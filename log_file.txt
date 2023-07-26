@@ -2,8 +2,10 @@
 
 ******************************
  started running main_file.py 
- start at:2023-07-25 17:35:14.299725 
-* 
- 
-* loaded administrative shapes: 2023-07-25 17:35:15.337610
-* loaded solar kataster shapes: 2023-07-25 17:35:15.338606
+ start at:2023-07-26 09:08:11.999291 
+******************************
+
+
+* loaded administrative shapes: 2023-07-26 09:08:13.283672
+* loaded solar kataster shapes: 2023-07-26 09:08:13.528906
+* loaded solar kataster shapes: 2023-07-26 09:08:33.221427
