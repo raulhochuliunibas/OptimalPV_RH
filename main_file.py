@@ -4,7 +4,7 @@ import os as os
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import pyogrio
-
+from functions import crs2wsg84
 from datetime import datetime
 #from pandasgui import show
 
@@ -41,9 +41,11 @@ with open(f'log_file.txt', 'a') as log_file:
     log_file.write(f"{check}\n")
 
 # load solar kataster shapes
+"""
 dat_solkat = gpd.read_file(f'{data_path}/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
 wgs84_crs = dat_solkat.crs.to_string().split(" +up")[0]
 dat_solkat = dat_solkat.to_crs(wgs84_crs)
+"""
 
 check = f'* loaded solar kataster shapes: {datetime.now()}'
 print(check)
@@ -51,14 +53,21 @@ with open(f'log_file.txt', 'a') as log_file:
     log_file.write(f"{check}\n")
 
 # load pv installations
+"""
 dat_pv = gpd.read_file(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen', layer ='subcat_2_pv')
 wgs84_crs = dat_pv.crs.to_string().split(" +up")[0]
 dat_pv = dat_pv.to_crs(wgs84_crs)
+"""
 
 check = f'* loaded solar kataster shapes: {datetime.now()}'
 print(check)
 with open(f'log_file.txt', 'a') as log_file:
     log_file.write(f"{check}\n")
+
+# create roofs from kataster shapes ------------------------------------
+shp_roof = ch_gm.unary_union
+
+
 
 # ----------------------------------------------------------------------
 # book mark ------------------------------------------------------------
