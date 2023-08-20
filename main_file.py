@@ -16,8 +16,8 @@ with open(f'log_file.txt', 'w') as log_file:
     log_file.write(f'{check}\n')
 
 # set working directory -----------------------------------------------
-wd_path = "C:/Models/OptimalPV"
-data_path = "C:/Models/data"
+wd_path = "C:/Models/OptimalPV_RH"
+data_path = "C:/Models/OptimalPV_RH_data"
 os.chdir(wd_path)   
 os.listdir()
 os.listdir(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen')
@@ -27,20 +27,40 @@ os.listdir(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen')
 # import data ----------------------------------------------------------
 
 # load administrative shapes
-ch_kt = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
-wgs84_crs = ch_kt.crs.to_string().split(" +up")[0]
-ch_kt = ch_kt.to_crs(wgs84_crs)
+kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+wgs84_crs = kt_shp.crs.to_string().split(" +up")[0]
+kt_shp = kt_shp.to_crs(wgs84_crs)
 
-ch_gm = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-wgs84_crs = ch_gm.crs.to_string().split(" +up")[0]
-ch_gm = ch_gm.to_crs(wgs84_crs)
+gm_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+wgs84_crs = gm_shp.crs.to_string().split(" +up")[0]
+gm_shp = gm_shp.to_crs(wgs84_crs)
 
-check = f'* loaded administrative shapes: {datetime.now()}'
+check = f'* finished loading administrative shapes: {datetime.now()}'
 print(check)
 with open(f'log_file.txt', 'a') as log_file:
     log_file.write(f"{check}\n")
 
+
+# ----------------------------------------------------------------------
+# book mark ------------------------------------------------------------
+# ----------------------------------------------------------------------
+
+
 # load solar kataster shapes
+roof_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+roof_kat.head()
+kt_shp.head()
+gm_shp.head()   
+kt_shp.columns
+
+
+kt_shp_be = kt_shp.loc[kt_shp["KANTONSNUM"] == 13].copy(deep=True)
+kt_shp_be.plot(figsize=(10,10))
+plt.show()
+kt_shp_be.head()
+
+roof_kat_be = gpd.sjoin(roof_kat, kt_shp_be, op='within')
+
 """
 dat_solkat = gpd.read_file(f'{data_path}/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
 wgs84_crs = dat_solkat.crs.to_string().split(" +up")[0]
@@ -65,7 +85,7 @@ with open(f'log_file.txt', 'a') as log_file:
     log_file.write(f"{check}\n")
 
 # create roofs from kataster shapes ------------------------------------
-shp_roof = ch_gm.unary_union
+shp_roof = gm_shp.unary_union
 
 
 
@@ -74,10 +94,10 @@ shp_roof = ch_gm.unary_union
 # ----------------------------------------------------------------------
 
 
-ch_kt_zh = ch_kt[ch_kt['NAME'] == 'Zürich']
+kt_shp_zh = kt_shp[kt_shp['NAME'] == 'Zürich']
 
 
-asdf = gpd.sjoin(ch_gm, ch_kt_zh, how='inner', op='intersects')
+asdf = gpd.sjoin(gm_shp, kt_shp_zh, how='inner', op='intersects')
 type(asdf)
 
 
