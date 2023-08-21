@@ -2,8 +2,11 @@
 
 ******************************
  started running main_file.py 
- start at:2023-08-20 14:35:18.341249 
+ start at:2023-08-21 17:13:11.033484 
 ******************************
 
 
-* finished loading administrative shapes: 2023-08-20 14:35:23.631251
+* finished loading administrative shapes: 2023-08-21 17:13:11.969044
+* finished loading roof kataster shapes: 2023-08-21 17:19:05.205764
+
+* changed all CRS to EPSG 4326: 2023-08-21 17:19:07.332625
