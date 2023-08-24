@@ -1,13 +1,79 @@
+ 
 
 
-******************************
+****************************************
  started running main_file.py 
- start at:2023-08-23 15:04:13.916974 
-******************************
+ start at:2023-08-24 11:21:37.393111 
+****************************************
 
 
-* finished loading administrative shapes: 2023-08-23 15:04:14.167126
-* finished loading roof kataster shapes: 2023-08-23 15:10:01.682112
-* finished loading pv installation points: 2023-08-23 15:10:05.527775
+* finished loading administrative shapes: 2023-08-24 11:21:39.450515
+* finished loading solar kataster shapes: 2023-08-24 11:28:42.239793
+* finished loading pv installation points: 2023-08-24 11:28:47.358478
 
-* changed all CRS to EPSG 4326: 2023-08-23 15:10:05.661730
+
+****************************************
+ aggregate roof parts at house level 
+ start at:2023-08-24 11:28:47.658055 
+****************************************
+
+
+
+
+****************************************
+ aggregate roof parts at house level 
+ start at:2023-08-24 11:28:50.043172 
+****************************************
+
+
+* created empty df for iter over roof parts: 2023-08-24 11:28:51.215074
+* finished loop iter over roof parts: 2023-08-24 11:29:40.601823
+* pd.df transformed to geo df + exported: 2023-08-24 11:29:40.951086
+
+
+****************************************
+ END of main_file.py 
+ start at:2023-08-24 11:29:41.345277 
+****************************************
+
+
+
+
+****************************************
+ aggregate roof parts at house level 
+ start at:2023-08-24 11:35:22.460036 
+****************************************
+
+
+* created empty df for iter over roof parts: 2023-08-24 11:35:23.636133
+* finished loop iter over roof parts: 2023-08-24 11:35:38.319913
+* pd.df transformed to geo df + exported: 2023-08-24 11:35:38.630505
+
+
+****************************************
+ END of main_file.py 
+ start at:2023-08-24 11:35:38.971375 
+****************************************
+
+
+* created empty df for iter over roof parts: 2023-08-24 11:48:12.034984
+* finished loop iter over roof parts: 2023-08-24 11:48:27.156249
+
+
+****************************************
+ aggregate roof parts at house level 
+ start at:2023-08-24 11:56:36.738431 
+****************************************
+
+
+* created empty df for iter over roof parts: 2023-08-24 11:56:37.908494
+* finished loop iter over roof parts: 2023-08-24 11:56:52.837858
+* aggregated gdf exported: 2023-08-24 11:57:25.012615
+
+
+****************************************
+ END of main_file.py 
+ start at:2023-08-24 11:57:25.185574 
+****************************************
+
+
