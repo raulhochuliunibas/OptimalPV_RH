@@ -175,6 +175,11 @@ winsound.Beep(400, 100)
 winsound.Beep(400, 500)
 
 
+
+# TODO: CRS is problematic! after changing it to 4326, the geometry cannot be plotted anymore. 
+
+
+
 type(roof_union)
 roof_union.crs
 roof_union.head()
@@ -198,6 +203,7 @@ type(pv['geometry'])
 
 
 kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+kt_shp.crs
 kt_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
 
 kt_shp.plot()
