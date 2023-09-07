@@ -123,6 +123,7 @@ checkpoint_to_logfile(f'created empty df to then iter over roof parts')
 
 # roof kataster: loop over roof_kat  ----------------------------------------------------------------------
 idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}'
+set_buffer = 1
 for idx, row_srs in roof_union.iterrows():
     
     # add unified geometry
@@ -130,8 +131,7 @@ for idx, row_srs in roof_union.iterrows():
     #roof_union.loc[idx, 'geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].unary_union
 
     # tester
-    roof_geom_buff = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].buffer(0.5, resolution = 16).unary_union.copy()
-    roof_union.loc[idx, 'geometry'] = roof_geom_buff.buffer(-0.5, resolution = 16).copy()
+    roof_union.loc[idx, 'geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16) # roof_geom_buff.buffer(-0.5, resolution = 16).copy()
     #
 
     """
@@ -150,6 +150,7 @@ for idx, row_srs in roof_union.iterrows():
     """
 
 checkpoint_to_logfile(f'finished loop iter over roof parts')
+roof_union.to_file(f'{data_path}/roof_union_W{set_buffer}buffer.shp')
 
 
 # pv inst: add empty nan conlumns to aggr df   ----------------------------------------------------------------------
