@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 import matplotlib.pyplot as plt
-# import pyogrio
+import pyogrio
 import winsound
 
 from functions import chapter_to_logfile, checkpoint_to_logfile
@@ -20,6 +20,7 @@ import warnings
 
 
 # pre setup + working directory -------------------------------------------------------------
+winsound.Beep(840,  100)
 
 wd_path = "C:/Models/OptimalPV_RH"
 #wd_path = "D:\OptimalPV_RH"
@@ -38,20 +39,24 @@ os.listdir(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen')
 
 # load administrative shapes
 kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
-kt_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
+#kt_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
 gm_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-gm_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
+#gm_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
 
 checkpoint_to_logfile(f'finished loading administrative shapes')
 
 # load solar kataster shapes
 roof_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-roof_kat.set_crs("EPSG:4326", allow_override=True, inplace=True)
-checkpoint_to_logfile(f'finished loading solar kataster shapes')
+#roof_kat.set_crs("EPSG:4326", allow_override=True, inplace=True)
+checkpoint_to_logfile(f'finished loading roof solar kataster shapes')
+
+#faca_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASSADE_20230221.gdb', layer ='SOLKAT_CH_FASSADE') 
+#faca_kat.set_crs("EPSG:4326", allow_override=True, inplace=True)
+#checkpoint_to_logfile(f'finished loading facade solar kataster shapes')
 
 # load pv installation points
 pv = gpd.read_file(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
-pv.set_crs("EPSG:4326", allow_override=True, inplace=True)  
+#pv.set_crs("EPSG:4326", allow_override=True, inplace=True)  
 
 # check if all CRS are compatible
 kt_shp.crs == gm_shp.crs == roof_kat.crs == pv.crs
@@ -93,9 +98,12 @@ winsound.Beep(840,  100)
 19 Historische Baute
 20 Gebaeude unsichtbar
 """
-cat_sb_object = [2,4]#[1,2,4,5,8,12,13]
-roof_kat['SB_OBJEKTART'].value_counts()
-roof_kat_sub = roof_kat.loc[roof_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
+#cat_sb_object = [4, 13]#[1,2,4,5,8,12,13]
+#roof_kat['SB_OBJEKTART'].value_counts()
+#roof_kat_sub = roof_kat.loc[roof_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
+
+roof_kat_sub = roof_kat.loc[roof_kat['SB_UUID'].isin(roof_kat['SB_UUID'].unique()[0:1000])].copy()
+
 
 # define roof range which are considered
 cutoff_roof_kat_area = [10,300] #TODO: add here values from the PV installation data set
@@ -104,20 +112,28 @@ cutoff_roof_kat_area = [10,300] #TODO: add here values from the PV installation 
 # roof kataster: create empty nan gdf with unique sb_obj_uuids as index ----------------------------------------------------------
 sb_obj_unique = roof_kat_sub['SB_UUID'].unique() 
 roof_union = gpd.GeoDataFrame(index = sb_obj_unique, columns = ['geometry']) #TODO: find a better naming convetion!
+roof_union.set_crs(roof_kat.crs, inplace=True)
+
 cols = ['FLAECHE', 'MSTRAHLUNG', 'GSTRAHLUNG', 'STROMERTRAG']
 cats = ['cat2_', 'cat3_', 'cat4_', 'cat5_']
 new_col = [cat + col for cat in cats for col in cols ]
 roof_union[new_col] = np.nan
-checkpoint_to_logfile(f'created empty df for iter over roof parts')
+checkpoint_to_logfile(f'created empty df to then iter over roof parts')
 
 
 # roof kataster: loop over roof_kat  ----------------------------------------------------------------------
-
+idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}'
 for idx, row_srs in roof_union.iterrows():
     
     # add unified geometry
     #row_srs['geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].unary_union
-    roof_union.loc[idx, 'geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].unary_union
+    #roof_union.loc[idx, 'geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].unary_union
+
+    # tester
+    roof_geom_buff = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].buffer(0.5, resolution = 16).unary_union.copy()
+    roof_union.loc[idx, 'geometry'] = roof_geom_buff.buffer(-0.5, resolution = 16).copy()
+    #
+
     """
     # set boolean indicatros 
     bool_id_2 = (roof_kat_sub['KLASSE'].isin([1,2])) & (roof_kat_sub['SB_UUID'] == idx ) & (roof_kat_sub['FLAECHE'] > cutoff_roof_kat_area[0]) & (roof_kat_sub['FLAECHE'] < cutoff_roof_kat_area[1])
@@ -180,6 +196,27 @@ winsound.Beep(400, 500)
 
 # TODO: CRS is problematic! after changing it to 4326, the geometry cannot be plotted anymore. 
 
+
+
+# ----------------------------------------------------------------------
+
+
+roof_kat_sub = roof_kat.loc[roof_kat['SB_UUID'].isin(roof_kat['SB_UUID'].unique()[0:1000])].copy()
+roof_kat_sub['geometry'] = roof_kat_sub['geometry'].copy().buffer(0.5, resolution = 16)
+roof_kat_sub.to_file(f'{data_path}/roof_kat_sub_buffer.shp')   
+
+roof_kat_sub['geometry'] = roof_kat_sub['geometry'].copy().buffer(-0.5, resolution = 16)
+roof_kat_sub.to_file(f'{data_path}/roof_kat_sub_DEbuffer.shp')   
+
+
+
+
+type(gm_shp)
+gm_shp.to_file(f'{data_path}/gm_shp.shp')
+gm_shp.to_file(f'{data_path}/gm_shp.geojson', driver='GeoJSON')
+
+type(roof_kat_sub)
+roof_kat_sub.to_file(f'{data_path}/roof_kat_sub.geojson', driver='GeoJSON')
 
 
 type(roof_union)
