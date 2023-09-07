@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 import matplotlib.pyplot as plt
-import pyogrio
+# import pyogrio
 import winsound
 
 from functions import chapter_to_logfile, checkpoint_to_logfile
@@ -22,7 +22,9 @@ import warnings
 # pre setup + working directory -------------------------------------------------------------
 
 wd_path = "C:/Models/OptimalPV_RH"
-data_path = "C:/Models/OptimalPV_RH_data"
+#wd_path = "D:\OptimalPV_RH"
+data_path = f'{wd_path}_data'
+
 os.chdir(wd_path)   
 # create log file for checkpoint comments
 with open(f'log_file.txt', 'w') as log_file:
