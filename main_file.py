@@ -17,13 +17,14 @@ import warnings
 # ----------------------------------------------------------------------
 # Setup + Import 
 # ----------------------------------------------------------------------
-
+wd_path = "C:/Models/OptimalPV_RH"
+#wd_path = "D:\OptimalPV_RH"
+# poetry add pandas numpy geopandas matplotlib pyogrio shapely winsound
 
 # pre setup + working directory -------------------------------------------------------------
 winsound.Beep(840,  100)
 
-wd_path = "C:/Models/OptimalPV_RH"
-#wd_path = "D:\OptimalPV_RH"
+
 data_path = f'{wd_path}_data'
 
 os.chdir(wd_path)   
