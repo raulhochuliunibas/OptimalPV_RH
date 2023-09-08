@@ -14,19 +14,18 @@ from shapely.ops import unary_union
 # still uncertain if this is needed
 import warnings
 
-# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
 # Setup + Import 
-# ----------------------------------------------------------------------
-wd_path = "C:/Models/OptimalPV_RH"
-#wd_path = "D:\OptimalPV_RH"
-# poetry add pandas numpy geopandas matplotlib pyogrio shapely winsound
+# ----------------------------------------------------------------------------------------------------------------
+wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
+#wd_path = "D:\OptimalPV_RH"         # path for server directory
+# poetry add pandas numpy geopandas matplotlib pyogrio shapely
 
-# pre setup + working directory -------------------------------------------------------------
+
+# pre setup + working directory -----------------------------------------------------------------------------------
 winsound.Beep(840,  100)
 
-
 data_path = f'{wd_path}_data'
-
 os.chdir(wd_path)   
 # create log file for checkpoint comments
 with open(f'log_file.txt', 'w') as log_file:
@@ -36,14 +35,13 @@ chapter_to_logfile('started running main_file.py')
 os.listdir(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen')
 
 
-# import data ----------------------------------------------------------
+# import data -----------------------------------------------------------------------------------------------------
 
 # load administrative shapes
 kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
 #kt_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
 gm_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 #gm_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
-
 checkpoint_to_logfile(f'finished loading administrative shapes')
 
 # load solar kataster shapes
@@ -51,9 +49,14 @@ roof_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-daecher_2056.gdb/SOL
 #roof_kat.set_crs("EPSG:4326", allow_override=True, inplace=True)
 checkpoint_to_logfile(f'finished loading roof solar kataster shapes')
 
-#faca_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASSADE_20230221.gdb', layer ='SOLKAT_CH_FASSADE') 
+#faca_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS') 
 #faca_kat.set_crs("EPSG:4326", allow_override=True, inplace=True)
-#checkpoint_to_logfile(f'finished loading facade solar kataster shapes')
+checkpoint_to_logfile(f'finished loading facade solar kataster shapes')
+
+#bldng_reg = gpd.read_file(f'{data_path}/GebWohnRegister.CH/buildings.geojson')
+checkpoint_to_logfile(f'finished loading building register points')
+
+heatcool_dem = gpd.read_file(f'{data_path}/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
 
 # load pv installation points
 pv = gpd.read_file(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
@@ -66,15 +69,15 @@ checkpoint_to_logfile(f'finished loading pv installation points')
 
 
 
-# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
 # Aggregate roof parts at house level 
-# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
 chapter_to_logfile('aggregate roof parts at house level')
 winsound.Beep(840,  100)
 winsound.Beep(840,  100)
 
 
-# set aggregate parameters  ----------------------------------------------------------
+# set aggregate parameters  ---------------------------------------------------------------------------------------
 
 # subset to relevant houses 
 """
@@ -110,7 +113,7 @@ roof_kat_sub = roof_kat.loc[roof_kat['SB_UUID'].isin(roof_kat['SB_UUID'].unique(
 cutoff_roof_kat_area = [10,300] #TODO: add here values from the PV installation data set
 
 
-# roof kataster: create empty nan gdf with unique sb_obj_uuids as index ----------------------------------------------------------
+# roof kataster: create empty nan gdf with unique sb_obj_uuids as index --------------------------------------------
 sb_obj_unique = roof_kat_sub['SB_UUID'].unique() 
 roof_union = gpd.GeoDataFrame(index = sb_obj_unique, columns = ['geometry']) #TODO: find a better naming convetion!
 roof_union.set_crs(roof_kat.crs, inplace=True)
@@ -122,9 +125,9 @@ roof_union[new_col] = np.nan
 checkpoint_to_logfile(f'created empty df to then iter over roof parts')
 
 
-# roof kataster: loop over roof_kat  ----------------------------------------------------------------------
-idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}'
-set_buffer = 1
+# roof kataster: loop over roof_kat  --------------------------------------------------------------------------------
+idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}' #TODO: delete later when no longer used
+set_buffer = 3 # determines the buffer around shapes to ensure a more proper union merge of single ouse shapes
 for idx, row_srs in roof_union.iterrows():
     
     # add unified geometry
@@ -151,7 +154,7 @@ for idx, row_srs in roof_union.iterrows():
     """
 
 checkpoint_to_logfile(f'finished loop iter over roof parts')
-roof_union.to_file(f'{data_path}/roof_union_W{set_buffer}buffer.shp')
+roof_union.to_file(f'{data_path}/z_py_exports/roof_union_W{set_buffer}buffer.shp')
 
 
 # pv inst: add empty nan conlumns to aggr df   ----------------------------------------------------------------------
@@ -159,7 +162,7 @@ roof_union.to_file(f'{data_path}/roof_union_W{set_buffer}buffer.shp')
 roof_union['pv_d', 'pv_address', 'pv_postcode', 'pv_BeginningO', 'InitialPow', 'TotalPow' ] = np.nan
 
 
-# pv inst: loop over pv   ----------------------------------------------------------------------
+# pv inst: loop over pv   -------------------------------------------------------------------------------------------
 
 for idx, row_srs in roof_union.iterrows():
 
@@ -173,27 +176,24 @@ for idx, row_srs in roof_union.iterrows():
     roof_union.loc[idx, 'TotalPow']
     """
 
-# ----------------------------------------------------------------------
-# book mark ------------------------------------------------------------
-roof_union['pv_d'].value_counts()
 
-# ----------------------------------------------------------------------
-
-
-# export ----------------------------------------------------------
-roof_union.to_file(f'{data_path}/roof_union.shp')
-roof_union.to_file(f'{data_path}/roof_union.geojson', driver='GeoJSON')
+# export 
+roof_union.to_file(f'{data_path}/z_py_exports/roof_union.shp')
+roof_union.to_file(f'{data_path}/z_py_exports/roof_union.geojson', driver='GeoJSON')
 checkpoint_to_logfile(f'aggregated gdf exported')
 
 
-# ----------------------------------------------------------------------
-# END ------------------------------------------------------------------
-# ----------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------------------
+# END 
+# --------------------------------------------------------------------------------------------------------------------
 chapter_to_logfile('END of main_file.py')
 winsound.Beep(400, 100)
 winsound.Beep(400, 100)
 winsound.Beep(400, 500)
 
+# --------------------------------------------------------------------------------------------------------------------
+# book mark ---------------------------------------------------------------------------------------------------------- 
+# --------------------------------------------------------------------------------------------------------------------
 
 
 # TODO: CRS is problematic! after changing it to 4326, the geometry cannot be plotted anymore. 
@@ -205,10 +205,10 @@ winsound.Beep(400, 500)
 
 roof_kat_sub = roof_kat.loc[roof_kat['SB_UUID'].isin(roof_kat['SB_UUID'].unique()[0:1000])].copy()
 roof_kat_sub['geometry'] = roof_kat_sub['geometry'].copy().buffer(0.5, resolution = 16)
-roof_kat_sub.to_file(f'{data_path}/roof_kat_sub_buffer.shp')   
+roof_kat_sub.to_file(f'{data_path}/z_py_exports/roof_kat_sub_buffer.shp')   
 
 roof_kat_sub['geometry'] = roof_kat_sub['geometry'].copy().buffer(-0.5, resolution = 16)
-roof_kat_sub.to_file(f'{data_path}/roof_kat_sub_DEbuffer.shp')   
+roof_kat_sub.to_file(f'{data_path}/z_py_exports/roof_kat_sub_DEbuffer.shp')   
 
 
 
@@ -218,7 +218,7 @@ gm_shp.to_file(f'{data_path}/gm_shp.shp')
 gm_shp.to_file(f'{data_path}/gm_shp.geojson', driver='GeoJSON')
 
 type(roof_kat_sub)
-roof_kat_sub.to_file(f'{data_path}/roof_kat_sub.geojson', driver='GeoJSON')
+roof_kat_sub.to_file(f'{data_path}/z_py_exports/roof_kat_sub.geojson', driver='GeoJSON')
 
 
 type(roof_union)
