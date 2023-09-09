@@ -41,31 +41,30 @@ os.listdir(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen')
 kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
 #kt_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
 gm_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-#gm_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
 checkpoint_to_logfile(f'finished loading administrative shapes')
 
 # load solar kataster shapes
 roof_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-#roof_kat.set_crs("EPSG:4326", allow_override=True, inplace=True)
 checkpoint_to_logfile(f'finished loading roof solar kataster shapes')
-
-#faca_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS') 
-#faca_kat.set_crs("EPSG:4326", allow_override=True, inplace=True)
+faca_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS') 
 checkpoint_to_logfile(f'finished loading facade solar kataster shapes')
 
-#bldng_reg = gpd.read_file(f'{data_path}/GebWohnRegister.CH/buildings.geojson')
+# load building register indicating residential or industrial use
+bldng_reg = gpd.read_file(f'{data_path}/GebWohnRegister.CH/buildings.geojson')
 checkpoint_to_logfile(f'finished loading building register points')
 
+# load heating / cooling demand raster 150x150m
 heatcool_dem = gpd.read_file(f'{data_path}/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+checkpoint_to_logfile(f'finished loading heating and cooling demand points')
 
 # load pv installation points
 pv = gpd.read_file(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
-#pv.set_crs("EPSG:4326", allow_override=True, inplace=True)  
+checkpoint_to_logfile(f'finished loading pv installation points')
 
 # check if all CRS are compatible
-kt_shp.crs == gm_shp.crs == roof_kat.crs == pv.crs
+kt_shpo.crs == gm_shp.crs == roof_kat.crs == faca_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
 
-checkpoint_to_logfile(f'finished loading pv installation points')
+
 
 
 
