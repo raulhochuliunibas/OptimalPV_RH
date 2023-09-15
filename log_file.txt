@@ -3,7 +3,22 @@
 
 ****************************************
  started running main_file.py 
- start at:2023-08-24 13:22:10.917641 
+ start at:2023-09-15 14:54:58.011014 
+****************************************
+
+
+* finished loading administrative shapes: 2023-09-15 14:55:00.419718
+* finished loading roof solar kataster shapes: 2023-09-15 15:00:22.786209
+* finished loading facade solar kataster shapes: 2023-09-15 15:00:22.786794
+* finished loading building register points: 2023-09-15 15:01:57.518071
+* finished loading heating and cooling demand points: 2023-09-15 15:01:59.436740
+* finished loading pv installation points: 2023-09-15 15:02:03.187686
+* finished loading electricity demand 2022(non-standardized for other years): 2023-09-15 15:02:05.251853
+
+
+****************************************
+ aggregate roof parts at house level 
+ start at:2023-09-15 15:02:07.323793 
 ****************************************
 
 

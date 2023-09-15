@@ -18,6 +18,7 @@ import warnings
 # Setup + Import 
 # ----------------------------------------------------------------------------------------------------------------
 script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
+subsample_faster_run = 0          # 0 = run on all data, 1 = run on subset of data for faster run
 
 # poetry add pandas numpy geopandas matplotlib pyogrio shapely
 
@@ -41,40 +42,70 @@ chapter_to_logfile('started running main_file.py')
 
 # import geo referenced data -------------------------------------------------------------------------------------
 
-# load administrative shapes
-kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
-#kt_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
-gm_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-checkpoint_to_logfile(f'finished loading administrative shapes')
-
-# load solar kataster shapes
-roof_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-checkpoint_to_logfile(f'finished loading roof solar kataster shapes')
-#faca_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS') 
-checkpoint_to_logfile(f'finished loading facade solar kataster shapes')
-
-# load building register indicating residential or industrial use
-bldng_reg = gpd.read_file(f'{data_path}/GebWohnRegister.CH/buildings.geojson')
-checkpoint_to_logfile(f'finished loading building register points')
-
-# load heating / cooling demand raster 150x150m
-#heatcool_dem = gpd.read_file(f'{data_path}/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
-checkpoint_to_logfile(f'finished loading heating and cooling demand points')
-
-# load pv installation points
-#pv = gpd.read_file(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
-checkpoint_to_logfile(f'finished loading pv installation points')
-
-# check if all CRS are compatible
-#kt_shp.crs == gm_shp.crs == roof_kat.crs == faca_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
-kt_shp.crs == gm_shp.crs == roof_kat.crs == bldng_reg.crs 
+if subsample_faster_run == 0:
+  # load administrative shapes
+  kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+  #kt_shp.set_crs("EPSG:4326", allow_override=True, inplace=True)
+  gm_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+  checkpoint_to_logfile(f'finished loading administrative shapes')
 
 
-# import regular data --------------------------------------------------------------------------------------------
+  # load solar kataster shapes
+  roof_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+  checkpoint_to_logfile(f'finished loading roof solar kataster shapes')
+  #faca_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS') 
+  checkpoint_to_logfile(f'finished loading facade solar kataster shapes')
+
+  # load building register indicating residential or industrial use
+  bldng_reg = gpd.read_file(f'{data_path}/GebWohnRegister.CH/buildings.geojson')
+  checkpoint_to_logfile(f'finished loading building register points')
+
+  # load heating / cooling demand raster 150x150m
+  heatcool_dem = gpd.read_file(f'{data_path}/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+  checkpoint_to_logfile(f'finished loading heating and cooling demand points')
+
+  # load pv installation points
+  pv = gpd.read_file(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
+  checkpoint_to_logfile(f'finished loading pv installation points')
+
+  # check if all CRS are compatible
+  #kt_shp.crs == gm_shp.crs == roof_kat.crs == faca_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
+  kt_shp.crs == gm_shp.crs == roof_kat.crs == bldng_reg.crs 
+
+elif subsample_faster_run == 1:
+  # load administrative shapes
+  kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+  gm_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+
+  roof_kat = gpd.read_file(f'{data_path}/subsample_faster_run/roof_kat_ZH.shp')
+  faca_kat = gpd.read_file(f'{data_path}/subsample_faster_run/faca_kat_ZH.shp')
+  bldng_reg = gpd.read_file(f'{data_path}/subsample_faster_run/bldng_reg_ZH.shp')
+  heatcool_dem = gpd.read_file(f'{data_path}/subsample_faster_run/heatcool_dem_ZH.shp')
+  pv = gpd.read_file(f'{data_path}/subsample_faster_run/pv_ZH.shp')
+
+
+# import regular, nonGIS data --------------------------------------------------------------------------------------------
 dict_elec_prod_dispatch = {'Week':['05.01.2022', '12.01.2022', '19.01.2022', '26.01.2022', '02.02.2022', '09.02.2022', '16.02.2022', '23.02.2022', '02.03.2022', '09.03.2022', '16.03.2022', '23.03.2022', '30.03.2022', '06.04.2022', '13.04.2022', '20.04.2022', '27.04.2022', '04.05.2022', '11.05.2022', '18.05.2022', '25.05.2022', '01.06.2022', '08.06.2022', '15.06.2022', '22.06.2022', '29.06.2022','06.07.2022', '13.07.2022', '20.07.2022', '27.07.2022', '03.08.2022', '10.08.2022', '17.08.2022', '24.08.2022', '31.08.2022', '07.09.2022', '14.09.2022', '21.09.2022', '28.09.2022', '05.10.2022', '12.10.2022', '19.10.2022', '26.10.2022', '02.11.2022', '09.11.2022', '16.11.2022', '23.11.2022', '30.11.2022', '07.12.2022', '14.12.2022', '21.12.2022', '28.12.2022'],
                            'consumption_Gwh':[195.2, 236.1, 216.7, 214.7, 218.6, 205.4, 213.2, 198.0, 196.9, 207.3, 193.0, 194.1, 191.4, 191.6, 170.2, 159.3, 167.3, 173.2, 164.4, 150.7, 158.1, 163.3, 161.3, 161.4, 175.0, 159.3, 150.1, 158.7, 144.4, 152.8, 149.6, 156.8, 144.2, 158.8, 171.6, 162.0, 172.0, 164.6, 180.7, 162.7, 173.5, 168.9, 171.1, 173.3, 190.3, 182.4, 199.0, 204.6, 220.4, 201.1, 208.0, 171.7]} 
 elec_dem_2022 = pd.DataFrame(dict_elec_prod_dispatch)
 checkpoint_to_logfile(f'finished loading electricity demand 2022(non-standardized for other years)')
+
+
+# export subsamples for faster run --------------------------------------------------------------------------------
+if True:
+  kt_shp_zh = kt_shp.loc[kt_shp['KANTONSNUM'] == 1].copy()
+  roof_kat_ZH = roof_kat['geometry'].intersects(kt_shp_zh['geometry']).copy()
+  faca_kat_ZH = faca_kat['geometry'].intersects(kt_shp_zh['geometry']).copy()
+  bldng_reg_ZH = bldng_reg['geometry'].intersects(kt_shp_zh['geometry']).copy()
+  heatcool_dem_ZH = heatcool_dem['geometry'].intersects(kt_shp_zh['geometry']).copy()
+  pv_ZH = pv['geometry'].intersects(kt_shp_zh['geometry']).copy()
+
+  roof_kat_ZH.to_file(f'{data_path}/subsample_faster_run/roof_kat_ZH.shp')
+  faca_kat_ZH.to_file(f'{data_path}/subsample_faster_run/faca_kat_ZH.shp')
+  bldng_reg_ZH.to_file(f'{data_path}/subsample_faster_run/bldng_reg_ZH.shp')
+  heatcool_dem_ZH.to_file(f'{data_path}/subsample_faster_run/heatcool_dem_ZH.shp')
+  pv_ZH.to_file(f'{data_path}/subsample_faster_run/pv_ZH.shp')
+
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -188,7 +219,7 @@ roof_union.set_crs(roof_kat.crs, inplace=True)
 
 # create new df from roof_kat: loop over each building merging shapes-------------------------------------------------
 idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}' #TODO: delete later when no longer used
-set_buffer = 1 # determines the buffer around shapes to ensure a more proper union merge of single ouse shapes
+set_buffer = 1.25 # determines the buffer around shapes to ensure a more proper union merge of single ouse shapes
 for idx, row_srs in roof_union.iterrows():
     
     # add unified geometry
@@ -197,7 +228,7 @@ for idx, row_srs in roof_union.iterrows():
     roof_union.loc[idx, 'geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16) # roof_geom_buff.buffer(-0.5, resolution = 16).copy()
 
 checkpoint_to_logfile(f'unionized roof parts per building')
-roof_union.to_file(f'{data_path}/roof_union_W{set_buffer}buffer_PILOT_bldgINTERSECTION.shp')
+roof_union.to_file(f'{data_path}/roof_union_1_W{set_buffer}buffer.shp')
 
 
 # intersect roof shape with buildingClass, roof_union with bldng_reg_residential ---------------------------------
@@ -225,8 +256,10 @@ for idx, row_srs in roof_union.iterrows():
         roof_union.loc[idx, 'bldngClass'] = bldng_reg_residential.loc[bldng_IN_idx, 'buildingClass'].values[0]
 
 checkpoint_to_logfile(f'extended roof_union with bldng_reg_residential info')
-roof_union.to_file(f'{data_path}/roof_union_W{set_buffer}_AFTER_bldng_extension.shp')
+roof_union.to_file(f'{data_path}/roof_union_2_AFTER_bldng_extension.shp')
 
+roof_union.columns
+roof_union['n_match_bldng_reg'].value_counts()  
 
 
 
