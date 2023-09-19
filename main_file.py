@@ -14,13 +14,18 @@ from shapely.ops import unary_union
 # still uncertain if this is needed
 import warnings
 
+
+# pre run settings -----------------------------------------------------------------------------------------------
+script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
+subsample_faster_run = 0          # 0 = run on all data, 1 = run on subset of data for faster run
+create_data_subsample = 1         # 0 = do not create data subsample, 1 = create data subsample
+
+
+
 # ----------------------------------------------------------------------------------------------------------------
 # Setup + Import 
 # ----------------------------------------------------------------------------------------------------------------
-script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
-subsample_faster_run = 0          # 0 = run on all data, 1 = run on subset of data for faster run
 
-# poetry add pandas numpy geopandas matplotlib pyogrio shapely
 
 # pre setup + working directory ----------------------------------------------------------------------------------
 if script_run_on_server == 0: 
@@ -72,6 +77,23 @@ if subsample_faster_run == 0:
   #kt_shp.crs == gm_shp.crs == roof_kat.crs == faca_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
   kt_shp.crs == gm_shp.crs == roof_kat.crs == bldng_reg.crs 
 
+
+  # export subsamples for faster run --------------------------------------------------------------------------------
+  if create_data_subsample == 1:
+    kt_shp_zh = kt_shp.loc[kt_shp['KANTONSNUM'] == 1].copy()
+    roof_kat_ZH = roof_kat['geometry'].intersects(kt_shp_zh['geometry']).copy()
+    faca_kat_ZH = faca_kat['geometry'].intersects(kt_shp_zh['geometry']).copy()
+    bldng_reg_ZH = bldng_reg['geometry'].intersects(kt_shp_zh['geometry']).copy()
+    heatcool_dem_ZH = heatcool_dem['geometry'].intersects(kt_shp_zh['geometry']).copy()
+    pv_ZH = pv['geometry'].intersects(kt_shp_zh['geometry']).copy()
+
+    roof_kat_ZH.to_file(f'{data_path}/subsample_faster_run/roof_kat_ZH.shp')
+    faca_kat_ZH.to_file(f'{data_path}/subsample_faster_run/faca_kat_ZH.shp')
+    bldng_reg_ZH.to_file(f'{data_path}/subsample_faster_run/bldng_reg_ZH.shp')
+    heatcool_dem_ZH.to_file(f'{data_path}/subsample_faster_run/heatcool_dem_ZH.shp')
+    pv_ZH.to_file(f'{data_path}/subsample_faster_run/pv_ZH.shp')
+
+
 elif subsample_faster_run == 1:
   # load administrative shapes
   kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
@@ -89,22 +111,6 @@ dict_elec_prod_dispatch = {'Week':['05.01.2022', '12.01.2022', '19.01.2022', '26
                            'consumption_Gwh':[195.2, 236.1, 216.7, 214.7, 218.6, 205.4, 213.2, 198.0, 196.9, 207.3, 193.0, 194.1, 191.4, 191.6, 170.2, 159.3, 167.3, 173.2, 164.4, 150.7, 158.1, 163.3, 161.3, 161.4, 175.0, 159.3, 150.1, 158.7, 144.4, 152.8, 149.6, 156.8, 144.2, 158.8, 171.6, 162.0, 172.0, 164.6, 180.7, 162.7, 173.5, 168.9, 171.1, 173.3, 190.3, 182.4, 199.0, 204.6, 220.4, 201.1, 208.0, 171.7]} 
 elec_dem_2022 = pd.DataFrame(dict_elec_prod_dispatch)
 checkpoint_to_logfile(f'finished loading electricity demand 2022(non-standardized for other years)')
-
-
-# export subsamples for faster run --------------------------------------------------------------------------------
-if True:
-  kt_shp_zh = kt_shp.loc[kt_shp['KANTONSNUM'] == 1].copy()
-  roof_kat_ZH = roof_kat['geometry'].intersects(kt_shp_zh['geometry']).copy()
-  faca_kat_ZH = faca_kat['geometry'].intersects(kt_shp_zh['geometry']).copy()
-  bldng_reg_ZH = bldng_reg['geometry'].intersects(kt_shp_zh['geometry']).copy()
-  heatcool_dem_ZH = heatcool_dem['geometry'].intersects(kt_shp_zh['geometry']).copy()
-  pv_ZH = pv['geometry'].intersects(kt_shp_zh['geometry']).copy()
-
-  roof_kat_ZH.to_file(f'{data_path}/subsample_faster_run/roof_kat_ZH.shp')
-  faca_kat_ZH.to_file(f'{data_path}/subsample_faster_run/faca_kat_ZH.shp')
-  bldng_reg_ZH.to_file(f'{data_path}/subsample_faster_run/bldng_reg_ZH.shp')
-  heatcool_dem_ZH.to_file(f'{data_path}/subsample_faster_run/heatcool_dem_ZH.shp')
-  pv_ZH.to_file(f'{data_path}/subsample_faster_run/pv_ZH.shp')
 
 
 
