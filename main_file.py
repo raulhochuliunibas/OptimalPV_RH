@@ -58,7 +58,7 @@ if subsample_faster_run == 0:
   # load solar kataster shapes
   roof_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
   checkpoint_to_logfile(f'finished loading roof solar kataster shapes')
-  #faca_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS') 
+  faca_kat = gpd.read_file(f'{data_path}/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS') 
   checkpoint_to_logfile(f'finished loading facade solar kataster shapes')
 
   # load building register indicating residential or industrial use
