@@ -51,3 +51,53 @@ df_aggr.to_csv(f'{wd_path_data}\\SHEDS\\SHEDS_id_aggregated_over_years.csv', sep
 #     return in_set
 
 # df_aggr['in_sheds17'] = df_aggr.apply(lambda x: id_in_shedsdf(x, sheds17), axis = 1)
+
+# ==========================================================================================
+# ==========================================================================================
+# ==========================================================================================
+
+import geopandas as gpd
+import pyogrio
+import winsound
+
+winsound.Beep(840,  100)
+
+wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
+data_path = f'{wd_path}_data'
+
+kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+pv = gpd.read_file(f'{data_path}/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
+pv.set_crs(kt_shp.crs, allow_override = True, inplace = True)
+pv.crs == kt_shp.crs
+winsound.Beep(840,  100)
+winsound.Beep(840,  100)
+
+
+sub_kt_number = 15
+kt_shp.loc[kt_shp['KANTONSNUM'] == sub_kt_number, ['NAME', 'KANTONSNUM']] 
+kt_shp_sub = kt_shp.loc[kt_shp["KANTONSNUM"] == sub_kt_number,].copy()
+
+
+# pv_sub = gpd.sjoin(pv, kt_shp_sub, how='left')
+# type(pv['geometry'])
+# type(kt_shp_sub['geometry'])
+# pv_sub = pv['geometry'].intersection(kt_shp_sub['geometry'])
+# pv['geometry'].intersects(kt_shp_sub).value_counts()
+# pv['geometry'].within(kt_shp_sub).value_counts()
+# pv['geometry'].contains(kt_shp_sub).value_counts()
+pv_sub = gpd.overlay(pv, kt_shp_sub, how='intersection')
+pv_sub.head()
+type(pv_sub)
+
+winsound.Beep(840,  100)
+
+kt_shp_sub.to_file(f'{data_path}/subsample_faster_run/kt_shp_sub.shp')	
+pv_sub.to_file(f'{data_path}/subsample_faster_run/pv_sub6.shp')
+asdf = r'C:\Models\OptimalPV_RH_data\subsample_faster_run\pv_sub7.shp'
+pv_sub.to_file(asdf)
+# pv_sub.to_file(f'{data_path}/subsample_faster_run/pv_sub3.gpkg', layer = 'pv_sub3', driver = 'GPKG')
+
+pv_sub.to_file( f'C:\Models\OptimalPV_RH_data\subsample_faster_run\pv_sub.gpkg', layer = 'pv_sub3', driver = 'GPKG')
+winsound.Beep(840,  100)
+winsound.Beep(840,  100)
+
