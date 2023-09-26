@@ -3,22 +3,29 @@
 
 ****************************************
  started running main_file.py 
- start at:2023-09-15 14:54:58.011014 
+ start at:2023-09-26 09:13:27.127261 
 ****************************************
 
 
-* finished loading administrative shapes: 2023-09-15 14:55:00.419718
-* finished loading roof solar kataster shapes: 2023-09-15 15:00:22.786209
-* finished loading facade solar kataster shapes: 2023-09-15 15:00:22.786794
-* finished loading building register points: 2023-09-15 15:01:57.518071
-* finished loading heating and cooling demand points: 2023-09-15 15:01:59.436740
-* finished loading pv installation points: 2023-09-15 15:02:03.187686
-* finished loading electricity demand 2022(non-standardized for other years): 2023-09-15 15:02:05.251853
-
-
-****************************************
- aggregate roof parts at house level 
- start at:2023-09-15 15:02:07.323793 
-****************************************
-
-
+* finished loading administrative shapes: 2023-09-26 09:13:28.067013
+* finished loading roof solar kataster shapes: 2023-09-26 09:18:49.321339
+* finished loading facade solar kataster shapes: 2023-09-26 09:29:29.948359
+* finished loading building register points: 2023-09-26 09:31:02.176228
+* finished loading heating and cooling demand points: 2023-09-26 09:31:03.946312
+* finished loading pv installation points: 2023-09-26 09:31:06.926974
+* start subsetting data for faster run: 2023-09-26 09:31:07.780978
+* finished subsetting roof_kat: 2023-09-26 09:31:48.028594
+* start subsetting data for faster run: 2023-09-26 11:17:43.458716
+* finished subsetting roof_kat: 2023-09-26 11:18:01.294085
+* finished exporting roof_kat: 2023-09-26 11:18:03.333243
+* finished subsetting roof_kat: 2023-09-26 11:19:14.904333
+* finished exporting roof_kat: 2023-09-26 11:19:17.331259
+* start creating subsamples: 2023-09-26 11:41:11.695392
+* finished subsetting roof_kat: 2023-09-26 11:41:14.259026
+* *finished subsetting faca_kat: 2023-09-26 11:42:13.064725
+* *finished subsetting bldng_reg: 2023-09-26 11:42:18.233659
+* *finished subsetting heatcool_dem: 2023-09-26 11:42:18.813995
+* *finished subsetting pv: 2023-09-26 11:42:19.094989
+* start exporting subsample shapes: 2023-09-26 11:42:19.103583
+* start exporting subsample shapes: 2023-09-26 11:45:03.345096
+* start exporting subsample shapes: 2023-09-26 11:56:26.784668
