@@ -96,30 +96,37 @@ if subsample_faster_run == 0:
                     os.remove(f'{data_path}/subsample_faster_run/{file}')
 
           # create subsample shapes selected
-          checkpoint_to_logfile(f'\t start creating subsamples', n_tabs = 3)
+          checkpoint_to_logfile(f'\tstart creating subsamples', n_tabs = 3)
           kt_shp_sub = kt_shp.loc[kt_shp["KANTONSNUM"].isin(kt_number_sub),].copy()
           gm_shp_sub = gm_shp.loc[gm_shp['BFS_NUMMER'].isin(gm_number_sub),].copy()
+          checkpoint_to_logfile(f'\t * finished subsetting admin shp', n_tabs = 2)
           
           roof_kat_sub = gpd.sjoin(roof_kat, gm_shp_sub, how="inner", op="within")
-          checkpoint_to_logfile(f'\t* finished subsetting roof_kat', n_tabs = 3)
+          checkpoint_to_logfile(f'\t * finished subsetting roof_kat', n_tabs = 3)
           
           faca_kat_sub =      gpd.sjoin(faca_kat, gm_shp_sub, how="inner", op="within")
-          checkpoint_to_logfile(f'\t* finished subsetting faca_kat', n_tabs = 3)
+          checkpoint_to_logfile(f'\t * finished subsetting faca_kat', n_tabs = 3)
           bldng_reg_sub =     gpd.sjoin(bldng_reg, gm_shp_sub, how="inner", op="within")
-          checkpoint_to_logfile(f'\t* finished subsetting bldng_reg', n_tabs = 3)
+          checkpoint_to_logfile(f'\t * finished subsetting bldng_reg', n_tabs = 2)
           heatcool_dem_sub =  gpd.sjoin(heatcool_dem, gm_shp_sub, how="inner", op="within")
-          checkpoint_to_logfile(f'\t* finished subsetting heatcool_dem', n_tabs = 3)
+          checkpoint_to_logfile(f'\t * finished subsetting heatcool_dem', n_tabs = 2)
           pv_sub =             gpd.sjoin(pv, gm_shp_sub, how="inner", op="within")   
-          checkpoint_to_logfile(f'\t* finished subsetting pv', n_tabs = 3)
+          checkpoint_to_logfile(f'\t * finished subsetting pv', n_tabs = 4)
 
           # export subsample to shape files
-          checkpoint_to_logfile(f'\t* start exporting subsample shapes', n_tabs = 2)
+          checkpoint_to_logfile(f'\tstart exporting subsample shapes', n_tabs = 2)
           gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/gm_shp_sub.shp')
+          checkpoint_to_logfile(f'\t\t * finished exporting gm_shp_sub', n_tabs = 3)
           roof_kat_sub.to_file(f'{data_path}/subsample_faster_run/roof_kat_sub.shp')
+          checkpoint_to_logfile(f'\t\t * finished exporting roof_kat_sub', n_tabs = 3)
           faca_kat_sub.to_file(f'{data_path}/subsample_faster_run/faca_kat_sub.shp')
+          checkpoint_to_logfile(f'\t\t * finished exporting faca_kat_sub', n_tabs = 3)
           bldng_reg_sub.to_file(f'{data_path}/subsample_faster_run/bldng_reg_sub.shp')
+          checkpoint_to_logfile(f'\t\t * finished exporting bldng_reg_sub', n_tabs = 3)
           heatcool_dem_sub.to_file(f'{data_path}/subsample_faster_run/heatcool_dem_sub.shp')
+          checkpoint_to_logfile(f'\t\t * finished exporting heatcool_dem_sub', n_tabs = 3)
           pv_sub.to_file(f'{data_path}/subsample_faster_run/pv_sub.shp')
+          checkpoint_to_logfile(f'\t\t * finished exporting pv_sub', n_tabs = 3)
 
           # export subsample to geopackage
           gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='gm_shp', driver="GPKG")
@@ -132,18 +139,20 @@ if subsample_faster_run == 0:
 
 
 elif subsample_faster_run == 1:
-     # load solar kataster shapes
-     kt_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
-     gm_shp = gpd.read_file(f'{data_path}/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+     checkpoint_to_logfile(f'using SUBSAMPLE for faster run', n_tabs = 1)
 
      #load subset shapes
      os.listdir(f'{data_path}/subsample_faster_run')   
      roof_kat = gpd.read_file(f'{data_path}/subsample_faster_run/roof_kat_sub.shp')
+     checkpoint_to_logfile(f'finished loading roof solar kataster shp', n_tabs = 1)
      faca_kat = gpd.read_file(f'{data_path}/subsample_faster_run/faca_kat_sub.shp')
+     checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
      bldng_reg = gpd.read_file(f'{data_path}/subsample_faster_run/bldng_reg_sub.shp')
+     checkpoint_to_logfile(f'finished loading building register pt', n_tabs = 2)
      heatcool_dem = gpd.read_file(f'{data_path}/subsample_faster_run/heatcool_dem_sub.shp')
+     checkpoint_to_logfile(f'finished loading heat & cool demand pt', n_tabs = 1)
      pv = gpd.read_file(f'{data_path}/subsample_faster_run/pv_sub.shp')
-     checkpoint_to_logfile(f'using SUBSAMPLE for faster run', n_tabs = 1)
+     checkpoint_to_logfile(f'finished loading pv installation pt', n_tabs = 2)
 
      
 # import regular, nonGIS data --------------------------------------------------------------------------------------------

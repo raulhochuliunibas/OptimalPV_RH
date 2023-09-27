@@ -3,29 +3,48 @@
 
 ****************************************
  started running main_file.py 
- start at:2023-09-26 09:13:27.127261 
+ start at:2023-09-27 09:42:41.327924 
 ****************************************
 
 
-* finished loading administrative shapes: 2023-09-26 09:13:28.067013
-* finished loading roof solar kataster shapes: 2023-09-26 09:18:49.321339
-* finished loading facade solar kataster shapes: 2023-09-26 09:29:29.948359
-* finished loading building register points: 2023-09-26 09:31:02.176228
-* finished loading heating and cooling demand points: 2023-09-26 09:31:03.946312
-* finished loading pv installation points: 2023-09-26 09:31:06.926974
-* start subsetting data for faster run: 2023-09-26 09:31:07.780978
-* finished subsetting roof_kat: 2023-09-26 09:31:48.028594
-* start subsetting data for faster run: 2023-09-26 11:17:43.458716
-* finished subsetting roof_kat: 2023-09-26 11:18:01.294085
-* finished exporting roof_kat: 2023-09-26 11:18:03.333243
-* finished subsetting roof_kat: 2023-09-26 11:19:14.904333
-* finished exporting roof_kat: 2023-09-26 11:19:17.331259
-* start creating subsamples: 2023-09-26 11:41:11.695392
-* finished subsetting roof_kat: 2023-09-26 11:41:14.259026
-* *finished subsetting faca_kat: 2023-09-26 11:42:13.064725
-* *finished subsetting bldng_reg: 2023-09-26 11:42:18.233659
-* *finished subsetting heatcool_dem: 2023-09-26 11:42:18.813995
-* *finished subsetting pv: 2023-09-26 11:42:19.094989
-* start exporting subsample shapes: 2023-09-26 11:42:19.103583
-* start exporting subsample shapes: 2023-09-26 11:45:03.345096
-* start exporting subsample shapes: 2023-09-26 11:56:26.784668
+* finished loading administrative shp		runtime: N/A;   (stamp: 2023-09-27 09:42:42.220078)
+* finished loading roof solar kataster shp	runtime: 5 min 33 sec;   (stamp: 2023-09-27 09:48:15.609898)
+* finished loading facade solar kataster shp	runtime: 10 min 36 sec;   (stamp: 2023-09-27 09:58:51.759836)
+* finished loading building register pt		runtime: 1 min 31 sec;   (stamp: 2023-09-27 10:00:22.794510)
+* finished loading heat & cool demand pt	runtime: 0 min 2 sec;   (stamp: 2023-09-27 10:00:25.060086)
+* finished loading pv installation pt		runtime: 0 min 3 sec;   (stamp: 2023-09-27 10:00:28.499453)
+* 	start creating subsamples			runtime: 8 min 42 sec;   (stamp: 2023-09-27 10:09:10.521058)
+* 	 * finished subsetting admin shp			runtime: 0 min 39 sec;   (stamp: 2023-09-27 10:09:50.274416)
+* 	 * finished subsetting admin shp		runtime: 0 min 17 sec;   (stamp: 2023-09-27 10:10:08.005090)
+* 	 * finished subsetting roof_kat			runtime: 0 min 40 sec;   (stamp: 2023-09-27 10:10:48.272731)
+* 	 * finished subsetting faca_kat			runtime: 0 min 59 sec;   (stamp: 2023-09-27 10:11:48.156641)
+* 	 * finished subsetting bldng_reg			runtime: 0 min 6 sec;   (stamp: 2023-09-27 10:11:54.762710)
+* 	 * finished subsetting heatcool_dem		runtime: 0 min 0 sec;   (stamp: 2023-09-27 10:11:55.430894)
+* 	 * finished subsetting pv		runtime: 0 min 0 sec;   (stamp: 2023-09-27 10:11:55.830246)
+* 	start exporting subsample shapes		runtime: 0 min 8 sec;   (stamp: 2023-09-27 10:12:04.217396)
+* 	start exporting subsample shapes		runtime: 92 min 44 sec;   (stamp: 2023-09-27 11:44:48.609576)
+* 		 * finished exporting gm_shp_sub			runtime: 0 min 15 sec;   (stamp: 2023-09-27 11:45:04.405916)
+* 	start exporting subsample shapes		runtime: 0 min 20 sec;   (stamp: 2023-09-27 11:45:25.341054)
+* 		 * finished exporting gm_shp_sub			runtime: 0 min 0 sec;   (stamp: 2023-09-27 11:45:25.490774)
+* 		 * finished exporting roof_kat_sub			runtime: 0 min 14 sec;   (stamp: 2023-09-27 11:45:40.421066)
+* 		 * finished exporting faca_kat_sub			runtime: 0 min 22 sec;   (stamp: 2023-09-27 11:46:02.900020)
+* 		 * finished exporting bldng_reg_sub			runtime: 0 min 2 sec;   (stamp: 2023-09-27 11:46:05.281524)
+* 		 * finished exporting heatcool_dem_sub			runtime: 0 min 0 sec;   (stamp: 2023-09-27 11:46:05.682104)
+* 		 * finished exporting pv_sub			runtime: 0 min 0 sec;   (stamp: 2023-09-27 11:46:05.844890)
+* finished loading electricity demand 2022(non-standardized for other years)	runtime: 8 min 8 sec;   (stamp: 2023-09-27 11:54:14.130589)
+
+
+****************************************
+ aggregate roof parts at house level 
+ start at:2023-09-27 11:54:14.348649 
+****************************************
+
+
+
+
+****************************************
+ aggregate roof parts at house level 
+ start at:2023-09-27 11:54:22.013865 
+****************************************
+
+
