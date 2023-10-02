@@ -27,22 +27,22 @@ create_data_subsample = 1         # 0 = do not create data subsample, 1 = create
 
 
 # pre setup + working directory ----------------------------------------------------------------------------------
-if script_run_on_server == 0:
-     winsound.Beep(840,  100)
-
-if script_run_on_server == 0:
-     wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
-elif script_run_on_server == 1:
-     wd_path = "D:\OptimalPV_RH"         # path for server directory
-
-data_path = f'{wd_path}_data'
-os.chdir(wd_path)
 
 # create log file for checkpoint comments
 timer = datetime.now()
 with open(f'log_file.txt', 'w') as log_file:
         log_file.write(f' \n')
 chapter_to_logfile('started running main_file.py')
+
+# set working directory
+if script_run_on_server == 0:
+     winsound.Beep(840,  100)
+     wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
+elif script_run_on_server == 1:
+     wd_path = "D:\OptimalPV_RH"         # path for server directory
+
+data_path = f'{wd_path}_data'
+os.chdir(wd_path)
 
 
 # import geo referenced data -------------------------------------------------------------------------------------
@@ -129,12 +129,18 @@ if subsample_faster_run == 0:
           checkpoint_to_logfile(f'\t\t * finished exporting pv_sub', n_tabs = 3)
 
           # export subsample to geopackage
-          gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='gm_shp', driver="GPKG")
-          # roof_kat_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='roof_kat', driver="GPKG", mode = 'a')
-          # faca_kat_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='faca_kat', driver="GPKG", mode = 'a')
-          # bldng_reg_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='bldng_reg', driver="GPKG", mode = 'a')
-          # heatcool_dem_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='heatcool_dem', driver="GPKG", mode = 'a')
-          # pv_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='pv', driver="GPKG", mode = 'a')
+          gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='gm_shp', driver="GPK
+          
+          # roof_kat_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='roof_kat', drive
+          # PKG", mode = 'a')
+          # faca_kat_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='faca_kat', drive
+          # PKG", mode = 'a')
+          # bldng_reg_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='bldng_reg', dri
+          # "GPKG", mode = 'a')
+          # heatcool_dem_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='heatcool_dem
+          # river="GPKG", mode = 'a')
+          # pv_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='pv', driver="GPKG", mo
+          #  'a')
       
 
 
@@ -164,13 +170,25 @@ checkpoint_to_logfile(f'finished loading electricity demand 2022(non-standardize
 
 
 # ----------------------------------------------------------------------------------------------------------------
-# Create Roof Based Dataframe - Aggregate Roof Parts at House Level 
+# Create House Based Dataframe  
 # ----------------------------------------------------------------------------------------------------------------
-chapter_to_logfile('aggregate roof parts at house level')
+chapter_to_logfile('Create House Based Dataframe')
 if script_run_on_server == 0: 
      winsound.Beep(840,  100)
      winsound.Beep(840,  100)
 
+
+# create single shape per roof_ID ---------------------------------------------------------------------------------
+#TODO: aggregate to roof_union
+#TODO: match roof shapes to building register
+#TODO: extend match of "non-assigned" to building register
+#TODO: match roof_kataster to building
+#TODO: match facade kataster to building
+#TODO: match pv to building
+
+
+
+# match roof shapes to building register
 
 
 # ----------------------------------------------------------------------------------------------------------------
