@@ -3,48 +3,24 @@
 
 ****************************************
  started running main_file.py 
- start at:2023-09-27 09:42:41.327924 
+ start at:2023-10-03 16:02:33.967196 
 ****************************************
 
 
-* finished loading administrative shp		runtime: N/A;   (stamp: 2023-09-27 09:42:42.220078)
-* finished loading roof solar kataster shp	runtime: 5 min 33 sec;   (stamp: 2023-09-27 09:48:15.609898)
-* finished loading facade solar kataster shp	runtime: 10 min 36 sec;   (stamp: 2023-09-27 09:58:51.759836)
-* finished loading building register pt		runtime: 1 min 31 sec;   (stamp: 2023-09-27 10:00:22.794510)
-* finished loading heat & cool demand pt	runtime: 0 min 2 sec;   (stamp: 2023-09-27 10:00:25.060086)
-* finished loading pv installation pt		runtime: 0 min 3 sec;   (stamp: 2023-09-27 10:00:28.499453)
-* 	start creating subsamples			runtime: 8 min 42 sec;   (stamp: 2023-09-27 10:09:10.521058)
-* 	 * finished subsetting admin shp			runtime: 0 min 39 sec;   (stamp: 2023-09-27 10:09:50.274416)
-* 	 * finished subsetting admin shp		runtime: 0 min 17 sec;   (stamp: 2023-09-27 10:10:08.005090)
-* 	 * finished subsetting roof_kat			runtime: 0 min 40 sec;   (stamp: 2023-09-27 10:10:48.272731)
-* 	 * finished subsetting faca_kat			runtime: 0 min 59 sec;   (stamp: 2023-09-27 10:11:48.156641)
-* 	 * finished subsetting bldng_reg			runtime: 0 min 6 sec;   (stamp: 2023-09-27 10:11:54.762710)
-* 	 * finished subsetting heatcool_dem		runtime: 0 min 0 sec;   (stamp: 2023-09-27 10:11:55.430894)
-* 	 * finished subsetting pv		runtime: 0 min 0 sec;   (stamp: 2023-09-27 10:11:55.830246)
-* 	start exporting subsample shapes		runtime: 0 min 8 sec;   (stamp: 2023-09-27 10:12:04.217396)
-* 	start exporting subsample shapes		runtime: 92 min 44 sec;   (stamp: 2023-09-27 11:44:48.609576)
-* 		 * finished exporting gm_shp_sub			runtime: 0 min 15 sec;   (stamp: 2023-09-27 11:45:04.405916)
-* 	start exporting subsample shapes		runtime: 0 min 20 sec;   (stamp: 2023-09-27 11:45:25.341054)
-* 		 * finished exporting gm_shp_sub			runtime: 0 min 0 sec;   (stamp: 2023-09-27 11:45:25.490774)
-* 		 * finished exporting roof_kat_sub			runtime: 0 min 14 sec;   (stamp: 2023-09-27 11:45:40.421066)
-* 		 * finished exporting faca_kat_sub			runtime: 0 min 22 sec;   (stamp: 2023-09-27 11:46:02.900020)
-* 		 * finished exporting bldng_reg_sub			runtime: 0 min 2 sec;   (stamp: 2023-09-27 11:46:05.281524)
-* 		 * finished exporting heatcool_dem_sub			runtime: 0 min 0 sec;   (stamp: 2023-09-27 11:46:05.682104)
-* 		 * finished exporting pv_sub			runtime: 0 min 0 sec;   (stamp: 2023-09-27 11:46:05.844890)
-* finished loading electricity demand 2022(non-standardized for other years)	runtime: 8 min 8 sec;   (stamp: 2023-09-27 11:54:14.130589)
+* finished loading administrative shp		runtime: N/A;   (stamp: 2023-10-03 16:02:36.612239)
+* using SUBSAMPLE for faster run	runtime: 0 min 0 sec;   (stamp: 2023-10-03 16:02:36.613993)
+* finished loading roof solar kataster shp	runtime: 1 min 56 sec;   (stamp: 2023-10-03 16:04:32.838772)
+* finished loading facade solar kataster shp	runtime: 0 min 0 sec;   (stamp: 2023-10-03 16:04:32.838772)
+* finished loading building register pt		runtime: 0 min 19 sec;   (stamp: 2023-10-03 16:04:51.862148)
+* finished loading heat & cool demand pt	runtime: 0 min 1 sec;   (stamp: 2023-10-03 16:04:53.790417)
+* finished loading pv installation pt		runtime: 0 min 0 sec;   (stamp: 2023-10-03 16:04:53.830182)
+* finished loading electricity demand 2022(non-standardized for other years)	runtime: 0 min 0 sec;   (stamp: 2023-10-03 16:04:53.831532)
 
 
 ****************************************
- aggregate roof parts at house level 
- start at:2023-09-27 11:54:14.348649 
+ Create House Based Dataframe 
+ start at:2023-10-03 16:04:53.831532 
 ****************************************
 
 
-
-
-****************************************
- aggregate roof parts at house level 
- start at:2023-09-27 11:54:22.013865 
-****************************************
-
-
+* finished aggregating roof kataster to unions		runtime: 8 min 5 sec;   (stamp: 2023-10-03 16:12:59.052818)

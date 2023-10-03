@@ -17,7 +17,7 @@ import warnings
 
 # pre run settings -----------------------------------------------------------------------------------------------
 script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
-subsample_faster_run = 0          # 0 = run on all data, 1 = run on subset of data for faster run
+subsample_faster_run = 1          # 0 = run on all data, 1 = run on subset of data for faster run
 create_data_subsample = 1         # 0 = do not create data subsample, 1 = create data subsample
 
 
@@ -111,7 +111,7 @@ if subsample_faster_run == 0:
           heatcool_dem_sub =  gpd.sjoin(heatcool_dem, gm_shp_sub, how="inner", op="within")
           checkpoint_to_logfile(f'\t * finished subsetting heatcool_dem', n_tabs = 2)
           pv_sub =             gpd.sjoin(pv, gm_shp_sub, how="inner", op="within")   
-          checkpoint_to_logfile(f'\t * finished subsetting pv', n_tabs = 4)
+          checkpoint_to_logfile(f'\t * finished subsetting pv', n_tabs = 3)
 
           # export subsample to shape files
           checkpoint_to_logfile(f'\tstart exporting subsample shapes', n_tabs = 2)
@@ -126,10 +126,10 @@ if subsample_faster_run == 0:
           heatcool_dem_sub.to_file(f'{data_path}/subsample_faster_run/heatcool_dem_sub.shp')
           checkpoint_to_logfile(f'\t\t * finished exporting heatcool_dem_sub', n_tabs = 3)
           pv_sub.to_file(f'{data_path}/subsample_faster_run/pv_sub.shp')
-          checkpoint_to_logfile(f'\t\t * finished exporting pv_sub', n_tabs = 3)
+          checkpoint_to_logfile(f'\t\t * finished exporting pv_sub', n_tabs = 4)
 
           # export subsample to geopackage
-          gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='gm_shp', driver="GPK
+          gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='gm_shp', driver="GPK")
           
           # roof_kat_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='roof_kat', drive
           # PKG", mode = 'a')
@@ -143,7 +143,6 @@ if subsample_faster_run == 0:
           #  'a')
       
 
-
 elif subsample_faster_run == 1:
      checkpoint_to_logfile(f'using SUBSAMPLE for faster run', n_tabs = 1)
 
@@ -151,7 +150,7 @@ elif subsample_faster_run == 1:
      os.listdir(f'{data_path}/subsample_faster_run')   
      roof_kat = gpd.read_file(f'{data_path}/subsample_faster_run/roof_kat_sub.shp')
      checkpoint_to_logfile(f'finished loading roof solar kataster shp', n_tabs = 1)
-     faca_kat = gpd.read_file(f'{data_path}/subsample_faster_run/faca_kat_sub.shp')
+     #faca_kat = gpd.read_file(f'{data_path}/subsample_faster_run/faca_kat_sub.shp')
      checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
      bldng_reg = gpd.read_file(f'{data_path}/subsample_faster_run/bldng_reg_sub.shp')
      checkpoint_to_logfile(f'finished loading building register pt', n_tabs = 2)
@@ -178,6 +177,157 @@ if script_run_on_server == 0:
      winsound.Beep(840,  100)
 
 
+# roof_kat: subset to relevant bulidings in roof_kat --------------------------------------------------------------
+"""
+0 Bruecke gedeckt
+1 Gebaeude Einzelhaus
+2 Hochhaus
+3 Hochkamin
+4 Turm
+5 Kuehlturm
+6 Lagertank
+7 Lueftungsschacht
+8 Offenes Gebaeude
+9 Treibhaus
+10 Im Bau
+11 Kapelle
+12 Sakraler Turm
+13 Sakrales Gebaeude
+15 Flugdach
+16 Unterirdisches Gebaeude
+17 Mauer gross
+18 Mauer gross gedeckt
+19 Historische Baute
+20 Gebaeude unsichtbar
+"""
+cat_sb_object = [1,2,4,8]
+roof_kat.columns
+roof_kat_res = roof_kat['SB_UUID'].loc[roof_kat['SB_OBJEKTA'].isin(cat_sb_object)].copy()
+sb_uuid = roof_kat_res.unique()
+
+# create new df and aggregate roof parts
+roof_agg = gpd.GeoDataFrame(index = sb_uuid, columns = ['geometry'])
+roof_agg.set_crs(roof_kat.crs, allow_override=True, inplace=True)
+
+idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}' #TODO: delete later when no longer used
+set_buffer = 1.25 # determines the buffer around shapes to ensure a more proper union merge of single ouse shapes
+i=0
+for idx, row_srs in roof_agg.iterrows():
+    # add unified geometry
+    roof_agg.loc[idx, 'geometry'] = roof_kat.loc[roof_kat['SB_UUID'] == idx, 'geometry'].buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16) # roof_geom_buff.buffer(-0.5, resolution = 16).copy()
+    i=i+1
+    print(f'roof_agg loop, {i} of {len(roof_agg)} done')
+
+winsound.Beep(840,  100)
+roof_agg.to_file(f'{data_path}/z_py_exports/roof_agg.shp')
+checkpoint_to_logfile(f'finished aggregating roof kataster to unions', n_tabs = 2)
+
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# BOOKMARK runs ok until here
+# ----------------------------------------------------------------------------------------------------------------
+
+
+# bldng_reg: subset to relevant bulidings in bldng_reg --------------------------------------------------------------
+"""
+See here for building codes that are selected:
+https://www.bfs.admin.ch/bfs/de/home/register/gebaeude-wohnungsregister/inhalt-referenzdokumente.assetdetail.22905270.html
+
+"buildingStatus":
+1001 Projektiert
+1002 Bewilligt
+1003 Im Bau
+1004 Bestehend
+1005 Nicht nutzbar
+1007 Abgebrochen
+1008 Nicht realisiert
+
+"builingCategory":
+0    ??
+1010 Provisorische Unterkunft
+1020 Gebäude mit ausschliesslicher Wohnnutzung
+1030 Andere Wohngebäude (Wohngebäude mit Nebennutzung)
+1040 Gebäude mit teilweiser Wohnnutzung
+1060 Gebäude ohne Wohnnutzung
+1080 Sonderbau
+
+"buildingClass":
+0    ??
+1110 Gebäude mit einer Wohnung
+  - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.
+  - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
+1121 Gebäude mit zwei Wohnungen
+  - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
+1122 Gebäude mit drei oder mehr Wohnungen
+  - Sonstige Wohngebäude wie Wohnblocks mit drei oder mehr Wohnungen
+1130 Wohngebäude für Gemeinschaften
+  - Wohngebäude, in denen bestimmte Personen gemeinschaftlich wohnen, einschliesslich der Wohnungen für ältere Menschen, Studenten, Kinder
+    und andere soziale Gruppen, z.B. Altersheime, Heime für Arbeiter, Bruderschaften, Waisen, Obdachlose usw.
+    
+1211 Hotelgebäude
+1212 Andere Gebäude für kurzfristige Beherbergungen
+1220 Bürogebäude
+1230 Gross- und Einzelhandelsgebäude
+1231 Restaurants und Bars in Gebäuden ohne Wohnnutzung
+1241 Bahnhöfe, Abfertigungsgebäude, Fernsprechvermittlungszentralen
+1242 Garagengebäude
+1251 Industriegebäude
+1252 Behälter, Silos und Lagergebäude
+1261 Gebäude für Kultur- und Freizeitzwecke
+1262 Museen / Bibliotheken
+1263 Schul- und Hochschulgebäude, Forschungseinrichtungen
+1264 Krankenhäuser und Facheinrichtungen des Gesundheitswesens
+1265 Sporthallen
+1271 Landwirtschaftliche Betriebsgebäude
+1272 Kirchen und sonstige Kulturgebäude
+1273 Denkmäler oder unter Denkmalschutz stehende Bauwerke
+1274 Sonstige Hochbauten, anderweitig nicht genannt
+1275 Andere Gebäude für die kollektive Unterkunft
+1276 Gebäude für die Tierhaltung
+1277 Gebäude für Pflanzenbau
+1278 Andere landwirtschaftliche Betriebsgebäude
+"""
+buildingClass_residential = [1110, 1121, 1122, 1130]
+bldng_reg_residential = bldng_reg.loc[bldng_reg['buildingClass'].isin(buildingClass_residential)].copy()    
+bldng_reg_residential.to_file(f'{data_path}/z_py_exports/bldng_reg_residential.shp')
+
+
+
+
+# associate aggregated roofs to building regisnter ----------------------------------------------------------------
+roof_agg['bldng_reg_egid'] = np.nan
+
+
+idx = roof_agg.index[102]
+i = 0
+a=0
+b = 0
+c = 0
+for idx, row_srs in roof_agg.iterrows():
+     bldng_IN_roof = bldng_reg.within(roof_agg.loc[idx, 'geometry'])
+     if sum(bldng_IN_roof) == 1:
+          roof_agg.loc[idx, 'bldng_reg_egid'] = bldng_reg.loc[bldng_IN_roof, 'egid'].values[0]
+          a = a+1
+     elif sum(bldng_IN_roof) > 1: 
+          roof_agg.loc[idx, 'bldng_reg_egid'] = str(bldng_reg.loc[bldng_IN_roof, 'egid'].values)          
+          b = b+1
+     elif sum(bldng_reg.within(roof_agg.loc[idx, 'geometry'])) == 0:
+          roof_agg.loc[idx, 'bldng_reg_egid'] = 0
+          c = c+1
+     i=i+1
+     print(f'roof_agg loop:  {i} of {len(roof_agg)} done,      => a={a}, b={b}, c={c}')
+
+# ----------------------------------------------------------------------------------------------------------------
+# BOOKMARK 
+# ----------------------------------------------------------------------------------------------------------------
+
+
+# prepare for PV_TOPO, house based dataframe --------------------------------------------------------------------- 
+
+
+
+
 # create single shape per roof_ID ---------------------------------------------------------------------------------
 #TODO: aggregate to roof_union
 #TODO: match roof shapes to building register
@@ -191,6 +341,7 @@ if script_run_on_server == 0:
 # match roof shapes to building register
 
 
+
 # ----------------------------------------------------------------------------------------------------------------
 # END 
 # ----------------------------------------------------------------------------------------------------------------
@@ -202,3 +353,6 @@ if script_run_on_server == 0:
 
 
 
+
+
+     
