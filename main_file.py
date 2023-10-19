@@ -17,8 +17,10 @@ import warnings
 
 # pre run settings -----------------------------------------------------------------------------------------------
 script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
-subsample_faster_run = 1          # 0 = run on all data, 1 = run on subset of data for faster run
-create_data_subsample = 1         # 0 = do not create data subsample, 1 = create data subsample
+subsample_faster_run = 0          # 0 = run on all data, 
+                                  # 1 = run on selected municipalities subset for faster run
+                                  # 2 = run on residential data points
+create_data_subsample = 0         # 0 = do not create data subsample, 1 = create data subsample
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -56,8 +58,10 @@ checkpoint_to_logfile(f'finished loading administrative shp', n_tabs = 2)
 if subsample_faster_run == 0:
     # load solar kataster shapes
     roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+    #roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
     checkpoint_to_logfile(f'finished loading roof solar kataster shp', n_tabs = 1)
-    faca_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS')
+    #faca_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS')
+    faca_kat = roof_kat.copy()
     checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
 
     # load building register indicating residential or industrial use
@@ -80,6 +84,110 @@ if subsample_faster_run == 0:
     bldng_reg.set_crs(kt_shp.crs, allow_override=True, inplace=True)
     heatcool_dem.set_crs(kt_shp.crs, allow_override=True, inplace=True)
     pv.set_crs(kt_shp.crs, allow_override=True, inplace=True)
+
+
+    # export ONLY residential data points to temp cache --------------------------------------------------------------------------------
+    # this should help in the beginning for preliminary analyses
+
+    # roof_kat subset and export 
+    """
+    0 Bruecke gedeckt
+    1 Gebaeude Einzelhaus
+    2 Hochhaus
+    3 Hochkamin
+    4 Turm
+    5 Kuehlturm
+    6 Lagertank
+    7 Lueftungsschacht
+    8 Offenes Gebaeude
+    9 Treibhaus
+    10 Im Bau
+    11 Kapelle
+    12 Sakraler Turm
+    13 Sakrales Gebaeude
+    15 Flugdach
+    16 Unterirdisches Gebaeude
+    17 Mauer gross
+    18 Mauer gross gedeckt
+    19 Historische Baute
+    20 Gebaeude unsichtbar
+    """
+    roof_kat.columns
+    cat_sb_object = [1,2,4,8,19,20]
+    roof_kat_res = roof_kat['SB_UUID'].loc[roof_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
+    roof_kat_res.to_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
+
+    # faca_kat subset and export
+    faca_kat.columns
+    cat_sb_object = [1,2,4,8] #TODO: check if this is the same as for roof_kat
+    faca_kat_res = faca_kat['SB_UUID'].loc[faca_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
+    faca_kat_res.to_file(f'{data_path}/temp_cache/faca_kat_1_2_4_8.shp')
+
+    # bldng_reg: subset to relevant bulidings in bldng_reg 
+    """
+    See here for building codes that are selected:
+    https://www.bfs.admin.ch/bfs/de/home/register/gebaeude-wohnungsregister/inhalt-referenzdokumente.assetdetail.22905270.html
+    
+    "buildingStatus":
+    1001 Projektiert
+    1002 Bewilligt
+    1003 Im Bau
+    1004 Bestehend
+    1005 Nicht nutzbar
+    1007 Abgebrochen
+    1008 Nicht realisiert
+    
+    "builingCategory":
+    0    ??
+    1010 Provisorische Unterkunft
+    1020 Gebäude mit ausschliesslicher Wohnnutzung
+    1030 Andere Wohngebäude (Wohngebäude mit Nebennutzung)
+    1040 Gebäude mit teilweiser Wohnnutzung
+    1060 Gebäude ohne Wohnnutzung
+    1080 Sonderbau
+    
+    "buildingClass":
+    0    ??
+    1110 Gebäude mit einer Wohnung
+      - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.
+      - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
+    1121 Gebäude mit zwei Wohnungen
+      - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
+    1122 Gebäude mit drei oder mehr Wohnungen
+      - Sonstige Wohngebäude wie Wohnblocks mit drei oder mehr Wohnungen
+    1130 Wohngebäude für Gemeinschaften
+      - Wohngebäude, in denen bestimmte Personen gemeinschaftlich wohnen, einschliesslich der Wohnungen für ältere Menschen, Studenten, Kinder
+        und andere soziale Gruppen, z.B. Altersheime, Heime für Arbeiter, Bruderschaften, Waisen, Obdachlose usw.
+        
+    1211 Hotelgebäude
+    1212 Andere Gebäude für kurzfristige Beherbergungen
+    1220 Bürogebäude
+    1230 Gross- und Einzelhandelsgebäude
+    1231 Restaurants und Bars in Gebäuden ohne Wohnnutzung
+    1241 Bahnhöfe, Abfertigungsgebäude, Fernsprechvermittlungszentralen
+    1242 Garagengebäude
+    1251 Industriegebäude
+    1252 Behälter, Silos und Lagergebäude
+    1261 Gebäude für Kultur- und Freizeitzwecke
+    1262 Museen / Bibliotheken
+    1263 Schul- und Hochschulgebäude, Forschungseinrichtungen
+    1264 Krankenhäuser und Facheinrichtungen des Gesundheitswesens
+    1265 Sporthallen
+    1271 Landwirtschaftliche Betriebsgebäude
+    1272 Kirchen und sonstige Kulturgebäude
+    1273 Denkmäler oder unter Denkmalschutz stehende Bauwerke
+    1274 Sonstige Hochbauten, anderweitig nicht genannt
+    1275 Andere Gebäude für die kollektive Unterkunft
+    1276 Gebäude für die Tierhaltung
+    1277 Gebäude für Pflanzenbau
+    1278 Andere landwirtschaftliche Betriebsgebäude
+    """
+    bldng_reg.columns
+    bldng_reg.buildingCl
+    buildingClass_res = [1110, 1121, 1122, 1130]
+    bldng_reg_res = bldng_reg.loc[bldng_reg['buildingCl'].isin(buildingClass_res)].copy()    
+    bldng_reg_res.to_file(f'{data_path}/temp_cache/bldng_reg_residential.shp')
+
     
     # export subsamples for faster run --------------------------------------------------------------------------------
     if create_data_subsample == 1:
@@ -141,10 +249,10 @@ if subsample_faster_run == 0:
           # river="GPKG", mode = 'a')
           # pv_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='pv', driver="GPKG", mo
           #  'a')
-      
 
+     
 elif subsample_faster_run == 1:
-     checkpoint_to_logfile(f'using SUBSAMPLE for faster run', n_tabs = 1)
+     checkpoint_to_logfile(f'using SUBSAMPLE(1) for faster run', n_tabs = 1)
 
      #load subset shapes
      os.listdir(f'{data_path}/subsample_faster_run')   
@@ -157,6 +265,24 @@ elif subsample_faster_run == 1:
      heatcool_dem = gpd.read_file(f'{data_path}/subsample_faster_run/heatcool_dem_sub.shp')
      checkpoint_to_logfile(f'finished loading heat & cool demand pt', n_tabs = 1)
      pv = gpd.read_file(f'{data_path}/subsample_faster_run/pv_sub.shp')
+     checkpoint_to_logfile(f'finished loading pv installation pt', n_tabs = 2)
+
+
+elif subsample_faster_run == 2:
+     checkpoint_to_logfile(f'using ONLY RESIDENTIAL(2) data subsample', n_tabs = 1)
+
+     #load subset shapes
+     os.listdir(f'{data_path}/temp_cache')
+     roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
+     checkpoint_to_logfile(f'finished loading roof solar kataster shp', n_tabs = 1)
+     # faca_kat = gdp.read_file(f'{data_path}/temp_cache/faca_kat_1_2_4_8.shp')
+     checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
+     bldng_reg = gpd.read_file(f'{data_path}/temp_cache/bldng_reg_residential.shp')
+     checkpoint_to_logfile(f'finished loading building register pt', n_tabs = 2)
+     
+     heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+     checkpoint_to_logfile(f'finished loading heat & cool demand pt', n_tabs = 1)
+     pv = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
      checkpoint_to_logfile(f'finished loading pv installation pt', n_tabs = 2)
 
      
@@ -177,33 +303,7 @@ if script_run_on_server == 0:
      winsound.Beep(840,  100)
 
 
-# roof_kat: subset to relevant bulidings in roof_kat --------------------------------------------------------------
-"""
-0 Bruecke gedeckt
-1 Gebaeude Einzelhaus
-2 Hochhaus
-3 Hochkamin
-4 Turm
-5 Kuehlturm
-6 Lagertank
-7 Lueftungsschacht
-8 Offenes Gebaeude
-9 Treibhaus
-10 Im Bau
-11 Kapelle
-12 Sakraler Turm
-13 Sakrales Gebaeude
-15 Flugdach
-16 Unterirdisches Gebaeude
-17 Mauer gross
-18 Mauer gross gedeckt
-19 Historische Baute
-20 Gebaeude unsichtbar
-"""
-cat_sb_object = [1,2,4,8]
-roof_kat.columns
-roof_kat_res = roof_kat['SB_UUID'].loc[roof_kat['SB_OBJEKTA'].isin(cat_sb_object)].copy()
-sb_uuid = roof_kat_res.unique()
+
 
 # create new df and aggregate roof parts
 roof_agg = gpd.GeoDataFrame(index = sb_uuid, columns = ['geometry'])
@@ -219,7 +319,7 @@ for idx, row_srs in roof_agg.iterrows():
     print(f'roof_agg loop, {i} of {len(roof_agg)} done')
 
 winsound.Beep(840,  100)
-roof_agg.to_file(f'{data_path}/z_py_exports/roof_agg.shp')
+roof_agg.to_file(f'{data_path}/temp/roof_agg_allCH.shp')
 checkpoint_to_logfile(f'finished aggregating roof kataster to unions', n_tabs = 2)
 
 
@@ -229,69 +329,9 @@ checkpoint_to_logfile(f'finished aggregating roof kataster to unions', n_tabs = 
 # ----------------------------------------------------------------------------------------------------------------
 
 
-# bldng_reg: subset to relevant bulidings in bldng_reg --------------------------------------------------------------
-"""
-See here for building codes that are selected:
-https://www.bfs.admin.ch/bfs/de/home/register/gebaeude-wohnungsregister/inhalt-referenzdokumente.assetdetail.22905270.html
 
-"buildingStatus":
-1001 Projektiert
-1002 Bewilligt
-1003 Im Bau
-1004 Bestehend
-1005 Nicht nutzbar
-1007 Abgebrochen
-1008 Nicht realisiert
 
-"builingCategory":
-0    ??
-1010 Provisorische Unterkunft
-1020 Gebäude mit ausschliesslicher Wohnnutzung
-1030 Andere Wohngebäude (Wohngebäude mit Nebennutzung)
-1040 Gebäude mit teilweiser Wohnnutzung
-1060 Gebäude ohne Wohnnutzung
-1080 Sonderbau
-
-"buildingClass":
-0    ??
-1110 Gebäude mit einer Wohnung
-  - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.
-  - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
-1121 Gebäude mit zwei Wohnungen
-  - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
-1122 Gebäude mit drei oder mehr Wohnungen
-  - Sonstige Wohngebäude wie Wohnblocks mit drei oder mehr Wohnungen
-1130 Wohngebäude für Gemeinschaften
-  - Wohngebäude, in denen bestimmte Personen gemeinschaftlich wohnen, einschliesslich der Wohnungen für ältere Menschen, Studenten, Kinder
-    und andere soziale Gruppen, z.B. Altersheime, Heime für Arbeiter, Bruderschaften, Waisen, Obdachlose usw.
-    
-1211 Hotelgebäude
-1212 Andere Gebäude für kurzfristige Beherbergungen
-1220 Bürogebäude
-1230 Gross- und Einzelhandelsgebäude
-1231 Restaurants und Bars in Gebäuden ohne Wohnnutzung
-1241 Bahnhöfe, Abfertigungsgebäude, Fernsprechvermittlungszentralen
-1242 Garagengebäude
-1251 Industriegebäude
-1252 Behälter, Silos und Lagergebäude
-1261 Gebäude für Kultur- und Freizeitzwecke
-1262 Museen / Bibliotheken
-1263 Schul- und Hochschulgebäude, Forschungseinrichtungen
-1264 Krankenhäuser und Facheinrichtungen des Gesundheitswesens
-1265 Sporthallen
-1271 Landwirtschaftliche Betriebsgebäude
-1272 Kirchen und sonstige Kulturgebäude
-1273 Denkmäler oder unter Denkmalschutz stehende Bauwerke
-1274 Sonstige Hochbauten, anderweitig nicht genannt
-1275 Andere Gebäude für die kollektive Unterkunft
-1276 Gebäude für die Tierhaltung
-1277 Gebäude für Pflanzenbau
-1278 Andere landwirtschaftliche Betriebsgebäude
-"""
-buildingClass_residential = [1110, 1121, 1122, 1130]
-bldng_reg_residential = bldng_reg.loc[bldng_reg['buildingClass'].isin(buildingClass_residential)].copy()    
-bldng_reg_residential.to_file(f'{data_path}/z_py_exports/bldng_reg_residential.shp')
-
+# ----------------------------------------------------------------------------------------------------------------
 
 
 
