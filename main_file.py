@@ -116,7 +116,7 @@ if subsample_faster_run == 0:
     """
     roof_kat.columns
     roof_kat.info()
-    roof_kat.loc[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']] = roof_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']].astype(str)
+    roof_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']] = roof_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']].astype(str)
     
     cat_sb_object = [1,2,4,8,19,20]
     roof_kat_res = roof_kat.loc[roof_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
@@ -126,7 +126,7 @@ if subsample_faster_run == 0:
     # faca_kat subset and export
     faca_kat.columns
     faca_kat.info()
-    faca_kat.loc[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']] = faca_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']].astype(str)
+    faca_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']] = faca_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']].astype(str)
 
     cat_sb_object = [1,2,4,8] #TODO: check if this is the same as for roof_kat
     faca_kat_res = faca_kat.loc[faca_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
@@ -196,10 +196,18 @@ if subsample_faster_run == 0:
     bldng_reg.buildingClass
 
     buildingClass_res = [1110, 1121, 1122, 1130]
-    bldng_reg_res = bldng_reg.loc[bldng_reg['buildingCl'].isin(buildingClass_res)].copy()    
+    bldng_reg_res = bldng_reg.loc[bldng_reg['buildingClass'].isin(buildingClass_res)].copy()    
     bldng_reg_res.to_file(f'{data_path}/temp_cache/bldng_reg_residential.shp')
 
-    
+    winsound.Beep(840,  100)
+    winsound.Beep(840,  100)
+
+    winsound.Beep(840,  100)
+    winsound.Beep(840,  100)
+    winsound.Beep(840,  100)
+    winsound.Beep(840,  100)
+
+
     # export subsamples for faster run --------------------------------------------------------------------------------
     if create_data_subsample == 1:
           kt_number_sub = [16,]
@@ -313,6 +321,26 @@ if script_run_on_server == 0:
      winsound.Beep(840,  100)
      winsound.Beep(840,  100)
 
+# ----------------------------------------------------------------------------------------------------------------
+# BOOKMARK runs ok until here
+# ----------------------------------------------------------------------------------------------------------------
+
+
+"""
+# SUGGESTION CHAT GPT
+
+# Buffer the entire roof_kat dataframe
+roof_kat['buffered_geometry'] = roof_kat['geometry'].buffer(set_buffer, resolution=16).unary_union.buffer(-set_buffer, resolution=16)
+
+# Use map to quickly assign values to roof_agg based on SB_UUID
+roof_agg['geometry'] = roof_agg.index.map(roof_kat.set_index('SB_UUID')['buffered_geometry'])
+
+# Clean up by dropping the buffered_geometry column
+roof_kat.drop(columns='buffered_geometry', inplace=True)
+
+winsound.Beep(840,  100)
+
+"""
 
 
 
@@ -335,9 +363,6 @@ checkpoint_to_logfile(f'finished aggregating roof kataster to unions', n_tabs = 
 
 
 
-# ----------------------------------------------------------------------------------------------------------------
-# BOOKMARK runs ok until here
-# ----------------------------------------------------------------------------------------------------------------
 
 
 
