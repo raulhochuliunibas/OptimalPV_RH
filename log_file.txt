@@ -3,24 +3,22 @@
 
 ****************************************
  started running main_file.py 
- start at:2023-10-03 16:02:33.967196 
+ start at:2023-10-19 15:55:38.662909 
 ****************************************
 
 
-* finished loading administrative shp		runtime: N/A;   (stamp: 2023-10-03 16:02:36.612239)
-* using SUBSAMPLE for faster run	runtime: 0 min 0 sec;   (stamp: 2023-10-03 16:02:36.613993)
-* finished loading roof solar kataster shp	runtime: 1 min 56 sec;   (stamp: 2023-10-03 16:04:32.838772)
-* finished loading facade solar kataster shp	runtime: 0 min 0 sec;   (stamp: 2023-10-03 16:04:32.838772)
-* finished loading building register pt		runtime: 0 min 19 sec;   (stamp: 2023-10-03 16:04:51.862148)
-* finished loading heat & cool demand pt	runtime: 0 min 1 sec;   (stamp: 2023-10-03 16:04:53.790417)
-* finished loading pv installation pt		runtime: 0 min 0 sec;   (stamp: 2023-10-03 16:04:53.830182)
-* finished loading electricity demand 2022(non-standardized for other years)	runtime: 0 min 0 sec;   (stamp: 2023-10-03 16:04:53.831532)
+* finished loading administrative shp		runtime: N/A;   (stamp: 2023-10-19 15:55:41.458867)
+* finished loading roof solar kataster shp	runtime: 79 min 49 sec;   (stamp: 2023-10-19 17:15:30.522964)
+* finished loading facade solar kataster shp	runtime: 1 min 16 sec;   (stamp: 2023-10-19 17:16:46.749872)
+* finished loading building register pt		runtime: 6 min 55 sec;   (stamp: 2023-10-19 17:23:42.629738)
+* finished loading heat & cool demand pt	runtime: 0 min 37 sec;   (stamp: 2023-10-19 17:24:19.789902)
+* finished loading pv installation pt		runtime: 0 min 28 sec;   (stamp: 2023-10-19 17:24:47.846996)
+* finished loading electricity demand 2022(non-standardized for other years)	runtime: 0 min 1 sec;   (stamp: 2023-10-19 17:24:49.541655)
 
 
 ****************************************
  Create House Based Dataframe 
- start at:2023-10-03 16:04:53.831532 
+ start at:2023-10-19 17:24:49.545841 
 ****************************************
 
 
-* finished aggregating roof kataster to unions		runtime: 8 min 5 sec;   (stamp: 2023-10-03 16:12:59.052818)

@@ -85,9 +85,11 @@ if subsample_faster_run == 0:
     heatcool_dem.set_crs(kt_shp.crs, allow_override=True, inplace=True)
     pv.set_crs(kt_shp.crs, allow_override=True, inplace=True)
 
-
+    
     # export ONLY residential data points to temp cache --------------------------------------------------------------------------------
     # this should help in the beginning for preliminary analyses
+    # convert some date/time to str for export to shp file
+
 
     # roof_kat subset and export 
     """
@@ -113,14 +115,21 @@ if subsample_faster_run == 0:
     20 Gebaeude unsichtbar
     """
     roof_kat.columns
+    roof_kat.info()
+    roof_kat.loc[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']] = roof_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']].astype(str)
+    
     cat_sb_object = [1,2,4,8,19,20]
-    roof_kat_res = roof_kat['SB_UUID'].loc[roof_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
+    roof_kat_res = roof_kat.loc[roof_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
+    roof_kat_res['SB_OBJEKTART'].value_counts()
     roof_kat_res.to_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
 
     # faca_kat subset and export
     faca_kat.columns
+    faca_kat.info()
+    faca_kat.loc[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']] = faca_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']].astype(str)
+
     cat_sb_object = [1,2,4,8] #TODO: check if this is the same as for roof_kat
-    faca_kat_res = faca_kat['SB_UUID'].loc[faca_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
+    faca_kat_res = faca_kat.loc[faca_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
     faca_kat_res.to_file(f'{data_path}/temp_cache/faca_kat_1_2_4_8.shp')
 
     # bldng_reg: subset to relevant bulidings in bldng_reg 
@@ -183,7 +192,9 @@ if subsample_faster_run == 0:
     1278 Andere landwirtschaftliche Betriebsgebäude
     """
     bldng_reg.columns
-    bldng_reg.buildingCl
+    bldng_reg.info()
+    bldng_reg.buildingClass
+
     buildingClass_res = [1110, 1121, 1122, 1130]
     bldng_reg_res = bldng_reg.loc[bldng_reg['buildingCl'].isin(buildingClass_res)].copy()    
     bldng_reg_res.to_file(f'{data_path}/temp_cache/bldng_reg_residential.shp')
