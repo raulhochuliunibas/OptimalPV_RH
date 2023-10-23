@@ -17,10 +17,10 @@ import warnings
 
 # pre run settings -----------------------------------------------------------------------------------------------
 script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
-subsample_faster_run = 0          # 0 = run on all data, 
+subsample_faster_run = 2          # 0 = run on all data, 
                                   # 1 = run on selected municipalities subset for faster run
                                   # 2 = run on residential data points
-create_data_subsample = 0         # 0 = do not create data subsample, 1 = create data subsample
+create_data_subsample = 1         # 0 = do not create data subsample, 1 = create data subsample
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -199,14 +199,6 @@ if subsample_faster_run == 0:
     bldng_reg_res = bldng_reg.loc[bldng_reg['buildingClass'].isin(buildingClass_res)].copy()    
     bldng_reg_res.to_file(f'{data_path}/temp_cache/bldng_reg_residential.shp')
 
-    winsound.Beep(840,  100)
-    winsound.Beep(840,  100)
-
-    winsound.Beep(840,  100)
-    winsound.Beep(840,  100)
-    winsound.Beep(840,  100)
-    winsound.Beep(840,  100)
-
 
     # export subsamples for faster run --------------------------------------------------------------------------------
     if create_data_subsample == 1:
@@ -325,26 +317,13 @@ if script_run_on_server == 0:
 # BOOKMARK runs ok until here
 # ----------------------------------------------------------------------------------------------------------------
 
-
-"""
-# SUGGESTION CHAT GPT
-
-# Buffer the entire roof_kat dataframe
-roof_kat['buffered_geometry'] = roof_kat['geometry'].buffer(set_buffer, resolution=16).unary_union.buffer(-set_buffer, resolution=16)
-
-# Use map to quickly assign values to roof_agg based on SB_UUID
-roof_agg['geometry'] = roof_agg.index.map(roof_kat.set_index('SB_UUID')['buffered_geometry'])
-
-# Clean up by dropping the buffered_geometry column
-roof_kat.drop(columns='buffered_geometry', inplace=True)
-
-winsound.Beep(840,  100)
-
-"""
-
-
-
+# ----------------------------------------------------------------------------------------------------------------
+# F*** it and just try the never ending loop :(
+# ----------------------------------------------------------------------------------------------------------------
 # create new df and aggregate roof parts
+roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
+
+sb_uuid = roof_kat['SB_UUID'].unique()
 roof_agg = gpd.GeoDataFrame(index = sb_uuid, columns = ['geometry'])
 roof_agg.set_crs(roof_kat.crs, allow_override=True, inplace=True)
 
