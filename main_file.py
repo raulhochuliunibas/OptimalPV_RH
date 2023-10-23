@@ -317,12 +317,21 @@ if script_run_on_server == 0:
 # BOOKMARK runs ok until here
 # ----------------------------------------------------------------------------------------------------------------
 
+roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
+checkpoint_to_logfile(f'\n\nstart GROUPBY unionizing ', n_tabs = 1)
+# create new df and aggregate roof parts
+set_buffer = 1.25
+roof_agg = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: x.buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16))
+checkpoint_to_logfile(f'end GROUPBY', n_tabs = 2)
+roof_agg.to_file(f'{data_path}/temp_cache/roof_agg_res.shp')
+
+
+
+
+
 # ----------------------------------------------------------------------------------------------------------------
 # F*** it and just try the never ending loop :(
 # ----------------------------------------------------------------------------------------------------------------
-# create new df and aggregate roof parts
-roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
-
 sb_uuid = roof_kat['SB_UUID'].unique()
 roof_agg = gpd.GeoDataFrame(index = sb_uuid, columns = ['geometry'])
 roof_agg.set_crs(roof_kat.crs, allow_override=True, inplace=True)
@@ -334,11 +343,14 @@ for idx, row_srs in roof_agg.iterrows():
     # add unified geometry
     roof_agg.loc[idx, 'geometry'] = roof_kat.loc[roof_kat['SB_UUID'] == idx, 'geometry'].buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16) # roof_geom_buff.buffer(-0.5, resolution = 16).copy()
     i=i+1
-    print(f'roof_agg loop, {i} of {len(roof_agg)} done')
+    #print(f'roof_agg loop, {i} of {len(roof_agg)} done')
+
+
 
 winsound.Beep(840,  100)
+
+
 roof_agg.to_file(f'{data_path}/temp/roof_agg_allCH.shp')
-checkpoint_to_logfile(f'finished aggregating roof kataster to unions', n_tabs = 2)
 
 
 
