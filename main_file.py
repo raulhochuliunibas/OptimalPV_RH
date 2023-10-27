@@ -17,7 +17,7 @@ import warnings
 
 # pre run settings -----------------------------------------------------------------------------------------------
 script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
-subsample_faster_run = 2          # 0 = run on all data, 
+subsample_faster_run = 0          # 0 = run on all data, 
                                   # 1 = run on selected municipalities subset for faster run
                                   # 2 = run on residential data points
 create_data_subsample = 1         # 0 = do not create data subsample, 1 = create data subsample
@@ -32,7 +32,7 @@ create_data_subsample = 1         # 0 = do not create data subsample, 1 = create
 
 # create log file for checkpoint comments
 timer = datetime.now()
-with open(f'log_file.txt', 'w') as log_file:
+with open(f'main_file_log.txt', 'w') as log_file:
         log_file.write(f' \n')
 chapter_to_logfile('started running main_file.py')
 
@@ -84,14 +84,19 @@ if subsample_faster_run == 0:
     bldng_reg.set_crs(kt_shp.crs, allow_override=True, inplace=True)
     heatcool_dem.set_crs(kt_shp.crs, allow_override=True, inplace=True)
     pv.set_crs(kt_shp.crs, allow_override=True, inplace=True)
+    kt_shp.crs == gm_shp.crs == roof_kat.crs == faca_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
 
     
     # export ONLY residential data points to temp cache --------------------------------------------------------------------------------
     # this should help in the beginning for preliminary analyses
+    
+    pv_cols = pv.columns.tolist()[]
+    pv_cols[0] = 'some_id'
+    pv.columns = pv_cols
+    
     # convert some date/time to str for export to shp file
-
-
     # roof_kat subset and export 
+    checkpoint_to_logfile(f'\tstart subset for roof_kat ONLY Residential', n_tabs = 2)
     """
     0 Bruecke gedeckt
     1 Gebaeude Einzelhaus
@@ -122,6 +127,7 @@ if subsample_faster_run == 0:
     roof_kat_res = roof_kat.loc[roof_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
     roof_kat_res['SB_OBJEKTART'].value_counts()
     roof_kat_res.to_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
+    checkpoint_to_logfile(f'\t\t * finished subset roof_kat_1_2_4_8_19_20', n_tabs = 1)
 
     # faca_kat subset and export
     faca_kat.columns
@@ -131,7 +137,8 @@ if subsample_faster_run == 0:
     cat_sb_object = [1,2,4,8] #TODO: check if this is the same as for roof_kat
     faca_kat_res = faca_kat.loc[faca_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
     faca_kat_res.to_file(f'{data_path}/temp_cache/faca_kat_1_2_4_8.shp')
-
+    checkpoint_to_logfile(f'\t\t * finished subset faca_kat_1_2_4_8', n_tabs = 1)
+    
     # bldng_reg: subset to relevant bulidings in bldng_reg 
     """
     See here for building codes that are selected:
@@ -197,7 +204,8 @@ if subsample_faster_run == 0:
 
     buildingClass_res = [1110, 1121, 1122, 1130]
     bldng_reg_res = bldng_reg.loc[bldng_reg['buildingClass'].isin(buildingClass_res)].copy()    
-    bldng_reg_res.to_file(f'{data_path}/temp_cache/bldng_reg_residential.shp')
+    bldng_reg_res.to_file(f'{data_path}/temp_cache/bldng_reg_1110_1121_1122_1130.shp')
+    checkpoint_to_logfile(f'\t\t * finished subset bldng_reg_1110_1121_1122_1130', n_tabs = 1)
 
 
     # export subsamples for faster run --------------------------------------------------------------------------------
@@ -231,24 +239,27 @@ if subsample_faster_run == 0:
           checkpoint_to_logfile(f'\t * finished subsetting heatcool_dem', n_tabs = 2)
           pv_sub =             gpd.sjoin(pv, gm_shp_sub, how="inner", op="within")   
           checkpoint_to_logfile(f'\t * finished subsetting pv', n_tabs = 3)
+          
+          # convert some date/time to str for export to shp file
+          roof_kat_sub[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']] = roof_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']].astype(str)
+          faca_kat_sub[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']] = faca_kat[['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG']].astype(str)
+          pv.info()
+
 
           # export subsample to shape files
           checkpoint_to_logfile(f'\tstart exporting subsample shapes', n_tabs = 2)
           gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/gm_shp_sub.shp')
-          checkpoint_to_logfile(f'\t\t * finished exporting gm_shp_sub', n_tabs = 3)
           roof_kat_sub.to_file(f'{data_path}/subsample_faster_run/roof_kat_sub.shp')
           checkpoint_to_logfile(f'\t\t * finished exporting roof_kat_sub', n_tabs = 3)
           faca_kat_sub.to_file(f'{data_path}/subsample_faster_run/faca_kat_sub.shp')
           checkpoint_to_logfile(f'\t\t * finished exporting faca_kat_sub', n_tabs = 3)
           bldng_reg_sub.to_file(f'{data_path}/subsample_faster_run/bldng_reg_sub.shp')
-          checkpoint_to_logfile(f'\t\t * finished exporting bldng_reg_sub', n_tabs = 3)
           heatcool_dem_sub.to_file(f'{data_path}/subsample_faster_run/heatcool_dem_sub.shp')
-          checkpoint_to_logfile(f'\t\t * finished exporting heatcool_dem_sub', n_tabs = 3)
           pv_sub.to_file(f'{data_path}/subsample_faster_run/pv_sub.shp')
-          checkpoint_to_logfile(f'\t\t * finished exporting pv_sub', n_tabs = 4)
+          checkpoint_to_logfile(f'\t\t * finished exporting subsample to shape files', n_tabs = 1)
 
           # export subsample to geopackage
-          gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='gm_shp', driver="GPK")
+          #gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='gm_shp', driver="GPK")
           
           # roof_kat_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='roof_kat', drive
           # PKG", mode = 'a')
@@ -301,21 +312,18 @@ elif subsample_faster_run == 2:
 # dict_elec_prod_dispatch = {'Week':['05.01.2022', '12.01.2022', '19.01.2022', '26.01.2022', '02.02.2022', '09.02.2022', '16.02.2022', '23.02.2022', '02.03.2022', '09.03.2022', '16.03.2022', '23.03.2022', '30.03.2022', '06.04.2022', '13.04.2022', '20.04.2022', '27.04.2022', '04.05.2022', '11.05.2022', '18.05.2022', '25.05.2022', '01.06.2022', '08.06.2022', '15.06.2022', '22.06.2022', '29.06.2022','06.07.2022', '13.07.2022', '20.07.2022', '27.07.2022', '03.08.2022', '10.08.2022', '17.08.2022', '24.08.2022', '31.08.2022', '07.09.2022', '14.09.2022', '21.09.2022', '28.09.2022', '05.10.2022', '12.10.2022', '19.10.2022', '26.10.2022', '02.11.2022', '09.11.2022', '16.11.2022', '23.11.2022', '30.11.2022', '07.12.2022', '14.12.2022', '21.12.2022', '28.12.2022'],
 #                          'consumption_Gwh':[195.2, 236.1, 216.7, 214.7, 218.6, 205.4, 213.2, 198.0, 196.9, 207.3, 193.0, 194.1, 191.4, 191.6, 170.2, 159.3, 167.3, 173.2, 164.4, 150.7, 158.1, 163.3, 161.3, 161.4, 175.0, 159.3, 150.1, 158.7, 144.4, 152.8, 149.6, 156.8, 144.2, 158.8, 171.6, 162.0, 172.0, 164.6, 180.7, 162.7, 173.5, 168.9, 171.1, 173.3, 190.3, 182.4, 199.0, 204.6, 220.4, 201.1, 208.0, 171.7]} 
 # elec_dem_2022 = pd.DataFrame(dict_elec_prod_dispatch)
+#TODO: import electricity demand data properly
 checkpoint_to_logfile(f'finished loading electricity demand 2022(non-standardized for other years)', n_tabs = 1)
 
 
 
 # ----------------------------------------------------------------------------------------------------------------
-# Create House Based Dataframe  
+# Aggregate roof_kat for house shapes  
 # ----------------------------------------------------------------------------------------------------------------
 chapter_to_logfile('Create House Based Dataframe')
 if script_run_on_server == 0: 
      winsound.Beep(840,  100)
      winsound.Beep(840,  100)
-
-# ----------------------------------------------------------------------------------------------------------------
-# BOOKMARK runs ok until here
-# ----------------------------------------------------------------------------------------------------------------
 
 roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
 checkpoint_to_logfile(f'\n\nstart GROUPBY unionizing ', n_tabs = 1)
@@ -325,6 +333,9 @@ roof_agg = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: x.buffer(set_
 checkpoint_to_logfile(f'end GROUPBY', n_tabs = 2)
 roof_agg.to_file(f'{data_path}/temp_cache/roof_agg_res.shp')
 
+# ----------------------------------------------------------------------------------------------------------------
+# BOOKMARK runs ok until here
+# ----------------------------------------------------------------------------------------------------------------
 
 
 
