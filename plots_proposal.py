@@ -8,6 +8,8 @@ import pyogrio
 import winsound
 import plotly 
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from functions import chapter_to_logfile, checkpoint_to_logfile
 from datetime import datetime
@@ -31,7 +33,7 @@ script_run_on_server = 0          # 0 = script is running on laptop, 1 = script 
 timer = datetime.now()
 with open(f'plots_proposal_log.txt', 'w') as log_file:
         log_file.write(f' \n')
-chapter_to_logfile('started running main_file.py')
+chapter_to_logfile('started plots_proposal.py')
 
 # set working directory
 if script_run_on_server == 0:
@@ -46,46 +48,198 @@ os.chdir(wd_path)
 # import data -----------------------------------------------------------------------------------------------------
 
 # all electricity production plants
-elec_prod_path = f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen'
-files_names = [x for x in os.listdir(elec_prod_path) if x.endswith(".shp")]
-files_names = list(map(lambda i: i[:-4], files_names))
-files_names
-# import data frames
-gdf = [gpd.read_file(f'{elec_prod_path}', layer = x) for x in files_names]  
-elec_prod = pd.concat(gdf, ignore_index=True)
+elec_prod_path = f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg'
 
-# rename faulty column name
+# import data frames
+elec_prod = gpd.read_file(f'{elec_prod_path}/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+elec_prod.info()
+elec_prod['SubCategory'].value_counts()
+
+# change data types
+elec_prod['BeginningOfOperation'] = pd.to_datetime(elec_prod['BeginningOfOperation'], format='%Y-%m-%d')
+
+# aggregate data -----------------------------------------------------------------------------------------------------
+
+# change date col name
 cols = elec_prod.columns.tolist()
-cols[0] = 'random_id'
+cols[5] = 'Date'
 elec_prod.columns = cols
 
-elec_prod['BeginningO'] = pd.to_datetime(elec_prod['BeginningO'], format='%Y-%m-%d')
+# changing category names
+elec_prod['SubCategory'].value_counts()
+case = [
+(elec_prod['SubCategory'] == "subcat_1"),
+(elec_prod['SubCategory'] == "subcat_2"),
+(elec_prod['SubCategory'] == "subcat_3"),
+(elec_prod['SubCategory'] == "subcat_4"),
+(elec_prod['SubCategory'] == "subcat_5"),
+(elec_prod['SubCategory'] == "subcat_6"),
+(elec_prod['SubCategory'] == "subcat_7"),
+(elec_prod['SubCategory'] == "subcat_8"),
+(elec_prod['SubCategory'] == "subcat_9"),
+(elec_prod['SubCategory'] == "subcat_10"),]
+when = ['Hydro', 'PV', 'Wind', 'Biomass', 'Geothermal', 'Nuclear', 'Oil', 'Gas', 'Coal', 'Waste']
 
-# count number of plants per category
-elec_prod_ts_count = elec_prod.groupby([elec_prod['BeginningO'].dt.to_period("M"), 'SubCategor']).size().reset_index(name='Counts')
-
-elec_prod_ts_count['BeginningO'] = elec_prod_ts_count['BeginningO'].dt.to_timestamp()
-
-# plot
-fig = px.line(elec_prod_ts_count, x='BeginningO', y='Counts', color='SubCategor', title='Monthly Counts of SubCategor Entries')
-fig.show()
-
-type(elec_prod_ts_count)
-type(pv_ts_count)
-pv_ts_count["SubCategor"].value_counts()
-
-
-os.listdir(f'{wd_path}_data/input/ch.bfe.elektrizitaetsproduktionsanlagen')
-
+elec_prod['SubCategory'] = np.select(case, when)
 
 
+# Grouping by month and 'SubCategor', then aggregating by count and sum of 'TotalPow'
+select_col = 'Counts'  # 'Counts' or 'PowerSum'
+elec_prod_ts_agg = elec_prod.groupby([elec_prod['Date'].dt.to_period("W"), 'SubCategory']).agg(
+     Counts=('xtf_id', 'size'), 
+     PowerSum=('InitialPower', 'sum')
+     ).reset_index()
+
+elec_prod_ts_agg['Date'] = elec_prod_ts_agg['Date'].dt.to_timestamp() # Convert 'BeginningO' back to timestamp for plotting
+elec_prod_ts_agg.info()
+
+# plot ELECTRICITS PROD OVER TIME --------------------------
+
+def plot_pv_counts_ts(show_plot = True):
+
+    # plotting
+    fig = px.line(elec_prod_ts_agg, x='Date', y=f'{select_col}', color='SubCategory', title=f'Monthly {select_col} of SubCategor Entries')
+    fig.update_layout(
+    plot_bgcolor='white',
+    paper_bgcolor='white',
+    xaxis=dict(showgrid=True, gridcolor='lightgray'),
+    yaxis=dict(showgrid=True, gridcolor='lightgray')
+    )
+
+    # zoom plot
+    start_date = '2000-01-01'
+    end_date = '2023-12-31'
+    fig.update_xaxes(range=[start_date, end_date])
+
+
+    # add time steps
+    cap_date1 = "2009-01-01"
+    fig.add_shape(
+    go.layout.Shape(
+        type="line",
+        x0=cap_date1,
+        x1=cap_date1,
+        y0=0.025,
+        y1=0.975,
+        yref="paper",
+        line=dict(color="black", width=1)
+    )
+    )
+    fig.add_annotation(
+    x=cap_date1,
+    y=0.95,
+    yref="paper",
+    text="KEV, 2009",
+    showarrow=False,
+    font=dict(color="black")
+    )
+
+    cap_date2 = "2014-01-01"
+    fig.add_shape(
+    go.layout.Shape(
+        type="line",
+        x0=cap_date2,
+        x1=cap_date2,
+        y0=0.025,
+        y1=0.975,
+        yref="paper",
+        line=dict(color="black", width=1)
+    )
+    )
+    fig.add_annotation(
+    x=cap_date2,
+    y=0.95,
+    yref="paper",
+    text="EIV, 2014",
+    showarrow=False,
+    font=dict(color="black")
+    )
+    
+    if show_plot: 
+        fig.show()
+plot_pv_counts_ts(False)
+
+# plot PV Counts + PowerSum OVER TIME -----------------------------------
+def plot_pv_2axis_counts_capacity_ts(show_plot = True):
+
+    # Filter the dataset for SubCategory 'PV'
+    df_pv = elec_prod_ts_agg[elec_prod_ts_agg['SubCategory'] == 'PV']
+
+    # Create a subplot with secondary y-axis
+    fig2 = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Add traces for Counts + PowerSum
+    fig2.add_trace(
+        go.Scatter(x=df_pv['Date'], y=df_pv['Counts'], mode='lines', name='Counts'),
+        secondary_y=False,
+    )
+    fig2.add_trace(
+        go.Scatter(x=df_pv['Date'], y=df_pv['PowerSum'], mode='lines', name='PowerSum'),
+        secondary_y=True,
+    )
+
+    # Update the layout
+    fig2.update_layout(
+        title_text='Monthly Counts and PowerSum of SubCategory PV Entries',
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+    )
+    fig2.update_yaxes(title_text="Counts", showgrid=True, gridcolor='lightgray', secondary_y=False)
+    fig2.update_yaxes(title_text="PowerSum", showgrid=True, gridcolor='lightgray', secondary_y=True)
+
+    # zoom plot
+    start_date = '2003-01-01'
+    end_date = '2023-12-31'
+    fig2.update_xaxes(range=[start_date, end_date])
+
+    # add time steps
+    cap_date1 = "2009-01-01"
+    fig2.add_shape(
+        go.layout.Shape(
+            type="line",
+            x0=cap_date1,
+            x1=cap_date1,
+            y0=0.025,
+            y1=0.975,
+            yref="paper",
+            line=dict(color="black", width=1)
+        )
+    )
+    fig2.add_annotation(
+        x=cap_date1,
+        y=0.95,
+        yref="paper",
+        text="KEV, 2009",
+        showarrow=False,
+        font=dict(color="black")
+    )
+
+    cap_date2 = "2014-01-01"
+    fig2.add_shape(
+        go.layout.Shape(
+            type="line",
+            x0=cap_date2,
+            x1=cap_date2,
+            y0=0.025,
+            y1=0.975,
+            yref="paper",
+            line=dict(color="black", width=1)
+        )
+    )
+    fig2.add_annotation(
+        x=cap_date2,
+        y=0.95,
+        yref="paper",
+        text="EIV, 2014",
+        showarrow=False,
+        font=dict(color="black")
+    )
+    if show_plot:
+        fig2.show()
+
+plot_pv_2axis_counts_capacity_ts()
 
 
 
-
-
-
-
-
-
-
+elec_prod['Date']
