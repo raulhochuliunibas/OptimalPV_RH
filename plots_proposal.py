@@ -30,9 +30,9 @@ script_run_on_server = 0          # 0 = script is running on laptop, 1 = script 
 
 # create log file for checkpoint comments
 timer = datetime.now()
-with open(f'plots_proposal_log.txt', 'w') as log_file:
-        log_file.write(f' \n')
-chapter_to_logfile('started plots_proposal.py')
+# with open(f'plots_proposal_log.txt', 'w') as log_file:
+#         log_file.write(f' \n')
+# chapter_to_logfile('started plots_proposal.py')
 
 # set working directory
 if script_run_on_server == 0:
@@ -161,12 +161,12 @@ plot_pv_counts_ts(False)
 
 # plot PV Counts + PowerSum OVER TIME  -------------------------------------------------------------------------------
 title_font = 1
-legend_title_font = 20 # 40
-leged_font = 15 #35
-tick_title_font = 20 #40
-tick_font = 15# 35
-caption_font = 20 #40
-line_size = 3 # 7
+legend_title_font = 40 #20 # 40
+leged_font = 35 #15 #35
+tick_title_font = 20 #20 #40
+tick_font = 35 #15# 35
+caption_font = 40 #20 #40
+line_size = 7 #3 # 7
 start_date = '1993-01-01'
 end_date = '2023-12-31'
 

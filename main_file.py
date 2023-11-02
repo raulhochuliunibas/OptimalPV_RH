@@ -41,7 +41,7 @@ if script_run_on_server == 0:
      winsound.Beep(840,  100)
      wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
 elif script_run_on_server == 1:
-     wd_path = "D:\OptimalPV_RH"         # path for server directory
+     wd_path = "D:\RaulHochuli_inuse\OptimalPV_RH"         # path for server directory
 
 data_path = f'{wd_path}_data'
 os.chdir(wd_path)
@@ -294,7 +294,8 @@ elif subsample_faster_run == 2:
      
      heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
      checkpoint_to_logfile(f'finished loading heat & cool demand pt', n_tabs = 1)
-     pv = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
+     elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+     pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
      checkpoint_to_logfile(f'finished loading pv installation pt', n_tabs = 2)
 
      
@@ -315,7 +316,7 @@ if script_run_on_server == 0:
      winsound.Beep(840,  100)
      winsound.Beep(840,  100)
 
-roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
+#roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
 checkpoint_to_logfile(f'\n\nstart GROUPBY unionizing ', n_tabs = 1)
 # create new df and aggregate roof parts
 set_buffer = 1.25
@@ -326,45 +327,58 @@ roof_agg.to_file(f'{data_path}/temp_cache/roof_agg_res.shp')
 # ----------------------------------------------------------------------------------------------------------------
 # BOOKMARK runs ok until here
 # ----------------------------------------------------------------------------------------------------------------
-
-
-
-
-# ----------------------------------------------------------------------------------------------------------------
-# F*** it and just try the never ending loop :(
-# ----------------------------------------------------------------------------------------------------------------
-sb_uuid = roof_kat['SB_UUID'].unique()
-roof_agg = gpd.GeoDataFrame(index = sb_uuid, columns = ['geometry'])
-roof_agg.set_crs(roof_kat.crs, allow_override=True, inplace=True)
-
-idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}' #TODO: delete later when no longer used
-set_buffer = 1.25 # determines the buffer around shapes to ensure a more proper union merge of single ouse shapes
-i=0
-for idx, row_srs in roof_agg.iterrows():
-    # add unified geometry
-    roof_agg.loc[idx, 'geometry'] = roof_kat.loc[roof_kat['SB_UUID'] == idx, 'geometry'].buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16) # roof_geom_buff.buffer(-0.5, resolution = 16).copy()
-    i=i+1
-    #print(f'roof_agg loop, {i} of {len(roof_agg)} done')
-
-
-
 winsound.Beep(840,  100)
-
-
-roof_agg.to_file(f'{data_path}/temp/roof_agg_allCH.shp')
-
-
-
-
-
-
-
-# ----------------------------------------------------------------------------------------------------------------
 
 
 
 # associate aggregated roofs to building regisnter ----------------------------------------------------------------
-roof_agg['bldng_reg_egid'] = np.nan
+roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
+bldng_reg = gpd.read_file(f'{data_path}/temp_cache/bldng_reg_1110_1121_1122_1130.shp')
+roof_agg = gpd.read_file(f'{data_path}/temp_cache/roof_agg_res.shp')
+
+# add pv to agg roofs
+roof_agg_withPV = gpd.sjoin(roof_agg, pv, how="left", op="within")
+roof_agg_withPV.to_file(f'{data_path}/temp_cache/roof_agg_withPV.shp')     
+
+roof_agg_withPV.info()
+roof_agg_withPV['SB_UUID']
+roof_agg_withPV['index_right']
+
+# add buliding reg to agg roofs 
+roof_agg_withBldngReg = gpd.sjoin(roof_agg, bldng_reg, how="left", op="intersects")
+roof_agg_withBldngReg.to_file(f'{data_path}/temp_cache/roof_agg_withBldngReg.shp')
+
+roof_agg_withBldngReg.shape[0] / 1000000
+bldng_reg.shape[0] / 1000000
+roof_agg.shape[0] / 1000000
+
+roof_agg_withBldngReg.info()
+roof_agg_withBldngReg['SB_UUID'].value_counts()
+roof_agg_withBldngReg['egid'].value_counts()
+roof_agg_withBldngReg['buildingCl'].value_counts()
+
+roof_kat['SB_UUID'].value_counts()
+
+"""
+sub_roof_agg = roof_agg[0:100]
+test_right = gpd.sjoin(sub_roof_agg, bldng_reg, how="left", op="intersects")
+
+test_right.shape[0] / 1000000
+bldng_reg.shape[0] / 1000000
+sub_roof_agg.shape[0] / 1000000
+
+test_right.info()
+test_right['egid'].value_counts()
+"""
+
+
+
+
+
+
+
+
+
 
 
 idx = roof_agg.index[102]
@@ -386,15 +400,13 @@ for idx, row_srs in roof_agg.iterrows():
      i=i+1
      print(f'roof_agg loop:  {i} of {len(roof_agg)} done,      => a={a}, b={b}, c={c}')
 
+
+
+
+
 # ----------------------------------------------------------------------------------------------------------------
 # BOOKMARK 
 # ----------------------------------------------------------------------------------------------------------------
-
-
-# prepare for PV_TOPO, house based dataframe --------------------------------------------------------------------- 
-
-
-
 
 # create single shape per roof_ID ---------------------------------------------------------------------------------
 #TODO: aggregate to roof_union
@@ -403,12 +415,6 @@ for idx, row_srs in roof_agg.iterrows():
 #TODO: match roof_kataster to building
 #TODO: match facade kataster to building
 #TODO: match pv to building
-
-
-
-# match roof shapes to building register
-
-
 
 # ----------------------------------------------------------------------------------------------------------------
 # END 
