@@ -18,7 +18,7 @@ import warnings
 # pre run settings -----------------------------------------------------------------------------------------------
 script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
 subsample_faster_run = 0          # 0 = run on all data, 
-                                  # 1 = run on selected municipalities subset for faster run
+                                  # 1 = run on SWEET municipalities subset for faster run
                                   # 2 = run on residential data points
 create_data_subsample = 1         # 0 = do not create data subsample, 1 = create data subsample
 
@@ -73,7 +73,9 @@ if subsample_faster_run == 0:
     checkpoint_to_logfile(f'finished loading heat & cool demand pt', n_tabs = 1)
 
     # load pv installation points
-    pv = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
+    # pv = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen', layer = 'subcat_2_pv')
+    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+    pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
     checkpoint_to_logfile(f'finished loading pv installation pt', n_tabs = 2) 
     
     # check if all CRS are compatible
@@ -84,15 +86,17 @@ if subsample_faster_run == 0:
     bldng_reg.set_crs(kt_shp.crs, allow_override=True, inplace=True)
     heatcool_dem.set_crs(kt_shp.crs, allow_override=True, inplace=True)
     pv.set_crs(kt_shp.crs, allow_override=True, inplace=True)
-    kt_shp.crs == gm_shp.crs == roof_kat.crs == faca_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
+    
+    all_crs_equal = kt_shp.crs == gm_shp.crs == roof_kat.crs == faca_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
+    if all_crs_equal:
+         checkpoint_to_logfile(f'CRS are compatible', n_tabs = 1)
+    elif not all_crs_equal:
+     checkpoint_to_logfile(f'CRS are NOT compatible', n_tabs = 1)
+     raise Exception('CRS are NOT compatible')
 
     
-    # export ONLY residential data points to temp cache --------------------------------------------------------------------------------
+    # export ONLY residential data points to temp cache ---------------------------------------------------------------
     # this should help in the beginning for preliminary analyses
-    
-    pv_cols = pv.columns.tolist()[]
-    pv_cols[0] = 'some_id'
-    pv.columns = pv_cols
     
     # convert some date/time to str for export to shp file
     # roof_kat subset and export 
@@ -126,7 +130,7 @@ if subsample_faster_run == 0:
     cat_sb_object = [1,2,4,8,19,20]
     roof_kat_res = roof_kat.loc[roof_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
     roof_kat_res['SB_OBJEKTART'].value_counts()
-    roof_kat_res.to_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp')
+    roof_kat_res.to_file(f'{data_path}/temp_cache/residential_subsample/roof_kat_1_2_4_8_19_20.shp')
     checkpoint_to_logfile(f'\t\t * finished subset roof_kat_1_2_4_8_19_20', n_tabs = 1)
 
     # faca_kat subset and export
@@ -136,7 +140,7 @@ if subsample_faster_run == 0:
 
     cat_sb_object = [1,2,4,8] #TODO: check if this is the same as for roof_kat
     faca_kat_res = faca_kat.loc[faca_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
-    faca_kat_res.to_file(f'{data_path}/temp_cache/faca_kat_1_2_4_8.shp')
+    faca_kat_res.to_file(f'{data_path}/temp_cache/residential_subsample/faca_kat_1_2_4_8.shp')
     checkpoint_to_logfile(f'\t\t * finished subset faca_kat_1_2_4_8', n_tabs = 1)
     
     # bldng_reg: subset to relevant bulidings in bldng_reg 
@@ -204,11 +208,11 @@ if subsample_faster_run == 0:
 
     buildingClass_res = [1110, 1121, 1122, 1130]
     bldng_reg_res = bldng_reg.loc[bldng_reg['buildingClass'].isin(buildingClass_res)].copy()    
-    bldng_reg_res.to_file(f'{data_path}/temp_cache/bldng_reg_1110_1121_1122_1130.shp')
+    bldng_reg_res.to_file(f'{data_path}/temp_cache/residential_subsample/bldng_reg_1110_1121_1122_1130.shp')
     checkpoint_to_logfile(f'\t\t * finished subset bldng_reg_1110_1121_1122_1130', n_tabs = 1)
 
 
-    # export subsamples for faster run --------------------------------------------------------------------------------
+    # export subsamples SWEET municipalities for faster run ----------------------------------------------------------
     if create_data_subsample == 1:
           kt_number_sub = [16,]
           gm_number_sub = [3851, 3901, 4761, 1083, 4001, 1061, 2829, 4042 ]
@@ -216,11 +220,11 @@ if subsample_faster_run == 0:
           gm_shp.loc[gm_shp['BFS_NUMMER'].isin(gm_number_sub), ['NAME', 'BFS_NUMMER']]
 
           # create folder for subsample shapes selected, remove old files if they exist
-          if not os.path.exists(f'{data_path}/subsample_faster_run'):
-               os.makedirs(f'{data_path}/subsample_faster_run')
-          elif os.path.exists(f'{data_path}/subsample_faster_run'):
-               for file in os.listdir(f'{data_path}/subsample_faster_run'):
-                    os.remove(f'{data_path}/subsample_faster_run/{file}')
+          if not os.path.exists(f'{data_path}/temp_cache/sweet_subsample'):
+               os.makedirs(f'{data_path}/temp_cache/sweet_subsample')
+          elif os.path.exists(f'{data_path}/temp_cache/sweet_subsample'):
+               for file in os.listdir(f'{data_path}/temp_cache/sweet_subsample'):
+                    os.remove(f'{data_path}/temp_cache/sweet_subsample/{file}')
 
           # create subsample shapes selected
           checkpoint_to_logfile(f'\tstart creating subsamples', n_tabs = 3)
@@ -248,45 +252,31 @@ if subsample_faster_run == 0:
 
           # export subsample to shape files
           checkpoint_to_logfile(f'\tstart exporting subsample shapes', n_tabs = 2)
-          gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/gm_shp_sub.shp')
-          roof_kat_sub.to_file(f'{data_path}/subsample_faster_run/roof_kat_sub.shp')
+          gm_shp_sub.to_file(f'{data_path}/temp_cache/sweet_subsample/gm_shp_sub.shp')
+          roof_kat_sub.to_file(f'{data_path}/temp_cache/sweet_subsample/roof_kat_sub.shp')
           checkpoint_to_logfile(f'\t\t * finished exporting roof_kat_sub', n_tabs = 3)
-          faca_kat_sub.to_file(f'{data_path}/subsample_faster_run/faca_kat_sub.shp')
+          faca_kat_sub.to_file(f'{data_path}/temp_cache/sweet_subsample/faca_kat_sub.shp')
           checkpoint_to_logfile(f'\t\t * finished exporting faca_kat_sub', n_tabs = 3)
-          bldng_reg_sub.to_file(f'{data_path}/subsample_faster_run/bldng_reg_sub.shp')
-          heatcool_dem_sub.to_file(f'{data_path}/subsample_faster_run/heatcool_dem_sub.shp')
-          pv_sub.to_file(f'{data_path}/subsample_faster_run/pv_sub.shp')
+          bldng_reg_sub.to_file(f'{data_path}/temp_cache/sweet_subsample/bldng_reg_sub.shp')
+          heatcool_dem_sub.to_file(f'{data_path}/temp_cache/sweet_subsample/heatcool_dem_sub.shp')
+          pv_sub.to_file(f'{data_path}/temp_cache/sweet_subsample/pv_sub.shp')
           checkpoint_to_logfile(f'\t\t * finished exporting subsample to shape files', n_tabs = 1)
-
-          # export subsample to geopackage
-          #gm_shp_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='gm_shp', driver="GPK")
-          
-          # roof_kat_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='roof_kat', drive
-          # PKG", mode = 'a')
-          # faca_kat_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='faca_kat', drive
-          # PKG", mode = 'a')
-          # bldng_reg_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='bldng_reg', dri
-          # "GPKG", mode = 'a')
-          # heatcool_dem_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='heatcool_dem
-          # river="GPKG", mode = 'a')
-          # pv_sub.to_file(f'{data_path}/subsample_faster_run/0_Subset_OptPV_RH_data.gpkg', layer='pv', driver="GPKG", mo
-          #  'a')
 
      
 elif subsample_faster_run == 1:
      checkpoint_to_logfile(f'using SUBSAMPLE(1) for faster run', n_tabs = 1)
 
      #load subset shapes
-     os.listdir(f'{data_path}/subsample_faster_run')   
-     roof_kat = gpd.read_file(f'{data_path}/subsample_faster_run/roof_kat_sub.shp')
+     os.listdir(f'{data_path}/temp_cache/sweet_subsample')   
+     roof_kat = gpd.read_file(f'{data_path}/temp_cache/sweet_subsample/roof_kat_sub.shp')
      checkpoint_to_logfile(f'finished loading roof solar kataster shp', n_tabs = 1)
-     #faca_kat = gpd.read_file(f'{data_path}/subsample_faster_run/faca_kat_sub.shp')
+     #faca_kat = gpd.read_file(f'{data_path}/temp_cache/sweet_subsample/faca_kat_sub.shp')
      checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
-     bldng_reg = gpd.read_file(f'{data_path}/subsample_faster_run/bldng_reg_sub.shp')
+     bldng_reg = gpd.read_file(f'{data_path}/temp_cache/sweet_subsample/bldng_reg_sub.shp')
      checkpoint_to_logfile(f'finished loading building register pt', n_tabs = 2)
-     heatcool_dem = gpd.read_file(f'{data_path}/subsample_faster_run/heatcool_dem_sub.shp')
+     heatcool_dem = gpd.read_file(f'{data_path}/temp_cache/sweet_subsample/heatcool_dem_sub.shp')
      checkpoint_to_logfile(f'finished loading heat & cool demand pt', n_tabs = 1)
-     pv = gpd.read_file(f'{data_path}/subsample_faster_run/pv_sub.shp')
+     pv = gpd.read_file(f'{data_path}/temp_cache/sweet_subsample/pv_sub.shp')
      checkpoint_to_logfile(f'finished loading pv installation pt', n_tabs = 2)
 
 
