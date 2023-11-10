@@ -1,19 +1,19 @@
 import os as os
 from datetime import datetime
 
-def chapter_to_logfile(str):
+def chapter_to_logfile(str, log_file_name):
     """
     Function to write a chapter to the logfile
     """
     check = f'\n\n****************************************\n {str} \n start at:{datetime.now()} \n****************************************\n\n'
     print(check)
-    with open(f'log_file.txt', 'a') as log_file:
+    with open(f'{log_file_name}', 'a') as log_file:
         log_file.write(f'{check}\n')
 
 
 time_last_call = None
 
-def checkpoint_to_logfile(str, n_tabs = 0,  timer_func=None):
+def checkpoint_to_logfile(str, log_file_name, n_tabs = 0, timer_func=None):
     """
     Function to write a checkpoint to the logfile
     """
@@ -31,7 +31,7 @@ def checkpoint_to_logfile(str, n_tabs = 0,  timer_func=None):
     check = f'* {str}{n_tabs_str}runtime: {runtime_str};   (stamp: {datetime.now()})'
     print(check)
 
-    with open('log_file.txt', 'a') as log_file:
+    with open(f'{log_file_name}', 'a') as log_file:
         log_file.write(f"{check}\n")
     
     time_last_call = time_now
