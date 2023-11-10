@@ -1,0 +1,118 @@
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-11-03 10:04:51.776828 
+****************************************
+
+
+* finished loading administrative shp		runtime: 66 min 27 sec;   (stamp: 2023-11-03 10:04:54.157036)
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-11-03 10:11:59.244888 
+****************************************
+
+
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-11-03 10:28:30.701939 
+****************************************
+
+
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-11-03 15:33:08.845654 
+****************************************
+
+
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-11-03 16:03:49.555636 
+****************************************
+
+
+* finished loading administrative shp		runtime: N/A;   (stamp: 2023-11-03 16:03:51.621399)
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-11-04 17:37:56.559787 
+****************************************
+
+
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-11-04 23:50:06.707869 
+****************************************
+
+
+* finished loading administrative shp		runtime: N/A;   (stamp: 2023-11-04 23:50:10.127858)
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-11-04 23:50:53.161049 
+****************************************
+
+
+* finished loading administrative shp		runtime: N/A;   (stamp: 2023-11-04 23:50:55.300350)
+* finished loading roof solar kataster shp	runtime: 75 min 8 sec;   (stamp: 2023-11-05 01:06:03.783115)
+* finished loading facade solar kataster shp	runtime: 0 min 39 sec;   (stamp: 2023-11-05 01:06:43.395911)
+* finished loading building register pt		runtime: 6 min 24 sec;   (stamp: 2023-11-05 01:13:07.492267)
+* finished loading heat & cool demand pt	runtime: 0 min 33 sec;   (stamp: 2023-11-05 01:13:41.001972)
+* finished loading pv installation pt		runtime: 0 min 23 sec;   (stamp: 2023-11-05 01:14:04.991270)
+* CRS are compatible	runtime: 0 min 0 sec;   (stamp: 2023-11-05 01:14:05.715843)
+* 	start subset for roof_kat ONLY Residential		runtime: 0 min 0 sec;   (stamp: 2023-11-05 01:14:05.716840)
+* 		 * finished subset roof_kat_1	runtime: 39 min 38 sec;   (stamp: 2023-11-05 01:53:44.238856)
+* 		 * finished subset faca_kat_1_2_4_8	runtime: 43 min 30 sec;   (stamp: 2023-11-05 02:37:14.376059)
+* 		 * finished subset bldng_reg_1110_1121_1122_1130	runtime: 2 min 8 sec;   (stamp: 2023-11-05 02:39:22.668011)
+* 	start creating subsamples			runtime: 0 min 0 sec;   (stamp: 2023-11-05 02:39:22.702321)
+* 	 * finished subsetting admin shp		runtime: 0 min 0 sec;   (stamp: 2023-11-05 02:39:22.707034)
+* 	 * finished subsetting roof_kat			runtime: 2 min 41 sec;   (stamp: 2023-11-05 02:42:04.578898)
+* 	 * finished subsetting faca_kat			runtime: 4 min 22 sec;   (stamp: 2023-11-05 02:46:26.721348)
+* 	 * finished subsetting bldng_reg		runtime: 0 min 9 sec;   (stamp: 2023-11-05 02:46:35.731566)
+* 	 * finished subsetting heatcool_dem		runtime: 0 min 1 sec;   (stamp: 2023-11-05 02:46:37.127233)
+* 	 * finished subsetting pv			runtime: 0 min 0 sec;   (stamp: 2023-11-05 02:46:37.791842)
+* 	start exporting subsample shapes		runtime: 0 min 21 sec;   (stamp: 2023-11-05 02:46:59.271406)
+* 		 * finished exporting roof_kat_sub			runtime: 0 min 58 sec;   (stamp: 2023-11-05 02:47:57.588212)
+* 		 * finished exporting faca_kat_sub			runtime: 0 min 55 sec;   (stamp: 2023-11-05 02:48:53.350711)
+* 		 * finished exporting subsample to shape files	runtime: 0 min 10 sec;   (stamp: 2023-11-05 02:49:04.082617)
+* finished loading electricity demand 2022(non-standardized for other years)	runtime: 0 min 0 sec;   (stamp: 2023-11-05 02:49:04.101549)
+
+
+****************************************
+ Create House Based Dataframe 
+ start at:2023-11-05 02:49:04.106312 
+****************************************
+
+
+* 
+
+start GROUPBY unionizing 	runtime: 0 min 0 sec;   (stamp: 2023-11-05 02:49:04.332429)
+* end GROUPBY		runtime: 296 min 54 sec;   (stamp: 2023-11-05 07:45:58.382749)
+
+
+****************************************
+ PV installations over House types.py 
+ start at:2023-11-06 17:23:04.492845 
+****************************************
+
+
+
+
+****************************************
+ PV installations over House types.py 
+ start at:2023-11-06 17:25:40.043593 
+****************************************
+
+
