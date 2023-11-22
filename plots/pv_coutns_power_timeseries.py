@@ -10,6 +10,7 @@ import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.offline as pyo
+import glob
 
 from functions import chapter_to_logfile, checkpoint_to_logfile
 
@@ -20,78 +21,71 @@ from datetime import datetime
 # pre run settings -----------------------------------------------------------------------------------------------
 script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
 
-
 # ----------------------------------------------------------------------------------------------------------------
 # Setup + Import 
 # ----------------------------------------------------------------------------------------------------------------
 
-
 # pre setup + working directory ----------------------------------------------------------------------------------
 
-# create log file for checkpoint comments
-timer = datetime.now()
-# with open(f'plots_proposal_log.txt', 'w') as log_file:
-#         log_file.write(f' \n')
-# chapter_to_logfile('started plots_proposal.py')
-
 # set working directory
+timer = datetime.now()
 if script_run_on_server == 0:
     winsound.Beep(840,  100)
     wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
 elif script_run_on_server == 1:
     wd_path = "D:\OptimalPV_RH"         # path for server directory
-
 data_path = f'{wd_path}_data'
 os.chdir(wd_path)
+with open(f'pv_proposal_pvShare_to_bldng.txt', 'w') as log_file:
+    log_file.write(f' \n')
+
+# import plot data -----------------------------------------------------------------------------------------------------
+if True:
+    # all electricity production plants
+    elec_prod_path = f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg'
+
+    # import data frames
+    elec_prod = gpd.read_file(f'{elec_prod_path}/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+    elec_prod.info()
+    elec_prod['SubCategory'].value_counts()
+
+    # change data types
+    elec_prod['BeginningOfOperation'] = pd.to_datetime(elec_prod['BeginningOfOperation'], format='%Y-%m-%d')
+
+    # aggregate data -----------------------------------------------------------------------------------------------------
+
+    # change date col name
+    cols = elec_prod.columns.tolist()
+    cols[5] = 'Date'
+    elec_prod.columns = cols
+
+    # changing category names
+    elec_prod['SubCategory'].value_counts()
+    case = [
+    (elec_prod['SubCategory'] == "subcat_1"),
+    (elec_prod['SubCategory'] == "subcat_2"),
+    (elec_prod['SubCategory'] == "subcat_3"),
+    (elec_prod['SubCategory'] == "subcat_4"),
+    (elec_prod['SubCategory'] == "subcat_5"),
+    (elec_prod['SubCategory'] == "subcat_6"),
+    (elec_prod['SubCategory'] == "subcat_7"),
+    (elec_prod['SubCategory'] == "subcat_8"),
+    (elec_prod['SubCategory'] == "subcat_9"),
+    (elec_prod['SubCategory'] == "subcat_10"),]
+    when = ['Hydro', 'PV', 'Wind', 'Biomass', 'Geothermal', 'Nuclear', 'Oil', 'Gas', 'Coal', 'Waste']
+
+    elec_prod['SubCategory'] = np.select(case, when)
 
 
-# import data -----------------------------------------------------------------------------------------------------
+    # Grouping by month and 'SubCategor', then aggregating by count and sum of 'TotalPow'
+    select_col = 'Counts'  # 'Counts' or 'PowerSum'
+    elec_prod_ts_agg = elec_prod.groupby([elec_prod['Date'].dt.to_period("Y"), 'SubCategory']).agg(
+        Counts=('xtf_id', 'size'), 
+        PowerSum=('InitialPower', 'sum')
+        ).reset_index()
 
-# all electricity production plants
-elec_prod_path = f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg'
-
-# import data frames
-elec_prod = gpd.read_file(f'{elec_prod_path}/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
-elec_prod.info()
-elec_prod['SubCategory'].value_counts()
-
-# change data types
-elec_prod['BeginningOfOperation'] = pd.to_datetime(elec_prod['BeginningOfOperation'], format='%Y-%m-%d')
-
-# aggregate data -----------------------------------------------------------------------------------------------------
-
-# change date col name
-cols = elec_prod.columns.tolist()
-cols[5] = 'Date'
-elec_prod.columns = cols
-
-# changing category names
-elec_prod['SubCategory'].value_counts()
-case = [
-(elec_prod['SubCategory'] == "subcat_1"),
-(elec_prod['SubCategory'] == "subcat_2"),
-(elec_prod['SubCategory'] == "subcat_3"),
-(elec_prod['SubCategory'] == "subcat_4"),
-(elec_prod['SubCategory'] == "subcat_5"),
-(elec_prod['SubCategory'] == "subcat_6"),
-(elec_prod['SubCategory'] == "subcat_7"),
-(elec_prod['SubCategory'] == "subcat_8"),
-(elec_prod['SubCategory'] == "subcat_9"),
-(elec_prod['SubCategory'] == "subcat_10"),]
-when = ['Hydro', 'PV', 'Wind', 'Biomass', 'Geothermal', 'Nuclear', 'Oil', 'Gas', 'Coal', 'Waste']
-
-elec_prod['SubCategory'] = np.select(case, when)
-
-
-# Grouping by month and 'SubCategor', then aggregating by count and sum of 'TotalPow'
-select_col = 'Counts'  # 'Counts' or 'PowerSum'
-elec_prod_ts_agg = elec_prod.groupby([elec_prod['Date'].dt.to_period("Y"), 'SubCategory']).agg(
-     Counts=('xtf_id', 'size'), 
-     PowerSum=('InitialPower', 'sum')
-     ).reset_index()
-
-elec_prod_ts_agg['Date'] = elec_prod_ts_agg['Date'].dt.to_timestamp() # Convert 'BeginningO' back to timestamp for plotting
-elec_prod_ts_agg.info()
+    elec_prod_ts_agg['Date'] = elec_prod_ts_agg['Date'].dt.to_timestamp() # Convert 'BeginningO' back to timestamp for plotting
+    elec_prod_ts_agg.info()
 
 
 # plot ELECTRICITS PROD OVER TIME ------------------------------------------------------------------------------------
@@ -159,6 +153,7 @@ def plot_pv_counts_ts(show_plot = True, export_plot = False):
         fig.show()
 plot_pv_counts_ts(False)
 
+
 # plot PV Counts + PowerSum OVER TIME  -------------------------------------------------------------------------------
 title_font = 1
 legend_title_font = 40 #20 # 40
@@ -166,9 +161,9 @@ leged_font = 35 #15 #35
 tick_title_font = 20 #20 #40
 tick_font = 35 #15# 35
 caption_font = 40 #20 #40
-line_size = 7 #3 # 7
-start_date = '1993-01-01'
-end_date = '2023-12-31'
+line_size = 2 #3 # 7
+start_date = '1992-01-01'
+end_date = '2022-01-01'
 
 def add_date_caption(fig_func, date_func, str_func, y0_func=0.05, y1_func=0.925):
     cap_date = date_func
@@ -254,56 +249,75 @@ def plot_pv_2axis_counts_capacity_ts(show_plot = True, export_plot = False):
     
     return fig2
 
-plot_pv_2axis_counts_capacity_ts(show_plot=True, export_plot=False)
+plot_pv_2axis_counts_capacity_ts(show_plot=False, export_plot=False)
+
 
 # plot PV Growth OVER TIME -----------------------------------------------------------------------------------------
-def plot_pv_2axis_counts_capacity_growth(show_plot = True, export_plot = False):
-    elec_prod_ts_agg = elec_prod.groupby([elec_prod['Date'].dt.to_period("Y"), 'SubCategory']).agg(
+def plot_pv_2axis_counts_capacity_growth(show_plot = True, export_plot = False, column = 'Counts', agg_period = 'Y'):
+    df_pv = elec_prod[elec_prod['SubCategory'] == 'PV'].copy()
+
+    df_pv_ts_agg = df_pv.groupby([df_pv['Date'].dt.to_period(f'{agg_period}'), 'SubCategory']).agg(
         Counts=('xtf_id', 'size'), 
         PowerSum=('InitialPower', 'sum')
         ).reset_index()
-    elec_prod_ts_agg['Date'] = elec_prod_ts_agg['Date'].dt.to_timestamp() # Convert 'BeginningO' back to timestamp for plotting
-    elec_prod_ts_agg.info()
-
-    df_pv = elec_prod_ts_agg[elec_prod_ts_agg['SubCategory'] == 'PV'].copy()
-    # calcucalte growth rates
-    df_pv['Counts_growth'] = (df_pv['Counts'] - df_pv['Counts'].shift(1)) / df_pv['Counts'].shift(1)
-    df_pv['PowerSum_growth'] = (df_pv['PowerSum'] - df_pv['PowerSum'].shift(1)) / df_pv['PowerSum'].shift(1)
-
-    # fig_func = make_subplots(specs=[[{"secondary_y": True}]])
-    fig_func = go.Figure()
+    df_pv_ts_agg['Date'] = df_pv_ts_agg['Date'].dt.to_timestamp() # Convert 'BeginningO' back to timestamp for plotting
+    df_pv_ts_agg.info()
+    
+    # calculate growth rates
+    df_pv_ts_agg['Counts_growth'] = (df_pv_ts_agg['Counts'] - df_pv_ts_agg['Counts'].shift(1)) / (df_pv_ts_agg['Counts'].shift(1) + 1e-10)
+    df_pv_ts_agg['PowerSum_growth'] = (df_pv_ts_agg['PowerSum'] - df_pv_ts_agg['PowerSum'].shift(1)) / (df_pv_ts_agg['PowerSum'].shift(1) + 1e-10)    
+    
+    # Fill NaN values for the growth rates with 0
+    df_pv_ts_agg['Counts_growth'].fillna(0, inplace=True)
+    df_pv_ts_agg['PowerSum_growth'].fillna(0, inplace=True)
+    
+    fig_func = make_subplots(specs=[[{"secondary_y": True}]])
     df_pv.head(10)
 
     # add traces
-    fig_func.add_trace(go.Scatter(x=df_pv['Date'], y=df_pv['Counts_growth'], mode='lines', name='Counts Growth', line=dict(color = 'blue', width=line_size)))
-    fig_func.add_trace(go.Scatter(x=df_pv['Date'], y=df_pv['PowerSum_growth'], mode='lines', name='PowerSum Growth', line=dict(color = 'red', width=line_size)))
+    if column == 'Counts':
+        fig_func.add_trace(go.Scatter(x=df_pv_ts_agg['Date'], y=df_pv_ts_agg[f'{column}'], mode='lines', name=f'{column}', line=dict(color = 'red', width=line_size)), secondary_y=False)
+        fig_func.add_trace(go.Scatter(x=df_pv_ts_agg['Date'], y=df_pv_ts_agg[f'{column}_growth'], mode='lines', name=f'{column}_growth', line=dict(color = 'red', width=line_size, dash = 'dash')), secondary_y=True)
 
+    elif column == 'PowerSum':
+        fig_func.add_trace(go.Scatter(x=df_pv_ts_agg['Date'], y=df_pv_ts_agg[f'{column}'], mode='lines', name=f'{column}', line=dict(color = 'blue', width=line_size)), secondary_y=False)
+        fig_func.add_trace(go.Scatter(x=df_pv_ts_agg['Date'], y=df_pv_ts_agg[f'{column}_growth'], mode='lines', name=f'{column}_growth', line=dict(color = 'blue', width=line_size, dash = 'dash')), secondary_y=True)
+    
+    # fig_func.add_trace(go.Scatter(x=df_pv_ts_agg['Date'], y=df_pv_ts_agg['PowerSum'], mode='lines', name='PowerSum', line=dict(color = 'red', width=line_size)))
+    # fig_func.add_trace(go.Scatter(x=df_pv_ts_agg['Date'], y=df_pv_ts_agg['Counts'], mode='lines', name='Counts', line=dict(color = 'blue', width=line_size)))
+    
     # Update the layout
     fig_func.update_layout(
-        title_text='Anuall Growth of Counts and Capacity of PV Plants in Switzerland',
+        title_text='PV Plants in Switzerland',
         plot_bgcolor='white',
         paper_bgcolor='white',
-        xaxis=dict(showgrid=True, gridcolor='lightgray'),)
+        xaxis=dict(showgrid=True, gridcolor='lightgray'),
+        legend_title_text = 'Absolute Growth')
 
-    # zoom plot
-    # start_date = '1997-01-01'
-    # end_date = '2023-12-31'
+    # zoom plot + captions
     fig_func.update_xaxes(range=[start_date, end_date])
-
     add_date_caption(fig_func, "2009-01-01", "KEV, 2009")
     add_date_caption(fig_func, "2014-01-01", "EIV, 2014")
 
     # update axes
+    if column == 'Counts':
+        axis_title_color = 'red'
+    elif column == 'PowerSum':
+        axis_title_color = 'blue'
+
     fig_func.update_xaxes(
         title_font=dict(size=tick_title_font),  # Font size for X-axis title
         tickfont=dict(size=tick_font))
     fig_func.update_yaxes(
+        title_text= f'{column}',  # Add primary y-axis title
+        title_font=dict(size=tick_title_font, color = axis_title_color),  # Font size for Y-axis title
+        tickfont=dict(size=tick_font),
+        secondary_y=False)
+    fig_func.update_yaxes(
+        title_text="Growth (in %)",  # Add secondary y-axis title
         title_font=dict(size=tick_title_font),  # Font size for Y-axis title
-        tickfont=dict(size=tick_font))
-    fig_func.update_layout(
-        title_font=dict(size=title_font),    # Font size for figure title
-        legend_title_font=dict(size=legend_title_font),  # Font size for legend title
-        legend_font=dict(size=leged_font))    # Font size for legend items
+        tickfont=dict(size=tick_font),
+        secondary_y=True)
 
     fig_func.update_traces(name="growth Capacity (kW)", selector=dict(name="PowerSum"))
     fig_func.update_layout(showlegend = False)
@@ -313,7 +327,7 @@ def plot_pv_2axis_counts_capacity_growth(show_plot = True, export_plot = False):
     if export_plot:
         pyo.plot(fig_func, filename=f'{data_path}/output/plot_pv_2axis_counts_capacity_growth.html', auto_open=False)
 
-plot_pv_2axis_counts_capacity_growth(show_plot=True, export_plot=False)
-
+plot_pv_2axis_counts_capacity_growth(show_plot=True, export_plot=True, column = 'Counts', agg_period = 'Y')
+plot_pv_2axis_counts_capacity_growth(show_plot=True, export_plot=False, column = 'PowerSum', agg_period = 'M')
 
 
