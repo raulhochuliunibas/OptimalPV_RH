@@ -1,5 +1,5 @@
 import os as os
-import functions
+# import functions
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -15,7 +15,7 @@ import scipy
 import plotly.figure_factory as ff
 
 
-from functions import chapter_to_logfile, checkpoint_to_logfile
+# from functions import chapter_to_logfile, checkpoint_to_logfile
 
 from plotly.subplots import make_subplots
 from datetime import datetime
@@ -24,9 +24,57 @@ from datetime import datetime
 # pre run settings -----------------------------------------------------------------------------------------------
 script_run_on_server = 0          # 0 = script is running on laptop, 1 = script is running on server
 
+
+use_raw_data_to_compute = False
+buffer_size_list = np.arange(0, 7, 0.2)
+absolute_value_cutoff = 10000  # for example
+
+# ----------------------------------------------------------------------------------------------------------------
+# Functions 
+# ----------------------------------------------------------------------------------------------------------------
+
+
+def chapter_to_logfile(str, log_file_name):
+    """
+    Function to write a chapter to the logfile
+    """
+    check = f'\n\n****************************************\n {str} \n start at:{datetime.now()} \n****************************************\n\n'
+    print(check)
+    with open(f'{log_file_name}', 'a') as log_file:
+        log_file.write(f'{check}\n')
+
+
+time_last_call = None
+
+def checkpoint_to_logfile(str, log_file_name, n_tabs = 0, timer_func=None):
+    """
+    Function to write a checkpoint to the logfile
+    """
+    global time_last_call
+    
+    time_now = datetime.now()
+    if time_last_call:
+        runtime = time_now - time_last_call
+        minutes, seconds = divmod(runtime.seconds, 60)
+        runtime_str = f"{minutes} min {seconds} sec"
+    else:
+        runtime_str = 'N/A'
+    
+    n_tabs_str = '\t' * n_tabs
+    check = f'* {str}{n_tabs_str}runtime: {runtime_str};   (stamp: {datetime.now()})'
+    print(check)
+
+    with open(f'{log_file_name}', 'a') as log_file:
+        log_file.write(f"{check}\n")
+    
+    time_last_call = time_now
+
+
+
 # ----------------------------------------------------------------------------------------------------------------
 # Setup + Import 
 # ----------------------------------------------------------------------------------------------------------------
+
 
 # pre setup + working directory ----------------------------------------------------------------------------------
 
@@ -94,16 +142,15 @@ if True:
 """
 
 # House charactersitics TO PV installations TABLE EXPORT -----------------------------------------------------------
-use_raw_data_to_compute = True
-buffer_size_list = np.arange(0, 7, 0.2)
-absolute_value_cutoff = 10000  # for example
 
 if True:    
+    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+    pv_df = elec_prod[(elec_prod['SubCategory'] == 'subcat_2')].copy() 
     chapter_to_logfile('PV installations over House types.py', log_file_name='pv_proposal_pvShare_to_bldng.txt')
     
-    def agg_pv_to_bldng_by_group(pv_to_bldng_func):
-        pv_to_bldng_func['buildingCl'] = pv_to_bldng_func['buildingCl'].fillna('NA')
-        pv_to_bldng_func_group = pv_to_bldng_func.groupby(['buildingCl']).agg(
+    def agg_pv_to_bldng_by_group(pv_to_bldng_func, col_name = 'buildingCl'):
+        pv_to_bldng_func[col_name] = pv_to_bldng_func[col_name].fillna('NA')
+        pv_to_bldng_func_group = pv_to_bldng_func.groupby([col_name]).agg(
             counts = ('TotalPower', 'size'),
             share = ('TotalPower', 'size'), 
             capacity = ('TotalPower', 'sum'), 
@@ -148,6 +195,7 @@ if True:
 
         pv_to_bldng_GLOB = []
         pv_to_bldng_group_GLOB = []
+        pv_to_bldng_shape_GLOB = []
         names_pv_to_bldng_GLOB = glob.glob(f'{data_path}/temp_cache/pv_to_bldng_*.shp')
 
     for name_df in names_pv_to_bldng_GLOB:
@@ -157,20 +205,69 @@ if True:
 
         pv_to_bldng_GLOB.append(df)
         pv_to_bldng_group_GLOB.append(df_group)
+        pv_to_bldng_shape_GLOB.append(df.shape)
         print(name_df)
 
-    for group in pv_to_bldng_group_GLOB:
-        with open(f'pv_proposal_pvShare_to_bldng.txt', 'a') as log_file:
-            log_file.write(f' \n\n')
-            checkpoint_to_logfile(f'group: {group}', log_file_name='pv_proposal_pvShare_to_bldng.txt')
-            log_file.write(group.to_string(index=False))
+    trimmed_names = [name[39:] for name in names_pv_to_bldng_GLOB]
+    trimmed_names   
+    checkpoint_to_logfile(f'finished loading and agg df: {trimmed_names}', 
+                          log_file_name='pv_proposal_pvShare_to_bldng.txt',
+                          n_tabs=1)
+        
+    total_iterations = len(pv_to_bldng_group_GLOB)
+    for i, group in enumerate(pv_to_bldng_group_GLOB, start=1):
+        # Get the i-th name from names_pv_to_bldng_GLOB
+        group_name = names_pv_to_bldng_GLOB[i-1]
 
-chapter_to_logfile('finished matching PV to House types for buffers 0.025 to 10', 
-                     log_file_name='pv_proposal_pvShare_to_bldng.txt')
+        # Pass the group name to checkpoint_to_logfile function
+        checkpoint_to_logfile(f'group {i} of {total_iterations}: {group_name}', 
+                                log_file_name='pv_proposal_pvShare_to_bldng.txt',
+                                n_tabs=1)
+        
+        with open('pv_proposal_pvShare_to_bldng.txt', 'a') as log_file:
+            log_file.write(' \n')
+            log_file.write(f'over buffered by {pv_to_bldng_shape_GLOB[i-1][0] / pv_df.shape[0]} % \n')
+            log_file.write(group.to_string(index=False))
+            log_file.write(' \n\n\n')
+
+            
+    chapter_to_logfile('finished matching PV to House types for buffers 0.025 to 10', 
+                        log_file_name='pv_proposal_pvShare_to_bldng.txt')
+
+
+    # export table -----------------------------------------------------------------------------------------------------
+
+    df_select = gpd.read_file(f'{data_path}/temp_cache/pv_to_bldng_0.8.shp')
+    df_select.rename(columns={'buildingClass': 'buildingCl'}, inplace=True) if "bulidingCl" in df.columns else df
+    df_select0 = df_select.copy()
+    agg_pv_to_bldng_by_group(df_select0)
+
+    df_select['table_name'] = 'other'
+    df_select.loc[df_select['buildingCl'] == 1110, 'table_name'] = '1110'
+    df_select.loc[df_select['buildingCl'] == 1121, 'table_name'] = '1121'
+    df_select.loc[df_select['buildingCl'] == 1122, 'table_name'] = '1122'
+    df_select.loc[df_select['buildingCl'] == 1130, 'table_name'] = '1130'
+    df_select.loc[df_select['buildingCl'].isna(), 'table_name'] = np.nan
+
+    agg_pv_to_bldng_by_group(df_select)
+    df_select_group = agg_pv_to_bldng_by_group(df_select, col_name='table_name')
+    df_select_group.to_clipboard(index=False)
+    df_select_group.to_csv(f'{data_path}/export_pv_to_bldng_group.csv', index=False)
+    bldng_reg
+
+
 winsound.Beep(840,  100)
 winsound.Beep(840,  100)
-winsound.Beep(840,  200)
 winsound.Beep(840,  100)
+
+
+
+bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')   #gpd.read_file(f'{data_path}/temp_cache/bldng_reg_1110_1121_1122_1130.shp')
+bldng_reg.info()
+len(bldng_reg[bldng_reg['buildingClass']== 1110])
+len(bldng_reg['buildingClass'])
+len(bldng_reg[bldng_reg['buildingClass']== 1110]) / len(bldng_reg['buildingClass'])
+
 
 # ----------------------------------------------------------------------------------------------------------------
 #  Bookmark - Distribution plot
@@ -178,46 +275,46 @@ winsound.Beep(840,  100)
 
 
 
+if False:
+    # assign NA values a label
+    # Define the specified buildingCl categories
+    pv_to_bldng_1 = gpd.read_file(f'{data_path}/temp_cache/pv_to_bldng_1.shp')
+    specified_labels = ['1110', '1121', '1122', '1130']
 
-# assign NA values a label
-# Define the specified buildingCl categories
-pv_to_bldng_1 = gpd.read_file(f'{data_path}/temp_cache/pv_to_bldng_1.shp')
-specified_labels = ['1110', '1121', '1122', '1130']
+    pv_to_bldng_1 = pv_to_bldng_1.dropna(subset=['buildingCl'])
+    if pv_to_bldng_1['buildingCl'].dtype == 'float64':
+        pv_to_bldng_1['buildingCl'] = pv_to_bldng_1['buildingCl'].astype(int)
+        pv_to_bldng_1['buildingCl'] = pv_to_bldng_1['buildingCl'].astype(str)
 
-pv_to_bldng_1 = pv_to_bldng_1.dropna(subset=['buildingCl'])
-if pv_to_bldng_1['buildingCl'].dtype == 'float64':
-    pv_to_bldng_1['buildingCl'] = pv_to_bldng_1['buildingCl'].astype(int)
-    pv_to_bldng_1['buildingCl'] = pv_to_bldng_1['buildingCl'].astype(str)
+    pv_to_bldng_1['buildingCl'].dtype
+    pv_to_bldng_1.info()
+    pv_to_bldng_1['buildingCl'][0:10]
 
-pv_to_bldng_1['buildingCl'].dtype
-pv_to_bldng_1.info()
-pv_to_bldng_1['buildingCl'][0:10]
+    # Initialize a dictionary to collect TotalPower values for each category
+    total_power_data = {str(label): [] for label in specified_labels}
+    total_power_data['rest'] = []  # For all other categories
 
-# Initialize a dictionary to collect TotalPower values for each category
-total_power_data = {str(label): [] for label in specified_labels}
-total_power_data['rest'] = []  # For all other categories
+    absolute_value_cutoff = 2000
+    # Populate the dictionary with the TotalPower values
+    for index, row in pv_to_bldng_1.iterrows():
+        building_class = row['buildingCl']
+        total_power = row['TotalPower']
+        if total_power <= absolute_value_cutoff:
+            if pd.isna(building_class):
+                total_power_data['NA'].append(total_power)
+            elif building_class in specified_labels:
+                total_power_data[str(building_class)].append(total_power)
+            else:
+                total_power_data['rest'].append(total_power)
 
-absolute_value_cutoff = 2000
-# Populate the dictionary with the TotalPower values
-for index, row in pv_to_bldng_1.iterrows():
-    building_class = row['buildingCl']
-    total_power = row['TotalPower']
-    if total_power <= absolute_value_cutoff:
-        if pd.isna(building_class):
-            total_power_data['NA'].append(total_power)
-        elif building_class in specified_labels:
-            total_power_data[str(building_class)].append(total_power)
-        else:
-            total_power_data['rest'].append(total_power)
+    data = [total_power for total_power in total_power_data.values() if total_power]
+    labels = [label for label, total_power in total_power_data.items() if total_power]
 
-data = [total_power for total_power in total_power_data.values() if total_power]
-labels = [label for label, total_power in total_power_data.items() if total_power]
+    # Now create the distribution plot
+    fig = ff.create_distplot(data, labels, show_rug=True)
 
-# Now create the distribution plot
-fig = ff.create_distplot(data, labels, show_rug=True)
-
-# Show the figure
-fig.show()
+    # Show the figure
+    fig.show()
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -238,29 +335,5 @@ fig.show()
 
 #-------------------------------------------------------------------------------------------------------------------
 
-pv_to_bldng['buildingCl'].value_counts()
-single = sum(pv_to_bldng['buildingCl']==1110)
-double = sum(pv_to_bldng['buildingCl']==1121)
-tripmor = sum(pv_to_bldng['buildingCl']==1122)
-multiple =sum(pv_to_bldng['buildingCl']==1130)
-
-tot_pv = pv2.shape[0]
-(-(single + double + tripmor + multiple) - tot_pv) / tot_pv
-single/tot_pv
-double/tot_pv
-tripmor/tot_pv
-multiple/tot_pv
-
-single =  pv_to_bldng.loc[sum(pv_to_bldng['buildingCl']==1110)]
-double =  pv_to_bldng.loc[sum(pv_to_bldng['buildingCl']==1121)]
-tripmo = pv_to_bldng.loc[sum(pv_to_bldng['buildingCl']==1122)]
-multip = pv_to_bldng.loc[sum(pv_to_bldng['buildingCl']==1130)]
-
-single['TotalPower'].mean()
-double['TotalPower'].mean()
-tripmo['TotalPower'].mean()
-multip['TotalPower'].mean()
-# TODO: hist_plot over all groups :) then that should show how single houses are justified to be sub selected for Monte Carlo iteration
 
 
-roof_agg_withBldngReg = gpd.sjoin(roof_agg, bldng_reg, how="left", op="intersects")
