@@ -1,157 +1,181 @@
+import numpy as np
+import geopandas as gpd
+import functions
 
-# subset bldng_reg to relevant building classes ------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------
+# Data gathering for Lupien
+# ----------------------------------------------------------------------------------------------------------------
+roof_kat = gpd.read_file(f'{data_path}/input/roof_kataster_2020-01-01/roof_kataster_2020-01-01.gpkg')
+set_buffer = 1.25
+roof_agg = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: x.buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16))
+checkpoint_to_logfile(f'end GROUPBY', n_tabs = 2)
+roof_agg.to_file(f'{data_path}/temp_cache/roof_agg_res.shp')
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# Code until here in TESTING with server
+# ----------------------------------------------------------------------------------------------------------------
+elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+pv1 = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
+bldng_reg = gpd.read_file(f'{data_path}/temp_cache/bldng_reg_1110_1121_1122_1130.shp')
+kt_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+
+pv1.set_crs(kt_shp.crs, allow_override=True, inplace=True )
+bldng_reg.set_crs(kt_shp.crs, allow_override=True, inplace=True)
+
+buffered_geom = pv1.buffer(1, resolution = 16)
+pv2 = pv1.copy()
+pv2['geometry'] = buffered_geom
+pv2.set_crs(kt_shp.crs, allow_override=True, inplace=True)
+
+pv2.to_file(f'{data_path}/temp_cache/pv2_buff1.shp')
+
+bldng_reg.shape
+pv2.shape
+elec_prod.shape
+
+pv_to_bldng = gpd.sjoin(pv2, bldng_reg, how = "left", predicate = "intersects")
+pv_to_bldng.info()
+grouped = pv_to_bldng.groupby('buildingCl')['TotalPower']
+
+
+pv_to_bldng['buildingCl'].value_counts()
+"""    
+    1110 Gebäude mit einer Wohnung
+      - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.
+      - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
+    1121 Gebäude mit zwei Wohnungen
+      - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
+    1122 Gebäude mit drei oder mehr Wohnungen
+      - Sonstige Wohngebäude wie Wohnblocks mit drei oder mehr Wohnungen
+    1130 Wohngebäude für Gemeinschaften
+      - Wohngebäude, in denen bestimmte Personen gemeinschaftlich wohnen, einschliesslich der Wohnungen für ältere Menschen, Studenten, Kinder
+        und andere soziale Gruppen, z.B. Altersheime, Heime für Arbeiter, Bruderschaften, Waisen, Obdachlose usw.
 """
-See here for building codes that are selected:
-https://www.bfs.admin.ch/bfs/de/home/register/gebaeude-wohnungsregister/inhalt-referenzdokumente.assetdetail.22905270.html
+single = sum(pv_to_bldng['buildingCl']==1110)
+double = sum(pv_to_bldng['buildingCl']==1121)
+tripmor = sum(pv_to_bldng['buildingCl']==1122)
+multiple =sum(pv_to_bldng['buildingCl']==1130)
 
-"buildingStatus":
-1001 Projektiert
-1002 Bewilligt
-1003 Im Bau
-1004 Bestehend
-1005 Nicht nutzbar
-1007 Abgebrochen
-1008 Nicht realisiert
+tot_pv = pv2.shape[0]
+(-(single + double + tripmor + multiple) - tot_pv) / tot_pv
+single/tot_pv
+double/tot_pv
+tripmor/tot_pv
+multiple/tot_pv
 
-"builingCategory":
-0    ??
-1010 Provisorische Unterkunft
-1020 Gebäude mit ausschliesslicher Wohnnutzung
-1030 Andere Wohngebäude (Wohngebäude mit Nebennutzung)
-1040 Gebäude mit teilweiser Wohnnutzung
-1060 Gebäude ohne Wohnnutzung
-1080 Sonderbau
+single =  pv_to_bldng.loc[sum(pv_to_bldng['buildingCl']==1110)]
+double =  pv_to_bldng.loc[sum(pv_to_bldng['buildingCl']==1121)]
+tripmo = pv_to_bldng.loc[sum(pv_to_bldng['buildingCl']==1122)]
+multip = pv_to_bldng.loc[sum(pv_to_bldng['buildingCl']==1130)]
 
-"buildingClass":
-0    ??
-1110 Gebäude mit einer Wohnung
-  - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.
-  - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
-1121 Gebäude mit zwei Wohnungen
-  - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
-1122 Gebäude mit drei oder mehr Wohnungen
-  - Sonstige Wohngebäude wie Wohnblocks mit drei oder mehr Wohnungen
-1130 Wohngebäude für Gemeinschaften
-  - Wohngebäude, in denen bestimmte Personen gemeinschaftlich wohnen, einschliesslich der Wohnungen für ältere Menschen, Studenten, Kinder
-    und andere soziale Gruppen, z.B. Altersheime, Heime für Arbeiter, Bruderschaften, Waisen, Obdachlose usw.
-    
-1211 Hotelgebäude
-1212 Andere Gebäude für kurzfristige Beherbergungen
-1220 Bürogebäude
-1230 Gross- und Einzelhandelsgebäude
-1231 Restaurants und Bars in Gebäuden ohne Wohnnutzung
-1241 Bahnhöfe, Abfertigungsgebäude, Fernsprechvermittlungszentralen
-1242 Garagengebäude
-1251 Industriegebäude
-1252 Behälter, Silos und Lagergebäude
-1261 Gebäude für Kultur- und Freizeitzwecke
-1262 Museen / Bibliotheken
-1263 Schul- und Hochschulgebäude, Forschungseinrichtungen
-1264 Krankenhäuser und Facheinrichtungen des Gesundheitswesens
-1265 Sporthallen
-1271 Landwirtschaftliche Betriebsgebäude
-1272 Kirchen und sonstige Kulturgebäude
-1273 Denkmäler oder unter Denkmalschutz stehende Bauwerke
-1274 Sonstige Hochbauten, anderweitig nicht genannt
-1275 Andere Gebäude für die kollektive Unterkunft
-1276 Gebäude für die Tierhaltung
-1277 Gebäude für Pflanzenbau
-1278 Andere landwirtschaftliche Betriebsgebäude
-"""
-buildingClass_residential = [1110, 1121, 1122, 1130]
-bldng_reg_residential = bldng_reg.loc[bldng_reg['buildingClass'].isin(buildingClass_residential)].copy()    
-bldng_reg_residential.to_file(f'{data_path}/z_py_exports/bldng_reg_residential.shp')
-checkpoint_to_logfile(f'subset bldng_reg to relevant building classes')
+single['TotalPower'].mean()
+double['TotalPower'].mean()
+tripmo['TotalPower'].mean()
+multip['TotalPower'].mean()
+# TODO: hist_plot over all groups :) then that should show how single houses are justified to be sub selected for Monte Carlo iteration
+
+roof_agg_withBldngReg = gpd.sjoin(roof_agg, bldng_reg, how="left", op="intersects")
 
 
-# prep new df from roof_kat, unionize all partitions per building  -----------------------------------------------
-
-# subset to relevant houses 
-"""
-0 Bruecke gedeckt
-1 Gebaeude Einzelhaus
-2 Hochhaus
-3 Hochkamin
-4 Turm
-5 Kuehlturm
-6 Lagertank
-7 Lueftungsschacht
-8 Offenes Gebaeude
-9 Treibhaus
-10 Im Bau
-11 Kapelle
-12 Sakraler Turm
-13 Sakrales Gebaeude
-15 Flugdach
-16 Unterirdisches Gebaeude
-17 Mauer gross
-18 Mauer gross gedeckt
-19 Historische Baute
-20 Gebaeude unsichtbar
-"""
-#cat_sb_object = [4, 13]#[1,2,4,5,8,12,13]
-#roof_kat['SB_OBJEKTART'].value_counts()
-#roof_kat_sub = roof_kat.loc[roof_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
-roof_kat_sub = roof_kat.loc[roof_kat['SB_UUID'].isin(roof_kat['SB_UUID'].unique()[0:2000])].copy()
-
-sb_obj_unique = roof_kat_sub['SB_UUID'].unique() 
-roof_union = gpd.GeoDataFrame(index = sb_obj_unique, columns = ['geometry']) #TODO: find a better naming convetion!
-roof_union.set_crs(roof_kat.crs, inplace=True)
+# ----------------------------------------------------------------------------------------------------------------
+# Code until here in TESTING with server
+# ----------------------------------------------------------------------------------------------------------------
 
 
-# create new df from roof_kat: loop over each building merging shapes-------------------------------------------------
-idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}' #TODO: delete later when no longer used
-set_buffer = 1.25 # determines the buffer around shapes to ensure a more proper union merge of single ouse shapes
-for idx, row_srs in roof_union.iterrows():
-    
-    # add unified geometry
-    #row_srs['geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].unary_union
-    #roof_union.loc[idx, 'geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].unary_union
-    roof_union.loc[idx, 'geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16) # roof_geom_buff.buffer(-0.5, resolution = 16).copy()
-
-checkpoint_to_logfile(f'unionized roof parts per building')
-roof_union.to_file(f'{data_path}/roof_union_1_W{set_buffer}buffer.shp')
-
-
-# intersect roof shape with buildingClass, roof_union with bldng_reg_residential ---------------------------------
-# TODO: NEXT STEPS:
-# TODO: 1. create a loop, singling out each building again, similar to the loop above
-# TODO: 2. intersect the single roof shape with the bldng_reg_residential, add all relevant information to roof_union
-# TODO: 3. export the file into proper format
-# TODO: 4. create proper reading part that imports the intermediary results later so that I don't always have to run the whole script up to here. 
-
-bldng_reg_residential.columns
-
-roof_union['n_match_bldng_reg'] = np.nan
-roof_union['bldngStatus'] = np.nan
-roof_union['bldngCategory'] = np.nan 
-roof_union['bldngClass'] = np.nan
-
-idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}' #TODO: delete later when no longer used
-for idx, row_srs in roof_union.iterrows():
-    
-    bldng_IN_idx = bldng_reg_residential['geometry'].intersects(roof_union.loc[idx, 'geometry'])
-    roof_union.loc[idx, 'n_match_bldng_reg'] = bldng_IN_idx.sum()
-    if bldng_IN_idx.sum() == 1:
-        roof_union.loc[idx, 'bldngStatus'] = bldng_reg_residential.loc[bldng_IN_idx, 'buildingStatus'].values[0]
-        roof_union.loc[idx, 'bldngCategory'] = bldng_reg_residential.loc[bldng_IN_idx, 'buildingCategory'].values[0]
-        roof_union.loc[idx, 'bldngClass'] = bldng_reg_residential.loc[bldng_IN_idx, 'buildingClass'].values[0]
-
-checkpoint_to_logfile(f'extended roof_union with bldng_reg_residential info')
-roof_union.to_file(f'{data_path}/roof_union_2_AFTER_bldng_extension.shp')
-
-roof_union.columns
-roof_union['n_match_bldng_reg'].value_counts()  
+# associate aggregated roofs to building regisnter ----------------------------------------------------------------
+kt_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+roof_kat = gpd.read_file(f'{data_path}/temp_cache/roof_kat_1_2_4_8_19_20.shp', rows=10000)
+bldng_reg = gpd.read_file(f'{data_path}/temp_cache/bldng_reg_1110_1121_1122_1130.shp', rows=10000)
+roof_agg = gpd.read_file(f'{data_path}/temp_cache/roof_agg_res.shp', rows=10000)
+elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows=10000)
+pv1 = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
 
 
 
-# export ---------------------------------------------------------------------------------------------------------
-roof_union.to_file(f'{data_path}/z_py_exports/roof_union.shp')
-roof_union.to_file(f'{data_path}/z_py_exports/roof_union.geojson', driver='GeoJSON')
-checkpoint_to_logfile(f'aggregated gdf exported')
+# add pv to agg roofs
+# roof_agg_withPV = gpd.sjoin(roof_agg, pv, how="left", op="within")
+# roof_agg_withPV.to_file(f'{data_path}/temp_cache/roof_agg_withPV.shp')     
+
+# roof_agg_withPV.info()
+# roof_agg_withPV['SB_UUID']
+# roof_agg_withPV['index_right']
+
+# add buliding reg to agg roofs 
+roof_agg_withBldngReg = gpd.sjoin(roof_agg, bldng_reg, how="left", op="intersects")
+# roof_agg_withBldngReg.to_file(f'{data_path}/temp_cache/roof_agg_withBldngReg.shp')
+
+roof_agg_withBldngReg.shape[0] / 1000000
+bldng_reg.shape[0] / 1000000
+roof_agg.shape[0] / 1000000
+
+roof_agg_withBldngReg.info()
+roof_agg_withBldngReg['SB_UUID'].value_counts()
+roof_agg_withBldngReg['egid'].value_counts()
+roof_agg_withBldngReg['buildingCl'].value_counts()
+
+
+roof_agg_withBldngReg['egid'].isna().sum()
+roof_agg_withBldngReg.index
+bldng_reg.index
+
+# Check for 'index_left' and 'index_right' columns and rename them if they exist
+if 'index_left' in roof_agg_withBldngReg.columns:
+    roof_agg_withBldngReg.rename(columns={'index_left': 'index_left_old'}, inplace=True)
+if 'index_right' in roof_agg_withBldngReg.columns:
+    roof_agg_withBldngReg.rename(columns={'index_right': 'index_right_old'}, inplace=True)
+
+
+roof_kat.set_crs(kt_shp.crs, allow_override=True, inplace=True)  
+bldng_reg.set_crs(kt_shp.crs, allow_override=True, inplace=True)
+roof_agg.set_crs(kt_shp.crs, allow_override=True, inplace=True)
+pv1.set_crs(kt_shp.crs, allow_override=True, inplace=True)
+nan_egid = roof_agg_withBldngReg[roof_agg_withBldngReg['egid'].isna()]
+nearest = gpd.sjoin_nearest(nan_egid, bldng_reg, how='left', distance_col='distances')
 
 
 
+
+
+# ----------------------------------------------------------------------------------------------------------------
+
+
+
+
+idx = roof_agg.index[102]
+i = 0
+a=0
+b = 0
+c = 0
+for idx, row_srs in roof_agg.iterrows():
+     bldng_IN_roof = bldng_reg.within(roof_agg.loc[idx, 'geometry'])
+     if sum(bldng_IN_roof) == 1:
+          roof_agg.loc[idx, 'bldng_reg_egid'] = bldng_reg.loc[bldng_IN_roof, 'egid'].values[0]
+          a = a+1
+     elif sum(bldng_IN_roof) > 1: 
+          roof_agg.loc[idx, 'bldng_reg_egid'] = str(bldng_reg.loc[bldng_IN_roof, 'egid'].values)          
+          b = b+1
+     elif sum(bldng_reg.within(roof_agg.loc[idx, 'geometry'])) == 0:
+          roof_agg.loc[idx, 'bldng_reg_egid'] = 0
+          c = c+1
+     i=i+1
+     print(f'roof_agg loop:  {i} of {len(roof_agg)} done,      => a={a}, b={b}, c={c}')
+
+
+
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# BOOKMARK 
+# ----------------------------------------------------------------------------------------------------------------
+
+# create single shape per roof_ID ---------------------------------------------------------------------------------
+#TODO: aggregate to roof_union
+#TODO: match roof shapes to building register
+#TODO: extend match of "non-assigned" to building register
+#TODO: match roof_kataster to building
+#TODO: match facade kataster to building
+#TODO: match pv to building
 
 # ----------------------------------------------------------------------------------------------------------------
 # END 
@@ -165,81 +189,5 @@ if script_run_on_server == 0:
 
 
 
-# TO-DO LIST: ----------------------------------------------------------------------------------------------------
-# TODO: intersect building use with unnion DF, then ,kick out all non residential buildings
 
-
-
-
-# ----------------------------------------------------------------------------------------------------------------
-# CODE FOR ADDIGN LATER!!! 
-# ----------------------------------------------------------------------------------------------------------------
-
-# ----------------------------------------------------------------------------------------------------------------
-# ----------------------------------------------------------------------------------------------------------------
-# Add other data to roof based dataframe
-# ----------------------------------------------------------------------------------------------------------------
-
-cols = ['FLAECHE', 'MSTRAHLUNG', 'GSTRAHLUNG', 'STROMERTRAG']
-cats = ['cat2_', 'cat3_', 'cat4_', 'cat5_']
-new_col = [cat + col for cat in cats for col in cols ]
-roof_union[new_col] = np.nan
-checkpoint_to_logfile(f'created empty df to then iter over roof parts')
-
-
-# create new df from roof_kat: loop over each building merging shapes---------------------------------------------
-idx = '{AF378B63-B28F-4A92-9BEB-4B84ABD75BDF}'
-set_buffer = 1 # determines the buffer around shapes to ensure a more proper union merge of single ouse shapes
-for idx, row_srs in roof_union.iterrows():
-    
-    # add unified geometry
-    #row_srs['geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].unary_union
-    #roof_union.loc[idx, 'geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].unary_union
-    roof_union.loc[idx, 'geometry'] = roof_kat_sub.loc[roof_kat_sub['SB_UUID'] == idx, 'geometry'].buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16) # roof_geom_buff.buffer(-0.5, resolution = 16).copy()
-
-    """
-    # set boolean indicatros 
-    bool_id_2 = (roof_kat_sub['KLASSE'].isin([1,2])) & (roof_kat_sub['SB_UUID'] == idx ) & (roof_kat_sub['FLAECHE'] > cutoff_roof_kat_area[0]) & (roof_kat_sub['FLAECHE'] < cutoff_roof_kat_area[1])
-    bool_id_3 = (roof_kat_sub['KLASSE'].isin([3]))   & (roof_kat_sub['SB_UUID'] == idx ) & (roof_kat_sub['FLAECHE'] > cutoff_roof_kat_area[0]) & (roof_kat_sub['FLAECHE'] < cutoff_roof_kat_area[1])
-    bool_id_4 = (roof_kat_sub['KLASSE'].isin([4]))   & (roof_kat_sub['SB_UUID'] == idx ) & (roof_kat_sub['FLAECHE'] > cutoff_roof_kat_area[0]) & (roof_kat_sub['FLAECHE'] < cutoff_roof_kat_area[1])
-    bool_id_5 = (roof_kat_sub['KLASSE'].isin([5]))   & (roof_kat_sub['SB_UUID'] == idx ) & (roof_kat_sub['FLAECHE'] > cutoff_roof_kat_area[0]) & (roof_kat_sub['FLAECHE'] < cutoff_roof_kat_area[1])
-
-    # add roof part values to aggr df
-    for col in cols: 
-        roof_union.loc[idx, f'cat2_{col}'] = roof_kat_sub.loc[bool_id_2, f'{col}'].sum()
-        roof_union.loc[idx, f'cat3_{col}'] = roof_kat_sub.loc[bool_id_3, f'{col}'].sum()
-        roof_union.loc[idx, f'cat4_{col}'] = roof_kat_sub.loc[bool_id_4, f'{col}'].sum()
-        roof_union.loc[idx, f'cat5_{col}'] = roof_kat_sub.loc[bool_id_5, f'{col}'].sum()
-    """
-checkpoint_to_logfile(f'finished loop iter over roof parts')
-roof_union.to_file(f'{data_path}/roof_union_W{set_buffer}buffer_PILOT_bldgINTERSECTION.shp')
-
-
-
-
-
-# define roof range which are considered
-cutoff_roof_kat_area = [10,300] #TODO: add here values from the PV installation data set
-
-# pv inst: add empty nan conlumns to aggr df   -------------------------------------------------------------------
-
-roof_union['pv_d', 'pv_address', 'pv_postcode', 'pv_BeginningO', 'InitialPow', 'TotalPow' ] = np.nan
-
-
-# pv inst: loop over pv   ----------------------------------------------------------------------------------------
-
-
-for idx, row_srs in roof_union.iterrows():
-
-    bool_id_pvonroof = pv['geometry'].intersects(roof_union.loc[idx, 'geometry'].buffer(0, resolution = 16))
-    roof_union.loc[idx, 'pv_d'] = bool_id_pvonroof.sum()
-    """
-    roof_union.loc[idx, 'pv_address'] 
-    roof_union.loc[idx, 'pv_postcode']
-    roof_union.loc[idx, 'pv_BeginningO']
-    roof_union.loc[idx, 'InitialPow']
-    roof_union.loc[idx, 'TotalPow']
-    """
-# ----------------------------------------------------------------------------------------------------------------
-# end - Add other data to roof based dataframe
-# ----------------------------------------------------------------------------------------------------------------
+     
