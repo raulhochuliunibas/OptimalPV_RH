@@ -100,12 +100,14 @@ df_export = df_join3.drop(drop_cols, axis=1)
 print(f'*dropped unnecessary columns | time: {datetime.now()} | runtime: {datetime.now() - start_timer} h:mm:ss.ss')
 df_join3.info()
 
-df_join3.to_file(f'{data_path}/temp_cache/df_joined_solkat_pv_municipality.shp')
-print(f'*exported df_join3 to shp | time: {datetime.now()} | runtime: {datetime.now() - start_timer} h:mm:ss.ss')
-df_join3.to_file(f'{data_path}/temp_cache/df_joined_solkat_pv_municipality.geojson', driver='GeoJSON')  # GeoJSON format
-print(f'*exported df_join3 to geojson | time: {datetime.now()} | runtime: {datetime.now() - start_timer} h:mm:ss.ss')
-df_join3.to_csv(f'{data_path}/temp_cache/df_joined_solkat_pv_municipality.csv', index = False)
-print(f'*exported df_join3 to csv | time: {datetime.now()} | runtime: {datetime.now() - start_timer} h:mm:ss.ss')
+# df_join3.to_file(f'{data_path}/temp_cache/df_joined_solkat_pv_municipality.shp')
+# print(f'*exported df_join3 to shp | time: {datetime.now()} | runtime: {datetime.now() - start_timer} h:mm:ss.ss')
+# df_join3.to_file(f'{data_path}/temp_cache/df_joined_solkat_pv_municipality.geojson', driver='GeoJSON')  # GeoJSON format
+# print(f'*exported df_join3 to geojson | time: {datetime.now()} | runtime: {datetime.now() - start_timer} h:mm:ss.ss')
+# df_join3.to_csv(f'{data_path}/temp_cache/df_joined_solkat_pv_municipality.csv', index = False)
+# print(f'*exported df_join3 to csv | time: {datetime.now()} | runtime: {datetime.now() - start_timer} h:mm:ss.ss')
+df_join3.to_parquet(f'{data_path}/temp_cache/df_joined_solkat_pv_municipality.parquet')
+print(f'*exported df_join3 to parquet | time: {datetime.now()} | runtime: {datetime.now() - start_timer} h:mm:ss.ss')
 
 print(f'\n\n\n ************\nscript finished\n************\n\n\n')
 winsound.Beep(440, 100) # frequency, duration
