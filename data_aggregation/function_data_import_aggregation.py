@@ -133,7 +133,7 @@ def import_aggregate_data(
     #checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
 
     # load building register indicating residential or industrial use
-    bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+    bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson' , rows = 10)
     checkpoint_to_logfile(f'finished loading building register pt', log_file_name = log_file_name_concat, n_tabs = 2)
 
     # load heating / cooling demand raster 150x150m
@@ -315,7 +315,8 @@ def import_aggregate_data(
     # Export 
     # ----------------------------------------------------------------------------------------------------------------
 
-    df_join3.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_solkat_pv_gm_gdf.geojson', driver='GeoJSON')  # GeoJSON format
+    # df_join3.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_solkat_pv_gm_gdf.geojson', driver='GeoJSON')  # GeoJSON format
+    df_join3.to_parquet(f'{data_path}/{name_aggdef}/{name_aggdef}_solkat_pv_gm.parquet')  
     checkpoint_to_logfile(f'exported df_join3 to geojson', log_file_name = log_file_name_concat, n_tabs = 3)
     # df_join5.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_MAIN_gdf.geojson', driver='GeoJSON')  # GeoJSON format
     if isinstance(subset_shape, gpd.GeoDataFrame):

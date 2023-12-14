@@ -11,8 +11,9 @@ if script_run_on_server == 0:
     layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 elif script_run_on_server == 1:
     gm_shp = gpd.read_file(
-    'D:\RaulHochuli_inuse\OptimalPV_RH\input\swissboundaries3d_2023-01_2056_5728.shp',
+    'D:\RaulHochuli_inuse\OptimalPV_RH_data\input\swissboundaries3d_2023-01_2056_5728.shp',
     layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+
 
 kt_list = list(gm_shp['KANTONSNUM'].dropna().unique())[0:2]
 
