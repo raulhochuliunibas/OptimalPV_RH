@@ -1,0 +1,340 @@
+import os as os
+import pandas as pd
+import geopandas as gpd
+import sys
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pyogrio
+import winsound
+
+# from functions import chapter_to_logfile, checkpoint_to_logfile
+from datetime import datetime
+from shapely.ops import unary_union
+
+
+# ------------------------------------------------------------------------------------------------------
+# LOG FIlE PRINTING FUNCTIONS
+# ------------------------------------------------------------------------------------------------------
+
+def chapter_to_logfile(str, log_file_name):
+    """
+    Function to write a chapter to the logfile
+    """
+    check = f'\n\n****************************************\n {str} \n start at:{datetime.now()} \n****************************************\n\n'
+    print(check)
+    with open(f'{log_file_name}', 'a') as log_file:
+        log_file.write(f'{check}\n')
+time_last_call = None
+def checkpoint_to_logfile(str, log_file_name, n_tabs = 0, timer_func=None):
+    """
+    Function to write a checkpoint to the logfile
+    """
+    global time_last_call
+    
+    time_now = datetime.now()
+    if time_last_call:
+        runtime = time_now - time_last_call
+        minutes, seconds = divmod(runtime.seconds, 60)
+        runtime_str = f"{minutes} min {seconds} sec"
+    else:
+        runtime_str = 'N/A'
+    
+    n_tabs_str = '\t' * n_tabs
+    check = f'* {str}{n_tabs_str}runtime: {runtime_str};   (stamp: {datetime.now()})'
+    print(check)
+
+    with open(f'{log_file_name}', 'a') as log_file:
+        log_file.write(f"{check}\n")
+    
+    time_last_call = time_now
+
+
+
+# ------------------------------------------------------------------------------------------------------
+# DATA IMPORT + AGGREGATION
+# ------------------------------------------------------------------------------------------------------
+
+"""
+Import data from input folder, subset for a relevant area and aggregate to building specific topology
+Input:
+- name: name of the aggregated data set
+- script_run_on_server: 0 = script is running on laptop, 1 = script is running on server
+- gm_numbers: list of municipality numbers to be considered
+- GWR buidling types: list of GWR types (number codes) to be considered from the building registry
+- Sonnendach building types: list of Sonnendach types (number codes) to be considered from the building registry
+Output: 
+- aggregated data set including all the relevant data sources in a single output directory
+"""
+    
+def import_aggregate_data(
+    name_aggdef = "test_agg",
+    script_run_on_server = 0,
+    gm_number_aggdef = [3851,],
+    select_gwr_aggdef = None,
+    select_solkat_aggdef = None, ):
+    
+    print(name_aggdef)
+    #   print(script_run_on_server)
+    #   print(gm_number_aggdef)
+    #   print(type_gwr_aggdef)
+    #   print(type_solkat_aggdef)
+
+
+    # print('not funning function properly')
+    # name_aggdef = "test_agg"
+    # script_run_on_server = 0
+    # gm_number_aggdef = [3851,]
+    # select_solkat_aggdef = None
+    # select_gwr_aggdef = None
+
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # Setup + Import 
+    # ----------------------------------------------------------------------------------------------------------------
+    
+    
+
+    # pre setup + working + export directory -------------------------------------------------------------------------
+
+    # set working directory
+    if script_run_on_server == 0:
+        winsound.Beep(840,  100)
+        wd_path = "C:\Models\OptimalPV_RH\data_aggregation"   # path for private computer
+        data_path = "C:\Models\OptimalPV_RH_data"
+    elif script_run_on_server == 1:
+        wd_path = "D:\RaulHochuli_inuse\OptimalPV_RH\data_aggregation"         # path for server directory
+        data_path = "D:/RaulHochuli_inuse\OptimalPV_RH_data"                  # path for server directory
+    os.chdir(wd_path)
+
+    # create new directory for export
+    if not os.path.exists(f'{data_path}/{name_aggdef}'):
+        os.makedirs(f'{data_path}/{name_aggdef}')
+        
+    # create log file for checkpoint comments
+    timer = datetime.now()
+    log_file_name_concat = f'{data_path}/{name_aggdef}/{name_aggdef}_log.txt'
+    with open(f'{data_path}/{name_aggdef}/{name_aggdef}_log.txt', 'w') as log_file:
+            log_file.write(f' \n')
+    chapter_to_logfile('started running main_file.py', log_file_name = log_file_name_concat)
+
+
+    # import geo referenced data -------------------------------------------------------------------------------------
+
+    # load administrative shapes
+    kt_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    checkpoint_to_logfile(f'finished loading administrative shp', log_file_name = log_file_name_concat, n_tabs = 2)
+
+    # load solar kataster shapes
+    roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+    checkpoint_to_logfile(f'finished loading roof solar kataster shp', log_file_name = log_file_name_concat, n_tabs = 1)
+    #faca_kat = roof_kat.copy()
+    #checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
+
+    # load building register indicating residential or industrial use
+    bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+    checkpoint_to_logfile(f'finished loading building register pt', log_file_name = log_file_name_concat, n_tabs = 2)
+
+    # load heating / cooling demand raster 150x150m
+    heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+    checkpoint_to_logfile(f'finished loading heat & cool demand pt', log_file_name = log_file_name_concat, n_tabs = 1)
+
+    # load pv installation points
+    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+    pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
+    checkpoint_to_logfile(f'finished loading pv installation pt', log_file_name = log_file_name_concat, n_tabs = 2) 
+
+
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # Transform + Subset by Relevant Municipalities 
+    # ----------------------------------------------------------------------------------------------------------------
+
+    # transform ------------------------------------------------------------------------------------------------------
+
+    # check if all CRS are compatible
+    main_crs = gm_shp.crs
+    kt_shp.crs == gm_shp.crs == roof_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
+    gm_shp.set_crs(main_crs, allow_override=True, inplace=True)
+    roof_kat.set_crs(main_crs, allow_override=True, inplace=True)
+    # faca_kat.set_crs(main_crs, allow_override=True, inplace=True)
+    bldng_reg.set_crs(main_crs, allow_override=True, inplace=True)
+    heatcool_dem.set_crs(main_crs, allow_override=True, inplace=True)
+    pv.set_crs(main_crs, allow_override=True, inplace=True)
+        
+    all_crs_equal = kt_shp.crs == gm_shp.crs == roof_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
+    if all_crs_equal:
+        checkpoint_to_logfile(' - ', log_file_name = log_file_name_concat, n_tabs = 5)
+        checkpoint_to_logfile(f'CRS are compatible', log_file_name = log_file_name_concat, n_tabs = 4)
+    elif not all_crs_equal:
+        checkpoint_to_logfile(f'CRS are NOT compatible', log_file_name = log_file_name_concat, n_tabs = 1)
+        raise Exception('\nCRS are NOT compatible')
+    
+    # remove all columns that are not needed -------------------------------------------------------------------------
+    drop_cols_roof_kat = ['WAERMEERTRAG', 'DUSCHGAENGE', 'DG_HEIZUNG', 'DG_WAERMEBEDARF', 'BEDARF_WARMWASSER',
+                'BEDARF_HEIZUNG', 'FLAECHE_KOLLEKTOREN', 'VOLUMEN_SPEICHER', ]
+    roof_kat.drop(columns=drop_cols_roof_kat, axis=1, inplace=True)
+
+    drop_cols_bldng_reg = ['buildingStatus', 'buildingCategory', 'municipalityNumber', 'municipalityName',
+                 'canton']
+    bldng_reg.drop(columns=drop_cols_bldng_reg, axis=1, inplace=True)
+
+    drop_cols_heatcool_dem = ['NEEDSERVICE', 'NEEDTOTAL', 'NOGA', 'SERVICE', 'PERCENTGAS', 'PERCENTOIL', 
+                 'PERCENTPUMP', 'PERCENTREMOTEHEAT', 'STYLE', 'OBJECTID']
+    heatcool_dem.drop(columns=drop_cols_heatcool_dem, axis=1, inplace=True)
+    
+    drop_cols_pv = ['MainCategory', 'PlantCategory', ]
+    pv.drop(columns=drop_cols_pv, axis=1, inplace=True)
+
+    drop_cols_gm_shp = ['UUID', 'DATUM_AEND', 'DATUM_ERST', 'ERSTELL_J', 'ERSTELL_M', 'REVISION_J', 
+                 'REVISION_M', 'GRUND_AEND', 'HERKUNFT', 'HERKUNFT_J', 'HERKUNFT_M', 'OBJEKTART', 
+                 'REVISION_Q', 'ICC', 'GEM_TEIL', 'GEM_FLAECH', 'SHN']
+    gm_shp.drop(columns=drop_cols_gm_shp, axis=1, inplace=True)
+    checkpoint_to_logfile(f'dropped unnecessary columns', log_file_name = log_file_name_concat, n_tabs = 3)
+
+
+    # subset roof_kat and bldng_reg for selected classes -------------------------------------------------------------
+
+    # check if type_solkat_aggdef is numeric list
+    if select_solkat_aggdef is not None:
+        if isinstance(select_solkat_aggdef, list) and all(isinstance(elem, (int, float)) for elem in select_solkat_aggdef):
+            roof_kat = roof_kat.loc[roof_kat['SB_OBJEKTART'].isin(select_solkat_aggdef)].copy()
+            roof_kat['SB_OBJEKTART'].value_counts()
+            # faca_kat = faca_kat.loc[faca_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
+
+    if select_solkat_aggdef is not None:
+        if isinstance(select_solkat_aggdef, list) and all(isinstance(elem, (int, float)) for elem in select_solkat_aggdef):
+            bldng_reg = bldng_reg.loc[bldng_reg['buildingClass'].isin(select_solkat_aggdef)].copy()    
+
+
+    #################################################################################################################
+    ### BOOKMARK
+    #   SUBSET by Gemeinde using NOT GPD SPATIAL JOIN
+    #################################################################################################################
+
+
+
+    # subset by selected gm shp --------------------------------------------------------------------------------------
+    if gm_number_aggdef is not None:
+        if isinstance(gm_number_aggdef, list) and all(isinstance(elem, (int, float)) for elem in gm_number_aggdef):
+            subset_shape = gm_shp.loc[gm_shp['BFS_NUMMER'].isin(gm_number_aggdef),].copy()
+            
+            roof_kat = gpd.sjoin(roof_kat, subset_shape, how="inner", predicate="within")
+            checkpoint_to_logfile(f'subset roof_kat for gm selection', log_file_name = log_file_name_concat, n_tabs = 2)
+            bldng_reg = gpd.sjoin(bldng_reg, subset_shape, how="inner", predicate="within")
+            checkpoint_to_logfile(f'subset bldng_reg for gm selection', log_file_name = log_file_name_concat, n_tabs = 2)
+            heatcool_dem = gpd.sjoin(heatcool_dem, subset_shape, how="inner", predicate="within")
+            checkpoint_to_logfile(f'subset heatcool_dem for gm selection', log_file_name = log_file_name_concat, n_tabs = 2)
+            pv = gpd.sjoin(pv, subset_shape, how="inner", predicate="within")
+            checkpoint_to_logfile(f'subset pv for gm selection', log_file_name = log_file_name_concat, n_tabs = 3)
+
+            drop_gm_cols = ['index_right', ] + list(gm_shp.columns)
+            print(drop_gm_cols)
+            roof_kat = roof_kat.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+            bldng_reg = bldng_reg.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+            heatcool_dem = heatcool_dem.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+            pv = pv.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+
+    # -------
+    # roof_kat_old = roof_kat.copy()
+    # bldng_reg_old = bldng_reg.copy()
+    # heatcool_dem_old = heatcool_dem.copy()
+    # pv_old = pv.copy()
+
+    if False:
+        # check if another way of subsetting is faster
+        checkpoint_to_logfile(f'\n\n CHECK ANOTHER WAY OF SUBSETTIGN', log_file_name = log_file_name_concat, n_tabs = 3)
+        def within_any(geometry, shapes):
+            return any(geometry.within(shape) for shape in shapes)
+
+        mask_roof_kat = roof_kat_old['geometry'].apply(lambda x: within_any(x, subset_shape['geometry']))
+        roof_kat2 = roof_kat_old[mask_roof_kat]
+        checkpoint_to_logfile(f'subset roof_kat for gm selection', log_file_name = log_file_name_concat, n_tabs = 3)
+        mask_bldng_reg = bldng_reg_old['geometry'].apply(lambda x: within_any(x, subset_shape['geometry']))
+        bldng_reg2 = bldng_reg_old[mask_bldng_reg]
+        checkpoint_to_logfile(f'subset bldng_reg for gm selection', log_file_name = log_file_name_concat, n_tabs = 3)
+        mask_heatcool_dem = heatcool_dem_old['geometry'].apply(lambda x: within_any(x, subset_shape['geometry']))
+        heatcool_dem2 = heatcool_dem_old[mask_heatcool_dem]
+        checkpoint_to_logfile(f'subset heatcool_dem for gm selection', log_file_name = log_file_name_concat, n_tabs = 3)
+        mask_pv = pv_old['geometry'].apply(lambda x: within_any(x, subset_shape['geometry']))
+        pv2 = pv_old[mask_pv]
+        checkpoint_to_logfile(f'* subset pv for gm selection', log_file_name = log_file_name_concat, n_tabs = 3)
+
+    # export to json for testing -------------------------------------------------------------------------------------
+    #   roof_kat.to_file(f'{data_path}/{name_aggdef}/roof_kat.geojson', driver='GeoJSON')  # GeoJSON format
+    #   checkpoint_to_logfile(f'* exported roof_kat to geojson', log_file_name = log_file_name_concat, n_tabs = 3)
+    #   bldng_reg.to_file(f'{data_path}/{name_aggdef}/bldng_reg.geojson', driver='GeoJSON')  # GeoJSON format
+    #   checkpoint_to_logfile(f'* exported bldng_reg to geojson', log_file_name = log_file_name_concat, n_tabs = 3)
+    #   heatcool_dem.to_file(f'{data_path}/{name_aggdef}/heatcool_dem.geojson', driver='GeoJSON')  # GeoJSON format
+    #   checkpoint_to_logfile(f'* exported heatcool_dem to geojson', log_file_name = log_file_name_concat, n_tabs = 3)
+    #   pv.to_file(f'{data_path}/{name_aggdef}/pv.geojson', driver='GeoJSON')  # GeoJSON format
+    #   checkpoint_to_logfile(f'* exported pv to geojson', log_file_name = log_file_name_concat, n_tabs = 3)
+    # -------
+
+
+    if script_run_on_server == 0:
+        winsound.Beep(840,  100)
+        winsound.Beep(840,  100)
+
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # Aggregate through Intersection 
+    # ----------------------------------------------------------------------------------------------------------------
+
+    # create house union shapes --------------------------------------------------------------------------------------
+    # unionize buffered polygons
+    set_buffer = 1.25
+    roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: x.buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16))
+    roof_agg = gpd.GeoDataFrame(roof_agg_Srs, geometry=roof_agg_Srs)
+    roof_agg.set_crs(main_crs, allow_override=True, inplace=True)
+
+
+    # intersection of data sets --------------------------------------------------------------------------------------
+    roof_kat.rename(columns={'index_right': 'index_roofkat'}, inplace=True)
+    df_join1 = gpd.sjoin(roof_agg, roof_kat, how = "left", predicate = "intersects")
+    df_join1.rename(columns={'index_right': 'index_roofkat'}, inplace=True)
+    checkpoint_to_logfile(f'joined df1: roof_kat', log_file_name = log_file_name_concat, n_tabs = 4 )
+    df_join2 = gpd.sjoin(df_join1, pv, how = "left", predicate = "intersects")
+    df_join2.rename(columns={'index_right': 'index_pv'}, inplace=True)
+    checkpoint_to_logfile(f'joined df2: pv', log_file_name = log_file_name_concat, n_tabs = 3)
+    df_join3 = gpd.sjoin(df_join2, gm_shp, how = "left", predicate = "intersects")
+    df_join3.rename(columns={'index_right': 'index_gm'}, inplace=True)
+    df_join3.drop(columns = ['SB_UUID',], axis = 1, inplace = True)
+    checkpoint_to_logfile(f'joined df3: gm_shp', log_file_name = log_file_name_concat, n_tabs = 3)
+
+    # df_join4 = gpd.sjoin(df_join3, bldng_reg, how = "left", predicate = "intersects")
+    # df_join4.rename(columns={'index_right': 'index_bldng_reg'}, inplace=True)
+    # checkpoint_to_logfile(f'joined df4: bldng_reg', log_file_name = log_file_name_concat, n_tabs = 3)
+    # df_join5 = gpd.sjoin(df_join4, heatcool_dem, how = "left", predicate = "intersects")
+    # df_join5.rename(columns={'index_right': 'index_heatcool_dem'}, inplace=True)
+    # checkpoint_to_logfile(f'joined df5: heatcool_dem', log_file_name = log_file_name_concat, n_tabs = 3)
+
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # Export 
+    # ----------------------------------------------------------------------------------------------------------------
+
+    df_join3.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_solkat_pv_gm_gdf.geojson', driver='GeoJSON')  # GeoJSON format
+    checkpoint_to_logfile(f'exported df_join3 to geojson', log_file_name = log_file_name_concat, n_tabs = 3)
+    # df_join5.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_MAIN_gdf.geojson', driver='GeoJSON')  # GeoJSON format
+    if isinstance(subset_shape, gpd.GeoDataFrame):
+        subset_shape.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_subset_shape.shp')  
+
+    heatcool_dem.to_file(f'{data_path}/{name_aggdef}/heatcool_dem.geojson', driver='GeoJSON')  # GeoJSON format
+
+ 
+
+    if script_run_on_server == 0:
+        winsound.Beep(840,  100)
+        winsound.Beep(840,  100)
+        winsound.Beep(840,  100)
+
+
+
+# import_aggregate_data(
+#     name_aggdef = 'test_agg', 
+#     script_run_on_server = 0, 
+#     gm_number_aggdef = []
+# )
+
