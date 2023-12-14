@@ -81,14 +81,14 @@ def import_aggregate_data(
     #   print(type_solkat_aggdef)
 
 
-    # print('not funning function properly')
-    # name_aggdef = "test_agg"
-    # script_run_on_server = 0
-    # gm_number_aggdef = [3851,]
-    # select_solkat_aggdef = None
-    # select_gwr_aggdef = None
+print('not funning function properly')
+name_aggdef = "test_agg"
+script_run_on_server = 0
+gm_number_aggdef = [3851,]
+select_solkat_aggdef = None
+select_gwr_aggdef = None
 
-
+if True: 
     # ----------------------------------------------------------------------------------------------------------------
     # Setup + Import 
     # ----------------------------------------------------------------------------------------------------------------
@@ -127,7 +127,7 @@ def import_aggregate_data(
     checkpoint_to_logfile(f'finished loading administrative shp', log_file_name = log_file_name_concat, n_tabs = 2)
 
     # load solar kataster shapes
-    roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+    roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10)
     checkpoint_to_logfile(f'finished loading roof solar kataster shp', log_file_name = log_file_name_concat, n_tabs = 1)
     #faca_kat = roof_kat.copy()
     #checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
@@ -137,11 +137,11 @@ def import_aggregate_data(
     checkpoint_to_logfile(f'finished loading building register pt', log_file_name = log_file_name_concat, n_tabs = 2)
 
     # load heating / cooling demand raster 150x150m
-    heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+    heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 10)
     checkpoint_to_logfile(f'finished loading heat & cool demand pt', log_file_name = log_file_name_concat, n_tabs = 1)
 
     # load pv installation points
-    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 10)
     pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
     checkpoint_to_logfile(f'finished loading pv installation pt', log_file_name = log_file_name_concat, n_tabs = 2) 
 
@@ -171,26 +171,46 @@ def import_aggregate_data(
         checkpoint_to_logfile(f'CRS are NOT compatible', log_file_name = log_file_name_concat, n_tabs = 1)
         raise Exception('\nCRS are NOT compatible')
     
-    # remove all columns that are not needed -------------------------------------------------------------------------
-    drop_cols_roof_kat = ['WAERMEERTRAG', 'DUSCHGAENGE', 'DG_HEIZUNG', 'DG_WAERMEBEDARF', 'BEDARF_WARMWASSER',
-                'BEDARF_HEIZUNG', 'FLAECHE_KOLLEKTOREN', 'VOLUMEN_SPEICHER', ]
-    roof_kat.drop(columns=drop_cols_roof_kat, axis=1, inplace=True)
 
+    # transform to minimize memory & remove columns not needed and  --------------------------------------------------
+    def minimize_type_for_memory(df):
+        for col in df.columns:
+            if pd.api.types.is_datetime64_any_dtype(df[col]):
+                df[col] = df[col].astype(str)
+            elif pd.api.types.is_object_dtype(df[col]):
+                df[col] = df[col].astype(str)
+            elif pd.api.types.is_float_dtype(roof_kat[col]):
+                df[col] = df[col].astype('float32')
+        return df
+    roof_kat = minimize_type_for_memory(roof_kat)
+    drop_cols_roof_kat = ['WAERMEERTRAG', 'DUSCHGAENGE', 'DG_HEIZUNG', 'DG_WAERMEBEDARF', 'BEDARF_WARMWASSER',
+                'BEDARF_HEIZUNG', 'FLAECHE_KOLLEKTOREN', 'VOLUMEN_SPEICHER', 'STROMERTRAG_SOMMERHALBJAHR', 'STROMERTRAG_SOMMERHALBJAHR' ]
+    roof_kat.drop(columns=drop_cols_roof_kat, axis=1, inplace=True)
+    roof_kat.info()
+
+    bldng_reg = minimize_type_for_memory(bldng_reg)
     drop_cols_bldng_reg = ['buildingStatus', 'buildingCategory', 'municipalityNumber', 'municipalityName',
                  'canton']
-    bldng_reg.drop(columns=drop_cols_bldng_reg, axis=1, inplace=True)
+    bldng_reg.drop(columns=drop_cols_bldng_reg, axis=1, inplace=True)    
+    bldng_reg.info()
 
+    heatcool_dem = minimize_type_for_memory(heatcool_dem)
     drop_cols_heatcool_dem = ['NEEDSERVICE', 'NEEDTOTAL', 'NOGA', 'SERVICE', 'PERCENTGAS', 'PERCENTOIL', 
-                 'PERCENTPUMP', 'PERCENTREMOTEHEAT', 'STYLE', 'OBJECTID']
+                 'PERCENTPUMP', 'PERCENTREMOTEHEAT', 'STYLE']
     heatcool_dem.drop(columns=drop_cols_heatcool_dem, axis=1, inplace=True)
+    heatcool_dem.info()
     
+    pv = minimize_type_for_memory(pv)
     drop_cols_pv = ['MainCategory', 'PlantCategory', ]
     pv.drop(columns=drop_cols_pv, axis=1, inplace=True)
+    pv.info()
 
+    gm_shp = minimize_type_for_memory(gm_shp)
     drop_cols_gm_shp = ['UUID', 'DATUM_AEND', 'DATUM_ERST', 'ERSTELL_J', 'ERSTELL_M', 'REVISION_J', 
                  'REVISION_M', 'GRUND_AEND', 'HERKUNFT', 'HERKUNFT_J', 'HERKUNFT_M', 'OBJEKTART', 
-                 'REVISION_Q', 'ICC', 'GEM_TEIL', 'GEM_FLAECH', 'SHN']
+                 'REVISION_Q', 'ICC', 'GEM_TEIL', 'GEM_FLAECH', 'SHN', 'SEE_FLAECH']
     gm_shp.drop(columns=drop_cols_gm_shp, axis=1, inplace=True)
+    gm_shp.info()
     checkpoint_to_logfile(f'dropped unnecessary columns', log_file_name = log_file_name_concat, n_tabs = 3)
 
 

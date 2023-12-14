@@ -15,7 +15,7 @@ elif script_run_on_server == 1:
     layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 
 
-kt_list = list(gm_shp['KANTONSNUM'].dropna().unique())[0:2]
+kt_list = list(gm_shp['KANTONSNUM'].dropna().unique())
 
 for kt_i in kt_list:
     print('Kanton: ', str(int(kt_i)))
