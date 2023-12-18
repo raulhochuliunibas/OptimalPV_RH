@@ -15,16 +15,27 @@ elif script_run_on_server == 1:
     layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 
 
+# export aggregations by cantons
 kt_list = list(gm_shp['KANTONSNUM'].dropna().unique())
 
 for kt_i in kt_list:
-    print('Kanton: ', str(int(kt_i)))
+    print(f'\n ***** Kanton:{str(int(kt_i))} ***** \n')
     gm_number_aggdef = list(gm_shp.loc[gm_shp['KANTONSNUM'] == kt_i, 'BFS_NUMMER'].unique())
     import_aggregate_data(
-        name_aggdef = f'agg_kt_{str(int(kt_i))}' + str(kt_i), 
+        name_aggdef = f'agg_solkat_pv_gm_kt_{str(int(kt_i))}', 
         script_run_on_server = script_run_on_server , 
-        gm_number_aggdef = gm_number_aggdef
-    )
+        gm_number_aggdef = gm_number_aggdef, 
+        select_solkat_aggdef = [1,2],)
+
+# export aggreagtion for all gm
+import_aggregate_data(
+    name_aggdef = 'agg_all_gm', 
+    script_run_on_server = script_run_on_server , 
+    select_solkat_aggdef=[1,2],
+)
+
+
+
 
 
 

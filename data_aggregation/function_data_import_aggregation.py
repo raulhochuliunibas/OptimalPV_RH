@@ -70,7 +70,7 @@ Output:
 def import_aggregate_data(
     name_aggdef = "test_agg",
     script_run_on_server = 0,
-    gm_number_aggdef = [3851,],
+    gm_number_aggdef = None,
     select_gwr_aggdef = None,
     select_solkat_aggdef = None, ):
     
@@ -84,11 +84,11 @@ def import_aggregate_data(
 print('not funning function properly')
 name_aggdef = "test_agg"
 script_run_on_server = 0
-gm_number_aggdef = [3851,]
+gm_number_aggdef = None
 select_solkat_aggdef = None
 select_gwr_aggdef = None
-
 if True: 
+
     # ----------------------------------------------------------------------------------------------------------------
     # Setup + Import 
     # ----------------------------------------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ if True:
     log_file_name_concat = f'{data_path}/{name_aggdef}/{name_aggdef}_log.txt'
     with open(f'{data_path}/{name_aggdef}/{name_aggdef}_log.txt', 'w') as log_file:
             log_file.write(f' \n')
-    chapter_to_logfile('started running main_file.py', log_file_name = log_file_name_concat)
+    chapter_to_logfile('started running function_data_import_aggregation.py', log_file_name = log_file_name_concat)
 
 
     # import geo referenced data -------------------------------------------------------------------------------------
@@ -127,23 +127,23 @@ if True:
     checkpoint_to_logfile(f'finished loading administrative shp', log_file_name = log_file_name_concat, n_tabs = 2)
 
     # load solar kataster shapes
-    roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10)
+    roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
     checkpoint_to_logfile(f'finished loading roof solar kataster shp', log_file_name = log_file_name_concat, n_tabs = 1)
     #faca_kat = roof_kat.copy()
     #checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
 
     # load building register indicating residential or industrial use
-    bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson' , rows = 10)
-    checkpoint_to_logfile(f'finished loading building register pt', log_file_name = log_file_name_concat, n_tabs = 2)
+    bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+    checkpoint_to_logfile(f'finished loading building register', log_file_name = log_file_name_concat, n_tabs = 2)
 
     # load heating / cooling demand raster 150x150m
-    heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 10)
-    checkpoint_to_logfile(f'finished loading heat & cool demand pt', log_file_name = log_file_name_concat, n_tabs = 1)
+    heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+    checkpoint_to_logfile(f'finished loading heat & cool demand', log_file_name = log_file_name_concat, n_tabs = 1)
 
     # load pv installation points
-    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 10)
+    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
     pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
-    checkpoint_to_logfile(f'finished loading pv installation pt', log_file_name = log_file_name_concat, n_tabs = 2) 
+    checkpoint_to_logfile(f'finished loading pv installation', log_file_name = log_file_name_concat, n_tabs = 2) 
 
 
 
@@ -165,7 +165,7 @@ if True:
         
     all_crs_equal = kt_shp.crs == gm_shp.crs == roof_kat.crs == bldng_reg.crs == heatcool_dem.crs == pv.crs
     if all_crs_equal:
-        checkpoint_to_logfile(' - ', log_file_name = log_file_name_concat, n_tabs = 5)
+        checkpoint_to_logfile(' - ', log_file_name = log_file_name_concat, n_tabs = 6)
         checkpoint_to_logfile(f'CRS are compatible', log_file_name = log_file_name_concat, n_tabs = 4)
     elif not all_crs_equal:
         checkpoint_to_logfile(f'CRS are NOT compatible', log_file_name = log_file_name_concat, n_tabs = 1)
@@ -179,9 +179,10 @@ if True:
                 df[col] = df[col].astype(str)
             elif pd.api.types.is_object_dtype(df[col]):
                 df[col] = df[col].astype(str)
-            elif pd.api.types.is_float_dtype(roof_kat[col]):
+            elif pd.api.types.is_float_dtype(df[col]):
                 df[col] = df[col].astype('float32')
         return df
+    
     roof_kat = minimize_type_for_memory(roof_kat)
     drop_cols_roof_kat = ['WAERMEERTRAG', 'DUSCHGAENGE', 'DG_HEIZUNG', 'DG_WAERMEBEDARF', 'BEDARF_WARMWASSER',
                 'BEDARF_HEIZUNG', 'FLAECHE_KOLLEKTOREN', 'VOLUMEN_SPEICHER', 'STROMERTRAG_SOMMERHALBJAHR', 'STROMERTRAG_SOMMERHALBJAHR' ]
@@ -226,13 +227,6 @@ if True:
     if select_solkat_aggdef is not None:
         if isinstance(select_solkat_aggdef, list) and all(isinstance(elem, (int, float)) for elem in select_solkat_aggdef):
             bldng_reg = bldng_reg.loc[bldng_reg['buildingClass'].isin(select_solkat_aggdef)].copy()    
-
-
-    #################################################################################################################
-    ### BOOKMARK
-    #   SUBSET by Gemeinde using NOT GPD SPATIAL JOIN
-    #################################################################################################################
-
 
 
     # subset by selected gm shp --------------------------------------------------------------------------------------
@@ -351,6 +345,7 @@ if True:
         winsound.Beep(840,  100)
         winsound.Beep(840,  100)
 
+df_join3.info()
 
 
 # import_aggregate_data(
