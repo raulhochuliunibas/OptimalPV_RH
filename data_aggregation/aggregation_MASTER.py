@@ -1,9 +1,14 @@
 import os as os
 import geopandas as gpd
+import winsound
 
-from function_data_import_aggregation import import_aggregate_data
+from local_data_import_aggregation import import_aggregate_data
 
+# SETUP & SETTIGNS --------------------------------------------------------------------
 script_run_on_server = 0
+
+
+# SETUP --------------------------------------------------------------------
 
 if script_run_on_server == 0:
     gm_shp = gpd.read_file(
@@ -18,9 +23,12 @@ elif script_run_on_server == 1:
 # export aggregations by cantons
 kt_list = list(gm_shp['KANTONSNUM'].dropna().unique())
 
+
 for kt_i in kt_list:
-    print(f'\n ***** Kanton:{str(int(kt_i))} ***** \n')
     gm_number_aggdef = list(gm_shp.loc[gm_shp['KANTONSNUM'] == kt_i, 'BFS_NUMMER'].unique())
+    print(f'\n ***** Kanton:{str(int(kt_i))} ***** \n')
+    print(f'> municipality numbers:{gm_number_aggdef}')
+    
     import_aggregate_data(
         name_aggdef = f'agg_solkat_pv_gm_kt_{str(int(kt_i))}', 
         script_run_on_server = script_run_on_server , 

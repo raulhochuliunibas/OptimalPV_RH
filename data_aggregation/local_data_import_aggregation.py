@@ -81,13 +81,13 @@ def import_aggregate_data(
     #   print(type_solkat_aggdef)
 
 
-print('not funning function properly')
-name_aggdef = "test_agg"
-script_run_on_server = 0
-gm_number_aggdef = None
-select_solkat_aggdef = None
-select_gwr_aggdef = None
-if True: 
+    # print('not funning function properly')
+    # name_aggdef = "test_agg"
+    # script_run_on_server = 0
+    # gm_number_aggdef = None
+    # select_solkat_aggdef = None
+    # select_gwr_aggdef = None
+    # if True: 
 
     # ----------------------------------------------------------------------------------------------------------------
     # Setup + Import 
@@ -116,35 +116,65 @@ if True:
     log_file_name_concat = f'{data_path}/{name_aggdef}/{name_aggdef}_log.txt'
     with open(f'{data_path}/{name_aggdef}/{name_aggdef}_log.txt', 'w') as log_file:
             log_file.write(f' \n')
-    chapter_to_logfile('started running function_data_import_aggregation.py', log_file_name = log_file_name_concat)
+    chapter_to_logfile('started running local_data_import_aggregation.py', log_file_name = log_file_name_concat)
 
 
     # import geo referenced data -------------------------------------------------------------------------------------
 
-    # load administrative shapes
-    kt_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
-    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    checkpoint_to_logfile(f'finished loading administrative shp', log_file_name = log_file_name_concat, n_tabs = 2)
+    subset_TF = False
+    if not subset_TF:
+        # load administrative shapes
+        kt_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+        gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+        checkpoint_to_logfile(f'finished loading administrative shp', log_file_name = log_file_name_concat, n_tabs = 2)
 
-    # load solar kataster shapes
-    roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-    checkpoint_to_logfile(f'finished loading roof solar kataster shp', log_file_name = log_file_name_concat, n_tabs = 1)
-    #faca_kat = roof_kat.copy()
-    #checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
+        # load solar kataster shapes
+        roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+        checkpoint_to_logfile(f'finished loading roof solar kataster shp', log_file_name = log_file_name_concat, n_tabs = 1)
+        #faca_kat = roof_kat.copy()
+        #checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
 
-    # load building register indicating residential or industrial use
-    bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
-    checkpoint_to_logfile(f'finished loading building register', log_file_name = log_file_name_concat, n_tabs = 2)
+        # load building register indicating residential or industrial use
+        bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+        checkpoint_to_logfile(f'finished loading building register', log_file_name = log_file_name_concat, n_tabs = 2)
 
-    # load heating / cooling demand raster 150x150m
-    heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
-    checkpoint_to_logfile(f'finished loading heat & cool demand', log_file_name = log_file_name_concat, n_tabs = 1)
+        # load heating / cooling demand raster 150x150m
+        heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+        checkpoint_to_logfile(f'finished loading heat & cool demand', log_file_name = log_file_name_concat, n_tabs = 1)
 
-    # load pv installation points
-    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
-    pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
-    checkpoint_to_logfile(f'finished loading pv installation', log_file_name = log_file_name_concat, n_tabs = 2) 
+        # load pv installation points
+        elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+        pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
+        checkpoint_to_logfile(f'finished loading pv installation', log_file_name = log_file_name_concat, n_tabs = 2) 
 
+    elif subset_TF:
+        # load administrative shapes
+        kt_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_KANTONSGEBIET')
+        gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+        checkpoint_to_logfile(f'finished loading administrative shp', log_file_name = log_file_name_concat, n_tabs = 2)
+
+        # load solar kataster shapes
+        nrows = 100000
+        roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = nrows)
+        roof_kat = roof_kat.apply(lambda col: col.astype(str) if col.dtype == 'datetime64[ns]' else col)
+        roof_kat.to_file(f'{data_path}/temp_cache/solkat_{nrows}.geojson', driver='GeoJSON')  # GeoJSON format
+
+        checkpoint_to_logfile(f'finished loading roof solar kataster shp', log_file_name = log_file_name_concat, n_tabs = 1)
+        #faca_kat = roof_kat.copy()
+        #checkpoint_to_logfile(f'finished loading facade solar kataster shp', n_tabs = 1)
+
+        # load building register indicating residential or industrial use
+        bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 1000)
+        checkpoint_to_logfile(f'finished loading building register', log_file_name = log_file_name_concat, n_tabs = 2)
+
+        # load heating / cooling demand raster 150x150m
+        heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 1000)
+        checkpoint_to_logfile(f'finished loading heat & cool demand', log_file_name = log_file_name_concat, n_tabs = 1)
+
+        # load pv installation points
+        elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 1000)
+        pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
+        checkpoint_to_logfile(f'finished loading pv installation', log_file_name = log_file_name_concat, n_tabs = 2)
 
 
     # ----------------------------------------------------------------------------------------------------------------
@@ -183,6 +213,7 @@ if True:
                 df[col] = df[col].astype('float32')
         return df
     
+
     roof_kat = minimize_type_for_memory(roof_kat)
     drop_cols_roof_kat = ['WAERMEERTRAG', 'DUSCHGAENGE', 'DG_HEIZUNG', 'DG_WAERMEBEDARF', 'BEDARF_WARMWASSER',
                 'BEDARF_HEIZUNG', 'FLAECHE_KOLLEKTOREN', 'VOLUMEN_SPEICHER', 'STROMERTRAG_SOMMERHALBJAHR', 'STROMERTRAG_SOMMERHALBJAHR' ]
@@ -204,7 +235,6 @@ if True:
     pv = minimize_type_for_memory(pv)
     drop_cols_pv = ['MainCategory', 'PlantCategory', ]
     pv.drop(columns=drop_cols_pv, axis=1, inplace=True)
-    pv.info()
 
     gm_shp = minimize_type_for_memory(gm_shp)
     drop_cols_gm_shp = ['UUID', 'DATUM_AEND', 'DATUM_ERST', 'ERSTELL_J', 'ERSTELL_M', 'REVISION_J', 
@@ -217,21 +247,42 @@ if True:
 
     # subset roof_kat and bldng_reg for selected classes -------------------------------------------------------------
 
-    # check if type_solkat_aggdef is numeric list
+    # check if select_solkat_aggdef is a numeric list
     if select_solkat_aggdef is not None:
-        if isinstance(select_solkat_aggdef, list) and all(isinstance(elem, (int, float)) for elem in select_solkat_aggdef):
+        is_solkat_list_TF = isinstance(select_solkat_aggdef, list)
+        is_solkat_intORfloat_TF = all(isinstance(elem, (int, float)) or np.issubdtype(type(elem), np.number) for elem in select_solkat_aggdef)
+        if is_solkat_list_TF and is_solkat_intORfloat_TF:
             roof_kat = roof_kat.loc[roof_kat['SB_OBJEKTART'].isin(select_solkat_aggdef)].copy()
             roof_kat['SB_OBJEKTART'].value_counts()
             # faca_kat = faca_kat.loc[faca_kat['SB_OBJEKTART'].isin(cat_sb_object)].copy()
+    
+    # check if select_gwr_aggdef is a numeric list
 
-    if select_solkat_aggdef is not None:
-        if isinstance(select_solkat_aggdef, list) and all(isinstance(elem, (int, float)) for elem in select_solkat_aggdef):
-            bldng_reg = bldng_reg.loc[bldng_reg['buildingClass'].isin(select_solkat_aggdef)].copy()    
+    if select_gwr_aggdef is not None:
+        is_gwr_list_TF = isinstance(select_gwr_aggdef, list)
+        is_gwr_intORfloat_TF = all(isinstance(elem, (int, float)) or np.issubdtype(type(elem), np.number) for elem in select_gwr_aggdef)
+        if is_gwr_list_TF and is_gwr_intORfloat_TF:
+            bldng_reg = bldng_reg.loc[bldng_reg['buildingClass'].isin(select_gwr_aggdef)].copy()    
 
 
     # subset by selected gm shp --------------------------------------------------------------------------------------
+    
+    type(roof_kat)
+    type(bldng_reg)
+    type(heatcool_dem)
+    type(pv)
+
+    roof_kat.columns
+    bldng_reg.columns
+    heatcool_dem.columns    
+    pv.columns
+    gm_shp.columns
+    
+    # check if gm_number_aggdef is a numeric list
     if gm_number_aggdef is not None:
-        if isinstance(gm_number_aggdef, list) and all(isinstance(elem, (int, float)) for elem in gm_number_aggdef):
+        is_gm_list_TF = isinstance(gm_number_aggdef, list)
+        is_gm_intORfloat_TF = all(isinstance(elem, (int, float)) or np.issubdtype(type(elem), np.number) for elem in gm_number_aggdef)
+        if  is_gm_list_TF and is_gm_intORfloat_TF :
             subset_shape = gm_shp.loc[gm_shp['BFS_NUMMER'].isin(gm_number_aggdef),].copy()
             
             roof_kat = gpd.sjoin(roof_kat, subset_shape, how="inner", predicate="within")
@@ -243,12 +294,21 @@ if True:
             pv = gpd.sjoin(pv, subset_shape, how="inner", predicate="within")
             checkpoint_to_logfile(f'subset pv for gm selection', log_file_name = log_file_name_concat, n_tabs = 3)
 
-            drop_gm_cols = ['index_right', ] + list(gm_shp.columns)
-            print(drop_gm_cols)
-            roof_kat = roof_kat.drop(columns = drop_gm_cols, axis = 1, inplace = True)
-            bldng_reg = bldng_reg.drop(columns = drop_gm_cols, axis = 1, inplace = True)
-            heatcool_dem = heatcool_dem.drop(columns = drop_gm_cols, axis = 1, inplace = True)
-            pv = pv.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+            roof_kat.drop(columns="index_right", inplace=True)
+            bldng_reg.drop(columns="index_right", inplace=True)
+            heatcool_dem.drop(columns="index_right", inplace=True)
+            pv.drop(columns="index_right", inplace=True)
+            print('\n')
+
+
+
+            # drop_gm_cols = ['index_right', ] + list(gm_shp.columns)
+            # print(drop_gm_cols)
+            # roof_kat = roof_kat.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+            # bldng_reg = bldng_reg.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+            # heatcool_dem = heatcool_dem.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+            # pv = pv.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+
 
     # -------
     # roof_kat_old = roof_kat.copy()
@@ -286,12 +346,6 @@ if True:
     #   checkpoint_to_logfile(f'* exported pv to geojson', log_file_name = log_file_name_concat, n_tabs = 3)
     # -------
 
-
-    if script_run_on_server == 0:
-        winsound.Beep(840,  100)
-        winsound.Beep(840,  100)
-
-
     # ----------------------------------------------------------------------------------------------------------------
     # Aggregate through Intersection 
     # ----------------------------------------------------------------------------------------------------------------
@@ -305,7 +359,7 @@ if True:
 
 
     # intersection of data sets --------------------------------------------------------------------------------------
-    roof_kat.rename(columns={'index_right': 'index_roofkat'}, inplace=True)
+    # roof_kat.rename(columns={'index_right': 'index_roofkat'}, inplace=True)
     df_join1 = gpd.sjoin(roof_agg, roof_kat, how = "left", predicate = "intersects")
     df_join1.rename(columns={'index_right': 'index_roofkat'}, inplace=True)
     checkpoint_to_logfile(f'joined df1: roof_kat', log_file_name = log_file_name_concat, n_tabs = 4 )
@@ -329,23 +383,21 @@ if True:
     # Export 
     # ----------------------------------------------------------------------------------------------------------------
 
-    # df_join3.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_solkat_pv_gm_gdf.geojson', driver='GeoJSON')  # GeoJSON format
+    df_join3.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_solkat_pv_gm_gdf.geojson', driver='GeoJSON')  # GeoJSON format
     df_join3.to_parquet(f'{data_path}/{name_aggdef}/{name_aggdef}_solkat_pv_gm.parquet')  
     checkpoint_to_logfile(f'exported df_join3 to geojson', log_file_name = log_file_name_concat, n_tabs = 3)
     # df_join5.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_MAIN_gdf.geojson', driver='GeoJSON')  # GeoJSON format
     if isinstance(subset_shape, gpd.GeoDataFrame):
-        subset_shape.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_subset_shape.shp')  
+        subset_shape.to_file(f'{data_path}/{name_aggdef}/{name_aggdef}_subset_shape.geojson', driver='GeoJSON') 
 
-    heatcool_dem.to_file(f'{data_path}/{name_aggdef}/heatcool_dem.geojson', driver='GeoJSON')  # GeoJSON format
+    # heatcool_dem.to_file(f'{data_path}/{name_aggdef}/heatcool_dem.geojson', driver='GeoJSON')  # GeoJSON format
 
  
 
     if script_run_on_server == 0:
         winsound.Beep(840,  100)
         winsound.Beep(840,  100)
-        winsound.Beep(840,  100)
 
-df_join3.info()
 
 
 # import_aggregate_data(
