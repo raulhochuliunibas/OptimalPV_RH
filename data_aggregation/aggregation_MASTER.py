@@ -51,7 +51,8 @@ if False:
             script_run_on_server = script_run_on_server , 
             gm_number_aggdef = gm_number_aggdef, 
             data_source= 'parquet')
-
+        
+    # copy all subfolders to one folder
     if not os.path.exists(f'{data_path}/agg_sol_kat_pv_BY_KT'):
         os.makedirs(f'{data_path}/agg_sol_kat_pv_BY_KT')
     source_dir = glob.glob(f'{data_path}/*agg_solkat_pv_gm_KT*')
@@ -60,13 +61,19 @@ if False:
     for f in source_dir:
         shutil.move(f, target_dir)
 
+    # create a folder containing all parquet and log files
+    if  not os.path.exists(f'{data_path}/agg_sol_kat_pv_BY_KT/agg_solkat_pv_gm_ALL'):
+        os.makedirs(f'{data_path}/agg_sol_kat_pv_BY_KT/agg_solkat_pv_gm_ALL')
     
-        
+    # add parquet and log files
+    files_pq = glob.glob(f'{data_path}/agg_sol_kat_pv_BY_KT/*/*agg_solkat_pv_gm_*').sort()
+    files_txt = glob.glob(f'{data_path}/agg_sol_kat_pv_BY_KT/*/*agg_solkat_pv_gm*.txt').sort()
+    files = files_pq + files_txt
+    for f in files:
+        shutil.copy(f, f'{data_path}/agg_sol_kat_pv_BY_KT/agg_solkat_pv_gm_ALL')    
 
-
-
-
-
-
-
+    # remove unnecessary files
+    files_del = glob.glob(f'{data_path}/agg_sol_kat_pv_BY_KT/agg_solkat_pv_gm_ALL/agg_solkat_pv_gm_*_selected_gm_shp.parquet')
+    for f in files_del:
+        os.remove(f)
 
