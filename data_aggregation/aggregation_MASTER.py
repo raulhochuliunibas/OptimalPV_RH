@@ -66,8 +66,8 @@ if False:
         os.makedirs(f'{data_path}/agg_sol_kat_pv_BY_KT/agg_solkat_pv_gm_ALL')
     
     # add parquet and log files
-    files_pq = glob.glob(f'{data_path}/agg_sol_kat_pv_BY_KT/*/*agg_solkat_pv_gm_*').sort()
-    files_txt = glob.glob(f'{data_path}/agg_sol_kat_pv_BY_KT/*/*agg_solkat_pv_gm*.txt').sort()
+    files_pq = glob.glob(f'{data_path}/agg_sol_kat_pv_BY_KT/*/*agg_solkat_pv_gm_KT*.parquet')
+    files_txt = glob.glob(f'{data_path}/agg_sol_kat_pv_BY_KT/*/*agg_solkat_pv_gm*.txt')
     files = files_pq + files_txt
     for f in files:
         shutil.copy(f, f'{data_path}/agg_sol_kat_pv_BY_KT/agg_solkat_pv_gm_ALL')    
