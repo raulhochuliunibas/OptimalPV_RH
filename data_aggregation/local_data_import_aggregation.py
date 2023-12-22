@@ -102,6 +102,7 @@ def import_aggregate_data(
     # set working directory
     if script_run_on_server == 0:
         winsound.Beep(840,  100)
+        winsound.Beep(840,  100)
         wd_path = "C:\Models\OptimalPV_RH\data_aggregation"   # path for private computer
         data_path = "C:\Models\OptimalPV_RH_data"
     elif script_run_on_server == 1:
@@ -215,13 +216,22 @@ def import_aggregate_data(
         drop_cols_pv = ['MainCategory', 'PlantCategory', ]
         drop_cols_gm_shp = ['UUID', 'DATUM_AEND', 'DATUM_ERST', 'ERSTELL_J', 'ERSTELL_M', 'REVISION_J', 'REVISION_M',
                             'GRUND_AEND', 'HERKUNFT', 'HERKUNFT_J', 'HERKUNFT_M', 'OBJEKTART', 'BEZIRKSNUM', 'SEE_FLAECH', 'REVISION_Q', 
-                            'NAME', 'KANTONSNUM', 'ICC', 'EINWOHNERZ', 'HIST_NR', 'GEM_TEIL', 'GEM_FLAECH', 'SHN']
+                            'NAME',  'ICC', 'HIST_NR', 'GEM_TEIL', 'GEM_FLAECH', 'SHN', 'KANTONSNUM', 'EINWOHNERZ']
         
         roof_kat.drop(columns = drop_cols_roof_kat + ['index_right'] + drop_cols_gm_shp, axis = 1, inplace = True)
         bldng_reg.drop(columns = drop_cols_bldng_reg + ['index_right'] + drop_cols_gm_shp, axis = 1, inplace = True)
         heatcool_dem.drop(columns = drop_cols_heatcool_dem + ['index_right'] + drop_cols_gm_shp, axis = 1, inplace = True)
         pv.drop(columns = drop_cols_pv + ['index_right'] + drop_cols_gm_shp, axis = 1, inplace = True)
+        gm_shp.drop(columns = drop_cols_gm_shp, axis = 1, inplace = True)   
         checkpoint_to_logfile(f'removed all unnecessary columns', log_file_name = log_file_name_concat, n_tabs = 3)
+
+        # remove BFS_NUMMER column from all because it causes problems with export
+        drop_BFS_NUMMER = ['BFS_NUMMER']
+        roof_kat.drop(columns = drop_BFS_NUMMER, axis = 1, inplace = True)
+        bldng_reg.drop(columns = drop_BFS_NUMMER, axis = 1, inplace = True)
+        heatcool_dem.drop(columns = drop_BFS_NUMMER, axis = 1, inplace = True)
+        pv.drop(columns = drop_BFS_NUMMER, axis = 1, inplace = True)
+        checkpoint_to_logfile(f'remove BFS columns from all but gm_shp', log_file_name = log_file_name_concat, n_tabs = 3)
 
         
         # subset roof_kat and bldng_reg for selected classes -------------------------------------------------------------
@@ -266,30 +276,32 @@ def import_aggregate_data(
         checkpoint_to_logfile(f'joined df2: pv', log_file_name = log_file_name_concat, n_tabs = 3)
         df_join3 = gpd.sjoin(df_join2, gm_shp, how = "left", predicate = "intersects")
         df_join3.rename(columns={'index_right': 'index_gm'}, inplace=True)
-        df_join3.drop(columns = ['SB_UUID',], axis = 1, inplace = True)
+        # df_join3.drop(columns = ['SB_UUID',], axis = 1, inplace = True)
         checkpoint_to_logfile(f'joined df3: gm_shp', log_file_name = log_file_name_concat, n_tabs = 3)
 
-        # df_join4 = gpd.sjoin(df_join3, bldng_reg, how = "left", predicate = "intersects")
-        # df_join4.rename(columns={'index_right': 'index_bldng_reg'}, inplace=True)
-        # checkpoint_to_logfile(f'joined df4: bldng_reg', log_file_name = log_file_name_concat, n_tabs = 3)
-        # df_join5 = gpd.sjoin(df_join4, heatcool_dem, how = "left", predicate = "intersects")
-        # df_join5.rename(columns={'index_right': 'index_heatcool_dem'}, inplace=True)
-        # checkpoint_to_logfile(f'joined df5: heatcool_dem', log_file_name = log_file_name_concat, n_tabs = 3)
-
+        df_join4 = gpd.sjoin(df_join3, bldng_reg, how = "left", predicate = "intersects")
+        df_join4.rename(columns={'index_right': 'index_bldng_reg'}, inplace=True)
+        checkpoint_to_logfile(f'joined df4: bldng_reg', log_file_name = log_file_name_concat, n_tabs = 3)
+        
+        df_join4['centroids'] = df_join4.geometry.centroid
+        df_join5 = gpd.sjoin(gpd.GeoDataFrame(df_join4, geometry='centroids'), heatcool_dem, how="left", predicate="intersects")
+        df_join5.rename(columns={'index_right': 'index_heatcool_dem'}, inplace=True)
+        df_join5.geometry = df_join4.geometry
+        checkpoint_to_logfile(f'joined df5: heatcool_dem', log_file_name = log_file_name_concat, n_tabs = 3)
+        
 
         # ----------------------------------------------------------------------------------------------------------------
         # Export 
         # ----------------------------------------------------------------------------------------------------------------
-
-        df_join3.to_parquet(f'{data_path}/{name_aggdef}/{name_aggdef}.parquet')  
+        
+        df_join3.to_parquet(f'{data_path}/{name_aggdef}/df3_{name_aggdef}.parquet')
+        # df_join5.to_parquet(f'{data_path}/{name_aggdef}/df5_{name_aggdef}.parquet')  
         gm_shp.to_parquet(f'{data_path}/{name_aggdef}/{name_aggdef}_selected_gm_shp.parquet')
         checkpoint_to_logfile(f'exported df_join3 to parquet', log_file_name = log_file_name_concat, n_tabs = 3)    
 
 
         chapter_to_logfile(f'finished local_data_import_aggregation.py - create: {name_aggdef}', log_file_name = log_file_name_concat)
-        if script_run_on_server == 0:
-            winsound.Beep(840,  100)
-            winsound.Beep(840,  100)
+
 
 
 
