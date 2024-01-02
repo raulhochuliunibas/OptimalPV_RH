@@ -295,7 +295,7 @@ def import_aggregate_data(
         # ----------------------------------------------------------------------------------------------------------------
         
         df_join3.to_parquet(f'{data_path}/{name_aggdef}/df3_{name_aggdef}.parquet')
-        # df_join5.to_parquet(f'{data_path}/{name_aggdef}/df5_{name_aggdef}.parquet')  
+        df_join5.to_parquet(f'{data_path}/{name_aggdef}/df5_{name_aggdef}.parquet')  
         gm_shp.to_parquet(f'{data_path}/{name_aggdef}/{name_aggdef}_selected_gm_shp.parquet')
         checkpoint_to_logfile(f'exported df_join3 to parquet', log_file_name = log_file_name_concat, n_tabs = 3)    
 

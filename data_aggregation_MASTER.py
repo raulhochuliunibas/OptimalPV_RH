@@ -37,19 +37,10 @@ if not pq_dir_exists or pq_files_rerun:
     spatial_toparquet(script_run_on_server_def = script_run_on_server)
     print('recreated parquet files for faster import and transformation')
 else:
-    print('no recreation of parquet files, necessary')
+    print('parquet files exist already, no recreation necessary')
 
 
 # AGGREGATIONS -----------------------------------------------------------------
-
-# export for all of CH
-if False:
-    import_aggregate_data(
-        name_aggdef = 'agg_solkat_pv_gm_ALL_CH', 
-        script_run_on_server = script_run_on_server , 
-        data_source= 'parquet'
-    )
-
 
 # aggregation solkat, pv, munic, gwr, heatcool by cantons 
 if True:

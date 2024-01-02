@@ -16,8 +16,10 @@ os.chdir(wd_path)
 os.listdir(data_path)
 
 # create a export txt file for summary outputs
+if not os.path.exists(f'{data_path}/sanitycheck_joined_roofkat_pv_gm'):
+    os.makedirs(f'{data_path}/sanitycheck_joined_roofkat_pv_gm')
 print(f'\n\n ***** START SANITY CHECK ***** \t time: {datetime.now()}')
-export_txt_name = f'{data_path}/sanitycheck_joined_roof_kat_pv_gm/sanity_check_output.txt'
+export_txt_name = f'{data_path}/sanitycheck_joined_roofkat_pv_gm/sanity_check_output.txt'
 with open(export_txt_name, 'w') as export_txt:
     export_txt.write(f'\n')
     export_txt.write(f'\n *************************** \n     SANITY CHECK OUTPUT \n *************************** \n')
@@ -55,12 +57,18 @@ with open(export_txt_name, 'a') as export_txt:
     export_txt.write(f'\n\n* imported all shapes from parquet: time: {datetime.now()}')
 
 # import aggregates 
-agg_pq_files = glob.glob(f'{data_path}/agg_sol_kat_pv_BY_KT/agg_solkat_pv_gm_ALL/agg_solkat_pv_gm_*.parquet')
+agg_pq_files = glob.glob(f'{data_path}/agg_solkat_pv_gm_gwr_heat_BY_KT/agg_ALL/agg_solkat_pv_gm_gwr_heat_KT*.parquet')
+agg_pq_files = [file for file in agg_pq_files if "selected_gm_shp" not in file]
 df_agg_pq = pd.DataFrame()
 f = agg_pq_files[0]
 for f in agg_pq_files:
     print(f)
     df_read = pd.read_parquet(f)
+    drop_cols = ['DATUM_AEND', 'DATUM_ERST', 'ERSTELL_J', 'ERSTELL_M', 'REVISION_J',
+       'REVISION_M', 'GRUND_AEND', 'HERKUNFT', 'HERKUNFT_J', 'HERKUNFT_M',
+       'OBJEKTART', 'BEZIRKSNUM', 'SEE_FLAECH', 'REVISION_Q', 'ICC', 'HIST_NR', 'GEM_TEIL',
+       'GEM_FLAECH', 'SHN']
+    df_read.drop(columns = drop_cols, inplace = True)
     df_agg_pq = df_agg_pq._append(pd.read_parquet(f))
 
 with open(export_txt_name, 'a') as export_txt:
