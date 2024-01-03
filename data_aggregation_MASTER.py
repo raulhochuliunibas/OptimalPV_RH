@@ -65,6 +65,7 @@ if True:
     name_dir_export ='agg_solkat_pv_gm_gwr_heat_buffNO_BY_KT'
     if not os.path.exists(f'{data_path}/{name_dir_export}'):
         os.makedirs(f'{data_path}/{name_dir_export}')
+        os.makedirs(f'{data_path}/{name_dir_export}_to_delete')
     
     # add parquet and log files + move unncecessary folders
     files_copy = glob.glob(f'{data_path}/{name_run}*/*{name_run}*')
@@ -73,7 +74,8 @@ if True:
 
     files_del = glob.glob(f'{data_path}/{name_run}*')
     for f in files_del:
-        # os.remove(f)
+        shutil.move(f, f'{data_path}/{name_dir_export}_to_delete')
+
 
     # buffer 10 ----------------------------------------------------------------
     
@@ -102,7 +104,8 @@ if True:
 
     files_del = glob.glob(f'{data_path}/{name_run}*')
     for f in files_del:
-        # os.remove(f)
+        shutil.move(f, f'{data_path}/{name_dir_export}_to_delete')
+
         
     
 
