@@ -41,53 +41,69 @@ else:
 
 
 # AGGREGATIONS -----------------------------------------------------------------
-
 # aggregation solkat, pv, munic, gwr, heatcool by cantons 
+
 if True:
     kt_list = list(gm_shp['KANTONSNUM'].dropna().unique())  
 
+    
+    # buffer False -----------------------------------------------------------------
+
     for n, kt_i in enumerate(kt_list):
+        name_run = 'agg_solkat_pv_gm_gwr_heat_buffNO_KT'
         gm_number_aggdef = list(gm_shp.loc[gm_shp['KANTONSNUM'] == kt_i, 'BFS_NUMMER'].unique())
         import_aggregate_data(
-            name_aggdef = f'agg_solkat_pv_gm_gwr_heat_KT{str(int(kt_i))}', 
+            name_aggdef = f'{name_run}{str(int(kt_i))}', 
             script_run_on_server = script_run_on_server , 
             gm_number_aggdef = gm_number_aggdef, 
-            data_source= 'parquet')
+            data_source= 'parquet', 
+            set_buffer = False)
         
         print(f'canton {kt_i} aggregated, {n+1} of {len(kt_list)} completed')
         
     # copy all subfolders to one folder
-    name_dir_export ='agg_solkat_pv_gm_gwr_heat_BY_KT'
+    name_dir_export ='agg_solkat_pv_gm_gwr_heat_buffNO_BY_KT'
     if not os.path.exists(f'{data_path}/{name_dir_export}'):
         os.makedirs(f'{data_path}/{name_dir_export}')
-    # source_dir = glob.glob(f'{data_path}/agg_solkat_pv_gm_gwr_heat_KT*')
-    # target_dir = f'{data_path}/agg_solkat_pv_gm_gwr_heat_BY_KT'
-    # # dirs = glob.glob(os.path.join(source_dir, '*agg_solkat_pv_gm_*'))
-    # for f in source_dir:
-    #     shutil.move(f, target_dir)
-
-    # # create a folder containing all parquet and log files
-    # if  not os.path.exists(f'{data_path}/agg_solkat_pv_gm_gwr_heat_BY_KT/agg_ALL'):
-    #     os.makedirs(f'{data_path}/agg_solkat_pv_gm_gwr_heat_BY_KT/agg_ALL')
-    # elif os.path.exists(f'{data_path}/agg_solkat_pv_gm_gwr_heat_BY_KT/agg_ALL'):
-    #     os.remove(f'{data_path}/agg_solkat_pv_gm_gwr_heat_BY_KT/agg_ALL')
     
-    # add parquet and log files
-    files_copy = glob.glob(f'{data_path}/agg_solkat_pv_gm_gwr_heat_KT*/*agg_solkat_pv_gm_gwr_heat_KT*')
-    # files_txt = glob.glob(f'{data_path}/agg_solkat_pv_gm_gwr_heat_BY_KT/*/*agg_solkat_pv_gm_gwr_heat_KT*.txt')
-    # files = files_pq + files_txt
+    # add parquet and log files + move unncecessary folders
+    files_copy = glob.glob(f'{data_path}/{name_run}*/*{name_run}*')
     for f in files_copy:
         shutil.move(f, f'{data_path}/{name_dir_export}')    
 
-    # # remove unnecessary files
-    # files_del = glob.glob(f'{data_path}/agg_solkat_pv_gm_gwr_heat_BY_KT/agg_ALL/*_selected_gm_shp.parquet')
-    # for f in files_del:
-    #     os.remove(f)
-    files_del = glob.glob(f'{data_path}/agg_solkat_pv_gm_gwr_heat_KT*')
+    files_del = glob.glob(f'{data_path}/{name_run}*')
     for f in files_del:
-        os.remove(f)
+        # os.remove(f)
 
-    if script_run_on_server == 0:
-        winsound.Beep(2500, 1000)
-        winsound.Beep(2500, 1000)
+    # buffer 10 ----------------------------------------------------------------
+    
+    for n, kt_i in enumerate(kt_list):
+        name_run = 'agg_solkat_pv_gm_gwr_heat_buff10KT'
+        gm_number_aggdef = list(gm_shp.loc[gm_shp['KANTONSNUM'] == kt_i, 'BFS_NUMMER'].unique())
+        import_aggregate_data(
+            name_aggdef = f'{name_run}{str(int(kt_i))}', 
+            script_run_on_server = script_run_on_server , 
+            gm_number_aggdef = gm_number_aggdef, 
+            data_source= 'parquet', 
+            set_buffer = 10)
+        
+        print(f'canton {kt_i} aggregated, {n+1} of {len(kt_list)} completed')
 
+    # copy all subfolders to one folder
+    name_dir_export ='agg_solkat_pv_gm_gwr_heat_buff10_BY_KT'
+    if not os.path.exists(f'{data_path}/{name_dir_export}'):
+        os.makedirs(f'{data_path}/{name_dir_export}')
+        os.makedirs(f'{data_path}/{name_dir_export}_to_delete')
+
+    # add parquet and log files + move unncecessary folders
+    files_copy = glob.glob(f'{data_path}/{name_run}*/*{name_run}*')
+    for f in files_copy:
+        shutil.move(f, f'{data_path}/{name_dir_export}')
+
+    files_del = glob.glob(f'{data_path}/{name_run}*')
+    for f in files_del:
+        # os.remove(f)
+        
+    
+
+    

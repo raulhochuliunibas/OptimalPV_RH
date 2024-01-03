@@ -16,6 +16,7 @@ import winsound
 from datetime import datetime
 from shapely.ops import unary_union
 from shapely import wkb
+from shapely.geometry import MultiPolygon
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -79,7 +80,9 @@ def import_aggregate_data(
     data_source = 'input', 
     gm_number_aggdef = None,
     select_gwr_aggdef = None,
-    select_solkat_aggdef = None, ):
+    select_solkat_aggdef = None, 
+    set_buffer = 1.25,
+    ):
 
     # print('not funning function properly')
     # name_aggdef = "test_agg"
@@ -226,7 +229,7 @@ def import_aggregate_data(
         checkpoint_to_logfile(f'removed all unnecessary columns', log_file_name = log_file_name_concat, n_tabs = 3)
 
         # remove BFS_NUMMER column from all because it causes problems with export
-        drop_BFS_NUMMER = ['BFS_NUMMER']
+        drop_BFS_NUMMER = ['BFS_NUMMER',]
         roof_kat.drop(columns = drop_BFS_NUMMER, axis = 1, inplace = True)
         bldng_reg.drop(columns = drop_BFS_NUMMER, axis = 1, inplace = True)
         heatcool_dem.drop(columns = drop_BFS_NUMMER, axis = 1, inplace = True)
@@ -257,13 +260,35 @@ def import_aggregate_data(
         # ----------------------------------------------------------------------------------------------------------------
 
         # create house union shapes --------------------------------------------------------------------------------------
-        # unionize buffered polygons
-        checkpoint_to_logfile(f'start unionize buffered polygons', log_file_name = log_file_name_concat, n_tabs = 3)
-        set_buffer = 1.25
-        roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: x.buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16))
-        roof_agg = gpd.GeoDataFrame(roof_agg_Srs, geometry=roof_agg_Srs)
-        roof_agg.set_crs(main_crs, allow_override=True, inplace=True)
-        checkpoint_to_logfile(f'finished unionize buffered polygons', log_file_name = log_file_name_concat, n_tabs = 3)
+        # check if set_buffer is an integer
+        if set_buffer > 0:
+            # unionize buffered polygons
+            checkpoint_to_logfile(f'start unionize buffered polygons', log_file_name = log_file_name_concat, n_tabs = 3)
+            # set_buffer = 1.25
+            roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: x.buffer(set_buffer, resolution = 16).unary_union.buffer(-set_buffer, resolution = 16))
+            roof_agg = gpd.GeoDataFrame(roof_agg_Srs, geometry=roof_agg_Srs)
+            roof_agg.set_crs(main_crs, allow_override=True, inplace=True)
+            checkpoint_to_logfile(f'finished unionize buffered polygons', log_file_name = log_file_name_concat, n_tabs = 3)
+
+        elif set_buffer == False:
+            
+            def flatten_multipolygons(geoms):
+                polygons = []
+                for geom in geoms:
+                    if isinstance(geom, MultiPolygon):
+                        polygons.extend(list(geom))
+                    else:
+                        polygons.append(geom)
+                return polygons
+             
+            # roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: MultiPolygon(flatten_multipolygons([poly.buffer(set_buffer, resolution = 16) for poly in x])))        
+            # roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: MultiPolygon([poly.buffer(set_buffer, resolution = 16) for poly in x]))
+            # roof_agg = gpd.GeoDataFrame(roof_agg_Srs, geometry=roof_agg_Srs)
+            # roof_agg.set_crs(main_crs, allow_override=True, inplace=True)
+
+            roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(unary_union)
+            roof_agg = gpd.GeoDataFrame(roof_agg_Srs, geometry='geometry')
+            roof_agg.set_crs(roof_kat.crs, allow_override=True, inplace=True)
 
 
         # intersection of data sets --------------------------------------------------------------------------------------
@@ -294,6 +319,7 @@ def import_aggregate_data(
         # Export 
         # ----------------------------------------------------------------------------------------------------------------
         
+        roof_agg.to_parquet(f'{data_path}/{name_aggdef}/roof_agg_{name_aggdef}.parquet')
         df_join3.to_parquet(f'{data_path}/{name_aggdef}/df3_{name_aggdef}.parquet')
         df_join5.to_parquet(f'{data_path}/{name_aggdef}/df5_{name_aggdef}.parquet')  
         gm_shp.to_parquet(f'{data_path}/{name_aggdef}/{name_aggdef}_selected_gm_shp.parquet')
