@@ -47,7 +47,7 @@ kt_list = list(gm_shp['KANTONSNUM'].dropna().unique())
 
 
 # buffer False -----------------------------------------------------------------
-if False:
+if True:
 
     for n, kt_i in enumerate(kt_list):
         name_run = 'agg_solkat_pv_gm_gwr_heat_buffNO_KT'

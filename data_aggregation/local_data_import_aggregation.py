@@ -12,7 +12,7 @@ import winsound
 
 
 
-# from functions import chapter_to_logfile, checkpoint_to_logfile
+# from ..functions import chapter_to_logfile, checkpoint_to_logfile
 from datetime import datetime
 from shapely.ops import unary_union
 from shapely import wkb
@@ -272,29 +272,59 @@ def import_aggregate_data(
 
         elif set_buffer == False:
             
-            def flatten_multipolygons(geoms):
-                polygons = []
-                for geom in geoms:
-                    if isinstance(geom, MultiPolygon):
-                        polygons.extend(list(geom))
-                    else:
-                        polygons.append(geom)
-                return polygons
-             
-            # roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: MultiPolygon(flatten_multipolygons([poly.buffer(set_buffer, resolution = 16) for poly in x])))        
-            # roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(lambda x: MultiPolygon([poly.buffer(set_buffer, resolution = 16) for poly in x]))
-            # roof_agg = gpd.GeoDataFrame(roof_agg_Srs, geometry=roof_agg_Srs)
-            # roof_agg.set_crs(main_crs, allow_override=True, inplace=True)
+            # def flatten_multipolygons(geoms):
+            #     polygons = []
+            #     for geom in geoms:
+            #         if isinstance(geom, MultiPolygon):
+            #             polygons.extend(list(geom))
+            #         else:
+            #             polygons.append(geom)
+            #     return polygons
+            # roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(unary_union)
+            # roof_agg = gpd.GeoDataFrame(roof_agg_Srs, geometry='geometry')
+            # roof_agg.set_crs(roof_kat.crs, allow_override=True, inplace=True)
+            # ---------
 
-            roof_agg_Srs = roof_kat.groupby('SB_UUID')['geometry'].apply(unary_union)
-            roof_agg = gpd.GeoDataFrame(roof_agg_Srs, geometry='geometry')
-            roof_agg.set_crs(roof_kat.crs, allow_override=True, inplace=True)
+            # def flatten_multipolygons(geom):
+            #     polygons = []
+            #     if isinstance(geom, MultiPolygon):
+            #         polygons.extend(list(geom))
+            #     else:
+            #         polygons.append(geom)
+            #     return polygons  # return list of polygons
+
+            # sb_uuid_list = list(roof_kat['SB_UUID'].unique())
+            # roof_agg_list = []
+            # sb_uuid_agg_list = []
+
+            # for sb_uuid_i in sb_uuid_list:
+            #     roof_agg_i = roof_kat.loc[roof_kat['SB_UUID'] == sb_uuid_i, 'geometry'].apply(flatten_multipolygons)
+            #     # flatten the list of lists to a single list
+            #     roof_agg_i = [polygon for sublist in roof_agg_i for polygon in sublist]
+            #     roof_agg_list.append(MultiPolygon(roof_agg_i))
+            #     sb_uuid_agg_list.append(sb_uuid_i)
+
+            # roof_agg = gpd.GeoDataFrame({'SB_UUID': sb_uuid_agg_list, 'geometry': roof_agg_list}, geometry='geometry')
+            # roof_agg.set_crs(roof_kat.crs, allow_override=True, inplace=True)
+
+
+            print("-")
+            
 
 
         # intersection of data sets --------------------------------------------------------------------------------------
         # roof_kat.rename(columns={'index_right': 'index_roofkat'}, inplace=True)
-        df_join1 = gpd.sjoin(roof_agg, roof_kat, how = "left", predicate = "intersects")
-        df_join1.rename(columns={'index_right': 'index_roofkat'}, inplace=True)
+        # df_join1 = gpd.sjoin(roof_agg, roof_kat, how = "left", predicate = "intersects")
+        # df_join1.rename(columns={'index_right': 'index_roofkat'}, inplace=True)
+        df_join1 = roof_kat.copy()
+        Map_roof_pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.parquet')
+        mapping = Map_roof_pv.set_index('SB_UUID')['xtf_id']
+
+        # Use the mapping to add the xtf_id values to df_join1
+        df_join1['xtf_id'] = df_join1['SB_UUID'].map(mapping)
+        df_join1 = df_join1.merge(pv, on='xtf_id', how='left')
+
+
         checkpoint_to_logfile(f'joined df1: roof_kat', log_file_name = log_file_name_concat, n_tabs = 4 )
         df_join2 = gpd.sjoin(df_join1, pv, how = "left", predicate = "intersects")
         df_join2.rename(columns={'index_right': 'index_pv'}, inplace=True)
@@ -319,7 +349,7 @@ def import_aggregate_data(
         # Export 
         # ----------------------------------------------------------------------------------------------------------------
         
-        roof_agg.to_parquet(f'{data_path}/{name_aggdef}/roof_agg_{name_aggdef}.parquet')
+        # roof_agg.to_parquet(f'{data_path}/{name_aggdef}/roof_agg_{name_aggdef}.parquet')
         df_join3.to_parquet(f'{data_path}/{name_aggdef}/df3_{name_aggdef}.parquet')
         df_join5.to_parquet(f'{data_path}/{name_aggdef}/df5_{name_aggdef}.parquet')  
         gm_shp.to_parquet(f'{data_path}/{name_aggdef}/{name_aggdef}_selected_gm_shp.parquet')
