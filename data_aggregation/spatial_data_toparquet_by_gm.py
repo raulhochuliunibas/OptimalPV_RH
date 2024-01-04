@@ -8,6 +8,44 @@ import winsound
 from datetime import datetime
 # from ..functions import chapter_to_logfile, checkpoint_to_logfile
 
+# ------------------------------------------------------------------------------------------------------
+# LOG FIlE PRINTING FUNCTIONS
+# ------------------------------------------------------------------------------------------------------
+
+def chapter_to_logfile(str, log_file_name):
+    """
+    Function to write a chapter to the logfile
+    """
+    check = f'\n\n****************************************\n {str} \n start at:{datetime.now()} \n****************************************\n\n'
+    print(check)
+    with open(f'{log_file_name}', 'a') as log_file:
+        log_file.write(f'{check}\n')
+time_last_call = None
+def checkpoint_to_logfile(str, log_file_name, n_tabs = 0, timer_func=None):
+    """
+    Function to write a checkpoint to the logfile
+    """
+    global time_last_call
+    
+    time_now = datetime.now()
+    if time_last_call:
+        runtime = time_now - time_last_call
+        minutes, seconds = divmod(runtime.seconds, 60)
+        runtime_str = f"{minutes} min {seconds} sec"
+    else:
+        runtime_str = 'N/A'
+    
+    n_tabs_str = '\t' * n_tabs
+    check = f'* {str}{n_tabs_str}runtime: {runtime_str};   (stamp: {datetime.now()})'
+    print(check)
+
+    with open(f'{log_file_name}', 'a') as log_file:
+        log_file.write(f"{check}\n")
+    
+    time_last_call = time_now
+
+
+
 # SETTIGNS --------------------------------------------------------------------
 def spatial_toparquet(script_run_on_server_def = 0):
 
@@ -33,7 +71,9 @@ def spatial_toparquet(script_run_on_server_def = 0):
     # import shapes
     gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
     checkpoint_to_logfile('import gm_shp', log_file_name = log_file_name, n_tabs = 1)
+    # roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
     roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+
     checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
     # faca_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS')
     # checkpoint_to_logfile('import faca_kat', log_file_name = log_file_name, n_tabs = 1)
@@ -46,6 +86,10 @@ def spatial_toparquet(script_run_on_server_def = 0):
     pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
     checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
 
+    roof_kat_for_Map = roof_kat.copy()
+    pv_for_Map = pv.copy()
+
+
     # drop unnecessary columns
 
     checkpoint_to_logfile('\n\n', log_file_name = log_file_name, n_tabs = 10)
@@ -55,6 +99,8 @@ def spatial_toparquet(script_run_on_server_def = 0):
     bldng_reg.set_crs(gm_shp.crs, allow_override=True, inplace=True)
     heatcool_dem.set_crs(gm_shp.crs, allow_override=True, inplace=True)
     pv.set_crs(gm_shp.crs, allow_override=True, inplace=True)
+    roof_kat_for_Map.set_crs(gm_shp.crs, allow_override=True, inplace=True)
+    pv_for_Map.set_crs(gm_shp.crs, allow_override=True, inplace=True)
 
 
     roof_kat = gpd.sjoin(roof_kat, gm_shp, how="left", predicate="within")
@@ -67,21 +113,17 @@ def spatial_toparquet(script_run_on_server_def = 0):
     checkpoint_to_logfile('sjoin heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
     pv = gpd.sjoin(pv, gm_shp, how="left", predicate="within")
     checkpoint_to_logfile('sjoin pv', log_file_name = log_file_name, n_tabs = 1)
+    roof_pv_sjoin = gpd.sjoin(roof_kat_for_Map, pv_for_Map, how="left", predicate="within")
+    Map_roof_pv = roof_pv_sjoin[['SB_UUID', 'xtf_id']].drop_duplicates()
+    checkpoint_to_logfile('sjoin Map_roof_pv', log_file_name = log_file_name, n_tabs = 1)
 
     roof_kat.info()
     bldng_reg.info()
     heatcool_dem.info()
     pv.info()
+    Map_roof_pv.info()
 
-    # # drop unnecessary columns
-    # drop_gm_cols = ['index_right', 'UUID', 'DATUM_AEND', 'DATUM_ERST', 'ERSTELL_J', 'ERSTELL_M', 'REVISION_J', 'REVISION_M',
-    #                 'GRUND_AEND', 'HERKUNFT', 'HERKUNFT_J', 'HERKUNFT_M', 'OBJEKTART', 'BEZIRKSNUM', 'SEE_FLAECH', 'REVISION_Q', 
-    #                 'NAME', 'KANTONSNUM', 'ICC', 'EINWOHNERZ', 'HIST_NR', 'GEM_TEIL', 'GEM_FLAECH', 'SHN']
-    # roof_kat.drop(columns = drop_gm_cols, axis = 1, inplace = True)
-    # bldng_reg.drop(columns = drop_gm_cols, axis = 1, inplace = True)
-    # heatcool_dem.drop(columns = drop_gm_cols, axis = 1, inplace = True)
-    # pv.drop(columns = drop_gm_cols, axis = 1, inplace = True)
-    # checkpoint_to_logfile('drop unnecessary columns', log_file_name = log_file_name, n_tabs = 1)
+
 
     # export to parquet
     roof_kat.to_parquet(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet')
@@ -96,5 +138,19 @@ def spatial_toparquet(script_run_on_server_def = 0):
     checkpoint_to_logfile('export pv.parquet', log_file_name = log_file_name, n_tabs = 1)
     gm_shp.to_parquet(f'{data_path}/spatial_intersection_by_gm/gm_shp.parquet')
     checkpoint_to_logfile('export gm_shp.parquet', log_file_name = log_file_name, n_tabs = 1)
+    Map_roof_pv.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.parquet')
+    Map_roof_pv.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.csv')
 
     chapter_to_logfile('end spatial_data_toparquet_by_gm.py', log_file_name = log_file_name)
+
+
+# --- OLD CODE ----------------------------------------------------------------
+    # # drop unnecessary columns
+# drop_gm_cols = ['index_right', 'UUID', 'DATUM_AEND', 'DATUM_ERST', 'ERSTELL_J', 'ERSTELL_M', 'REVISION_J', 'REVISION_M',
+#                 'GRUND_AEND', 'HERKUNFT', 'HERKUNFT_J', 'HERKUNFT_M', 'OBJEKTART', 'BEZIRKSNUM', 'SEE_FLAECH', 'REVISION_Q', 
+#                 'NAME', 'KANTONSNUM', 'ICC', 'EINWOHNERZ', 'HIST_NR', 'GEM_TEIL', 'GEM_FLAECH', 'SHN']
+# roof_kat.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+# bldng_reg.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+# heatcool_dem.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+# pv.drop(columns = drop_gm_cols, axis = 1, inplace = True)
+# checkpoint_to_logfile('drop unnecessary columns', log_file_name = log_file_name, n_tabs = 1)
