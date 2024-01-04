@@ -69,24 +69,40 @@ def spatial_toparquet(script_run_on_server_def = 0):
 
 
     # import shapes
-    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    checkpoint_to_logfile('import gm_shp', log_file_name = log_file_name, n_tabs = 1)
-    # roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-    roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-
-    checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
-    # faca_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS')
-    # checkpoint_to_logfile('import faca_kat', log_file_name = log_file_name, n_tabs = 1)
-    bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
-    checkpoint_to_logfile('import bldng_reg', log_file_name = log_file_name, n_tabs = 1)
-    heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
-    checkpoint_to_logfile('import heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
-    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
-    checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 1)
-    pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
-    checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
+    smaller_import = False
+    if not smaller_import:    
+        gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+        checkpoint_to_logfile('import gm_shp', log_file_name = log_file_name, n_tabs = 1)
+        roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
+        # faca_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS')
+        # checkpoint_to_logfile('import faca_kat', log_file_name = log_file_name, n_tabs = 1)
+        bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+        checkpoint_to_logfile('import bldng_reg', log_file_name = log_file_name, n_tabs = 1)
+        heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+        checkpoint_to_logfile('import heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
+        elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+        checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 1)
+        pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
+        checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
+    
+    elif smaller_import:
+        gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+        checkpoint_to_logfile('import gm_shp', log_file_name = log_file_name, n_tabs = 1)
+        roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10000)
+        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
+        # faca_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-fassaden_2056.gdb/SOLKAT_FASS_20230221.gdb', layer ='SOLKAT_CH_FASS', rows = 10000)
+        # checkpoint_to_logfile('import faca_kat', log_file_name = log_file_name, n_tabs = 1)
+        bldng_reg = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 2)
+        checkpoint_to_logfile('import bldng_reg', log_file_name = log_file_name, n_tabs = 1)
+        heatcool_dem = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 10)
+        checkpoint_to_logfile('import heatcool_dem', log_file_name = log_file_name, n_tabs = 1) 
+        elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 10000)
+        checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 1)
+        pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
 
     roof_kat_for_Map = roof_kat.copy()
+    roof_kat_for_Map['geometry'] = roof_kat_for_Map.buffer(2.0, resolution = 16)
     pv_for_Map = pv.copy()
 
 
@@ -113,8 +129,10 @@ def spatial_toparquet(script_run_on_server_def = 0):
     checkpoint_to_logfile('sjoin heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
     pv = gpd.sjoin(pv, gm_shp, how="left", predicate="within")
     checkpoint_to_logfile('sjoin pv', log_file_name = log_file_name, n_tabs = 1)
-    roof_pv_sjoin = gpd.sjoin(roof_kat_for_Map, pv_for_Map, how="left", predicate="within")
-    Map_roof_pv = roof_pv_sjoin[['SB_UUID', 'xtf_id']].drop_duplicates()
+
+    roof_pv_sjoin = gpd.sjoin(roof_kat_for_Map, pv_for_Map, how="left", predicate="intersects")
+    Map_roof_pv_all = roof_pv_sjoin[['SB_UUID', 'xtf_id', 'GWR_EGID']]
+    Map_roof_pv = roof_pv_sjoin[['SB_UUID', 'xtf_id', 'GWR_EGID']].drop_duplicates()
     checkpoint_to_logfile('sjoin Map_roof_pv', log_file_name = log_file_name, n_tabs = 1)
 
     roof_kat.info()
@@ -126,6 +144,7 @@ def spatial_toparquet(script_run_on_server_def = 0):
 
 
     # export to parquet
+
     roof_kat.to_parquet(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet')
     checkpoint_to_logfile('export roof_kat.parquet', log_file_name = log_file_name, n_tabs = 1)
     # faca_kat.to_parquet(f'{data_path}/spatial_intersection_by_gm/faca_kat_by_gm.parquet')
@@ -138,8 +157,12 @@ def spatial_toparquet(script_run_on_server_def = 0):
     checkpoint_to_logfile('export pv.parquet', log_file_name = log_file_name, n_tabs = 1)
     gm_shp.to_parquet(f'{data_path}/spatial_intersection_by_gm/gm_shp.parquet')
     checkpoint_to_logfile('export gm_shp.parquet', log_file_name = log_file_name, n_tabs = 1)
+
     Map_roof_pv.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.parquet')
     Map_roof_pv.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.csv')
+    Map_roof_pv_all.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_all.parquet')
+    checkpoint_to_logfile('export Map_roof_pv.parquet', log_file_name = log_file_name, n_tabs = 1)
+
 
     chapter_to_logfile('end spatial_data_toparquet_by_gm.py', log_file_name = log_file_name)
 
