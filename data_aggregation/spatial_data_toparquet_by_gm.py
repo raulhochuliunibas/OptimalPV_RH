@@ -154,14 +154,29 @@ def spatial_toparquet(script_run_on_server_def = 0):
 
     # CREATE ROOF_PV MAPPING with different buffer sizes -------------------------
     buff_size = np.round(np.arange(0.05, 1.3, 0.05), 2)
+
+    def assign_xtf_to_Map_roof_pv(sb_uuid):
+        selected_rows = Map_roof_pv_all[Map_roof_pv_all['SB_UUID'] == sb_uuid]
+        non_nan_xtf_id = selected_rows['xtf_id'].dropna().unique()
+
+        if selected_rows['xtf_id'].isna().all():
+            return np.nan
+        elif len(non_nan_xtf_id) == 1:
+            return non_nan_xtf_id[0]
+        else:
+            return 'multiple_xft_ids'
+
     for b in buff_size:
         roof_kat_for_Map_buff = roof_kat_for_Map.copy()
         roof_kat_for_Map_buff['geometry'] = roof_kat_for_Map_buff.buffer(b, resolution = 16)
 
         roof_pv_sjoin = gpd.sjoin(roof_kat_for_Map_buff, pv_for_Map, how="left", predicate="intersects")
         Map_roof_pv_all = roof_pv_sjoin[['SB_UUID', 'xtf_id']]
-        Map_roof_pv = roof_pv_sjoin[['SB_UUID', 'xtf_id']].drop_duplicates()
 
+        # create mapping
+        Map_roof_pv = pd.DataFrame({'SB_UUID': roof_kat_for_Map_buff['SB_UUID'].unique()})
+        Map_roof_pv['xtf_id'] = Map_roof_pv['SB_UUID'].apply(assign_xtf_to_Map_roof_pv)
+        
         # export
         Map_roof_pv.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_buff{str(b)}.parquet')
         Map_roof_pv.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_buff{str(b)}.csv')
