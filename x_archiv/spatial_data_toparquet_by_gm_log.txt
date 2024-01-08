@@ -1,0 +1,69 @@
+
+
+****************************************
+ nstart spatial_data_toparquet_by_gm.py 
+ start at:2023-12-18 13:22:01.614478 
+****************************************
+
+
+* import gm_shp	runtime: N/A;   (stamp: 2023-12-18 13:22:04.864310)
+
+
+****************************************
+ nstart spatial_data_toparquet_by_gm.py 
+ start at:2023-12-18 13:37:39.270527 
+****************************************
+
+
+* import gm_shp	runtime: N/A;   (stamp: 2023-12-18 13:37:41.505534)
+* import roof_kat	runtime: 91 min 30 sec;   (stamp: 2023-12-18 15:09:11.939855)
+* import bldng_reg	runtime: 6 min 58 sec;   (stamp: 2023-12-18 15:16:10.827836)
+* import heatcool_dem	runtime: 0 min 37 sec;   (stamp: 2023-12-18 15:16:48.423181)
+* import elec_prod	runtime: 0 min 26 sec;   (stamp: 2023-12-18 15:17:14.700804)
+* subset for pv	runtime: 0 min 0 sec;   (stamp: 2023-12-18 15:17:14.856893)
+* 
+
+										runtime: 0 min 0 sec;   (stamp: 2023-12-18 15:17:14.872436)
+* sjoin roof_kat	runtime: 5 min 19 sec;   (stamp: 2023-12-18 15:22:34.271390)
+* sjoin bldng_reg	runtime: 0 min 25 sec;   (stamp: 2023-12-18 15:22:59.646227)
+* sjoin heatcool_dem	runtime: 0 min 3 sec;   (stamp: 2023-12-18 15:23:03.642262)
+* sjoin pv	runtime: 0 min 2 sec;   (stamp: 2023-12-18 15:23:06.234034)
+* drop unnecessary columns	runtime: 0 min 21 sec;   (stamp: 2023-12-18 15:23:28.022218)
+* export roof_kat.parquet	runtime: 1 min 56 sec;   (stamp: 2023-12-18 15:25:24.368234)
+* export bldng_reg.parquet	runtime: 0 min 9 sec;   (stamp: 2023-12-18 15:25:34.144427)
+* export heatcool_dem.parquet	runtime: 0 min 1 sec;   (stamp: 2023-12-18 15:25:35.980240)
+* export pv.parquet	runtime: 0 min 0 sec;   (stamp: 2023-12-18 15:25:36.935405)
+
+
+****************************************
+ end spatial_data_toparquet_by_gm.py 
+ start at:2023-12-18 15:25:36.935405 
+****************************************
+
+
+
+
+****************************************
+ start spatial_data_toparquet_by_gm.py 
+ start at:2023-12-18 17:32:06.555356 
+****************************************
+
+
+* import gm_shp	runtime: N/A;   (stamp: 2023-12-18 17:32:08.896515)
+
+
+****************************************
+ start spatial_data_toparquet_by_gm.py 
+ start at:2023-12-18 17:32:13.687385 
+****************************************
+
+
+* import gm_shp	runtime: N/A;   (stamp: 2023-12-18 17:32:15.374387)
+
+
+****************************************
+ start spatial_data_toparquet_by_gm.py 
+ start at:2023-12-18 17:33:19.910564 
+****************************************
+
+
