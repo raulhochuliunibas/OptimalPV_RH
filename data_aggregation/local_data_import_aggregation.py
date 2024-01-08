@@ -309,6 +309,23 @@ def import_aggregate_data(
 
 
             print("-")
+            # --------------------------------------------------------------------------------------------------------
+            # BOOKRMARK ----------------------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------------------------------------
+
+            Map_roof_pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.parquet')
+            Map_roof_pv = Map_roof_pv[['SB_UUID', 'xtf_id']].drop_duplicates()
+
+
+            mapping = Map_roof_pv.set_index('SB_UUID')['xtf_id']
+
+            # Select only the duplicate rows
+            duplicates = Map_roof_pv[Map_roof_pv['SB_UUID'].duplicated(keep=False)]
+
+            # Export the duplicates to a text file
+            duplicates.to_csv('Map_roof_pv_duplicates.txt', sep='\t', index=False)
+
+
             
 
 
@@ -317,8 +334,11 @@ def import_aggregate_data(
         # df_join1 = gpd.sjoin(roof_agg, roof_kat, how = "left", predicate = "intersects")
         # df_join1.rename(columns={'index_right': 'index_roofkat'}, inplace=True)
         df_join1 = roof_kat.copy()
-        Map_roof_pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.parquet')
-        mapping = Map_roof_pv.set_index('SB_UUID')['xtf_id']
+    
+        
+        
+
+        print(f'Number of duplicate SB_UUID values: {num_duplicates}')
 
         # Use the mapping to add the xtf_id values to df_join1
         df_join1['xtf_id'] = df_join1['SB_UUID'].map(mapping)
@@ -359,8 +379,87 @@ def import_aggregate_data(
         chapter_to_logfile(f'finished local_data_import_aggregation.py - create: {name_aggdef}', log_file_name = log_file_name_concat)
 
 
+# buliding classes
+"""
+   # roof_kat buliding classes
+    0 Bruecke gedeckt
+    1 Gebaeude Einzelhaus
+    2 Hochhaus
+    3 Hochkamin
+    4 Turm
+    5 Kuehlturm
+    6 Lagertank
+    7 Lueftungsschacht
+    8 Offenes Gebaeude
+    9 Treibhaus
+    10 Im Bau
+    11 Kapelle
+    12 Sakraler Turm
+    13 Sakrales Gebaeude
+    15 Flugdach
+    16 Unterirdisches Gebaeude
+    17 Mauer gross
+    18 Mauer gross gedeckt
+    19 Historische Baute
+    20 Gebaeude unsichtbar
 
+    # bldng_reg buliding classes
 
+    "buildingStatus":
+    1001 Projektiert
+    1002 Bewilligt
+    1003 Im Bau
+    1004 Bestehend
+    1005 Nicht nutzbar
+    1007 Abgebrochen
+    1008 Nicht realisiert
+    
+    "builingCategory":
+    0    ??
+    1010 Provisorische Unterkunft
+    1020 Gebäude mit ausschliesslicher Wohnnutzung
+    1030 Andere Wohngebäude (Wohngebäude mit Nebennutzung)
+    1040 Gebäude mit teilweiser Wohnnutzung
+    1060 Gebäude ohne Wohnnutzung
+    1080 Sonderbau
+    
+    "buildingClass":
+    0    ??
+    1110 Gebäude mit einer Wohnung
+      - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.
+      - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
+    1121 Gebäude mit zwei Wohnungen
+      - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
+    1122 Gebäude mit drei oder mehr Wohnungen
+      - Sonstige Wohngebäude wie Wohnblocks mit drei oder mehr Wohnungen
+    1130 Wohngebäude für Gemeinschaften
+      - Wohngebäude, in denen bestimmte Personen gemeinschaftlich wohnen, einschliesslich der Wohnungen für ältere Menschen, Studenten, Kinder
+        und andere soziale Gruppen, z.B. Altersheime, Heime für Arbeiter, Bruderschaften, Waisen, Obdachlose usw.
+        
+    1211 Hotelgebäude
+    1212 Andere Gebäude für kurzfristige Beherbergungen
+    1220 Bürogebäude
+    1230 Gross- und Einzelhandelsgebäude
+    1231 Restaurants und Bars in Gebäuden ohne Wohnnutzung
+    1241 Bahnhöfe, Abfertigungsgebäude, Fernsprechvermittlungszentralen
+    1242 Garagengebäude
+    1251 Industriegebäude
+    1252 Behälter, Silos und Lagergebäude
+    1261 Gebäude für Kultur- und Freizeitzwecke
+    1262 Museen / Bibliotheken
+    1263 Schul- und Hochschulgebäude, Forschungseinrichtungen
+    1264 Krankenhäuser und Facheinrichtungen des Gesundheitswesens
+    1265 Sporthallen
+    1271 Landwirtschaftliche Betriebsgebäude
+    1272 Kirchen und sonstige Kulturgebäude
+    1273 Denkmäler oder unter Denkmalschutz stehende Bauwerke
+    1274 Sonstige Hochbauten, anderweitig nicht genannt
+    1275 Andere Gebäude für die kollektive Unterkunft
+    1276 Gebäude für die Tierhaltung
+    1277 Gebäude für Pflanzenbau
+    1278 Andere landwirtschaftliche Betriebsgebäude
+    
+"""
         
 
 

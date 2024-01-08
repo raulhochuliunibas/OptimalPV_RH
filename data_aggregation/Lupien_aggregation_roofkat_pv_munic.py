@@ -16,6 +16,11 @@ data_path = f'{wd_path}_data'
 os.chdir(wd_path)
 os.listdir(data_path)
 
+# import raw input data
+check_vs_raw_input = False
+agg_version = 'agg_solkat_pv_gm_gwr_heat_buff10_KT'
+
+
 # create a export txt file for summary outputs
 print(f'\n\n ***** AGGREGATION roofkat pv munic ***** \t time: {datetime.now()}')
 if not os.path.exists(f'{data_path}/Lupien_aggregation'):
@@ -30,9 +35,6 @@ with open(export_txt_name, 'w') as export_txt:
 # ------------------------------------------------------------------------------
 # DATA IMPORT
 # ------------------------------------------------------------------------------
-
-# import raw input data
-check_vs_raw_input = False
 
 if check_vs_raw_input:
     print(f'\n\n* import raw input data: time: {datetime.now()}')
@@ -55,7 +57,7 @@ elif not check_vs_raw_input:
     
 
 # import aggregates 
-agg_pq_files = glob.glob(f'{data_path}/agg_solkat_pv_gm_gwr_heat_BY_KT/df3_agg_solkat_pv_gm_gwr_heat_KT*.parquet')
+agg_pq_files = glob.glob(f'{data_path}/{agg_version}_BY_KT/df3_{agg_version}_KT*.parquet')
 agg_pq_files = [f for f in agg_pq_files if 'selected_gm_shp' not in f]
 
 df_agg_pq = pd.DataFrame()
