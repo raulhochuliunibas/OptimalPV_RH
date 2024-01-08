@@ -79,7 +79,7 @@ def roof_kat_spatial_toparquet(
         roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
         checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
     elif smaller_import:
-        print('USE SMALLER IMPORT for debugging')
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
         roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10000)
         checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
     
@@ -123,7 +123,7 @@ def bldng_reg_spatial_toparquet(
         bldng_reg_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
         checkpoint_to_logfile('import bldng_reg', log_file_name = log_file_name, n_tabs = 1)
     elif smaller_import:
-        print('USE SMALLER IMPORT for debugging')
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
         bldng_reg_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 2)
         checkpoint_to_logfile('import bldng_reg', log_file_name = log_file_name, n_tabs = 1)
 
@@ -167,7 +167,7 @@ def heatcool_dem_spatial_toparquet(
         heatcool_dem_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
         checkpoint_to_logfile('import heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
     elif smaller_import:
-        print('USE SMALLER IMPORT for debugging')
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
         heatcool_dem_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 10)
         checkpoint_to_logfile('import heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
 
@@ -213,7 +213,7 @@ def pv_spatial_toparquet(
         pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
         checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
     elif smaller_import:
-        print('USE SMALLER IMPORT for debugging')
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
         elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 10000)
         checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 1)
         pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
@@ -264,7 +264,7 @@ def create_Map_roof_pv(
         pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
         checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
     elif smaller_import:
-        print('USE SMALLER IMPORT for debugging')
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
         roof_kat_exists_TF, pv_exists_TF = os.path.exists(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet'), os.path.exists(f'{data_path}/spatial_intersection_by_gm/pv_by_gm.parquet')
         
         roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10000)
@@ -364,7 +364,7 @@ def create_Map_roof_gm(
         roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
         checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
     elif smaller_import:
-        print('USE SMALLER IMPORT for debugging')
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
         roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10000)
         checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
 
