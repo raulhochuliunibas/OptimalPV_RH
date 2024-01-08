@@ -38,14 +38,17 @@ pq_files_rerun = recreate_parquet_files == 1
 
 if not pq_dir_exists or pq_files_rerun:
     # spatial_toparquet(script_run_on_server_def = script_run_on_server)
-    spd_to_pq.roof_kat_spatial_toparquet(script_run_on_server_def = script_run_on_server, smaller_import=True)
-    spd_to_pq.bldng_reg_spatial_toparquet(script_run_on_server_def = script_run_on_server, smaller_import=False)
-    spd_to_pq.heatcool_dem_spatial_toparquet(script_run_on_server_def=script_run_on_server, smaller_import=False)
-    spd_to_pq.pv_spatial_toparquet(script_run_on_server_def=script_run_on_server, smaller_import=False)
+    # spd_to_pq.roof_kat_spatial_toparquet(script_run_on_server_def = script_run_on_server, smaller_import=False)
+    # spd_to_pq.bldng_reg_spatial_toparquet(script_run_on_server_def = script_run_on_server, smaller_import=False)
+    # spd_to_pq.heatcool_dem_spatial_toparquet(script_run_on_server_def=script_run_on_server, smaller_import=False)
+    # spd_to_pq.pv_spatial_toparquet(script_run_on_server_def=script_run_on_server, smaller_import=False)
     
-    spd_to_pq.create_Map_roof_pv(script_run_on_server_def=script_run_on_server,
-                                 buffer_size = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 
-                                 smaller_import=False)
+    # spd_to_pq.create_Map_roof_pv(script_run_on_server_def=script_run_on_server,
+    #                              buffer_size = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 
+    #                              smaller_import=True)
+
+    spd_to_pq.create_Map_roof_pv(script_run_on_server_def=script_run_on_server, smaller_import=True)
+    spd_to_pq.create_Map_roof_gm(script_run_on_server_def=script_run_on_server, smaller_import=True)
 
     print('recreated parquet files for faster import and transformation')
 else:
@@ -58,7 +61,7 @@ kt_list = list(gm_shp['KANTONSNUM'].dropna().unique())
 
 
 # buffer False -----------------------------------------------------------------
-if True:
+if False:
 
     for n, kt_i in enumerate(kt_list):
         name_run = 'agg_solkat_pv_gm_gwr_heat_buffNO_KT'

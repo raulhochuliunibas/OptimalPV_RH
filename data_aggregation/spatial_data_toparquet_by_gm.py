@@ -233,7 +233,7 @@ def pv_spatial_toparquet(
 # MAP ROOF PV ---------------------------------------------------------------------
 def create_Map_roof_pv(
     script_run_on_server_def = 0,
-    buffer_size = [0.05,],
+    # buffer_size = [0.05,],
     smaller_import = False,):
     """
     Function to create a mapping from roof_kat to pv, SB_UUID to xtf_id
@@ -265,6 +265,8 @@ def create_Map_roof_pv(
         checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
     elif smaller_import:
         print('USE SMALLER IMPORT for debugging')
+        roof_kat_exists_TF, pv_exists_TF = os.path.exists(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet'), os.path.exists(f'{data_path}/spatial_intersection_by_gm/pv_by_gm.parquet')
+        
         roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10000)
         checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
         elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 10000)
@@ -273,39 +275,131 @@ def create_Map_roof_pv(
         checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
 
     # drop unnecessary columns ------------------
+    keep_cols_roof_kat = ["SB_UUID", "DF_NUMMER", "geometry" ]
+    dele_cols_roof_kat = [col for col in roof_kat_gdf.columns if col not in keep_cols_roof_kat]
+    roof_kat_gdf.drop(columns = dele_cols_roof_kat, inplace = True)
+
+    keep_cols_pv = ["xtf_id", "geometry"]
+    dele_cols_pv = [col for col in pv_gdf.columns if col not in keep_cols_pv]
+    pv_gdf.drop(columns = dele_cols_pv, inplace = True)
+
         
+    # convex_hull by SB_UUID ------------------
+    roof_kat_union = roof_kat_gdf.groupby('SB_UUID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
+    roof_kat_hull = gpd.GeoDataFrame(roof_kat_union, geometry='geometry') # gpd.GeoDataFrame(roof_kat_union, crs = roof_kat_gdf.crs).reset_index()
+    roof_kat_hull['geometry'] = roof_kat_hull['geometry'].convex_hull
+
+    checkpoint_to_logfile('created roof_kat_hull', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile(f'roof_kat_hull is {(roof_kat_hull["geometry"].area.sum() - roof_kat_gdf["geometry"].area.sum() )/ roof_kat_gdf["geometry"].area.sum()}% the size of roof_kat_gdf', log_file_name = log_file_name, n_tabs = 1)
+    
     # sjoin ------------------
+    roof_kat_hull.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    pv_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    join_roof_kat_pv = gpd.sjoin(roof_kat_hull, pv_gdf, how="left", predicate="within")
+    join_roof_kat_pv.drop(columns = ['index_right'], inplace = True)
+
+    Map_roof_pv = join_roof_kat_pv.copy()
+
+    # export ------------------
+    Map_roof_pv.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.parquet')
+    Map_roof_pv.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.csv')
+    roof_kat_hull.to_file(f'{data_path}/spatial_intersection_by_gm/roof_kat_hull_IN_PV.shp')
+    checkpoint_to_logfile(f'export Map_roof_pv.parquet', log_file_name = log_file_name, n_tabs = 1)
+
+
+
+    # # create roof_pv mapping ------------------
+    # def assign_xtf_to_Map_roof_pv(sb_uuid):
+    #     selected_rows = Map_roof_pv_all[Map_roof_pv_all['SB_UUID'] == sb_uuid]
+    #     non_nan_xtf_id = selected_rows['xtf_id'].dropna().unique()
+
+    #     if selected_rows['xtf_id'].isna().all():
+    #         return np.nan
+    #     elif len(non_nan_xtf_id) == 1:
+    #         return non_nan_xtf_id[0]
+    #     else:
+    #         return 'multiple_xft_ids'
         
+    # for b in buffer_size:
+    #     roof_kat_for_Map_buff = roof_kat_gdf.copy()
+    #     roof_kat_for_Map_buff['geometry'] = roof_kat_for_Map_buff.buffer(b, resolution = 16)
 
-    # create roof_pv mapping ------------------
-    def assign_xtf_to_Map_roof_pv(sb_uuid):
-        selected_rows = Map_roof_pv_all[Map_roof_pv_all['SB_UUID'] == sb_uuid]
-        non_nan_xtf_id = selected_rows['xtf_id'].dropna().unique()
+    #     roof_pv_sjoin = gpd.sjoin(roof_kat_for_Map_buff, pv_gdf, how="left", predicate="intersects")
+    #     Map_roof_pv_all = roof_pv_sjoin[['SB_UUID', 'xtf_id']]
 
-        if selected_rows['xtf_id'].isna().all():
-            return np.nan
-        elif len(non_nan_xtf_id) == 1:
-            return non_nan_xtf_id[0]
-        else:
-            return 'multiple_xft_ids'
+    #     # create mapping
+    #     Map_roof_pv = pd.DataFrame({'SB_UUID': roof_kat_for_Map_buff['SB_UUID'].unique()})
+    #     Map_roof_pv['xtf_id'] = Map_roof_pv['SB_UUID'].apply(assign_xtf_to_Map_roof_pv)
         
-    for b in buffer_size:
-        roof_kat_for_Map_buff = roof_kat_gdf.copy()
-        roof_kat_for_Map_buff['geometry'] = roof_kat_for_Map_buff.buffer(b, resolution = 16)
+    
 
-        roof_pv_sjoin = gpd.sjoin(roof_kat_for_Map_buff, pv_gdf, how="left", predicate="intersects")
-        Map_roof_pv_all = roof_pv_sjoin[['SB_UUID', 'xtf_id']]
+    chapter_to_logfile('end spatial_data_toparquet.py', log_file_name = log_file_name)
 
-        # create mapping
-        Map_roof_pv = pd.DataFrame({'SB_UUID': roof_kat_for_Map_buff['SB_UUID'].unique()})
-        Map_roof_pv['xtf_id'] = Map_roof_pv['SB_UUID'].apply(assign_xtf_to_Map_roof_pv)
+# MAP ROOF GM ---------------------------------------------------------------------
+def create_Map_roof_gm(
+    script_run_on_server_def = 0,
+    smaller_import = False,):
+    """
+    Function to create a mapping from roof_kat to gm, SB_UUID to BFS_NUMMER
+    """
+
+    # setup -------------------
+    if script_run_on_server_def == 0:
+        wd_path = "C:/Models/OptimalPV_RH"
+        data_path = f'{wd_path}_data'
+    elif script_run_on_server_def == 1:
+        wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
+        data_path = f'{wd_path}_data'
+
+    # set directory if necessary
+    if not os.path.exists(f'{data_path}/spatial_intersection_by_gm'):
+        os.makedirs(f'{data_path}/spatial_intersection_by_gm')
+
+    # create log file for checkpoint comments
+    log_file_name = f'{data_path}/spatial_intersection_by_gm/spatial_data_toparquet_by_gm_log.txt'
+
+    # import ------------------
+    gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    if not smaller_import:
+        roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
+    elif smaller_import:
+        print('USE SMALLER IMPORT for debugging')
+        roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10000)
+        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
+
+    # drop unnecessary columns ------------------
+    keep_cols_roof_kat = ["SB_UUID", "DF_NUMMER", "geometry" ]
+    dele_cols_roof_kat = [col for col in roof_kat_gdf.columns if col not in keep_cols_roof_kat]
+    roof_kat_gdf.drop(columns = dele_cols_roof_kat, inplace = True)
+
+    keep_cols_gm = ["BFS_NUMMER", "geometry"]
+    dele_cols_gm = [col for col in gm_shp_gdf.columns if col not in keep_cols_gm]
+    gm_shp_gdf.drop(columns = dele_cols_gm, inplace = True)
+    
         
-        # export
-        Map_roof_pv.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_buff{str(b)}.parquet')
-        Map_roof_pv.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_buff{str(b)}.csv')
-        Map_roof_pv_all.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_all_buff{str(b)}.parquet')
-        checkpoint_to_logfile(f'export Map_roof_pv_buff{str(b)}.parquet', log_file_name = log_file_name, n_tabs = 1)
+    # convex_hull by SB_UUID ------------------
+    roof_kat_union = roof_kat_gdf.groupby('SB_UUID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
+    roof_kat_hull = gpd.GeoDataFrame(roof_kat_union, geometry='geometry') # gpd.GeoDataFrame(roof_kat_union, crs = roof_kat_gdf.crs).reset_index()
+    roof_kat_hull['geometry'] = roof_kat_hull['geometry'].convex_hull
 
+    checkpoint_to_logfile('created roof_kat_hull', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile(f'roof_kat_hull is {(roof_kat_hull["geometry"].area.sum() - roof_kat_gdf["geometry"].area.sum() )/ roof_kat_gdf["geometry"].area.sum()}% the size of roof_kat_gdf', log_file_name = log_file_name, n_tabs = 1)
+
+
+    # sjoin ------------------
+    roof_kat_hull.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    join_roof_kat_gm = gpd.sjoin(roof_kat_hull, gm_shp_gdf, how="left", predicate="within")
+    join_roof_kat_gm.drop(columns = ['index_right'], inplace = True)
+    
+    Map_roof_gm = join_roof_kat_gm.copy()
+
+    # export ------------------
+    Map_roof_gm.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm.parquet')
+    Map_roof_gm.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm.csv')
+    roof_kat_hull.to_file(f'{data_path}/spatial_intersection_by_gm/roof_kat_hull_IN_GM.shp')
+    checkpoint_to_logfile(f'export Map_roof_gm.parquet', log_file_name = log_file_name, n_tabs = 1)
+            
     chapter_to_logfile('end spatial_data_toparquet.py', log_file_name = log_file_name)
 
 
@@ -316,6 +410,7 @@ def create_Map_roof_pv(
 # ------------------------------------------------------------------------------------------------------
 
 # SETTIGNS --------------------------------------------------------------------
+"""    
 def spatial_toparquet(script_run_on_server_def = 0):
 
     # SETUP --------------------------------------------------------------------
@@ -458,7 +553,7 @@ def spatial_toparquet(script_run_on_server_def = 0):
         checkpoint_to_logfile(f'export Map_roof_pv_buff{str(b)}.parquet', log_file_name = log_file_name, n_tabs = 1)
 
     chapter_to_logfile('end spatial_data_toparquet_by_gm.py', log_file_name = log_file_name)
-
+"""
 
 # --- OLD CODE ----------------------------------------------------------------
     # # drop unnecessary columns
