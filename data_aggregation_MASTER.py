@@ -1,16 +1,26 @@
+# -----------------------------------------------------------------------------
+# data_aggreation_MASTER.py 
+# -----------------------------------------------------------------------------
+# Preamble: 
+# > 
+
+import sys
+sys.path.append('C:/Models/OptimalPV_RH') 
+
 import os as os
 import pandas as pd
 import geopandas as gpd
 import glob
 import shutil
 import winsound
-import functions
 import subprocess
+import functions 
 
 import data_aggregation.spatial_data_toparquet_by_gm as spd_to_pq
 
 from functions import chapter_to_logfile, checkpoint_to_logfile
 from data_aggregation.local_data_import_aggregation import import_aggregate_data
+# from data_aggregation.Lupien_aggregation_roofkat_pv_munic_V2 import Lupien_aggregation
 # from data_aggregation.spatial_data_toparquet_by_gm import spatal_topiarquet
 
 # SETTIGNS --------------------------------------------------------------------
@@ -43,14 +53,15 @@ if not pq_dir_exists or pq_files_rerun:
     # spd_to_pq.create_Map_roof_pv(script_run_on_server_def=script_run_on_server,
     #                              buffer_size = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], 
     #                              smaller_import=True)
+    # spd_to_pq.create_Map_roof_gm(script_run_on_server_def=script_run_on_server, smaller_import=False)
 
+    # keep, should work
     spd_to_pq.roof_kat_spatial_toparquet(script_run_on_server_def = script_run_on_server, smaller_import=False)
     spd_to_pq.bldng_reg_spatial_toparquet(script_run_on_server_def = script_run_on_server, smaller_import=False)
     spd_to_pq.heatcool_dem_spatial_toparquet(script_run_on_server_def=script_run_on_server, smaller_import=False)
     spd_to_pq.pv_spatial_toparquet(script_run_on_server_def=script_run_on_server, smaller_import=False)
     
-    spd_to_pq.create_Map_roof_pv(script_run_on_server_def=script_run_on_server, smaller_import=True)
-    spd_to_pq.create_Map_roof_gm(script_run_on_server_def=script_run_on_server, smaller_import=True)
+    spd_to_pq.create_Mappings(script_run_on_server_def=script_run_on_server, smaller_import=False)
 
     print('recreated parquet files for faster import and transformation')
 else:
@@ -58,8 +69,7 @@ else:
 
 
 # DATA AGGREGATION FOR MA student Lupien --------------------------------------
-subprocess.call(['python', f'{wd_path}/data_aggregation/Lupien_aggregation_roofkat_pv_munic_V2.py'])
-
+# Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=False,)
 
 # AGGREGATIONS -----------------------------------------------------------------
 # aggregation solkat, pv, munic, gwr, heatcool by cantons 

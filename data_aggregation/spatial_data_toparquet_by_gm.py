@@ -231,13 +231,15 @@ def pv_spatial_toparquet(
     checkpoint_to_logfile('export pv.parquet', log_file_name = log_file_name, n_tabs = 1)
 
 # MAP ROOF PV ---------------------------------------------------------------------
-def create_Map_roof_pv(
+def create_Mappings(
     script_run_on_server_def = 0,
     # buffer_size = [0.05,],
     smaller_import = False,):
     """
     Function to create a mapping from roof_kat to pv, SB_UUID to xtf_id
     """
+    print(f'\n\n > call function create_Mappings()')
+    
 
     # setup -------------------
     if script_run_on_server_def == 0:
@@ -264,15 +266,15 @@ def create_Map_roof_pv(
         pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
         checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
     elif smaller_import:
-        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 5)
         roof_kat_exists_TF, pv_exists_TF = os.path.exists(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet'), os.path.exists(f'{data_path}/spatial_intersection_by_gm/pv_by_gm.parquet')
         
-        roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10000)
-        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
-        elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 10000)
-        checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 1)
+        roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 30000)
+        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 7)
+        elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = int(194022/2))
+        checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 7)
         pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
-        checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
+        checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 8)
 
     # drop unnecessary columns ------------------
     keep_cols_roof_kat = ["SB_UUID", "DF_NUMMER", "geometry" ]
@@ -283,27 +285,74 @@ def create_Map_roof_pv(
     dele_cols_pv = [col for col in pv_gdf.columns if col not in keep_cols_pv]
     pv_gdf.drop(columns = dele_cols_pv, inplace = True)
 
+    keep_cols_gm = ["BFS_NUMMER", "geometry"]
+    dele_cols_gm = [col for col in gm_shp_gdf.columns if col not in keep_cols_gm]
+    gm_shp_gdf.drop(columns = dele_cols_gm, inplace = True)
+
         
     # convex_hull by SB_UUID ------------------
-    roof_kat_union = roof_kat_gdf.groupby('SB_UUID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
-    roof_kat_hull = gpd.GeoDataFrame(roof_kat_union, geometry='geometry') # gpd.GeoDataFrame(roof_kat_union, crs = roof_kat_gdf.crs).reset_index()
+    roof_kat_union_srs = roof_kat_gdf.groupby('SB_UUID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
+    roof_kat_union = gpd.GeoDataFrame(roof_kat_union_srs, geometry='geometry')  
+    roof_kat_hull = gpd.GeoDataFrame(roof_kat_union_srs, geometry='geometry') # gpd.GeoDataFrame(roof_kat_union, crs = roof_kat_gdf.crs).reset_index()
     roof_kat_hull['geometry'] = roof_kat_hull['geometry'].convex_hull
 
-    checkpoint_to_logfile('created roof_kat_hull', log_file_name = log_file_name, n_tabs = 1)
-    checkpoint_to_logfile(f'roof_kat_hull is {(roof_kat_hull["geometry"].area.sum() - roof_kat_gdf["geometry"].area.sum() )/ roof_kat_gdf["geometry"].area.sum()}% the size of roof_kat_gdf', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 6)
+    checkpoint_to_logfile('created roof_kat_hull + roof_kat_union', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile(f'roof_kat_hull area is {(roof_kat_hull["geometry"].area.sum() - roof_kat_gdf["geometry"].area.sum() )/ roof_kat_gdf["geometry"].area.sum()} %  larger than roof_kat_gdf', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile(f'roof_kat_union area is {(roof_kat_union["geometry"].area.sum() - roof_kat_gdf["geometry"].area.sum() )/ roof_kat_gdf["geometry"].area.sum()} %  larger than roof_kat_gdf', log_file_name = log_file_name, n_tabs = 1)
+    
     
     # sjoin ------------------
     roof_kat_hull.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    roof_kat_union.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
     pv_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
-    join_roof_kat_pv = gpd.sjoin(roof_kat_hull, pv_gdf, how="left", predicate="within")
-    join_roof_kat_pv.drop(columns = ['index_right'], inplace = True)
+    # join_roof_kat_pv = gpd.sjoin(roof_kat_hull, pv_gdf, how="left", predicate="within")
+    # join_roof_kat_pv.drop(columns = ['index_right'], inplace = True)
 
-    Map_roof_pv = join_roof_kat_pv.copy()
+    Map_roof_pv_hull = gpd.sjoin(roof_kat_hull, pv_gdf, how="left", predicate="intersects")
+    Map_roof_pv_hull.drop(columns = ['index_right'], inplace = True)
+    Map_roof_pv_hull.reset_index(inplace = True)
+
+    Map_roof_pv_union = gpd.sjoin(roof_kat_union, pv_gdf, how="left", predicate="intersects")
+    Map_roof_pv_union.drop(columns = ['index_right'], inplace = True)
+    Map_roof_pv_union.reset_index(inplace = True)
+
+    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 6)
+    checkpoint_to_logfile(f'shape: Map_roof_pv_hull: {Map_roof_pv_hull.shape}, Map_roof_pv_union: {Map_roof_pv_union.shape}', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile(f'nunique SB_UUID in Map_roof_pv_hull: {Map_roof_pv_hull["SB_UUID"].nunique()}, Map_roof_pv_union: {Map_roof_pv_union["SB_UUID"].nunique()}', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile(f'nunique xtf_id in Map_roof_pv_hull: {Map_roof_pv_hull["xtf_id"].nunique()}, Map_roof_pv_union: {Map_roof_pv_union["xtf_id"].nunique()}', log_file_name = log_file_name, n_tabs = 1)
+
+    Map_roof_gm_hull = gpd.sjoin(roof_kat_hull, gm_shp_gdf, how="left", predicate="intersects")
+    Map_roof_gm_hull.drop(columns = ['index_right'], inplace = True)
+    Map_roof_gm_hull.reset_index(inplace = True)
+
+    Map_roof_gm_union = gpd.sjoin(roof_kat_union, gm_shp_gdf, how="left", predicate="intersects")
+    Map_roof_gm_union.drop(columns = ['index_right'], inplace = True)
+    Map_roof_gm_union.reset_index(inplace = True)
+
+    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 6)
+    checkpoint_to_logfile(f'shape: Map_roof_gm_hull: {Map_roof_gm_hull.shape}, Map_roof_gm_union: {Map_roof_gm_union.shape}', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile(f'nunique SB_UUID in Map_roof_gm_hull: {Map_roof_gm_hull["SB_UUID"].nunique()}, Map_roof_gm_union: {Map_roof_gm_union["SB_UUID"].nunique()}', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile(f'nunique BFS_NUMMER in Map_roof_gm_hull: {Map_roof_gm_hull["BFS_NUMMER"].nunique()}, Map_roof_gm_union: {Map_roof_gm_union["BFS_NUMMER"].nunique()}', log_file_name = log_file_name, n_tabs = 1)
 
     # export ------------------
-    Map_roof_pv.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.parquet')
-    Map_roof_pv.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.csv')
+    # Map_roof_pv.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.parquet')
+    # Map_roof_pv.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.csv')
+
+    Map_roof_pv_hull.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_hull.parquet')
+    Map_roof_pv_hull.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_hull.csv')
+    Map_roof_pv_union.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_union.parquet')
+    Map_roof_pv_union.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_union.csv')
+
+    Map_roof_gm_hull.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm_hull.parquet')
+    Map_roof_gm_hull.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm_hull.csv')
+    Map_roof_gm_union.to_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm_union.parquet')
+    Map_roof_gm_union.to_csv(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm_union.csv')
+
     roof_kat_hull.to_file(f'{data_path}/spatial_intersection_by_gm/roof_kat_hull_IN_PV.shp')
+    roof_kat_union.to_file(f'{data_path}/spatial_intersection_by_gm/roof_kat_union_IN_PV.shp')
+    
+    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 6)
     checkpoint_to_logfile(f'export Map_roof_pv.parquet', log_file_name = log_file_name, n_tabs = 1)
 
 
@@ -335,6 +384,12 @@ def create_Map_roof_pv(
 
     chapter_to_logfile('end spatial_data_toparquet.py', log_file_name = log_file_name)
 
+
+
+
+# ------------------------------------------------------------------------------------------------------
+# OLD ALL IN ONE FUNCTION
+# ------------------------------------------------------------------------------------------------------
 # MAP ROOF GM ---------------------------------------------------------------------
 def create_Map_roof_gm(
     script_run_on_server_def = 0,
@@ -364,9 +419,9 @@ def create_Map_roof_gm(
         roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
         checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
     elif smaller_import:
-        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 4)
         roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10000)
-        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
+        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 7)
 
     # drop unnecessary columns ------------------
     keep_cols_roof_kat = ["SB_UUID", "DF_NUMMER", "geometry" ]
@@ -404,10 +459,6 @@ def create_Map_roof_gm(
 
 
 
-
-# ------------------------------------------------------------------------------------------------------
-# OLD ALL IN ONE FUNCTION
-# ------------------------------------------------------------------------------------------------------
 
 # SETTIGNS --------------------------------------------------------------------
 """    
