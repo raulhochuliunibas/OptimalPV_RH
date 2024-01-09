@@ -41,3 +41,6 @@ def checkpoint_to_logfile(str, log_file_name, n_tabs = 0, timer_func=None):
 # book mark ------------------------------------------------------------
 # 
 # ----------------------------------------------------------------------
+    
+def test_functions(text):
+    print(f'return: {text}')
