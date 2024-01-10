@@ -12,122 +12,123 @@ from datetime import datetime
 # ------------------------------------------------------------------------------
 def Lupien_aggregation(
         script_run_on_server_def = 0,
-        check_vs_raw_input = False):
+        check_vs_raw_input = False, 
+        union_vs_hull_shape = 'union'):
     """
     script_run_on_server_def: 0 = private computer, 1 = server
     """
-    
-    print('asdf')
+        
+    # script_run_on_server_def = 0
+    # check_vs_raw_input = False
+    # union_vs_hull_shape = 'union'
 
-script_run_on_server_def = 0
-check_vs_raw_input = False
-# ------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------
 
-if script_run_on_server_def == 0:
-    wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
-    data_path = f'{wd_path}_data'
-    
+    if script_run_on_server_def == 0:
+        wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
+        data_path = f'{wd_path}_data'
+    elif script_run_on_server_def == 1:
+        wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
+        data_path = f'{wd_path}_data'
 
-elif script_run_on_server_def == 1:
-    wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
-    data_path = f'{wd_path}_data'
+    # wd_path = 'C:/Models/OptimalPV_RH'
+    # data_path = f'{wd_path}_data'
+    os.chdir(wd_path)
+    os.listdir(data_path)
 
-# wd_path = 'C:/Models/OptimalPV_RH'
-# data_path = f'{wd_path}_data'
-os.chdir(wd_path)
-os.listdir(data_path)
-
-# import raw input data
-# check_vs_raw_input = False
-# agg_version = 'agg_solkat_pv_gm_gwr_heat_buff10_KT'
+    # import raw input data
+    # check_vs_raw_input = False
+    # agg_version = 'agg_solkat_pv_gm_gwr_heat_buff10_KT'
 
 
-# create a export txt file for summary outputs
-print(f'\n\n ***** AGGREGATION roofkat pv munic ***** \t time: {datetime.now()}')
-if not os.path.exists(f'{data_path}/Lupien_aggregation'):
-    os.makedirs(f'{data_path}/Lupien_aggregation')
+    # create a export txt file for summary outputs
+    print(f'\n\n ***** AGGREGATION roofkat pv munic ***** \t time: {datetime.now()}')
+    if not os.path.exists(f'{data_path}/Lupien_aggregation'):
+        os.makedirs(f'{data_path}/Lupien_aggregation')
 
-export_txt_name = f'{data_path}/Lupien_aggregation/aggregation_roofkat_pv_munic_log.txt'
-with open(export_txt_name, 'w') as export_txt:
-    export_txt.write(f'\n')
-    export_txt.write(f'\n *************************** \n     SANITY CHECK OUTPUT \n *************************** \n')
-    export_txt.write(f'\n* start script: time: {datetime.now()}')
+    export_txt_name = f'{data_path}/Lupien_aggregation/aggregation_roofkat_pv_munic_log.txt'
+    with open(export_txt_name, 'w') as export_txt:
+        export_txt.write(f'\n')
+        export_txt.write(f'\n *************************** \n     SANITY CHECK OUTPUT \n *************************** \n')
+        export_txt.write(f'\n* start script: time: {datetime.now()} \n  settings: ')
+        export_txt.write(f'\n -- script_run_on_server_def: {script_run_on_server_def}')
+        export_txt.write(f'\n -- check_vs_raw_input: {check_vs_raw_input}')
+        export_txt.write(f'\n -- union_vs_hull_shape: {union_vs_hull_shape}')
 
-# ------------------------------------------------------------------------------
-# DATA IMPORT
-# ------------------------------------------------------------------------------
-    
-gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-Map_roof_pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv.parquet')
-Map_roof_gm = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm.parquet')
+    # ------------------------------------------------------------------------------
+    # DATA IMPORT
+    # ------------------------------------------------------------------------------
+        
+    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    Map_roof_pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_{union_vs_hull_shape}.parquet')
+    Map_roof_gm = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm_{union_vs_hull_shape}.parquet')
 
-if check_vs_raw_input:
-    print(f'\n\n* import raw input data: time: {datetime.now()}')
-    roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-    print(f'imported roof_kat, time: {datetime.now()}')
-    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
-    pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
-    print(f'imported pv, time: {datetime.now()}')
+    if check_vs_raw_input:
+        print(f'\n\n* import raw input data: time: {datetime.now()}')
+        roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+        print(f'imported roof_kat, time: {datetime.now()}')
+        elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+        pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
+        print(f'imported pv, time: {datetime.now()}')
 
-    with open(export_txt_name, 'a') as export_txt:
-        export_txt.write(f'\n* use parquet RAW INPUT DATA for scanity check: time: {datetime.now()}')
+        with open(export_txt_name, 'a') as export_txt:
+            export_txt.write(f'\n\n* use parquet RAW INPUT DATA for scanity check: time: {datetime.now()}')
 
-elif not check_vs_raw_input:
-    print(f'\n\n* import parquet files: time: {datetime.now()}')
-    roof_kat = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet')
-    roof_kat.drop(columns=list(gm_shp.columns) + ['index_right',], inplace=True)
+    elif not check_vs_raw_input:
+        print(f'\n\n* import parquet files: time: {datetime.now()}')
+        roof_kat = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet')
+        roof_kat.drop(columns=list(gm_shp.columns) + ['index_right',], inplace=True)
 
-    pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/pv_by_gm.parquet')
-    pv.drop(columns=list(gm_shp.columns) + ['index_right',], inplace=True)
+        pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/pv_by_gm.parquet')
+        pv.drop(columns=list(gm_shp.columns) + ['index_right',], inplace=True)
 
-    with open(export_txt_name, 'a') as export_txt:
-        export_txt.write(f'\n* use parquet INTERCEPTS for scanity check: time: {datetime.now()}')
-    
-# ------------------------------------------------------------------------------
-# AGGREGATE
-# ------------------------------------------------------------------------------
+        with open(export_txt_name, 'a') as export_txt:
+            export_txt.write(f'\n\n* use parquet INTERCEPTS for scanity check: time: {datetime.now()}')
+        
+    # ------------------------------------------------------------------------------
+    # AGGREGATE
+    # ------------------------------------------------------------------------------
 
-# map to roofs -----------------------------------------------------------------
+    # map to roofs -----------------------------------------------------------------
 
-# pv to roofs_agg
-if "SB_UUID" not in Map_roof_pv.columns:
-    Map_roof_pv = Map_roof_pv.reset_index()
-# Map_roof_pv['SB_UUID'] = Map_roof_pv['SB_UUID'].astype('str')
-# Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].where(Map_roof_pv['xtf_id'].isna(), Map_roof_pv['xtf_id'].astype(str))
-# Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].astype('str')
-# Map_roof_pv.loc[Map_roof_pv['xtf_id'] == 'nan', 'xtf_id'] = np.nan
-# Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].astype('Int64')
-# roof_kat['SB_UUID'] = roof_kat['SB_UUID'].astype('str')
-# pv['xtf_id'] = pv['xtf_id'].astype('Int64')
-
-df_agg_pq = roof_kat.merge(Map_roof_pv[['SB_UUID', 'xtf_id']], on='SB_UUID', how='left')
-df_agg_pq = df_agg_pq.merge(pv[['xtf_id', 'TotalPower', 'InitialPower',  'BeginningOfOperation']], on='xtf_id', how='left')
-
-# gm to roofs_agg
-if "SB_UUID" not in Map_roof_gm.columns:
-    Map_roof_gm = Map_roof_gm.reset_index()
-# Map_roof_gm['SB_UUID'] = Map_roof_gm['SB_UUID'].astype('str')
-# Map_roof_gm['BFS_NUMMER'] = Map_roof_gm['BFS_NUMMER'].astype('Int64')
-
-df_agg_pq = df_agg_pq.merge(Map_roof_gm[['SB_UUID', 'BFS_NUMMER']], on='SB_UUID', how='left')
-
-# gm to roof_kat
-roof_kat = roof_kat.merge(Map_roof_gm[['SB_UUID', 'BFS_NUMMER']], on='SB_UUID', how='left')
+    # pv to roofs_agg
+    if "SB_UUID" not in Map_roof_pv.columns:
+        Map_roof_pv = Map_roof_pv.reset_index()
+    # Map_roof_pv['SB_UUID'] = Map_roof_pv['SB_UUID'].astype('str')
+    # Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].where(Map_roof_pv['xtf_id'].isna(), Map_roof_pv['xtf_id'].astype(str))
+    # Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].astype('str')
+    # Map_roof_pv.loc[Map_roof_pv['xtf_id'] == 'nan', 'xtf_id'] = np.nan
+    Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].astype('Int64')
+    # roof_kat['SB_UUID'] = roof_kat['SB_UUID'].astype('str')
+    # pv['xtf_id'] = pv['xtf_id'].astype('Int64')
 
 
-# transform date to year -------------------------------------------------------
-df_agg_pq['BeginningOfOperation'] = pd.to_datetime(df_agg_pq['BeginningOfOperation'])
-df_agg_pq['year'] = df_agg_pq['BeginningOfOperation'].dt.year
-df_agg_pq['year'] = df_agg_pq['year'].astype('Int64')
+    df_agg_pq = roof_kat.merge(Map_roof_pv[['SB_UUID', 'xtf_id']], on='SB_UUID', how='left')
+    df_agg_pq = df_agg_pq.merge(pv[['xtf_id', 'TotalPower', 'InitialPower',  'BeginningOfOperation']], on='xtf_id', how='left')
+
+    # gm to roofs_agg
+    if "SB_UUID" not in Map_roof_gm.columns:
+        Map_roof_gm = Map_roof_gm.reset_index()
+    # Map_roof_gm['SB_UUID'] = Map_roof_gm['SB_UUID'].astype('str')
+    Map_roof_gm['BFS_NUMMER'] = Map_roof_gm['BFS_NUMMER'].astype('Int64')
+
+    df_agg_pq = df_agg_pq.merge(Map_roof_gm[['SB_UUID', 'BFS_NUMMER']], on='SB_UUID', how='left')
+
+    # gm to roof_kat
+    roof_kat = roof_kat.merge(Map_roof_gm[['SB_UUID', 'BFS_NUMMER']], on='SB_UUID', how='left')
 
 
-# transform data to be grouped later -------------------------------------------
+    # transform date to year -------------------------------------------------------
+    df_agg_pq['BeginningOfOperation'] = pd.to_datetime(df_agg_pq['BeginningOfOperation'])
+    df_agg_pq['year'] = df_agg_pq['BeginningOfOperation'].dt.year
+    df_agg_pq['year'] = df_agg_pq['year'].astype('Int64')
 
-if True: 
+
+    # transform data to be grouped later -------------------------------------------
 
     # EXPORT: Select Houses with PV installation ----------------------------------------------------
-
     print(f'* start aggregation <<agg_solkat_pv_gm_BY_INSTALLATION>>, time: {datetime.now()}')
+
     df_agg_pq_non_nan = df_agg_pq[df_agg_pq['xtf_id'].notna()]
     len(df_agg_pq_non_nan['xtf_id'].unique()) 
     len(pv['xtf_id'].unique())
@@ -154,12 +155,11 @@ if True:
 
 
     # EXPORT: aggregate data by municipality  ------------------------------------------------
-
     print(f'* start aggregation <<agg_solkat_pv_gm_gwr_heat_BY_gm>>, time: {datetime.now()}')
 
     # Sanity check
     with open(export_txt_name, 'a') as export_txt:
-        export_txt.write(f'\n\n{10*"-"}\n sanity checks df_agg_pg by municipalities and year;  time: {datetime.now()} \n{10*"-"}')
+        export_txt.write(f'\n\n{10*"-"}\n sanity checks df_agg_pg by municipalities ONLY;  time: {datetime.now()} \n{10*"-"}')
         export_txt.write(f'\n length unique "SB_UUID": {len(roof_kat["SB_UUID"].unique())} in roof_kat ("raw import") | {len(df_agg_pq["SB_UUID"].unique())} df_agg_pq_non_nan ("aggregated, by house shapes")')
 
         print(f'** sanity check: STROMERTRAG')
@@ -207,6 +207,7 @@ if True:
             export_txt.write(f'\n min difference in STROMERTRAG by bfs: {min(percent_diff_by_bfs):.2f}%')
             export_txt.write(f'\n max difference in STROMERTRAG by bfs: {max(percent_diff_by_bfs):.2f}%')
         
+        print(f'** sanity check: STROMERTRAG - DIFFERENCES IN PERCENT, ROOF WITH INSTALLATION VS WITHOUT')
         export_txt.write(f'\n\n - PERCENT OF PV PRODUCTION TO POTENTIAL') 
         export_txt.write(f'\n % of STROMERTRAG, pv installed roofs / total, df_agg_pq: {df_agg_pq.loc[df_agg_pq["xtf_id"].notna(), "STROMERTRAG"].sum() / df_agg_pq["STROMERTRAG"].sum() * 100:.2f}%')
         export_txt.write(f'\n % of STROMERTRAG, pv installed roofs / total, class2up : {df_agg_pq.loc[(df_agg_pq["KLASSE"] >= 2) & (df_agg_pq["xtf_id"].notna()), "STROMERTRAG"].sum() / df_agg_pq.loc[df_agg_pq["KLASSE"] >= 2, "STROMERTRAG"].sum() * 100:.2f}%')
@@ -251,16 +252,17 @@ if True:
         })
     )
     """
+    # AGGREGATE
     df_agg_BY_GM = df_agg_pq.groupby(['BFS_NUMMER']).agg(
-        stromertrag_pot=('STROMERTRAG', 'sum'),
-        stromertrag_pot_class2up=('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 2].sum()),
-        stromertrag_pot_class3up=('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 3].sum()),
-        stromertrag_pot_class4up=('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 4].sum()),
-        stromertrag_pot_class5up=('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 5].sum()),
+        stromertrag_pot_kwh=('STROMERTRAG', 'sum'),
+        stromertrag_pot_kwh_class2up=('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 2].sum()),
+        stromertrag_pot_kwh_class3up=('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 3].sum()),
+        stromertrag_pot_kwh_class4up=('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 4].sum()),
+        stromertrag_pot_kwh_class5up=('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 5].sum()),
         ).reset_index()
 
     # EXPORT
-    df_agg_BY_GM.to_csv(f'{data_path}/Lupien_aggregation/agg_solkat_pv_gm_BY_gm.csv', index=False)
+    df_agg_BY_GM.to_csv(f'{data_path}/Lupien_aggregation/agg_solkat_pv_gm_BY_GM.csv', index=False)
     df_agg_BY_GM.to_parquet(f'{data_path}/Lupien_aggregation/agg_solkat_pv_gm_BY_GM.parquet')
     print(f'* export << agg_solkat_pv_gm_BY_GM >> to parquet and csv, aggregated by gm')
     with open(export_txt_name, 'a') as export_txt:
@@ -269,28 +271,81 @@ if True:
     # Sanity check 2
     with open(export_txt_name, 'a') as export_txt:
         print(f'** sanity check2: STROMERTRAG - DIFFERENCES IN PERCENT')
-        export_txt.write(f'\n\n - df_export vs raw data in DIFFERENCES')
-        export_txt.write(f'\n total "STROMERTRAG":          {df_agg_BY_GM["stromertrag_pot"].sum() - roof_kat["STROMERTRAG"].sum()}, df_agg_BY_GM[STROMERTRAG] -roof_kat[STROMERTRAG]')
-        export_txt.write(f'\n total "STROMERTRAG_class2up": {df_agg_BY_GM["stromertrag_pot_class2up"].sum() - roof_kat.loc[roof_kat["KLASSE"] >= 2, "STROMERTRAG"].sum()}, df_agg_BY_GM[STROMERTRAG_class2up] - roof_kat[STROMERTRAG_class2up]')
-        export_txt.write(f'\n total "STROMERTRAG_class3up": {df_agg_BY_GM["stromertrag_pot_class3up"].sum() - roof_kat.loc[roof_kat["KLASSE"] >= 3, "STROMERTRAG"].sum()}, df_agg_BY_GM[STROMERTRAG_class3up] - roof_kat[STROMERTRAG_class3up]')
-        export_txt.write(f'\n total "STROMERTRAG_class4up": {df_agg_BY_GM["stromertrag_pot_class4up"].sum() - roof_kat.loc[roof_kat["KLASSE"] >= 4, "STROMERTRAG"].sum()}, df_agg_BY_GM[STROMERTRAG_class4up] - roof_kat[STROMERTRAG_class4up]')
-        export_txt.write(f'\n total "STROMERTRAG_class5up": {df_agg_BY_GM["stromertrag_pot_class5up"].sum() - roof_kat.loc[roof_kat["KLASSE"] >= 5, "STROMERTRAG"].sum()}, df_agg_BY_GM[STROMERTRAG_class5up] - roof_kat[STROMERTRAG_class5up]')
+        export_txt.write(f'\n\n - df_exported vs raw data in DIFFERENCES IN PERCENT')
+        export_txt.write(f'\n total "STROMERTRAG":          {(df_agg_BY_GM["stromertrag_pot_kwh"].sum() - roof_kat["STROMERTRAG"].sum())/roof_kat["STROMERTRAG"].sum()}, (df_agg_BY_GM -roof_kat) / roof_kat')
+        export_txt.write(f'\n total "STROMERTRAG_class2up": {(df_agg_BY_GM["stromertrag_pot_kwh_class2up"].sum() - roof_kat.loc[roof_kat["KLASSE"] >= 2, "STROMERTRAG"].sum())/roof_kat.loc[roof_kat["KLASSE"] >= 2, "STROMERTRAG"].sum()}, (df_agg_BY_GM -roof_kat) / roof_kat')
+        export_txt.write(f'\n total "STROMERTRAG_class3up": {(df_agg_BY_GM["stromertrag_pot_kwh_class3up"].sum() - roof_kat.loc[roof_kat["KLASSE"] >= 3, "STROMERTRAG"].sum())/roof_kat.loc[roof_kat["KLASSE"] >= 3, "STROMERTRAG"].sum()}, (df_agg_BY_GM -roof_kat) / roof_kat')
+        export_txt.write(f'\n total "STROMERTRAG_class4up": {(df_agg_BY_GM["stromertrag_pot_kwh_class4up"].sum() - roof_kat.loc[roof_kat["KLASSE"] >= 4, "STROMERTRAG"].sum())/roof_kat.loc[roof_kat["KLASSE"] >= 4, "STROMERTRAG"].sum()}, (df_agg_BY_GM -roof_kat) / roof_kat')
+        export_txt.write(f'\n total "STROMERTRAG_class5up": {(df_agg_BY_GM["stromertrag_pot_kwh_class5up"].sum() - roof_kat.loc[roof_kat["KLASSE"] >= 5, "STROMERTRAG"].sum())/roof_kat.loc[roof_kat["KLASSE"] >= 5, "STROMERTRAG"].sum()}, (df_agg_BY_GM -roof_kat) / roof_kat')
 
 
 
-# EXPORT: aggregate data by municipality AND YEAR ------------------------------------------------
+    # EXPORT: aggregate data by municipality AND YEAR ------------------------------------------------
 
-print(f'* start aggregation <<agg_solkat_pv_gm_gwr_heat_BY_gm_YEAR>>, time: {datetime.now()}')
+    print(f'* start aggregation <<agg_solkat_pv_gm_gwr_heat_BY_gm_YEAR>>, time: {datetime.now()}')
 
-# Group by 'BFS_NUMMER' and 'year', and calculate aggregates
-df_agg_pq_NAT = df_agg_pq[df_agg_pq['BeginningOfOperation'].notnull()]
-df_agg_pq_non_nan = df_agg_pq[df_agg_pq['xtf_id'].notna()]
+    # Sanity check
+    pv['BeginningOfOperation'] = pd.to_datetime(pv['BeginningOfOperation'])
+    with open(export_txt_name, 'a') as export_txt:
+        export_txt.write(f'\n\n{10*"-"}\n sanity checks df_agg_pg by municipalities and year;  time: {datetime.now()} \n{10*"-"}')
+        
+        print(f'** sanity check: number of installations per year')
+        export_txt.write(f'\n\n\n- N UNIQUE INSTALLATIONS, by YEAR')
+        export_txt.write(f'\n nunique inst 2015+, df_agg_pq: {df_agg_pq.loc[df_agg_pq["year"] >= 2015, "xtf_id"].nunique()}, pv: {pv.loc[pv["BeginningOfOperation"] >= "2015-01-01", "xtf_id"].nunique()}')
+        export_txt.write(f'\n nunique inst 2016+, df_agg_pq: {df_agg_pq.loc[df_agg_pq["year"] >= 2016, "xtf_id"].nunique()}, pv: {pv.loc[pv["BeginningOfOperation"] >= "2016-01-01", "xtf_id"].nunique()}')
+        export_txt.write(f'\n nunique inst 2017+, df_agg_pq: {df_agg_pq.loc[df_agg_pq["year"] >= 2017, "xtf_id"].nunique()}, pv: {pv.loc[pv["BeginningOfOperation"] >= "2017-01-01", "xtf_id"].nunique()}')
+        export_txt.write(f'\n nunique inst 2018+, df_agg_pq: {df_agg_pq.loc[df_agg_pq["year"] >= 2018, "xtf_id"].nunique()}, pv: {pv.loc[pv["BeginningOfOperation"] >= "2018-01-01", "xtf_id"].nunique()}')
+        export_txt.write(f'\n nunique inst 2019+, df_agg_pq: {df_agg_pq.loc[df_agg_pq["year"] >= 2019, "xtf_id"].nunique()}, pv: {pv.loc[pv["BeginningOfOperation"] >= "2019-01-01", "xtf_id"].nunique()}')
+        export_txt.write(f'\n nunique inst 2020+, df_agg_pq: {df_agg_pq.loc[df_agg_pq["year"] >= 2020, "xtf_id"].nunique()}, pv: {pv.loc[pv["BeginningOfOperation"] >= "2020-01-01", "xtf_id"].nunique()}')
+        export_txt.write(f'\n nunique inst 2021+, df_agg_pq: {df_agg_pq.loc[df_agg_pq["year"] >= 2021, "xtf_id"].nunique()}, pv: {pv.loc[pv["BeginningOfOperation"] >= "2021-01-01", "xtf_id"].nunique()}')
+        export_txt.write(f'\n nunique inst 2022+, df_agg_pq: {df_agg_pq.loc[df_agg_pq["year"] >= 2022, "xtf_id"].nunique()}, pv: {pv.loc[pv["BeginningOfOperation"] >= "2022-01-01", "xtf_id"].nunique()}')
+        export_txt.write(f'\n nunqiue inst 2023+, df_agg_pq: {df_agg_pq.loc[df_agg_pq["year"] >= 2023, "xtf_id"].nunique()}, pv: {pv.loc[pv["BeginningOfOperation"] >= "2023-01-01", "xtf_id"].nunique()}')
+        export_txt.write(f'\n -')
 
-print("asdf")
+        print(f'** sanity check: number of installations per year IN PERCENT')
+        export_txt.write(f'\n\n- N UNIQUE INSTALLATIONS, by YEAR IN PERCENT')
+        export_txt.write(f'\n df_agg_pq[xtf_id, year] / pv[xtf_id, year]: {df_agg_pq.loc[df_agg_pq["year"] >= 2015, "xtf_id"].nunique() / pv.loc[pv["BeginningOfOperation"] >= "2015-01-01", "xtf_id"].nunique() * 100:.2f} %')
+        export_txt.write(f'\n df_agg_pq[xtf_id, year] / pv[xtf_id, year]: {df_agg_pq.loc[df_agg_pq["year"] >= 2016, "xtf_id"].nunique() / pv.loc[pv["BeginningOfOperation"] >= "2016-01-01", "xtf_id"].nunique() * 100:.2f} %')
+        export_txt.write(f'\n df_agg_pq[xtf_id, year] / pv[xtf_id, year]: {df_agg_pq.loc[df_agg_pq["year"] >= 2017, "xtf_id"].nunique() / pv.loc[pv["BeginningOfOperation"] >= "2017-01-01", "xtf_id"].nunique() * 100:.2f} %')
+        export_txt.write(f'\n df_agg_pq[xtf_id, year] / pv[xtf_id, year]: {df_agg_pq.loc[df_agg_pq["year"] >= 2018, "xtf_id"].nunique() / pv.loc[pv["BeginningOfOperation"] >= "2018-01-01", "xtf_id"].nunique() * 100:.2f} %')
+        export_txt.write(f'\n df_agg_pq[xtf_id, year] / pv[xtf_id, year]: {df_agg_pq.loc[df_agg_pq["year"] >= 2019, "xtf_id"].nunique() / pv.loc[pv["BeginningOfOperation"] >= "2019-01-01", "xtf_id"].nunique() * 100:.2f} %')
+        export_txt.write(f'\n df_agg_pq[xtf_id, year] / pv[xtf_id, year]: {df_agg_pq.loc[df_agg_pq["year"] >= 2020, "xtf_id"].nunique() / pv.loc[pv["BeginningOfOperation"] >= "2020-01-01", "xtf_id"].nunique() * 100:.2f} %')
+        export_txt.write(f'\n df_agg_pq[xtf_id, year] / pv[xtf_id, year]: {df_agg_pq.loc[df_agg_pq["year"] >= 2021, "xtf_id"].nunique() / pv.loc[pv["BeginningOfOperation"] >= "2021-01-01", "xtf_id"].nunique() * 100:.2f} %')
+        export_txt.write(f'\n df_agg_pq[xtf_id, year] / pv[xtf_id, year]: {df_agg_pq.loc[df_agg_pq["year"] >= 2022, "xtf_id"].nunique() / pv.loc[pv["BeginningOfOperation"] >= "2022-01-01", "xtf_id"].nunique() * 100:.2f} %')
+        export_txt.write(f'\n df_agg_pq[xtf_id, year] / pv[xtf_id, year]: {df_agg_pq.loc[df_agg_pq["year"] >= 2023, "xtf_id"].nunique() / pv.loc[pv["BeginningOfOperation"] >= "2023-01-01", "xtf_id"].nunique() * 100:.2f} %')
+        export_txt.write(f'\n -')
+        
+        print(f'** sanity check: number of installations per year IN PERCENT, BY KLASSE')
+        export_txt.write(f'\n\n- STROMERTRAG FOR INSTALLATIONS, for some years and classes')
+        export_txt.write(f'\n** sanity check: PRODUCTION POTENTIAL on INSTALLED ROOFS class3up, in 2020+')
+        export_txt.write(f'\n "STROMERTRAG" potentail on PVInst, class3 up, 2019:            {df_agg_pq.loc[(df_agg_pq["year"] == 2019) & (df_agg_pq["KLASSE"] >= 3), "STROMERTRAG"].sum()}')
+        export_txt.write(f'\n "STROMERTRAG" potentail on PVInst, class3 up, 2019, by xtf_id: {df_agg_pq.loc[(df_agg_pq["year"] == 2019) & (df_agg_pq["KLASSE"] >= 3) & (df_agg_pq["xtf_id"].notna()), "STROMERTRAG"].sum()}')
+        export_txt.write(f'\n "STROMERTRAG" potentail on PVInst, class3 up, 2020:            {df_agg_pq.loc[(df_agg_pq["year"] == 2020) & (df_agg_pq["KLASSE"] >= 3), "STROMERTRAG"].sum()}')
+        export_txt.write(f'\n "STROMERTRAG" potentail on PVInst, class3 up, 2020, by xtf_id: {df_agg_pq.loc[(df_agg_pq["year"] == 2020) & (df_agg_pq["KLASSE"] >= 3) & (df_agg_pq["xtf_id"].notna()), "STROMERTRAG"].sum()}')
+        export_txt.write(f'\n "STROMERTRAG" potentail on PVInst, class4 up, 2019:            {df_agg_pq.loc[(df_agg_pq["year"] == 2019) & (df_agg_pq["KLASSE"] >= 4), "STROMERTRAG"].sum()}')
+        export_txt.write(f'\n "STROMERTRAG" potentail on PVInst, class4 up, 2019, by xtf_id: {df_agg_pq.loc[(df_agg_pq["year"] == 2019) & (df_agg_pq["KLASSE"] >= 4) & (df_agg_pq["xtf_id"].notna()), "STROMERTRAG"].sum()}')
+        export_txt.write(f'\n "STROMERTRAG" potentail on PVInst, class4 up, 2020:            {df_agg_pq.loc[(df_agg_pq["year"] == 2020) & (df_agg_pq["KLASSE"] >= 4), "STROMERTRAG"].sum()}')
+        export_txt.write(f'\n "STROMERTRAG" potentail on PVInst, class4 up, 2020, by xtf_id: {df_agg_pq.loc[(df_agg_pq["year"] == 2020) & (df_agg_pq["KLASSE"] >= 4) & (df_agg_pq["xtf_id"].notna()), "STROMERTRAG"].sum()}')
 
 
 
+    # AGGREGATE
+    df_agg_BY_gm_YR = df_agg_pq.groupby(['BFS_NUMMER', 'year']).agg(
+        nunique_xtf_id=('xtf_id', 'nunique'),
+        stromertrag_pot_kwh_PVinst = ('STROMERTRAG', 'sum'),
+        stromertrag_pot_kwh_PVinst_class2up = ('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 2].sum()),
+        stromertrag_pot_kwh_PVinst_class3up = ('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 3].sum()),
+        stromertrag_pot_kwh_PVinst_class4up = ('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 4].sum()),
+        stromertrag_pot_kwh_PVinst_class5up = ('STROMERTRAG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 5].sum())
+        ).reset_index()
 
-print(f'\n\n ***** END SCRIPT ***** \t time: {datetime.now()}')
+    # EXPORT
+    df_agg_BY_gm_YR.to_csv(f'{data_path}/Lupien_aggregation/agg_solkat_pv_gm_BY_gm_YR.csv', index=False)
+    df_agg_BY_gm_YR.to_parquet(f'{data_path}/Lupien_aggregation/agg_solkat_pv_gm_BY_gm_YR.parquet')
+    print(f'* export << agg_solkat_pv_gm_BY_gm_YR >> to parquet and csv, aggregated by gm and year')
+    with open(export_txt_name, 'a') as export_txt:
+        export_txt.write(f'\n\n *export << agg_solkat_pv_gm_BY_gm_YR >> to parquet and csv, time: {datetime.now()}')
 
-    
+    print(f'\n\n ***** END SCRIPT ***** \t time: {datetime.now()}')
+
+        

@@ -4,9 +4,18 @@
 # Preamble: 
 # > 
 
-import sys
-sys.path.append('C:/Models/OptimalPV_RH') 
+# SETTIGNS --------------------------------------------------------------------
+script_run_on_server = 0
+recreate_parquet_files = 0
 
+
+# PACKAGES --------------------------------------------------------------------
+
+import sys
+if script_run_on_server == 0:
+    sys.path.append('C:/Models/OptimalPV_RH') 
+elif script_run_on_server == 1:
+    sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
 import os as os
 import pandas as pd
 import geopandas as gpd
@@ -15,17 +24,12 @@ import shutil
 import winsound
 import subprocess
 import functions 
-
 import data_aggregation.spatial_data_toparquet_by_gm as spd_to_pq
 
-from functions import chapter_to_logfile, checkpoint_to_logfile
+from functions import chapter_to_logfile, checkpoint_to_logfile, test_functions
 from data_aggregation.local_data_import_aggregation import import_aggregate_data
-# from data_aggregation.Lupien_aggregation_roofkat_pv_munic_V2 import Lupien_aggregation
+from data_aggregation.Lupien_aggregation_roofkat_pv_munic_V2 import Lupien_aggregation
 # from data_aggregation.spatial_data_toparquet_by_gm import spatal_topiarquet
-
-# SETTIGNS --------------------------------------------------------------------
-script_run_on_server = 0
-recreate_parquet_files = 1
 
 
 # SETUP -----------------------------------------------------------------------
@@ -69,7 +73,15 @@ else:
 
 
 # DATA AGGREGATION FOR MA student Lupien --------------------------------------
-# Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=False,)
+def move_Lupien_agg_to_dict(dict_name):
+    if not os.path.exists(f'{data_path}/{dict_name}'):
+        os.makedirs(f'{data_path}/{dict_name}')
+    f_to_move = glob.glob(f'{data_path}/Lupien_aggregation/*')
+    for f in f_to_move: 
+        shutil.copy(f, f'{data_path}/{dict_name}/')
+
+Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=True,  union_vs_hull_shape = 'union')
+
 
 # AGGREGATIONS -----------------------------------------------------------------
 # aggregation solkat, pv, munic, gwr, heatcool by cantons 

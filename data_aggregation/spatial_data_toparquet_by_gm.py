@@ -296,7 +296,7 @@ def create_Mappings(
     roof_kat_hull = gpd.GeoDataFrame(roof_kat_union_srs, geometry='geometry') # gpd.GeoDataFrame(roof_kat_union, crs = roof_kat_gdf.crs).reset_index()
     roof_kat_hull['geometry'] = roof_kat_hull['geometry'].convex_hull
 
-    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 6)
+    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 9)
     checkpoint_to_logfile('created roof_kat_hull + roof_kat_union', log_file_name = log_file_name, n_tabs = 1)
     checkpoint_to_logfile(f'roof_kat_hull area is {(roof_kat_hull["geometry"].area.sum() - roof_kat_gdf["geometry"].area.sum() )/ roof_kat_gdf["geometry"].area.sum()} %  larger than roof_kat_gdf', log_file_name = log_file_name, n_tabs = 1)
     checkpoint_to_logfile(f'roof_kat_union area is {(roof_kat_union["geometry"].area.sum() - roof_kat_gdf["geometry"].area.sum() )/ roof_kat_gdf["geometry"].area.sum()} %  larger than roof_kat_gdf', log_file_name = log_file_name, n_tabs = 1)
@@ -317,7 +317,7 @@ def create_Mappings(
     Map_roof_pv_union.drop(columns = ['index_right'], inplace = True)
     Map_roof_pv_union.reset_index(inplace = True)
 
-    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 6)
+    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 9)
     checkpoint_to_logfile(f'shape: Map_roof_pv_hull: {Map_roof_pv_hull.shape}, Map_roof_pv_union: {Map_roof_pv_union.shape}', log_file_name = log_file_name, n_tabs = 1)
     checkpoint_to_logfile(f'nunique SB_UUID in Map_roof_pv_hull: {Map_roof_pv_hull["SB_UUID"].nunique()}, Map_roof_pv_union: {Map_roof_pv_union["SB_UUID"].nunique()}', log_file_name = log_file_name, n_tabs = 1)
     checkpoint_to_logfile(f'nunique xtf_id in Map_roof_pv_hull: {Map_roof_pv_hull["xtf_id"].nunique()}, Map_roof_pv_union: {Map_roof_pv_union["xtf_id"].nunique()}', log_file_name = log_file_name, n_tabs = 1)
@@ -330,7 +330,7 @@ def create_Mappings(
     Map_roof_gm_union.drop(columns = ['index_right'], inplace = True)
     Map_roof_gm_union.reset_index(inplace = True)
 
-    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 6)
+    checkpoint_to_logfile('-', log_file_name = log_file_name, n_tabs = 9)
     checkpoint_to_logfile(f'shape: Map_roof_gm_hull: {Map_roof_gm_hull.shape}, Map_roof_gm_union: {Map_roof_gm_union.shape}', log_file_name = log_file_name, n_tabs = 1)
     checkpoint_to_logfile(f'nunique SB_UUID in Map_roof_gm_hull: {Map_roof_gm_hull["SB_UUID"].nunique()}, Map_roof_gm_union: {Map_roof_gm_union["SB_UUID"].nunique()}', log_file_name = log_file_name, n_tabs = 1)
     checkpoint_to_logfile(f'nunique BFS_NUMMER in Map_roof_gm_hull: {Map_roof_gm_hull["BFS_NUMMER"].nunique()}, Map_roof_gm_union: {Map_roof_gm_union["BFS_NUMMER"].nunique()}', log_file_name = log_file_name, n_tabs = 1)
