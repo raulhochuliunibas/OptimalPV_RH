@@ -17,116 +17,118 @@ def Lupien_aggregation(
     """
     script_run_on_server_def: 0 = private computer, 1 = server
     """
+    print("-")
         
-    # script_run_on_server_def = 0
-    # check_vs_raw_input = False
-    # union_vs_hull_shape = 'union'
+script_run_on_server_def = 0
+check_vs_raw_input = False
+union_vs_hull_shape = 'union'
 
-    # ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-    if script_run_on_server_def == 0:
-        wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
-        data_path = f'{wd_path}_data'
-    elif script_run_on_server_def == 1:
-        wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
-        data_path = f'{wd_path}_data'
+if script_run_on_server_def == 0:
+    wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
+    data_path = f'{wd_path}_data'
+elif script_run_on_server_def == 1:
+    wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
+    data_path = f'{wd_path}_data'
 
-    # wd_path = 'C:/Models/OptimalPV_RH'
-    # data_path = f'{wd_path}_data'
-    os.chdir(wd_path)
-    os.listdir(data_path)
+# wd_path = 'C:/Models/OptimalPV_RH'
+# data_path = f'{wd_path}_data'
+os.chdir(wd_path)
+os.listdir(data_path)
 
-    # import raw input data
-    # check_vs_raw_input = False
-    # agg_version = 'agg_solkat_pv_gm_gwr_heat_buff10_KT'
-
-
-    # create a export txt file for summary outputs
-    print(f'\n\n ***** AGGREGATION roofkat pv munic ***** \t time: {datetime.now()}')
-    if not os.path.exists(f'{data_path}/Lupien_aggregation'):
-        os.makedirs(f'{data_path}/Lupien_aggregation')
-
-    export_txt_name = f'{data_path}/Lupien_aggregation/aggregation_roofkat_pv_munic_log.txt'
-    with open(export_txt_name, 'w') as export_txt:
-        export_txt.write(f'\n')
-        export_txt.write(f'\n *************************** \n     SANITY CHECK OUTPUT \n *************************** \n')
-        export_txt.write(f'\n* start script: time: {datetime.now()} \n  settings: ')
-        export_txt.write(f'\n -- script_run_on_server_def: {script_run_on_server_def}')
-        export_txt.write(f'\n -- check_vs_raw_input: {check_vs_raw_input}')
-        export_txt.write(f'\n -- union_vs_hull_shape: {union_vs_hull_shape}')
-
-    # ------------------------------------------------------------------------------
-    # DATA IMPORT
-    # ------------------------------------------------------------------------------
-        
-    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    Map_roof_pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_{union_vs_hull_shape}.parquet')
-    Map_roof_gm = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm_{union_vs_hull_shape}.parquet')
-
-    if check_vs_raw_input:
-        print(f'\n\n* import raw input data: time: {datetime.now()}')
-        roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-        print(f'imported roof_kat, time: {datetime.now()}')
-        elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
-        pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
-        print(f'imported pv, time: {datetime.now()}')
-
-        with open(export_txt_name, 'a') as export_txt:
-            export_txt.write(f'\n\n* use parquet RAW INPUT DATA for scanity check: time: {datetime.now()}')
-
-    elif not check_vs_raw_input:
-        print(f'\n\n* import parquet files: time: {datetime.now()}')
-        roof_kat = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet')
-        roof_kat.drop(columns=list(gm_shp.columns) + ['index_right',], inplace=True)
-
-        pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/pv_by_gm.parquet')
-        pv.drop(columns=list(gm_shp.columns) + ['index_right',], inplace=True)
-
-        with open(export_txt_name, 'a') as export_txt:
-            export_txt.write(f'\n\n* use parquet INTERCEPTS for scanity check: time: {datetime.now()}')
-        
-    # ------------------------------------------------------------------------------
-    # AGGREGATE
-    # ------------------------------------------------------------------------------
-
-    # map to roofs -----------------------------------------------------------------
-
-    # pv to roofs_agg
-    if "SB_UUID" not in Map_roof_pv.columns:
-        Map_roof_pv = Map_roof_pv.reset_index()
-    # Map_roof_pv['SB_UUID'] = Map_roof_pv['SB_UUID'].astype('str')
-    # Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].where(Map_roof_pv['xtf_id'].isna(), Map_roof_pv['xtf_id'].astype(str))
-    # Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].astype('str')
-    # Map_roof_pv.loc[Map_roof_pv['xtf_id'] == 'nan', 'xtf_id'] = np.nan
-    Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].astype('Int64')
-    # roof_kat['SB_UUID'] = roof_kat['SB_UUID'].astype('str')
-    # pv['xtf_id'] = pv['xtf_id'].astype('Int64')
+# import raw input data
+# check_vs_raw_input = False
+# agg_version = 'agg_solkat_pv_gm_gwr_heat_buff10_KT'
 
 
-    df_agg_pq = roof_kat.merge(Map_roof_pv[['SB_UUID', 'xtf_id']], on='SB_UUID', how='left')
-    df_agg_pq = df_agg_pq.merge(pv[['xtf_id', 'TotalPower', 'InitialPower',  'BeginningOfOperation']], on='xtf_id', how='left')
+# create a export txt file for summary outputs
+print(f'\n\n ***** AGGREGATION roofkat pv munic ***** \t time: {datetime.now()}')
+if not os.path.exists(f'{data_path}/Lupien_aggregation'):
+    os.makedirs(f'{data_path}/Lupien_aggregation')
 
-    # gm to roofs_agg
-    if "SB_UUID" not in Map_roof_gm.columns:
-        Map_roof_gm = Map_roof_gm.reset_index()
-    # Map_roof_gm['SB_UUID'] = Map_roof_gm['SB_UUID'].astype('str')
-    Map_roof_gm['BFS_NUMMER'] = Map_roof_gm['BFS_NUMMER'].astype('Int64')
+export_txt_name = f'{data_path}/Lupien_aggregation/aggregation_roofkat_pv_munic_log.txt'
+with open(export_txt_name, 'w') as export_txt:
+    export_txt.write(f'\n')
+    export_txt.write(f'\n *************************** \n     SANITY CHECK OUTPUT \n *************************** \n')
+    export_txt.write(f'\n* start script: time: {datetime.now()} \n  settings: ')
+    export_txt.write(f'\n -- script_run_on_server_def: {script_run_on_server_def}')
+    export_txt.write(f'\n -- check_vs_raw_input: {check_vs_raw_input}')
+    export_txt.write(f'\n -- union_vs_hull_shape: {union_vs_hull_shape}')
 
-    df_agg_pq = df_agg_pq.merge(Map_roof_gm[['SB_UUID', 'BFS_NUMMER']], on='SB_UUID', how='left')
+# ------------------------------------------------------------------------------
+# DATA IMPORT
+# ------------------------------------------------------------------------------
+    
+gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+Map_roof_pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_pv_{union_vs_hull_shape}.parquet')
+Map_roof_gm = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/Map_roof_gm_{union_vs_hull_shape}.parquet')
 
-    # gm to roof_kat
-    roof_kat = roof_kat.merge(Map_roof_gm[['SB_UUID', 'BFS_NUMMER']], on='SB_UUID', how='left')
+if check_vs_raw_input:
+    print(f'\n\n* import raw input data: time: {datetime.now()}')
+    roof_kat = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+    print(f'imported roof_kat, time: {datetime.now()}')
+    elec_prod = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+    pv = elec_prod[elec_prod['SubCategory'] == 'subcat_2'].copy()
+    print(f'imported pv, time: {datetime.now()}')
+
+    with open(export_txt_name, 'a') as export_txt:
+        export_txt.write(f'\n\n* use parquet RAW INPUT DATA for scanity check: time: {datetime.now()}')
+
+elif not check_vs_raw_input:
+    print(f'\n\n* import parquet files: time: {datetime.now()}')
+    roof_kat = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet')
+    roof_kat.drop(columns=list(gm_shp.columns) + ['index_right',], inplace=True)
+
+    pv = pd.read_parquet(f'{data_path}/spatial_intersection_by_gm/pv_by_gm.parquet')
+    pv.drop(columns=list(gm_shp.columns) + ['index_right',], inplace=True)
+
+    with open(export_txt_name, 'a') as export_txt:
+        export_txt.write(f'\n\n* use parquet INTERCEPTS for scanity check: time: {datetime.now()}')
+    
+# ------------------------------------------------------------------------------
+# AGGREGATE
+# ------------------------------------------------------------------------------
+
+# map to roofs -----------------------------------------------------------------
+
+# pv to roofs_agg
+if "SB_UUID" not in Map_roof_pv.columns:
+    Map_roof_pv = Map_roof_pv.reset_index()
+# Map_roof_pv['SB_UUID'] = Map_roof_pv['SB_UUID'].astype('str')
+# Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].where(Map_roof_pv['xtf_id'].isna(), Map_roof_pv['xtf_id'].astype(str))
+# Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].astype('str')
+# Map_roof_pv.loc[Map_roof_pv['xtf_id'] == 'nan', 'xtf_id'] = np.nan
+Map_roof_pv['xtf_id'] = Map_roof_pv['xtf_id'].astype('Int64')
+# roof_kat['SB_UUID'] = roof_kat['SB_UUID'].astype('str')
+# pv['xtf_id'] = pv['xtf_id'].astype('Int64')
 
 
-    # transform date to year -------------------------------------------------------
-    df_agg_pq['BeginningOfOperation'] = pd.to_datetime(df_agg_pq['BeginningOfOperation'])
-    df_agg_pq['year'] = df_agg_pq['BeginningOfOperation'].dt.year
-    df_agg_pq['year'] = df_agg_pq['year'].astype('Int64')
+df_agg_pq = roof_kat.merge(Map_roof_pv[['SB_UUID', 'xtf_id']], on='SB_UUID', how='left')
+df_agg_pq = df_agg_pq.merge(pv[['xtf_id', 'TotalPower', 'InitialPower',  'BeginningOfOperation']], on='xtf_id', how='left')
+
+# gm to roofs_agg
+if "SB_UUID" not in Map_roof_gm.columns:
+    Map_roof_gm = Map_roof_gm.reset_index()
+# Map_roof_gm['SB_UUID'] = Map_roof_gm['SB_UUID'].astype('str')
+Map_roof_gm['BFS_NUMMER'] = Map_roof_gm['BFS_NUMMER'].astype('Int64')
+
+df_agg_pq = df_agg_pq.merge(Map_roof_gm[['SB_UUID', 'BFS_NUMMER']], on='SB_UUID', how='left')
+
+# gm to roof_kat
+roof_kat = roof_kat.merge(Map_roof_gm[['SB_UUID', 'BFS_NUMMER']], on='SB_UUID', how='left')
 
 
-    # transform data to be grouped later -------------------------------------------
+# transform date to year -------------------------------------------------------
+df_agg_pq['BeginningOfOperation'] = pd.to_datetime(df_agg_pq['BeginningOfOperation'])
+df_agg_pq['year'] = df_agg_pq['BeginningOfOperation'].dt.year
+df_agg_pq['year'] = df_agg_pq['year'].astype('Int64')
 
-    # EXPORT: Select Houses with PV installation ----------------------------------------------------
+
+# transform data to be grouped later -------------------------------------------
+
+# EXPORT: Select Houses with PV installation ----------------------------------------------------
+if False:
     print(f'* start aggregation <<agg_solkat_pv_gm_BY_INSTALLATION>>, time: {datetime.now()}')
 
     df_agg_pq_non_nan = df_agg_pq[df_agg_pq['xtf_id'].notna()]
@@ -154,7 +156,8 @@ def Lupien_aggregation(
         export_txt.write(f'\n\n *export << agg_solkat_pv_gm_BY_INSTALLATION >> to parquet and csv, time: {datetime.now()}')
 
 
-    # EXPORT: aggregate data by municipality  ------------------------------------------------
+# EXPORT: aggregate data by municipality  ------------------------------------------------
+if False:
     print(f'* start aggregation <<agg_solkat_pv_gm_gwr_heat_BY_gm>>, time: {datetime.now()}')
 
     # Sanity check
@@ -279,9 +282,8 @@ def Lupien_aggregation(
         export_txt.write(f'\n total "STROMERTRAG_class5up": {(df_agg_BY_GM["stromertrag_pot_kwh_class5up"].sum() - roof_kat.loc[roof_kat["KLASSE"] >= 5, "STROMERTRAG"].sum())/roof_kat.loc[roof_kat["KLASSE"] >= 5, "STROMERTRAG"].sum()}, (df_agg_BY_GM -roof_kat) / roof_kat')
 
 
-
-    # EXPORT: aggregate data by municipality AND YEAR ------------------------------------------------
-
+# EXPORT: aggregate data by municipality AND YEAR ------------------------------------------------
+if False:
     print(f'* start aggregation <<agg_solkat_pv_gm_gwr_heat_BY_gm_YEAR>>, time: {datetime.now()}')
 
     # Sanity check
@@ -346,6 +348,28 @@ def Lupien_aggregation(
     with open(export_txt_name, 'a') as export_txt:
         export_txt.write(f'\n\n *export << agg_solkat_pv_gm_BY_gm_YR >> to parquet and csv, time: {datetime.now()}')
 
-    print(f'\n\n ***** END SCRIPT ***** \t time: {datetime.now()}')
+# EXPORT: aggregate data by municipality, MSTRAHLUNG average ------------------------------------
+if True: 
+    print(f'* start aggregation <<agg_solkat_pv_gm_gwr_heat_BY_GM_MSTRAHLUNG>>, time: {datetime.now()}')
 
-        
+    df_agg_avg_MSTRAHL_BY_GM = df_agg_pq.groupby(['BFS_NUMMER']).agg(
+        mstrah_kwh_m2_year_mean=('MSTRAHLUNG', 'mean'),
+        mstrah_kwh_m2_year_mean_2up=('MSTRAHLUNG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 2].mean()),
+        mstrah_kwh_m2_year_mean_3up=('MSTRAHLUNG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 3].mean()),
+        mstrah_kwh_m2_year_mean_4up=('MSTRAHLUNG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 4].mean()),
+        mstrah_kwh_m2_year_mean_5up=('MSTRAHLUNG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 5].mean()),
+        gstrah_kwh_m2_year_mean=('GSTRAHLUNG', 'mean'),
+        gstrah_kwh_m2_year_mean_2up=('GSTRAHLUNG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 2].mean()),
+        gstrah_kwh_m2_year_mean_3up=('GSTRAHLUNG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 3].mean()),
+        gstrah_kwh_m2_year_mean_4up=('GSTRAHLUNG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 4].mean()),
+        gstrah_kwh_m2_year_mean_5up=('GSTRAHLUNG', lambda x: x[df_agg_pq.loc[x.index, 'KLASSE'] >= 5].mean()),
+        ).reset_index()
+
+    # EXPORT
+    df_agg_avg_MSTRAHL_BY_GM.to_csv(f'{data_path}/Lupien_aggregation/agg_solkat_pv_gm_BY_GM_MSTRAHLUNG.csv', index=False)
+    df_agg_avg_MSTRAHL_BY_GM.to_parquet(f'{data_path}/Lupien_aggregation/agg_solkat_pv_gm_BY_GM_MSTRAHLUNG.parquet')
+    print(f'* export << agg_solkat_pv_gm_BY_GM_MSTRAHLUNG >> to parquet and csv, aggregated by gm and year')
+    
+print(f'\n\n ***** END SCRIPT ***** \t time: {datetime.now()}')
+
+    
