@@ -1,242 +1,392 @@
+import sys
 import os as os
 import pandas as pd
-import numpy as np
 import geopandas as gpd
-import datetime
 import winsound
-
 from datetime import datetime
-# from ..functions import chapter_to_logfile, checkpoint_to_logfile
 
-# ------------------------------------------------------------------------------------------------------
-# LOG FIlE PRINTING FUNCTIONS
-# ------------------------------------------------------------------------------------------------------
-
-def chapter_to_logfile(str, log_file_name):
-    """
-    Function to write a chapter to the logfile
-    """
-    check = f'\n\n****************************************\n {str} \n start at:{datetime.now()} \n****************************************\n\n'
-    print(check)
-    with open(f'{log_file_name}', 'a') as log_file:
-        log_file.write(f'{check}\n')
-time_last_call = None
-def checkpoint_to_logfile(str, log_file_name, n_tabs = 0, timer_func=None):
-    """
-    Function to write a checkpoint to the logfile
-    """
-    global time_last_call
-    
-    time_now = datetime.now()
-    if time_last_call:
-        runtime = time_now - time_last_call
-        minutes, seconds = divmod(runtime.seconds, 60)
-        runtime_str = f"{minutes} min {seconds} sec"
-    else:
-        runtime_str = 'N/A'
-    
-    n_tabs_str = '\t' * n_tabs
-    check = f'* {str}{n_tabs_str}runtime: {runtime_str};   (stamp: {datetime.now()})'
-    print(check)
-
-    with open(f'{log_file_name}', 'a') as log_file:
-        log_file.write(f"{check}\n")
-    
-    time_last_call = time_now
+sys.path.append('..')
+from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
 
 # ------------------------------------------------------------------------------------------------------
 # SPATIAL DATA TO PARQUET BY GM
 # ------------------------------------------------------------------------------------------------------
 
-# ROOF_KAT ---------------------------------------------------------------------
-def roof_kat_spatial_toparquet(
-    script_run_on_server_def = 0,
-    smaller_import = False,):
+# SOLAR KATASTER ---------------------------------------------------------------------
+def solkat_spatial_toparquet(
+    script_run_on_server_def = False,
+    smaller_import_def = False,
+    log_file_name_def = None,
+    wd_path_def = None,
+    data_path_def = None,
+    show_debug_prints_def = None, 
+    ):
     """
     Function to intersect spatial data with gm_shp and export to parquet
     """
 
     # setup -------------------
-    if script_run_on_server_def == 0:
-        wd_path = "C:/Models/OptimalPV_RH"
-        data_path = f'{wd_path}_data'
-    elif script_run_on_server_def == 1:
-        wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
-        data_path = f'{wd_path}_data'
+    wd_path = wd_path_def if wd_path_def else "C:/Models/OptimalPV_RH"
+    data_path = data_path_def if data_path_def else f'{wd_path}_data'
+
+    import sys
+    if not script_run_on_server_def:
+        sys.path.append('C:/Models/OptimalPV_RH') 
+    elif script_run_on_server_def:
+        sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
+    import functions
+    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
     # set directory if necessary    
-    if not os.path.exists(f'{data_path}/spatial_intersection_by_gm'):
-        os.makedirs(f'{data_path}/spatial_intersection_by_gm')
-    
-    # create log file for checkpoint comments
-    log_file_name = f'{data_path}/spatial_intersection_by_gm/spatial_data_toparquet_by_gm_log.txt'
-    chapter_to_logfile('start roof_kat_spatial_toparquet.py', log_file_name = log_file_name)
+    if not os.path.exists(f'{data_path}/output/preprep_data'):
+        os.makedirs(f'{data_path}/output/preprep_data')
+
+    # create first checkpoint
+    checkpoint_to_logfile('run function: solkat_spatial_toparquet.py', log_file_name_def=log_file_name_def, n_tabs_def = 5) 
+
 
     # import ------------------
     gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    if not smaller_import:
-        roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
-    elif smaller_import:
-        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
-        roof_kat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 10000)
-        checkpoint_to_logfile('import roof_kat', log_file_name = log_file_name, n_tabs = 1)
-    
-    # drop unnecessary columns ------------------
+    if not smaller_import_def:
+        solkat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+        checkpoint_to_logfile('import solkat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    elif smaller_import_def:
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        solkat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 1000)
+        checkpoint_to_logfile('import solkat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
         
     # sjoin to gm_shp ------------------
-    roof_kat_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
-    roof_kat = gpd.sjoin(roof_kat_gdf, gm_shp_gdf, how="left", predicate="within")
-    checkpoint_to_logfile('sjoin roof_kat', log_file_name = log_file_name, n_tabs = 1)
+    solkat_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    solkat = gpd.sjoin(solkat_gdf, gm_shp_gdf, how="left", predicate="within")
+    checkpoint_to_logfile('sjoin solkat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+        # drop unnecessary columns ------------------
+    keep_cols = ["BFS_NUMMER", ]
+    dele_cols = ['index_right'] + [col for col in gm_shp_gdf.columns if col not in keep_cols]
+    solkat.drop(columns = dele_cols, inplace = True)
 
     # export ------------------
-    roof_kat.to_parquet(f'{data_path}/spatial_intersection_by_gm/roof_kat_by_gm.parquet')
-    checkpoint_to_logfile('export roof_kat.parquet', log_file_name = log_file_name, n_tabs = 1)
+    solkat.to_parquet(f'{data_path}/output/preprep_data/solkat_by_gm.parquet')
+    checkpoint_to_logfile('export solkat.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5)
+    print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
 
-# BDLNG_REG ---------------------------------------------------------------------
-def bldng_reg_spatial_toparquet(
-    script_run_on_server_def = 0,
-    smaller_import = False,):
+
+# BUILDING + DWELLING REGISTERY ---------------------------------------------------------------------
+def gwr_spatial_toparquet(
+    script_run_on_server_def = False,
+    smaller_import_def = False,
+    log_file_name_def = None,
+    wd_path_def = None,
+    data_path_def = None,
+    show_debug_prints_def = None,
+    ):
     """
     Function to intersect spatial data with gm_shp and export to parquet
     """
 
     # setup -------------------
-    if script_run_on_server_def == 0:
-        wd_path = "C:/Models/OptimalPV_RH"
-        data_path = f'{wd_path}_data'
-    elif script_run_on_server_def == 1:
-        wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
-        data_path = f'{wd_path}_data'
+    wd_path = wd_path_def if wd_path_def else "C:/Models/OptimalPV_RH"
+    data_path = data_path_def if data_path_def else f'{wd_path}_data'
 
-    # set directory if necessary 
-    if not os.path.exists(f'{data_path}/spatial_intersection_by_gm'):
-        os.makedirs(f'{data_path}/spatial_intersection_by_gm')
-
-    # create log file for checkpoint comments
-    log_file_name = f'{data_path}/spatial_intersection_by_gm/spatial_data_toparquet_by_gm_log.txt'
-
-    # import ------------------
-    gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    if not smaller_import:
-        bldng_reg_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
-        checkpoint_to_logfile('import bldng_reg', log_file_name = log_file_name, n_tabs = 1)
-    elif smaller_import:
-        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
-        bldng_reg_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 2)
-        checkpoint_to_logfile('import bldng_reg', log_file_name = log_file_name, n_tabs = 1)
-
-    # drop unnecessary columns ------------------
-        
-    # sjoin to gm_shp ------------------
-    bldng_reg_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
-    bldng_reg = gpd.sjoin(bldng_reg_gdf, gm_shp_gdf, how="left", predicate="within")
-    checkpoint_to_logfile('sjoin bldng_reg', log_file_name = log_file_name, n_tabs = 1)
-
-    # export ------------------
-    bldng_reg.to_parquet(f'{data_path}/spatial_intersection_by_gm/bldng_reg_by_gm.parquet')
-    checkpoint_to_logfile('export bldng_reg.parquet', log_file_name = log_file_name, n_tabs = 1)
-
-# HEATCOOL ---------------------------------------------------------------------
-def heatcool_dem_spatial_toparquet(
-    script_run_on_server_def = 0,
-    smaller_import = False,):
-    """
-    Function to intersect spatial data with gm_shp and export to parquet
-    """
-
-    # setup -------------------
-    if script_run_on_server_def == 0:
-        wd_path = "C:/Models/OptimalPV_RH"
-        data_path = f'{wd_path}_data'
-    elif script_run_on_server_def == 1:
-        wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
-        data_path = f'{wd_path}_data'
+    import sys
+    if not script_run_on_server_def:
+        sys.path.append('C:/Models/OptimalPV_RH')
+    elif script_run_on_server_def:
+        sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
+    import functions
+    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
     # set directory if necessary
-    if not os.path.exists(f'{data_path}/spatial_intersection_by_gm'):
-        os.makedirs(f'{data_path}/spatial_intersection_by_gm')
-    
-    # create log file for checkpoint comments
-    log_file_name = f'{data_path}/spatial_intersection_by_gm/spatial_data_toparquet_by_gm_log.txt'
+    if not os.path.exists(f'{data_path}/output/preprep_data'):
+        os.makedirs(f'{data_path}/output/preprep_data')
 
+    # create first checkpoint
+    checkpoint_to_logfile('run function: gwr_spatial_toparquet.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+    
     # import ------------------
     gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    if not smaller_import:
-        heatcool_dem_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
-        checkpoint_to_logfile('import heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
-    elif smaller_import:
-        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
-        heatcool_dem_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 10)
-        checkpoint_to_logfile('import heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
+    if not smaller_import_def:
+        gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+        checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    elif smaller_import_def:
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 1000)
+        checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # sjoin to gm_shp ------------------
+    gwr_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    gwr = gpd.sjoin(gwr_gdf, gm_shp_gdf, how="left", predicate="within")
+    checkpoint_to_logfile('sjoin gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # drop unnecessary columns ------------------
-        
-    # sjoin to gm_shp ------------------
-    heatcool_dem_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
-    heatcool_dem = gpd.sjoin(heatcool_dem_gdf, gm_shp_gdf, how="left", predicate="within")
-    checkpoint_to_logfile('sjoin heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
+    keep_cols = ["BFS_NUMMER", ]
+    dele_cols = ['index_right'] + [col for col in gm_shp_gdf.columns if col not in keep_cols]
+    gwr.drop(columns = dele_cols, inplace = True)
 
     # export ------------------
-    heatcool_dem.to_parquet(f'{data_path}/spatial_intersection_by_gm/heatcool_dem_by_gm.parquet')
-    checkpoint_to_logfile('export heatcool_dem.parquet', log_file_name = log_file_name, n_tabs = 1)
+    gwr.to_parquet(f'{data_path}/output/preprep_data/gwr_by_gm.parquet')
+    checkpoint_to_logfile('export gwr.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5)
+    print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
+
+
+# HEATING + COOLING DEMAND ---------------------------------------------------------------------
+def heat_spatial_toparquet(
+    script_run_on_server_def = False,
+    smaller_import_def = False,
+    log_file_name_def = None,
+    wd_path_def = None,
+    data_path_def = None,
+    show_debug_prints_def = None,
+    ):
+    """
+    Function to intersect spatial data with gm_shp and export to parquet
+    """
+
+    # setup -------------------
+    wd_path = wd_path_def if wd_path_def else "C:/Models/OptimalPV_RH"
+    data_path = data_path_def if data_path_def else f'{wd_path}_data'
+
+    import sys
+    if not script_run_on_server_def:
+        sys.path.append('C:/Models/OptimalPV_RH')
+    elif script_run_on_server_def:
+        sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
+    import functions
+    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+
+    # set directory if necessary
+    if not os.path.exists(f'{data_path}/output/preprep_data'):
+        os.makedirs(f'{data_path}/output/preprep_data')
+
+    # create first checkpoint
+    checkpoint_to_logfile('run function: heat_spatial_toparquet.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+    
+    # import ------------------
+    gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    if not smaller_import_def:
+        heat_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')       
+        checkpoint_to_logfile('import heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    elif smaller_import_def:
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
+        heat_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 10)
+        checkpoint_to_logfile('import heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    
+    # sjoin to gm_shp ------------------
+    heat_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    heat = gpd.sjoin(heat_gdf, gm_shp_gdf, how="left", predicate="within")
+    checkpoint_to_logfile('sjoin heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # drop unnecessary columns ------------------
+    keep_cols = ["BFS_NUMMER", ]
+    dele_cols = ['index_right'] + [col for col in gm_shp_gdf.columns if col not in keep_cols]
+    heat.drop(columns = dele_cols, inplace = True)
+
+    # export ------------------
+    heat.to_parquet(f'{data_path}/output/preprep_data/heat_by_gm.parquet')
+    checkpoint_to_logfile('export heat.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5)
+    print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
+
 
 # PV ---------------------------------------------------------------------
 def pv_spatial_toparquet(
-    script_run_on_server_def = 0,
-    smaller_import = False,):
+    script_run_on_server_def = False,
+    smaller_import_def = False,
+    log_file_name_def = None,
+    wd_path_def = None,
+    data_path_def = None,
+    show_debug_prints_def = None,
+    ):
     """
     Function to intersect spatial data with gm_shp and export to parquet
     """
 
     # setup -------------------
-    if script_run_on_server_def == 0:
-        wd_path = "C:/Models/OptimalPV_RH"
-        data_path = f'{wd_path}_data'
-    elif script_run_on_server_def == 1:
-        wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
-        data_path = f'{wd_path}_data'
+    wd_path = wd_path_def if wd_path_def else "C:/Models/OptimalPV_RH"
+    data_path = data_path_def if data_path_def else f'{wd_path}_data'
+
+    import sys
+    if not script_run_on_server_def:
+        sys.path.append('C:/Models/OptimalPV_RH')
+    elif script_run_on_server_def:
+        sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
+    import functions
+    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
     # set directory if necessary
-    if not os.path.exists(f'{data_path}/spatial_intersection_by_gm'):
-        os.makedirs(f'{data_path}/spatial_intersection_by_gm')
+    if not os.path.exists(f'{data_path}/output/preprep_data'):
+        os.makedirs(f'{data_path}/output/preprep_data')
 
-    # create log file for checkpoint comments
-    log_file_name = f'{data_path}/spatial_intersection_by_gm/spatial_data_toparquet_by_gm_log.txt'
+    # create first checkpoint
+    checkpoint_to_logfile('run function: pv_spatial_toparquet.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 
     # import ------------------
     gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    if not smaller_import:
+    if not smaller_import_def:
         elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
-        checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 1)
+        checkpoint_to_logfile('import elec_prod', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
         pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
-        checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
-    elif smaller_import:
-        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
-        elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 10000)
-        checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 1)
+        checkpoint_to_logfile('subset for pv', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    elif smaller_import_def:
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 1000)
+        checkpoint_to_logfile('import elec_prod', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
         pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
-        checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
-
-    # drop unnecessary columns ------------------
+        checkpoint_to_logfile('subset for pv', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # sjoin to gm_shp ------------------
     pv_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
     pv = gpd.sjoin(pv_gdf, gm_shp_gdf, how="left", predicate="within")
-    checkpoint_to_logfile('sjoin pv', log_file_name = log_file_name, n_tabs = 1)
+    checkpoint_to_logfile('sjoin pv', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # drop unnecessary columns ------------------
+    keep_cols = ["BFS_NUMMER", ]
+    dele_cols = ['index_right'] + [col for col in gm_shp_gdf.columns if col not in keep_cols]
+    pv.drop(columns = dele_cols, inplace = True)
 
     # export ------------------
-    pv.to_parquet(f'{data_path}/spatial_intersection_by_gm/pv_by_gm.parquet')
-    checkpoint_to_logfile('export pv.parquet', log_file_name = log_file_name, n_tabs = 1)
+    pv.to_parquet(f'{data_path}/output/preprep_data/pv_by_gm.parquet')
+    checkpoint_to_logfile('export pv.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5)
+    print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
+
+
+# ------------------------------------------------------------------------------------------------------
+# MAPPINGS FOR SPATIAL DATA
+# ------------------------------------------------------------------------------------------------------
 
 # MAP ROOF PV ---------------------------------------------------------------------
+def create_spatial_mappings(
+    script_run_on_server_def = False,
+    smaller_import_def = False,
+    log_file_name_def = None,
+    wd_path_def = None,
+    data_path_def = None,
+    show_debug_prints_def = None,
+    ):
+    """
+    Function to create a mapping from solkat to pv, SB_UUID to xtf_id but also other data sources
+    """    
+
+    # setup -------------------
+    wd_path = wd_path_def if wd_path_def else "C:/Models/OptimalPV_RH"
+    data_path = data_path_def if data_path_def else f'{wd_path}_data'
+
+    import sys
+    if not script_run_on_server_def:
+        sys.path.append('C:/Models/OptimalPV_RH')
+    elif script_run_on_server_def:
+        sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
+    import functions
+    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+
+    # set directory if necessary
+    if not os.path.exists(f'{data_path}/output/preprep_data'):
+        os.makedirs(f'{data_path}/output/preprep_data')
+
+    # create first checkpoint
+    checkpoint_to_logfile('run function: create_spatial_mappings.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+
+    # import ------------------
+    gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    if not smaller_import_def:
+        solkat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+        checkpoint_to_logfile('import solkat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+        checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        heat_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+        checkpoint_to_logfile('import heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+        checkpoint_to_logfile('import elec_prod', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
+    elif smaller_import_def:
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        solkat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 1000)
+        gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 1000)
+        heat_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 100)
+        elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 1000)
+        pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
+        checkpoint_to_logfile('import data SMALLER IMPORT', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # drop unnecessary columns ------------------
+    def keep_columns (col_names, gdf):
+        keep_cols = col_names
+        dele_cols = [col for col in gdf.columns if col not in keep_cols]
+        gdf.drop(columns = dele_cols, inplace = True)
+        return gdf
+
+    solkat_gdf = keep_columns(["SB_UUID", "DF_NUMMER", "geometry" ], solkat_gdf)
+    
+    gwr_gdf = keep_columns(["egid", "geometry" ], gwr_gdf)
+    heat_gdf = keep_columns(["OBJECTID", "geometry" ], heat_gdf)
+    
+    pv_gdf = keep_columns(["xtf_id", "geometry"], pv_gdf)
+
+    # create mapping files ------------------
+    # create house shapes 
+    solkat_union_srs = solkat_gdf.groupby('SB_UUID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
+    solkat_union = gpd.GeoDataFrame(solkat_union_srs, geometry='geometry')
+    checkpoint_to_logfile('created solkat_union', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # sjoin map SOLKAT > PV
+    Map_roof_pv = gpd.sjoin(solkat_union, pv_gdf, how="left", predicate="intersects")
+    Map_roof_pv.drop(columns = ['index_right'], inplace = True)
+    Map_roof_pv.reset_index(inplace = True)
+    checkpoint_to_logfile(f'created Map_roof_pv', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # sjoin SOLKAT > GWR 
+    Map_roof_gwr = gpd.sjoin(solkat_union, gwr_gdf, how="left", predicate="intersects")
+    Map_roof_gwr.drop(columns = ['index_right'], inplace = True)
+    Map_roof_gwr.reset_index(inplace = True)
+    checkpoint_to_logfile(f'created Map_roof_gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # sjoin SOLKAT > HEAT
+    Map_roof_heat = gpd.sjoin(solkat_union, heat_gdf, how="left", predicate="intersects")
+    Map_roof_heat.drop(columns = ['index_right'], inplace = True)
+    Map_roof_heat.reset_index(inplace = True)
+    checkpoint_to_logfile(f'created Map_roof_heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # sjoin HEAT > SOLKAT 
+    Map_heat_roof = gpd.sjoin(heat_gdf, solkat_union, how="left", predicate="intersects")
+    Map_heat_roof.drop(columns = ['index_right'], inplace = True)
+    Map_heat_roof.reset_index(inplace = True)
+    checkpoint_to_logfile(f'created Map_heat_roof', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # sjoin SOLKAT > GM 
+    Map_roof_gm = gpd.sjoin(solkat_union, gm_shp_gdf, how="left", predicate="intersects")
+    Map_roof_gm.drop(columns = ['index_right'], inplace = True)
+    Map_roof_gm.reset_index(inplace = True)
+    checkpoint_to_logfile(f'created Map_roof_gm', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # export ------------------
+    Map_roof_pv.to_parquet(f'{data_path}/output/preprep_data/Map_roof_pv.parquet')
+    Map_roof_gwr.to_parquet(f'{data_path}/output/preprep_data/Map_roof_gwr.parquet')
+    Map_roof_heat.to_parquet(f'{data_path}/output/preprep_data/Map_roof_heat.parquet')
+    Map_heat_roof.to_parquet(f'{data_path}/output/preprep_data/Map_heat_roof.parquet')
+    Map_roof_gm.to_parquet(f'{data_path}/output/preprep_data/Map_roof_gm.parquet')
+    checkpoint_to_logfile('exported all Map*.parquet files', log_file_name_def = log_file_name_def, n_tabs_def = 5)
+
+
+
+
+###############################
+# BOOKMARK
+##############################################################################################################################
+##############################################################################################################################
+
+    
+
+
+
+
+
+        
+
 def create_Mappings(
     script_run_on_server_def = 0,
     # buffer_size = [0.05,],
     smaller_import = False,):
     """
-    Function to create a mapping from roof_kat to pv, SB_UUID to xtf_id
+    Function to create a mapping from solkat to pv, SB_UUID to xtf_id
     """
     print(f'\n\n > call function create_Mappings()')
     
@@ -388,8 +538,143 @@ def create_Mappings(
 
 
 # ------------------------------------------------------------------------------------------------------
+# LOG FIlE PRINTING FUNCTIONS
+# ------------------------------------------------------------------------------------------------------
+
+# def chapter_to_logfile(str, log_file_name):
+#     """
+#     Function to write a chapter to the logfile
+#     """
+#     check = f'\n\n****************************************\n {str} \n start at:{datetime.now()} \n****************************************\n\n'
+#     print(check)
+#     with open(f'{log_file_name}', 'a') as log_file:
+#         log_file.write(f'{check}\n')
+# time_last_call = None
+# def checkpoint_to_logfile(str, log_file_name, n_tabs = 0, timer_func=None):
+#     """
+#     Function to write a checkpoint to the logfile
+#     """
+#     global time_last_call
+    
+#     time_now = datetime.now()
+#     if time_last_call:
+#         runtime = time_now - time_last_call
+#         minutes, seconds = divmod(runtime.seconds, 60)
+#         runtime_str = f"{minutes} min {seconds} sec"
+#     else:
+#         runtime_str = 'N/A'
+    
+#     n_tabs_str = '\t' * n_tabs
+#     check = f'* {str}{n_tabs_str}runtime: {runtime_str};   (stamp: {datetime.now()})'
+#     print(check)
+
+#     with open(f'{log_file_name}', 'a') as log_file:
+#         log_file.write(f"{check}\n")
+    
+#     time_last_call = time_now
+
+
+
+# ------------------------------------------------------------------------------------------------------
 # OLD ALL IN ONE FUNCTION
 # ------------------------------------------------------------------------------------------------------
+
+
+def heatcool_dem_spatial_toparquet(
+    script_run_on_server_def = 0,
+    smaller_import = False,):
+    """
+    Function to intersect spatial data with gm_shp and export to parquet
+    """
+
+    # setup -------------------
+    if script_run_on_server_def == 0:
+        wd_path = "C:/Models/OptimalPV_RH"
+        data_path = f'{wd_path}_data'
+    elif script_run_on_server_def == 1:
+        wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
+        data_path = f'{wd_path}_data'
+
+    # set directory if necessary
+    if not os.path.exists(f'{data_path}/spatial_intersection_by_gm'):
+        os.makedirs(f'{data_path}/spatial_intersection_by_gm')
+    
+    # create log file for checkpoint comments
+    log_file_name = f'{data_path}/spatial_intersection_by_gm/spatial_data_toparquet_by_gm_log.txt'
+
+    # import ------------------
+    gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    if not smaller_import:
+        heatcool_dem_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+        checkpoint_to_logfile('import heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
+    elif smaller_import:
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
+        heatcool_dem_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 10)
+        checkpoint_to_logfile('import heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
+
+    # drop unnecessary columns ------------------
+        
+    # sjoin to gm_shp ------------------
+    heatcool_dem_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    heatcool_dem = gpd.sjoin(heatcool_dem_gdf, gm_shp_gdf, how="left", predicate="within")
+    checkpoint_to_logfile('sjoin heatcool_dem', log_file_name = log_file_name, n_tabs = 1)
+
+    # export ------------------
+    heatcool_dem.to_parquet(f'{data_path}/spatial_intersection_by_gm/heatcool_dem_by_gm.parquet')
+    checkpoint_to_logfile('export heatcool_dem.parquet', log_file_name = log_file_name, n_tabs = 1)
+
+# PV ---------------------------------------------------------------------
+def pv_old_spatial_toparquet(
+    script_run_on_server_def = 0,
+    smaller_import = False,):
+    """
+    Function to intersect spatial data with gm_shp and export to parquet
+    """
+
+    # setup -------------------
+    if script_run_on_server_def == 0:
+        wd_path = "C:/Models/OptimalPV_RH"
+        data_path = f'{wd_path}_data'
+    elif script_run_on_server_def == 1:
+        wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
+        data_path = f'{wd_path}_data'
+
+    # set directory if necessary
+    if not os.path.exists(f'{data_path}/spatial_intersection_by_gm'):
+        os.makedirs(f'{data_path}/spatial_intersection_by_gm')
+
+    # create log file for checkpoint comments
+    log_file_name = f'{data_path}/spatial_intersection_by_gm/spatial_data_toparquet_by_gm_log.txt'
+
+    # import ------------------
+    gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    if not smaller_import:
+        elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+        checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 1)
+        pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
+        checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
+    elif smaller_import:
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name = log_file_name, n_tabs = 1)
+        elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 10000)
+        checkpoint_to_logfile('import elec_prod', log_file_name = log_file_name, n_tabs = 1)
+        pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
+        checkpoint_to_logfile('subset for pv', log_file_name = log_file_name, n_tabs = 1)
+
+    # drop unnecessary columns ------------------
+
+    # sjoin to gm_shp ------------------
+    pv_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    pv = gpd.sjoin(pv_gdf, gm_shp_gdf, how="left", predicate="within")
+    checkpoint_to_logfile('sjoin pv', log_file_name = log_file_name, n_tabs = 1)
+
+    # export ------------------
+    pv.to_parquet(f'{data_path}/spatial_intersection_by_gm/pv_by_gm.parquet')
+    checkpoint_to_logfile('export pv.parquet', log_file_name = log_file_name, n_tabs = 1)
+
+
+
+
+
 # MAP ROOF GM ---------------------------------------------------------------------
 def create_Map_roof_gm(
     script_run_on_server_def = 0,

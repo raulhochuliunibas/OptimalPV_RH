@@ -4,18 +4,32 @@
 # Preamble: 
 # > 
 
+
 # SETTIGNS --------------------------------------------------------------------
+agg_settings = {
+        'name_dir_export': 'all_CH',   # name of the directory for the aggregated data, and maybe file extension
+        'script_run_on_server': False,             # F: run on private computer, T: run on server
+        'recreate_parquet_files': True,           # F: use existing parquet files, T: recreate parquet files in data prep
+        'show_debug_prints': True,                     # F: certain print statements are omitted, T: includes print statements that help with debugging
+        'smaller_import': True,                   # F: import all data, T: import only a small subset of data for debugging
+
+        'bfs_numbers_OR_shape': [0,],
+        'gwr_house_type_class': [0,], 
+        'solkat_house_type_class': [0,], 
+        }
+
 script_run_on_server = 0
 recreate_parquet_files = 0
 
 
 # PACKAGES --------------------------------------------------------------------
-
 import sys
-if script_run_on_server == 0:
+if agg_settings['script_run_on_server']:
     sys.path.append('C:/Models/OptimalPV_RH') 
-elif script_run_on_server == 1:
+elif agg_settings['script_run_on_server']:
     sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
+
+# external packages
 import os as os
 import pandas as pd
 import geopandas as gpd
@@ -23,47 +37,86 @@ import glob
 import shutil
 import winsound
 import subprocess
-import functions 
-import data_aggregation.spatial_data_toparquet_by_gm as spd_to_pq
 
-from functions import chapter_to_logfile, checkpoint_to_logfile, test_functions
-from data_aggregation.local_data_import_aggregation import import_aggregate_data
-from data_aggregation.Lupien_aggregation_roofkat_pv_munic_V2 import Lupien_aggregation
+# own packages and functions
+import functions
+from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+
+
+from data_aggregation.preprepare_data import solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet
+from data_aggregation.preprepare_data import create_spatial_mappings
+
+
+# import OptimalPV_RH.data_aggregation.preprepare_data as spd_to_pq
+
+# from data_aggregation.local_data_import_aggregation import import_aggregate_data
+# from data_aggregation.Lupien_aggregation_roofkat_pv_munic_V2 import Lupien_aggregation
 # from data_aggregation.spatial_data_toparquet_by_gm import spatal_topiarquet
 
 
 # SETUP -----------------------------------------------------------------------
-if script_run_on_server == 0:
+# set working directory
+if not agg_settings['script_run_on_server']:
     wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
     data_path = f'{wd_path}_data'
-    
-    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp',
-                           layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 
-elif script_run_on_server == 1:
+    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+elif agg_settings['script_run_on_server']:
     wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
     data_path = f'{wd_path}_data'
 
-    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp',
-                           layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    
+# create directory + log file
+if not os.path.exists(f'{data_path}/output/{agg_settings["name_dir_export"]}'):
+    os.makedirs(f'{data_path}/output/{agg_settings["name_dir_export"]}')
+
+log_name = f'{data_path}/output/{agg_settings["name_dir_export"]}_log.txt'
+chapter_to_logfile(f'start data_aggregation_MASTER for: {agg_settings["name_dir_export"]}', log_name, overwrite_file=True)
+print_to_logfile(f'> agg_settings: \n\t name_dir_export: {agg_settings["name_dir_export"]} \n\t script_run_on_server: {agg_settings["script_run_on_server"]} \n\t recreate_parquet_files: {agg_settings["recreate_parquet_files"]} \n\t debug_prints: {agg_settings["show_debug_prints"]} \n\t smaller_import: {agg_settings["smaller_import"]}', log_name)
+
+
+# PRE PREP DATA ---------------------------------------------------------------
+
+# download possible API data to local directory
+# --- subchapter_to_logfile('pre-prep data: API', log_name)
+
+# transform spatial data to parquet files for faster import and transformation
+pq_dir_exists_TF = os.path.exists(f'{data_path}/output/{agg_settings["name_dir_export"]}_preprep_sdtopq')
+pq_files_rerun = agg_settings['recreate_parquet_files']
+
+if not pq_dir_exists_TF or pq_files_rerun:
+    subchapter_to_logfile('pre-prep data: SPATIAL DATA to PARQUET', log_name)
+    solkat_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'], 
+                             log_name, wd_path, data_path, agg_settings['show_debug_prints'])
+    gwr_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'],
+                            log_name, wd_path, data_path, agg_settings['show_debug_prints'])
+    heat_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'],
+                            log_name, wd_path, data_path, agg_settings['show_debug_prints'])
+    pv_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'],
+                            log_name, wd_path, data_path, agg_settings['show_debug_prints'])
+    
+    subchapter_to_logfile('pre-prep data: SPATIAL MAPPINGS', log_name)
+    create_spatial_mappings(script_run_on_server_def= agg_settings['script_run_on_server'], 
+                            smaller_import_def=agg_settings['smaller_import'], 
+                            log_file_name_def=log_name,
+                            wd_path_def=wd_path, 
+                            data_path_def=data_path, 
+                            show_debug_prints_def=agg_settings['show_debug_prints'])
+    
+else: 
+    checkpoint_to_logfile('parquet files and mappings exist already', log_name)
+
     
 
-# SPATIAL DATA TO PARQUET -----------------------------------------------------
-pq_dir_exists = os.path.exists(f'{data_path}/spatial_intersection_by_gm')
-pq_files_rerun = recreate_parquet_files == 1
 
-if not pq_dir_exists or pq_files_rerun:
-    spd_to_pq.roof_kat_spatial_toparquet(script_run_on_server_def = script_run_on_server, smaller_import=False)
-    spd_to_pq.bldng_reg_spatial_toparquet(script_run_on_server_def = script_run_on_server, smaller_import=False)
-    spd_to_pq.heatcool_dem_spatial_toparquet(script_run_on_server_def=script_run_on_server, smaller_import=False)
-    spd_to_pq.pv_spatial_toparquet(script_run_on_server_def=script_run_on_server, smaller_import=False)
-    
-    spd_to_pq.create_Mappings(script_run_on_server_def=script_run_on_server, smaller_import=False)
-    print('recreated parquet files for faster import and transformation')
+###############################
+# BOOKMARK
+###############################
 
-else:
-    print('parquet files exist already, no recreation necessary')
-
+winsound.Beep(440, 100)
+winsound.Beep(440, 100)
+print("asdf")
 
 # DATA AGGREGATION FOR MA student Lupien --------------------------------------
 def move_Lupien_agg_to_dict(dict_name):
@@ -72,8 +125,7 @@ def move_Lupien_agg_to_dict(dict_name):
     f_to_move = glob.glob(f'{data_path}/Lupien_aggregation/*')
     for f in f_to_move: 
         shutil.copy(f, f'{data_path}/{dict_name}/')
-
-Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=True     ,  union_vs_hull_shape = 'union')
+# Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=True, union_vs_hull_shape = 'union')
 
 
 # AGGREGATIONS -----------------------------------------------------------------
