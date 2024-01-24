@@ -9,7 +9,7 @@
 agg_settings = {
         'name_dir_export': 'all_CH',        # name of the directory for the aggregated data, and maybe file extension
         'script_run_on_server': False,      # F: run on private computer, T: run on server
-        'recreate_parquet_files': True,     # F: use existing parquet files, T: recreate parquet files in data prep
+        'recreate_preprep_data': True,     # F: use existing parquet files, T: recreate parquet files in data prep
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
         'smaller_import': False,             # F: import all data, T: import only a small subset of data for debugging
 
@@ -34,11 +34,10 @@ import glob
 import shutil
 import winsound
 import subprocess
+from datetime import datetime
 
 # own packages and functions
-import functions
 from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
-
 from data_aggregation.api_electricity_prices import api_electricity_prices
 from data_aggregation.preprepare_data import solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet, create_spatial_mappings
 
@@ -53,12 +52,12 @@ from data_aggregation.preprepare_data import solkat_spatial_toparquet, gwr_spati
 # SETUP -----------------------------------------------------------------------
 # set working directory
 if not agg_settings['script_run_on_server']:
-    wd_path = "C:/Models/OptimalPV_RH"   # path for private computer
+    wd_path = "C:\Models\OptimalPV_RH"   # path for private computer
     data_path = f'{wd_path}_data'
 
     gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 elif agg_settings['script_run_on_server']:
-    wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH"
+    wd_path = "D:\\RaulHochuli_inuse\\OptimalPV_RH"
     data_path = f'{wd_path}_data'
 
     gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
@@ -69,27 +68,36 @@ if not os.path.exists(f'{data_path}/output/{agg_settings["name_dir_export"]}'):
 
 log_name = f'{data_path}/output/{agg_settings["name_dir_export"]}_log.txt'
 chapter_to_logfile(f'start data_aggregation_MASTER for: {agg_settings["name_dir_export"]}', log_name, overwrite_file=True)
-print_to_logfile(f'> agg_settings: \n\t name_dir_export: {agg_settings["name_dir_export"]} \n\t script_run_on_server: {agg_settings["script_run_on_server"]} \n\t recreate_parquet_files: {agg_settings["recreate_parquet_files"]} \n\t debug_prints: {agg_settings["show_debug_prints"]} \n\t smaller_import: {agg_settings["smaller_import"]}', log_name)
+print_to_logfile(f'> agg_settings: \n\t name_dir_export: {agg_settings["name_dir_export"]} \n\t script_run_on_server: {agg_settings["script_run_on_server"]} \n\t recreate_preprep_data: {agg_settings["recreate_preprep_data"]} \n\t debug_prints: {agg_settings["show_debug_prints"]} \n\t smaller_import: {agg_settings["smaller_import"]}', log_name)
 
 
 # PRE PREP DATA ---------------------------------------------------------------
 
 # download possible API data to local directory
 subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-if agg_settings['recreate_parquet_files']:
-    api_electricity_prices(agg_settings['script_run_on_server'], agg_settings['recreate_parquet_files'], agg_settings['smaller_import'], 
-                           log_name, wd_path, data_path, agg_settings['show_debug_prints'],
-                           year_range = [2009, 2023])
+file_exists_TF = os.path.exists(f'{data_path}/elecpri.parquet')
+preprep_data_rerun = agg_settings['recreate_preprep_data']
+
+if not file_exists_TF or preprep_data_rerun:
+    api_electricity_prices(script_run_on_server_def = agg_settings['script_run_on_server'],
+                           recreate_parquet_files_def=agg_settings['recreate_preprep_data'],
+                           smaller_import_def=agg_settings['smaller_import'],
+                           log_file_name_def=log_name,
+                           wd_path_def=wd_path,
+                           data_path_def=data_path, 
+                           show_debug_prints_def=agg_settings['show_debug_prints'], 
+                            year_range = [2009, 2023])
+
 else:
     checkpoint_to_logfile('use electricity prices that are downloaded already', log_name)
 
 
 # transform spatial data to parquet files for faster import and transformation
-pq_dir_exists_TF = os.path.exists(f'{data_path}/output/{agg_settings["name_dir_export"]}_preprep_sdtopq')
-pq_files_rerun = agg_settings['recreate_parquet_files']
+subchapter_to_logfile('pre-prep data: SPATIAL DATA to PARQUET', log_name)
+pq_dir_exists_TF = os.path.exists(f'{data_path}/output/prepred_data')
+pq_files_rerun = agg_settings['recreate_preprep_data']
 
 if not pq_dir_exists_TF or pq_files_rerun:
-    subchapter_to_logfile('pre-prep data: SPATIAL DATA to PARQUET', log_name)
     solkat_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'], 
                              log_name, wd_path, data_path, agg_settings['show_debug_prints'])
     gwr_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'],
@@ -121,6 +129,18 @@ def move_Lupien_agg_to_dict(dict_name):
         shutil.copy(f, f'{data_path}/{dict_name}/')
 # Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=True, union_vs_hull_shape = 'union')
 
+# MOVE AGGREGATED DATA TO DICT not to overwrite it while debugging
+today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+dirs_preprep_data_DATE = f'{data_path}/output/preprep_data_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}'
+if not os.path.exists(dirs_preprep_data_DATE):
+    os.makedirs(dirs_preprep_data_DATE)
+file_to_move = glob.glob(f'{data_path}/output/preprep_data/*')
+for f in file_to_move:
+    shutil.move(f, dirs_preprep_data_DATE)
+shutil.copy(f'{data_path}/output/{agg_settings["name_dir_export"]}_log.txt', dirs_preprep_data_DATE)
+
+
+chapter_to_logfile(f'END data_aggregation_MASTER for: {agg_settings["name_dir_export"]}', log_name, overwrite_file=True)
 
 ###############################
 # BOOKMARK
