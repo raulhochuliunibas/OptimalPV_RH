@@ -315,43 +315,51 @@ def create_spatial_mappings(
         return gdf
 
     solkat_gdf = keep_columns(["SB_UUID", "DF_NUMMER", "geometry" ], solkat_gdf)
-    
     gwr_gdf = keep_columns(["egid", "geometry" ], gwr_gdf)
     heat_gdf = keep_columns(["OBJECTID", "geometry" ], heat_gdf)
-    
     pv_gdf = keep_columns(["xtf_id", "geometry"], pv_gdf)
 
     # create mapping files ------------------
+    def set_crs_to_gm_shp(gdf_a, gdf_b):
+        gdf_a.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+        gdf_b.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+        return gdf_a, gdf_b
+    
     # create house shapes 
     solkat_union_srs = solkat_gdf.groupby('SB_UUID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
     solkat_union = gpd.GeoDataFrame(solkat_union_srs, geometry='geometry')
     checkpoint_to_logfile('created solkat_union', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # sjoin map SOLKAT > PV
+    solkat_union, pv_gdf = set_crs_to_gm_shp(solkat_union, pv_gdf)
     Map_roof_pv = gpd.sjoin(solkat_union, pv_gdf, how="left", predicate="intersects")
     Map_roof_pv.drop(columns = ['index_right'], inplace = True)
     Map_roof_pv.reset_index(inplace = True)
     checkpoint_to_logfile(f'created Map_roof_pv', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # sjoin SOLKAT > GWR 
+    solkat_union, gwr_gdf = set_crs_to_gm_shp(solkat_union, gwr_gdf)
     Map_roof_gwr = gpd.sjoin(solkat_union, gwr_gdf, how="left", predicate="intersects")
     Map_roof_gwr.drop(columns = ['index_right'], inplace = True)
     Map_roof_gwr.reset_index(inplace = True)
     checkpoint_to_logfile(f'created Map_roof_gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # sjoin SOLKAT > HEAT
+    solkat_union, heat_gdf = set_crs_to_gm_shp(solkat_union, heat_gdf)
     Map_roof_heat = gpd.sjoin(solkat_union, heat_gdf, how="left", predicate="intersects")
     Map_roof_heat.drop(columns = ['index_right'], inplace = True)
     Map_roof_heat.reset_index(inplace = True)
     checkpoint_to_logfile(f'created Map_roof_heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # sjoin HEAT > SOLKAT 
+    heat_gdf, solkat_union = set_crs_to_gm_shp(heat_gdf, solkat_union)
     Map_heat_roof = gpd.sjoin(heat_gdf, solkat_union, how="left", predicate="intersects")
     Map_heat_roof.drop(columns = ['index_right'], inplace = True)
     Map_heat_roof.reset_index(inplace = True)
     checkpoint_to_logfile(f'created Map_heat_roof', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # sjoin SOLKAT > GM 
+    solkat_union, gm_shp_gdf = set_crs_to_gm_shp(solkat_union, gm_shp_gdf)
     Map_roof_gm = gpd.sjoin(solkat_union, gm_shp_gdf, how="left", predicate="intersects")
     Map_roof_gm.drop(columns = ['index_right'], inplace = True)
     Map_roof_gm.reset_index(inplace = True)
