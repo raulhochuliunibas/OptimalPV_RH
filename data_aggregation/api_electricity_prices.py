@@ -37,7 +37,7 @@ def api_electricity_prices(
         wd_path_def = None,
         data_path_def = None,
         show_debug_prints_def = None,
-        year_range = [2017, 2020],
+        year_range_def = [2017, 2020],
         ):
     '''
     This function imports electricity prices from the Swiss government API.
@@ -45,8 +45,8 @@ def api_electricity_prices(
     ''' 
 
     # setup -------------------
-    wd_path = wd_path_def if wd_path_def else "C:/Models/OptimalPV_RH"
-    data_path = data_path_def if data_path_def else f'{wd_path}_data'
+    wd_path = wd_path_def if script_run_on_server_def else "C:/Models/OptimalPV_RH"
+    data_path = f'{wd_path}_data'
 
     # create directory + log file
     if not os.path.exists(f'{data_path}/output/preprep_data'):
@@ -241,9 +241,9 @@ def api_electricity_prices(
 
 
 
-    # query
-    checkpoint_to_logfile(f'api call yearly electricity prices: {year_range[0]} to {year_range[1]}', log_file_name_def=log_file_name_def, n_tabs_def = 6)
-    year_range_list = list(range(year_range[0], year_range[1]+1))
+    # query -------------------
+    checkpoint_to_logfile(f'api call yearly electricity prices: {year_range_def[0]} to {year_range_def[1]}', log_file_name_def=log_file_name_def, n_tabs_def = 6)
+    year_range_list = list(range(year_range_def[0], year_range_def[1]+1))
     tariffs_agg_list = []
 
     sparql = SparqlClient("https://lindas.admin.ch/query")
@@ -292,5 +292,5 @@ def api_electricity_prices(
 
     # export
     elecpri.to_parquet(f'{data_path}/output/preprep_data/elecpri.parquet')
-    checkpoint_to_logfile(f'export electricity prices', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+    checkpoint_to_logfile(f'exported electricity prices', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 

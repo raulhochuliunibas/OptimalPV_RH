@@ -4,6 +4,7 @@ import pandas as pd
 import geopandas as gpd
 import winsound
 from datetime import datetime
+from shapely.geometry import Point
 
 sys.path.append('..')
 from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
@@ -107,12 +108,21 @@ def gwr_spatial_toparquet(
     # import ------------------
     gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
     if not smaller_import_def:
-        gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+        # gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+        gwr_pq = pd.read_parquet(f'{data_path}/output/preprep_data/gwr.parquet')  
         checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
     elif smaller_import_def:
         checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-        gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 1000)
+        # gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 1000)
+        gwr_pq = pd.read_parquet(f'{data_path}/output/preprep_data/gwr.parquet')  
         checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    
+    # create gdf ------------------
+    gwr_pq['GKODE'] = pd.to_numeric(gwr_pq['GKODE'], errors='coerce')
+    gwr_pq['GKODN'] = pd.to_numeric(gwr_pq['GKODN'], errors='coerce')
+
+    gwr_gdf = gpd.GeoDataFrame(gwr_pq, geometry=gpd.points_from_xy(gwr_pq['GKODE'], gwr_pq['GKODN']))
+
 
     # sjoin to gm_shp ------------------
     gwr_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
@@ -291,21 +301,34 @@ def create_spatial_mappings(
     if not smaller_import_def:
         solkat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
         checkpoint_to_logfile('import solkat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-        gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
-        checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
         heat_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
         checkpoint_to_logfile('import heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
         elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
         checkpoint_to_logfile('import elec_prod', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
         pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
+
+        # gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+        # checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        gwr = pd.read_parquet(f'{data_path}/output/preprep_data/gwr.parquet')
+        
     elif smaller_import_def:
         checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
         solkat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 1000)
-        gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 1000)
         heat_gdf = gpd.read_file(f'{data_path}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 100)
         elec_prod_gdf = gpd.read_file(f'{data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 1000)
         pv_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
         checkpoint_to_logfile('import data SMALLER IMPORT', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+        gwr = pd.read_parquet(f'{data_path}/output/preprep_data/gwr.parquet')
+        gwr = gwr.head(1000)
+    
+    # changes ------------------
+    gwr['GKODE'] = pd.to_numeric(gwr['GKODE'], errors='coerce')
+    gwr['GKODN'] = pd.to_numeric(gwr['GKODN'], errors='coerce')
+    gwr_gdf = gpd.GeoDataFrame(gwr, geometry=gpd.points_from_xy(gwr['GKODE'], gwr['GKODN']))
+
+    solkat_gdf = solkat_gdf.rename(columns={'GWR_EGID': 'EGID'})
+        
 
     # drop unnecessary columns ------------------
     def keep_columns (col_names, gdf):
@@ -314,80 +337,122 @@ def create_spatial_mappings(
         gdf.drop(columns = dele_cols, inplace = True)
         return gdf
 
-    solkat_gdf = keep_columns(["SB_UUID", "DF_NUMMER", "geometry" ], solkat_gdf)
-    gwr_gdf = keep_columns(["egid", "geometry" ], gwr_gdf)
+    solkat_gdf = keep_columns(["SB_UUID", "EGID", "DF_NUMMER", "geometry" ], solkat_gdf)
+    gwr_gdf = keep_columns(["EGID", "geometry" ], gwr_gdf)
     heat_gdf = keep_columns(["OBJECTID", "geometry" ], heat_gdf)
     pv_gdf = keep_columns(["xtf_id", "geometry"], pv_gdf)
 
-    # create mapping files ------------------
+    # create ID mapping files ------------------
     def set_crs_to_gm_shp(gdf_a, gdf_b):
         gdf_a.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
         gdf_b.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
         return gdf_a, gdf_b
     
+    def drop_index_right_cols(gdf):
+        gdf.drop(columns = ['geometry', 'index_right'], inplace = True)
+        return gdf
+    
+
+    # prepare Mappings ------------------
     # create house shapes 
     solkat_union_srs = solkat_gdf.groupby('SB_UUID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
     solkat_union = gpd.GeoDataFrame(solkat_union_srs, geometry='geometry')
     checkpoint_to_logfile('created solkat_union', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-    # sjoin map SOLKAT > PV
-    solkat_union, pv_gdf = set_crs_to_gm_shp(solkat_union, pv_gdf)
-    Map_roof_pv = gpd.sjoin(solkat_union, pv_gdf, how="left", predicate="intersects")
-    Map_roof_pv.drop(columns = ['index_right'], inplace = True)
-    Map_roof_pv.reset_index(inplace = True)
-    checkpoint_to_logfile(f'created Map_roof_pv', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    gwr_union_srs = solkat_gdf.groupby('EGID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
+    gwr_union = gpd.GeoDataFrame(gwr_union_srs, geometry='geometry')
+    checkpoint_to_logfile('created gwr_union', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-    # sjoin SOLKAT > GWR 
-    solkat_union, gwr_gdf = set_crs_to_gm_shp(solkat_union, gwr_gdf)
-    Map_roof_gwr = gpd.sjoin(solkat_union, gwr_gdf, how="left", predicate="intersects")
-    Map_roof_gwr.drop(columns = ['index_right'], inplace = True)
-    Map_roof_gwr.reset_index(inplace = True)
-    checkpoint_to_logfile(f'created Map_roof_gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    
+    # GWR_EGID SOLKAT to X Mappings ------------------
+    # map eg_solkat > sb_solkat
+    unique_combo = solkat_gdf[["SB_UUID", "EGID"]].drop_duplicates()
+    unique_combo.dropna(subset=['EGID'], inplace=True)
+    Map_egroof_sbroof = unique_combo['EGID', 'SB_UUID']
+    checkpoint_to_logfile('created Map_egroof_sbroof', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-    # sjoin SOLKAT > HEAT
-    solkat_union, heat_gdf = set_crs_to_gm_shp(solkat_union, heat_gdf)
-    Map_roof_heat = gpd.sjoin(solkat_union, heat_gdf, how="left", predicate="intersects")
-    Map_roof_heat.drop(columns = ['index_right'], inplace = True)
-    Map_roof_heat.reset_index(inplace = True)
-    checkpoint_to_logfile(f'created Map_roof_heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    # map eg_solkat > PV
+    gwr_union, pv_gdf = set_crs_to_gm_shp(gwr_union, pv_gdf)
+    Map_egroof_pv = gpd.sjoin(gwr_union, pv_gdf, how="left", predicate="intersects")
+    Map_egroof_pv = drop_index_right_cols(Map_egroof_pv)
+    Map_egroof_pv.reset_index(inplace = True)
+    checkpoint_to_logfile('created Map_egroof_pv', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-    # sjoin HEAT > SOLKAT 
-    heat_gdf, solkat_union = set_crs_to_gm_shp(heat_gdf, solkat_union)
-    Map_heat_roof = gpd.sjoin(heat_gdf, solkat_union, how="left", predicate="intersects")
-    Map_heat_roof.drop(columns = ['index_right'], inplace = True)
-    Map_heat_roof.reset_index(inplace = True)
-    checkpoint_to_logfile(f'created Map_heat_roof', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    # map eg_solkat > heat
+    gwr_union, heat_gdf = set_crs_to_gm_shp(gwr_union, heat_gdf)
+    Map_egroof_heat = gpd.sjoin(gwr_union, heat_gdf, how="left", predicate="intersects")
+    Map_egroof_heat = drop_index_right_cols(Map_egroof_heat)
+    Map_egroof_heat.reset_index(inplace = True)
+    checkpoint_to_logfile('created Map_egroof_heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-    # sjoin SOLKAT > GM 
-    solkat_union, gm_shp_gdf = set_crs_to_gm_shp(solkat_union, gm_shp_gdf)
-    Map_roof_gm = gpd.sjoin(solkat_union, gm_shp_gdf, how="left", predicate="intersects")
-    Map_roof_gm.drop(columns = ['index_right'], inplace = True)
-    Map_roof_gm.reset_index(inplace = True)
-    checkpoint_to_logfile(f'created Map_roof_gm', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
+    # GEOMETRY mapping files ------------------
+    Map_sbroof_geom = solkat_union
+    Map_sbroof_geom.reset_index(inplace = True)
+    
+    Map_egroof_geom = gwr_union
+    Map_egroof_geom.reset_index(inplace = True)
+    
+    Map_solkat_geom = solkat_gdf[['SB_UUID', 'geometry']]
+    Map_gwr_geom = gwr_gdf[['EGID', 'geometry']]    
+    Map_heat_geom = heat_gdf[['OBJECTID', 'geometry']]
+    Map_pv_geom = pv_gdf[['xtf_id', 'geometry']]
+
+    # SB_UUID SOLKAT to X Mappings ------------------
+    if False:
+
+        # sjoin map SOLKAT > PV
+        solkat_union, pv_gdf = set_crs_to_gm_shp(solkat_union, pv_gdf)
+        Map_roof_pv = gpd.sjoin(solkat_union, pv_gdf, how="left", predicate="intersects")
+        Map_roof_pv = drop_index_right_cols(Map_roof_pv)
+        Map_roof_pv.reset_index(inplace = True)
+        checkpoint_to_logfile(f'created Map_roof_pv', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+        # sjoin SOLKAT > GWR 
+        solkat_union, gwr_gdf = set_crs_to_gm_shp(solkat_union, gwr_gdf)
+        Map_roof_gwr = gpd.sjoin(solkat_union, gwr_gdf, how="left", predicate="intersects")
+        Map_roof_gwr = drop_index_right_cols(Map_roof_gwr)
+        Map_roof_gwr.reset_index(inplace = True)
+        checkpoint_to_logfile(f'created Map_roof_gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+        # sjoin SOLKAT > HEAT
+        solkat_union, heat_gdf = set_crs_to_gm_shp(solkat_union, heat_gdf)
+        Map_roof_heat = gpd.sjoin(solkat_union, heat_gdf, how="left", predicate="intersects")
+        Map_roof_heat = drop_index_right_cols(Map_roof_heat)
+        Map_roof_heat.reset_index(inplace = True)
+        checkpoint_to_logfile(f'created Map_roof_heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+        # sjoin SOLKAT > GM 
+        solkat_union, gm_shp_gdf = set_crs_to_gm_shp(solkat_union, gm_shp_gdf)
+        Map_roof_gm = gpd.sjoin(solkat_union, gm_shp_gdf, how="left", predicate="intersects")
+        Map_roof_gm = drop_index_right_cols(Map_roof_gm)
+        Map_roof_gm.reset_index(inplace = True)
+        checkpoint_to_logfile(f'created Map_roof_gm', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    Map_egroof_sbroof.to_parquet(f'{data_path}/output/preprep_data/Map_egroof_sbroof.parquet')
+    Map_egroof_pv.to_parquet(f'{data_path}/output/preprep_data/Map_egroof_pv.parquet')
+    Map_egroof_heat.to_parquet(f'{data_path}/output/preprep_data/Map_egroof_heat.parquet')
+
+    Map_egroof_sbroof.to_csv(f'{data_path}/output/preprep_data/Map_egroof_sbroof.csv')
+    Map_egroof_pv.to_csv(f'{data_path}/output/preprep_data/Map_egroof_pv.csv')
+    Map_egroof_heat.to_csv(f'{data_path}/output/preprep_data/Map_egroof_heat.csv')
+
+    Map_egroof_geom.to_file(f'{data_path}/output/preprep_data/Map_egroof_geom.geojson', driver='GeoJSON')
+    Map_sbroof_geom.to_file(f'{data_path}/output/preprep_data/Map_sbroof_geom.geojson', driver='GeoJSON')
+    Map_solkat_geom.to_file(f'{data_path}/output/preprep_data/Map_solkat_geom.geojson', driver='GeoJSON')
     # export ------------------
-    Map_roof_pv.to_parquet(f'{data_path}/output/preprep_data/Map_roof_pv.parquet')
-    Map_roof_gwr.to_parquet(f'{data_path}/output/preprep_data/Map_roof_gwr.parquet')
-    Map_roof_heat.to_parquet(f'{data_path}/output/preprep_data/Map_roof_heat.parquet')
-    Map_heat_roof.to_parquet(f'{data_path}/output/preprep_data/Map_heat_roof.parquet')
-    Map_roof_gm.to_parquet(f'{data_path}/output/preprep_data/Map_roof_gm.parquet')
     checkpoint_to_logfile('exported all Map*.parquet files', log_file_name_def = log_file_name_def, n_tabs_def = 5)
 
 
 
 
+
+
+
 ###############################
-# BOOKMARK
+# No Longer Used, to be deleted in March 2024
 ##############################################################################################################################
 ##############################################################################################################################
-
-    
-
-
-
-
-
-        
 
 def create_Mappings(
     script_run_on_server_def = 0,
