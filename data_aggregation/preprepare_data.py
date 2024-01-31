@@ -73,73 +73,6 @@ def solkat_spatial_toparquet(
     print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
 
 
-# BUILDING + DWELLING REGISTERY ---------------------------------------------------------------------
-def gwr_spatial_toparquet(
-    script_run_on_server_def = False,
-    smaller_import_def = False,
-    log_file_name_def = None,
-    wd_path_def = None,
-    data_path_def = None,
-    show_debug_prints_def = None,
-    ):
-    """
-    Function to intersect spatial data with gm_shp and export to parquet
-    """
-
-    # setup -------------------
-    wd_path = wd_path_def if wd_path_def else "C:/Models/OptimalPV_RH"
-    data_path = data_path_def if data_path_def else f'{wd_path}_data'
-
-    import sys
-    if not script_run_on_server_def:
-        sys.path.append('C:/Models/OptimalPV_RH')
-    elif script_run_on_server_def:
-        sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
-    import functions
-    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
-
-    # set directory if necessary
-    if not os.path.exists(f'{data_path}/output/preprep_data'):
-        os.makedirs(f'{data_path}/output/preprep_data')
-
-    # create first checkpoint
-    checkpoint_to_logfile('run function: gwr_spatial_toparquet.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
-    
-    # import ------------------
-    gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    if not smaller_import_def:
-        # gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
-        gwr_pq = pd.read_parquet(f'{data_path}/output/preprep_data/gwr.parquet')  
-        checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-    elif smaller_import_def:
-        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-        # gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 1000)
-        gwr_pq = pd.read_parquet(f'{data_path}/output/preprep_data/gwr.parquet')  
-        checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-    
-    # create gdf ------------------
-    gwr_pq['GKODE'] = pd.to_numeric(gwr_pq['GKODE'], errors='coerce')
-    gwr_pq['GKODN'] = pd.to_numeric(gwr_pq['GKODN'], errors='coerce')
-
-    gwr_gdf = gpd.GeoDataFrame(gwr_pq, geometry=gpd.points_from_xy(gwr_pq['GKODE'], gwr_pq['GKODN']))
-
-
-    # sjoin to gm_shp ------------------
-    gwr_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
-    gwr = gpd.sjoin(gwr_gdf, gm_shp_gdf, how="left", predicate="within")
-    checkpoint_to_logfile('sjoin gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-
-    # drop unnecessary columns ------------------
-    keep_cols = ["BFS_NUMMER", ]
-    dele_cols = ['index_right'] + [col for col in gm_shp_gdf.columns if col not in keep_cols]
-    gwr.drop(columns = dele_cols, inplace = True)
-
-    # export ------------------
-    gwr.to_parquet(f'{data_path}/output/preprep_data/gwr_by_gm.parquet')
-    checkpoint_to_logfile('export gwr.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5)
-    print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
-
-
 # HEATING + COOLING DEMAND ---------------------------------------------------------------------
 def heat_spatial_toparquet(
     script_run_on_server_def = False,
@@ -446,13 +379,83 @@ def create_spatial_mappings(
 
 
 
-
-
-
-
-###############################
-# No Longer Used, to be deleted in March 2024
 ##############################################################################################################################
+##############################################################################################################################
+# No Longer Used, to be deleted in April 2024
+#   V   V   V
+##############################################################################################################################
+
+# BUILDING + DWELLING REGISTERY ---------------------------------------------------------------------
+def gwr_spatial_toparquet(
+    script_run_on_server_def = False,
+    smaller_import_def = False,
+    log_file_name_def = None,
+    wd_path_def = None,
+    data_path_def = None,
+    show_debug_prints_def = None,
+    ):
+    """
+    Function to intersect spatial data with gm_shp and export to parquet
+    """
+
+    # setup -------------------
+    wd_path = wd_path_def if wd_path_def else "C:/Models/OptimalPV_RH"
+    data_path = data_path_def if data_path_def else f'{wd_path}_data'
+
+    import sys
+    if not script_run_on_server_def:
+        sys.path.append('C:/Models/OptimalPV_RH')
+    elif script_run_on_server_def:
+        sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
+    import functions
+    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+
+    # set directory if necessary
+    if not os.path.exists(f'{data_path}/output/preprep_data'):
+        os.makedirs(f'{data_path}/output/preprep_data')
+
+    # create first checkpoint
+    checkpoint_to_logfile('run function: gwr_spatial_toparquet.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+    
+    # import ------------------
+    gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    if not smaller_import_def:
+        # gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson')
+        gwr_pq = pd.read_parquet(f'{data_path}/output/preprep_data/gwr.parquet')  
+        checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    elif smaller_import_def:
+        checkpoint_to_logfile('USE SMALLER IMPORT for debugging', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        # gwr_gdf = gpd.read_file(f'{data_path}/input/GebWohnRegister.CH/buildings.geojson', rows = 1000)
+        gwr_pq = pd.read_parquet(f'{data_path}/output/preprep_data/gwr.parquet')  
+        checkpoint_to_logfile('import gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    
+    # create gdf ------------------
+    gwr_pq['GKODE'] = pd.to_numeric(gwr_pq['GKODE'], errors='coerce')
+    gwr_pq['GKODN'] = pd.to_numeric(gwr_pq['GKODN'], errors='coerce')
+
+    gwr_gdf = gpd.GeoDataFrame(gwr_pq, geometry=gpd.points_from_xy(gwr_pq['GKODE'], gwr_pq['GKODN']))
+
+
+    # sjoin to gm_shp ------------------
+    gwr_gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
+    gwr = gpd.sjoin(gwr_gdf, gm_shp_gdf, how="left", predicate="within")
+    checkpoint_to_logfile('sjoin gwr', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    # drop unnecessary columns ------------------
+    keep_cols = ["BFS_NUMMER", ]
+    dele_cols = ['index_right'] + [col for col in gm_shp_gdf.columns if col not in keep_cols]
+    gwr.drop(columns = dele_cols, inplace = True)
+
+    # export ------------------
+    gwr.to_parquet(f'{data_path}/output/preprep_data/gwr_by_gm.parquet')
+    checkpoint_to_logfile('export gwr.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5)
+    print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
+
+
+##############################################################################################################################
+##############################################################################################################################
+# No Longer Used, to be deleted in March 2024
+#   V   V   V
 ##############################################################################################################################
 
 def create_Mappings(
@@ -609,43 +612,6 @@ def create_Mappings(
     chapter_to_logfile('end spatial_data_toparquet.py', log_file_name = log_file_name)
 
 
-
-
-# ------------------------------------------------------------------------------------------------------
-# LOG FIlE PRINTING FUNCTIONS
-# ------------------------------------------------------------------------------------------------------
-
-# def chapter_to_logfile(str, log_file_name):
-#     """
-#     Function to write a chapter to the logfile
-#     """
-#     check = f'\n\n****************************************\n {str} \n start at:{datetime.now()} \n****************************************\n\n'
-#     print(check)
-#     with open(f'{log_file_name}', 'a') as log_file:
-#         log_file.write(f'{check}\n')
-# time_last_call = None
-# def checkpoint_to_logfile(str, log_file_name, n_tabs = 0, timer_func=None):
-#     """
-#     Function to write a checkpoint to the logfile
-#     """
-#     global time_last_call
-    
-#     time_now = datetime.now()
-#     if time_last_call:
-#         runtime = time_now - time_last_call
-#         minutes, seconds = divmod(runtime.seconds, 60)
-#         runtime_str = f"{minutes} min {seconds} sec"
-#     else:
-#         runtime_str = 'N/A'
-    
-#     n_tabs_str = '\t' * n_tabs
-#     check = f'* {str}{n_tabs_str}runtime: {runtime_str};   (stamp: {datetime.now()})'
-#     print(check)
-
-#     with open(f'{log_file_name}', 'a') as log_file:
-#         log_file.write(f"{check}\n")
-    
-#     time_last_call = time_now
 
 
 
