@@ -368,7 +368,8 @@ def create_spatial_mappings(
     # map eg_solkat > sb_solkat
     unique_combo = solkat_gdf[["SB_UUID", "EGID"]].drop_duplicates()
     unique_combo.dropna(subset=['EGID'], inplace=True)
-    Map_egroof_sbroof = unique_combo['EGID', 'SB_UUID']
+    Map_egroof_sbroof = unique_combo
+    Map_egroof_sbroof.reset_index(inplace = True)
     checkpoint_to_logfile('created Map_egroof_sbroof', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # map eg_solkat > PV

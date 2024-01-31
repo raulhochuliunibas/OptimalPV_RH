@@ -15,11 +15,10 @@
 
 # SETTIGNS --------------------------------------------------------------------
 agg_settings = {
-        # 'name_dir_export': 'all_CH',        # name of the directory for the aggregated data, and maybe file extension
         'script_run_on_server': False,      # F: run on private computer, T: run on server
         'recreate_preprep_data': True,     # F: use existing parquet files, T: recreate parquet files in data prep
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
-        'smaller_import': True,             # F: import all data, T: import only a small subset of data for debugging
+        'smaller_import': False,             # F: import all data, T: import only a small subset of data for debugging
 
         'bfs_numbers_OR_shape': [3851,],       # 3851: Davos (GR)
         'gwr_house_type_class': [0,], 
@@ -120,20 +119,6 @@ if not pq_dir_exists_TF or pq_files_rerun:
 else: 
     checkpoint_to_logfile('use parquet files and mappings that exist already', log_name)
 
-
-# DATA AGGREGATION FOR MA student Lupien --------------------------------------
-def move_Lupien_agg_to_dict(dict_name):
-    if not os.path.exists(f'{data_path}/{dict_name}'):
-        os.makedirs(f'{data_path}/{dict_name}')
-    f_to_move = glob.glob(f'{data_path}/Lupien_aggregation/*')
-    for f in f_to_move: 
-        shutil.copy(f, f'{data_path}/{dict_name}/')
-# Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=True, union_vs_hull_shape = 'union')
-
-
-# INITIALIZATION OF PV TOPOLOGY -----------------------------------------------
-
-
 chapter_to_logfile(f'END data_aggregation_MASTER', log_name, overwrite_file=False)
 # MOVE AGGREGATED DATA TO DICT not to overwrite it while debugging
 today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -146,16 +131,19 @@ for f in file_to_move:
 shutil.copy(glob.glob(f'{data_path}/output/prepre*_log.txt')[0], dirs_preprep_data_DATE)
 
 
-
 ###############################
 # BOOKMARK
 ###############################
-# INITIALIZE PV TOPOLOGY --------------------------------------
 
 
-
-# AGGREGATIONS -----------------------------------------------------------------
-# aggregation solkat, pv, munic, gwr, heatcool by cantons 
+# DATA AGGREGATION FOR MA student Lupien --------------------------------------
+def move_Lupien_agg_to_dict(dict_name):
+    if not os.path.exists(f'{data_path}/{dict_name}'):
+        os.makedirs(f'{data_path}/{dict_name}')
+    f_to_move = glob.glob(f'{data_path}/Lupien_aggregation/*')
+    for f in f_to_move: 
+        shutil.copy(f, f'{data_path}/{dict_name}/')
+# Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=True, union_vs_hull_shape = 'union')
 
 
 # buffer False -----------------------------------------------------------------
