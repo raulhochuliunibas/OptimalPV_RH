@@ -9,14 +9,19 @@
 #   parquet files (faster imports) and creating mappings for fast lookups. 
 
 # TO-DOs:
+# TODO: ADJUST ALL MAPPINGS so that the data type is a string, not an int
+# TODO: Map_egroof_sbroof carries an unnecessary index in the export file. remove that in the preppred_data function
+# TODO: Change the GWR aggregation to take GBAUP not GBAUJ -> see email MADD, Mauro Nanini
+# TODO: Add many more variables for GWR extraction (heating, living area etc.)
 # TODO: change code such that prepred_data is on the same directory level than output
+
 
 
 
 # SETTIGNS --------------------------------------------------------------------
 agg_settings = {
         'script_run_on_server': False,      # F: run on private computer, T: run on server
-        'recreate_preprep_data': True,     # F: use existing parquet files, T: recreate parquet files in data prep
+        'recreate_preprep_data': False,     # F: use existing parquet files, T: recreate parquet files in data prep
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
         'smaller_import': False,             # F: import all data, T: import only a small subset of data for debugging
 
@@ -46,6 +51,7 @@ from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_l
 from data_aggregation.api_electricity_prices import api_electricity_prices
 from data_aggregation.sql_gwr import sql_gwr_data
 from data_aggregation.preprepare_data import solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet, create_spatial_mappings
+from data_aggregation.installation_cost import attach_pv_cost
 
 
 # SETUP -----------------------------------------------------------------------
@@ -65,12 +71,12 @@ print_to_logfile(f' > settings: \n{pformat(agg_settings)}', log_name)
 # PRE PREP DATA ---------------------------------------------------------------
 
 # download possible API data to local directory
-subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-file_exists_TF = os.path.exists(f'{data_path}/elecpri.parquet')
+file_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/elecpri.parquet')
 preprep_data_rerun = agg_settings['recreate_preprep_data']
 year_range = [2021, 2021] if agg_settings['smaller_import'] else [2009, 2023]
 
 if not file_exists_TF or preprep_data_rerun:
+    subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
     api_electricity_prices(script_run_on_server_def = agg_settings['script_run_on_server'],
                            recreate_parquet_files_def=agg_settings['recreate_preprep_data'],
                            smaller_import_def=agg_settings['smaller_import'],
@@ -79,6 +85,8 @@ if not file_exists_TF or preprep_data_rerun:
                            data_path_def=data_path, 
                            show_debug_prints_def=agg_settings['show_debug_prints'], 
                             year_range_def = year_range)
+    
+    subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
     sql_gwr_data(script_run_on_server_def = agg_settings['script_run_on_server'],
                  recreate_parquet_files_def=agg_settings['recreate_preprep_data'],
                  smaller_import_def=agg_settings['smaller_import'],
@@ -86,13 +94,12 @@ if not file_exists_TF or preprep_data_rerun:
                  wd_path_def=wd_path,
                  data_path_def=data_path, 
                  show_debug_prints_def=agg_settings['show_debug_prints'])
-
 else:
     checkpoint_to_logfile('use electricity prices that are downloaded already', log_name)
 
 
 # transform spatial data to parquet files for faster import and transformation
-pq_dir_exists_TF = os.path.exists(f'{data_path}/output/prepred_data')
+pq_dir_exists_TF = os.path.exists(f'{data_path}/output/preprep_data')
 pq_files_rerun = agg_settings['recreate_preprep_data']
 
 if not pq_dir_exists_TF or pq_files_rerun:
@@ -113,14 +120,27 @@ if not pq_dir_exists_TF or pq_files_rerun:
                             log_name, wd_path, data_path, agg_settings['show_debug_prints'])
     pv_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'],
                             log_name, wd_path, data_path, agg_settings['show_debug_prints'])
-    
-
-    
 else: 
     checkpoint_to_logfile('use parquet files and mappings that exist already', log_name)
 
-chapter_to_logfile(f'END data_aggregation_MASTER', log_name, overwrite_file=False)
+
+# EXTEND WITH TIME FIXED DATA ---------------------------------------------------------------
+cost_df_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/pvinstcost.parquet')
+pq_files_rerun = agg_settings['recreate_preprep_data']
+
+if not cost_df_exists_TF or pq_files_rerun:
+    subchapter_to_logfile('extend data: PV INSTALLTION COST', log_name)
+    Map_kw_pvcost = attach_pv_cost(script_run_on_server_def= agg_settings['script_run_on_server'],  
+                     log_file_name_def=log_name,
+                     wd_path_def=wd_path, 
+                     data_path_def=data_path, 
+                     show_debug_prints_def=agg_settings['show_debug_prints'])
+    
+    subchapter_to_logfile('extend data: WEIGHTS FOR ELECTRICITY DEMAND', log_name)
+
+    
 # MOVE AGGREGATED DATA TO DICT not to overwrite it while debugging
+chapter_to_logfile(f'END data_aggregation_MASTER', log_name, overwrite_file=False)
 today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 dirs_preprep_data_DATE = f'{data_path}/output/preprep_data_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
 if not os.path.exists(dirs_preprep_data_DATE):
@@ -131,9 +151,14 @@ for f in file_to_move:
 shutil.copy(glob.glob(f'{data_path}/output/prepre*_log.txt')[0], dirs_preprep_data_DATE)
 
 
+
+# -----------------------------------------------------------------------------
+# END 
+# -----------------------------------------------------------------------------
+
 ###############################
-# BOOKMARK
 ###############################
+# BOOKMARK > delete in March 2024
 
 
 # DATA AGGREGATION FOR MA student Lupien --------------------------------------
@@ -145,6 +170,13 @@ def move_Lupien_agg_to_dict(dict_name):
         shutil.copy(f, f'{data_path}/{dict_name}/')
 # Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=True, union_vs_hull_shape = 'union')
 
+###############################
+###############################
+
+
+###############################
+###############################
+# BOOKMARK > delete in February 2024
 
 # buffer False -----------------------------------------------------------------
 if False:
@@ -207,9 +239,5 @@ if False:
     for f in files_del:
         shutil.move(f, f'{data_path}/{name_dir_export}_to_delete')
 
-
-
-        
-    
-
-    
+###############################
+###############################
