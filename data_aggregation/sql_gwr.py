@@ -36,7 +36,7 @@ def sql_gwr_data(
     checkpoint_to_logfile('run function: sql_gwr_data.py', log_file_name_def=log_file_name_def, n_tabs_def = 5) 
 
     query_columns = ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
-                     'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GABBJ', 'GANZWHG', 
+                     'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
                      'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1']
 
 
