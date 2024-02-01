@@ -302,7 +302,9 @@ def create_spatial_mappings(
     unique_combo = solkat_gdf[["SB_UUID", "EGID"]].drop_duplicates()
     unique_combo.dropna(subset=['EGID'], inplace=True)
     Map_egroof_sbroof = unique_combo
-    Map_egroof_sbroof.reset_index(inplace = True)
+    Map_egroof_sbroof['EGID'] = Map_egroof_sbroof['EGID'].astype(int).astype(str)
+    # Map_egroof_sbroof.reset_index(inplace = True)
+
     checkpoint_to_logfile('created Map_egroof_sbroof', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # map eg_solkat > PV
@@ -310,6 +312,8 @@ def create_spatial_mappings(
     Map_egroof_pv = gpd.sjoin(gwr_union, pv_gdf, how="left", predicate="intersects")
     Map_egroof_pv = drop_index_right_cols(Map_egroof_pv)
     Map_egroof_pv.reset_index(inplace = True)
+    Map_egroof_pv['EGID'] = Map_egroof_pv['EGID'].astype(int).astype(str)
+    Map_egroof_pv['xtf_id'] = Map_egroof_pv['xtf_id'].astype(int).astype(str)
     checkpoint_to_logfile('created Map_egroof_pv', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     # map eg_solkat > heat
@@ -317,6 +321,8 @@ def create_spatial_mappings(
     Map_egroof_heat = gpd.sjoin(gwr_union, heat_gdf, how="left", predicate="intersects")
     Map_egroof_heat = drop_index_right_cols(Map_egroof_heat)
     Map_egroof_heat.reset_index(inplace = True)
+    Map_egroof_heat['EGID'] = Map_egroof_heat['EGID'].astype(int).astype(str)
+    Map_egroof_heat['OBJECTID'] = Map_egroof_heat['OBJECTID'].astype(int).astype(str)
     checkpoint_to_logfile('created Map_egroof_heat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
 
@@ -362,6 +368,9 @@ def create_spatial_mappings(
         Map_roof_gm = drop_index_right_cols(Map_roof_gm)
         Map_roof_gm.reset_index(inplace = True)
         checkpoint_to_logfile(f'created Map_roof_gm', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    
+    # transform all Mappings to str ------------------
+    
 
     Map_egroof_sbroof.to_parquet(f'{data_path}/output/preprep_data/Map_egroof_sbroof.parquet')
     Map_egroof_pv.to_parquet(f'{data_path}/output/preprep_data/Map_egroof_pv.parquet')
