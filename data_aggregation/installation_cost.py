@@ -142,7 +142,7 @@ def attach_pv_cost(
         counter_list = df_sub['counter_partition'].to_list()
 
         for c in counter_list:
-            print(f'GWR_EGID: {e} partition: {c}') if show_debug_prints_def else None
+            print(f'GWR_EGID: {e} partition: {c}') if smaller_import_def else None
             solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'FLAECH_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'FLAECHE'].sum()
             solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'GSTRAH_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'GSTRAHLUNG'].sum()
             solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'MSTRAH_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'MSTRAHLUNG'].sum()

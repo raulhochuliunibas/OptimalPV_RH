@@ -24,7 +24,7 @@ agg_settings = {
         'script_run_on_server': False,      # F: run on private computer, T: run on server
         'recreate_preprep_data': False,     # F: use existing parquet files, T: recreate parquet files in data prep
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
-        'smaller_import': True,             # F: import all data, T: import only a small subset of data for debugging
+        'smaller_import': False,             # F: import all data, T: import only a small subset of data for debugging
 
         'bfs_numbers_OR_shape': [0,],       
         'gwr_house_type_class': [0,], 
@@ -121,6 +121,8 @@ if not cost_df_exists_TF or pq_files_rerun:
                      show_debug_prints_def=agg_settings['show_debug_prints'])
     
     subchapter_to_logfile('extend data: WEIGHTS FOR ELECTRICITY DEMAND', log_name)
+
+###############################
 
     
 # MOVE AGGREGATED DATA TO DICT not to overwrite it while debugging
