@@ -79,17 +79,18 @@ def attach_pv_cost(
     installation_cost_df.reset_index(inplace=True)
 
 
-    def Map_kw_pvcost(kw_def):
-        """
-        Cost Assumption set in def pv_cost_df_and_func():!
-        Function to return the cost (CHF) of a pv system (input kW)  
-        """
-        return np.interp(kw_def, installation_cost_df['kw'], installation_cost_df['chf_pkW'])
+    # def Map_kw_pvcost(kw_def):
+    #     """
+    #     Cost Assumption set in def pv_cost_df_and_func():!
+    #     Function to return the cost (CHF) of a pv system (input kW)  
+    #     """
+    #     return np.interp(kw_def, installation_cost_df['kw'], installation_cost_df['chf_pkW'])
 
 
     # export cost df -------------------
     installation_cost_df.to_parquet(f'{data_path}/output/preprep_data/pvinstcost_table.parquet')
     checkpoint_to_logfile(f'exported pvinstcost_table', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+
 
 
     # import and transform for COST dfs -------------------
@@ -106,75 +107,103 @@ def attach_pv_cost(
     checkpoint_to_logfile(f'imported + transformed solkat_by_gm.parquet', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
 
 
-    # create df with cost for 3+ partition -------------------
+
+    # extend COST for 3+ partition -------------------
+
     solkatcost_3up = solkat.groupby(['GWR_EGID', ]).agg(
         {'FLAECHE': 'sum', 'MSTRAHLUNG': 'mean', 'GSTRAHLUNG': 'sum', 'STROMERTRAG': 'sum', 'n_partition':'sum'}).reset_index()
     solkatcost_3up['pvpot_bysurface_kw'] = solkatcost_3up['FLAECHE'] * conversion_m2_to_kw
     checkpoint_to_logfile(f'created solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
     
-
-    # create df with cost per ADDITIONAL partition -------------------
-    
-    # prepare df to calculate cumulative cost
-    solkatcost_cumm = solkat.loc[solkat['GWR_EGID'].notna(), ['GWR_EGID', 'DF_UID', 'DF_NUMMER', 'SB_UUID', 'KLASSE', 
-                                                         'FLAECHE', 'MSTRAHLUNG', 'GSTRAHLUNG', 'STROMERTRAG',]].copy()
-    
-    solkatcost_cumm = solkatcost_cumm.sort_values(by=['GWR_EGID', 'GSTRAHLUNG', 'KLASSE'], ascending=[True, False, False])
-    
-    solkatcost_cumm['counter_partition'] = solkatcost_cumm.groupby('GWR_EGID').cumcount() + 1 # add counter variable and shift column to front
-    cols = solkatcost_cumm.columns.tolist()
-    cols = cols[:1] + cols[-1:] + cols[1:-1]
-    solkatcost_cumm = solkatcost_cumm[cols]
-
-    # do 2 loop to assign cummulative values
-    solkatcost_cumm['FLAECH_cumm'] = np.nan
-    solkatcost_cumm['GSTRAH_cumm'] = np.nan
-    solkatcost_cumm['MSTRAH_cumm'] = np.nan
-    solkatcost_cumm['STROME_cumm'] = np.nan
-
-    egid_list = solkatcost_cumm['GWR_EGID'].unique().tolist()
-    egid_list = egid_list[0:3] if smaller_import_def else egid_list
-    checkpoint_to_logfile(f'start loop for accumulation over solkatcost', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
-
-    for e in egid_list:
-        df_sub = solkatcost_cumm.loc[solkatcost_cumm['GWR_EGID']== e]
-        df_sub = df_sub.sort_values(by = ['GSTRAHLUNG', 'KLASSE'], ascending = [False, False])
-        counter_list = df_sub['counter_partition'].to_list()
-
-        for c in counter_list:
-            print(f'GWR_EGID: {e} partition: {c}') if smaller_import_def else None
-            solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'FLAECH_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'FLAECHE'].sum()
-            solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'GSTRAH_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'GSTRAHLUNG'].sum()
-            solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'MSTRAH_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'MSTRAHLUNG'].sum()
-            solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'STROME_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'STROMERTRAG'].sum()
-
-    checkpoint_to_logfile(f'end loop for accumulation over solkatcost', log_file_name_def=log_file_name_def, n_tabs_def = 5)
-    solkatcost_cumm['pvpot_bysurface_kw_cumm'] = solkatcost_cumm['FLAECH_cumm'] * conversion_m2_to_kw
-
-    
-    # use COST FUNCTION -------------------
+    # use COST intrapolation
     # solkatcost_3up['partition_pv_cost_chf'] = solkatcost_3up['pvpot_bysurface_kw'].apply(Map_kw_pvcost)
     solkatcost_3up['partition_pv_cost_chf'] = np.interp(solkatcost_3up['pvpot_bysurface_kw'], installation_cost_df['kw'], installation_cost_df['chf_pkW'])
-    checkpoint_to_logfile(f'attached cost to solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
+    checkpoint_to_logfile(f'attached intrapolated cost to solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
 
-    # solkatcost_cumm['cumm_pv_cost_chf'] =  solkatcost_cumm['pvpot_bysurface_kw_cumm'].apply(Map_kw_pvcost)
-    solkatcost_cumm['partition_pv_cost_chf'] = np.interp(solkatcost_cumm['pvpot_bysurface_kw_cumm'], installation_cost_df['kw'], installation_cost_df['chf_pkW'])
-    checkpoint_to_logfile(f'attached cost to solkatcost_cumm', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
-
-
-    # export -------------------
-    
+    # export cost_3up
     solkatcost_3up.to_parquet(f'{data_path}/output/preprep_data/solkatcost_3up.parquet')
     solkatcost_3up.to_csv(f'{data_path}/output/preprep_data/solkatcost_3up.csv')
+    checkpoint_to_logfile(f'exported solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def= show_debug_prints_def)
 
+
+
+    # extend COST per ADDITIONAL partition -------------------
+    
+    # ALTERNATIVE GPT
+    # prepare df to calculate cumulative cost
+    solkatcost_cumm = solkat.loc[solkat['GWR_EGID'].notna(), ['GWR_EGID', 'DF_UID', 'DF_NUMMER', 'SB_UUID', 'KLASSE', 
+                                                        'FLAECHE', 'MSTRAHLUNG', 'GSTRAHLUNG', 'STROMERTRAG']].copy()
+
+    solkatcost_cumm = solkatcost_cumm.sort_values(by=['GWR_EGID', 'GSTRAHLUNG', 'KLASSE'], ascending=[True, False, False])
+    solkatcost_cumm['counter_partition'] = solkatcost_cumm.groupby('GWR_EGID').cumcount() + 1
+
+    # apply cummulative sum in groupby on copy of variable of interest
+    cumulative_cols = ['FLAECH_cumm', 'GSTRAH_cumm', 'MSTRAH_cumm', 'STROME_cumm']
+    solkatcost_cumm[cumulative_cols] = solkatcost_cumm[['FLAECHE', 'GSTRAHLUNG', 'MSTRAHLUNG', 'STROMERTRAG']]
+    for col in cumulative_cols:
+          checkpoint_to_logfile(f'start cumulative sum for: {col}', log_file_name_def=log_file_name_def, n_tabs_def=2, show_debug_prints_def=show_debug_prints_def)
+          solkatcost_cumm[col] = solkatcost_cumm.groupby('GWR_EGID')[col].transform(pd.Series.cumsum)
+
+    # convert m2 to kw and intrapolate costs
+    solkatcost_cumm['pvpot_bysurface_kw_cumm'] = solkatcost_cumm['FLAECH_cumm'] * conversion_m2_to_kw
+    solkatcost_cumm['partition_pv_cost_chf'] = np.interp(solkatcost_cumm['pvpot_bysurface_kw_cumm'], installation_cost_df['kw'], installation_cost_df['chf_pkW'])
+    checkpoint_to_logfile(f'attached intrapolated cost to solkatcost_cumm', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
+
+    # export cost_cumm
     solkatcost_cumm.to_parquet(f'{data_path}/output/preprep_data/solkatcost_cumm.parquet')
     solkatcost_cumm.to_csv(f'{data_path}/output/preprep_data/solkatcost_cumm.csv')
     checkpoint_to_logfile(f'exported solkatcost_3up + solkatcost_cumm', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
 
-    return Map_kw_pvcost
 
 
+####################
+# V V V to be deleted in March 2024
+# extend COST per ADDITONAL partition IN LOOPS -------------------
+
+"""
+# TAKING MULTIPLE DAYS TO SOLVE!
+# prepare df to calculate cumulative cost
+solkatcost_cumm = solkat.loc[solkat['GWR_EGID'].notna(), ['GWR_EGID', 'DF_UID', 'DF_NUMMER', 'SB_UUID', 'KLASSE', 
+                                                        'FLAECHE', 'MSTRAHLUNG', 'GSTRAHLUNG', 'STROMERTRAG',]].copy()
+
+solkatcost_cumm = solkatcost_cumm.sort_values(by=['GWR_EGID', 'GSTRAHLUNG', 'KLASSE'], ascending=[True, False, False])
+
+solkatcost_cumm['counter_partition'] = solkatcost_cumm.groupby('GWR_EGID').cumcount() + 1 # add counter variable and shift column to front
+cols = solkatcost_cumm.columns.tolist()
+cols = cols[:1] + cols[-1:] + cols[1:-1]
+solkatcost_cumm = solkatcost_cumm[cols]
+
+# do 2 loop to assign cummulative values
+solkatcost_cumm['FLAECH_cumm'] = np.nan
+solkatcost_cumm['GSTRAH_cumm'] = np.nan
+solkatcost_cumm['MSTRAH_cumm'] = np.nan
+solkatcost_cumm['STROME_cumm'] = np.nan
+
+egid_list = solkatcost_cumm['GWR_EGID'].unique().tolist()
+egid_list = egid_list[0:3] if smaller_import_def else egid_list
+checkpoint_to_logfile(f'start loop for accumulation over solkatcost', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+
+counter_10perc_loop = len(egid_list) // 2000000
+for n, e in enumerate(egid_list,start = 1):
+    df_sub = solkatcost_cumm.loc[solkatcost_cumm['GWR_EGID']== e]
+    df_sub = df_sub.sort_values(by = ['GSTRAHLUNG', 'KLASSE'], ascending = [False, False])
+    counter_list = df_sub['counter_partition'].to_list()
+
+    for c in counter_list:
+        print(f'GWR_EGID: {e} partition: {c}') if smaller_import_def else None
+
+        solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'FLAECH_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'FLAECHE'].sum()
+        solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'GSTRAH_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'GSTRAHLUNG'].sum()
+        solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'MSTRAH_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'MSTRAHLUNG'].sum()
+        solkatcost_cumm.loc[(solkatcost_cumm['GWR_EGID'] == e) & (solkatcost_cumm['counter_partition'] == c), 'STROME_cumm'] = df_sub.loc[df_sub['counter_partition'] <= c, 'STROMERTRAG'].sum()
     
-    
+    if n % counter_10perc_loop==0:
+        checkpoint_to_logfile(f'cumulated {n} of {len(egid_list)} GWR_EGIDs', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def= show_debug_prints_def)
+
+checkpoint_to_logfile(f'end loop for accumulation over solkatcost', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+solkatcost_cumm['pvpot_bysurface_kw_cumm'] = solkatcost_cumm['FLAECH_cumm'] * conversion_m2_to_kw
+"""
+
+####################
 
 
