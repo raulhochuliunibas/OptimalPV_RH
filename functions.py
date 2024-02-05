@@ -64,9 +64,10 @@ def checkpoint_to_logfile(str_def, log_file_name_def, n_tabs_def = 0, show_debug
     if show_debug_prints_def:
         time_now = datetime.now()
         if time_last_call:
-            runtime = time_now - time_last_call
-            minutes, seconds = divmod(runtime.seconds, 60)
-            runtime_str = f"{minutes} min {seconds} sec"
+            total_seconds = int((time_now - time_last_call).total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            runtime_str = f"{hours} hr {minutes} min {seconds} sec"
         else:
             runtime_str = 'N/A'
         

@@ -28,7 +28,7 @@ def attach_pv_cost(
     conversion_m2_to_kw = 0.1  # A 1m2 area can fit 0.1 kWp of PV Panels
 
     # setup -------------------
-    wd_path = "D:/RaulHochuli_inuse/Models/OptimalPV_RH" if script_run_on_server_def else "C:/Models/OptimalPV_RH"   # path for private computer
+    wd_path = "D:\RaulHochuli_inuse\OptimalPV_RH" if script_run_on_server_def else "C:/Models/OptimalPV_RH"   # path for private computer
     data_path = f'{wd_path}_data'
 
     # create directory + log file
@@ -138,8 +138,8 @@ def attach_pv_cost(
     solkatcost_cumm['counter_partition'] = solkatcost_cumm.groupby('GWR_EGID').cumcount() + 1
 
     # apply cummulative sum in groupby on copy of variable of interest
-    cumulative_cols = ['FLAECH_cumm', 'GSTRAH_cumm', 'MSTRAH_cumm', 'STROME_cumm']
-    solkatcost_cumm[cumulative_cols] = solkatcost_cumm[['FLAECHE', 'GSTRAHLUNG', 'MSTRAHLUNG', 'STROMERTRAG']]
+    cumulative_cols = ['FLAECH_cumm', 'GSTRAH_cumm', 'STROME_cumm']
+    solkatcost_cumm[cumulative_cols] = solkatcost_cumm[['FLAECHE', 'GSTRAHLUNG', 'STROMERTRAG']]
     for col in cumulative_cols:
           checkpoint_to_logfile(f'start cumulative sum for: {col}', log_file_name_def=log_file_name_def, n_tabs_def=2, show_debug_prints_def=show_debug_prints_def)
           solkatcost_cumm[col] = solkatcost_cumm.groupby('GWR_EGID')[col].transform(pd.Series.cumsum)

@@ -27,7 +27,7 @@ def sql_gwr_data(
 
 
     # setup -------------------
-    wd_path = "D:/RaulHochuli_inuse/Models/OptimalPV_RH" if script_run_on_server_def else "C:/Models/OptimalPV_RH"   # path for private computer
+    wd_path = "D:/RaulHochuli_inuse/OptimalPV_RH" if script_run_on_server_def else "C:/Models/OptimalPV_RH"   # path for private computer
     data_path = f'{wd_path}_data'
 
     # create directory + log file
