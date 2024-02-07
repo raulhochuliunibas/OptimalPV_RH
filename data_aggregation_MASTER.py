@@ -9,14 +9,17 @@
 #   parquet files (faster imports) and creating mappings for fast lookups. 
 
 # TO-DOs:
-# TODO: Remove MSTRAHLUNG from Cummulative summation => unnecessary and not true anyway (summed up an average)
+
+# TODO: integrate pvtarif to data aggregation
 # TODO: Add many more variables for GWR extraction (heating, living area etc.), WAREA not found in SQL data base
-# TODO: change code such that prepred_data is on the same directory level than output
 
 # TODO: facade data inculde 
+# TODO: change code such that prepred_data is on the same directory level than output
+
 # NOTE: ADJUST ALL MAPPINGS so that the data type is a string, not an int
 # NOTE: Map_egroof_sbroof carries an unnecessary index in the export file. remove that in the preppred_data function
 # NOTE: Change the GWR aggregation to take GBAUP not GBAUJ -> see email MADD, Mauro Nanini
+# NOTE: Remove MSTRAHLUNG from Cummulative summation => unnecessary and not true anyway (summed up an average)
 
 
 
@@ -53,6 +56,7 @@ from pprint import pprint, pformat
 from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 from data_aggregation.api_electricity_prices import api_electricity_prices
 from data_aggregation.sql_gwr import sql_gwr_data
+from data_aggregation.api_pvtarif import api_pvtarif
 from data_aggregation.preprepare_data import solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet, create_spatial_mappings
 from data_aggregation.installation_cost import attach_pv_cost
 
@@ -76,18 +80,25 @@ print_to_logfile(f' > settings: \n{pformat(agg_settings)}', log_name)
 # download possible API data to local directory
 file_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/elecpri.parquet')
 preprep_data_rerun = agg_settings['recreate_preprep_data']
-year_range = [2021, 2021] if agg_settings['smaller_import'] else [2009, 2023]
+
+year_range_gwr = [2020, 2021] if agg_settings['smaller_import'] else [2009, 2023]
+year_range_pvtarif = [2020, 2021] if agg_settings['smaller_import'] else [2015, 2023]
 
 if not file_exists_TF or preprep_data_rerun:
     subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-    api_electricity_prices(script_run_on_server_def = agg_settings['script_run_on_server'], recreate_parquet_files_def=agg_settings['recreate_preprep_data'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def = year_range)
+    api_electricity_prices(script_run_on_server_def = agg_settings['script_run_on_server'], recreate_parquet_files_def=agg_settings['recreate_preprep_data'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def = year_range_gwr)
     
     subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
     sql_gwr_data(script_run_on_server_def = agg_settings['script_run_on_server'], recreate_parquet_files_def=agg_settings['recreate_preprep_data'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'])
 
+    subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
+    api_pvtarif(script_run_on_server_def = agg_settings['script_run_on_server'], recreate_parquet_files_def=agg_settings['recreate_preprep_data'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def=year_range_pvtarif )
+
 else:
     print_to_logfile('\n\n', log_name)
     checkpoint_to_logfile('use electricity prices that are downloaded already', log_name)
+
+   
 
 
 # transform spatial data to parquet files for faster import and transformation
@@ -107,11 +118,9 @@ else:
     print_to_logfile('\n', log_name)
     checkpoint_to_logfile('use parquet files and mappings that exist already', log_name)
 
-###############################
-# BOOKMARK > still in DEV
-###############################
 
-# EXTEND WITH TIME FIXED DATA ---------------------------------------------------------------
+
+# EXTEND WITH TIME FIXED DATA pvtarif = pvtarif_raw.loc[pvtarif_raw['valid'] == True].copy()
 cost_df_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/pvinstcost.parquet')
 extend_data_rerun = agg_settings['reextend_fixed_data']
 
@@ -126,10 +135,10 @@ if not cost_df_exists_TF or extend_data_rerun:
     
     subchapter_to_logfile('extend data: WEIGHTS FOR ELECTRICITY DEMAND', log_name)
 
-###############################
 
-    
-# MOVE AGGREGATED DATA TO DICT not to overwrite it while debugging
+
+   
+# COPY AGGREGATED DATA not to overwrite it while debugging 
 chapter_to_logfile(f'END data_aggregation_MASTER', log_name, overwrite_file=False)
 today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 dirs_preprep_data_DATE = f'{data_path}/output/preprep_data_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
@@ -141,7 +150,6 @@ for f in file_to_move:
 shutil.copy(glob.glob(f'{data_path}/output/prepre*_log.txt')[0], dirs_preprep_data_DATE)
 
 
-print('')
 # -----------------------------------------------------------------------------
 # END 
 # -----------------------------------------------------------------------------

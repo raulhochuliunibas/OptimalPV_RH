@@ -3,6 +3,8 @@ import os
 import pandas as pd
 import numpy as np
 
+from collections import OrderedDict
+
 sys.path.append('..')
 from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
@@ -74,17 +76,8 @@ def attach_pv_cost(
         'chf_pkW': list(installation_cost_dict['on_roof_installation_cost_pkW'].values()),
         'chf_total': list(installation_cost_dict['on_roof_installation_cost_total'].values())
     })
-
-    # installation_cost_df.set_index('kw', inplace=True)
     installation_cost_df.reset_index(inplace=True)
 
-
-    # def Map_kw_pvcost(kw_def):
-    #     """
-    #     Cost Assumption set in def pv_cost_df_and_func():!
-    #     Function to return the cost (CHF) of a pv system (input kW)  
-    #     """
-    #     return np.interp(kw_def, installation_cost_df['kw'], installation_cost_df['chf_pkW'])
 
 
     # export cost df -------------------
@@ -116,20 +109,19 @@ def attach_pv_cost(
     checkpoint_to_logfile(f'created solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
     
     # use COST intrapolation
-    # solkatcost_3up['partition_pv_cost_chf'] = solkatcost_3up['pvpot_bysurface_kw'].apply(Map_kw_pvcost)
-    solkatcost_3up['partition_pv_cost_chf'] = np.interp(solkatcost_3up['pvpot_bysurface_kw'], installation_cost_df['kw'], installation_cost_df['chf_pkW'])
+    # solkatcost_3up['partition_pv_cost_chf'] = np.interp(solkatcost_3up['pvpot_bysurface_kw'], installation_cost_df['kw'], installation_cost_df['chf_pkW'])
     checkpoint_to_logfile(f'attached intrapolated cost to solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
 
     # export cost_3up
-    solkatcost_3up.to_parquet(f'{data_path}/output/preprep_data/solkatcost_3up.parquet')
-    solkatcost_3up.to_csv(f'{data_path}/output/preprep_data/solkatcost_3up.csv')
+    # solkatcost_3up.to_parquet(f'{data_path}/output/preprep_data/solkatcost_3up.parquet')
+    # solkatcost_3up.to_csv(f'{data_path}/output/preprep_data/solkatcost_3up.csv')
     checkpoint_to_logfile(f'exported solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def= show_debug_prints_def)
 
 
 
     # extend COST per ADDITIONAL partition -------------------
     
-    # ALTERNATIVE GPT
+    # use groupby and .cumsum()
     # prepare df to calculate cumulative cost
     solkatcost_cumm = solkat.loc[solkat['GWR_EGID'].notna(), ['GWR_EGID', 'DF_UID', 'DF_NUMMER', 'SB_UUID', 'KLASSE', 
                                                         'FLAECHE', 'MSTRAHLUNG', 'GSTRAHLUNG', 'STROMERTRAG']].copy()
@@ -141,8 +133,8 @@ def attach_pv_cost(
     cumulative_cols = ['FLAECH_cumm', 'GSTRAH_cumm', 'STROME_cumm']
     solkatcost_cumm[cumulative_cols] = solkatcost_cumm[['FLAECHE', 'GSTRAHLUNG', 'STROMERTRAG']]
     for col in cumulative_cols:
-          checkpoint_to_logfile(f'start cumulative sum for: {col}', log_file_name_def=log_file_name_def, n_tabs_def=2, show_debug_prints_def=show_debug_prints_def)
-          solkatcost_cumm[col] = solkatcost_cumm.groupby('GWR_EGID')[col].transform(pd.Series.cumsum)
+        checkpoint_to_logfile(f'start cumulative sum for: {col}', log_file_name_def=log_file_name_def, n_tabs_def=2, show_debug_prints_def=show_debug_prints_def)
+        solkatcost_cumm[col] = solkatcost_cumm.groupby('GWR_EGID')[col].transform(pd.Series.cumsum)
 
     # convert m2 to kw and intrapolate costs
     solkatcost_cumm['pvpot_bysurface_kw_cumm'] = solkatcost_cumm['FLAECH_cumm'] * conversion_m2_to_kw
@@ -153,6 +145,41 @@ def attach_pv_cost(
     solkatcost_cumm.to_parquet(f'{data_path}/output/preprep_data/solkatcost_cumm.parquet')
     solkatcost_cumm.to_csv(f'{data_path}/output/preprep_data/solkatcost_cumm.csv')
     checkpoint_to_logfile(f'exported solkatcost_3up + solkatcost_cumm', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+
+    # use numpy.cumsum.group => doesn't work!
+    if False: 
+        # prepare df to calculate cumulative cost
+        solkatcost_cumm = solkat.loc[solkat['GWR_EGID'].notna(), ['GWR_EGID', 'DF_UID', 'DF_NUMMER', 'SB_UUID', 'KLASSE', 
+                                                                'FLAECHE', 'MSTRAHLUNG', 'GSTRAHLUNG', 'STROMERTRAG']].copy()
+        solkatcost_cumm = solkatcost_cumm.sort_values(by=['GWR_EGID', 'GSTRAHLUNG', 'KLASSE'], ascending=[True, False, False])
+        solkatcost_cumm['counter_partition'] = solkatcost_cumm.groupby('GWR_EGID').cumcount() + 1
+        solkatcost_cumm[['FLAECH_cumm', 'GSTRAH_cumm', 'STROME_cumm']]= np.nan
+
+        # get GWR_EGID counts
+
+        # a faster version of this >> egid_n = [(x, list(solkatcost_cumm['GWR_EGID']).count(x)) for x in solkatcost_cumm['GWR_EGID'].unique()]
+        checkpoint_to_logfile(f'start GWR_egid counts: GPT version', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+        egid_list = solkatcost_cumm['GWR_EGID']
+
+        egid_counts_dict = OrderedDict() # Initialize an ordered dictionary to preserve the order
+        for egid in solkatcost_cumm['GWR_EGID']:    # Iterate through the 'GWR_EGID' column and count occurrences
+            egid_counts_dict[egid] = egid_counts_dict.get(egid, 0) + 1 
+            
+        egid_counts_list = list(egid_counts_dict.items())  # Convert the ordered dictionary to a list of tuples (value, count)
+        egid_counts = list(zip(*egid_counts_list))[1]
+
+        checkpoint_to_logfile(f'end GWR_egid counts: GPT version', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+
+        # checkpoint_to_logfile(f'start GWR_egid counts: lambdalist version', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+        # egid_n = [(x, list(solkatcost_cumm['GWR_EGID']).count(x)) for x in solkatcost_cumm['GWR_EGID'].unique()]
+        # checkpoint_to_logfile(f'end GWR_egid counts: lambdalist version', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+
+
+
+
+
+
+
 
 
 
