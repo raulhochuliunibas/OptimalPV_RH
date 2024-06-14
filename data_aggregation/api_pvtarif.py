@@ -1,0 +1,161 @@
+import sys
+import os
+import pandas as pd
+import geopandas as gpd
+import requests
+
+sys.path.append('..')
+from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+
+sys.path.append(r'C:/Models/OptimalPV_RH_apikeys')
+from apikeys import get_pvtarif_key
+
+print(get_pvtarif_key)
+
+# ------------------------------------------------------------------------------------------------------
+# API DATA IMPORT
+# ------------------------------------------------------------------------------------------------------
+
+# PV TARIF VESE ------------------------------------------------------
+#> https://www.vese.ch/wp-content/uploads/pvtarif/pvtarif2/appPvMapExpert/pvtarif-map-expert-data-de.html
+
+def api_pvtarif(
+        script_run_on_server_def = None,
+        smaller_import_def = None,
+        log_file_name_def = None,
+        wd_path_def = None,
+        data_path_def = None,
+        show_debug_prints_def = None,
+        year_range_def = [2021, 2021],
+        ):
+    '''
+    This function imports electricity prices from the VESE API.
+    The data is aggregated by municipality and year and saved as parquet file in the data folder.
+    ''' 
+
+    # script_run_on_server_def = agg_settings['script_run_on_server']
+    # smaller_import_def = agg_settings['smaller_import']
+    # # log_file_name_def = None
+    # wd_path_def = "C:\Models\OptimalPV_RH"
+    # data_path_def = wd_path_def
+    # show_debug_prints_def = agg_settings['show_debug_prints']
+    # year_range_def = [1998, 2022]
+
+    # setup -------------------
+    wd_path = wd_path_def if script_run_on_server_def else "C:/Models/OptimalPV_RH"
+    data_path = f'{wd_path}_data'
+
+    # create directory + log file
+    if not os.path.exists(f'{data_path}/output/preprep_data'):
+        os.makedirs(f'{data_path}/output/preprep_data')
+    checkpoint_to_logfile('run function: api_pvtarif.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+
+    # ------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------
+
+    # query -------------------
+    response_all_df_list = []
+    year_range_list = [str(year % 100).zfill(2) for year in range(year_range_def[0], year_range_def[1]+1)]
+    ew_id = list(range(1, 500+1)) if smaller_import_def else range(1, 1000) # the ew ID is quite random in the range 1:1000. So I just loop over all of them and just keep the valid API calls
+    ew_id_counter = len(ew_id) / 4
+
+    url = "https://opendata.vese.ch/pvtarif/api/getData/evu?"
+
+    for y in year_range_list:
+        checkpoint_to_logfile(f'api call pvtarif year: {y} started', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+
+        response_ew_list = []
+
+        for ew in ew_id:
+            req_url = f'{url}evuId={ew}&year={y}&licenseKey={get_pvtarif_key()}'
+            response = requests.get(req_url)
+            response_json = response.json()
+            
+            response_ew_list.append(response_json)
+            if ew % ew_id_counter == 0:
+                checkpoint_to_logfile(f'year: {y}, ew: {ew}', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
+
+        response_ew_df = pd.DataFrame(response_ew_list)
+        response_ew_df['year'] = y
+        response_all_df_list.append(response_ew_df)
+        checkpoint_to_logfile(f'api call year: {y} completed', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+
+    pvtarif_raw = pd.concat(response_all_df_list)
+
+    # output transformations
+    pvtarif = pvtarif_raw.loc[pvtarif_raw['valid'] == True].copy()
+    # ...
+
+    # export
+    pvtarif.to_parquet(f'{data_path}/output/preprep_data/pvtarif.parquet')
+    pvtarif.to_csv(f'{data_path}/output/preprep_data/pvtarif.csv', index=False)
+    checkpoint_to_logfile(f'exported electricity prices', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+
+
+    
+
+# MUNICIPALITY QUERY ------------------------------------------------------
+def api_pvtarif_gm_Mapping(
+        script_run_on_server_def = None,
+        smaller_import_def = None,
+        log_file_name_def = None,
+        wd_path_def = None,
+        data_path_def = None,
+        show_debug_prints_def = None,
+        year_range_def = [2021, 2021],
+        ):
+    '''
+    This function imports nrElcom for all the selected BFS municipality numbers. 
+    The data is saved as parquet file in the data folder.
+    ''' 
+
+    # setup -------------------
+    wd_path = wd_path_def if script_run_on_server_def else "C:/Models/OptimalPV_RH"
+    data_path = f'{wd_path}_data'
+
+    # create directory + log file
+    if not os.path.exists(f'{data_path}/output/preprep_data'):
+        os.makedirs(f'{data_path}/output/preprep_data')
+    checkpoint_to_logfile('run function: api_pvtarif_gm_Mapping.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+
+    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+
+    # query -------------------
+    bfs_list = gm_shp['BFS_NUMMER'].unique()
+    # bfs_list = bfs_list[0:100]
+    bfs_counter = len(bfs_list) / 4
+
+    url = 'https://opendata.vese.ch/pvtarif/api/getData/muni'
+    response_bfs_list = []
+    Map_df = []
+    checkpoint_to_logfile(f'api call pvtarif gm started', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+
+    for i_bfs, bfs in enumerate(bfs_list):
+        req_url = f'{url}?idofs={bfs}&licenseKey={get_pvtarif_key()}'
+        response = requests.get(req_url)
+        response_json = response.json()
+
+        if response_json['valid'] == True:
+            evus_list = response_json['evus']
+            sub_bfs_list = []
+            sub_nrElcom_list = []
+
+            for i in evus_list:
+                sub_bfs_list = sub_bfs_list+ [bfs]
+                sub_nrElcom_list = sub_nrElcom_list + [i['nrElcom']]
+            
+            sub_Map_df = pd.DataFrame({'bfs': sub_bfs_list, 'nrElcom': sub_nrElcom_list})
+            Map_df.append(sub_Map_df)
+            if bfs % bfs_counter == 0:
+                checkpoint_to_logfile(f'bfs: {bfs}, {i_bfs+1} of {len(bfs_list)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
+
+    Map_gm_ewr = pd.concat(Map_df, ignore_index=True)   
+    checkpoint_to_logfile(f'api call pvtarif gm completed', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+
+    # export   
+    Map_gm_ewr.to_parquet(f'{data_path}/output/preprep_data/Map_gm_ewr.parquet')
+    Map_gm_ewr.to_csv(f'{data_path}/output/preprep_data/Map_gm_ewr.csv', index=False)
+    checkpoint_to_logfile(f'exported Map_gm_ewr from API', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+
+
+

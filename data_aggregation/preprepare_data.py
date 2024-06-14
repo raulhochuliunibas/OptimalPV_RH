@@ -7,7 +7,7 @@ from datetime import datetime
 from shapely.geometry import Point
 
 sys.path.append('..')
-from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -274,6 +274,7 @@ def create_spatial_mappings(
     gwr_gdf = keep_columns(["EGID", "geometry" ], gwr_gdf)
     heat_gdf = keep_columns(["OBJECTID", "geometry" ], heat_gdf)
     pv_gdf = keep_columns(["xtf_id", "geometry"], pv_gdf)
+    gm_shp_gdf = keep_columns(["BFS_NUMMER", "geometry"], gm_shp_gdf)
 
     # create ID mapping files ------------------
     def set_crs_to_gm_shp(gdf_a, gdf_b):

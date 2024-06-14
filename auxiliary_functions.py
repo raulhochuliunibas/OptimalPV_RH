@@ -36,10 +36,6 @@ def subchapter_to_logfile(str_def, log_file_name_def):
             log_file.write(f'{check}\n')
 
 
-# ---
-# ---
-
-
 def print_to_logfile(str_def, log_file_name_def):
     """
     Function to write just plain text to logfile
@@ -51,13 +47,9 @@ def print_to_logfile(str_def, log_file_name_def):
         log_file.write(f"{check}\n")
 
 
-
-
-
-
 def checkpoint_to_logfile(str_def, log_file_name_def, n_tabs_def = 0, show_debug_prints_def = True):
     """
-    Function to write a checkpoint to the logfile
+    Function to write a checkpoint to the logfile, Mainly used for debugging because prints can be switched off
     """ 
     global time_last_call
     
