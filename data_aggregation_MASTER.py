@@ -27,14 +27,14 @@
 agg_settings = {
         'script_run_on_server': False,      # F: run on private computer, T: run on server
         'smaller_import': True,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
-        'reimport_api_data': True,          # F: use existing parquet files, T: recreate parquet files in data prep
+        'reimport_api_data': False,          # F: use existing parquet files, T: recreate parquet files in data prep
         'rerun_spatial_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
         'reextend_fixed_data': True,          # F: use existing exentions, T: recalculate extensions (e.g. pv installation costs per partition)
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
 
         'bfs_numbers_OR_shape': 
-        [2761, 2763, 2842, 2787],           # small list for debugging
-                                            # BL: als BFS lists from            
+        # [2761, 2763, 2842, 2787],           # small list for debugging   # BL: als BFS lists from  
+        [2829, 2770, 2888, 2788, 2787, 2885, 2858, 2823, 2831, 2791, 2821, 2846, 2884, 2782, 2893, 2861, 2762, 2844, 2895, 2852, 2868, 2771, 2834, 2775, 2761, 2883, 2889, 2769, 2855, 2781, 2773, 2866, 2856, 2763, 2869, 2784, 2790, 2882, 2768, 2892, 2886, 2865, 2785, 2828, 2792, 2853, 2860, 2772, 2863, 2825, 2793, 2824, 2765, 2891, 2764, 2887, 2847, 2841, 2894, 2789, 2833, 2881, 2848, 2786, 2867, 2849, 2830, 2767, 2857, 2783, 2766, 2862, 2842, 2859, 2864, 2832, 2843, 2890, 2854, 2822, 2827, 2851, 2850, 2845, 2774, 2826, 2827],      
         'gwr_house_type_class': [0,], 
         'solkat_house_type_class': [0,], 
         }
@@ -83,22 +83,23 @@ print_to_logfile(f' > settings: \n{pformat(agg_settings)}', log_name)
 # IMPORT API DATA ---------------------------------------------------------------
 
 # download possible API data to local directory
-file_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/elecpri.parquet')
+file_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/elecpri.parquet')  # conditions that determine if the data should be reimported
 reimport_api_data = agg_settings['reimport_api_data']
 
-year_range_gwr = [2020, 2021] if agg_settings['smaller_import'] else [2009, 2023]
-year_range_pvtarif = [2020, 2021] if agg_settings['smaller_import'] else [2015, 2023]
+year_range_gwr = [2020, 2021] if agg_settings['smaller_import'] else [2009, 2023]  # range of years to import, smaller range for debugging
+year_range_pvtarif = [2020, 2021] if agg_settings['smaller_import'] else [2015, 2023] 
 
 if not file_exists_TF or reimport_api_data:
-    # subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-    # api_electricity_prices(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def = year_range_gwr)
+    subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
+    api_electricity_prices(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def = year_range_gwr)
     
-    # subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
-    # sql_gwr_data(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'])
+    subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
+    sql_gwr_data(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'])
 
     subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
     api_pvtarif(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def=year_range_pvtarif )
 
+    subchapter_to_logfile('pre-prep data: API PVTARIF to GM MAPPING', log_name)
     api_pvtarif_gm_Mapping(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def=year_range_pvtarif )
 
 else:
@@ -172,14 +173,6 @@ shutil.copy(glob.glob(f'{data_path}/output/prepre*_log.txt')[0], dirs_preprep_da
 # BOOKMARK > delete in March 2024
 
 
-# DATA AGGREGATION FOR MA student Lupien --------------------------------------
-def move_Lupien_agg_to_dict(dict_name):
-    if not os.path.exists(f'{data_path}/{dict_name}'):
-        os.makedirs(f'{data_path}/{dict_name}')
-    f_to_move = glob.glob(f'{data_path}/Lupien_aggregation/*')
-    for f in f_to_move: 
-        shutil.copy(f, f'{data_path}/{dict_name}/')
-# Lupien_aggregation(script_run_on_server_def = script_run_on_server, check_vs_raw_input=True, union_vs_hull_shape = 'union')
 
 ###############################
 ###############################

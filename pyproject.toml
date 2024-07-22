@@ -23,6 +23,8 @@ folium = "^0.15.1"
 mapclassify = "^2.6.1"
 graphly = {git = "https://github.com/zazuko/graphly.git"}
 dask = "^2024.1.1"
+geopy = "^2.4.1"
+kaleido = "0.2.1"
 
 
 [build-system]

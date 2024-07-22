@@ -29,17 +29,9 @@ def api_pvtarif(
         year_range_def = [2021, 2021],
         ):
     '''
-    This function imports electricity prices from the VESE API.
-    The data is aggregated by municipality and year and saved as parquet file in the data folder.
+    This function imports the ID of all Distribution System Grid Operators of the VESE API (nrElcom) and their PV compensation tariff.
+    The data is aggregated by DSO and year and saved as parquet file in the data folder.
     ''' 
-
-    # script_run_on_server_def = agg_settings['script_run_on_server']
-    # smaller_import_def = agg_settings['smaller_import']
-    # # log_file_name_def = None
-    # wd_path_def = "C:\Models\OptimalPV_RH"
-    # data_path_def = wd_path_def
-    # show_debug_prints_def = agg_settings['show_debug_prints']
-    # year_range_def = [1998, 2022]
 
     # setup -------------------
     wd_path = wd_path_def if script_run_on_server_def else "C:/Models/OptimalPV_RH"
@@ -56,7 +48,8 @@ def api_pvtarif(
     # query -------------------
     response_all_df_list = []
     year_range_list = [str(year % 100).zfill(2) for year in range(year_range_def[0], year_range_def[1]+1)]
-    ew_id = list(range(1, 500+1)) if smaller_import_def else range(1, 1000) # the ew ID is quite random in the range 1:1000. So I just loop over all of them and just keep the valid API calls
+    # the ew ID is quite random in the range 1:1000. So I just loop over all of them and just keep the valid API calls
+    ew_id = list(range(1, 200+1)) if smaller_import_def else range(1, 1000) 
     ew_id_counter = len(ew_id) / 4
 
     url = "https://opendata.vese.ch/pvtarif/api/getData/evu?"
@@ -66,14 +59,14 @@ def api_pvtarif(
 
         response_ew_list = []
 
-        for ew in ew_id:
+        for i_ew, ew in enumerate(ew_id):
             req_url = f'{url}evuId={ew}&year={y}&licenseKey={get_pvtarif_key()}'
             response = requests.get(req_url)
             response_json = response.json()
             
             response_ew_list.append(response_json)
             if ew % ew_id_counter == 0:
-                checkpoint_to_logfile(f'year: {y}, ew: {ew}', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
+                checkpoint_to_logfile(f'year: {y}, ew: {ew}, {i_ew+1} of {len(ew_id)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
 
         response_ew_df = pd.DataFrame(response_ew_list)
         response_ew_df['year'] = y
@@ -84,7 +77,6 @@ def api_pvtarif(
 
     # output transformations
     pvtarif = pvtarif_raw.loc[pvtarif_raw['valid'] == True].copy()
-    # ...
 
     # export
     pvtarif.to_parquet(f'{data_path}/output/preprep_data/pvtarif.parquet')
@@ -105,7 +97,7 @@ def api_pvtarif_gm_Mapping(
         year_range_def = [2021, 2021],
         ):
     '''
-    This function imports nrElcom for all the selected BFS municipality numbers. 
+    This function imports DSO ID for all the selected BFS municipality numbers where they are operating. 
     The data is saved as parquet file in the data folder.
     ''' 
 
@@ -122,7 +114,6 @@ def api_pvtarif_gm_Mapping(
 
     # query -------------------
     bfs_list = gm_shp['BFS_NUMMER'].unique()
-    # bfs_list = bfs_list[0:100]
     bfs_counter = len(bfs_list) / 4
 
     url = 'https://opendata.vese.ch/pvtarif/api/getData/muni'

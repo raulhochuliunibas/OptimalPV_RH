@@ -6,7 +6,7 @@ import numpy as np
 from collections import OrderedDict
 
 sys.path.append('..')
-from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
 # ------------------------------------------------------------------------------------------------------
 # INVESTMENT COSTS
@@ -155,7 +155,7 @@ def attach_pv_cost(
         solkatcost_cumm['counter_partition'] = solkatcost_cumm.groupby('GWR_EGID').cumcount() + 1
         solkatcost_cumm[['FLAECH_cumm', 'GSTRAH_cumm', 'STROME_cumm']]= np.nan
 
-        # get GWR_EGID counts
+        #  get GWR_EGID counts
 
         # a faster version of this >> egid_n = [(x, list(solkatcost_cumm['GWR_EGID']).count(x)) for x in solkatcost_cumm['GWR_EGID'].unique()]
         checkpoint_to_logfile(f'start GWR_egid counts: GPT version', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)

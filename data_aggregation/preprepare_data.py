@@ -36,8 +36,8 @@ def solkat_spatial_toparquet(
         sys.path.append('C:/Models/OptimalPV_RH') 
     elif script_run_on_server_def:
         sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
-    import functions
-    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+    import auxiliary_functions
+    from auxiliary_functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
     # set directory if necessary    
     if not os.path.exists(f'{data_path}/output/preprep_data'):
@@ -95,8 +95,8 @@ def heat_spatial_toparquet(
         sys.path.append('C:/Models/OptimalPV_RH')
     elif script_run_on_server_def:
         sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
-    import functions
-    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+    import auxiliary_functions
+    from auxiliary_functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
     # set directory if necessary
     if not os.path.exists(f'{data_path}/output/preprep_data'):
@@ -153,8 +153,8 @@ def pv_spatial_toparquet(
         sys.path.append('C:/Models/OptimalPV_RH')
     elif script_run_on_server_def:
         sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
-    import functions
-    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+    import auxiliary_functions
+    from auxiliary_functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
     # set directory if necessary
     if not os.path.exists(f'{data_path}/output/preprep_data'):
@@ -219,8 +219,8 @@ def create_spatial_mappings(
         sys.path.append('C:/Models/OptimalPV_RH')
     elif script_run_on_server_def:
         sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
-    import functions
-    from functions import chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+    import auxiliary_functions
+    from auxiliary_functions import checkpoint_to_logfile, print_to_logfile
 
     # set directory if necessary
     if not os.path.exists(f'{data_path}/output/preprep_data'):
@@ -231,6 +231,7 @@ def create_spatial_mappings(
 
     # import ------------------
     gm_shp_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+
     if not smaller_import_def:
         solkat_gdf = gpd.read_file(f'{data_path}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
         checkpoint_to_logfile('import solkat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
