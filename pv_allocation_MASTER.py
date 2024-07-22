@@ -15,14 +15,15 @@
 
 # SETTIGNS --------------------------------------------------------------------
 pvalloc_settings = {
-        'name_dir_export': 'test_BSBL',             # name of the directory for the aggregated data, and maybe file extension
-        'name_dir_import': 'preprep_data_20240207_04h_W_COST',
+        'name_dir_export': 'test_BSBL',             # name of the directory where all proccessed data is stored at the end of the code file 
+        'name_dir_import': 'preprep_data_20240207_04h_W_COST', # name of the directory where preprepared data is stored and accessed by the code
         'script_run_on_server': False,              # F: run on private computer, T: run on server
         'show_debug_prints': True,                  # F: certain print statements are omitted, T: includes print statements that help with debugging
 
-        'bfs_numbers': [2763,], #'kt_OW',                     # list of municipalites; certain Kantons are pre-defined (incl all municipalities, e.g. kt_LU)
+        'kt_numbers': [12,13],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
+        'bfs_numbers': [],                        # list of municipalites to select for allocation (only used if kt_numbers == 0)
         'topology_year_range':[2019, 2022],
-        'gwr_house_type_class': ['1110',],               # list of house type classes to be considered
+        'gwr_house_type_class': ['1110',],          # list of house type classes to be considered
 
         'prediction_year_range':[2023, 2025],
         'solkat_house_type_class': [0,],            # list of house type classes to be considered
@@ -57,7 +58,7 @@ import pprint
 
 
 # own packages and functions
-from functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 from data_aggregation.api_electricity_prices import api_electricity_prices
 from data_aggregation.preprepare_data import solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet, create_spatial_mappings
 
@@ -74,29 +75,31 @@ if not os.path.exists(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}
 
 log_name = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}_log_file.txt'
 chapter_to_logfile(f'start pv_allocation_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
-print_to_logfile(f' > settings: \n{pformat(pvalloc_settings)}', log_name)
+subchapter_to_logfile(f'pvalloc_settings: \n{pformat(pvalloc_settings)}', log_name)
 
-# adjust "bfs_number" for large, pre-defined municicpaltie groups
+# adjust "bfs_numbers" to all bfs of a canton are selected
 gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 
-if pvalloc_settings['bfs_numbers'] == 'kt_LU':
-    gm_shp_sub = gm_shp[gm_shp['KANTONSNUM'] == 3]
+if (isinstance(pvalloc_settings['kt_numbers'], list)) and (not not pvalloc_settings['kt_numbers']): # check if canton selection is a list and not empty
+    print_to_logfile(f' > kt_numbers: {pvalloc_settings["kt_numbers"]}; use the municipality bfs numbers from the following canton numbers', log_name)
+    gm_shp_sub = gm_shp[gm_shp['KANTONSNUM'].isin(pvalloc_settings['kt_numbers'])]
     pvalloc_settings['bfs_numbers'] = gm_shp_sub['BFS_NUMMER'].unique().tolist()
+elif (isinstance(pvalloc_settings['bfs_numbers'], list)) and (not not pvalloc_settings['bfs_numbers']): # check if bfs selection is a list and not empty
+    print_to_logfile(f' > bfs_numbers: {pvalloc_settings["bfs_numbers"]}; use the following municipality bfs numbers, not cantonal selection specifies', log_name)
+else:
+    print_to_logfile(f' > ERROR: no canton or bfs selection applicables; NOT used any municipality selection', log_name)
 
-elif pvalloc_settings['bfs_numbers'] == 'kt_OW':
-    gm_shp_sub = gm_shp[gm_shp['KANTONSNUM'] == 6]
-    pvalloc_settings['bfs_numbers'] = gm_shp_sub['BFS_NUMMER'].unique().tolist()
-
-elif pvalloc_settings['bfs_numbers'] == 'kt_BSBL':
-    gm_shp_sub = gm_shp[gm_shp['KANTONSNUM'].isin([12, 13])]
-    pvalloc_settings['bfs_numbers'] = gm_shp_sub['BFS_NUMMER'].unique().tolist()
-
-
-print_to_logfile(f' > list bfs_numbers: {pvalloc_settings["bfs_numbers"]}', log_name)
-
+# print all selected municipalities as a check
+checkpoint_to_logfile('\n > selected municipalities for pv allocation', log_name, n_tabs_def=1, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
+select_bfs = gm_shp_sub[['NAME', 'BFS_NUMMER', 'KANTONSNUM']].copy()
+for i, r in select_bfs.iterrows():
+    row_data = ', '.join([f'{col}: {r[col]}' for col in select_bfs.columns])
+    checkpoint_to_logfile(f'name: {r["NAME"]} \t BFS: {r["BFS_NUMMER"]} \t KT: {r["KANTONSNUM"]}', log_name, n_tabs_def=2, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
+print_to_logfile(f'\n', log_name)
 
 
 # IMPORT ----------------------------------------------------------------
+subchapter_to_logfile('data import for pvalloc', log_name)
 bfs_list = pvalloc_settings['bfs_numbers']
 bfs_list_str = [str(bfs) for bfs in bfs_list]
 
@@ -105,14 +108,15 @@ Map_egroof_sbroof = pd.read_parquet(f'{data_path}/output/{pvalloc_settings["name
 Map_egroof_pv = pd.read_parquet(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/Map_egroof_pv.parquet')
 Map_gm_ewr = pd.read_parquet(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/Map_gm_ewr.parquet')
 
-checkpoint_to_logfile(f'start import with DD', log_name, n_tabs_def=2, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
 # gwr
+checkpoint_to_logfile(f'start import with DD > GWR', log_name, n_tabs_def=2, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
 gwr_dd = dd.read_parquet(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/gwr.parquet')
 gwr = gwr_dd[gwr_dd['GGDENR'].isin(bfs_list_str)].compute()
 
 # solkat
-# solkat_dd = dd.read_parquet(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/solkat_by_gm.parquet')
-# solkat = solkat_dd[solkat_dd['BFS_NUMMER'].isin(bfs_list)].compute()
+checkpoint_to_logfile(f'start import with DD > SOLKAT', log_name, n_tabs_def=2, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
+solkat_dd = dd.read_parquet(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/solkat_by_gm.parquet')
+solkat = solkat_dd[solkat_dd['BFS_NUMMER'].isin(bfs_list)].compute()
 solkat_cumm_dd = dd.read_parquet(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/solkatcost_cumm.parquet')
 solkat_cumm = solkat_cumm_dd[solkat_cumm_dd['GWR_EGID'].isin(gwr['EGID'].unique())].compute()
 solkat = solkat_cumm.copy()
@@ -135,6 +139,9 @@ gwr_pq = pd.read_parquet(f'{data_path}/output/{pvalloc_settings["name_dir_import
 pv_pq = pd.read_parquet(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/pv_by_gm.parquet')
 checkpoint_to_logfile(f'end import ALL in PQ', log_name, n_tabs_def=2, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
 
+
+
+# DATA TRANSFORMATIONS -------------------------------------------------------
 # convert all ID columns to string
 def convert_srs_to_str(df, col_name):
     df[col_name] = df[col_name].fillna(-1).astype(int).astype(str)          # Fill NaN values with -1, convert to integers, and then to stringsMap_egroof_sbroof['EGID'] = Map_egroof_sbroof['EGID'].fillna(-1).astype(int).astype(str)    # Fill NaN values with -1, convert to integers, and then to strings
@@ -147,7 +154,6 @@ Map_egroof_pv = convert_srs_to_str(Map_egroof_pv, 'xtf_id')
 Map_gm_ewr = convert_srs_to_str(Map_gm_ewr, 'bfs')
 
 solkat = convert_srs_to_str(solkat, 'GWR_EGID')
-
 pv = convert_srs_to_str(pv, 'xtf_id')
 pv = convert_srs_to_str(pv, 'BFS_NUMMER')
 
@@ -162,6 +168,9 @@ pv_capa['BeginningOfOperation'] = pd.to_datetime(pv_capa['BeginningOfOperation']
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------
+
+
+
 
 # plan:
 #-- stil before pv_allocation

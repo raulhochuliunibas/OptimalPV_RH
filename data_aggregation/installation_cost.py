@@ -2,6 +2,9 @@ import sys
 import os
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
 
 from collections import OrderedDict
 
@@ -36,7 +39,7 @@ def attach_pv_cost(
     # create directory + log file
     if not os.path.exists(f'{data_path}/output/preprep_data'):
         os.makedirs(f'{data_path}/output/preprep_data')
-    checkpoint_to_logfile('run function: create_cost_df_and_func.py', log_file_name_def=log_file_name_def, n_tabs_def = 5) 
+    checkpoint_to_logfile('run function: attach_pv_cost.py', log_file_name_def=log_file_name_def, n_tabs_def = 5) 
     print_to_logfile(f' > assuming cost of energieschweiz.ch/tools/solarrechner/; January 2024', log_file_name_def= log_file_name_def)
 
 
@@ -78,6 +81,53 @@ def attach_pv_cost(
     })
     installation_cost_df.reset_index(inplace=True)
 
+    # define intrapolation functions -------------------
+    poly_fitting_deg = 1
+    instcost_pkW_fit = np.polyfit(np.log(installation_cost_df['kw']), installation_cost_df['chf_pkW'], poly_fitting_deg)
+    instcost_total_fit = np.polyfit(installation_cost_df['kw'], installation_cost_df['chf_total'], poly_fitting_deg)
+    instcost_total_interp1d = np.poly1d(instcost_total_fit)
+    instcost_pkW_interp1d = np.poly1d(instcost_pkW_fit)
+    
+    if True:
+        # define functional form, apply to data and extract parameters 
+        def exp_func_pkW(x, a, b, c):
+            return a * np.exp(-b * x) + c
+        params, covar = curve_fit(exp_func_pkW, installation_cost_df['kw'], installation_cost_df['chf_pkW'])
+        a, b, c = params
+        instcost_pkW_interp1d = lambda x: exp_func_pkW(x, a, b, c)
+
+        def exp_func_total(x, a, b, c):
+            return a * np.exp(-b * x) + c   
+        params, covar = curve_fit(exp_func_total, installation_cost_df['kw'], installation_cost_df['chf_total'])
+        a, b, c = params
+        # instcost_total_interp1d = lambda x: exp_func_total(x, a, b, c)
+
+        # plot cost df -------------------
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6))  # figsize can be adjusted as needed
+
+        # interp values
+        kw_min = installation_cost_df['kw'].min()
+        kw_max = installation_cost_df['kw'].max()
+        kw_range = np.linspace(kw_min, kw_max, 500)
+        chf_pkW_interp = instcost_pkW_interp1d(kw_range)
+        chf_total_interp = instcost_total_interp1d(kw_range)
+        
+        # Scatter plots + interpolation
+        axs[0].plot(kw_range, chf_pkW_interp, label='Interpolated chf_pkW', color='red')  # Interpolated line
+        axs[0].scatter(installation_cost_df['kw'], installation_cost_df['chf_pkW'], label='chf_pkW', color='blue')
+        axs[0].set(xlabel='kW', ylabel='CHF', title='Cost per kW')
+        axs[0].legend()
+
+        axs[1].plot(kw_range, chf_total_interp, label='Interpolated chf_total', color='green')  # Interpolated line
+        axs[1].scatter(installation_cost_df['kw'], installation_cost_df['chf_total'], label='chf_total', color='orange')
+        axs[1].set(xlabel='kW', ylabel='CHF', title='Total Cost')
+        axs[1].legend()
+
+        # Export the plots
+        plt.tight_layout()  # Adjusts subplot params so that subplots are nicely fit in the figure area.
+        plt.show()
+        plt.savefig(f'{data_path}/output/preprep_data/pvinstcost_table.png')
+    
 
 
     # export cost df -------------------
@@ -96,28 +146,26 @@ def attach_pv_cost(
     solkat = convert_srs_to_str(solkat, 'GWR_EGID')
     solkat = convert_srs_to_str(solkat, 'BFS_NUMMER')
     
-    solkat['n_partition'] = 1
+    solkat['n_partition'] = 1  # set to 1 for each individual partition, used to count partitions in groupby later
     checkpoint_to_logfile(f'imported + transformed solkat_by_gm.parquet', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
 
 
 
-    # extend COST for 3+ partition -------------------
+    # extend COST for ALL partition BY EGID -------------------
+    if smaller_import_def:
+        solkat = solkat[0:100]
 
-    solkatcost_3up = solkat.groupby(['GWR_EGID', ]).agg(
+    solkat_groupbyegid = solkat.groupby(['GWR_EGID', ]).agg(
         {'FLAECHE': 'sum', 'MSTRAHLUNG': 'mean', 'GSTRAHLUNG': 'sum', 'STROMERTRAG': 'sum', 'n_partition':'sum'}).reset_index()
-    solkatcost_3up['pvpot_bysurface_kw'] = solkatcost_3up['FLAECHE'] * conversion_m2_to_kw
-    checkpoint_to_logfile(f'created solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+    solkat_groupbyegid['pvpot_bysurface_kw'] = solkat_groupbyegid['FLAECHE'] * conversion_m2_to_kw
+    solkat_groupbyegid['cost_chf_pkW'] = instcost_pkW_interp1d(solkat_groupbyegid['pvpot_bysurface_kw'])
+    solkat_groupbyegid['cost_chf_total'] = instcost_total_interp1d(solkat_groupbyegid['pvpot_bysurface_kw']) 
+    checkpoint_to_logfile(f'created solkat_groupbyegid + attached intrapolated cost', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+
+    solkat_groupbyegid.to_parquet(f'{data_path}/output/preprep_data/solkat_groupbyegid.parquet')
+    checkpoint_to_logfile(f'exported solkat_groupbyegid', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+
     
-    # use COST intrapolation
-    # solkatcost_3up['partition_pv_cost_chf'] = np.interp(solkatcost_3up['pvpot_bysurface_kw'], installation_cost_df['kw'], installation_cost_df['chf_pkW'])
-    checkpoint_to_logfile(f'attached intrapolated cost to solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
-
-    # export cost_3up
-    # solkatcost_3up.to_parquet(f'{data_path}/output/preprep_data/solkatcost_3up.parquet')
-    # solkatcost_3up.to_csv(f'{data_path}/output/preprep_data/solkatcost_3up.csv')
-    checkpoint_to_logfile(f'exported solkatcost_3up', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def= show_debug_prints_def)
-
-
 
     # extend COST per ADDITIONAL partition -------------------
     
@@ -145,6 +193,7 @@ def attach_pv_cost(
     solkatcost_cumm.to_parquet(f'{data_path}/output/preprep_data/solkatcost_cumm.parquet')
     solkatcost_cumm.to_csv(f'{data_path}/output/preprep_data/solkatcost_cumm.csv')
     checkpoint_to_logfile(f'exported solkatcost_3up + solkatcost_cumm', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+
 
     # use numpy.cumsum.group => doesn't work!
     if False: 
