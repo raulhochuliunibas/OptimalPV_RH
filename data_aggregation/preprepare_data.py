@@ -62,7 +62,7 @@ def solkat_spatial_toparquet(
     solkat = gpd.sjoin(solkat_gdf, gm_shp_gdf, how="left", predicate="within")
     checkpoint_to_logfile('sjoin solkat', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-        # drop unnecessary columns ------------------
+    # drop unnecessary columns ------------------
     keep_cols = ["BFS_NUMMER", ]
     dele_cols = ['index_right'] + [col for col in gm_shp_gdf.columns if col not in keep_cols]
     solkat.drop(columns = dele_cols, inplace = True)
@@ -207,7 +207,7 @@ def create_spatial_mappings(
     show_debug_prints_def = None,
     ):
     """
-    Function to create a mapping from solkat to pv, SB_UUID to xtf_id but also other data sources
+    Function to create a spatial mapping from geometry to id columns of solkat, pv and others
     """    
 
     # setup -------------------
@@ -264,7 +264,7 @@ def create_spatial_mappings(
     solkat_gdf = solkat_gdf.rename(columns={'GWR_EGID': 'EGID'})
         
 
-    # drop unnecessary columns ------------------
+    # drop unnecessary columns (keep only mentioned ones) ------------------
     def keep_columns (col_names, gdf):
         keep_cols = col_names
         dele_cols = [col for col in gdf.columns if col not in keep_cols]

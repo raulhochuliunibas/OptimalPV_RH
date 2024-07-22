@@ -9,17 +9,22 @@
 #   parquet files (faster imports) and creating mappings for fast lookups (no single data base). 
 
 # TO-DOs:
+# prio1 ------------------------------
+# NOTE: Change the GWR aggregation to take GBAUP not GBAUJ -> see email MADD, Mauro Nanini
+# NOTE: Remove MSTRAHLUNG from Cummulative summation => unnecessary and not true anyway (summed up an average)
+
+
+# prio2 ------------------------------
+
+# TODO: facade data inculde 
 
 # TODO: create a GWR>GM and SOLKAT>GM mapping for the spatial data
 # TODO: Add many more variables for GWR extraction (heating, living area etc.), WAREA not found in SQL data base
 
-# TODO: facade data inculde 
 # TODO: change code such that prepred_data is on the same directory level than output
 
 # NOTE: ADJUST ALL MAPPINGS so that the data type is a string, not an int
 # NOTE: Map_egroof_sbroof carries an unnecessary index in the export file. remove that in the preppred_data function
-# NOTE: Change the GWR aggregation to take GBAUP not GBAUJ -> see email MADD, Mauro Nanini
-# NOTE: Remove MSTRAHLUNG from Cummulative summation => unnecessary and not true anyway (summed up an average)
 
 
 
@@ -27,9 +32,9 @@
 agg_settings = {
         'script_run_on_server': False,      # F: run on private computer, T: run on server
         'smaller_import': True,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
-        'reimport_api_data': False,          # F: use existing parquet files, T: recreate parquet files in data prep
+        'reimport_api_data': True,          # F: use existing parquet files, T: recreate parquet files in data prep
         'rerun_spatial_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
-        'reextend_fixed_data': True,          # F: use existing exentions, T: recalculate extensions (e.g. pv installation costs per partition)
+        'reextend_fixed_data': True,        # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again 
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
 
         'bfs_numbers_OR_shape': 
@@ -71,8 +76,9 @@ wd_path = "D:\\RaulHochuli_inuse\\OptimalPV_RH"  if agg_settings['script_run_on_
 data_path = f'{wd_path}_data'
     
 # create directory + log file
-# if not os.path.exists(f'{data_path}/output/{agg_settings["name_dir_export"]}'):
-#     os.makedirs(f'{data_path}/output/{agg_settings["name_dir_export"]}')
+preprepd_path = f'{data_path}/output/preprep_data'
+if not os.path.exists(preprepd_path):
+    os.makedirs(preprepd_path)
 
 log_name = f'{data_path}/output/prepre_data_log.txt'
 chapter_to_logfile(f'start data_aggregation_MASTER', log_name, overwrite_file=True)
@@ -97,14 +103,14 @@ if not file_exists_TF or reimport_api_data:
     sql_gwr_data(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'])
 
     subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
-    api_pvtarif(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def=year_range_pvtarif )
+    api_pvtarif_data(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def=year_range_pvtarif )
 
     subchapter_to_logfile('pre-prep data: API PVTARIF to GM MAPPING', log_name)
-    api_pvtarif_gm_Mapping(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def=year_range_pvtarif )
+    api_pvtarif_gm_ewr_Mapping(script_run_on_server_def = agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'], year_range_def=year_range_pvtarif )
 
 else:
     print_to_logfile('\n\n', log_name)
-    checkpoint_to_logfile('use electricity prices that are downloaded already', log_name)
+    checkpoint_to_logfile('use already downloaded data on electricity prices, GWR, PV Tarifs', log_name)
 
 
 
@@ -118,7 +124,7 @@ if not pq_dir_exists_TF or pq_files_rerun:
     subchapter_to_logfile('pre-prep data: SPATIAL MAPPINGS', log_name)
     create_spatial_mappings(script_run_on_server_def= agg_settings['script_run_on_server'], smaller_import_def=agg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=agg_settings['show_debug_prints'])    
 
-    subchapter_to_logfile('pre-prep data: SPATIAL DATA to PARQUET', log_name)
+    subchapter_to_logfile('pre-prep data: SPATIAL DATA to PARQUET', log_name) # extend all spatial data sources with the gm_id and export it to parquet files for easier handling later on
     solkat_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'], log_name, wd_path, data_path, agg_settings['show_debug_prints'])
     heat_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'], log_name, wd_path, data_path, agg_settings['show_debug_prints'])
     pv_spatial_toparquet(agg_settings['script_run_on_server'], agg_settings['smaller_import'], log_name, wd_path, data_path, agg_settings['show_debug_prints'])
@@ -182,66 +188,10 @@ shutil.copy(glob.glob(f'{data_path}/output/prepre*_log.txt')[0], dirs_preprep_da
 ###############################
 # BOOKMARK > delete in February 2024
 
-# buffer False -----------------------------------------------------------------
-if False:
-
-    for n, kt_i in enumerate(kt_list):
-        name_run = 'agg_solkat_pv_gm_gwr_heat_buffNO_KT'
-        gm_number_aggdef = list(gm_shp.loc[gm_shp['KANTONSNUM'] == kt_i, 'BFS_NUMMER'].unique())
-        import_aggregate_data(
-            name_aggdef = f'{name_run}{str(int(kt_i))}', 
-            script_run_on_server = script_run_on_server , 
-            gm_number_aggdef = gm_number_aggdef, 
-            data_source= 'parquet', 
-            set_buffer = False)
-        
-        print(f'canton {kt_i} aggregated, {n+1} of {len(kt_list)} completed')
-        
-    # copy all subfolders to one folder
-    name_dir_export ='agg_solkat_pv_gm_gwr_heat_buffNO_2_BY_KT'
-    if not os.path.exists(f'{data_path}/{name_dir_export}'):
-        os.makedirs(f'{data_path}/{name_dir_export}')
-        os.makedirs(f'{data_path}/{name_dir_export}_to_delete')
-    
-    # add parquet and log files + move unncecessary folders
-    files_copy = glob.glob(f'{data_path}/{name_run}*/*{name_run}*')
-    for f in files_copy:
-        shutil.move(f, f'{data_path}/{name_dir_export}')    
-
-    files_del = glob.glob(f'{data_path}/{name_run}*')
-    for f in files_del:
-        shutil.move(f, f'{data_path}/{name_dir_export}_to_delete')
 
 
-# buffer 10 ----------------------------------------------------------------
-if False:
- 
-    for n, kt_i in enumerate(kt_list):
-        name_run = 'agg_solkat_pv_gm_gwr_heat_buff10KT'
-        gm_number_aggdef = list(gm_shp.loc[gm_shp['KANTONSNUM'] == kt_i, 'BFS_NUMMER'].unique())
-        import_aggregate_data(
-            name_aggdef = f'{name_run}{str(int(kt_i))}', 
-            script_run_on_server = script_run_on_server , 
-            gm_number_aggdef = gm_number_aggdef, 
-            data_source= 'parquet', 
-            set_buffer = 10)
-        
-        print(f'canton {kt_i} aggregated, {n+1} of {len(kt_list)} completed')
-
-    # copy all subfolders to one folder
-    name_dir_export ='agg_solkat_pv_gm_gwr_heat_buff10_BY_KT'
-    if not os.path.exists(f'{data_path}/{name_dir_export}'):
-        os.makedirs(f'{data_path}/{name_dir_export}')
-        os.makedirs(f'{data_path}/{name_dir_export}_to_delete')
-
-    # add parquet and log files + move unncecessary folders
-    files_copy = glob.glob(f'{data_path}/{name_run}*/*{name_run}*')
-    for f in files_copy:
-        shutil.move(f, f'{data_path}/{name_dir_export}')
-
-    files_del = glob.glob(f'{data_path}/{name_run}*')
-    for f in files_del:
-        shutil.move(f, f'{data_path}/{name_dir_export}_to_delete')
-
+###############################
+###############################
+# BOOKMARK > delete in July 2024
 ###############################
 ###############################

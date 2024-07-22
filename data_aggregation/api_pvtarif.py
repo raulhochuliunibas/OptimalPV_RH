@@ -19,7 +19,7 @@ print(get_pvtarif_key)
 # PV TARIF VESE ------------------------------------------------------
 #> https://www.vese.ch/wp-content/uploads/pvtarif/pvtarif2/appPvMapExpert/pvtarif-map-expert-data-de.html
 
-def api_pvtarif(
+def api_pvtarif_data(
         script_run_on_server_def = None,
         smaller_import_def = None,
         log_file_name_def = None,
@@ -87,7 +87,7 @@ def api_pvtarif(
     
 
 # MUNICIPALITY QUERY ------------------------------------------------------
-def api_pvtarif_gm_Mapping(
+def api_pvtarif_gm_ewr_Mapping(
         script_run_on_server_def = None,
         smaller_import_def = None,
         log_file_name_def = None,
@@ -97,7 +97,7 @@ def api_pvtarif_gm_Mapping(
         year_range_def = [2021, 2021],
         ):
     '''
-    This function imports DSO ID for all the selected BFS municipality numbers where they are operating. 
+    This function imports DSO ID for all the selected BFS municipality numbers where they are operating. Keep unique ones per municipality, so to know which DSO operates where.  
     The data is saved as parquet file in the data folder.
     ''' 
 
