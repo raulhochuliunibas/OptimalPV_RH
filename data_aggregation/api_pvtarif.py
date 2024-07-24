@@ -20,30 +20,23 @@ print(get_pvtarif_key)
 #> https://www.vese.ch/wp-content/uploads/pvtarif/pvtarif2/appPvMapExpert/pvtarif-map-expert-data-de.html
 
 def api_pvtarif_data(
-        script_run_on_server_def = None,
-        smaller_import_def = None,
-        log_file_name_def = None,
-        wd_path_def = None,
-        data_path_def = None,
-        show_debug_prints_def = None,
-        year_range_def = [2021, 2021],
-        ):
+        dataagg_settings_def, ):
     '''
     This function imports the ID of all Distribution System Grid Operators of the VESE API (nrElcom) and their PV compensation tariff.
     The data is aggregated by DSO and year and saved as parquet file in the data folder.
     ''' 
 
-    # setup -------------------
-    wd_path = wd_path_def if script_run_on_server_def else "C:/Models/OptimalPV_RH"
-    data_path = f'{wd_path}_data'
+    # import settings + setup -------------------
+    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
+    bfs_number_def = dataagg_settings_def['bfs_numbers']
+    year_range_def = dataagg_settings_def['year_range']
+    smaller_import_def = dataagg_settings_def['smaller_import']
+    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
+    log_file_name_def = dataagg_settings_def['log_file_name']
+    wd_path_def = dataagg_settings_def['wd_path']
+    data_path_def = dataagg_settings_def['data_path']
+    print_to_logfile(f'run function: api_pvtarif.py', log_file_name_def=log_file_name_def)
 
-    # create directory + log file
-    if not os.path.exists(f'{data_path}/output/preprep_data'):
-        os.makedirs(f'{data_path}/output/preprep_data')
-    checkpoint_to_logfile('run function: api_pvtarif.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
-
-    # ------------------------------------------------------------------------------------------------------
-    # ------------------------------------------------------------------------------------------------------
 
     # query -------------------
     response_all_df_list = []
@@ -55,7 +48,7 @@ def api_pvtarif_data(
     url = "https://opendata.vese.ch/pvtarif/api/getData/evu?"
 
     for y in year_range_list:
-        checkpoint_to_logfile(f'api call pvtarif year: {y} started', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+        checkpoint_to_logfile(f'api call pvtarif for year: {y} started', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
 
         response_ew_list = []
 
@@ -79,8 +72,8 @@ def api_pvtarif_data(
     pvtarif = pvtarif_raw.loc[pvtarif_raw['valid'] == True].copy()
 
     # export
-    pvtarif.to_parquet(f'{data_path}/output/preprep_data/pvtarif.parquet')
-    pvtarif.to_csv(f'{data_path}/output/preprep_data/pvtarif.csv', index=False)
+    pvtarif.to_parquet(f'{data_path_def}/output/preprep_data/pvtarif.parquet')
+    pvtarif.to_csv(f'{data_path_def}/output/preprep_data/pvtarif.csv', index=False)
     checkpoint_to_logfile(f'exported electricity prices', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 
 
@@ -88,32 +81,29 @@ def api_pvtarif_data(
 
 # MUNICIPALITY QUERY ------------------------------------------------------
 def api_pvtarif_gm_ewr_Mapping(
-        script_run_on_server_def = None,
-        smaller_import_def = None,
-        log_file_name_def = None,
-        wd_path_def = None,
-        data_path_def = None,
-        show_debug_prints_def = None,
-        year_range_def = [2021, 2021],
-        ):
+        dataagg_settings_def, ):
+
     '''
     This function imports DSO ID for all the selected BFS municipality numbers where they are operating. Keep unique ones per municipality, so to know which DSO operates where.  
     The data is saved as parquet file in the data folder.
     ''' 
 
-    # setup -------------------
-    wd_path = wd_path_def if script_run_on_server_def else "C:/Models/OptimalPV_RH"
-    data_path = f'{wd_path}_data'
+    # import settings + setup -------------------
+    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
+    bfs_number_def = dataagg_settings_def['bfs_numbers']
+    year_range_def = dataagg_settings_def['year_range']
+    smaller_import_def = dataagg_settings_def['smaller_import']
+    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
+    log_file_name_def = dataagg_settings_def['log_file_name']
+    wd_path_def = dataagg_settings_def['wd_path']
+    data_path_def = dataagg_settings_def['data_path']
+    print_to_logfile(f'run function: api_pvtarif_gm_Mapping.py', log_file_name_def=log_file_name_def)
 
-    # create directory + log file
-    if not os.path.exists(f'{data_path}/output/preprep_data'):
-        os.makedirs(f'{data_path}/output/preprep_data')
-    checkpoint_to_logfile('run function: api_pvtarif_gm_Mapping.py', log_file_name_def=log_file_name_def, n_tabs_def = 5)
-
-    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 
     # query -------------------
-    bfs_list = gm_shp['BFS_NUMMER'].unique()
+    # gm_shp = gpd.read_file(f'{data_path_def}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    # bfs_list = gm_shp['BFS_NUMMER'].unique()
+    bfs_list = bfs_number_def 
     bfs_counter = len(bfs_list) / 4
 
     url = 'https://opendata.vese.ch/pvtarif/api/getData/muni'
@@ -144,8 +134,8 @@ def api_pvtarif_gm_ewr_Mapping(
     checkpoint_to_logfile(f'api call pvtarif gm completed', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
 
     # export   
-    Map_gm_ewr.to_parquet(f'{data_path}/output/preprep_data/Map_gm_ewr.parquet')
-    Map_gm_ewr.to_csv(f'{data_path}/output/preprep_data/Map_gm_ewr.csv', index=False)
+    Map_gm_ewr.to_parquet(f'{data_path_def}/output/preprep_data/Map_gm_ewr.parquet')
+    Map_gm_ewr.to_csv(f'{data_path_def}/output/preprep_data/Map_gm_ewr.csv', index=False)
     checkpoint_to_logfile(f'exported Map_gm_ewr from API', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 
 

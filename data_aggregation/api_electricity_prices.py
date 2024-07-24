@@ -28,34 +28,28 @@ from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, check
 
 # SWISS ELECTRICITY PRICES ------------------------------------------------------
 #> https://jupyter.zazuko.com/electricity_prices.html
+#   copied code from: https://colab.research.google.com/github/zazuko/notebooks/blob/master/notebooks/electricity_prices/electricity_prices.ipynb
 #> https://lindas.admin.ch/sparql/#
 def api_electricity_prices(
-        script_run_on_server_def = None,
-        smaller_import_def = None,
-        log_file_name_def = None,
-        wd_path_def = None,
-        data_path_def = None,
-        show_debug_prints_def = None,
-        year_range_def = [2017, 2020],
-        ):
+        dataagg_settings_def, ):
     '''
     This function imports electricity prices from the Swiss (government) ELCOM API.
     The data is index by municipality and year and tariff type and in the data folder.
     ''' 
-
-    # setup -------------------
-    wd_path = wd_path_def if script_run_on_server_def else "C:/Models/OptimalPV_RH"
-    data_path = f'{wd_path}_data'
-
-    # create directory + log file
-    if not os.path.exists(f'{data_path}/output/preprep_data'):
-        os.makedirs(f'{data_path}/output/preprep_data')
-    checkpoint_to_logfile('run function: api_electricity_prices.py', log_file_name_def=log_file_name_def, n_tabs_def = 5) 
-
+    # import settings + setup -------------------
+    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
+    bfs_number_def = dataagg_settings_def['bfs_numbers']
+    year_range_def = dataagg_settings_def['year_range']
+    smaller_import_def = dataagg_settings_def['smaller_import']
+    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
+    log_file_name_def = dataagg_settings_def['log_file_name']
+    wd_path_def = dataagg_settings_def['wd_path']
+    data_path_def = dataagg_settings_def['data_path']
+    print_to_logfile(f'run function: api_electricity_prices.py', log_file_name_def=log_file_name_def)
 
     # query -------------------
     checkpoint_to_logfile(f'api call yearly electricity prices: {year_range_def[0]} to {year_range_def[1]}', log_file_name_def=log_file_name_def, n_tabs_def = 6)
-    year_range_list = [2021,2022,] if smaller_import_def else list(range(year_range_def[0], year_range_def[1]+1))
+    year_range_list = list(range(year_range_def[0], year_range_def[1]+1))
     tariffs_agg_list = []
 
     sparql = SparqlClient("https://lindas.admin.ch/query")
@@ -100,8 +94,12 @@ def api_electricity_prices(
     # output transformations 
     elecpri["bfs_number"] = elecpri["municipality_id"].str.extract('https://ld.admin.ch/municipality/(\d+)')
 
+    # subselect only relevant bfs numbers (faster to leave the API call whole for Switzerland and filter later)
+    bfs_numbers_str = [str(i) for i in bfs_number_def]     # transform bfs_number_def to string
+    elecpri = elecpri[elecpri["bfs_number"].isin(bfs_numbers_str)]
+
     # export
-    elecpri.to_parquet(f'{data_path}/output/preprep_data/elecpri.parquet')
-    elecpri.to_csv(f'{data_path}/output/preprep_data/elecpri.csv', index=False)
+    elecpri.to_parquet(f'{data_path_def}/output/preprep_data/elecpri.parquet')
+    elecpri.to_csv(f'{data_path_def}/output/preprep_data/elecpri.csv', index=False)
     checkpoint_to_logfile(f'exported electricity prices', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 

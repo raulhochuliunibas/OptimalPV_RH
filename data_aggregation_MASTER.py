@@ -11,14 +11,27 @@
 
 # SETTIGNS --------------------------------------------------------------------
 dataagg_settings = {
-        'name_dir_export': None,            # name of the directory where the data is exported to (name to replace the name of the folder "preprep_data" in the end)
+        'name_dir_export': None,            # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
         'script_run_on_server': False,      # F: run on private computer, T: run on server
+
+        
+        'kt_numbers': [],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
+        'bfs_numbers': [2829, 2770, 2888, 2788, 2787,],  # list of municipalites to select for allocation (only used if kt_numbers == 0)
+        'year_range': [2020, 2020],             # range of years to import
+        
         'smaller_import': True,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
-        'reimport_api_data': False,          # F: use existing parquet files, T: recreate parquet files in data prep
-        'rerun_spatial_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
-        'reextend_fixed_data': True,        # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again 
+        'reimport_api_data': True,         # F: use existing parquet files, T: recreate parquet files in data prep
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
 
+        'rerun_spatial_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
+        'reextend_fixed_data': True,        # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again
+
+        'gwr_query_columns': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                     'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                     'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1'], 
+
+        
+        # V to be deleted later
         'bfs_numbers_OR_shape': 
         # [2761, 2763, 2842, 2787],           # small list for debugging   # BL: als BFS lists from  
         [2829, 2770, 2888, 2788, 2787, 2885, 2858, 2823, 2831, 2791, 2821, 2846, 2884, 2782, 2893, 2861, 2762, 2844, 2895, 2852, 2868, 2771, 2834, 2775, 2761, 2883, 2889, 2769, 2855, 2781, 2773, 2866, 2856, 2763, 2869, 2784, 2790, 2882, 2768, 2892, 2886, 2865, 2785, 2828, 2792, 2853, 2860, 2772, 2863, 2825, 2793, 2824, 2765, 2891, 2764, 2887, 2847, 2841, 2894, 2789, 2833, 2881, 2848, 2786, 2867, 2849, 2830, 2767, 2857, 2783, 2766, 2862, 2842, 2859, 2864, 2832, 2843, 2890, 2854, 2822, 2827, 2851, 2850, 2845, 2774, 2826, 2827],      
@@ -43,6 +56,7 @@ from datetime import datetime
 from pprint import pprint, pformat
 
 # own packages and functions
+import auxiliary_functions
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 from data_aggregation.api_electricity_prices import api_electricity_prices
 from data_aggregation.sql_gwr import sql_gwr_data
@@ -58,13 +72,24 @@ wd_path = "D:\\RaulHochuli_inuse\\OptimalPV_RH"  if dataagg_settings['script_run
 data_path = f'{wd_path}_data'
     
 # create directory + log file
-preprepd_path = f'{data_path}/output/preprep_data'
+preprepd_path = f'{data_path}/output/preprep_data' 
 if not os.path.exists(preprepd_path):
     os.makedirs(preprepd_path)
 
 log_name = f'{data_path}/output/prepre_data_log.txt'
 chapter_to_logfile(f'start data_aggregation_MASTER', log_name, overwrite_file=True)
 print_to_logfile(f' > settings: \n{pformat(dataagg_settings)}', log_name)
+
+# get bfs numbers from canton selection if applicable
+if not not dataagg_settings['kt_numbers']: 
+    dataagg_settings['bfs_numbers'] = auxiliary_functions.get_bfs_from_ktnr(dataagg_settings['kt_numbers'], data_path, log_name)
+    print_to_logfile(f' > no. of kt  numbers in selection: {len(dataagg_settings["kt_numbers"])}', log_name)
+    print_to_logfile(f' > no. of bfs numbers in selection: {len(dataagg_settings["bfs_numbers"])}', log_name) 
+
+# add information to dataagg_settings that's relevant for further functions
+dataagg_settings['log_file_name'] = log_name
+dataagg_settings['wd_path'] = wd_path
+dataagg_settings['data_path'] = data_path
 
 
 
@@ -74,21 +99,29 @@ print_to_logfile(f' > settings: \n{pformat(dataagg_settings)}', log_name)
 file_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/elecpri.parquet')  # conditions that determine if the data should be reimported
 reimport_api_data = dataagg_settings['reimport_api_data']
 
-year_range_gwr = [2020, 2021] if dataagg_settings['smaller_import'] else [2009, 2023]  # range of years to import, smaller range for debugging
-year_range_pvtarif = [2020, 2021] if dataagg_settings['smaller_import'] else [2015, 2023] 
+year_range_gwr = dataagg_settings['year_range'] if not not dataagg_settings['year_range'] else [2009, 2023] # else statement shows max range of years available
+year_range_pvtarif = dataagg_settings['year_range'] if not not dataagg_settings['year_range'] else [2015, 2023]
+# year_range_gwr = [2020, 2021] if dataagg_settings['smaller_import'] else [2009, 2023]  # range of years to import, smaller range for debugging
+# year_range_pvtarif = [2020, 2021] if dataagg_settings['smaller_import'] else [2015, 2023] 
 
 if not file_exists_TF or reimport_api_data:
     subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-    api_electricity_prices(script_run_on_server_def = dataagg_settings['script_run_on_server'], smaller_import_def=dataagg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=dataagg_settings['show_debug_prints'], year_range_def = year_range_gwr)
-    
+    api_electricity_prices(dataagg_settings_def = dataagg_settings)
+        
     subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
-    sql_gwr_data(script_run_on_server_def = dataagg_settings['script_run_on_server'], smaller_import_def=dataagg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=dataagg_settings['show_debug_prints'])
+    sql_gwr_data(dataagg_settings_def=dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
-    api_pvtarif_data(script_run_on_server_def = dataagg_settings['script_run_on_server'], smaller_import_def=dataagg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=dataagg_settings['show_debug_prints'], year_range_def=year_range_pvtarif )
+    api_pvtarif_data(dataagg_settings_def=dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API PVTARIF to GM MAPPING', log_name)
-    api_pvtarif_gm_ewr_Mapping(script_run_on_server_def = dataagg_settings['script_run_on_server'], smaller_import_def=dataagg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=dataagg_settings['show_debug_prints'], year_range_def=year_range_pvtarif )
+    api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
+
+    # still to import: 
+    # - heat demand data
+    # - TS for electricity demand
+    # - TS for meteo sunshine => these two TS should ideally come from the same source
+    # - TS electricity market price
 
 else:
     print_to_logfile('\n\n', log_name)
