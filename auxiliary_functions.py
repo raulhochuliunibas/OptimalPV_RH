@@ -1,4 +1,6 @@
 import os as os
+import geopandas as gpd
+
 from datetime import datetime
 
 # this is required to set the timer properly
@@ -72,6 +74,20 @@ def checkpoint_to_logfile(str_def, log_file_name_def, n_tabs_def = 0, show_debug
         
         time_last_call = time_now
 
+
+def get_bfs_from_ktnr(ktnr_list, data_path, log_name):
+    """
+    Function to get a list of the BFS numbers for all municipalites within a list of canton numbers
+    """
+    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+
+    if (isinstance(ktnr_list, list)) and (not not ktnr_list):
+        gm_shp_sub = gm_shp[gm_shp['KANTONSNUM'].isin(ktnr_list)]
+        bfs_list = gm_shp_sub['BFS_NUMMER'].unique().tolist()
+    else: 
+        print_to_logfile(f' > ERROR: no canton or bfs selection applicables; NOT used any municipality selection', log_name)
+
+    return bfs_list
 
 
 
