@@ -13,30 +13,16 @@
 dataagg_settings = {
         'name_dir_export': None,            # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
         'script_run_on_server': False,      # F: run on private computer, T: run on server
-
-        
-        'kt_numbers': [],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
-        'bfs_numbers': [2829, 2770, 2888, 2788, 2787,],  # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        'year_range': [2020, 2020],             # range of years to import
-        
-        'smaller_import': True,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
-        'reimport_api_data': True,         # F: use existing parquet files, T: recreate parquet files in data prep
+        'smaller_import': False,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
 
+        'kt_numbers': [1,2,3,4,5,6,7,8],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
+        'bfs_numbers': [2829, 2770, 2888, 2788, 2787,],  # list of municipalites to select for allocation (only used if kt_numbers == 0)
+        'year_range': [2020, 2020],             # range of years to import
+
+        'reimport_api_data': True,         # F: use existing parquet files, T: recreate parquet files in data prep        
         'rerun_spatial_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
-        'reextend_fixed_data': True,        # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again
-
-        'gwr_query_columns': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
-                     'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
-                     'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1'], 
-
-        
-        # V to be deleted later
-        'bfs_numbers_OR_shape': 
-        # [2761, 2763, 2842, 2787],           # small list for debugging   # BL: als BFS lists from  
-        [2829, 2770, 2888, 2788, 2787, 2885, 2858, 2823, 2831, 2791, 2821, 2846, 2884, 2782, 2893, 2861, 2762, 2844, 2895, 2852, 2868, 2771, 2834, 2775, 2761, 2883, 2889, 2769, 2855, 2781, 2773, 2866, 2856, 2763, 2869, 2784, 2790, 2882, 2768, 2892, 2886, 2865, 2785, 2828, 2792, 2853, 2860, 2772, 2863, 2825, 2793, 2824, 2765, 2891, 2764, 2887, 2847, 2841, 2894, 2789, 2833, 2881, 2848, 2786, 2867, 2849, 2830, 2767, 2857, 2783, 2766, 2862, 2842, 2859, 2864, 2832, 2843, 2890, 2854, 2822, 2827, 2851, 2850, 2845, 2774, 2826, 2827],      
-        'gwr_house_type_class': [0,], 
-        'solkat_house_type_class': [0,], 
+        'reextend_fixed_data': False,        # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again       
         }
 
 
@@ -61,7 +47,7 @@ from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, check
 from data_aggregation.api_electricity_prices import api_electricity_prices
 from data_aggregation.sql_gwr import sql_gwr_data
 from data_aggregation.api_pvtarif import api_pvtarif_data, api_pvtarif_gm_ewr_Mapping
-from data_aggregation.preprepare_data import solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet, create_spatial_mappings
+from data_aggregation.preprepare_data import local_data_to_parquet_AND_create_spatial_mappings, solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet, create_spatial_mappings
 from data_aggregation.installation_cost import attach_pv_cost
 
 
@@ -94,6 +80,11 @@ dataagg_settings['data_path'] = data_path
 
 
 # IMPORT API DATA ---------------------------------------------------------------
+    # still to import: 
+    # - heat demand data
+    # - TS for electricity demand
+    # - TS for meteo sunshine => these two TS should ideally come from the same source
+    # - TS electricity market price
 
 # download possible API data to local directory
 file_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/elecpri.parquet')  # conditions that determine if the data should be reimported
@@ -101,8 +92,6 @@ reimport_api_data = dataagg_settings['reimport_api_data']
 
 year_range_gwr = dataagg_settings['year_range'] if not not dataagg_settings['year_range'] else [2009, 2023] # else statement shows max range of years available
 year_range_pvtarif = dataagg_settings['year_range'] if not not dataagg_settings['year_range'] else [2015, 2023]
-# year_range_gwr = [2020, 2021] if dataagg_settings['smaller_import'] else [2009, 2023]  # range of years to import, smaller range for debugging
-# year_range_pvtarif = [2020, 2021] if dataagg_settings['smaller_import'] else [2015, 2023] 
 
 if not file_exists_TF or reimport_api_data:
     subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
@@ -114,14 +103,8 @@ if not file_exists_TF or reimport_api_data:
     subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
     api_pvtarif_data(dataagg_settings_def=dataagg_settings)
 
-    subchapter_to_logfile('pre-prep data: API PVTARIF to GM MAPPING', log_name)
+    subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', log_name)
     api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
-
-    # still to import: 
-    # - heat demand data
-    # - TS for electricity demand
-    # - TS for meteo sunshine => these two TS should ideally come from the same source
-    # - TS electricity market price
 
 else:
     print_to_logfile('\n\n', log_name)
@@ -129,20 +112,23 @@ else:
 
 
 
-# SPATIAL MAPPINGS ---------------------------------------------------------------
+# IMPORT LOCAL DATA + SPATIAL MAPPINGS ------------------------------------------
+
+
 
 # transform spatial data to parquet files for faster import and transformation
 pq_dir_exists_TF = os.path.exists(f'{data_path}/output/preprep_data')
 pq_files_rerun = dataagg_settings['rerun_spatial_mappings']
 
 if not pq_dir_exists_TF or pq_files_rerun:
-    subchapter_to_logfile('pre-prep data: SPATIAL MAPPINGS', log_name)
-    create_spatial_mappings(script_run_on_server_def= dataagg_settings['script_run_on_server'], smaller_import_def=dataagg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=dataagg_settings['show_debug_prints'])    
-
-    subchapter_to_logfile('pre-prep data: SPATIAL DATA to PARQUET', log_name) # extend all spatial data sources with the gm_id and export it to parquet files for easier handling later on
-    solkat_spatial_toparquet(dataagg_settings['script_run_on_server'], dataagg_settings['smaller_import'], log_name, wd_path, data_path, dataagg_settings['show_debug_prints'])
-    heat_spatial_toparquet(dataagg_settings['script_run_on_server'], dataagg_settings['smaller_import'], log_name, wd_path, data_path, dataagg_settings['show_debug_prints'])
-    pv_spatial_toparquet(dataagg_settings['script_run_on_server'], dataagg_settings['smaller_import'], log_name, wd_path, data_path, dataagg_settings['show_debug_prints'])
+    subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', log_name)
+    local_data_to_parquet_AND_create_spatial_mappings(dataagg_settings_def = dataagg_settings)
+    
+    # create_spatial_mappings(script_run_on_server_def= dataagg_settings['script_run_on_server'], smaller_import_def=dataagg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=dataagg_settings['show_debug_prints'])    
+    # subchapter_to_logfile('pre-prep data: SPATIAL DATA to PARQUET', log_name) # extend all spatial data sources with the gm_id and export it to parquet files for easier handling later on
+    # solkat_spatial_toparquet(dataagg_settings['script_run_on_server'], dataagg_settings['smaller_import'], log_name, wd_path, data_path, dataagg_settings['show_debug_prints'])
+    # heat_spatial_toparquet(dataagg_settings['script_run_on_server'], dataagg_settings['smaller_import'], log_name, wd_path, data_path, dataagg_settings['show_debug_prints'])
+    # pv_spatial_toparquet(dataagg_settings['script_run_on_server'], dataagg_settings['smaller_import'], log_name, wd_path, data_path, dataagg_settings['show_debug_prints'])
 
 else: 
     print_to_logfile('\n', log_name)
@@ -152,9 +138,9 @@ else:
 
 # EXTEND WITH TIME FIXED DATA ---------------------------------------------------------------
 cost_df_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/pvinstcost.parquet')
-extend_data_rerun = dataagg_settings['reextend_fixed_data']
+reextend_fixed_data = dataagg_settings['reextend_fixed_data']
 
-if not cost_df_exists_TF or extend_data_rerun:
+if not cost_df_exists_TF or reextend_fixed_data:
     subchapter_to_logfile('extend data: PV INSTALLTION COST', log_name)
     attach_pv_cost(script_run_on_server_def= dataagg_settings['script_run_on_server'],  
                      log_file_name_def=log_name,
