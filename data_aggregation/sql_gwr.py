@@ -29,17 +29,19 @@ def sql_gwr_data(
     log_file_name_def = dataagg_settings_def['log_file_name']
     wd_path_def = dataagg_settings_def['wd_path']
     data_path_def = dataagg_settings_def['data_path']
-
-    query_columns = dataagg_settings_def['gwr_query_columns']
     print_to_logfile('run function: sql_gwr_data.py', log_file_name_def=log_file_name_def)
-    checkpoint_to_logfile(f'use GWR query cols: {query_columns}', log_file_name_def=log_file_name_def, n_tabs_def = 5)
-
 
     # query -------------------
+
+    query_columns =  ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                     'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                     'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1']
     conn = sqlite3.connect(f'{data_path_def}/input/GebWohnRegister.CH/data.sqlite')
     cur = conn.cursor()
     query_columns_str = ', '.join(query_columns)
     query_bfs_numbers = ', '.join([str(i) for i in bfs_number_def])
+    checkpoint_to_logfile(f'use GWR query cols: {query_columns}', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+
 
     # cur.execute("SELECT EGID, GDEKT FROM building")
     cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers})')
