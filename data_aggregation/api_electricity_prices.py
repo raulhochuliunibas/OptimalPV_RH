@@ -30,7 +30,7 @@ from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, check
 #> https://jupyter.zazuko.com/electricity_prices.html
 #   copied code from: https://colab.research.google.com/github/zazuko/notebooks/blob/master/notebooks/electricity_prices/electricity_prices.ipynb
 #> https://lindas.admin.ch/sparql/#
-def api_electricity_prices(
+def api_electricity_prices_data(
         dataagg_settings_def, ):
     '''
     This function imports electricity prices from the Swiss (government) ELCOM API.

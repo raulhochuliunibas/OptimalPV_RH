@@ -16,9 +16,9 @@ dataagg_settings = {
         'smaller_import': False,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
 
-        'kt_numbers': [12, 13,],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
+        'kt_numbers': [12,13], #[1,2,3],#[12, 13,],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
         'bfs_numbers': [],  # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        'year_range': [2022, 2023],             # range of years to import
+        'year_range': [2018, 2023],             # range of years to import
 
         'reimport_api_data': True,         # F: use existing parquet files, T: recreate parquet files in data prep        
         'rerun_spatial_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
@@ -44,10 +44,12 @@ from pprint import pprint, pformat
 # own packages and functions
 import auxiliary_functions
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
-from data_aggregation.api_electricity_prices import api_electricity_prices
+
+from data_aggregation.api_electricity_prices import api_electricity_prices_data
 from data_aggregation.sql_gwr import sql_gwr_data
 from data_aggregation.api_pvtarif import api_pvtarif_data, api_pvtarif_gm_ewr_Mapping
-from data_aggregation.preprepare_data import local_data_to_parquet_AND_create_spatial_mappings, solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet, create_spatial_mappings
+from data_aggregation.api_entsoe import api_entsoe_ahead_elecpri_data
+from data_aggregation.preprepare_data import local_data_to_parquet_AND_create_spatial_mappings
 from data_aggregation.extend_data import attach_pv_cost
 
 
@@ -95,7 +97,7 @@ year_range_pvtarif = dataagg_settings['year_range'] if not not dataagg_settings[
 
 if not file_exists_TF or reimport_api_data:
     subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-    api_electricity_prices(dataagg_settings_def = dataagg_settings)
+    api_electricity_prices_data(dataagg_settings_def = dataagg_settings)
         
     subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
     sql_gwr_data(dataagg_settings_def=dataagg_settings)
@@ -105,6 +107,12 @@ if not file_exists_TF or reimport_api_data:
 
     subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', log_name)
     api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
+
+    subchapter_to_logfile('pre-prep data: API ENTSOE DayAhead', log_name)
+    api_entsoe_ahead_elecpri_data(dataagg_settings_def = dataagg_settings)
+
+
+
 
 else:
     print_to_logfile('\n\n', log_name)
@@ -141,10 +149,9 @@ cost_df_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/pvinstcost.
 reextend_fixed_data = dataagg_settings['reextend_fixed_data']
 
 if not cost_df_exists_TF or reextend_fixed_data:
-    subchapter_to_logfile('extend data: PV INSTALLTION COST', log_name)
+    subchapter_to_logfile('extend data: ESTIM PV INSTALLTION COST FUNCTION,  ', log_name)
     attach_pv_cost(dataagg_settings_def = dataagg_settings)
     
-    subchapter_to_logfile('extend data: WEIGHTS FOR ELECTRICITY DEMAND', log_name)
 
 
    

@@ -10,7 +10,7 @@ from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, check
 sys.path.append(r'C:/Models/OptimalPV_RH_apikeys')
 from apikeys import get_pvtarif_key
 
-print(get_pvtarif_key)
+print(get_pvtarif_key())
 
 # ------------------------------------------------------------------------------------------------------
 # API DATA IMPORT
