@@ -155,19 +155,23 @@ def attach_pv_cost(
 
 
     # extend COST per ADDITIONAL partition -------------------
-    # prepare df; sort and add counter
-    solkat_egid_cumsum = solkat.loc[solkat['EGID'].notna(), ['EGID', 'GSTRAHLUNG', 'FLAECHE', 'MSTRAHLUNG', 'STROMERTRAG']].copy()
-    solkat_egid_cumsum = solkat.sort_values(by=['EGID', 'GSTRAHLUNG'], ascending=[True, False]) 
-    solkat_egid_cumsum['partition_counter'] = solkat_egid_cumsum.groupby('EGID').cumcount() + 1
+    # THIS COMPUTATION DOES NOT YIELD MUCH INFORMATION BECAUSE IT STILL DOES NOT GIVE THE COST FOR EACH UNIQUE PARTITION COMBINATION
+    # >> Rather export the cost estimation functions so they can be called later when all the unique combinations are created. 
+    if False:  
+        # prepare df; sort and add counter
+        solkat_egid_cumsum = solkat.loc[solkat['EGID'].notna(), ['EGID', 'GSTRAHLUNG', 'FLAECHE', 'MSTRAHLUNG', 'STROMERTRAG']].copy()
+        solkat_egid_cumsum = solkat.sort_values(by=['EGID', 'GSTRAHLUNG'], ascending=[True, False]) 
+        solkat_egid_cumsum['partition_counter'] = solkat_egid_cumsum.groupby('EGID').cumcount() + 1
 
-    # apply cummulative sum in groupby on copy of variable of interest
-    cumulative_cols = ['FLAECH_cumm', 'GSTRAH_cumm', 'STROME_cumm']
-    solkat_egid_cumsum[cumulative_cols] = solkat_egid_cumsum[['FLAECHE', 'GSTRAHLUNG', 'STROMERTRAG']]
-    for col in cumulative_cols:
-        checkpoint_to_logfile(f'start cumulative sum for: {col}', log_file_name_def=log_file_name_def, n_tabs_def=2, show_debug_prints_def=show_debug_prints_def)
-        solkat_egid_cumsum[col] = solkat_egid_cumsum.groupby('EGID')[col].transform(pd.Series.cumsum)
+        # apply cummulative sum in groupby on copy of variable of interest
+        cumulative_cols = ['FLAECH_cumm', 'GSTRAH_cumm', 'STROME_cumm']
+        solkat_egid_cumsum[cumulative_cols] = solkat_egid_cumsum[['FLAECHE', 'GSTRAHLUNG', 'STROMERTRAG']]
+        for col in cumulative_cols:
+            checkpoint_to_logfile(f'start cumulative sum for: {col}', log_file_name_def=log_file_name_def, n_tabs_def=2, show_debug_prints_def=show_debug_prints_def)
+            solkat_egid_cumsum[col] = solkat_egid_cumsum.groupby('EGID')[col].transform(pd.Series.cumsum)
 
-    solkat_egid_cumsum.to_parquet(f'{data_path_def}/output/preprep_data/solkat_egid_cumsum.parquet')
+        solkat_egid_cumsum.to_parquet(f'{data_path_def}/output/preprep_data/solkat_egid_cumsum.parquet')
+        checkpoint_to_logfile(f'exported solkat_egid_cumsum', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
 
 
 
