@@ -158,13 +158,14 @@ def local_data_to_parquet_AND_create_spatial_mappings(
     # Create House Shapes ---------------------------------------------------------------------
     solkat_gdf_mapping = solkat_gdf.copy()
     solkat_gdf_mapping = set_crs_to_gm_shp(gm_shp_gdf, solkat_gdf_mapping)
-    solkat_gdf_mapping = keep_columns(['SB_UUID', 'EGID', 'DF_NUMMER', 'geometry'], solkat_gdf_mapping)
+    # solkat_gdf_mapping = keep_columns(['SB_UUID', 'EGID', 'DF_NUMMER', 'geometry'], solkat_gdf_mapping)
+    solkat_gdf_mapping = solkat_gdf_mapping.loc[:,['SB_UUID', 'EGID', 'DF_NUMMER', 'geometry']]
     solkat_union_srs = solkat_gdf_mapping.groupby('EGID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
     solkat_egidunion = gpd.GeoDataFrame(solkat_union_srs, geometry='geometry')
 
 
     # MAP: solkat_egid > solkat_sbuuid ---------------------------------------------------------------------
-    Map_solkategid_sbuuid = solkat_gdf_mapping[['SB_UUID', 'EGID']].drop_duplicates()
+    Map_solkategid_sbuuid = solkat_gdf_mapping[['SB_UUID', 'EGID']].drop_duplicates().copy()
     Map_solkategid_sbuuid.dropna(subset = ['EGID'], inplace = True)
     Map_solkategid_sbuuid = Map_solkategid_sbuuid.sort_values(by = ['EGID', 'SB_UUID'])
 
@@ -176,7 +177,8 @@ def local_data_to_parquet_AND_create_spatial_mappings(
     solkat_egidunion.reset_index(inplace = True)
     solkat_egidunion, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, solkat_egidunion, pv_gdf)
     Map_solkategid_pv = gpd.sjoin(solkat_egidunion, pv_gdf, how="left", predicate="within")
-    Map_solkategid_pv = keep_columns(['EGID','xtf_id', ], Map_solkategid_pv)
+    # Map_solkategid_pv = keep_columns(['EGID','xtf_id', ], Map_solkategid_pv)
+    Map_solkategid_pv = Map_solkategid_pv.loc[:,['EGID','xtf_id', ]]
 
     Map_solkategid_pv.to_parquet(f'{data_path_def}/output/preprep_data/Map_solkategid_pv.parquet')
     Map_solkategid_pv.to_csv(f'{data_path_def}/output/preprep_data/Map_solkategid_pv.csv', sep=';', index=False)
@@ -186,7 +188,8 @@ def local_data_to_parquet_AND_create_spatial_mappings(
     solkat_egidunion.reset_index(inplace = True)
     solkat_egidunion, heat_gdf = set_crs_to_gm_shp(gm_shp_gdf, solkat_egidunion, heat_gdf)
     Map_solkategid_heat = gpd.sjoin(solkat_egidunion, heat_gdf, how="left", predicate="within")
-    Map_solkategid_heat = keep_columns(['EGID','NEEDHOME', ], Map_solkategid_heat)
+    # Map_solkategid_heat = keep_columns(['EGID','NEEDHOME', ], Map_solkategid_heat)
+    Map_solkategid_heat = Map_solkategid_heat.loc[:,['EGID','NEEDHOME', ]]
 
     Map_solkategid_heat.to_parquet(f'{data_path_def}/output/preprep_data/Map_solkategid_heat.parquet')
     Map_solkategid_heat.to_csv(f'{data_path_def}/output/preprep_data/Map_solkategid_heat.csv', sep=';', index=False)
@@ -197,11 +200,13 @@ def local_data_to_parquet_AND_create_spatial_mappings(
     GEOM_solkat_union.to_file(f'{data_path_def}/output/preprep_data/GEOM_solkat_union.geojson', driver='GeoJSON')
 
     # MAP: pv > geometry ---------------------------------------------------------------------
-    GEOM_pv = keep_columns(['xtf_id', 'geometry'], pv_gdf).copy()
+    # GEOM_pv = keep_columns(['xtf_id', 'geometry'], pv_gdf).copy()
+    GEOM_pv = pv_gdf.loc[:,['xtf_id', 'geometry']]
     GEOM_pv.to_file(f'{data_path_def}/output/preprep_data/GEOM_pv.geojson', driver='GeoJSON')
 
     # MAP: heat > geometry ---------------------------------------------------------------------
-    GEOM_heat = keep_columns(['NEEDHOME', 'geometry'], heat_gdf).copy()
+    # GEOM_heat = keep_columns(['NEEDHOME', 'geometry'], heat_gdf).copy()
+    GEOM_heat = heat_gdf.loc[:,['NEEDHOME', 'geometry']]
     GEOM_heat.to_file(f'{data_path_def}/output/preprep_data/GEOM_heat.geojson', driver='GeoJSON')
 
 
