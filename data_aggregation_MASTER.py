@@ -16,13 +16,13 @@ dataagg_settings = {
         'smaller_import': False,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
 
-        'kt_numbers': [1,2,3,4,5,6,7,8],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
-        'bfs_numbers': [2829, 2770, 2888, 2788, 2787,],  # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        'year_range': [2020, 2020],             # range of years to import
+        'kt_numbers': [12, 13,],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
+        'bfs_numbers': [],  # list of municipalites to select for allocation (only used if kt_numbers == 0)
+        'year_range': [2022, 2023],             # range of years to import
 
         'reimport_api_data': True,         # F: use existing parquet files, T: recreate parquet files in data prep        
         'rerun_spatial_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
-        'reextend_fixed_data': False,        # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again       
+        'reextend_fixed_data': True,        # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again       
         }
 
 
@@ -48,7 +48,7 @@ from data_aggregation.api_electricity_prices import api_electricity_prices
 from data_aggregation.sql_gwr import sql_gwr_data
 from data_aggregation.api_pvtarif import api_pvtarif_data, api_pvtarif_gm_ewr_Mapping
 from data_aggregation.preprepare_data import local_data_to_parquet_AND_create_spatial_mappings, solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet, create_spatial_mappings
-from data_aggregation.installation_cost import attach_pv_cost
+from data_aggregation.extend_data import attach_pv_cost
 
 
 
@@ -142,12 +142,7 @@ reextend_fixed_data = dataagg_settings['reextend_fixed_data']
 
 if not cost_df_exists_TF or reextend_fixed_data:
     subchapter_to_logfile('extend data: PV INSTALLTION COST', log_name)
-    attach_pv_cost(script_run_on_server_def= dataagg_settings['script_run_on_server'],  
-                     log_file_name_def=log_name,
-                     wd_path_def=wd_path, 
-                     smaller_import_def=dataagg_settings['smaller_import'],
-                     data_path_def=data_path, 
-                     show_debug_prints_def=dataagg_settings['show_debug_prints'])
+    attach_pv_cost(dataagg_settings_def = dataagg_settings)
     
     subchapter_to_logfile('extend data: WEIGHTS FOR ELECTRICITY DEMAND', log_name)
 
