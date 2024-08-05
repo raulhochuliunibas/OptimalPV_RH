@@ -82,13 +82,7 @@ dataagg_settings['data_path'] = data_path
 
 
 # IMPORT API DATA ---------------------------------------------------------------
-    # still to import: 
-    # - heat demand data
-    # - TS for electricity demand
-    # - TS for meteo sunshine => these two TS should ideally come from the same source
-    # - TS electricity market price
-
-# download possible API data to local directory
+# download API data and store it local directory for needed time and range
 file_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/elecpri.parquet')  # conditions that determine if the data should be reimported
 reimport_api_data = dataagg_settings['reimport_api_data']
 
