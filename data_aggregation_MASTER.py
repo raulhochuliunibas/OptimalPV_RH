@@ -15,20 +15,38 @@ dataagg_settings = {
         'script_run_on_server': False,      # F: run on private computer, T: run on server
         'smaller_import': False,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
+        'wd_path_laptop': 'C:/Models/OptimalPV_RH', # path to the working directory on Raul's laptop
+        'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH', # path to the working directory on the server
 
         'kt_numbers': [12,13], #[1,2,3],#[12, 13,],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
         'bfs_numbers': [],  # list of municipalites to select for allocation (only used if kt_numbers == 0)
         'year_range': [2018, 2023],             # range of years to import
-
+        # switch on/off parts of aggregation
         'reimport_api_data': True,         # F: use existing parquet files, T: recreate parquet files in data prep        
-        'rerun_spatial_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
+        'rerun_localimport_and_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
         'reextend_fixed_data': True,        # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again       
+        
+        'gwr_selection_specs': {
+            'building_cols': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                        'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                        'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1', 'GEBF', 'GAREA'],
+            'dwelling_cols':['EGID', 'WAZIM', 'WAREA', ],
+            'DEMAND_proxy': 'GAREA',
+            'GSTAT': ['1004',],                 # GSTAT - 1004: only existing, fully constructed buildings
+            'GKLAS': ['1110',],                 # GKLAS - 1110: only 1 living space per building
+            'GBAUJ_minmax': [1950, 2023],   # GBAUJ_minmax: range of years of construction
+            'GWAERZH': ['7410', '7411',],       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
+            'GENH': ['7580', '7581', '7582'],   # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
+                                                # GANZWHG - total number of apartments in building
+                                                # GAZZI - total number of rooms in building
+
+            },
         }
 
 
 # PACKAGES --------------------------------------------------------------------
 import sys
-sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH') if dataagg_settings['script_run_on_server'] else sys.path.append('C:/Models/OptimalPV_RH')
+sys.path.append(dataagg_settings['wd_path_laptop']) if not dataagg_settings['script_run_on_server'] else sys.path.append(dataagg_settings['wd_path_server'])
 
 # external packages
 import os as os
@@ -49,14 +67,14 @@ from data_aggregation.api_electricity_prices import api_electricity_prices_data
 from data_aggregation.sql_gwr import sql_gwr_data
 from data_aggregation.api_pvtarif import api_pvtarif_data, api_pvtarif_gm_ewr_Mapping
 from data_aggregation.api_entsoe import api_entsoe_ahead_elecpri_data
-from data_aggregation.preprepare_data import local_data_to_parquet_AND_create_spatial_mappings
+from data_aggregation.preprepare_data import local_data_to_parquet_AND_create_spatial_mappings, import_demand_TS_AND_match_households
 from data_aggregation.extend_data import attach_pv_cost
 
 
 
 # SETUP -----------------------------------------------------------------------
 # set working directory
-wd_path = "D:\\RaulHochuli_inuse\\OptimalPV_RH"  if dataagg_settings['script_run_on_server'] else "C:\Models\OptimalPV_RH"
+wd_path = dataagg_settings['wd_path_laptop'] if not dataagg_settings['script_run_on_server'] else dataagg_settings['wd_path_server']
 data_path = f'{wd_path}_data'
     
 # create directory + log file
@@ -91,22 +109,19 @@ year_range_pvtarif = dataagg_settings['year_range'] if not not dataagg_settings[
 
 if not file_exists_TF or reimport_api_data:
     subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-    api_electricity_prices_data(dataagg_settings_def = dataagg_settings)
+    # api_electricity_prices_data(dataagg_settings_def = dataagg_settings)
         
     subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
     sql_gwr_data(dataagg_settings_def=dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
-    api_pvtarif_data(dataagg_settings_def=dataagg_settings)
+    # api_pvtarif_data(dataagg_settings_def=dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', log_name)
-    api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
+    # api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API ENTSOE DayAhead', log_name)
-    api_entsoe_ahead_elecpri_data(dataagg_settings_def = dataagg_settings)
-
-
-
+    # # api_entsoe_ahead_elecpri_data(dataagg_settings_def = dataagg_settings)
 
 else:
     print_to_logfile('\n\n', log_name)
@@ -115,16 +130,17 @@ else:
 
 
 # IMPORT LOCAL DATA + SPATIAL MAPPINGS ------------------------------------------
-
-
-
 # transform spatial data to parquet files for faster import and transformation
 pq_dir_exists_TF = os.path.exists(f'{data_path}/output/preprep_data')
-pq_files_rerun = dataagg_settings['rerun_spatial_mappings']
+pq_files_rerun = dataagg_settings['rerun_localimport_and_mappings']
 
 if not pq_dir_exists_TF or pq_files_rerun:
     subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', log_name)
-    local_data_to_parquet_AND_create_spatial_mappings(dataagg_settings_def = dataagg_settings)
+    # local_data_to_parquet_AND_create_spatial_mappings(dataagg_settings_def = dataagg_settings)
+
+    subchapter_to_logfile('pre-prep data: IMPORT DEMAND TS + match series HOUSES', log_name)
+    import_demand_TS_AND_match_households(dataagg_settings_def = dataagg_settings)
+
     
     # create_spatial_mappings(script_run_on_server_def= dataagg_settings['script_run_on_server'], smaller_import_def=dataagg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=dataagg_settings['show_debug_prints'])    
     # subchapter_to_logfile('pre-prep data: SPATIAL DATA to PARQUET', log_name) # extend all spatial data sources with the gm_id and export it to parquet files for easier handling later on

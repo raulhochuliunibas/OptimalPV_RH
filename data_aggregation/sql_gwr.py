@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import geopandas as gpd
 import  sqlite3
+import re
 
 sys.path.append('..')
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
@@ -29,48 +30,96 @@ def sql_gwr_data(
     log_file_name_def = dataagg_settings_def['log_file_name']
     wd_path_def = dataagg_settings_def['wd_path']
     data_path_def = dataagg_settings_def['data_path']
+
+    gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
     print_to_logfile('run function: sql_gwr_data.py', log_file_name_def=log_file_name_def)
 
-    # query -------------------
 
-    query_columns =  ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
-                     'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
-                     'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1']
-    conn = sqlite3.connect(f'{data_path_def}/input/GebWohnRegister.CH/data.sqlite')
-    cur = conn.cursor()
+    # querys -------------------
+    # Get all column names from GWR 2.0
+    if False: 
+        print_to_logfile('check all GWR cols for empty cells', log_file_name_def=log_file_name_def)
+        col_nan_table, col_nan_name, col_nan_count = [], [], []
+
+        conn = sqlite3.connect(f'{data_path_def}/input/GebWohnRegister.CH/data.sqlite')
+        cur = conn.cursor()
+
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cur.fetchall()
+        for table in tables:
+            table_name = table[0]
+            
+            # Get the column names and count ""
+            cur.execute(f"PRAGMA table_info({table_name});")
+            columns = cur.fetchall()
+            checkpoint_to_logfile(f'check table: {table_name}, no. of cols: {len(columns)}', log_file_name_def = log_file_name_def, n_tabs_def = 5)
+
+
+            column_names = [column[1] for column in columns]
+            for column_name in column_names:
+                cur.execute(f"SELECT COUNT(*) FROM {table_name} WHERE {column_name} = '';")
+                empty_count = cur.fetchone()[0]
+                
+                col_nan_table.append(table_name)
+                col_nan_name.append(column_name)
+                col_nan_count.append(empty_count)
+        
+        conn.close()
+        gwr_nan_df = pd.DataFrame({'table': col_nan_table, 'col': col_nan_name, 'empty_cells': col_nan_count})
+        gwr_nan_df.to_csv(f'{wd_path_def}/gwr_nan.csv', sep=';', index=False) 
+        gwr_nan_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_nan.csv', sep=';', index=False)
+        checkpoint_to_logfile('exported gwr_nan data', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+
+
+    # get BUILDING data
+    # select cols
+    query_columns = gwr_selection_specs_def['building_cols']
     query_columns_str = ', '.join(query_columns)
     query_bfs_numbers = ', '.join([str(i) for i in bfs_number_def])
-    checkpoint_to_logfile(f'use GWR query cols: {query_columns}', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+    # select rows
+    gklas_values = gwr_selection_specs_def['GKLAS']
+    if isinstance(gklas_values, list):
+        gklas_values_str = ', '.join([f"'{str(value)}'" for value in gklas_values])
+    else:
+        gklas_values_str = f"'{str(gklas_values)}'"
 
-
-    # cur.execute("SELECT EGID, GDEKT FROM building")
-    cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers})')
-
+    conn = sqlite3.connect(f'{data_path_def}/input/GebWohnRegister.CH/data.sqlite')
+    cur = conn.cursor()
+    cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers}) AND GKLAS IN ({gklas_values_str})')
     sqlrows = cur.fetchall()
-
     conn.close()
     checkpoint_to_logfile('sql query done', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-    # convert to df -------------------
-    gwr = pd.DataFrame(sqlrows, columns=query_columns)
+    gwr_building_df = pd.DataFrame(sqlrows, columns=query_columns)
+    gwr_building_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_building_df.csv', sep=';', index=False)
+    selected_EGID = list(gwr_building_df['EGID'])
 
-    
-    # export -------------------
-    gwr.to_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
+
+    # get DWELLING data
+    # select cols
+    query_columns = gwr_selection_specs_def['dwelling_cols']
+    query_columns_str = ', '.join(query_columns)
+    query_bfs_numbers = ', '.join([str(i) for i in bfs_number_def])
+    # select rows
+    egid_values = selected_EGID
+    # egid_values_str = ', '.join([f"'{str(value)}'" for value in egid_values])
+
+    conn = sqlite3.connect(f'{data_path_def}/input/GebWohnRegister.CH/data.sqlite')
+    cur = conn.cursor()
+    cur.execute(f'SELECT {query_columns_str} FROM dwelling')
+    sqlrows = cur.fetchall()
+    conn.close()
+    checkpoint_to_logfile('sql query done', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+    gwr_dwelling_df = pd.DataFrame(sqlrows, columns=query_columns)
+
+    len(selected_EGID)
+    gwr_building_df.loc[gwr_building_df['GAREA'] == '', 'EGID'].nunique()
+    (gwr_building_df.loc[gwr_building_df['GAREA'] == '', 'EGID'].nunique() / len(selected_EGID)) * 100
+    print_to_logfile('Did NOT us a combination of building and dwelling data, because they overlap way too little. \nThis makes sense intuitievly as single unit houses probably are not registered as dwellings in the data base.', log_file_name_def=log_file_name_def)
+
+    # merge dfs and export -------------------
+    gwr = gwr_building_df
     gwr.to_csv(f'{data_path_def}/output/preprep_data/gwr.csv', sep=';', index=False)
+    gwr.to_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
     checkpoint_to_logfile(f'exported gwr data', log_file_name_def=log_file_name_def, n_tabs_def = 5)
-
-    
-
-
-
-
-
-
-
-        
-
-
-
-
-
