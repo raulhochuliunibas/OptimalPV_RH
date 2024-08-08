@@ -91,25 +91,26 @@ def local_data_to_parquet_AND_create_spatial_mappings(
 
 
         # HEATING + COOLING DEMAND ---------------------------------------------------------------------
-        if not smaller_import_def:
-            heat_all_gdf = gpd.read_file(f'{data_path_def}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
-        elif smaller_import_def:
-            heat_all_gdf = gpd.read_file(f'{data_path_def}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 100)
-        checkpoint_to_logfile(f'import heat, {heat_all_gdf.shape[0]} rows (smaller_import: {smaller_import_def})', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        if False: # Heat data most likely not needed because demand TS is available
+            if not smaller_import_def:
+                heat_all_gdf = gpd.read_file(f'{data_path_def}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES')
+            elif smaller_import_def:
+                heat_all_gdf = gpd.read_file(f'{data_path_def}/input/heating_cooling_demand.gpkg/fernwaerme-nachfrage_wohn_dienstleistungsgebaeude_2056.gpkg', layer= 'HOMEANDSERVICES', rows = 100)
+            checkpoint_to_logfile(f'import heat, {heat_all_gdf.shape[0]} rows (smaller_import: {smaller_import_def})', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-        # attach bfs
-        heat_all_gdf = attach_bfs_to_spatial_data(heat_all_gdf, gm_shp_gdf)
+            # attach bfs
+            heat_all_gdf = attach_bfs_to_spatial_data(heat_all_gdf, gm_shp_gdf)
 
-        # drop unnecessary columns --------
-        # transformations --------
+            # drop unnecessary columns --------
+            # transformations --------
 
-        # filter by bfs_nubmers_def --------
-        heat_gdf = heat_all_gdf[heat_all_gdf['BFS_NUMMER'].isin(bfs_number_def)]
-        
-        # export --------
-        heat_gdf.to_parquet(f'{data_path_def}/output/preprep_data/heat.parquet')
-        heat_gdf.to_csv(f'{data_path_def}/output/preprep_data/heat.csv', sep=';', index=False)
-        print_to_logfile(f'exported heat data', log_file_name_def = log_file_name_def)
+            # filter by bfs_nubmers_def --------
+            heat_gdf = heat_all_gdf[heat_all_gdf['BFS_NUMMER'].isin(bfs_number_def)]
+            
+            # export --------
+            heat_gdf.to_parquet(f'{data_path_def}/output/preprep_data/heat.parquet')
+            heat_gdf.to_csv(f'{data_path_def}/output/preprep_data/heat.csv', sep=';', index=False)
+            print_to_logfile(f'exported heat data', log_file_name_def = log_file_name_def)
 
 
         # PV ---------------------------------------------------------------------
@@ -222,8 +223,9 @@ def local_data_to_parquet_AND_create_spatial_mappings(
 def import_demand_TS_AND_match_households(
         dataagg_settings_def, ):
     """
-    1) Import demand time series data and store it as parquet file.
+    1) Import demand time series data and aggregate it to 4 demand archetypes.
     2) Match the time series to the households IDs dependent on building characteristics (e.g. flat/house size, electric heating, etc.)
+       Export all the mappings and time series data.
     """
 
     # import settings + setup -------------------
@@ -395,16 +397,7 @@ def import_demand_TS_AND_match_households(
     low_DEMANDprox_wiHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = True, up_low50percent = "lower")
     high_DEMANDprox_noHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = False, up_low50percent = "upper")
     low_DEMANDprox_noHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = False, up_low50percent = "lower")
-    
-    # ---------------------------------------------------------------------
-    # ---------------------------------------------------------------------
-    #     
-    # Map_demand_type_gwrEGID ={
-    #     'high_GEBF_wiHP': high_GEBF_wiHP_list,
-    #     'low_GEBF_wiHP': low_GEBF_wiHP_list,
-    #     'high_GEBF_noHP': high_GEBF_noHP_list,
-    #     'low_GEBF_noHP': low_GEBF_noHP_list,
-    # }
+
 
     # sanity check --------
     print_to_logfile(f'sanity check gwr classifications', log_file_name_def = log_file_name_def)
@@ -438,3 +431,54 @@ def import_demand_TS_AND_match_households(
     with open(f'{data_path_def}/output/preprep_data/Map_demand_type_gwrEGID.json', 'w') as f:
         json.dump(Map_demand_type_gwrEGID, f)
     checkpoint_to_logfile(f'exported demand types for GWR', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+
+
+
+# ------------------------------------------------------------------------------------------------------
+# IMPORT METEO DATA
+# ------------------------------------------------------------------------------------------------------
+
+def import_meteo_data(
+        dataagg_settings_def, ):
+    """
+    Import meteo data from a source, select only the relevant time frame store data to prepreped data folder.
+    """
+    
+    # import settings + setup --------
+    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
+    bfs_number_def = dataagg_settings_def['bfs_numbers']
+    year_range_def = dataagg_settings_def['year_range']
+    smaller_import_def = dataagg_settings_def['smaller_import']
+    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
+    log_file_name_def = dataagg_settings_def['log_file_name']
+    wd_path_def = dataagg_settings_def['wd_path']
+    data_path_def = dataagg_settings_def['data_path']
+
+    gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
+    print_to_logfile(f'run function: import_demand_TS_AND_match_households.py', log_file_name_def = log_file_name_def)
+
+
+
+    # IMPORT METEO DATA ============================================================================
+    print_to_logfile(f'\nIMPORT METEO DATA {10*"*"}', log_file_name_def = log_file_name_def)
+
+    # import meteo data --------
+    meteo = pd.read_csv(f'{data_path_def}/input/Meteoblue_BSBL/Meteodaten_Basel_2018_2024_reduziert_bereinigt.csv')
+
+    # transformations
+    meteo['timestamp'] = pd.to_datetime(meteo['timestamp'], format = '%d.%m.%Y %H:%M:%S')
+
+    # select relevant time frame
+    start_stamp = pd.to_datetime(f'01.01.{year_range_def[0]}', format = '%d.%m.%Y')
+    end_stamp = pd.to_datetime(f'31.12.{year_range_def[1]}', format = '%d.%m.%Y')
+    meteo = meteo[(meteo['timestamp'] >= start_stamp) & (meteo['timestamp'] <= end_stamp)]
+    
+    # export --------
+    meteo.to_parquet(f'{data_path_def}/output/preprep_data/meteo.parquet')
+    checkpoint_to_logfile(f'exported meteo data', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+    # MATCH WEATHER STATIONS TO HOUSEHOLDS ============================================================================
+
+
+

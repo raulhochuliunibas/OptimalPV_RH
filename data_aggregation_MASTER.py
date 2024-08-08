@@ -67,7 +67,7 @@ from data_aggregation.api_electricity_prices import api_electricity_prices_data
 from data_aggregation.sql_gwr import sql_gwr_data
 from data_aggregation.api_pvtarif import api_pvtarif_data, api_pvtarif_gm_ewr_Mapping
 from data_aggregation.api_entsoe import api_entsoe_ahead_elecpri_data
-from data_aggregation.preprepare_data import local_data_to_parquet_AND_create_spatial_mappings, import_demand_TS_AND_match_households
+from data_aggregation.preprepare_data import local_data_to_parquet_AND_create_spatial_mappings, import_demand_TS_AND_match_households, import_meteo_data
 from data_aggregation.extend_data import attach_pv_cost
 
 
@@ -112,7 +112,7 @@ if not file_exists_TF or reimport_api_data:
     # api_electricity_prices_data(dataagg_settings_def = dataagg_settings)
         
     subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
-    sql_gwr_data(dataagg_settings_def=dataagg_settings)
+    # sql_gwr_data(dataagg_settings_def=dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
     # api_pvtarif_data(dataagg_settings_def=dataagg_settings)
@@ -139,14 +139,10 @@ if not pq_dir_exists_TF or pq_files_rerun:
     # local_data_to_parquet_AND_create_spatial_mappings(dataagg_settings_def = dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: IMPORT DEMAND TS + match series HOUSES', log_name)
-    import_demand_TS_AND_match_households(dataagg_settings_def = dataagg_settings)
+    # import_demand_TS_AND_match_households(dataagg_settings_def = dataagg_settings)
 
-    
-    # create_spatial_mappings(script_run_on_server_def= dataagg_settings['script_run_on_server'], smaller_import_def=dataagg_settings['smaller_import'], log_file_name_def=log_name, wd_path_def=wd_path, data_path_def=data_path, show_debug_prints_def=dataagg_settings['show_debug_prints'])    
-    # subchapter_to_logfile('pre-prep data: SPATIAL DATA to PARQUET', log_name) # extend all spatial data sources with the gm_id and export it to parquet files for easier handling later on
-    # solkat_spatial_toparquet(dataagg_settings['script_run_on_server'], dataagg_settings['smaller_import'], log_name, wd_path, data_path, dataagg_settings['show_debug_prints'])
-    # heat_spatial_toparquet(dataagg_settings['script_run_on_server'], dataagg_settings['smaller_import'], log_name, wd_path, data_path, dataagg_settings['show_debug_prints'])
-    # pv_spatial_toparquet(dataagg_settings['script_run_on_server'], dataagg_settings['smaller_import'], log_name, wd_path, data_path, dataagg_settings['show_debug_prints'])
+    subchapter_to_logfile('pre-prep data: IMPORT METEO SUNSHINE TS', log_name)
+    import_meteo_data(dataagg_settings_def = dataagg_settings)
 
 else: 
     print_to_logfile('\n', log_name)
@@ -162,7 +158,6 @@ if not cost_df_exists_TF or reextend_fixed_data:
     subchapter_to_logfile('extend data: ESTIM PV INSTALLTION COST FUNCTION,  ', log_name)
     attach_pv_cost(dataagg_settings_def = dataagg_settings)
     
-
 
    
 # COPY AGGREGATED DATA ---------------------------------------------------------------

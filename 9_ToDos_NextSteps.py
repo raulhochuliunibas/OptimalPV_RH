@@ -9,20 +9,31 @@
 # SETUP --------
 
 # IMPORT API DATA --------
-# B - Get ENTSOE API to work properly
+# TODO: B - Get ENTSOE API to work properly
 
 # still to import: 
-# A - TS for electricity demand
-# A - TS for meteo sunshine => these two TS should ideally come from the same source
-# B- TS electricity market price (maybe not relevant)
+# OK A - TS for electricity demand
+#    > import and transformation to df from dict even sensible? => No, i just retransfrom the df to a dict again. keep it simple :)
+#    ok >> group agg_demand_df by upper and lower 50 percentilie for with/out HP and with/out PV. 
+#    ok >> then export this demand series and 
+#    ok >> attach type to EGID of GWR
 
-# Z - heat demand data (not relevant if I have demand TS)
+# (OK) A - TS for meteo sunshine => these two TS should ideally come from the same source
+#      > Not from the same source as demand TS -> ok, doesn't matter according also to Frank
+#      > For now just imported the shortwave radiation data (visible sunlight, amongst other columns) for Basel SBB (?)
+#      > only. Will add more weather stations later
+
+
+
+# TODO: B- TS electricity market price (maybe not relevant)
+
+# TODO: Z - heat demand data (not relevant if I have demand TS)
 
 
 # IMPORT LOCAL DATA + SPATIAL MAPPINGS --------
-# B - remove unneeded mapping functions (e.g. create_spatial_mappings, solkat_spatial_toparquet, etc.).
+# OK B - remove unneeded mapping functions (e.g. create_spatial_mappings, solkat_spatial_toparquet, etc.).
 
 # EXTEND WITH TIME FIXED DATA --------
-# A - remove unnecessary CUMSUM function for PV installation cost, find a way to export and store cost function params
+# TODO: A - remove unnecessary CUMSUM function for PV installation cost, find a way to export and store cost function params
 
 
