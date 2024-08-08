@@ -42,7 +42,7 @@ def api_pvtarif_data(
     response_all_df_list = []
     year_range_list = [str(year % 100).zfill(2) for year in range(year_range_def[0], year_range_def[1]+1)]
     # the ew ID is quite random in the range 1:1000. So I just loop over all of them and just keep the valid API calls
-    ew_id = list(range(1, 200+1)) if smaller_import_def else range(1, 1000) 
+    ew_id = list(range(1, 50+1)) if smaller_import_def else range(1, 1000) 
     ew_id_counter = len(ew_id) / 4
 
     url = "https://opendata.vese.ch/pvtarif/api/getData/evu?"

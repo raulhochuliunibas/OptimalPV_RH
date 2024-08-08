@@ -13,14 +13,14 @@
 dataagg_settings = {
         'name_dir_export': None,            # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
         'script_run_on_server': False,      # F: run on private computer, T: run on server
-        'smaller_import': False,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
+        'smaller_import': True,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
         'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
         'wd_path_laptop': 'C:/Models/OptimalPV_RH', # path to the working directory on Raul's laptop
         'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH', # path to the working directory on the server
 
         'kt_numbers': [12,13], #[1,2,3],#[12, 13,],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
         'bfs_numbers': [],  # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        'year_range': [2018, 2023],             # range of years to import
+        'year_range': [2022, 2023],             # range of years to import
         # switch on/off parts of aggregation
         'reimport_api_data': True,         # F: use existing parquet files, T: recreate parquet files in data prep        
         'rerun_localimport_and_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
@@ -109,19 +109,19 @@ year_range_pvtarif = dataagg_settings['year_range'] if not not dataagg_settings[
 
 if not file_exists_TF or reimport_api_data:
     subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-    # api_electricity_prices_data(dataagg_settings_def = dataagg_settings)
+    api_electricity_prices_data(dataagg_settings_def = dataagg_settings)
         
     subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
-    # sql_gwr_data(dataagg_settings_def=dataagg_settings)
+    sql_gwr_data(dataagg_settings_def=dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
-    # api_pvtarif_data(dataagg_settings_def=dataagg_settings)
+    api_pvtarif_data(dataagg_settings_def=dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', log_name)
-    # api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
+    api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API ENTSOE DayAhead', log_name)
-    # # api_entsoe_ahead_elecpri_data(dataagg_settings_def = dataagg_settings)
+    api_entsoe_ahead_elecpri_data(dataagg_settings_def = dataagg_settings)
 
 else:
     print_to_logfile('\n\n', log_name)
@@ -161,7 +161,7 @@ if not cost_df_exists_TF or reextend_fixed_data:
 
    
 # COPY AGGREGATED DATA ---------------------------------------------------------------
-# > not to overwrite it while debugging 
+# > not to overwrite completed preprep folder while debugging 
 chapter_to_logfile(f'END data_aggregation_MASTER', log_name, overwrite_file=False)
 
 if dataagg_settings['name_dir_export'] is None:    
