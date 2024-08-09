@@ -15,31 +15,50 @@
 
 # SETTIGNS --------------------------------------------------------------------
 pvalloc_settings = {
-        'name_dir_export': 'test_BSBL',             # name of the directory where all proccessed data is stored at the end of the code file 
-        'name_dir_import': 'preprep_data_20240207_04h_W_COST', # name of the directory where preprepared data is stored and accessed by the code
+        'name_dir_export': 'pvalloc_BSBL_22to23',             # name of the directory where all proccessed data is stored at the end of the code file 
+        'name_dir_import': 'preprep_data_20240726_08h', # name of the directory where preprepared data is stored and accessed by the code
         'script_run_on_server': False,              # F: run on private computer, T: run on server
+        'fast_debug_run': False,                    # T: run the code with a small subset of data, F: run the code with the full dataset
         'show_debug_prints': True,                  # F: certain print statements are omitted, T: includes print statements that help with debugging
+        'wd_path_laptop': 'C:/Models/OptimalPV_RH',     # path to the working directory on Raul's laptop
+        'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH', # path to the working directory on the server
 
         'kt_numbers': [12,13],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
         'bfs_numbers': [],                        # list of municipalites to select for allocation (only used if kt_numbers == 0)
         'topology_year_range':[2019, 2022],
-        'gwr_house_type_class': ['1110',],          # list of house type classes to be considered
-
         'prediction_year_range':[2023, 2025],
-        'solkat_house_type_class': [0,],            # list of house type classes to be considered
-        'rate_operation_cost': 0.01,                # assumed rate of operation cost (of investment cost)
+        
+        'gwr_selection_specs': {
+            'building_cols': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                        'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                        'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1', 'GEBF', 'GAREA'],
+            'dwelling_cols':['EGID', 'WAZIM', 'WAREA', ],
+            'DEMAND_proxy': 'GAREA',
+            'GSTAT': ['1004',],                 # GSTAT - 1004: only existing, fully constructed buildings
+            'GKLAS': ['1110',],                 # GKLAS - 1110: only 1 living space per building
+            'GBAUJ_minmax': [1950, 2023],       # GBAUJ_minmax: range of years of construction
+            'GWAERZH': ['7410', '7411',],       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
+            'GENH': ['7580', '7581', '7582'],   # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
+                                                # GANZWHG - total number of apartments in building
+                                                # GAZZI - total number of rooms in building
+            },
+        'assumed_parameters': {
+            'interest_rate': 0.01,
+            'inflation_rate': 0.018,
+            'invest_maturity': 25,
+            'disc_rate': '', 
+            'disc_denom': '', 
+        },
 
+        'rate_operation_cost': 0.01,                # assumed rate of operation cost (of investment cost)
         'NPV_include_wealth_tax': False,            # F: exclude wealth tax from NPV calculation, T: include wealth tax in NPV calculation
-        'smaller_import': True,                     # F: import all data, T: import only a small subset of data for debugging
+        'solkat_house_type_class': [0,],            # list of house type classes to be considered
          }
 
 
 # PACKAGES --------------------------------------------------------------------
 import sys
-if pvalloc_settings['script_run_on_server']:
-    sys.path.append('C:/Models/OptimalPV_RH') 
-elif pvalloc_settings['script_run_on_server']:
-    sys.path.append('D:/RaulHochuli_inuse/OptimalPV_RH')
+sys.path.append(pvalloc_settings['wd_path_laptop']) if pvalloc_settings['script_run_on_server'] else sys.path.append(pvalloc_settings['wd_path_server'])
 
 # external packages
 import os as os
@@ -56,50 +75,57 @@ import winsound
 import subprocess
 import pprint
 
-
 # own packages and functions
-from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
-from data_aggregation.api_electricity_prices import api_electricity_prices
-from data_aggregation.preprepare_data import solkat_spatial_toparquet, gwr_spatial_toparquet, heat_spatial_toparquet, pv_spatial_toparquet, create_spatial_mappings
+import auxiliary_functions
+from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr, format_MASTER_settings
+from pv_allocation.initialization import *
 
 
 
 # SETUP -----------------------------------------------------------------------
 # set working directory
-wd_path = "D:\\RaulHochuli_inuse\\OptimalPV_RH"  if pvalloc_settings['script_run_on_server'] else "C:\Models\OptimalPV_RH"
+wd_path = pvalloc_settings['wd_path_laptop'] if not pvalloc_settings['script_run_on_server'] else pvalloc_settings['wd_path_server']
 data_path = f'{wd_path}_data'
 
 # create directory + log file
-if not os.path.exists(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'):
-    os.makedirs(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}') 
+pvalloc_path = f'{data_path}/output/pvalloc_run'
+if not os.path.exists(pvalloc_path):
+    os.makedirs(pvalloc_path)
+log_name = f'{data_path}/output/pvalloc_log_file.txt'
 
-log_name = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}_log_file.txt'
+# extend settings dict with relevant informations for later functions
+if not not pvalloc_settings['kt_numbers']:
+    pvalloc_settings['bfs_numbers'] = auxiliary_functions.get_bfs_from_ktnr(pvalloc_settings['kt_numbers'], data_path, log_name)
+    print_to_logfile(f' > no. of kt  numbers in selection: {len(pvalloc_settings["kt_numbers"])}', log_name)
+    print_to_logfile(f' > no. of bfs numbers in selection: {len(pvalloc_settings["bfs_numbers"])}', log_name) 
+
+pvalloc_settings['log_file_name'] = log_name
+pvalloc_settings['wd_path'] = wd_path
+pvalloc_settings['data_path'] = data_path
+pvalloc_settings['pvalloc_path'] = pvalloc_path
+pvalloc_settings['disc_rate'] = (pvalloc_settings['assumed_parameters']['interest_rate'] + pvalloc_settings['assumed_parameters']['inflation_rate'] )
+pvalloc_settings['disc_denom'] = np.sum((1+pvalloc_settings['disc_rate'])** np.arange(1, pvalloc_settings['assumed_parameters']['invest_maturity']+1))
+
 chapter_to_logfile(f'start pv_allocation_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
-subchapter_to_logfile(f'pvalloc_settings: \n{pformat(pvalloc_settings)}', log_name)
-
-# adjust "bfs_numbers" to all bfs of a canton are selected
-gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-
-if (isinstance(pvalloc_settings['kt_numbers'], list)) and (not not pvalloc_settings['kt_numbers']): # check if canton selection is a list and not empty
-    print_to_logfile(f' > kt_numbers: {pvalloc_settings["kt_numbers"]}; use the municipality bfs numbers from the following canton numbers', log_name)
-    gm_shp_sub = gm_shp[gm_shp['KANTONSNUM'].isin(pvalloc_settings['kt_numbers'])]
-    pvalloc_settings['bfs_numbers'] = gm_shp_sub['BFS_NUMMER'].unique().tolist()
-elif (isinstance(pvalloc_settings['bfs_numbers'], list)) and (not not pvalloc_settings['bfs_numbers']): # check if bfs selection is a list and not empty
-    print_to_logfile(f' > bfs_numbers: {pvalloc_settings["bfs_numbers"]}; use the following municipality bfs numbers, not cantonal selection specifies', log_name)
-else:
-    print_to_logfile(f' > ERROR: no canton or bfs selection applicables; NOT used any municipality selection', log_name)
-
-# print all selected municipalities as a check
-checkpoint_to_logfile('\n > selected municipalities for pv allocation', log_name, n_tabs_def=1, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
-select_bfs = gm_shp_sub[['NAME', 'BFS_NUMMER', 'KANTONSNUM']].copy()
-for i, r in select_bfs.iterrows():
-    row_data = ', '.join([f'{col}: {r[col]}' for col in select_bfs.columns])
-    checkpoint_to_logfile(f'name: {r["NAME"]} \t BFS: {r["BFS_NUMMER"]} \t KT: {r["KANTONSNUM"]}', log_name, n_tabs_def=2, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
-print_to_logfile(f'\n', log_name)
+formated_pvalloc_settings = format_MASTER_settings(pvalloc_settings)
+print_to_logfile(f'pvalloc_settings: \n{pformat(formated_pvalloc_settings)}', log_name)
 
 
-# IMPORT ----------------------------------------------------------------
-subchapter_to_logfile('data import for pvalloc', log_name)
+
+# INITIALIZATION ----------------------------------------------------------------
+subchapter_to_logfile('initialization: IMPORT PREPREPED DATA & TRANSFORM', log_name)
+topo = import_prepre_AND_create_topology(pvalloc_settings)
+
+subchapter_to_logfile('initialization: CREATE (building) TOPOLOGY', log_name)
+# create_topology(pvalloc_settings, df_list)
+
+subchapter_to_logfile('initialization: CREATE FUTURE TS PARAMETERS', log_name)
+
+
+# ===========================================================================================
+# ===========================================================================================
+# ===========================================================================================
+
 bfs_list = pvalloc_settings['bfs_numbers']
 bfs_list_str = [str(bfs) for bfs in bfs_list]
 
@@ -312,16 +338,30 @@ print("End of script")
 # END
 # -----------------------------------------------------------------------------
 
+# =============================================================================
+# ARCHIVE
+# =============================================================================
 
 
+"""
+# adjust "bfs_numbers" to all bfs of a canton are selected
 
-import pandas as pd
+if (isinstance(pvalloc_settings['kt_numbers'], list)) and (not not pvalloc_settings['kt_numbers']): # check if canton selection is a list and not empty
+    pvalloc_settings['bfs_numbers'] = get_bfs_from_ktnr(pvalloc_settings['kt_numbers'])
+#     print_to_logfile(f' > kt_numbers: {pvalloc_settings["kt_numbers"]}; use the municipality bfs numbers from the following canton numbers', log_name)
+#     gm_shp_sub = gm_shp[gm_shp['KANTONSNUM'].isin(pvalloc_settings['kt_numbers'])]
+#     pvalloc_settings['bfs_numbers'] = gm_shp_sub['BFS_NUMMER'].unique().tolist()
+elif (isinstance(pvalloc_settings['bfs_numbers'], list)) and (not not pvalloc_settings['bfs_numbers']): # check if bfs selection is a list and not empty
+    print_to_logfile(f' > bfs_numbers: {pvalloc_settings["bfs_numbers"]}; use the following municipality bfs numbers, not cantonal selection specifies', log_name)
+else:
+    print_to_logfile(f' > ERROR: no canton or bfs selection applicables; NOT used any municipality selection', log_name)
 
-for id in pvtopo['EGID']:
-    filtered_data = Map_egroof_pv.loc[Map_egroof_pv['EGID'] == id, 'xtf_id'].values
-
-    if len(filtered_data) > 0:
-        xtf_id_value = filtered_data[0]
-        pvtopo.loc[pvtopo['EGID'] == id, 'pv'] = 1
-
+# print all selected municipalities as a check
+checkpoint_to_logfile('\n > selected municipalities for pv allocation', log_name, n_tabs_def=1, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
+select_bfs = gm_shp_sub[['NAME', 'BFS_NUMMER', 'KANTONSNUM']].copy()
+for i, r in select_bfs.iterrows():
+    row_data = ', '.join([f'{col}: {r[col]}' for col in select_bfs.columns])
+    checkpoint_to_logfile(f'name: {r["NAME"]} \t BFS: {r["BFS_NUMMER"]} \t KT: {r["KANTONSNUM"]}', log_name, n_tabs_def=2, show_debug_prints_def=pvalloc_settings['show_debug_prints'])
+print_to_logfile(f'\n', log_name)
+"""
 
