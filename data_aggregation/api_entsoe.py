@@ -42,72 +42,82 @@ def api_entsoe_ahead_elecpri_data(
     print_to_logfile(f'run function: api_pvtarif.py', log_file_name_def=log_file_name_def)
 
 
-    # API query -------------------
-    # url parts for whole query
-    docType = 'documentType=A44'                 # A44: Day-ahead prices
-    in_Domain = 'in_Domain=10YCH-SWISSGRIDZ'  # Switzerland (and other regions / countries ?)
-    out_Domain = 'out_Domain=10YCH-SWISSGRIDZ'
-    periodStart = f'periodStart={year_range_def[0]}01010000' if not smaller_import_def else f'periodStart={year_range_def[0]}12290000'
-    periodEnd =   f'periodEnd={year_range_def[1]}12310000'   if not smaller_import_def else f'periodEnd={year_range_def[1]}12310000'
-    req_url = f'https://web-api.tp.entsoe.eu/api?securityToken={get_entsoe_key()}&{docType}&{in_Domain}&{out_Domain}&{periodStart}&{periodEnd}'      # req_url = f'https://web-api.tp.entsoe.eu/api?securityToken={get_entsoe_key()}&documentType=A44&in_Domain=10YCZ-CEPS-----N&out_Domain=10YCZ-CEPS-----N&periodStart=201612302300&periodEnd=201612312300'
+    # year loop -------------------
+    # necessary because api only ansers 1 year at a time
+    market_elecpri = pd.DataFrame() # empty df to be filled with every loop later
+    year_list = range(year_range_def[0], year_range_def[1]+1)
+    for year in year_list:
 
-    # query
-    checkpoint_to_logfile(f'start api call ENTSO-E, year: {year_range_def[0]} to {year_range_def[1]}', log_file_name_def=log_file_name_def, n_tabs_def = 6)
-    response = requests.get(req_url)
-    response.status_code
-    checkpoint_to_logfile(f'response.status_code: {response.status_code}', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+        # API query -------------------
+        # url parts for whole query
+        docType = 'documentType=A44'                 # A44: Day-ahead prices
+        in_Domain = 'in_Domain=10YCH-SWISSGRIDZ'  # Switzerland (and other regions / countries ?)
+        out_Domain = 'out_Domain=10YCH-SWISSGRIDZ'
+        periodStart = f'periodStart={year}01010000' if not smaller_import_def else f'periodStart={year}12290000'
+        periodEnd =   f'periodEnd={year}12310000'   if not smaller_import_def else f'periodEnd={year}12310000'
+        req_url = f'https://web-api.tp.entsoe.eu/api?securityToken={get_entsoe_key()}&{docType}&{in_Domain}&{out_Domain}&{periodStart}&{periodEnd}'      # req_url = f'https://web-api.tp.entsoe.eu/api?securityToken={get_entsoe_key()}&documentType=A44&in_Domain=10YCZ-CEPS-----N&out_Domain=10YCZ-CEPS-----N&periodStart=201612302300&periodEnd=201612312300'
 
-    # ------------------------------------------------------------------------------------------------------
-    with open(f'{data_path_def}/output/preprep_data/entsoe_response.txt', 'w') as f:
-        f.write(response.text)
+        # query
+        checkpoint_to_logfile(f'start api call ENTSO-E, year: {year}', log_file_name_def=log_file_name_def, n_tabs_def = 6)
+        response = requests.get(req_url)
+        response.status_code
+        checkpoint_to_logfile(f'response.status_code: {response.status_code}', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
 
-    # extract data from xml response
-    root = ET.fromstring(response.text)
-    # Namespace
-    ns = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:0'}
+        # export response to check content
+        with open(f'{data_path_def}/output/preprep_data/entsoe_response.txt', 'w') as f:
+            f.write(response.text)
 
-    # Initialize the result dictionary
-    results_dict = {}
-    currency_list = []
-    price_measurement_unit_list = []
-    in_domain_list = []
+        # extract data from xml response
+        root = ET.fromstring(response.text)
+        ns = {'ns': 'urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:0'}     # Namespace
 
-    resp_timestamp_list = []
-    resp_prices_list = []
+        # Initialize the result dictionary
+        results_dict = {}
+        currency_list = []
+        price_measurement_unit_list = []
+        in_domain_list = []
 
+        resp_timestamp_list = []
+        resp_prices_list = []
+
+        # Iterate over each TimeSeries
+        timeseries_all = root.findall('ns:TimeSeries', ns)
+        if not timeseries_all:
+            raise Exception("No TimeSeries elements found in the response")
+        elif len(timeseries_all) > 1:
+            ts = timeseries_all[0]
     
+        for ts in root.findall('ns:TimeSeries', ns):
+            currency_list.append(ts.find('ns:currency_Unit.name', ns).text)
+            price_measurement_unit_list.append(ts.find('ns:price_Measure_Unit.name', ns).text)
+            in_domain_list.append(ts.find('ns:in_Domain.mRID', ns).text)
 
-    # Iterate over each TimeSeries
-    timeseries_all = root.findall('ns:TimeSeries', ns)
-    ts = timeseries_all[0]
-    for ts in root.findall('ns:TimeSeries', ns):
-        currency_list.append(ts.find('ns:currency_Unit.name', ns).text)
-        price_measurement_unit_list.append(ts.find('ns:price_Measure_Unit.name', ns).text)
-        in_domain_list.append(ts.find('ns:in_Domain.mRID', ns).text)
+            period = ts.find('ns:Period', ns)
+            time_interval = period.find('ns:timeInterval', ns)
+            start_time = time_interval.find('ns:start', ns).text
+            end_time = time_interval.find('ns:end', ns).text
+            
+            points_all = period.findall('ns:Point', ns)
+            start_time_dt = datetime.fromisoformat(start_time)
+            point = points_all[0]
 
-        period = ts.find('ns:Period', ns)
-        time_interval = period.find('ns:timeInterval', ns)
-        start_time = time_interval.find('ns:start', ns).text
-        end_time = time_interval.find('ns:end', ns).text
-        
-        points_all = period.findall('ns:Point', ns)
-        start_time_dt = datetime.fromisoformat(start_time)
-        point = points_all[0]
+            for point in period.findall('ns:Point', ns):
+                position = point.find('ns:position', ns).text
+                price_amount = point.find('ns:price.amount', ns).text
+                current_timestamp = start_time_dt + timedelta(hours=int(position)-1)
 
-        for point in period.findall('ns:Point', ns):
-            position = point.find('ns:position', ns).text
-            price_amount = point.find('ns:price.amount', ns).text
-            current_timestamp = start_time_dt + timedelta(hours=int(position)-1)
+                # time_stamp_prices.append({
+                #     'timestamp': current_timestamp,
+                #     'price_amount': price_amount})
+            # timestamps_prices.append((current_timestamp.isoformat(), price_amount))
+            resp_timestamp_list.append(current_timestamp)
+            resp_prices_list.append(price_amount)
 
-            # time_stamp_prices.append({
-            #     'timestamp': current_timestamp,
-            #     'price_amount': price_amount})
-        # timestamps_prices.append((current_timestamp.isoformat(), price_amount))
-        resp_timestamp_list.append(current_timestamp)
-        resp_prices_list.append(price_amount)
+        # create dataframe
+        market_elecpri_year = pd.DataFrame({'timestamp': resp_timestamp_list, 'price': resp_prices_list})    
 
-    # create dataframe
-    market_elecpri = pd.DataFrame({'timestamp': resp_timestamp_list, 'price': resp_prices_list})    
+        # merge with existing data
+        market_elecpri = pd.concat([market_elecpri, market_elecpri_year], axis=0)
 
     col1 = f'{"_".join(list(set(in_domain_list)))}'
     col2 = f'{"_".join(list(set(currency_list)))}_per_{"_".join(list(set(price_measurement_unit_list)))}'
