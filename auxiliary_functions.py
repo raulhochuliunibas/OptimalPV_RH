@@ -90,6 +90,16 @@ def get_bfs_from_ktnr(ktnr_list, data_path, log_name):
     return bfs_list
 
 
+def format_MASTER_settings(settings_dict):
+    formatted_settings = {}
+    for key, value in settings_dict.items():
+        if isinstance(value, list):
+            formatted_settings[key] = ', '.join(map(str, value))
+        elif isinstance(value, dict):
+            formatted_settings[key] = format_MASTER_settings(value)
+        else:
+            formatted_settings[key] = value
+    return formatted_settings
 
 
 
