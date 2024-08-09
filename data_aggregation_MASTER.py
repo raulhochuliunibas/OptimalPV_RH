@@ -11,21 +11,21 @@
 
 # SETTIGNS --------------------------------------------------------------------
 dataagg_settings = {
-        'name_dir_export': None,            # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
-        'script_run_on_server': False,      # F: run on private computer, T: run on server
-        'smaller_import': True,             # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
-        'show_debug_prints': True,          # F: certain print statements are omitted, T: includes print statements that help with debugging
-        'wd_path_laptop': 'C:/Models/OptimalPV_RH', # path to the working directory on Raul's laptop
+        'name_dir_export': 'preprep_BSBL_17to23',       # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
+        'script_run_on_server': False,                  # F: run on private computer, T: run on server
+        'smaller_import': False,                	    # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
+        'show_debug_prints': True,                      # F: certain print statements are omitted, T: includes print statements that help with debugging
+        'wd_path_laptop': 'C:/Models/OptimalPV_RH',     # path to the working directory on Raul's laptop
         'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH', # path to the working directory on the server
 
-        'kt_numbers': [12,13], #[1,2,3],#[12, 13,],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
-        'bfs_numbers': [],  # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        'year_range': [2022, 2023],             # range of years to import
-        # switch on/off parts of aggregation
-        'reimport_api_data': True,         # F: use existing parquet files, T: recreate parquet files in data prep        
-        'rerun_localimport_and_mappings': True,     # F: use existing parquet files, T: recreate parquet files in data prep
-        'reextend_fixed_data': True,        # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again       
-        
+        'kt_numbers': [12,13], #[1,2,3],#[12, 13,],     # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
+        'bfs_numbers': [],                              # list of municipalites to select for allocation (only used if kt_numbers == 0)
+        'year_range': [2023, 2023],                     # range of years to import
+                                            # switch on/off parts of aggregation
+        'reimport_api_data': False,                      # F: use existing parquet files, T: recreate parquet files in data prep        
+        'rerun_localimport_and_mappings': True,         # F: use existing parquet files, T: recreate parquet files in data prep
+        'reextend_fixed_data': True,                    # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again       
+                                            # settings for gwr selection
         'gwr_selection_specs': {
             'building_cols': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
                         'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
@@ -34,12 +34,11 @@ dataagg_settings = {
             'DEMAND_proxy': 'GAREA',
             'GSTAT': ['1004',],                 # GSTAT - 1004: only existing, fully constructed buildings
             'GKLAS': ['1110',],                 # GKLAS - 1110: only 1 living space per building
-            'GBAUJ_minmax': [1950, 2023],   # GBAUJ_minmax: range of years of construction
+            'GBAUJ_minmax': [1950, 2023],       # GBAUJ_minmax: range of years of construction
             'GWAERZH': ['7410', '7411',],       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
             'GENH': ['7580', '7581', '7582'],   # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
                                                 # GANZWHG - total number of apartments in building
                                                 # GAZZI - total number of rooms in building
-
             },
         }
 
@@ -61,7 +60,7 @@ from pprint import pprint, pformat
 
 # own packages and functions
 import auxiliary_functions
-from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr, format_MASTER_settings
 
 from data_aggregation.api_electricity_prices import api_electricity_prices_data
 from data_aggregation.sql_gwr import sql_gwr_data
@@ -81,10 +80,8 @@ data_path = f'{wd_path}_data'
 preprepd_path = f'{data_path}/output/preprep_data' 
 if not os.path.exists(preprepd_path):
     os.makedirs(preprepd_path)
-
 log_name = f'{data_path}/output/prepre_data_log.txt'
-chapter_to_logfile(f'start data_aggregation_MASTER', log_name, overwrite_file=True)
-print_to_logfile(f' > settings: \n{pformat(dataagg_settings)}', log_name)
+
 
 # get bfs numbers from canton selection if applicable
 if not not dataagg_settings['kt_numbers']: 
@@ -96,6 +93,10 @@ if not not dataagg_settings['kt_numbers']:
 dataagg_settings['log_file_name'] = log_name
 dataagg_settings['wd_path'] = wd_path
 dataagg_settings['data_path'] = data_path
+
+chapter_to_logfile(f'start data_aggregation_MASTER', log_name, overwrite_file=True)
+formated_dataagg_settings = format_MASTER_settings(dataagg_settings)
+print_to_logfile(f' > settings: \n{pformat(formated_dataagg_settings)}', log_name)
 
 
 
@@ -136,10 +137,10 @@ pq_files_rerun = dataagg_settings['rerun_localimport_and_mappings']
 
 if not pq_dir_exists_TF or pq_files_rerun:
     subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', log_name)
-    # local_data_to_parquet_AND_create_spatial_mappings(dataagg_settings_def = dataagg_settings)
+    local_data_to_parquet_AND_create_spatial_mappings(dataagg_settings_def = dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: IMPORT DEMAND TS + match series HOUSES', log_name)
-    # import_demand_TS_AND_match_households(dataagg_settings_def = dataagg_settings)
+    import_demand_TS_AND_match_households(dataagg_settings_def = dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: IMPORT METEO SUNSHINE TS', log_name)
     import_meteo_data(dataagg_settings_def = dataagg_settings)
@@ -160,14 +161,23 @@ if not cost_df_exists_TF or reextend_fixed_data:
     
 
    
-# COPY AGGREGATED DATA ---------------------------------------------------------------
+# COPY & RENAME AGGREGATED DATA FOLDER ---------------------------------------------------------------
 # > not to overwrite completed preprep folder while debugging 
 chapter_to_logfile(f'END data_aggregation_MASTER', log_name, overwrite_file=False)
 
 if dataagg_settings['name_dir_export'] is None:    
-
     today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     dirs_preprep_data_DATE = f'{data_path}/output/preprep_data_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
+    if not os.path.exists(dirs_preprep_data_DATE):
+        os.makedirs(dirs_preprep_data_DATE)
+    file_to_move = glob.glob(f'{data_path}/output/preprep_data/*')
+    for f in file_to_move:
+        shutil.copy(f, dirs_preprep_data_DATE)
+    shutil.copy(glob.glob(f'{data_path}/output/prepre*_log.txt')[0], dirs_preprep_data_DATE)
+
+elif dataagg_settings['name_dir_export'] is not None:
+    today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    dirs_preprep_data_DATE = f'{data_path}/output/{dataagg_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
     if not os.path.exists(dirs_preprep_data_DATE):
         os.makedirs(dirs_preprep_data_DATE)
     file_to_move = glob.glob(f'{data_path}/output/preprep_data/*')
@@ -179,30 +189,3 @@ if dataagg_settings['name_dir_export'] is None:
 # -----------------------------------------------------------------------------
 # END 
 # -----------------------------------------------------------------------------
-
-
-
-
-
-
-###############################
-###############################
-# BOOKMARK > delete in March 2024
-
-
-
-###############################
-###############################
-
-
-###############################
-###############################
-# BOOKMARK > delete in February 2024
-
-
-
-###############################
-###############################
-# BOOKMARK > delete in July 2024
-###############################
-###############################

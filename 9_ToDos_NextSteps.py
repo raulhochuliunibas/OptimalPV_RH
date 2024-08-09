@@ -23,8 +23,6 @@
 #      > For now just imported the shortwave radiation data (visible sunlight, amongst other columns) for Basel SBB (?)
 #      > only. Will add more weather stations later
 
-
-
 # TODO: B- TS electricity market price (maybe not relevant)
 
 # TODO: Z - heat demand data (not relevant if I have demand TS)
@@ -34,6 +32,35 @@
 # OK B - remove unneeded mapping functions (e.g. create_spatial_mappings, solkat_spatial_toparquet, etc.).
 
 # EXTEND WITH TIME FIXED DATA --------
-# TODO: A - remove unnecessary CUMSUM function for PV installation cost, find a way to export and store cost function params
+# OK A - remove unnecessary CUMSUM function for PV installation cost, find a way to export and store cost function params
 
 
+# -----------------------------------------------------------------------------
+# data_aggreation_MASTER.py 
+# -----------------------------------------------------------------------------
+
+
+# INITIALIZATION --------
+
+# - func to import and transform all prepreped data
+#   > return all relevant dfs
+# - func to create pv topo dict
+#   > return dict
+# BOOKMARK - The Map_solkategid_pv appears to be empty, so I have to recheck data aggregation for that part of the code
+
+# - func to create the feedin tarif TS (empty)
+#   > return TS
+# - func to attach all roof partition combos to dict
+#   > return dict
+
+# - define Construction capacity per month
+
+# ALLOCATION
+# - loop for month
+
+#   - func to update pv topo dict
+#    . 
+#   > return dict   
+
+#   - func to update feedin premium
+#   > return premium TS
