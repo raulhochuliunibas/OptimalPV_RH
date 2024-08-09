@@ -181,23 +181,24 @@ def local_data_to_parquet_AND_create_spatial_mappings(
     solkat_egidunion.reset_index(inplace = True)
     solkat_egidunion, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, solkat_egidunion, pv_gdf)
     Map_solkategid_pv = gpd.sjoin(solkat_egidunion, pv_gdf, how="left", predicate="within")
-    # Map_solkategid_pv = keep_columns(['EGID','xtf_id', ], Map_solkategid_pv)
     Map_solkategid_pv = Map_solkategid_pv.loc[:,['EGID','xtf_id', ]]
+    Map_solkategid_pv = Map_solkategid_pv.dropna()
 
     Map_solkategid_pv.to_parquet(f'{data_path_def}/output/preprep_data/Map_solkategid_pv.parquet')
     Map_solkategid_pv.to_csv(f'{data_path_def}/output/preprep_data/Map_solkategid_pv.csv', sep=';', index=False)
     checkpoint_to_logfile(f'exported Map_egid_pv', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
 
     # MAP: solkat_egid > heat id ---------------------------------------------------------------------
-    solkat_egidunion.reset_index(inplace = True)
-    solkat_egidunion, heat_gdf = set_crs_to_gm_shp(gm_shp_gdf, solkat_egidunion, heat_gdf)
-    Map_solkategid_heat = gpd.sjoin(solkat_egidunion, heat_gdf, how="left", predicate="within")
-    # Map_solkategid_heat = keep_columns(['EGID','NEEDHOME', ], Map_solkategid_heat)
-    Map_solkategid_heat = Map_solkategid_heat.loc[:,['EGID','NEEDHOME', ]]
+    if False:
+        solkat_egidunion.reset_index(inplace = True)
+        solkat_egidunion, heat_gdf = set_crs_to_gm_shp(gm_shp_gdf, solkat_egidunion, heat_gdf)
+        Map_solkategid_heat = gpd.sjoin(solkat_egidunion, heat_gdf, how="left", predicate="within")
+        # Map_solkategid_heat = keep_columns(['EGID','NEEDHOME', ], Map_solkategid_heat)
+        Map_solkategid_heat = Map_solkategid_heat.loc[:,['EGID','NEEDHOME', ]]
 
-    Map_solkategid_heat.to_parquet(f'{data_path_def}/output/preprep_data/Map_solkategid_heat.parquet')
-    Map_solkategid_heat.to_csv(f'{data_path_def}/output/preprep_data/Map_solkategid_heat.csv', sep=';', index=False)
-    checkpoint_to_logfile(f'exported Map_egid_heat', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        Map_solkategid_heat.to_parquet(f'{data_path_def}/output/preprep_data/Map_solkategid_heat.parquet')
+        Map_solkategid_heat.to_csv(f'{data_path_def}/output/preprep_data/Map_solkategid_heat.csv', sep=';', index=False)
+        checkpoint_to_logfile(f'exported Map_egid_heat', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
 
     # MAP: solkat_egidunion > geometry ---------------------------------------------------------------------
     GEOM_solkat_union = solkat_egidunion.copy()
@@ -209,9 +210,10 @@ def local_data_to_parquet_AND_create_spatial_mappings(
     GEOM_pv.to_file(f'{data_path_def}/output/preprep_data/GEOM_pv.geojson', driver='GeoJSON')
 
     # MAP: heat > geometry ---------------------------------------------------------------------
-    # GEOM_heat = keep_columns(['NEEDHOME', 'geometry'], heat_gdf).copy()
-    GEOM_heat = heat_gdf.loc[:,['NEEDHOME', 'geometry']]
-    GEOM_heat.to_file(f'{data_path_def}/output/preprep_data/GEOM_heat.geojson', driver='GeoJSON')
+    if False: 
+        # GEOM_heat = keep_columns(['NEEDHOME', 'geometry'], heat_gdf).copy()
+        GEOM_heat = heat_gdf.loc[:,['NEEDHOME', 'geometry']]
+        GEOM_heat.to_file(f'{data_path_def}/output/preprep_data/GEOM_heat.geojson', driver='GeoJSON')
 
 
 
