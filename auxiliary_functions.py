@@ -83,6 +83,7 @@ def get_bfs_from_ktnr(ktnr_list, data_path, log_name):
 
     if (isinstance(ktnr_list, list)) and (not not ktnr_list):
         gm_shp_sub = gm_shp[gm_shp['KANTONSNUM'].isin(ktnr_list)]
+        gm_shp_sub['BFS_NUMMER'] = gm_shp_sub['BFS_NUMMER'].astype(int).astype(str)
         bfs_list = gm_shp_sub['BFS_NUMMER'].unique().tolist()
     else: 
         print_to_logfile(f' > ERROR: no canton or bfs selection applicables; NOT used any municipality selection', log_name)
