@@ -88,7 +88,7 @@ def sql_gwr_data(
     cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers}) AND GKLAS IN ({gklas_values_str})')
     sqlrows = cur.fetchall()
     conn.close()
-    checkpoint_to_logfile('sql query done', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    checkpoint_to_logfile('sql query BUILDING done', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     gwr_building_df = pd.DataFrame(sqlrows, columns=query_columns)
     gwr_building_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_building_df.csv', sep=';', index=False)
@@ -109,7 +109,7 @@ def sql_gwr_data(
     cur.execute(f'SELECT {query_columns_str} FROM dwelling')
     sqlrows = cur.fetchall()
     conn.close()
-    checkpoint_to_logfile('sql query done', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    checkpoint_to_logfile('sql query DWELLING done', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     gwr_dwelling_df = pd.DataFrame(sqlrows, columns=query_columns)
 
