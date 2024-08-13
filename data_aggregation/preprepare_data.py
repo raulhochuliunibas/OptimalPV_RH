@@ -34,6 +34,9 @@ def local_data_to_parquet_AND_create_spatial_mappings(
     log_file_name_def = dataagg_settings_def['log_file_name']
     wd_path_def = dataagg_settings_def['wd_path']
     data_path_def = dataagg_settings_def['data_path']
+
+    gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
+    solkat_selection_specs_def = dataagg_settings_def['solkat_selection_specs']
     print_to_logfile(f'run function: local_data_to_parquet_AND_create_spatial_mappings.py', log_file_name_def = log_file_name_def)
 
     # import sys
@@ -61,34 +64,12 @@ def local_data_to_parquet_AND_create_spatial_mappings(
             checkpoint_to_logfile('sjoin complete', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
             dele_cols = ['index_right'] + [col for col in gm_shp_gdf.columns if col not in keep_cols]
             gdf.drop(columns = dele_cols, inplace = True)
+            if 'BFS_NUMMER' in gdf.columns:
+                # transform BFS_NUMMER to str, np.nan to ''
+                gdf['BFS_NUMMER'] = gdf['BFS_NUMMER'].apply(lambda x: '' if pd.isna(x) else str(int(x)))
 
             return gdf 
-
-        # SOLAR KATASTER --------------------------------------------------------------------
-        if not smaller_import_def:  
-            solkat_all_gdf = gpd.read_file(f'{data_path_def}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
-        elif smaller_import_def:
-            solkat_all_gdf = gpd.read_file(f'{data_path_def}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 1000)
-        checkpoint_to_logfile(f'import solkat, {solkat_all_gdf.shape[0]} rows (smaller_import: {smaller_import_def})', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-
-        # attach bfs
-        solkat_all_gdf = attach_bfs_to_spatial_data(solkat_all_gdf, gm_shp_gdf, )
-
-        # drop unnecessary columns --------
-        # transformations --------
-        solkat_all_gdf = solkat_all_gdf.rename(columns={'GWR_EGID': 'EGID'})
-        solkat_all_gdf['EGID'] = solkat_all_gdf['EGID'].replace('nan', np.nan)  # convert EGID into numbers with no decimal points
-        solkat_all_gdf['EGID'] = solkat_all_gdf['EGID'].astype('Int64')
         
-
-        # filter by bfs_nubmers_def --------
-        solkat_gdf = solkat_all_gdf[solkat_all_gdf['BFS_NUMMER'].isin(bfs_number_def)]
-
-        # export --------
-        solkat_gdf.to_parquet(f'{data_path_def}/output/preprep_data/solkat.parquet')
-        solkat_gdf.to_csv(f'{data_path_def}/output/preprep_data/solkat.csv', sep=';', index=False)
-        print_to_logfile(f'exported solkat data', log_file_name_def = log_file_name_def)
-
 
         # HEATING + COOLING DEMAND ---------------------------------------------------------------------
         if False: # Heat data most likely not needed because demand TS is available
@@ -122,19 +103,49 @@ def local_data_to_parquet_AND_create_spatial_mappings(
             pv_all_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
         checkpoint_to_logfile(f'import pv, {pv_all_gdf.shape[0]} rows (smaller_import: {smaller_import_def})', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-        # attach bfs
-        pv_all_gdf = attach_bfs_to_spatial_data(pv_all_gdf, gm_shp_gdf)
-
-        # drop unnecessary columns --------
-        # transformations --------
-
         # filter by bfs_nubmers_def --------
+        pv_all_gdf = attach_bfs_to_spatial_data(pv_all_gdf, gm_shp_gdf)
         pv_gdf = pv_all_gdf[pv_all_gdf['BFS_NUMMER'].isin(bfs_number_def)]
 
         # export --------
         pv_gdf.to_parquet(f'{data_path_def}/output/preprep_data/pv.parquet')
         pv_gdf.to_csv(f'{data_path_def}/output/preprep_data/pv.csv', sep=';', index=False)
         print_to_logfile(f'exported pv data', log_file_name_def = log_file_name_def)
+
+
+        # GWR KATASTER --------------------------------------------------------------------
+        gwr_all = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
+
+        # transform to gdf
+        gwr = gwr_all.loc[gwr_all['GGDENR'].isin(bfs_number_def) ].copy()
+        gwr = gwr.loc[(gwr['GKODE'] != '') & (gwr['GKODN'] != '')]
+        gwr[['GKODE', 'GKODN']] = gwr[['GKODE', 'GKODN']].astype(float)
+        gwr['geometry'] = gwr.apply(lambda row: Point(row['GKODE'], row['GKODN']), axis=1)
+        gwr_gdf = gpd.GeoDataFrame(gwr, geometry='geometry')
+
+
+        # SOLAR KATASTER --------------------------------------------------------------------
+        if not smaller_import_def:  
+            solkat_all_gdf = gpd.read_file(f'{data_path_def}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH')
+        elif smaller_import_def:
+            solkat_all_gdf = gpd.read_file(f'{data_path_def}/input/solarenergie-eignung-daecher_2056.gdb/SOLKAT_DACH_20230221.gdb', layer ='SOLKAT_CH_DACH', rows = 4000)
+        checkpoint_to_logfile(f'import solkat, {solkat_all_gdf.shape[0]} rows (smaller_import: {smaller_import_def})', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+
+
+        # filter by bfs_nubmers_def --------
+        solkat_all_gdf = attach_bfs_to_spatial_data(solkat_all_gdf, gm_shp_gdf, )
+        solkat_all_gdf['BFS_NUMMER'] = solkat_all_gdf['BFS_NUMMER'].astype(int).astype(str)
+        solkat_gdf = solkat_all_gdf[solkat_all_gdf['BFS_NUMMER'].isin(bfs_number_def)]
+
+        # transformations --------
+        solkat_gdf = solkat_gdf.rename(columns={'GWR_EGID': 'solkat_EGID'})
+        solkat_gdf.dtypes
+        solkat_gdf['solkat_EGID'] = solkat_gdf['solkat_EGID'].apply(lambda x: '' if pd.isna(x) else str(int(x))) # convert EGID into str numbers and replace nan with '' empty string
+
+        # export --------
+        solkat_gdf.to_parquet(f'{data_path_def}/output/preprep_data/solkat.parquet')
+        solkat_gdf.to_csv(f'{data_path_def}/output/preprep_data/solkat.csv', sep=';', index=False)
+        print_to_logfile(f'exported solkat data', log_file_name_def = log_file_name_def)
 
 
 
@@ -148,7 +159,20 @@ def local_data_to_parquet_AND_create_spatial_mappings(
         dele_cols = [col for col in gdf.columns if col not in keep_cols]
         gdf.drop(columns = dele_cols, inplace = True)
         return gdf
+
+
+    # MAP: solkat_dfuid > gwr_egid ---------------------------------------------------------------------
+    # attach EGID from GWR data to SOLKAT because solkat EGIDs are largely missing (much aboe 10%)
+    buffer = solkat_selection_specs_def['GWR_EGID_buffer_size']
+    col_partition_union = solkat_selection_specs_def['col_partition_union']
+
+    print_to_logfile(f'\nGWR_EGID in SOLKAT is largely missing (much above 10%), or faulty (1 EGIDs for multiple houses, contrary to GWR).' , log_file_name_def = log_file_name_def)
+    print_to_logfile(f'That is why the roof unions are only considered for overlapping SB_UUIDs and buffered GWR Points', log_file_name_def = log_file_name_def)
+    print_to_logfile(f' Applying a buffer of {buffer}m to GWR points to increase the overlap direct neighboring partitions (e.g. Giebeldaecher)', log_file_name_def = log_file_name_def)
     
+    checkpoint_to_logfile(f'n of solkat[GWR_EGID] == NaN: {solkat_gdf.loc[solkat_gdf["solkat_EGID"].isna()].shape[0]}', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+    checkpoint_to_logfile(f'> {round(solkat_gdf.loc[solkat_gdf["solkat_EGID"] == ""].shape[0] / solkat_gdf.shape[0] *100, 2)}% of solkat rows are missing EGID (% of roof partitions)', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
     def set_crs_to_gm_shp(gdf_CRS, gdf_a, gdf_b = None):
         gdf_a.set_crs(gdf_CRS.crs, allow_override=True, inplace=True)
         if gdf_b is not None:
@@ -158,35 +182,139 @@ def local_data_to_parquet_AND_create_spatial_mappings(
             return gdf_a
         if gdf_b is not None:
             return gdf_a, gdf_b
-          
-    # Create House Shapes ---------------------------------------------------------------------
-    solkat_gdf_mapping = solkat_gdf.copy()
-    solkat_gdf_mapping = set_crs_to_gm_shp(gm_shp_gdf, solkat_gdf_mapping)
-    # solkat_gdf_mapping = keep_columns(['SB_UUID', 'EGID', 'DF_NUMMER', 'geometry'], solkat_gdf_mapping)
-    solkat_gdf_mapping = solkat_gdf_mapping.loc[:,['SB_UUID', 'EGID', 'DF_NUMMER', 'geometry']]
-    solkat_union_srs = solkat_gdf_mapping.groupby('EGID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
-    solkat_egidunion = gpd.GeoDataFrame(solkat_union_srs, geometry='geometry')
 
 
-    # MAP: solkat_egid > solkat_sbuuid ---------------------------------------------------------------------
-    Map_solkategid_sbuuid = solkat_gdf_mapping[['SB_UUID', 'EGID']].drop_duplicates().copy()
-    Map_solkategid_sbuuid.dropna(subset = ['EGID'], inplace = True)
-    Map_solkategid_sbuuid = Map_solkategid_sbuuid.sort_values(by = ['EGID', 'SB_UUID'])
+    # Build unions with SB_UUIDs --------
+    solkat_gdf = solkat_gdf.loc[:,['SB_UUID', 'DF_NUMMER', 'DF_UID', 'BFS_NUMMER', 'geometry']]
+    solkat_sbuuid_union = solkat_gdf.groupby(col_partition_union)['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
+    solkat_sbuuid_gdf = gpd.GeoDataFrame(solkat_sbuuid_union, geometry='geometry').reset_index() 
 
-    Map_solkategid_sbuuid.to_parquet(f'{data_path_def}/output/preprep_data/Map_solkategid_sbuuid.parquet')
-    Map_solkategid_sbuuid.to_csv(f'{data_path_def}/output/preprep_data/Map_solkategid_sbuuid.csv', sep=';', index=False)
-    checkpoint_to_logfile(f'exported Map_egid_sbuuid', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+    # attach GWR EGID to SOLKAT by SB_UUID --------
+    gwr_buff_gdf = gwr_gdf.loc[gwr_gdf['GGDENR'].isin(solkat_gdf['BFS_NUMMER'].unique())].copy()
+    gwr_buff_gdf.set_crs("EPSG:32632", allow_override=True, inplace=True)
+    gwr_buff_gdf['geometry'] = gwr_buff_gdf['geometry'].buffer(buffer)
+    gwr_buff_gdf, solkat_sbuuid_gdf = set_crs_to_gm_shp(gm_shp_gdf, gwr_buff_gdf, solkat_sbuuid_gdf)
+    checkpoint_to_logfile(f'gwr_gdf.crs == solkat_sbuuid_gdf.crs: {gwr_buff_gdf.crs == solkat_sbuuid_gdf.crs}', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+    solkat_sbuuid_gdf = gpd.sjoin(solkat_sbuuid_gdf, gwr_buff_gdf, how="left", predicate="intersects")
+    solkat_sbuuid_gdf.drop(columns = ['index_right'] + [col for col in gwr_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
+    checkpoint_to_logfile(f'sjoin completed', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+    
+    # one unique EGID per one or multiple SB_UUID 
+    submap_oneSBUUID = solkat_sbuuid_gdf.copy()
+    submap_oneSBUUID.dropna(subset = ['EGID'], inplace = True)
+    unique_sbuuid = submap_oneSBUUID['SB_UUID'].unique()
+    submap_oneSBUUID = submap_oneSBUUID.loc[submap_oneSBUUID['SB_UUID'].isin(unique_sbuuid)]
+    submap_oneSBUUID.rename(columns = {'EGID': 'EGID_oneSBUUID'}, inplace = True)
+
+    # multip EGID per one SBUUID 
+    submap_multipEGID = solkat_sbuuid_gdf.copy()
+    submap_multipEGID.dropna(subset = ['EGID'], inplace = True)
+    duplicated_sbuuid = submap_multipEGID['SB_UUID'][submap_multipEGID['SB_UUID'].duplicated(keep=False)]
+    submap_multipEGID = submap_multipEGID[submap_multipEGID['SB_UUID'].isin(duplicated_sbuuid)]
+
+    solkat_multipEGID_subgdf = solkat_gdf.loc[solkat_gdf['SB_UUID'].isin(duplicated_sbuuid)].copy()
+    gwr_buff_gdf, solkat_multipEGID_subgdf = set_crs_to_gm_shp(gm_shp_gdf, gwr_buff_gdf, solkat_multipEGID_subgdf)
+    solkat_dfuid_gdf =  gpd.sjoin(solkat_multipEGID_subgdf, gwr_buff_gdf, how="left", predicate="intersects")
+    solkat_dfuid_gdf.drop(columns = ['index_right'] + [col for col in gwr_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
+    checkpoint_to_logfile(f'sjoin by DF_UID completed', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+    solkat_dfuid_gdf.rename(columns = {'EGID': 'EGID_dfuid'}, inplace = True)
+
+    # merge sub_gdfs to one single mapping gdf --------
+    Map_solkatdfuid_egid = solkat_gdf.loc[:,['DF_UID', 'DF_NUMMER', 'SB_UUID']].copy()
+    Map_solkatdfuid_egid = Map_solkatdfuid_egid.merge(submap_oneSBUUID.loc[:,['SB_UUID', 'EGID_oneSBUUID']], how = 'left', on = 'SB_UUID')
+    Map_solkatdfuid_egid = Map_solkatdfuid_egid.merge(solkat_dfuid_gdf.loc[:,['DF_UID', 'EGID_dfuid']], how = 'left', on = 'DF_UID')
+
+    Map_solkatdfuid_egid['EGID'] = np.where(Map_solkatdfuid_egid['EGID_oneSBUUID'].notna(), Map_solkatdfuid_egid['EGID_oneSBUUID'], Map_solkatdfuid_egid['EGID_dfuid'])
+    Map_solkatdfuid_egid.drop(columns = ['EGID_oneSBUUID', 'EGID_dfuid'], inplace = True)
+    print_to_logfile(f'attached buffered EGID based one SB_UUID mapping to DF_UID where ever possible', log_file_name_def )
+    print_to_logfile(f'In case of double EGIDs per SB_UUID, the buffered EGID from GWR directly with DF_UID', log_file_name_def )
+    print_to_logfile(f'\t => EGID mapping for {Map_solkatdfuid_egid["EGID"].notna().sum()} of {Map_solkatdfuid_egid.shape[0]} roof partitions ({(Map_solkatdfuid_egid["EGID"].notna().sum()/Map_solkatdfuid_egid.shape[0])*100} %)', log_file_name_def )
+
+    # export --------
+    Map_solkatdfuid_egid.to_parquet(f'{data_path_def}/output/preprep_data/Map_solkatdfuid_egid.parquet')
+    Map_solkatdfuid_egid.to_csv(f'{data_path_def}/output/preprep_data/Map_solkatdfuid_egid.csv', sep=';', index=False)
+    checkpoint_to_logfile(f'exported Map_solkatdfuid_egid', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+    # SHP exports!
+    if False: 
+        if os.path.exists(f'{data_path_def}/output/preprep_data_shp') == False:
+            os.makedirs(f'{data_path_def}/output/preprep_data_shp')
+
+        gwr_small_gdf = gwr_gdf.loc[gwr_gdf['GGDENR'].isin(solkat_gdf['BFS_NUMMER'].unique())].copy()
+        gwr_small_gdf.to_file(f'{data_path_def}/output/gwr_gdf.shp')
+        checkpoint_to_logfile(f'exported gwr_gdf', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        gwr_buff_gdf.to_file(f'{data_path_def}/output/gwr_buff_gdf.shp')
+        checkpoint_to_logfile(f'exported gwr_buff_gdf', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        if smaller_import_def: 
+            solkat_gdf.to_file(f'{data_path_def}/output/solkat_gdf.shp')
+            checkpoint_to_logfile(f'exported solkat_gdf', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+        solkat_sbuuid_gdf.to_file(f'{data_path_def}/output/solkat_sbuuid_gdf.shp')
+        checkpoint_to_logfile(f'exported solkat_sbuuid_gdf', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        for i in range(4):
+            winsound.Beep(500, 500)
+        print('exported shp files')
+
+
+    # UPDATE: solkat by gwr_egid ---------------------------------------------------------------------
+    solkat_pq = solkat_all_gdf[solkat_all_gdf['BFS_NUMMER'].isin(bfs_number_def)].copy()
+    solkat_pq = solkat_pq.merge(Map_solkatdfuid_egid.loc[:,['DF_UID', 'EGID']], how = 'left', on = 'DF_UID')
+    solkat_pq.to_parquet(f'{data_path_def}/output/preprep_data/solkat.parquet')
+    solkat_pq.to_csv(f'{data_path_def}/output/preprep_data/solkat.csv', sep=';', index=False)
+    checkpoint_to_logfile(f'exported updated solkat_gdf (w EGID)', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+    
 
     # MAP: solkat_egid > pv id ---------------------------------------------------------------------
-    solkat_egidunion.reset_index(inplace = True)
-    solkat_egidunion, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, solkat_egidunion, pv_gdf)
-    Map_solkategid_pv = gpd.sjoin(solkat_egidunion, pv_gdf, how="left", predicate="within")
+    # create shape unions now based on EGID, to get highest possible match and accuracy in overlap with pv installations
+    solkat_egid_union = solkat_gdf.copy()
+    solkat_egid_union = solkat_egid_union.merge(Map_solkatdfuid_egid, how = 'left', on = 'DF_UID')
+    solkat_egid_union = solkat_egid_union.groupby('EGID')['geometry'].apply(lambda x: gpd.GeoSeries(x).unary_union)
+    solkat_egid_gdf = gpd.GeoDataFrame(solkat_egid_union, geometry='geometry').reset_index()
+
+    solkat_egid_gdf, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, solkat_egid_gdf, pv_gdf)
+    Map_solkategid_pv = gpd.sjoin(solkat_egid_gdf, pv_gdf, how="left", predicate="within")
     Map_solkategid_pv = Map_solkategid_pv.loc[:,['EGID','xtf_id', ]]
-    Map_solkategid_pv = Map_solkategid_pv.dropna()
 
     Map_solkategid_pv.to_parquet(f'{data_path_def}/output/preprep_data/Map_solkategid_pv.parquet')
     Map_solkategid_pv.to_csv(f'{data_path_def}/output/preprep_data/Map_solkategid_pv.csv', sep=';', index=False)
     checkpoint_to_logfile(f'exported Map_egid_pv', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+
+    # MAP: solkat_ALL > geometry ---------------------------------------------------------------------
+    GEOM_solkat = solkat_gdf.copy()
+    GEOM_solkat.to_file(f'{data_path_def}/output/preprep_data/GEOM_solkat.geojson', driver='GeoJSON')
+    checkpoint_to_logfile(f'exported GEOM_solkat', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+    GEOM_solkatdfuid = solkat_gdf.copy()
+    nonNA_dfuid = Map_solkatdfuid_egid.dropna(subset = ['EGID'])['DF_UID'].unique()
+    GEOM_solkatdfuid = GEOM_solkatdfuid.loc[GEOM_solkatdfuid['DF_UID'].isin(nonNA_dfuid)]
+    GEOM_solkatdfuid.to_file(f'{data_path_def}/output/preprep_data/GEOM_solkatdfuid.geojson', driver='GeoJSON')
+    checkpoint_to_logfile(f'exported GEOM_solkatdfuid', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+
+    # MAP: GWR > geometry ---------------------------------------------------------------------
+    GEOM_gwr = gwr_gdf.copy()
+    GEOM_gwr.to_file(f'{data_path_def}/output/preprep_data/GEOM_gwr.geojson', driver='GeoJSON')
+
+
+    # MAP: PV > geometry ---------------------------------------------------------------------
+    GEOM_pv = pv_gdf.copy()
+    GEOM_pv.to_file(f'{data_path_def}/output/preprep_data/GEOM_pv.geojson', driver='GeoJSON')
+    checkpoint_to_logfile(f'exported GEOM_pv', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+
+
+
+    # # MAP: solkat_egidunion > geometry ---------------------------------------------------------------------
+    # GEOM_solkat_union = solkat_egidunion.copy()
+    # GEOM_solkat_union.to_file(f'{data_path_def}/output/preprep_data/GEOM_solkat_union.geojson', driver='GeoJSON')
+
+    # # MAP: pv > geometry ---------------------------------------------------------------------
+    # # GEOM_pv = keep_columns(['xtf_id', 'geometry'], pv_gdf).copy()
+    # GEOM_pv = pv_gdf.loc[:,['xtf_id', 'geometry']]
+    # GEOM_pv.to_file(f'{data_path_def}/output/preprep_data/GEOM_pv.geojson', driver='GeoJSON')
 
     # MAP: solkat_egid > heat id ---------------------------------------------------------------------
     if False:
@@ -199,15 +327,6 @@ def local_data_to_parquet_AND_create_spatial_mappings(
         Map_solkategid_heat.to_parquet(f'{data_path_def}/output/preprep_data/Map_solkategid_heat.parquet')
         Map_solkategid_heat.to_csv(f'{data_path_def}/output/preprep_data/Map_solkategid_heat.csv', sep=';', index=False)
         checkpoint_to_logfile(f'exported Map_egid_heat', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
-
-    # MAP: solkat_egidunion > geometry ---------------------------------------------------------------------
-    GEOM_solkat_union = solkat_egidunion.copy()
-    GEOM_solkat_union.to_file(f'{data_path_def}/output/preprep_data/GEOM_solkat_union.geojson', driver='GeoJSON')
-
-    # MAP: pv > geometry ---------------------------------------------------------------------
-    # GEOM_pv = keep_columns(['xtf_id', 'geometry'], pv_gdf).copy()
-    GEOM_pv = pv_gdf.loc[:,['xtf_id', 'geometry']]
-    GEOM_pv.to_file(f'{data_path_def}/output/preprep_data/GEOM_pv.geojson', driver='GeoJSON')
 
     # MAP: heat > geometry ---------------------------------------------------------------------
     if False: 
