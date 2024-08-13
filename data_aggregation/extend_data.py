@@ -77,6 +77,7 @@ def attach_pv_cost(
         })
         installation_cost_df.reset_index(inplace=True)
 
+
         # define intrapolation functions for cost structure -------------------
         # chf_pkW
         def func_chf_pkW(x, a, b):
@@ -84,6 +85,7 @@ def attach_pv_cost(
         params_pkW, covar = curve_fit(func_chf_pkW, installation_cost_df['kw'], installation_cost_df['chf_pkW'])
         # createa a function that takes a kw value and returns the cost per kW
         estim_instcost_chfpkW = lambda x: func_chf_pkW(x, *params_pkW)
+        checkpoint_to_logfile(f'created intrapolation function for chf_pkW using "cureve_fit" to receive curve parameters', log_file_name_def)
         print_to_logfile(f'params_pkW: {params_pkW}', log_file_name_def)
         
         # chf_total
@@ -92,6 +94,7 @@ def attach_pv_cost(
         def func_chf_total_poly(x, coefs):
             return sum(c * x**i for i, c in enumerate(coefs))
         estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs)
+        checkpoint_to_logfile(f'created intrapolation function for chf_total using "Polynomial.fit" to receive curve coefficients', log_file_name_def)
         print_to_logfile(f'coefs: {coefs}', log_file_name_def)
         
 
@@ -115,7 +118,7 @@ def attach_pv_cost(
 
             # Export the plots
             plt.tight_layout()
-            plt.show()
+            # plt.show()
             plt.savefig(f'{data_path_def}/output/preprep_data/pvinstcost_table.png')
 
         # export cost df -------------------
