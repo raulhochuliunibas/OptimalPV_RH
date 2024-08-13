@@ -42,7 +42,7 @@ def api_pvtarif_data(
     response_all_df_list = []
     year_range_list = [str(year % 100).zfill(2) for year in range(year_range_def[0], year_range_def[1]+1)]
     # the ew ID is quite random in the range 1:1000. So I just loop over all of them and just keep the valid API calls
-    ew_id = list(range(1, 50+1)) if smaller_import_def else range(1, 1000) 
+    ew_id = list(range(1, 50+1)) if smaller_import_def else range(1, 1000+1) 
     ew_id_counter = len(ew_id) / 4
 
     url = "https://opendata.vese.ch/pvtarif/api/getData/evu?"
@@ -127,7 +127,7 @@ def api_pvtarif_gm_ewr_Mapping(
             
             sub_Map_df = pd.DataFrame({'bfs': sub_bfs_list, 'nrElcom': sub_nrElcom_list})
             Map_df.append(sub_Map_df)
-            if bfs % bfs_counter == 0:
+            if i_bfs % bfs_counter == 0:
                 checkpoint_to_logfile(f'bfs: {bfs}, {i_bfs+1} of {len(bfs_list)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
 
     Map_gm_ewr = pd.concat(Map_df, ignore_index=True)   
