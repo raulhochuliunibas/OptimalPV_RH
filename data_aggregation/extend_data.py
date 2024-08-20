@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import json
 
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
@@ -17,7 +18,7 @@ from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, check
 # INVESTMENT COSTS
 # ------------------------------------------------------------------------------------------------------
 
-def attach_pv_cost(
+def estimate_pv_cost(
         dataagg_settings_def, ):        
     """
     Function to create assumed cost df for PV installation (by total and relative size in kW)
@@ -39,7 +40,7 @@ def attach_pv_cost(
 
     # CREATE COST DF AND FUNCTIONS ================================================================
     if True:
-        conversion_m2_to_kw = 0.1  # A 1m2 area can fit 0.1 kWp of PV Panels
+        # conversion_m2_to_kw = 0.1  # A 1m2 area can fit 0.1 kWp of PV Panels
         installation_cost_dict = {
             "on_roof_installation_cost_pkW": {
                 2:   4636,
@@ -90,13 +91,24 @@ def attach_pv_cost(
         
         # chf_total
         degree = 2  # Change this to try different degrees
-        coefs = Polynomial.fit(installation_cost_df['kw'], installation_cost_df['chf_total'], deg=degree).convert().coef
-        def func_chf_total_poly(x, coefs):
-            return sum(c * x**i for i, c in enumerate(coefs))
-        estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs)
+        coefs_total = Polynomial.fit(installation_cost_df['kw'], installation_cost_df['chf_total'], deg=degree).convert().coef
+        def func_chf_total_poly(x, coefs_total):
+            return sum(c * x**i for i, c in enumerate(coefs_total))
+        estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs_total)
         checkpoint_to_logfile(f'created intrapolation function for chf_total using "Polynomial.fit" to receive curve coefficients', log_file_name_def)
-        print_to_logfile(f'coefs: {coefs}', log_file_name_def)
-        
+        print_to_logfile(f'coefs_total: {coefs_total}', log_file_name_def)
+
+        pvinstcost_coefficients = {
+            'params_pkW': list(params_pkW),
+            'coefs_total': list(coefs_total)
+        }
+
+        # export 
+        with open(f'{data_path_def}/output/preprep_data/pvinstcost_coefficients.json', 'w') as f:
+            json.dump(pvinstcost_coefficients, f)
+
+        np.save(f'{data_path_def}/output/preprep_data/pvinstcost_coefficients.npy', pvinstcost_coefficients)
+
 
         # plot installation cost df + intrapolation functions -------------------
         if True: 
@@ -128,33 +140,37 @@ def attach_pv_cost(
 
 
     # ATTACH CUMULATIVE COST TO ROOF PARTITIONS ================================================================
+    # IT MAKES no sense to calculate the cost for EACH partition! Most partitions will not be considered any way 
+    # and the cost need to be intrapolated for each combination as well, chaging the cost for each partition because
+    # costs are assumed to be non-linear!
 
-    # import and prepare solkat data -------------------
-    solkat = pd.read_parquet(f'{data_path_def}/output/preprep_data/solkat.parquet')
+    if False: 
+        # import and prepare solkat data -------------------
+        solkat = pd.read_parquet(f'{data_path_def}/output/preprep_data/solkat.parquet')
 
-    # transform IDs cols to str 
-    def convert_srs_to_str(df, colname):
-        df[colname] = df[colname].fillna(-1).astype(int).astype(str)
-        df[colname] = df[colname].replace('-1', np.nan)
-        return df
-    solkat = convert_srs_to_str(solkat, 'EGID')
-    solkat = convert_srs_to_str(solkat, 'BFS_NUMMER')
-    solkat['n_partition'] = 1  # set to 1 for each individual partition, used to count partitions in groupby later
-    checkpoint_to_logfile(f'imported + transformed solkat for cost extension', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
-    
-    if smaller_import_def:
-        solkat = solkat[0:200]
+        # transform IDs cols to str 
+        def convert_srs_to_str(df, colname):
+            df[colname] = df[colname].fillna(-1).astype(int).astype(str)
+            df[colname] = df[colname].replace('-1', np.nan)
+            return df
+        solkat = convert_srs_to_str(solkat, 'EGID')
+        solkat = convert_srs_to_str(solkat, 'BFS_NUMMER')
+        solkat['n_partition'] = 1  # set to 1 for each individual partition, used to count partitions in groupby later
+        checkpoint_to_logfile(f'imported + transformed solkat for cost extension', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+        
+        if smaller_import_def:
+            solkat = solkat[0:200]
 
 
-    # extend COST for ALL partition BY EGID -------------------
-    solkat_egid_total = solkat.groupby(['EGID', ]).agg(
-        {'FLAECHE': 'sum', 'MSTRAHLUNG': 'mean', 'GSTRAHLUNG': 'sum', 'STROMERTRAG': 'sum', 'n_partition':'sum'}).reset_index()
-    solkat_egid_total['pvpot_bysurface_kw'] = solkat_egid_total['FLAECHE'] * conversion_m2_to_kw
-    solkat_egid_total['cost_chf_pkW_times_kw'] = estim_instcost_chfpkW(solkat_egid_total['pvpot_bysurface_kw']) * solkat_egid_total['pvpot_bysurface_kw']
-    solkat_egid_total['cost_chf_total'] = estim_instcost_chftotal(solkat_egid_total['pvpot_bysurface_kw'])
+        # extend COST for ALL partition BY EGID -------------------
+        solkat_egid_total = solkat.groupby(['EGID', ]).agg(
+            {'FLAECHE': 'sum', 'MSTRAHLUNG': 'mean', 'GSTRAHLUNG': 'sum', 'STROMERTRAG': 'sum', 'n_partition':'sum'}).reset_index()
+        solkat_egid_total['pvpot_bysurface_kw'] = solkat_egid_total['FLAECHE'] * conversion_m2_to_kw
+        solkat_egid_total['cost_chf_pkW_times_kw'] = estim_instcost_chfpkW(solkat_egid_total['pvpot_bysurface_kw']) * solkat_egid_total['pvpot_bysurface_kw']
+        solkat_egid_total['cost_chf_total'] = estim_instcost_chftotal(solkat_egid_total['pvpot_bysurface_kw'])
 
-    solkat_egid_total.to_parquet(f'{data_path_def}/output/preprep_data/solkat_egid_total.parquet')
-    checkpoint_to_logfile(f'exported solkat_egid_total', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+        solkat_egid_total.to_parquet(f'{data_path_def}/output/preprep_data/solkat_egid_total.parquet')
+        checkpoint_to_logfile(f'exported solkat_egid_total', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
 
 
     # extend COST per ADDITIONAL partition -------------------
