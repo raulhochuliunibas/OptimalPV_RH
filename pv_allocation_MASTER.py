@@ -6,28 +6,28 @@
 # > description: 
 
 
-# TO-DOs:
-# TODO: Adjust GBAUJ to other variable
-# TODO: Include WNART to only consider residential buildings for "primary living"
-# TODO: check in QGIS if GKLAS == 1273 are really also denkmalgeschützt buildings or just monuments
-
-
-
 # SETTIGNS --------------------------------------------------------------------
 pvalloc_settings = {
-        'name_dir_export': 'pvalloc_BSBL_22to23',             # name of the directory where all proccessed data is stored at the end of the code file 
-        'name_dir_import': 'preprep_data_20240726_08h', # name of the directory where preprepared data is stored and accessed by the code
-        'script_run_on_server': False,              # F: run on private computer, T: run on server
-        'fast_debug_run': False,                    # T: run the code with a small subset of data, F: run the code with the full dataset
-        'show_debug_prints': True,                  # F: certain print statements are omitted, T: includes print statements that help with debugging
-        'wd_path_laptop': 'C:/Models/OptimalPV_RH',     # path to the working directory on Raul's laptop
-        'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH', # path to the working directory on the server
+        'name_dir_export': 'pvalloc_BSBL_test23',              # name of the directory where all proccessed data is stored at the end of the code file 
+        'name_dir_import': 'preprep_BSBLSO_15to23_20240817_01h', # name of the directory where preprepared data is stored and accessed by the code
+        'script_run_on_server': False,                           # F: run on private computer, T: run on server
+        'fast_debug_run': False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
+        'show_debug_prints': False,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
+        'turnoff_comp_after_run': False,                         # F: keep computer running after script is finished, T: turn off computer after script is finished
+        'n_egid_in_topo': 250, 
+        'wd_path_laptop': 'C:/Models/OptimalPV_RH',              # path to the working directory on Raul's laptop
+        'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',   # path to the working directory on the server
 
-        'kt_numbers': [12,13],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
-        'bfs_numbers': [],                        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+        'kt_numbers': [12,13],                           # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
+        'bfs_numbers': [], # 2761, 2772],             # list of municipalites to select for allocation (only used if kt_numbers == 0)
         'topology_year_range':[2019, 2022],
         'prediction_year_range':[2023, 2025],
-        
+        'T0_prediction': 2023, 
+        'months_lookback': 12*1,
+        'months_prediction': 12*2,
+        'recreate_topology': True, 
+        'topo_type': 1,              # 1: all data, all egid  2: all data, only egid in solkat,  3: only partitions + Mappings, all egid, 4: only partitions + Mappings, only egid in solkat
+                                     # 5: try using vectorized values for partitions
         'gwr_selection_specs': {
             'building_cols': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
                         'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
@@ -35,14 +35,15 @@ pvalloc_settings = {
             'dwelling_cols':['EGID', 'WAZIM', 'WAREA', ],
             'DEMAND_proxy': 'GAREA',
             'GSTAT': ['1004',],                 # GSTAT - 1004: only existing, fully constructed buildings
-            'GKLAS': ['1110',],                 # GKLAS - 1110: only 1 living space per building
+            'GKLAS': ['1110','1121','1276',],                 # GKLAS - 1110: only 1 living space per building
             'GBAUJ_minmax': [1950, 2023],       # GBAUJ_minmax: range of years of construction
-            'GWAERZH': ['7410', '7411',],       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
-            'GENH': ['7580', '7581', '7582'],   # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
+            # 'GWAERZH': ['7410', '7411',],       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
+            # 'GENH': ['7580', '7581', '7582'],   # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
                                                 # GANZWHG - total number of apartments in building
                                                 # GAZZI - total number of rooms in building
             },
         'assumed_parameters': {
+            'conversion_m2_to_kw': 0.1,  # A 1m2 area can fit 0.1 kWp of PV Panels
             'interest_rate': 0.01,
             'inflation_rate': 0.018,
             'invest_maturity': 25,
@@ -91,13 +92,16 @@ data_path = f'{wd_path}_data'
 pvalloc_path = f'{data_path}/output/pvalloc_run'
 if not os.path.exists(pvalloc_path):
     os.makedirs(pvalloc_path)
-log_name = f'{data_path}/output/pvalloc_log_file.txt'
+log_name = f'{data_path}/output/pvalloc_log.txt'
 
 # extend settings dict with relevant informations for later functions
 if not not pvalloc_settings['kt_numbers']:
     pvalloc_settings['bfs_numbers'] = auxiliary_functions.get_bfs_from_ktnr(pvalloc_settings['kt_numbers'], data_path, log_name)
     print_to_logfile(f' > no. of kt  numbers in selection: {len(pvalloc_settings["kt_numbers"])}', log_name)
     print_to_logfile(f' > no. of bfs numbers in selection: {len(pvalloc_settings["bfs_numbers"])}', log_name) 
+
+elif (not pvalloc_settings['kt_numbers']) and (not not pvalloc_settings['bfs_numbers']):
+    pvalloc_settings['bfs_numbers'] = [str(bfs) for bfs in pvalloc_settings['bfs_numbers']]
 
 pvalloc_settings['log_file_name'] = log_name
 pvalloc_settings['wd_path'] = wd_path
@@ -113,18 +117,111 @@ print_to_logfile(f'pvalloc_settings: \n{pformat(formated_pvalloc_settings)}', lo
 
 
 # INITIALIZATION ----------------------------------------------------------------
-subchapter_to_logfile('initialization: IMPORT PREPREPED DATA & TRANSFORM', log_name)
-topo = import_prepre_AND_create_topology(pvalloc_settings)
+if pvalloc_settings['recreate_topology']:
+    subchapter_to_logfile('initialization: IMPORT PREPREP DATA & CREATE (building) TOPOLOGY', log_name)
+    topo, mapping_list = import_prepre_AND_create_topology(pvalloc_settings)
 
-subchapter_to_logfile('initialization: CREATE (building) TOPOLOGY', log_name)
-# create_topology(pvalloc_settings, df_list)
+
+
+    # TESTING what causes long run time: 
+    """
+    arranging combinations of partitions within the loop creating the topo appears to be the decicive 
+    feature that causes long run times! 
+
+    => try to create the partition combinations later in vectorized form 
+
+    subchapter_to_logfile('TEST_TOPO_TYPE 1', log_name)
+    pvalloc_settings['topo_type'] = 1
+    topo, mapping_list = import_prepre_AND_create_topology(pvalloc_settings)
+
+    subchapter_to_logfile('TEST_TOPO_TYPE 2', log_name)
+    pvalloc_settings['topo_type'] = 2
+    topo, mapping_list = import_prepre_AND_create_topology(pvalloc_settings)
+
+    subchapter_to_logfile('TEST_TOPO_TYPE 3', log_name)
+    pvalloc_settings['topo_type'] = 3
+    topo, mapping_list = import_prepre_AND_create_topology(pvalloc_settings)
+
+    subchapter_to_logfile('TEST_TOPO_TYPE 4', log_name)
+    pvalloc_settings['topo_type'] = 4
+    topo, mapping_list = import_prepre_AND_create_topology(pvalloc_settings)
+    """
+
+
+
+
+
+
+
+
+
+elif not pvalloc_settings['recreate_topology']:
+    if os.path.exists(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/topo.json'):
+        subchapter_to_logfile('initialization: (IMPORT TOPOLOGY)', log_name)
+        # topo,  mapping_list = import_topology(pvalloc_settings)
+
+
+
+
+# subchapter_to_logfile('initialization: IMPORT TS DATA', log_name)
+# -- import_ts_data(pvalloc_settings)
 
 subchapter_to_logfile('initialization: CREATE FUTURE TS PARAMETERS', log_name)
 
+# ALGORITHM Input: topo, tariff_TS, lookback_TS, prediction_TS, parameter_settings
+
+
+
+# COPY & RENAME AGGREGATED DATA FOLDER ---------------------------------------------------------------
+# > not to overwrite completed preprep folder while debugging 
+chapter_to_logfile(f'END data_aggregation_MASTER', log_name, overwrite_file=False)
+
+if pvalloc_settings['name_dir_export'] is None:    
+    today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    dirs_alloc_data_DATE = f'{data_path}/output/pvalloc_data_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
+    if not os.path.exists(dirs_alloc_data_DATE):
+        os.makedirs(dirs_alloc_data_DATE)
+    file_to_move = glob.glob(f'{data_path}/output/pvalloc_data/*')
+    for f in file_to_move:
+        shutil.copy(f, dirs_alloc_data_DATE)
+    shutil.copy(glob.glob(f'{data_path}/output/pvalloc*_log.txt')[0], dirs_alloc_data_DATE)
+
+elif pvalloc_settings['name_dir_export'] is not None:
+    today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    dirs_alloc_data_DATE = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
+    if not os.path.exists(dirs_alloc_data_DATE):
+        os.makedirs(dirs_alloc_data_DATE)
+    file_to_move = glob.glob(f'{data_path}/output/pvalloc_run/*')
+    for f in file_to_move:
+        shutil.copy(f, dirs_alloc_data_DATE)
+    shutil.copy(glob.glob(f'{data_path}/output/pvalloc_log.txt')[0], f'{dirs_alloc_data_DATE}/pvalloc_log_{pvalloc_settings["name_dir_export"]}.txt')
+    
+
+
+# -----------------------------------------------------------------------------
+# END 
+if not pvalloc_settings['script_run_on_server']:
+    winsound.Beep(1000, 300)
+    winsound.Beep(1000, 300)
+    winsound.Beep(1000, 1000)
+    if pvalloc_settings['turnoff_comp_after_run']:
+        subprocess.Popen(['shutdown', '/s'])
+# -----------------------------------------------------------------------------
+
+
+
+
+
+
 
 # ===========================================================================================
 # ===========================================================================================
 # ===========================================================================================
+
+
+
+"""
+
 
 bfs_list = pvalloc_settings['bfs_numbers']
 bfs_list_str = [str(bfs) for bfs in bfs_list]
@@ -330,7 +427,7 @@ plt.show()
 egid_noinst_t = pvtopo.loc[pvtopo['pv'] != 1, :]
 
 
-
+"""
 
 
 print("End of script")
