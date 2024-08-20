@@ -59,12 +59,12 @@ def api_pvtarif_data(
             
             response_ew_list.append(response_json)
             if ew % ew_id_counter == 0:
-                checkpoint_to_logfile(f'year: {y}, ew: {ew}, {i_ew+1} of {len(ew_id)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
+                checkpoint_to_logfile(f'-- year: {y}, ew: {ew}, {i_ew+1} of {len(ew_id)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
 
         response_ew_df = pd.DataFrame(response_ew_list)
         response_ew_df['year'] = y
         response_all_df_list.append(response_ew_df)
-        checkpoint_to_logfile(f'api call year: {y} completed', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+        checkpoint_to_logfile(f'api call year: {y} completed', log_file_name_def=log_file_name_def, n_tabs_def = 4, show_debug_prints_def=show_debug_prints_def)
 
     pvtarif_raw = pd.concat(response_all_df_list)
 
@@ -109,7 +109,7 @@ def api_pvtarif_gm_ewr_Mapping(
     url = 'https://opendata.vese.ch/pvtarif/api/getData/muni'
     response_bfs_list = []
     Map_df = []
-    checkpoint_to_logfile(f'api call pvtarif gm started', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+    checkpoint_to_logfile(f'api call pvtarif gm started', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
 
     for i_bfs, bfs in enumerate(bfs_list):
         req_url = f'{url}?idofs={bfs}&licenseKey={get_pvtarif_key()}'
@@ -128,15 +128,16 @@ def api_pvtarif_gm_ewr_Mapping(
             sub_Map_df = pd.DataFrame({'bfs': sub_bfs_list, 'nrElcom': sub_nrElcom_list})
             Map_df.append(sub_Map_df)
             if i_bfs % bfs_counter == 0:
-                checkpoint_to_logfile(f'bfs: {bfs}, {i_bfs+1} of {len(bfs_list)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
+                checkpoint_to_logfile(f'bfs: {bfs}, {i_bfs+1} of {len(bfs_list)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
 
     Map_gm_ewr = pd.concat(Map_df, ignore_index=True)   
     checkpoint_to_logfile(f'api call pvtarif gm completed', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+    print_to_logfile(f'\n', log_file_name_def=log_file_name_def)
 
     # export   
     Map_gm_ewr.to_parquet(f'{data_path_def}/output/preprep_data/Map_gm_ewr.parquet')
     Map_gm_ewr.to_csv(f'{data_path_def}/output/preprep_data/Map_gm_ewr.csv', index=False)
-    checkpoint_to_logfile(f'exported Map_gm_ewr from API', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+    checkpoint_to_logfile(f'exported Map_gm_ewr from API', log_file_name_def=log_file_name_def, n_tabs_def = 3)
 
 
 

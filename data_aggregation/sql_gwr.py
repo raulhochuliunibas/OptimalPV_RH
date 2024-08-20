@@ -88,7 +88,7 @@ def sql_gwr_data(
     cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers}) AND GKLAS IN ({gklas_values_str})')
     sqlrows = cur.fetchall()
     conn.close()
-    checkpoint_to_logfile('sql query BUILDING done', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    checkpoint_to_logfile('sql query BUILDING done', log_file_name_def, 10, show_debug_prints_def)
 
     gwr_building_df = pd.DataFrame(sqlrows, columns=query_columns)
     gwr_building_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_building_df.csv', sep=';', index=False)
@@ -109,17 +109,36 @@ def sql_gwr_data(
     cur.execute(f'SELECT {query_columns_str} FROM dwelling')
     sqlrows = cur.fetchall()
     conn.close()
-    checkpoint_to_logfile('sql query DWELLING done', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    checkpoint_to_logfile('sql query DWELLING done', log_file_name_def, 10, show_debug_prints_def)
 
     gwr_dwelling_df = pd.DataFrame(sqlrows, columns=query_columns)
 
-    len(selected_EGID)
-    gwr_building_df.loc[gwr_building_df['GAREA'] == '', 'EGID'].nunique()
-    (gwr_building_df.loc[gwr_building_df['GAREA'] == '', 'EGID'].nunique() / len(selected_EGID)) * 100
-    print_to_logfile('Did NOT us a combination of building and dwelling data, because they overlap way too little. \nThis makes sense intuitievly as single unit houses probably are not registered as dwellings in the data base.', log_file_name_def=log_file_name_def)
+
+    # merger & filter for specs -------------------
+    gwr = gwr_building_df.merge(gwr_dwelling_df, on='EGID', how='inner')
+
+    checkpoint_to_logfile(f'check gwr BEFORE filtering: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round(gwr["EGID"].nunique()/gwr.shape[0],2)*100} %', log_file_name_def, 3, True)
+    gwr['GBAUJ'] = gwr['GBAUJ'].replace('', 0).astype(int)
+    gwr = gwr[(gwr['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
+              (gwr['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) & 
+              (gwr['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
+              (gwr['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
+    gwr['GBAUJ'] = gwr['GBAUJ'].replace(0, '').astype(str)
+    checkpoint_to_logfile(f'check gwr AFTER filtering: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round(gwr["EGID"].nunique()/gwr.shape[0],2)*100} %', log_file_name_def, 3, True)
+
+
+    # check proxy possiblity -------------------
+    checkpoint_to_logfile(f'gwr_guilding_df.shape: {gwr_building_df.shape}, EGID: {gwr_building_df["EGID"].nunique()};\n  gwr_dwelling_df.shape: {gwr_dwelling_df.shape}, EGID: {gwr_dwelling_df["EGID"].nunique()};\n  gwr.shape: {gwr.shape}, EGID: {gwr["EGID"].nunique()}', log_file_name_def, 2, True)
+    
+    checkpoint_to_logfile(f'* check for WAZIM: {gwr.loc[gwr["WAZIM"] != "", "EGID"].nunique()} unique EGIDs of non-empty WAZIM", {round(gwr.loc[gwr["WAZIM"] != "", "EGID"].nunique() / gwr["EGID"].nunique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].nunique()})', log_file_name_def, 1, True)
+    checkpoint_to_logfile(f'* check for WAREA: {gwr.loc[gwr["WAREA"] != "", "EGID"].nunique()} unique EGIDs of non-empty WAREA", {round(gwr.loc[gwr["WAREA"] != "", "EGID"].nunique() / gwr["EGID"].nunique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].nunique()})', log_file_name_def, 1, True)
+    checkpoint_to_logfile(f'* check for GAREA: {gwr.loc[gwr["GAREA"] != "", "EGID"].nunique()} unique EGIDs of non-empty GAREA", {round(gwr.loc[gwr["GAREA"] != "", "EGID"].nunique() / gwr["EGID"].nunique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].nunique()})', log_file_name_def, 1, True)
+    
+    # checkpoint_to_logfile('Did NOT us a combination of building and dwelling data, \n because they overlap way too little. This makes sense \nintuitievly as single unit houses probably are not registered \nas dwellings in the data base.', log_file_name_def, 1, True)
+
 
     # merge dfs and export -------------------
-    gwr = gwr_building_df
+    # gwr = gwr_building_df
     gwr.to_csv(f'{data_path_def}/output/preprep_data/gwr.csv', sep=';', index=False)
     gwr.to_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
-    checkpoint_to_logfile(f'exported gwr data', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+    checkpoint_to_logfile(f'exported gwr data', log_file_name_def=log_file_name_def, n_tabs_def = 4)

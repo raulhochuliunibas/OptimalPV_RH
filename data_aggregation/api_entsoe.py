@@ -58,7 +58,7 @@ def api_entsoe_ahead_elecpri_data(
         req_url = f'https://web-api.tp.entsoe.eu/api?securityToken={get_entsoe_key()}&{docType}&{in_Domain}&{out_Domain}&{periodStart}&{periodEnd}'      # req_url = f'https://web-api.tp.entsoe.eu/api?securityToken={get_entsoe_key()}&documentType=A44&in_Domain=10YCZ-CEPS-----N&out_Domain=10YCZ-CEPS-----N&periodStart=201612302300&periodEnd=201612312300'
 
         # query
-        checkpoint_to_logfile(f'start api call ENTSO-E, year: {year}', log_file_name_def=log_file_name_def, n_tabs_def = 6)
+        checkpoint_to_logfile(f'start api call ENTSO-E, year: {year}', log_file_name_def=log_file_name_def, n_tabs_def = 2)
         response = requests.get(req_url)
         response.status_code
         checkpoint_to_logfile(f'response.status_code: {response.status_code}', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
