@@ -11,7 +11,7 @@ def chapter_to_logfile(str_def, log_file_name_def, overwrite_file=False):
     """
     Function to write a chapter to the logfile
     """
-    check = f'\n\n****************************************\n {str_def} \n start at: {datetime.now()} \n****************************************\n'
+    check = f'\n\n****************************************\n {str_def} \n timestamp: {datetime.now()} \n****************************************\n'
     print(check)
     
     log_file_exists_TF = os.path.exists(f'{log_file_name_def}')
@@ -58,10 +58,15 @@ def checkpoint_to_logfile(str_def, log_file_name_def, n_tabs_def = 0, show_debug
     if show_debug_prints_def:
         time_now = datetime.now()
         if time_last_call:
-            total_seconds = int((time_now - time_last_call).total_seconds())
-            hours, remainder = divmod(total_seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            runtime_str = f"{hours} hr {minutes} min {seconds} sec"
+            # total_seconds = (time_now - time_last_call).total_seconds()
+            # hours, remainder_min = divmod(total_seconds, 3600)
+            # minutes, remainder_sec = divmod(remainder_min, 60)
+            # seconds = int(remainder_sec)
+            # milliseconds = int((remainder_sec - seconds) * 1000)
+            # runtime_str = f"{hours} hr {minutes} min {seconds} sec {milliseconds} ms"
+
+            runtime_str = f'{time_now - time_last_call} (hh:mm:ss.ms)'
+            
         else:
             runtime_str = 'N/A'
         
