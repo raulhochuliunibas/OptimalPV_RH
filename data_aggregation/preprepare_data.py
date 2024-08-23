@@ -82,7 +82,8 @@ def local_data_AND_spatial_mappings(
     solkat_all_pq = pd.read_parquet(f'{data_path_def}/split_data_geometry/solkat_pq.parquet')
     checkpoint_to_logfile(f'import solkat_pq, {solkat_all_pq.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
     
-    if os.path.exists(f'{data_path_def}/split_data_geometry/solkat_bsblso_geo.geojson'):
+    bsblso_kt_numbers_TF = all([kt in [11,12,13] for kt in dataagg_settings_def['kt_numbers']])
+    if (bsblso_kt_numbers_TF) & (os.path.exists(f'{data_path_def}/split_data_geometry/solkat_bsblso_geo.geojson')):
         solkat_all_geo = gpd.read_file(f'{data_path_def}/split_data_geometry/solkat_bsblso_geo.geojson')
     else:
         solkat_all_geo = gpd.read_file(f'{data_path_def}/split_data_geometry/solkat_geo.geojson')
@@ -285,26 +286,31 @@ def import_demand_TS_AND_match_households(
     ids_low_noHP  = get_IDs_upper_lower_totalconsumpttion_by_hp(agg_demand_df, hp_TF = False, up_low50percent = "lower")
 
     # aggregate demand types
-    demand_types = pd.DataFrame()
+    demandtypes = pd.DataFrame()
     t_sequence = agg_demand_df['t'].unique()
-    demand_types['t'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().keys()
-    demand_types['high_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().values
-    demand_types['low_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_wiHP)].groupby('t')['value'].mean().values
-    demand_types['high_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_noHP)].groupby('t')['value'].mean().values
-    demand_types['low_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_noHP)].groupby('t')['value'].mean().values
 
-    demand_types['t'] = pd.Categorical(demand_types['t'], categories=t_sequence, ordered=True)
-    demand_types = demand_types.sort_values(by = 't')
-    demand_types = demand_types.reset_index(drop=True)
+    demandtypes['t'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().keys()
+    # demandtypes['high_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().values
+    # demandtypes['low_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_wiHP)].groupby('t')['value'].mean().values
+    # demandtypes['high_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_noHP)].groupby('t')['value'].mean().values
+    # demandtypes['low_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_noHP)].groupby('t')['value'].mean().values
+    demandtypes['high_DEMANDprox_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().values
+    demandtypes['low_DEMANDprox_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_wiHP)].groupby('t')['value'].mean().values
+    demandtypes['high_DEMANDprox_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_noHP)].groupby('t')['value'].mean().values
+    demandtypes['low_DEMANDprox_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_noHP)].groupby('t')['value'].mean().values
 
-    demand_types.to_parquet(f'{data_path_def}/output/preprep_data/demand_types.parquet')
-    demand_types.to_csv(f'{data_path_def}/output/preprep_data/demand_types.csv', sep=';', index=False)
+    demandtypes['t'] = pd.Categorical(demandtypes['t'], categories=t_sequence, ordered=True)
+    demandtypes = demandtypes.sort_values(by = 't')
+    demandtypes = demandtypes.reset_index(drop=True)
+
+    demandtypes.to_parquet(f'{data_path_def}/output/preprep_data/demandtypes.parquet')
+    demandtypes.to_csv(f'{data_path_def}/output/preprep_data/demandtypes.csv', sep=';', index=False)
     checkpoint_to_logfile(f'exported demand types', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
 
     # plot demand types with plotly
-    fig = px.line(demand_types, x='t', y=['high_wiHP', 'low_wiHP', 'high_noHP', 'low_noHP'], title='Demand types')
+    fig = px.line(demandtypes, x='t', y=['high_DEMANDprox_wiHP', 'low_DEMANDprox_wiHP', 'high_DEMANDprox_noHP', 'low_DEMANDprox_noHP'], title='Demand types')
     # fig.show()
-    fig.write_html(f'{data_path_def}/output/preprep_data/demand_types.html')
+    fig.write_html(f'{data_path_def}/output/preprep_data/demandtypes.html')
 
 
 
