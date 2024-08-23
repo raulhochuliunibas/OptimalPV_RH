@@ -39,26 +39,31 @@ def api_pvtarif_data(
 
 
     # query -------------------
-    response_all_df_list = []
     year_range_list = [str(year % 100).zfill(2) for year in range(year_range_def[0], year_range_def[1]+1)]
-    # the ew ID is quite random in the range 1:1000. So I just loop over all of them and just keep the valid API calls
-    ew_id = list(range(1, 50+1)) if smaller_import_def else range(1, 1000+1) 
+    response_all_df_list = []
+
+    Map_gm_ewr = pd.read_parquet(f'{data_path_def}/output/preprep_data/Map_gm_ewr.parquet')
+    ew_id = Map_gm_ewr['nrElcom'].unique()[0:20] if smaller_import_def else Map_gm_ewr['nrElcom'].unique()   
+
+    # ew_id = list(range(1, 50+1)) if smaller_import_def else range(1, 1000+1)   # the ew ID is quite random in the range 1:1000. So I just loop over all of them and just keep the valid API calls
+
     ew_id_counter = len(ew_id) / 4
 
     url = "https://opendata.vese.ch/pvtarif/api/getData/evu?"
 
     for y in year_range_list:
         checkpoint_to_logfile(f'api call pvtarif for year: {y} started', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
-
         response_ew_list = []
 
         for i_ew, ew in enumerate(ew_id):
             req_url = f'{url}evuId={ew}&year={y}&licenseKey={get_pvtarif_key()}'
             response = requests.get(req_url)
             response_json = response.json()
-            
-            response_ew_list.append(response_json)
-            if ew % ew_id_counter == 0:
+
+            if response_json['valid'] == True:
+                response_ew_list.append(response_json)
+
+            if i_ew % ew_id_counter == 0:
                 checkpoint_to_logfile(f'-- year: {y}, ew: {ew}, {i_ew+1} of {len(ew_id)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
 
         response_ew_df = pd.DataFrame(response_ew_list)
@@ -69,11 +74,18 @@ def api_pvtarif_data(
     pvtarif_raw = pd.concat(response_all_df_list)
 
     # output transformations
-    pvtarif = pvtarif_raw.loc[pvtarif_raw['valid'] == True].copy()
+    # pvtarif = pvtarif_raw.loc[pvtarif_raw['valid'] == True].copy()
+
+    # remove all columns that have only na values
+    pvtarif = pvtarif_raw.copy()
+    empty_cols = [col for col in pvtarif.columns if (pvtarif[col]=='').all()]
+    pvtarif = pvtarif.drop(columns=empty_cols)
+
 
     # export
     pvtarif.to_parquet(f'{data_path_def}/output/preprep_data/pvtarif.parquet')
-    pvtarif.to_csv(f'{data_path_def}/output/preprep_data/pvtarif.csv', index=False)
+    # pvtarif.to_csv(f'{data_path_def}/output/preprep_data/pvtarif.csv', index=False)
+    pvtarif.to_csv(f'{wd_path_def}/pv_tarif.csv', index=False)
     checkpoint_to_logfile(f'exported electricity prices', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 
 
@@ -101,15 +113,16 @@ def api_pvtarif_gm_ewr_Mapping(
 
 
     # query -------------------
-    # gm_shp = gpd.read_file(f'{data_path_def}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    # bfs_list = gm_shp['BFS_NUMMER'].unique()
-    bfs_list = bfs_number_def 
-    bfs_counter = len(bfs_list) / 4
+    gm_shp = gpd.read_file(f'{data_path_def}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    bfs_list = gm_shp['BFS_NUMMER'].unique()
+
+    # bfs_list = bfs_number_def 
+    bfs_counter = len(bfs_list) // 4
 
     url = 'https://opendata.vese.ch/pvtarif/api/getData/muni'
     response_bfs_list = []
     Map_df = []
-    checkpoint_to_logfile(f'api call pvtarif gm started', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
+    checkpoint_to_logfile(f'api call pvtarif gm to ewr started', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
 
     for i_bfs, bfs in enumerate(bfs_list):
         req_url = f'{url}?idofs={bfs}&licenseKey={get_pvtarif_key()}'
@@ -120,12 +133,16 @@ def api_pvtarif_gm_ewr_Mapping(
             evus_list = response_json['evus']
             sub_bfs_list = []
             sub_nrElcom_list = []
+            sub_name_list = []
+            sub_idofs_list = []
 
             for i in evus_list:
                 sub_bfs_list = sub_bfs_list+ [bfs]
                 sub_nrElcom_list = sub_nrElcom_list + [i['nrElcom']]
-            
-            sub_Map_df = pd.DataFrame({'bfs': sub_bfs_list, 'nrElcom': sub_nrElcom_list})
+                sub_name_list = sub_name_list + [i['Name']] 
+                sub_idofs_list = sub_idofs_list + [i['idofs']]
+
+            sub_Map_df = pd.DataFrame({'bfs': sub_bfs_list, 'nrElcom': sub_nrElcom_list, 'Name': sub_name_list, 'idofs': sub_idofs_list})
             Map_df.append(sub_Map_df)
             if i_bfs % bfs_counter == 0:
                 checkpoint_to_logfile(f'bfs: {bfs}, {i_bfs+1} of {len(bfs_list)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
