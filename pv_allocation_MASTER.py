@@ -13,7 +13,7 @@ pvalloc_settings = {
         'script_run_on_server': False,                           # F: run on private computer, T: run on server
         'fast_debug_run': True,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
         'show_debug_prints': True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
-        'n_egid_in_topo': 300, 
+        'n_egid_in_topo':1000, 
         'wd_path_laptop': 'C:/Models/OptimalPV_RH',              # path to the working directory on Raul's laptop
         'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',   # path to the working directory on the server
 
@@ -23,7 +23,7 @@ pvalloc_settings = {
         # 'prediction_year_range':[2023, 2025],
         'T0_prediction': '2023-01-01 00:00:00', 
         'months_lookback': 12*1,
-        'months_prediction': 12*1,
+        'months_prediction': 12*3,
         'recreate_topology': True, 
         'rebuild_solkat_combo_from_topo': True,
         'MonteCarlo_iter': 1000, 
@@ -332,8 +332,6 @@ for i, m in enumerate(months_prediction):
     #     combo_npv = pd.read_parquet(f'C:\Models\OptimalPV_RH_data\output\pvalloc_BSBLSO_wrkn_prgrss_20240823_13h\solkat_combo_df_npv.parquet')
 
 
-
-
     # INSTALLATION PICK ==========
     rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
     safety_counter_max = pvalloc_settings['algorithm_specs']['safety_counter_max']
@@ -379,8 +377,14 @@ for i, m in enumerate(months_prediction):
         if len(dfuid_installed_list) % 100 == 0:
             checkpoint_to_logfile(f' picked {len(dfuid_installed_list) }EGIDs, inst_power: {inst_power}, constr_capa m: {round(constr_built_m,1)}/{round(constr_capa_m,1)}; y: {round(constr_built_y,1)}/{round(constr_capa_y,1)}', log_name, 2)
 
+        
+        combo_installed_df = combo_npv_before.loc[combo_npv_before['df_uid_combo'].isin(dfuid_installed_list), ]
+        combo_installed_df.to_parquet(f'{data_path}/output/pvalloc_run/combo_installed_df.parquet')
+        combo_installed_df.to_csv(f'{data_path}/output/pvalloc_run/combo_installed_df.csv', index=False)
+
 
     # ADJUST GRID PREMIUM ==========
+    # TO BE CODED SOON! \_(^_^)_/ 
 
 
     # end ----------
@@ -391,10 +395,6 @@ for i, m in enumerate(months_prediction):
 # EXPORT TOPO & interim files ----------------------------------------------------------------  
 with open(f'{data_path}/output/pvalloc_run/topo_after.json', 'w') as f:
     json.dump(topo, f)
-
-combo_installed_df = combo_npv_before.loc[combo_npv_before['df_uid_combo'].isin(dfuid_installed_list), ]
-combo_installed_df.to_parquet(f'{data_path}/output/pvalloc_run/combo_installed_df.parquet')
-combo_installed_df.to_csv(f'{data_path}/output/pvalloc_run/combo_installed_df.csv', index=False)
 
 
 

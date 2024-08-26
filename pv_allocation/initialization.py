@@ -334,6 +334,7 @@ def import_prepre_AND_create_topology(
             solkat_partitions = {}
             solkat_combos = {}
             checkpoint_to_logfile(f'egid {egid} not in solkat', log_file_name_def, 3, show_debug_prints_def)
+            CHECK_egid_with_problems.append((egid, 'not in solkat'))
 
 
         # add demand type --------
