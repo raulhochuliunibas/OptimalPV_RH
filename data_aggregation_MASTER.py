@@ -11,7 +11,7 @@
 
 # SETTIGNS --------------------------------------------------------------------
 dataagg_settings = {
-        'name_dir_export': 'preprep_BSBLSO_15to23',     # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
+        'name_dir_export': 'preprep_BSBLSO_18to22',     # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
         'script_run_on_server': False,                  # F: run on private computer, T: run on server
         'smaller_import': False,                	        # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
         'show_debug_prints': True,                      # F: certain print statements are omitted, T: includes print statements that help with debugging
@@ -21,12 +21,12 @@ dataagg_settings = {
 
         'kt_numbers': [11,12,13],                       # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
         'bfs_numbers': [],                              # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        'year_range': [2015, 2023],                     # range of years to import
+        'year_range': [2018, 2022],                     # range of years to import
         
         # switch on/off parts of aggregation
-        'split_data_and_geometry': True, 
-        'reimport_api_data_1': True,                   # F: use existing parquet files, T: recreate parquet files in data prep        
-        'reimport_api_data_2': True,
+        'split_data_geometry_AND_slow_api': True, 
+        # 'reimport_api_data_1': True,                   # F: use existing parquet files, T: recreate parquet files in data prep        
+        'reimport_api_data': True,
         'rerun_localimport_and_mappings': True,         # F: use existi ng parquet files, T: recreate parquet files in data prep
         'reextend_fixed_data': True,                    # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again       
         
@@ -39,7 +39,7 @@ dataagg_settings = {
             'DEMAND_proxy': 'GAREA',
             'GSTAT': ['1004',],                 # GSTAT - 1004: only existing, fully constructed buildings
             'GKLAS': ['1110','1121','1276'],    # GKLAS - 1110: only 1 living space per building; 1121: Double-, row houses with each appartment (living unit) having it's own roof; 1276: structure for animal keeping (most likely still one owner)
-            'GBAUJ_minmax': [1950, 2023],       # GBAUJ_minmax: range of years of construction
+            'GBAUJ_minmax': [1950, 2022],       # GBAUJ_minmax: range of years of construction
             'GWAERZH': ['7410', '7411',],       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
             # 'GENH': ['7580', '7581', '7582'],   # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
                                                 # GANZWHG - total number of apartments in building
@@ -71,13 +71,13 @@ from pprint import pprint, pformat
 import auxiliary_functions
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr, format_MASTER_settings
 
-from data_aggregation.split_data_geometry import split_data_and_geometry
-from data_aggregation.api_electricity_prices import api_electricity_prices_data
-from data_aggregation.sql_gwr import sql_gwr_data
-from data_aggregation.api_pvtarif import api_pvtarif_data, api_pvtarif_gm_ewr_Mapping
-from data_aggregation.api_entsoe import api_entsoe_ahead_elecpri_data
+from data_aggregation.split_data_geometry import *
+from data_aggregation.api_electricity_prices import *
+from data_aggregation.sql_gwr import *
+from data_aggregation.api_pvtarif import *
+from data_aggregation.api_entsoe import *
 from data_aggregation.preprepare_data import local_data_AND_spatial_mappings, local_data_to_parquet_AND_create_spatial_mappings_bySBUUID, import_demand_TS_AND_match_households, import_meteo_data
-from data_aggregation.extend_data import estimate_pv_cost
+from data_aggregation.extend_data import *
 
 
 
@@ -113,35 +113,33 @@ print_to_logfile(f' > settings: \n{pformat(formated_dataagg_settings)}', log_nam
 
 # SPLIT DATA AND GEOMETRY ------------------------------------------------------
 # split data and geometry to avoid memory issues when importing data
-if dataagg_settings['split_data_and_geometry']:
-    subchapter_to_logfile('pre-prep data: SPLIT DATA AND GEOMETRY', log_name)
+if dataagg_settings['split_data_geometry_AND_slow_api']:
+    subchapter_to_logfile('pre-prep data: SPLIT DATA GEOMETRY + IMPORT SLOW APIs', log_name)
     split_data_and_geometry(dataagg_settings_def = dataagg_settings)
 
 
 
-# IMPORT API DATA ---------------------------------------------------------------
-# download API data and store it local directory for needed time and range
-year_range_gwr = dataagg_settings['year_range'] if not not dataagg_settings['year_range'] else [2009, 2023] # else statement shows max range of years available
-year_range_pvtarif = dataagg_settings['year_range'] if not not dataagg_settings['year_range'] else [2015, 2023]
-
-if dataagg_settings['reimport_api_data_1']:
+# IMPORT SLOW API DATA ---------------------------------------------------------------
+if dataagg_settings['split_data_geometry_AND_slow_api']:
+    dataagg_settings['year_range'] = [2015, 2023] 
     subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-    # api_electricity_prices_data(dataagg_settings_def = dataagg_settings)
-
-    subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
-    api_pvtarif_data(dataagg_settings_def=dataagg_settings)
+    api_electricity_prices_data(dataagg_settings_def = dataagg_settings)
 
     subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', log_name)
     api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
 
+    subchapter_to_logfile('pre-prep data: API PVTARIF', log_name)
+    api_pvtarif_data(dataagg_settings_def=dataagg_settings)
+
     subchapter_to_logfile('pre-prep data: API ENTSOE DayAhead', log_name)
     api_entsoe_ahead_elecpri_data(dataagg_settings_def = dataagg_settings)
 
-if dataagg_settings['reimport_api_data_2']:
+
+
+# IMPORT API DATA 2 ---------------------------------------------------------------
+if dataagg_settings['reimport_api_data']:
     subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
     sql_gwr_data(dataagg_settings_def=dataagg_settings)
-
-
 else:
     print_to_logfile('\n\n', log_name)
     checkpoint_to_logfile('use already downloaded data on electricity prices, GWR, PV Tarifs', log_name)
@@ -177,6 +175,10 @@ reextend_fixed_data = dataagg_settings['reextend_fixed_data']
 if not cost_df_exists_TF or reextend_fixed_data:
     subchapter_to_logfile('extend data: ESTIM PV INSTALLTION COST FUNCTION,  ', log_name)
     estimate_pv_cost(dataagg_settings_def = dataagg_settings)
+
+    subchapter_to_logfile('extend data: GET ANGLE+TILT FACTOR + NODE MAPPING', log_name)
+    get_angle_tilt_table(dataagg_settings_def = dataagg_settings)
+    get_fake_gridnodes(dataagg_settings_def = dataagg_settings)
     
 
    
