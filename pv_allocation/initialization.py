@@ -96,6 +96,11 @@ def import_prepre_AND_create_topology(
                   (gwr['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
     gwr['GBAUJ'] = gwr['GBAUJ'].replace(0, '').astype(str)
 
+    if pvalloc_settings['gwr_selection_specs']['dwelling_cols'] == None: 
+        gwr = gwr.loc[:, pvalloc_settings['gwr_selection_specs']['building_cols']].copy()
+        gwr = gwr.drop_duplicates()
+
+
     gwr = gwr.loc[gwr['GGDENR'].isin(bfs_number_def)]
     gwr = gwr.copy()
 
@@ -107,6 +112,16 @@ def import_prepre_AND_create_topology(
     solkat['SB_UUID'] = solkat['SB_UUID'].fillna('').astype(str)
     solkat['FLAECHE'] = solkat['FLAECHE'].fillna(0).astype(float)
     solkat['STROMERTRAG'] = solkat['STROMERTRAG'].fillna(0).astype(float)
+    solkat['AUSRICHTUNG'] = solkat['AUSRICHTUNG'].astype(int)
+    solkat['NEIGUNG'] = solkat['NEIGUNG'].astype(int)
+
+
+    # NOTE: remove building with maximal (outlier large) number of partitions => complicates the creation of partition combinations
+    solkat['EGID'].value_counts()
+    egid_counts = solkat['EGID'].value_counts()
+    egids_below_max = list(egid_counts[egid_counts < pvalloc_settings['gwr_selection_specs']['solkat_max_n_partitions']].index)
+    solkat = solkat.loc[solkat['EGID'].isin(egids_below_max)]
+    # -
 
     solkat = solkat.loc[solkat['BFS_NUMMER'].isin(bfs_number_def)]
     solkat = solkat.copy()
@@ -147,7 +162,8 @@ def import_prepre_AND_create_topology(
 
     # transformation
     pvtarif['bfs'] = pvtarif['bfs'].astype(str)
-    pvtarif[pvtarif_col] = pvtarif[pvtarif_col].fillna(0).astype(float)
+    # pvtarif[pvtarif_col] = pvtarif[pvtarif_col].fillna(0).astype(float)
+    pvtarif[pvtarif_col] = pvtarif[pvtarif_col].replace('', 0).astype(float)
 
     pvtarif = pvtarif.loc[(pvtarif['year'] == str(pvtarif_year)[2:4]) & 
                           (pvtarif['bfs'].isin(pvalloc_settings['bfs_numbers']))]
@@ -190,6 +206,13 @@ def import_prepre_AND_create_topology(
     coefs_total = pvinstcost_coefficients['coefs_total']
 
 
+    # Map egid > node -------
+    Map_egid_nodes = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.parquet')
+
+    # angle_tilt_df -------
+    angle_tilt_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.parquet')
+
+
     # PV Cost functions --------
     # Define the interpolation functions using the imported coefficients
     def func_chf_pkW(x, a, b):
@@ -219,6 +242,7 @@ def import_prepre_AND_create_topology(
 
     if pvalloc_settings['fast_debug_run']:
         gwr_before_copy = gwr.copy()
+        # a more diverse small sample of gwr to have multiple BFS gemeinde in sample. 
 
         num_strata = 10
         n_egid_in_topo = pvalloc_settings['n_egid_in_topo']
@@ -233,7 +257,6 @@ def import_prepre_AND_create_topology(
         sampled_gwr = sampled_gwr.drop(columns='strata')
         sampled_gwr['GGDENR'] = sampled_gwr['GGDENR'].astype(str)
         gwr = sampled_gwr.copy()
-        # gwr = gwr.iloc[0:pvalloc_settings['n_egid_in_topo']]
 
 
     # start loop ------------------------------------------------
@@ -250,37 +273,45 @@ def import_prepre_AND_create_topology(
     gwr_npry = np.array(gwr)
     elecpri_npry = np.array(elecpri)
 
+    # check how many of gwr's EGIDs are in solkat and pv
+    len(np.intersect1d(gwr['EGID'].unique(), solkat['EGID'].unique()))
+    len(np.intersect1d(gwr['EGID'].unique(), Map_egid_pv['EGID'].unique()))
+
+    # throw out all EGIDs of GWR that are not in solkat
+    # NOTE: this could be troublesome :/ check in QGIS if large share of buildings are missing.  
+    gwr = gwr.loc[gwr['EGID'].isin(solkat['EGID'].unique())]
+
     for i, egid in enumerate(gwr['EGID']):
 
-         
         # add pv data --------
-        pv_inst = {}
+        pv_inst = {
+            'inst_TF': False,
+            'info_source': '',
+            'xtf_id': '',
+            'BeginOp': '',
+            'InitialPower': '',
+            'TotalPower': '',
+        }
         egid_without_pv = []
         Map_xtf = Map_egid_pv.loc[Map_egid_pv['EGID'] == egid, 'xtf_id']
 
         if Map_xtf.empty:
             # checkpoint_to_logfile(f'egid {egid} not in PV Mapping (Map_egid_pv?)', log_file_name_def, 3, show_debug_prints_def)
             egid_without_pv.append(egid)
-            pv_inst['inst_TF'] = False
-            pv_inst['info_source'] = ''
-            pv_inst['xtf_id'] = ''
-            pv_inst['BeginOp'] = ''
-            pv_inst['InitialPower'] = ''
-            pv_inst['TotalPower'] = ''
 
         elif not Map_xtf.empty:
             xtfid = Map_xtf.iloc[0]
-            if xtfid not in pv['xtf_id']:
+            if xtfid not in pv['xtf_id'].values:
                 checkpoint_to_logfile(f'---- pv xtf_id {xtfid} in Mapping_egid_pv, but NOT in pv data', log_file_name_def, 3, False)
                 
-            if (Map_xtf.shape[0] == 1) and (xtfid in pv['xtf_id']):
+            if (Map_xtf.shape[0] == 1) and (xtfid in pv['xtf_id'].values):
                 mask_xtfid = np.isin(pv_npry[:, pv.columns.get_loc('xtf_id')], [xtfid,])
 
-                pv_inst['inst_TF'] = True,
+                pv_inst['inst_TF'] = True
                 pv_inst['info_source'] = 'pv_df'
-                pv_inst['xtf_id'] = str(xtfid),
+                pv_inst['xtf_id'] = str(xtfid)
                 
-                pv_inst['BeginOp'] = pv_npry[mask_xtfid, pv.columns.get_loc('BeginningOfOperation')][0],
+                pv_inst['BeginOp'] = pv_npry[mask_xtfid, pv.columns.get_loc('BeginningOfOperation')][0]
                 pv_inst['InitialPower'] = pv_npry[mask_xtfid, pv.columns.get_loc('InitialPower')][0]
                 pv_inst['TotalPower'] = pv_npry[mask_xtfid, pv.columns.get_loc('TotalPower')][0]
             
@@ -298,37 +329,7 @@ def import_prepre_AND_create_topology(
             solkat_sub = solkat.loc[solkat['EGID'] == egid]
             if solkat.duplicated(subset=['DF_UID', 'EGID']).any():
                 solkat_sub = solkat_sub.drop_duplicates(subset=['DF_UID', 'EGID'])
-            solkat_partitions = solkat_sub.set_index('DF_UID')[['FLAECHE', 'STROMERTRAG']].to_dict(orient='index') 
-
-
-            # add solkat combos
-            solkat_combos = {}
-            combo_partitions = []
-            solkat_npry = np.array(solkat_sub)
-            partitions = solkat_npry[:, solkat_sub.columns.get_loc('DF_UID')]
-            keys = list(partitions)
-            if len(keys) < 15:
-                for r in range(1, len(keys) + 1):
-                    combo = list(itertools.combinations(keys, r))
-                    combo_partitions.extend(combo)
-                
-                for c in combo_partitions:
-                    mask_dfuid = np.isin(solkat_npry[:, solkat_sub.columns.get_loc('DF_UID')], c)
-                    flaeche = solkat_npry[mask_dfuid, solkat_sub.columns.get_loc('FLAECHE')].sum()
-                    conv_m2toKWP = pvalloc_settings['assumed_parameters']['conversion_m2_to_kw']
-
-                    solkat_combos['_'.join(c)] = {
-                        'DF_UID': list(c),
-                        'DF_NUMMER': solkat_npry[mask_dfuid, solkat_sub.columns.get_loc('DF_NUMMER')].tolist(),
-                        'FLAECHE': flaeche,
-                        'STROMERTRAG': solkat_npry[mask_dfuid, solkat_sub.columns.get_loc('STROMERTRAG')].sum(),
-                        'estim_pvinstcost_chf': estim_instcost_chfpkW(flaeche * conv_m2toKWP),
-                    }
-            elif len(keys) >= 15:
-                checkpoint_to_logfile(f'ATTENTION* : EGID {egid} has more than 15 partitions > not computing combos', log_file_name_def, 3, show_debug_prints_def)
-                solkat_combos = {}
-                CHECK_egid_with_problems.append((egid, 'more than 15 partitions'))
-                        
+            solkat_partitions = solkat_sub.set_index('DF_UID')[['FLAECHE', 'STROMERTRAG', 'AUSRICHTUNG', 'NEIGUNG']].to_dict(orient='index')                   
         
         elif egid not in solkat['EGID'].unique():
             solkat_partitions = {}
@@ -360,9 +361,16 @@ def import_prepre_AND_create_topology(
                 'energy1': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'energy1'].sum(),
                 'eco1': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'eco1'].sum(),
             }
-        else:
-            checkpoint_to_logfile(f'ERROR: multiple pvtarif data for EGID {egid}', log_file_name_def, 3, show_debug_prints_def)
-            ewr_info = {}
+        elif pvtarif_sub.shape[0] > 1:
+            ewr_info = {
+                'nrElcom': pvtarif_sub['nrElcom'].unique().tolist(),
+                'name': pvtarif_sub['nomEw'].unique().tolist(),
+                'energy1': pvtarif_sub['energy1'].mean(),
+                'eco1': pvtarif_sub['eco1'].mean(),
+            }
+        
+            checkpoint_to_logfile(f'multiple pvtarif data for EGID {egid}', log_file_name_def, 3, show_debug_prints_def)
+            # ewr_info = {}
             CHECK_egid_with_problems.append((egid, 'multiple pvtarif data'))
 
 
@@ -394,6 +402,7 @@ def import_prepre_AND_create_topology(
                 'fixcosts': fixcosts,
             }
 
+
             # add GWR --------
             bfs_of_egid = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0] 
             glkas_of_egid = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GKLAS')][0]
@@ -403,14 +412,21 @@ def import_prepre_AND_create_topology(
                 'gklas': glkas_of_egid,
             }
 
+            # add grid node --------
+            if isinstance(Map_egid_nodes.loc[egid, 'grid_node'], str):
+                grid_node = Map_egid_nodes.loc[egid, 'grid_node']
+            elif isinstance(Map_egid_nodes.loc[egid, 'grid_node'], pd.Series):
+                grid_node = Map_egid_nodes.loc[egid, 'grid_node'].iloc[0]
+                
 
         # attach to topo --------
         # topo['EGID'][egid] = {
         topo_egid[egid] = {
             'gwr_info': gwr_info,
+            'grid_node': grid_node,
             'pv_inst': pv_inst,
             'solkat_partitions': solkat_partitions, 
-            'solkat_combos': solkat_combos,
+            # 'solkat_combos': solkat_combos,
             'demand_type': demand_type,
             'pvtarif_Rp_kWh': pvtarif_egid, 
             'EWR': ewr_info, 
@@ -421,12 +437,15 @@ def import_prepre_AND_create_topology(
         # Checkpoint prints
         if i % modulus_print == 0:
             spacer = f'\t' if i < 100 else f''
-            checkpoint_to_logfile(f'EGID {i} of {len(gwr["EGID"])}{spacer}', log_file_name_def, 1, True)
-        # checkpoint_to_logfile(f'Attach {egid} to topo {15*"-"}', log_file_name_def, 3, show_debug_prints_def)
+            # checkpoint_to_logfile(f'EGID {i} of {len(gwr["EGID"])}{spacer}', log_file_name_def, 1, True)
+            print_to_logfile(f'-- EGID {i} of {len(gwr["EGID"])}{15*"-"}', log_file_name_def)
+
+            # checkpoint_to_logfile(f'Attach {egid} to topo {15*"-"}', log_file_name_def, 3, show_debug_prints_def)
+
         
     # end loop ------------------------------------------------
     # gwr['EGID'].apply(populate_topo_byEGID)
-    checkpoint_to_logfile('end attach to topo', log_file_name_def, 1 , True)
+    # checkpoint_to_logfile('end attach to topo', log_file_name_def, 1 , True)
 
 
 
@@ -446,8 +465,8 @@ def import_prepre_AND_create_topology(
 
 
 
-    df_list = [Map_solkatdfuid_egid, Map_egid_pv, Map_demandtypes_egid, Map_egid_demandtypes, pvtarif, elecpri]
-    df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pvtarif', 'elecpri']
+    df_list = [Map_solkatdfuid_egid, Map_egid_pv, Map_demandtypes_egid, Map_egid_demandtypes, pvtarif, elecpri, angle_tilt_df]
+    df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pvtarif', 'elecpri', 'angle_tilt_df']
 
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):
@@ -579,8 +598,8 @@ def import_ts_data(
 
 
     # meteo types --------
-    rad_proxy = pvalloc_settings['meteoblue_col_radiation_proxy']
-    weater_year = pvalloc_settings['weather_year']
+    rad_proxy = pvalloc_settings['weather_specs']['meteoblue_col_radiation_proxy']
+    weater_year = pvalloc_settings['weather_specs']['weather_year']
 
     meteo = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/meteo.parquet')
     meteo = meteo.loc[:,['timestamp', rad_proxy]]
@@ -595,9 +614,15 @@ def import_ts_data(
 
     # grid premium --------
     t_list = [f't_{i}' for i in range(1, 8761)]
-    gridprem = pd.DataFrame({'t': t_list, 'prem_Rp_kWh': 0.0})
-    gridprem_ts = gridprem.copy()
+    grid_nodes = ['node1', 'node2', 'node3', 'node4']
+    rep_t = t_list * len(grid_nodes)
+    rep_nodes = np.repeat(grid_nodes, len(t_list))
 
+    gridprem = pd.DataFrame({'t': rep_t, 
+                             'grid_node': rep_nodes, 
+                             'prem_Rp_kWh': 0.0})
+    
+    gridprem_ts = gridprem.copy()
 
 
     # pvtarif --------
@@ -669,6 +694,32 @@ def import_exisitng_ts_data(
 """
     
 
+# ------------------------------------------------------------------------------------------------------
+# import inst cost estimation func
+# ------------------------------------------------------------------------------------------------------
+def get_estim_instcost_function(pvalloc_settings):
+    data_path_def = pvalloc_settings['data_path']
+    name_dir_import_def = pvalloc_settings['name_dir_import']
+    log_file_name_def = pvalloc_settings['log_file_name']
+
+    with open(f'{data_path_def}/output/{name_dir_import_def}/pvinstcost_coefficients.json', 'r') as file:
+        pvinstcost_coefficients = json.load(file)
+    params_pkW = pvinstcost_coefficients['params_pkW']
+    coefs_total = pvinstcost_coefficients['coefs_total']
+
+    # PV Cost functions --------
+    # Define the interpolation functions using the imported coefficients
+    def func_chf_pkW(x, a, b):
+        return a + b / x
+
+    estim_instcost_chfpkW = lambda x: func_chf_pkW(x, *params_pkW)
+
+    def func_chf_total_poly(x, coefs_total):
+        return sum(c * x**i for i, c in enumerate(coefs_total))
+
+    estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs_total)
+
+    return estim_instcost_chfpkW, estim_instcost_chftotal
 
     
 # ------------------------------------------------------------------------------------------------------
@@ -803,10 +854,142 @@ def define_construction_capacity(
 
 
 
+# ------------------------------------------------------------------------------------------------------
+# ANGLE TILT & AZIMUTH Table
+# ------------------------------------------------------------------------------------------------------
+def get_angle_tilt_table(pvalloc_settings):
 
+    # import settings + setup -------------------
+    data_path_def = pvalloc_settings['data_path']
+    log_file_name_def = pvalloc_settings['log_file_name']
+    name_dir_import_def = pvalloc_settings['name_dir_import']
+    print_to_logfile('run function: get_angle_tilt_table', log_file_name_def)
+
+    # SOURCE: table was retreived from this site: https://echtsolar.de/photovoltaik-neigungswinkel/
+    # date 29.08.24
     
-        
-        
+    # import df ---------
+    index_angle = [-180, -170, -160, -150, -140, -130, -120, -110, -100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
+    index_tilt = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
+    tuples_iter = list(itertools.product(index_angle, index_tilt))
+
+    tuples = [(-180, 0), (-180, 5), (-180, 10), (-180, 15), (-180, 20), (-180, 25), (-180, 30), (-180, 35), (-180, 40), (-180, 45), (-180, 50), (-180, 55), (-180, 60), (-180, 65), (-180, 70), (-180, 75), (-180, 80), (-180, 85), (-180, 90), 
+              (-170, 0), (-170, 5), (-170, 10), (-170, 15), (-170, 20), (-170, 25), (-170, 30), (-170, 35), (-170, 40), (-170, 45), (-170, 50), (-170, 55), (-170, 60), (-170, 65), (-170, 70), (-170, 75), (-170, 80), (-170, 85), (-170, 90), 
+              (-160, 0), (-160, 5), (-160, 10), (-160, 15), (-160, 20), (-160, 25), (-160, 30), (-160, 35), (-160, 40), (-160, 45), (-160, 50), (-160, 55), (-160, 60), (-160, 65), (-160, 70), (-160, 75), (-160, 80), (-160, 85), (-160, 90), 
+              (-150, 0), (-150, 5), (-150, 10), (-150, 15), (-150, 20), (-150, 25), (-150, 30), (-150, 35), (-150, 40), (-150, 45), (-150, 50), (-150, 55), (-150, 60), (-150, 65), (-150, 70), (-150, 75), (-150, 80), (-150, 85), (-150, 90), 
+              (-140, 0), (-140, 5), (-140, 10), (-140, 15), (-140, 20), (-140, 25), (-140, 30), (-140, 35), (-140, 40), (-140, 45), (-140, 50), (-140, 55), (-140, 60), (-140, 65), (-140, 70), (-140, 75), (-140, 80), (-140, 85), (-140, 90),
+              (-130, 0), (-130, 5), (-130, 10), (-130, 15), (-130, 20), (-130, 25), (-130, 30), (-130, 35), (-130, 40), (-130, 45), (-130, 50), (-130, 55), (-130, 60), (-130, 65), (-130, 70), (-130, 75), (-130, 80), (-130, 85), (-130, 90),
+              (-120, 0), (-120, 5), (-120, 10), (-120, 15), (-120, 20), (-120, 25), (-120, 30), (-120, 35), (-120, 40), (-120, 45), (-120, 50), (-120, 55), (-120, 60), (-120, 65), (-120, 70), (-120, 75), (-120, 80), (-120, 85), (-120, 90),
+              (-110, 0), (-110, 5), (-110, 10), (-110, 15), (-110, 20), (-110, 25), (-110, 30), (-110, 35), (-110, 40), (-110, 45), (-110, 50), (-110, 55), (-110, 60), (-110, 65), (-110, 70), (-110, 75), (-110, 80), (-110, 85), (-110, 90),
+              (-100, 0), (-100, 5), (-100, 10), (-100, 15), (-100, 20), (-100, 25), (-100, 30), (-100, 35), (-100, 40), (-100, 45), (-100, 50), (-100, 55), (-100, 60), (-100, 65), (-100, 70), (-100, 75), (-100, 80), (-100, 85), (-100, 90),
+              (-90, 0), (-90, 5), (-90, 10), (-90, 15), (-90, 20), (-90, 25), (-90, 30), (-90, 35), (-90, 40), (-90, 45), (-90, 50), (-90, 55), (-90, 60), (-90, 65), (-90, 70), (-90, 75), (-90, 80), (-90, 85), (-90, 90),
+              (-80, 0), (-80, 5), (-80, 10), (-80, 15), (-80, 20), (-80, 25), (-80, 30), (-80, 35), (-80, 40), (-80, 45), (-80, 50), (-80, 55), (-80, 60), (-80, 65), (-80, 70), (-80, 75), (-80, 80), (-80, 85), (-80, 90),
+              (-70, 0), (-70, 5), (-70, 10), (-70, 15), (-70, 20), (-70, 25), (-70, 30), (-70, 35), (-70, 40), (-70, 45), (-70, 50), (-70, 55), (-70, 60), (-70, 65), (-70, 70), (-70, 75), (-70, 80), (-70, 85), (-70, 90),
+              (-60, 0), (-60, 5), (-60, 10), (-60, 15), (-60, 20), (-60, 25), (-60, 30), (-60, 35), (-60, 40), (-60, 45), (-60, 50), (-60, 55), (-60, 60), (-60, 65), (-60, 70), (-60, 75), (-60, 80), (-60, 85), (-60, 90),
+              (-50, 0), (-50, 5), (-50, 10), (-50, 15), (-50, 20), (-50, 25), (-50, 30), (-50, 35), (-50, 40), (-50, 45), (-50, 50), (-50, 55), (-50, 60), (-50, 65), (-50, 70), (-50, 75), (-50, 80), (-50, 85), (-50, 90),
+              (-40, 0), (-40, 5), (-40, 10), (-40, 15), (-40, 20), (-40, 25), (-40, 30), (-40, 35), (-40, 40), (-40, 45), (-40, 50), (-40, 55), (-40, 60), (-40, 65), (-40, 70), (-40, 75), (-40, 80), (-40, 85), (-40, 90),
+              (-30, 0), (-30, 5), (-30, 10), (-30, 15), (-30, 20), (-30, 25), (-30, 30), (-30, 35), (-30, 40), (-30, 45), (-30, 50), (-30, 55), (-30, 60), (-30, 65), (-30, 70), (-30, 75), (-30, 80), (-30, 85), (-30, 90),
+              (-20, 0), (-20, 5), (-20, 10), (-20, 15), (-20, 20), (-20, 25), (-20, 30), (-20, 35), (-20, 40), (-20, 45), (-20, 50), (-20, 55), (-20, 60), (-20, 65), (-20, 70), (-20, 75), (-20, 80), (-20, 85), (-20, 90),
+              (-10, 0), (-10, 5), (-10, 10), (-10, 15), (-10, 20), (-10, 25), (-10, 30), (-10, 35), (-10, 40), (-10, 45), (-10, 50), (-10, 55), (-10, 60), (-10, 65), (-10, 70), (-10, 75), (-10, 80), (-10, 85), (-10, 90),
+              (0, 0), (0, 5), (0, 10), (0, 15), (0, 20), (0, 25), (0, 30), (0, 35), (0, 40), (0, 45), (0, 50), (0, 55), (0, 60), (0, 65), (0, 70), (0, 75), (0, 80), (0, 85), (0, 90),
+              (10, 0), (10, 5), (10, 10), (10, 15), (10, 20), (10, 25), (10, 30), (10, 35), (10, 40), (10, 45), (10, 50), (10, 55), (10, 60), (10, 65), (10, 70), (10, 75), (10, 80), (10, 85), (10, 90),
+              (20, 0), (20, 5), (20, 10), (20, 15), (20, 20), (20, 25), (20, 30), (20, 35), (20, 40), (20, 45), (20, 50), (20, 55), (20, 60), (20, 65), (20, 70), (20, 75), (20, 80), (20, 85), (20, 90),
+              (30, 0), (30, 5), (30, 10), (30, 15), (30, 20), (30, 25), (30, 30), (30, 35), (30, 40), (30, 45), (30, 50), (30, 55), (30, 60), (30, 65), (30, 70), (30, 75), (30, 80), (30, 85), (30, 90),
+              (40, 0), (40, 5), (40, 10), (40, 15), (40, 20), (40, 25), (40, 30), (40, 35), (40, 40), (40, 45), (40, 50), (40, 55), (40, 60), (40, 65), (40, 70), (40, 75), (40, 80), (40, 85), (40, 90),
+              (50, 0), (50, 5), (50, 10), (50, 15), (50, 20), (50, 25), (50, 30), (50, 35), (50, 40), (50, 45), (50, 50), (50, 55), (50, 60), (50, 65), (50, 70), (50, 75), (50, 80), (50, 85), (50, 90),
+              (60, 0), (60, 5), (60, 10), (60, 15), (60, 20), (60, 25), (60, 30), (60, 35), (60, 40), (60, 45), (60, 50), (60, 55), (60, 60), (60, 65), (60, 70), (60, 75), (60, 80), (60, 85), (60, 90),
+              (70, 0), (70, 5), (70, 10), (70, 15), (70, 20), (70, 25), (70, 30), (70, 35), (70, 40), (70, 45), (70, 50), (70, 55), (70, 60), (70, 65), (70, 70), (70, 75), (70, 80), (70, 85), (70, 90),
+              (80, 0), (80, 5), (80, 10), (80, 15), (80, 20), (80, 25), (80, 30), (80, 35), (80, 40), (80, 45), (80, 50), (80, 55), (80, 60), (80, 65), (80, 70), (80, 75), (80, 80), (80, 85), (80, 90),
+              (90, 0), (90, 5), (90, 10), (90, 15), (90, 20), (90, 25), (90, 30), (90, 35), (90, 40), (90, 45), (90, 50), (90, 55), (90, 60), (90, 65), (90, 70), (90, 75), (90, 80), (90, 85), (90, 90),
+              (100, 0), (100, 5), (100, 10), (100, 15), (100, 20), (100, 25), (100, 30), (100, 35), (100, 40), (100, 45), (100, 50), (100, 55), (100, 60), (100, 65), (100, 70), (100, 75), (100, 80), (100, 85), (100, 90),
+              (110, 0), (110, 5), (110, 10), (110, 15), (110, 20), (110, 25), (110, 30), (110, 35), (110, 40), (110, 45), (110, 50), (110, 55), (110, 60), (110, 65), (110, 70), (110, 75), (110, 80), (110, 85), (110, 90),
+              (120, 0), (120, 5), (120, 10), (120, 15), (120, 20), (120, 25), (120, 30), (120, 35), (120, 40), (120, 45), (120, 50), (120, 55), (120, 60), (120, 65), (120, 70), (120, 75), (120, 80), (120, 85), (120, 90),
+              (130, 0), (130, 5), (130, 10), (130, 15), (130, 20), (130, 25), (130, 30), (130, 35), (130, 40), (130, 45), (130, 50), (130, 55), (130, 60), (130, 65), (130, 70), (130, 75), (130, 80), (130, 85), (130, 90),
+              (140, 0), (140, 5), (140, 10), (140, 15), (140, 20), (140, 25), (140, 30), (140, 35), (140, 40), (140, 45), (140, 50), (140, 55), (140, 60), (140, 65), (140, 70), (140, 75), (140, 80), (140, 85), (140, 90),
+              (150, 0), (150, 5), (150, 10), (150, 15), (150, 20), (150, 25), (150, 30), (150, 35), (150, 40), (150, 45), (150, 50), (150, 55), (150, 60), (150, 65), (150, 70), (150, 75), (150, 80), (150, 85), (150, 90),
+              (160, 0), (160, 5), (160, 10), (160, 15), (160, 20), (160, 25), (160, 30), (160, 35), (160, 40), (160, 45), (160, 50), (160, 55), (160, 60), (160, 65), (160, 70), (160, 75), (160, 80), (160, 85), (160, 90),
+              (170, 0), (170, 5), (170, 10), (170, 15), (170, 20), (170, 25), (170, 30), (170, 35), (170, 40), (170, 45), (170, 50), (170, 55), (170, 60), (170, 65), (170, 70), (170, 75), (170, 80), (170, 85), (170, 90),
+              (180, 0), (180, 5), (180, 10), (180, 15), (180, 20), (180, 25), (180, 30), (180, 35), (180, 40), (180, 45), (180, 50), (180, 55), (180, 60), (180, 65), (180, 70), (180, 75), (180, 80), (180, 85), (180, 90)
+              ]
+    index = pd.MultiIndex.from_tuples(tuples, names=['angle', 'tilt'])
+
+    values = [89.0, 85.5, 81.5, 77.3, 72.7, 68.3, 64.0, 59.8, 55.6, 51.5, 47.6, 44.1, 40.7, 37.9, 35.8, 34.1, 32.7, 31.4, 30.2, 
+              89.0, 85.5, 81.6, 77.4, 72.9, 68.5, 64.2, 60.0, 55.9, 51.9, 48.1, 44.5, 41.2, 38.5, 36.4, 34.8, 33.3, 31.9, 30.7, 
+              89.0, 85.7, 81.9, 77.8, 73.5, 69.2, 65.0, 60.9, 56.9, 53.0, 49.4, 46.0, 42.9, 40.6, 38.6, 36.8, 35.2, 33.7, 32.2, 
+              89.0, 85.9, 82.4, 78.6, 74.6, 70.5, 66.4, 62.5, 58.7, 55.0, 51.6, 48.6, 46.1, 43.8, 41.7, 39.8, 38.0, 36.3, 34.6, 
+              89.0, 86.3, 83.1, 79.6, 75.9, 72.2, 68.4, 64.8, 61.3, 58.1, 55.1, 52.4, 49.9, 47.6, 45.4, 43.3, 41.3, 39.4, 37.5, 
+              89.0, 86.7, 84.0, 80.8, 77.7, 74.3, 71.1, 67.8, 64.8, 61.9, 59.1, 56.5, 54.1, 51.8, 49.4, 47.2, 45.0, 42.8, 40.7, 
+              89.0, 87.1, 84.9, 82.4, 79.6, 76.8, 74.0, 71.3, 68.6, 66.0, 63.4, 61.0, 58.6, 56.2, 53.8, 51.4, 49.0, 46.6, 44.2, 
+              89.0, 87.7, 85.9, 84.0, 81.8, 79.5, 77.2, 74.9, 72.5, 70.2, 67.9, 65.5, 63.1, 60.7, 58.8, 55.7, 53.1, 50.6, 48.0, 
+              89.0, 88.3, 87.1, 85.6, 84.0, 82.2, 80.4, 78.5, 76.5, 74.4, 72.2, 69.9, 67.6, 65.2, 62.7, 60.1, 57.3, 54.5, 51.8, 
+              89.0, 88.8, 88.2, 87.3, 86.2, 84.9, 83.6, 82.0, 80.3, 78.4, 76.4, 74.3, 71.9, 69.5, 66.8, 64.1, 61.3, 58.3, 55.2, 
+              89.0, 89.4, 89.3, 89.0, 88.4, 87.6, 86.6, 85.4, 84.0, 82.3, 80.4, 78.3, 75.9, 73.4, 70.9, 67.9, 64.8, 61.8, 58.5, 
+              89.0, 89.9, 90.5, 90.6, 90.5, 90.1, 89.5, 88.6, 87.3, 85.8, 84.0, 82.0, 79.7, 77.1, 74.3, 71.4, 68.2, 64.7, 61.3, 
+              89.0, 90.5, 91.4, 92.1, 92.4, 92.4, 92.1, 91.4, 90.4, 89.0, 87.4, 85.2, 83.0, 80.5, 77.5, 74.3, 71.0, 67.4, 63.7, 
+              89.0, 90.9, 92.4, 93.5, 94.2, 94.5, 94.4, 93.9, 93.0, 91.7, 90.2, 88.3, 85.8, 83.1, 80.2, 76.9, 73.3, 69.5, 65.6, 
+              89.0, 91.4, 93.2, 94.6, 95.6, 96.2, 96.4, 96.1, 95.4, 94.2, 92.5, 90.6, 88.3, 85.5, 82.3, 78.9, 75.2, 71.2, 66.9, 
+              89.0, 91.7, 93.9, 95.5, 96.8, 97.7, 98.0, 97.7, 97.1, 96.1, 94.5, 92.5, 90.0, 87.1, 84.0, 80.4, 76.4, 72.2, 67.8, 
+              89.0, 91.9, 94.3, 96.3, 97.7, 98.6, 99.1, 99.0, 98.5, 97.4, 95.8, 93.8, 91.4, 88.4, 85.0, 81.3, 77.2, 72.8, 68.1, 
+              89.0, 92.1, 94.6, 96.7, 98.2, 99.2, 99.8, 99.8, 99.3, 98.3, 96.7, 94.6, 92.0, 89.0, 85.5, 81.8, 77.5, 73.0, 68.2, 
+              89.0, 92.1, 94.7, 96.8, 98.4, 99.5, 100,  100 , 99.5, 98.3, 96.8, 94.8, 92.3, 89.3, 85.8, 81.9, 77.6, 73.1, 68.1,
+              89.0, 92.1, 94.6, 96.7, 98.2, 99.2, 99.8, 99.8, 99.3, 98.3, 96.7, 94.6, 92.0, 89.0, 85.5, 81.8, 77.5, 73.0, 68.2, 
+              89.0, 91.9, 94.3, 96.3, 97.7, 98.6, 99.1, 99.0, 98.5, 97.4, 95.8, 93.8, 91.4, 88.4, 85.0, 81.3, 77.2, 72.8, 68.1, 
+              89.0, 91.7, 93.9, 95.5, 96.8, 97.7, 98.0, 97.7, 97.1, 96.1, 94.5, 92.5, 90.0, 87.1, 84.0, 80.4, 76.4, 72.2, 67.8, 
+              89.0, 91.4, 93.2, 94.6, 95.6, 96.2, 96.4, 96.1, 95.4, 94.2, 92.5, 90.6, 88.3, 85.5, 82.3, 78.9, 75.2, 71.2, 66.9, 
+              89.0, 90.9, 92.4, 93.5, 94.2, 94.5, 94.4, 93.9, 93.0, 91.7, 90.2, 88.3, 85.8, 83.1, 80.2, 76.9, 73.3, 69.5, 65.6, 
+              89.0, 90.5, 91.4, 92.1, 92.4, 92.4, 92.1, 91.4, 90.4, 89.0, 87.4, 85.2, 83.0, 80.5, 77.5, 74.3, 71.0, 67.4, 63.7, 
+              89.0, 89.9, 90.5, 90.6, 90.5, 90.1, 89.5, 88.6, 87.3, 85.8, 84.0, 82.0, 79.7, 77.1, 74.3, 71.4, 68.2, 64.7, 61.3, 
+              89.0, 89.4, 89.3, 89.0, 88.4, 87.6, 86.6, 85.4, 84.0, 82.3, 80.4, 78.3, 75.9, 73.4, 70.9, 67.9, 64.8, 61.8, 58.5, 
+              89.0, 88.8, 88.2, 87.3, 86.2, 84.9, 83.6, 82.0, 80.3, 78.4, 76.4, 74.3, 71.9, 69.5, 66.8, 64.1, 61.3, 58.3, 55.2, 
+              89.0, 88.3, 87.1, 85.6, 84.0, 82.2, 80.4, 78.5, 76.5, 74.4, 72.2, 69.9, 67.6, 65.2, 62.7, 60.1, 57.3, 54.5, 51.8, 
+              89.0, 87.7, 85.9, 84.0, 81.8, 79.5, 77.2, 74.9, 72.5, 70.2, 67.9, 65.5, 63.1, 60.7, 58.8, 55.7, 53.1, 50.6, 48.0, 
+              89.0, 87.1, 84.9, 82.4, 79.6, 76.8, 74.0, 71.3, 68.6, 66.0, 63.4, 61.0, 58.6, 56.2, 53.8, 51.4, 49.0, 46.6, 44.2, 
+              89.0, 86.7, 84.0, 80.8, 77.7, 74.3, 71.1, 67.8, 64.8, 61.9, 59.1, 56.5, 54.1, 51.8, 49.4, 47.2, 45.0, 42.8, 40.7, 
+              89.0, 86.3, 83.1, 79.6, 75.9, 72.2, 68.4, 64.8, 61.3, 58.1, 55.1, 52.4, 49.9, 47.6, 45.4, 43.3, 41.3, 39.4, 37.5, 
+              89.0, 85.9, 82.4, 78.6, 74.6, 70.5, 66.4, 62.5, 58.7, 55.0, 51.6, 48.6, 46.1, 43.8, 41.7, 39.8, 38.0, 36.3, 34.6, 
+              89.0, 85.7, 81.9, 77.8, 73.5, 69.2, 65.0, 60.9, 56.9, 53.0, 49.4, 46.0, 42.9, 40.6, 38.6, 36.8, 35.2, 33.7, 32.2, 
+              89.0, 85.5, 81.6, 77.4, 72.9, 68.5, 64.2, 60.0, 55.9, 51.9, 48.1, 44.5, 41.2, 38.5, 36.4, 34.8, 33.3, 31.9, 30.7, 
+              89.0, 85.5, 81.5, 77.3, 72.7, 68.3, 64.0, 59.8, 55.6, 51.5, 47.6, 44.1, 40.7, 37.9, 35.8, 34.1, 32.7, 31.4, 30.2
+              ] 
+    
+    angle_tilt_df = pd.DataFrame(data = values, index = index, columns = ['efficiency_factor'])
+    angle_tilt_df['efficiency_factor'] = angle_tilt_df['efficiency_factor'] / 100
+
+    # export df ----------
+    angle_tilt_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.parquet')
+    angle_tilt_df.to_csv(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.csv')
+    return angle_tilt_df
+
+
+# ------------------------------------------------------------------------------------------------------
+# FAKE TRAFO EGID MAPPING
+# ------------------------------------------------------------------------------------------------------
+def get_fake_gridnodes(pvalloc_settings):
+    
+    # import settings + setup -------------------
+    data_path_def = pvalloc_settings['data_path']
+    log_file_name_def = pvalloc_settings['log_file_name']
+    name_dir_import_def = pvalloc_settings['name_dir_import']
+    print_to_logfile('run function: get_fake_gridnodes', log_file_name_def)
+
+    # create fake gridnodes ----------------------
+    gwr = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/gwr.parquet')
+
+    gwr_nodes = gwr[['EGID', 'GDEKT']].copy()
+    gwr_nodes['EGID_int'] = gwr_nodes['EGID'].astype(int)
+
+    gwr_nodes.sort_values(by=['GDEKT','EGID_int'], inplace=True)
+    gwr_nodes['grid_node'] = pd.cut(gwr_nodes['EGID_int'], bins=4, labels=['node1', 'node2', 'node3', 'node4'])
+
+    gwr_nodes.drop(columns=['EGID_int', 'GDEKT'], inplace=True)
+    gwr_nodes.set_index('EGID', inplace=True)
+
+    # export df ----------
+    Map_egid_nodes = gwr_nodes.copy()
+    Map_egid_nodes.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.parquet')
+    Map_egid_nodes.to_csv(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.csv')
+
+    return gwr_nodes
 
 
 
