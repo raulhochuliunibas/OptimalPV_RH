@@ -306,11 +306,11 @@ def get_angle_tilt_table(dataagg_settings):
 # ------------------------------------------------------------------------------------------------------
 # FAKE TRAFO EGID MAPPING
 # ------------------------------------------------------------------------------------------------------
-def get_fake_gridnodes(dataagg_settings):
+def get_fake_gridnodes(dataagg_settings_def):
     
     # import settings + setup -------------------
-    data_path_def = dataagg_settings['data_path']
-    log_file_name_def = dataagg_settings['log_file_name']
+    data_path_def = dataagg_settings_def['data_path']
+    log_file_name_def = dataagg_settings_def['log_file_name']
     # name_dir_import_def = pvalloc_settings['name_dir_import']
     print_to_logfile('run function: get_fake_gridnodes', log_file_name_def)
 
