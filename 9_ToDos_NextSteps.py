@@ -44,9 +44,10 @@ if True:
     print('')
 
 # TODO: Check EGIDs in solkat for BSBL for not to have double counting.
+# TODO: some egid in gwr.parquet are double up to 10 times in the column, check why!
 
 # -----------------------------------------------------------------------------
-# data_aggreation_MASTER.py 
+# pv_allocation__MASTER.py 
 # -----------------------------------------------------------------------------
 
 
@@ -55,33 +56,48 @@ if True:
 # OK - func to import and transform all prepreped data
 #   > return all relevant dfs
 # OK - func to create pv topo dict
+#   TODO: OK A - add Ausrichtung and Neigung to the topo for later uses
+#   TODO: OK A - find a functional way to adjust production to Ausrichtung (Neigung)
+#   TODO: OK A - add a fictive node to kantons 11, 12, 13 egids (just a plain csv, then merge it with empty gridprem_ts) 
 #   > return dict
 # OK - func to attach all roof partition combos to dict
 #   > return dict
 # OK - filter all input data again by alloc settings such that the allocation algorithm is applicable also on larger preped data sets
 
-# B - func to create the feedin tarif TS (empty)
-#   > return TS
 
+#===============================
+# # BOOKMARK: 
+# - There is an issue with buildings that have a HUGE number of partitions. 
+#  > make either a function exporting all solkat with more than x rows for 1 egid
+#  > OR make a function after topo_df generation that matches the topo df to the geo data and exports it to a shape file
+#  > PLUS attach also exisiting pv installations to the topoology! so it is possible to see in topo_df which buildings have a pv installation already
+#===============================
 
-# A - define Construction capacity per month
+# OK:  A - define Construction capacity per month
 
 # ALLOCATION
 # - loop for month
-
-#   - func to update pv topo dict
-#    . 
-#   > return dict   
+#   - pick building for PV
 
 #   - func to update feedin premium
+#   TODO: OK A - get all installations from topo.dict
+#   TODO: A - calculate production HOYs and find where voltage level meets tier
+#   TODO: A - update gridprem_ts
 #   > return premium TS
+
+#   TODO: A - Update NPV calculations of every house using npv_df from beginning of allocation 
 
 # TO-DOs:
 # TODO: Adjust GBAUJ to other variable
 # TODO: Include WNART to only consider residential buildings for "primary living"
 # TODO: check in QGIS if GKLAS == 1273 are really also denkmalgeschützt buildings or just monuments
+# TODO: inst_power in allocation algorithm NOT weighted by angle tilt efficiency; But in updating of grid premium
+        # which one makes more sense?
+# TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
 
 
+
+#   - repick building for PV
 # -----------------------------------------------------------------------------
 # data / model extensions 
 # -----------------------------------------------------------------------------

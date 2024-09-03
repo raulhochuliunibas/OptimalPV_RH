@@ -5,28 +5,34 @@
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
 # > description: 
 
-visual_settings = {
-    'wd_path_laptop': 'C:/Models/OptimalPV_RH',
+try: 
+    if not isinstance(visual_settings, dict):
+        pass
 
-    'general_specs': {
-    }, 
-    'plot_TOPOinterim': {
-        'plot_show': True, 
-        'plot_save': True,
-        'import_path': 'C:\Models\OptimalPV_RH_data\output\pvalloc_BSBLSO_wrkn_prgrss_20240826_9h_BREAK',
-        'preprep_path': 'C:/Models/OptimalPV_RH_data/output/preprep_BSBLSO_15to23_20240821_02h',
-        'title': 'TOPO interim development',
+except NameError:
+    visual_settings = {
+        'wd_path_laptop': 'C:/Models/OptimalPV_RH',
 
-    }, 
-    'plot_SOLKAT_max_Xpartitions': {
-        'plot_show': True, 
-        'plot_save': True,
-        'import_path': 'preprep_BSBLSO_18to22_20240826_22h',
-        'preprep_path': '',
-        'title': 'TOPO interim development',
+        'general_specs': {
+        }, 
+        'plot_TOPOinterim': {
+            'plot_show': True, 
+            'plot_save': True,
+            'import_path': 'C:\Models\OptimalPV_RH_data\output\pvalloc_BSBLSO_wrkn_prgrss_20240826_9h_BREAK',
+            'preprep_path': 'C:/Models/OptimalPV_RH_data/output/preprep_BSBLSO_15to23_20240821_02h',
+            'title': 'TOPO interim development',
 
-    },
-}
+        }, 
+        'plot_SOLKAT_max_Xpartitions': {
+            'plot_show': True, 
+            'plot_save': True,
+            'import_path': 'preprep_BSBLSO_18to22_20240826_22h',
+            'preprep_path': '',
+            'title': 'TOPO interim development',
+
+        },
+        }
+
 
 # PACKAGES =============================================================
 if True:
@@ -138,8 +144,10 @@ def plot_SOLKAT_max_Xpartitions(general_specs, plot_specs):
 
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     fig.show()
-plot_SOLKAT_max_Xpartitions(visual_settings['general_specs'], visual_settings['plot_SOLKAT_max_Xpartitions'])
+# plot_SOLKAT_max_Xpartitions(visual_settings['general_specs'], visual_settings['plot_SOLKAT_max_Xpartitions'])
 
+print('hello there')
+print(f'{visual_settings.keys()}')
 
 # END OF SCRIPT ========================================================
 winsound.Beep(2000, 100)
