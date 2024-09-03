@@ -5,6 +5,8 @@ import geopandas as gpd
 import  sqlite3
 import re
 
+from shapely.geometry import Point
+
 sys.path.append('..')
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
