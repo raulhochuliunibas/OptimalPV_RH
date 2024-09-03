@@ -148,12 +148,6 @@ def import_prepre_AND_create_topology(
     pvtarif = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/pvtarif.parquet')
     pvtarif = pvtarif.merge(Map_gm_ewr, how='left', on='nrElcom')
 
-    # find bfs that have now value in energy1, eco1, etc.
-
-
-    (pvtarif['bfs'] == "").sum()
-    (pvtarif['nrElcom'] == "").sum()
-    pvtarif.dtypes
 
     # ELECTRICITY PRICE -------
     elecpri = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/elecpri.parquet')
@@ -188,18 +182,23 @@ def import_prepre_AND_create_topology(
     Map_egid_pv['xtf_id'] = Map_egid_pv['xtf_id'].fillna('').astype(int).astype(str)
 
 
-    # EGID specific data (demand type, cost, etc.) --------
-    # NOTE: CLEAN UP when aggregation is adjusted
+    # Map demandtypes > egid -------
+    # NOTE: CLEAN UP when aggregation is adjusted, should be no longer used!
     if os.path.exists(f'{data_path_def}/output/{name_dir_import_def}/Map_demandtype_EGID.json'):
         with open(f'{data_path_def}/output/{name_dir_import_def}/Map_demandtype_EGID.json', 'r') as file:
             Map_demandtypes_egid = json.load(file)
+
     elif os.path.exists(f'{data_path_def}/output/{name_dir_import_def}/Map_demand_type_gwrEGID.json'):
         with open(f'{data_path_def}/output/{name_dir_import_def}/Map_demand_type_gwrEGID.json', 'r') as file:
             Map_demandtypes_egid = json.load(file)
 
+
+    # Map egid > demandtypes -------
     with open(f'{data_path_def}/output/{name_dir_import_def}/Map_EGID_demandtypes.json', 'r') as file:
         Map_egid_demandtypes = json.load(file)
 
+
+    # Func pv installation cost -------
     with open(f'{data_path_def}/output/{name_dir_import_def}/pvinstcost_coefficients.json', 'r') as file:
         pvinstcost_coefficients = json.load(file)
     params_pkW = pvinstcost_coefficients['params_pkW']
@@ -208,6 +207,7 @@ def import_prepre_AND_create_topology(
 
     # Map egid > node -------
     Map_egid_nodes = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.parquet')
+
 
     # angle_tilt_df -------
     angle_tilt_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.parquet')
@@ -296,7 +296,6 @@ def import_prepre_AND_create_topology(
         Map_xtf = Map_egid_pv.loc[Map_egid_pv['EGID'] == egid, 'xtf_id']
 
         if Map_xtf.empty:
-            # checkpoint_to_logfile(f'egid {egid} not in PV Mapping (Map_egid_pv?)', log_file_name_def, 3, show_debug_prints_def)
             egid_without_pv.append(egid)
 
         elif not Map_xtf.empty:
@@ -437,10 +436,7 @@ def import_prepre_AND_create_topology(
         # Checkpoint prints
         if i % modulus_print == 0:
             spacer = f'\t' if i < 100 else f''
-            # checkpoint_to_logfile(f'EGID {i} of {len(gwr["EGID"])}{spacer}', log_file_name_def, 1, True)
-            print_to_logfile(f'-- EGID {i} of {len(gwr["EGID"])}{15*"-"}', log_file_name_def)
-
-            # checkpoint_to_logfile(f'Attach {egid} to topo {15*"-"}', log_file_name_def, 3, show_debug_prints_def)
+            print_to_logfile(f'-- EGID {i} of {len(gwr["EGID"])} {spacer}{15*"-"}', log_file_name_def)
 
         
     # end loop ------------------------------------------------
@@ -464,9 +460,8 @@ def import_prepre_AND_create_topology(
         f.write(str(CHECK_egid_with_problems))
 
 
-
-    df_list = [Map_solkatdfuid_egid, Map_egid_pv, Map_demandtypes_egid, Map_egid_demandtypes, pvtarif, elecpri, angle_tilt_df]
-    df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pvtarif', 'elecpri', 'angle_tilt_df']
+    df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   pv,  pvtarif,   elecpri,    angle_tilt_df,  Map_egid_nodes]
+    df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_nodes']
 
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):
@@ -728,7 +723,8 @@ def get_estim_instcost_function(pvalloc_settings):
 def define_construction_capacity(
         pvalloc_settings, 
         topo_func, 
-        ts_list_func,):
+        df_list_func, df_names_func,
+        ts_list_func, ts_names_func):
     """
     Based on the selection of pvalloc_settings for the prediction, this function will define a time series for
     the construction capacity of new PV installations for the comming months. 
@@ -745,7 +741,8 @@ def define_construction_capacity(
     log_file_name_def = pvalloc_settings['log_file_name']
 
     topo = topo_func
-    ts_list = ts_list_func
+    ts_list, ts_names = ts_list_func, ts_names_func
+    df_list, df_names = df_list_func, df_names_func
     print_to_logfile('run function: define_construction_capacity.py', log_file_name_def)
 
 
@@ -761,9 +758,13 @@ def define_construction_capacity(
 
 
     # IMPORT ----------------------------------------------------------------------------
-    Map_daterange = ts_list[0]
-    pv = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/pv.parquet')
-    Map_egid_pv = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_pv.parquet')
+    # Map_daterange = ts_list[0]
+    # pv = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/pv.parquet')
+    # Map_egid_pv = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_pv.parquet')
+
+    Map_daterange = ts_list[ts_names.index('Map_daterange')]
+    pv = df_list[df_names.index('pv')]
+    Map_egid_pv = df_list[df_names.index('Map_egid_pv')]
 
     topo_keys = list(topo.keys())
 
