@@ -1,8 +1,10 @@
 import os
 
+import pv_allocation.default_settings
 
+from pv_allocation.default_settings import extend_pvalloc_scen_with_defaults
 
-# SETTINGS DEFINITION =========================================================
+# SETTINGS DEFINITION ==================================================================================================================
 
 # data_aggregation ------------------------------------------------------------
 dataagg_settings = {
@@ -50,37 +52,40 @@ dataagg_settings = {
 
 # pv_allocation ----------------------------------------------------------------
 pvalloc_settings = {
-                'name_dir_export': 'pvalloc_BSBLSO_wrkn_prgrss',              # name of the directory where all proccessed data is stored at the end of the code file 
+                'name_dir_export': 'pvalloc_BL_smallsample',              # name of the directory where all proccessed data is stored at the end of the code file 
                 'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h', # name of the directory where preprepared data is stored and accessed by the code
-                'script_run_on_server': False,                           # F: run on private computer, T: run on server
-                'fast_debug_run': False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
-                'show_debug_prints': True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
-                'n_egid_in_topo': 7000, 
                 'wd_path_laptop': 'C:/Models/OptimalPV_RH',              # path to the working directory on Raul's laptop
                 'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',   # path to the working directory on the server
 
-                'kt_numbers': [13,], #[11,12,13],                           # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain indiviual municipalities
-                'bfs_numbers': [2549, 2574, 2612, 2541, 2445, 2424, 2463, 2524, 2502, 2492], # list of bfs numbers to be considered
-                
-                # 'topology_year_range':[2019, 2022]
-                # 'prediction_year_range':[2023, 2025],
+                'kt_numbers': [], # [13, ][11,12,13],                           # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain indiviual municipalities
+                'bfs_numbers': [2791, 2784, 2781, 2789, 2782, 2793, 2787, 2792, 2613, 2614, 2476, 2477],
                 'T0_prediction': '2023-01-01 00:00:00', 
                 'months_lookback': 12*1,
-                'months_prediction': 3,
-                'recreate_topology':            True, 
-                'recalc_economics_topo_df':     False,
-                'create_map_of_topology':       False,
-                'recalc_npv_all_combinations':  False,
-                'run_allocation_loop':          True,
+                'months_prediction': 5,
 
+                'script_run_on_server':     False,                           # F: run on private computer, T: run on server
+                'show_debug_prints':        True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
+                'fast_debug_run':           False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
+                'n_egid_in_topo': 200, 
+                'recreate_topology':            True, 
+                'recalc_economics_topo_df':     True,
+                'run_allocation_loop':          False,
+
+                'create_map_of_topology':       False,
+
+                'recalc_npv_all_combinations':  True,
                 'test_faster_if_subdf_deleted': False,
                 'test_faster_npv_update_w_subdf_npry': True, 
 
                 'algorithm_specs': {
-                    'rand_seed': 42, 
-                    'safety_counter_max': 5000,
+                    'inst_selection_method': 'prob_weighted_npv', # random, prob_weighted_npv, 
+                    'montecarlo_iterations': 1,
+                    'keep_files_each_iterations': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
+                    'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
+                    'rand_seed': 42,                            # random seed set to int or None
+                    'while_inst_counter_max': 5000,
                     'capacity_tweak_fact': 1, 
-                    'topo_subdf_partitioner': 9*(10**8),
+                    'topo_subdf_partitioner': 800,
                 },
                 'gridprem_adjustment_specs': {
                     'voltage_assumption': '',
@@ -101,15 +106,15 @@ pvalloc_settings = {
                     #     6: [15000, 50],
                     #     },},
                 'tech_economic_specs': {
+                    'self_consumption_ifapplicable': 1,
                     'interest_rate': 0.01,
                     'pvtarif_year': 2022, 
                     'pvtarif_col': ['energy1', 'eco1'],
                     'elecpri_year': 2022,
                     'elecpri_category': 'H8', 
                     'invst_maturity': 25,
-                    'self_consumption_ifapplicable': 1,
                     'conversion_m2tokW': 0.1,  # A 1m2 area can fit 0.1 kWp of PV Panels
-                    },
+                },
                 'weather_specs': {
                     'meteoblue_col_radiation_proxy': 'Basel Direct Shortwave Radiation',
                     'weather_year': 2022,
@@ -135,50 +140,63 @@ pvalloc_settings = {
                     # 'GENH': ['7580', '7581', '7582'],   # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
                                                         # GANZWHG - total number of apartments in building
                                                         # GAZZI - total number of rooms in building
-                    },
-                'assumed_parameters': {
                 },
+    }
 
-                'topo_type': 1,              # 1: all data, all egid  2: all data, only egid in solkat,  3: only partitions + Mappings, all egid, 4: only partitions + Mappings, only egid in solkat
-                'rate_operation_cost': 0.01,                # assumed rate of operation cost (of investment cost)
-                'NPV_include_wealth_tax': False,            # F: exclude wealth tax from NPV calculation, T: include wealth tax in NPV calculation
-                'solkat_house_type_class': [0,],            # list of house type classes to be considered
-                }
+pvalloc_scenarios={
+    'pvalloc_smallBL_SLCTN_npv_weighted': {
+            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+
+            'recreate_topology':            False, 
+            'recalc_economics_topo_df':     False,
+            'run_allocation_loop':          True,
+
+            'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
+        },
+
+    'pvalloc_smallBL_SLCTN_random': {
+            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+
+            'recreate_topology':            False, 
+            'recalc_economics_topo_df':     False,
+            'run_allocation_loop':          True,
+
+            'algorithm_specs': {'inst_selection_method': 'random',},
+        },
+        'pvalloc_BL_SLCTN_random': {
+            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+
+            'kt_numbers': [13, ],
+
+            'recreate_topology':            True,
+            'recalc_economics_topo_df':     True,
+            'run_allocation_loop':          True,
+
+            'algorithm_specs': {'inst_selection_method': 'random',},
+
+        }
+
+}
+
+
+pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
+print(pvalloc_scenarios)
+# EXECUTION ==================================================================================================================
+
+
+# RUN  ------------------------------------------------------------------------
+# with open(f'{dataagg_settings["wd_path_laptop"]}/data_aggregation_MASTER.py', 'r') as f:
+#     script_code = f.read()
+# exec(script_code)
 
 
 
+for k_sett, scen_sett in pvalloc_scenarios.items():
+    pvalloc_settings = scen_sett
+    with open(f'{pvalloc_settings["wd_path_laptop"]}/pv_allocation_MASTER.py', 'r') as f:
+        script_code = f.read()
+    exec(script_code)
 
-
-# EXECUTION ====================================================================
-
-
-# for setting in dataagg_settings:
-#     with open(f'{setting["wd_path_laptop"]}/data_aggregation_MASTER.py', 'r') as f:
-#         script_code = f.read()
-#     exec(script_code)
-
-# TEST if NPARRAY LOOKUPS FOR SUBDFs IN NPV CALCULATION ARE FASTER
-
-
-# for setting in pvalloc_settings:
-#     with open(f'{setting["wd_path_laptop"]}/pv_allocation_MASTER.py', 'r') as f:
-#         script_code = f.read()
-#     exec(script_code)
-
-pvalloc_settings['name_dir_export'] = 'pvalloc_BSBLSO_wrkn_prgrss_1'
-
-with open(f'{pvalloc_settings["wd_path_laptop"]}/pv_allocation_MASTER.py', 'r') as f:
-    script_code = f.read()
-exec(script_code)
-
-
-
-pvalloc_settings['name_dir_export'] = 'pvalloc_BSBLSO_wrkn_prgrss_2'
-pvalloc_settings['test_faster_npv_update_w_subdf_npry'] = False
-
-with open(f'{pvalloc_settings["wd_path_laptop"]}/pv_allocation_MASTER.py', 'r') as f:
-    script_code = f.read()
-exec(script_code)
 
 
 # END ==========================================================================

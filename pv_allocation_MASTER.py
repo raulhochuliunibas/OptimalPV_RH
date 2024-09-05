@@ -352,7 +352,12 @@ if  not os.path.exists(f'{data_path}/output/{pvalloc_settings["name_dir_export"]
 else:
     today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
-    os.makedirs(dir_alloc_moveto)
+    if not os.path.exists(dir_alloc_moveto):
+        os.makedirs(dir_alloc_moveto)
+    elif os.path.exists(dir_alloc_moveto):
+        os.rmdir(dir_alloc_moveto) 
+        os.makedirs(dir_alloc_moveto)
+
 file_to_move = glob.glob(f'{data_path}/output/pvalloc_run/*')
 for f in file_to_move:
     if os.path.isfile(f):
