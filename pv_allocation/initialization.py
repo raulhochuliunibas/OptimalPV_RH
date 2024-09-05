@@ -31,13 +31,14 @@ def get_interim_path(pvalloc_settings):
 
     interim_pvalloc_folder = glob.glob(f'{data_path_def}/output/{name_dir_export_def}*')
     if len(interim_pvalloc_folder) == 0:
-        checkpoint_to_logfile(f'No existing interim pvalloc folder found, use "pvalloc_run" instead', log_file_name_def)
+        checkpoint_to_logfile(f'ATTENTION! No existing interim pvalloc folder found, use "pvalloc_run" instead', log_file_name_def)
         iterim_path = f'{data_path_def}/output/pvalloc_run'
 
     if len(interim_pvalloc_folder) > 0:
         iterim_path = interim_pvalloc_folder[-1]
 
     return iterim_path
+
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -368,8 +369,7 @@ def import_prepre_AND_create_topology(
                 'eco1': pvtarif_sub['eco1'].mean(),
             }
         
-            checkpoint_to_logfile(f'multiple pvtarif data for EGID {egid}', log_file_name_def, 3, show_debug_prints_def)
-            # ewr_info = {}
+            # checkpoint_to_logfile(f'multiple pvtarif data for EGID {egid}', log_file_name_def, 3, show_debug_prints_def)
             CHECK_egid_with_problems.append((egid, 'multiple pvtarif data'))
 
 
@@ -435,13 +435,12 @@ def import_prepre_AND_create_topology(
 
         # Checkpoint prints
         if i % modulus_print == 0:
-            spacer = f'\t' if i < 100 else f''
-            print_to_logfile(f'-- EGID {i} of {len(gwr["EGID"])} {spacer}{15*"-"}', log_file_name_def)
+            print_to_logfile(f'\t -- EGID {i} of {len(gwr["EGID"])} {15*"-"}', log_file_name_def)
 
         
     # end loop ------------------------------------------------
     # gwr['EGID'].apply(populate_topo_byEGID)
-    # checkpoint_to_logfile('end attach to topo', log_file_name_def, 1 , True)
+    checkpoint_to_logfile('end attach to topo', log_file_name_def, 1 , True)
 
 
 
@@ -652,42 +651,7 @@ def import_ts_data(
     # RETURN ----------------------------------------------------------------------------
     return ts_list, ts_names
 
-# ------------------------------------------------------------------------------------------------------
-# import existing ts data
-# ------------------------------------------------------------------------------------------------------
-# > for now this part of the code runs in seconds, not needed to rely on previous runs to make it faster. 
-"""
-def import_exisitng_ts_data(
-        pvalloc_settings, ):
-    
-    name_dir_export_def = pvalloc_settings['name_dir_export']
-    data_path_def = pvalloc_settings['data_path']
-    log_file_name_def = pvalloc_settings['log_file_name']
 
-    print_to_logfile('run function: import_existing_topology', log_file_name_def)
-
-    # import existing topo & Mappings ---------
-    interim_pvalloc_folder = glob.glob(f'{data_path_def}/output/{name_dir_export_def}*')
-    if len(interim_pvalloc_folder) == 0:
-        checkpoint_to_logfile(f'ERROR: No existing interim pvalloc folder found', log_file_name_def)
-        interim_path = f'{data_path_def}/output/pvalloc_run' 
-
-    if len(interim_pvalloc_folder) >  1:
-        interim_path = interim_pvalloc_folder[-1]
-    else:
-        interim_path = interim_pvalloc_folder[0]
-
-    ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts']
-    ts_list = []
-
-    for t in ts_names:
-        f = glob.glob(f'{interim_path}/{t}.*')
-        if len(f) == 1:
-            ts_list.append(pd.read_parquet(f[0]))
-
-    return ts_list
-"""
-    
 
 # ------------------------------------------------------------------------------------------------------
 # import inst cost estimation func
@@ -716,7 +680,8 @@ def get_estim_instcost_function(pvalloc_settings):
 
     return estim_instcost_chfpkW, estim_instcost_chftotal
 
-    
+
+
 # ------------------------------------------------------------------------------------------------------
 # CONSTRUCTION CAPACITY for pv installations
 # ------------------------------------------------------------------------------------------------------
@@ -852,6 +817,49 @@ def define_construction_capacity(
     constrcapa.to_csv(f'{data_path_def}/output/pvalloc_run/constrcapa.csv', index=False)
 
     return constrcapa, months_prediction, months_lookback
+
+
+
+
+
+# TO BE DELETED
+
+# ------------------------------------------------------------------------------------------------------
+# import existing ts data
+# ------------------------------------------------------------------------------------------------------
+# > for now this part of the code runs in seconds, not needed to rely on previous runs to make it faster. 
+"""
+def import_exisitng_ts_data(
+        pvalloc_settings, ):
+    
+    name_dir_export_def = pvalloc_settings['name_dir_export']
+    data_path_def = pvalloc_settings['data_path']
+    log_file_name_def = pvalloc_settings['log_file_name']
+
+    print_to_logfile('run function: import_existing_topology', log_file_name_def)
+
+    # import existing topo & Mappings ---------
+    interim_pvalloc_folder = glob.glob(f'{data_path_def}/output/{name_dir_export_def}*')
+    if len(interim_pvalloc_folder) == 0:
+        checkpoint_to_logfile(f'ERROR: No existing interim pvalloc folder found', log_file_name_def)
+        interim_path = f'{data_path_def}/output/pvalloc_run' 
+
+    if len(interim_pvalloc_folder) >  1:
+        interim_path = interim_pvalloc_folder[-1]
+    else:
+        interim_path = interim_pvalloc_folder[0]
+
+    ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts']
+    ts_list = []
+
+    for t in ts_names:
+        f = glob.glob(f'{interim_path}/{t}.*')
+        if len(f) == 1:
+            ts_list.append(pd.read_parquet(f[0]))
+
+    return ts_list
+"""
+    
 
 
 
