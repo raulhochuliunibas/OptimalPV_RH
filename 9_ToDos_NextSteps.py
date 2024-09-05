@@ -56,9 +56,9 @@ if True:
 # OK - func to import and transform all prepreped data
 #   > return all relevant dfs
 # OK - func to create pv topo dict
-#   TODO: OK A - add Ausrichtung and Neigung to the topo for later uses
-#   TODO: OK A - find a functional way to adjust production to Ausrichtung (Neigung)
-#   TODO: OK A - add a fictive node to kantons 11, 12, 13 egids (just a plain csv, then merge it with empty gridprem_ts) 
+#   OK A - add Ausrichtung and Neigung to the topo for later uses
+#   OK A - find a functional way to adjust production to Ausrichtung (Neigung)
+#   OK A - add a fictive node to kantons 11, 12, 13 egids (just a plain csv, then merge it with empty gridprem_ts) 
 #   > return dict
 # OK - func to attach all roof partition combos to dict
 #   > return dict
@@ -76,16 +76,64 @@ if True:
 # OK:  A - define Construction capacity per month
 
 # ALLOCATION
-# - loop for month
+
+# LOOP for MONTE CARLO
+#   - #TODO:  - create copies of all the data objects that are needed "fresh" for each iteration. oterhwise iter2
+#               will be influenced by iter1 (will start where iter1 ended)
+#   - #TODO:OK A - create a directory to store all the monte carlo iterations
+
+#        - LOOP for MONTH
+#          - update npv for all non pv buildings
+#            OK A - get all topo_time_subdf from many seperated sub_topo_dfs.parquet by EGID
+#            > return npv_df
+#       
+#          - func to update feedin premium
+#            OK A - get all installations from topo.dict
+#            OK A - calculate production HOYs and find where voltage level meets tier
+#            OK A - update gridprem_ts
+#            > return premium TS
+#       
+#          - pick installation
+#            OK A - create selection mechanism NPV based as function
+#            OK A - create random selection mechanism as function (for comparision)
+#       
+#          - add picked installation to topo.dict 
+#       
+#          - export built installations for later visualizations
+
+#   - #TODO:OK A - copy-paste the MC iteration to MC dir
+#   - #TODO:OK B - select only the relevant output files to store in MC dir
+
+
+# -----------------------------------------------------------------------------
+# visualizations_MASTER.py 
+# -----------------------------------------------------------------------------
+
+# Create plot functions for the following:
+
+# - individual scenarios
+#   TODO: ? - Amount of installed capacity per node (avg incl std bands)
+#   TODO: ? - Amount of installed capacity per bfs (avg incl std bands)
+
+
+# - aggregated scenarios
+#   TODO: ? - Avg Amount of installed capacity in months (avg incl std bands)
+#   TODO: ? - Avg Production HOY per scenario (avg incl std bands)
+#   TODO: ? - Final avg gridprem ts per scenario (avg incl std bands)
+
+# 
+
+
+
+
+
+
+
+
+
 #   - pick building for PV
 
-#   - func to update feedin premium
-#   TODO: OK A - get all installations from topo.dict
-#   TODO: A - calculate production HOYs and find where voltage level meets tier
-#   TODO: A - update gridprem_ts
-#   > return premium TS
 
-#   TODO: A - Update NPV calculations of every house using npv_df from beginning of allocation 
 
 # TO-DOs:
 # TODO: Adjust GBAUJ to other variable
