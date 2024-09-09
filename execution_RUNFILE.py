@@ -2,6 +2,7 @@ import os
 
 import data_aggregation_MASTER
 import pv_allocation_MASTER
+import visualization_MASTER
 
 from data_aggregation.default_settings import extend_dataag_scen_with_defaults
 from pv_allocation.default_settings import extend_pvalloc_scen_with_defaults
@@ -9,6 +10,7 @@ from pv_allocation.default_settings import extend_pvalloc_scen_with_defaults
 
 # SETTINGS DEFINITION ==================================================================================================================
 os.chdir('C:/Models/OptimalPV_RH')
+
 
 # data_aggregation 
 datagg_scenarios = {
@@ -23,25 +25,33 @@ datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
 # pv_allocation 
 pvalloc_scenarios={
     'pvalloc_smallBL_SLCTN_npv_weighted': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-  
-            'recreate_topology':            True, 
-            'recalc_economics_topo_df':     True,
-            'run_allocation_loop':          True,
-
             'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
     },
     'pvalloc_smallBL_SLCTN_random': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-
-            'recreate_topology':            True, 
-            'recalc_economics_topo_df':     True,
-            'run_allocation_loop':          True,
-
             'algorithm_specs': {'inst_selection_method': 'random',},
-        },
+    },
+    # 'pvalloc_smallBL_1y_npv_weighted': {
+    #         'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+    #         'months_prediction': 12,
+    #         'recreate_topology':            True, 
+    #         'recalc_economics_topo_df':     True,
+    #         'run_allocation_loop':          True,
 
-    'pvalloc_BL_SLCTN_random': {
+    #         'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
+    # },
+    # 'pvalloc_smallBL_1y_random': {
+    #         'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',    
+    #         'months_prediction': 12,
+    #         'recreate_topology':            True,
+    #         'recalc_economics_topo_df':     True,
+    #         'run_allocation_loop':          True,
+
+    #         'algorithm_specs': {'inst_selection_method': 'random',},
+    # },
+}
+
+parkplatz = {
+        'pvalloc_BL_SLCTN_random': {
             'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
             'kt_numbers': [13, ],
             'recreate_topology':            True,
@@ -70,7 +80,7 @@ print(pvalloc_scenarios)
 
 
 # vsualiastion 
-visualisations_settings = {
+visual_settings= {
     }
 
 
@@ -89,9 +99,9 @@ for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
     pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
     
-    # with open(f'{pvalloc_settings["wd_path_laptop"]}/pv_allocation_MASTER.py', 'r') as f:
-    #     script_code = f.read()
-    # exec(script_code)
+
+# VISUALISATION RUNs  ------------------------------------------------------------------------
+visualization_MASTER.visualization_MASTER(pvalloc_scenarios, visual_settings)
 
 
 

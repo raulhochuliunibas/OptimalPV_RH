@@ -112,14 +112,16 @@ if True:
 # Create plot functions for the following:
 
 # - individual scenarios
-#   TODO: ? - Amount of installed capacity per node (avg incl std bands)
-#   TODO: ? - Amount of installed capacity per bfs (avg incl std bands)
+#   TODO: A - Amount of installed capacity per node (avg incl std bands)
+#   TODO: A - Amount of installed capacity per bfs (avg incl std bands)
+#   TODO: ? - Map of covered regions (bfs) with installed capacity
+#   TODO: ? - Avg building characteristics (amount of houses in each class etc., with x roof partitions etc.)
 
 
 # - aggregated scenarios
-#   TODO: ? - Avg Amount of installed capacity in months (avg incl std bands)
-#   TODO: ? - Avg Production HOY per scenario (avg incl std bands)
-#   TODO: ? - Final avg gridprem ts per scenario (avg incl std bands)
+#   TODO: A - Avg Amount of installed capacity in months (avg incl std bands)
+#   TODO: A - Avg Production HOY per scenario (avg incl std bands)
+#   TODO: A - Final avg gridprem ts per scenario (avg incl std bands)
 
 # 
 

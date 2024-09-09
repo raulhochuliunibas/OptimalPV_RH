@@ -1,40 +1,67 @@
 import os
+import pandas as pd
+import numpy as np
+import json
 import winsound
-
-visual_settings = {
-    'wd_path_laptop': 'C:/Models/OptimalPV_RH',
-
-    'general_specs': {
-    }, 
-    'asdf': {
-        'plot_show': True, 
-        'plot_save': True,
-        'import_path': 'C:\Models\OptimalPV_RH_data\output\pvalloc_BSBLSO_wrkn_prgrss_20240826_9h_BREAK',
-        'preprep_path': 'C:/Models/OptimalPV_RH_data/output/preprep_BSBLSO_15to23_20240821_02h',
-        'title': 'TOPO interim development',
-
-    }, 
-    'fdsa': {
-        'plot_show': True, 
-        'plot_save': True,
-        'import_path': 'preprep_BSBLSO_18to22_20240826_22h',
-        'preprep_path': '',
-        'title': 'TOPO interim development',
-
-    },
-}
-
-wd_path = f'C:/Models/OptimalPV_RH'
+import glob
 
 
-# RUN TEST: -----------------------------------------------------------
-with open(f'{wd_path}/visualizations_MASTER.py', 'r') as f:
-    script_code = f.read()
+wd_path = 'C:/Models/OptimalPV_RH'
+data_path = f'{wd_path}_data'
 
-exec(script_code)
+topo = json.load(open(f'{data_path}/output/pvalloc_smallBL_SLCTN_npv_weighted/topo_egid.json', 'r'))
+
+# topo characteristics
+topo[list(topo.keys())[0]].keys()
+topo[list(topo.keys())[0]]['pv_inst']
 
 
-print('end)')
-winsound.Beep(2000, 100)
-winsound.Beep(2000, 100)
+all_topo_m = glob.glob(f'{data_path}/output/pvalloc_smallBL_SLCTN_npv_weighted/interim_predictions/topo*.json')
 
+for f in all_topo_m: 
+
+    topo = json.load(open(f, 'r'))
+    print(f'\ncounts for {f.split("topo_")[-1].split(".json")[0]}')
+
+    egid_list, gklas_list, inst_tf_list, inst_info_list, inst_id_list, beginop_list, power_list = [], [], [], [], [], [], []
+    for k,v in topo.items():
+        # print(k)
+        egid_list.append(k)
+        gklas_list.append(v['gwr_info']['gklas'])
+        inst_tf_list.append(v['pv_inst']['inst_TF'])
+        inst_info_list.append(v['pv_inst']['info_source'])
+        if 'xtf_id' in v['pv_inst']:
+            inst_id_list.append(v['pv_inst']['xtf_id'])
+        else:   
+            inst_id_list.append('')
+        beginop_list.append(v['pv_inst']['BeginOp'])
+        power_list.append(v['pv_inst']['TotalPower'])
+    # for ls in [egid_list, gklas_list, inst_tf_list, inst_info_list, inst_id_list, beginop_list]:
+    #     print(len(ls))
+
+    topo_df = pd.DataFrame({'egid': egid_list, 'gklas': gklas_list, 'inst_tf': inst_tf_list, 'inst_info': inst_info_list, 
+                            'inst_id': inst_id_list, 'beginop': beginop_list, 'power': power_list})
+    
+
+
+
+topo = json.load(open(f'{data_path}/output/pvalloc_smallBL_SLCTN_npv_weighted/topo_egid.json', 'r'))
+egid_list, gklas_list, inst_tf_list, inst_info_list, inst_id_list, beginop_list, power_list = [], [], [], [], [], [], []
+for k,v in topo.items():
+    # print(k)
+    egid_list.append(k)
+    gklas_list.append(v['gwr_info']['gklas'])
+    inst_tf_list.append(v['pv_inst']['inst_TF'])
+    inst_info_list.append(v['pv_inst']['info_source'])
+    if 'xtf_id' in v['pv_inst']:
+        inst_id_list.append(v['pv_inst']['xtf_id'])
+    else:   
+        inst_id_list.append('')
+    beginop_list.append(v['pv_inst']['BeginOp'])
+    power_list.append(v['pv_inst']['TotalPower'])
+
+topo_df = pd.DataFrame({'egid': egid_list, 'gklas': gklas_list, 'inst_tf': inst_tf_list, 'inst_info': inst_info_list,
+                        'inst_id': inst_id_list, 'beginop': beginop_list, 'power': power_list})
+
+topo_df.to_csv(f'{wd_path}/topo_df.csv')
+print(topo_df['PV_INST'].value_counts())

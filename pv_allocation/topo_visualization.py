@@ -23,18 +23,19 @@ from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, check
 # visualization of PV topology
 # ------------------------------------------------------------------------------------------------------
 def create_map_of_topology(
-        pvalloc_settings, 
-        topo_df_func ):
+        pvalloc_settings, ):
     
     # setup -----------------------------------------------------
     name_dir_import_def = pvalloc_settings['name_dir_import']
     data_path_def = pvalloc_settings['data_path']
     log_file_name_def = pvalloc_settings['log_file_name']
 
-    topo_df= topo_df_func 
+    # topo_df= topo_df_func 
 
 
     # import geo data -----------------------------------------------------
+    topo_df = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/topo_df.parquet')
+
     if pvalloc_settings['fast_debug_run']:
         solkat_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/solkat_gdf.geojson', rows=50)
         gwr_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson', rows = 50)
