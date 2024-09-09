@@ -285,14 +285,14 @@ def pv_allocation_MASTER(pvalloc_settings_func):
 
 
             # GRID PREM UPDATE ==========
-            algo.update_gridprem(pvalloc_settings, topo, 
+            algo.update_gridprem(pvalloc_settings,
                         df_list, df_names,
                         ts_list, ts_names, 
                         m)
             
 
             # NPV UPDATE ==========
-            npv_df = algo.update_npv_df(pvalloc_settings, topo, 
+            npv_df = algo.update_npv_df(pvalloc_settings,
                         groupby_cols_topoaggdf, agg_cols_topoaggdf, 
                         df_list, df_names,
                         ts_list, ts_names,)

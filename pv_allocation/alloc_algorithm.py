@@ -107,7 +107,9 @@ def calc_economics_in_topo_df(
     if not os.path.exists(subdf_path):
         os.makedirs(subdf_path)
     else:
-        os.remove(glob.glob(f'{subdf_path}/*'))
+        old_files = glob.glob(f'{subdf_path}/*')
+        for f in old_files:
+            os.remove(f)
     
 
     # MERGE + GET ECONOMIC VALUES FOR NPV CALCULATION =============================================
@@ -165,7 +167,6 @@ def calc_economics_in_topo_df(
 # ------------------------------------------------------------------------------------------------------
 def update_gridprem(
         pvalloc_settings,
-        topo_func, 
         df_list_func, df_names_func,
         ts_list_func, ts_names_func,
         month_func,):
@@ -184,12 +185,12 @@ def update_gridprem(
     # checkpoint_to_logfile(f'    run function: update_gridprem', log_file_name_def, 2, show_debug_prints_def)
     print_to_logfile(f'run function: update_gridprem', log_file_name_def)
     
-    topo = topo_func
     df_list, df_names = df_list_func, df_names_func
     ts_list, ts_names = ts_list_func, ts_names_func
     m = month_func
 
     # import  -----------------------------------------------------
+    topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
     gridprem_ts = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
     pv = df_list[df_names.index('pv')]
 
@@ -200,17 +201,32 @@ def update_gridprem(
     # import topo_time_subdfs -----------------------------------------------------
     topo_subdf_paths = glob.glob(f'{data_path_def}/output/pvalloc_run/topo_time_subdf/*.parquet')
     agg_subinst_df_list = []
+    no_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == False]
+
 
     path = topo_subdf_paths[0]
     for i, path in enumerate(topo_subdf_paths):
         # print_to_logfile(f'  {2*"-"} update gridprem (tranche{i}/{len(topo_subdf_paths)}) {6*"-"}', log_file_name_def)
+        if i < 5 : 
+            checkpoint_to_logfile(f'updated gridprem_ts', log_file_name_def, 2, show_debug_prints_def)
         if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //5 ) == 0:
             checkpoint_to_logfile(f'updated gridprem_ts (tranche {i} of {len(topo_subdf_paths)})', log_file_name_def, 2, show_debug_prints_def)
-        else:
-            checkpoint_to_logfile(f'updated gridprem_ts', log_file_name_def, 2, show_debug_prints_def)
 
+        # import dask.dataframe as dd
+        # subinst = dd.read_parquet(path).compute()
         subinst = pd.read_parquet(path)
 
+        # Only consider production for houses that have built a pv installation
+        if any(subinst['pvinst_TF'] == True):
+            print('PV installation found')
+        subinst['copy_pvprod_kW'] = subinst['pvprod_kW']
+        subinst['has_pv'] = subinst.loc[subinst['EGID'].isin(no_pv_egid), 'has_pv'] = False
+        subinst['has_pv'] = subinst.loc[subinst['EGID'].isin(no_pv_egid) == False, 'has_pv'] = True
+
+        subinst['pvprod_kW'] = np.where(subinst['has_pv'] == False, 0, subinst['copy_pvprod_kW'])
+        # subinst.drop(columns=['copy_pvprod_kW', 'has_pv'], inplace=True)
+
+        # attempt for a more elaborate way to handle already installed installations
         if False:
             pv['pvsource'] = 'pv_df'
             pv['pvid'] = pv['xtf_id']
@@ -231,7 +247,8 @@ def update_gridprem(
                     subinst.loc[idx, 'pvprod_kW'] = share * TotalPower
 
         agg_subinst = subinst.groupby(['grid_node', 't']).agg({'pvprod_kW': 'sum'}).reset_index()
-        agg_subinst_df_list.append(subinst)
+        del subinst
+        agg_subinst_df_list.append(agg_subinst)
     
     gridnode_df = pd.concat(agg_subinst_df_list)
     gridnode_df = gridnode_df.groupby(['grid_node', 't']).agg({'pvprod_kW': 'sum'}).reset_index() # groupby df again because grid nodes will be spreach accross multiple tranches
@@ -252,9 +269,14 @@ def update_gridprem(
     # export gridprem_ts -----------------------------------------------------
     gridprem_ts.to_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
 
+    # export by Month -----------------------------------------------------
     gridprem_by_M_path = f'{data_path_def}/output/pvalloc_run/pred_gridprem_by_M'
     if not os.path.exists(gridprem_by_M_path):
         os.makedirs(gridprem_by_M_path)
+
+    gridnode_df.to_parquet(f'{data_path_def}/output/pvalloc_run/pred_gridprem_by_M/gridprem_ts_{m}.parquet')
+    gridnode_df.to_csv(f'{data_path_def}/output/pvalloc_run/pred_gridprem_by_M/gridprem_ts_{m}.csv', index=False)
+
     gridprem_ts.to_parquet(f'{data_path_def}/output/pvalloc_run/pred_gridprem_by_M/gridprem_ts_{m}.parquet')
     gridprem_ts.to_csv(f'{data_path_def}/output/pvalloc_run/pred_gridprem_by_M/gridprem_ts_{m}.csv', index=False)
 
@@ -402,7 +424,6 @@ def update_gridprem(
 # UPDATE NPV_DF with NEW GRID PREMIUM TS
 # ------------------------------------------------------------------------------------------------------
 def update_npv_df(pvalloc_settings,
-                  topo_func,  
                   groupby_cols_func, agg_cols_func, 
                   df_list, df_names,
                   ts_list, ts_names,
@@ -423,7 +444,6 @@ def update_npv_df(pvalloc_settings,
 
     estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
 
-    topo = topo_func
     groupby_cols = groupby_cols_func
     agg_cols = agg_cols_func
 
@@ -431,8 +451,9 @@ def update_npv_df(pvalloc_settings,
     print_to_logfile(f'run: update_npv_df', log_file_name_def)
 
 
-    # import TS -----------------------------------------------------
+    # import -----------------------------------------------------
     gridprem_ts = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
+    topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
 
 
     # import topo_time_subdfs -----------------------------------------------------
@@ -442,7 +463,9 @@ def update_npv_df(pvalloc_settings,
 
     path = topo_subdf_paths[0]
     for i, path in enumerate(topo_subdf_paths):
-        print_to_logfile(f'  {2*"-"} update npv (tranche{i}/{len(topo_subdf_paths)}) {6*"-"}', log_file_name_def)
+        if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //5 ) == 0:
+            # print_to_logfile(f'  {2*"-"} update npv (tranche {i}/{len(topo_subdf_paths)}) {6*"-"}', log_file_name_def)
+            checkpoint_to_logfile(f'updated npv (tranche {i}/{len(topo_subdf_paths)})', log_file_name_def, 2, show_debug_prints_def)
         subdf = pd.read_parquet(path)
 
         # drop egids with pv installations
@@ -464,11 +487,13 @@ def update_npv_df(pvalloc_settings,
 
         subdf['selfconsum_kW'], subdf['netdemand_kW'], subdf['netfeedin_kW'], subdf['econ_inc_chf'], subdf['econ_spend_chf'] = selfconsum_kW, netdemand_kW, netfeedin_kW, econ_inc_chf, econ_spend_chf
 
-        checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 2, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
+        if i <5: 
+            checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 2, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
 
         agg_subdf = subdf.groupby(groupby_cols).agg(agg_cols).reset_index()
         
-        checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 2, show_debug_prints_def)
+        if i <5:
+            checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 2, show_debug_prints_def)
 
         # create combinations ----------------------------------------------
         aggsub_npry = np.array(agg_subdf)
@@ -533,7 +558,8 @@ def update_npv_df(pvalloc_settings,
         
                
         # checkpoint_to_logfile(f'  created all df_uid combos in agg_subdf', log_file_name_def, 1)
-        checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', log_file_name_def, 1, show_debug_prints_def)
+        if i<5:
+            checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', log_file_name_def, 1, show_debug_prints_def)
 
         
 
@@ -546,12 +572,17 @@ def update_npv_df(pvalloc_settings,
             return npv
         aggsubdf_combo['NPV_uid'] = aggsubdf_combo.apply(compute_npv, axis=1)
 
-        checkpoint_to_logfile(f'\t computed NPV for agg_subdf', log_file_name_def, 2, show_debug_prints_def)
+        if i<5:
+            checkpoint_to_logfile(f'\t computed NPV for agg_subdf', log_file_name_def, 2, show_debug_prints_def)
 
         agg_npv_df_list.append(aggsubdf_combo)
 
     agg_npv_df = pd.concat(agg_npv_df_list)
     npv_df = agg_npv_df.copy()
+
+    # export -----------------------------------------------------
+    with open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'w') as f:
+        json.dump(topo, f)
 
     npv_df.to_parquet(f'{data_path_def}/output/pvalloc_run/agg_npv_df.parquet')
     return npv_df

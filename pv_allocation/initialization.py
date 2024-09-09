@@ -467,8 +467,7 @@ def import_prepre_AND_create_topology(
             m.to_parquet(f'{data_path_def}/output/pvalloc_run/{df_names[i]}.parquet')
         elif isinstance(m, dict):
             with open(f'{data_path_def}/output/pvalloc_run/{df_names[i]}.json', 'w') as f:
-                json.dump(m, f)
-        
+                json.dump(m, f)        
 
 
     # RETURN OBJECTS ============================================================================
