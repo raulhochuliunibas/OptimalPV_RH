@@ -44,10 +44,9 @@ if True:
     print('')
 
 # TODO: Check EGIDs in solkat for BSBL for not to have double counting.
-# TODO: some egid in gwr.parquet are double up to 10 times in the column, check why!
 
 # -----------------------------------------------------------------------------
-# pv_allocation__MASTER.py 
+# data_aggreation_MASTER.py 
 # -----------------------------------------------------------------------------
 
 
@@ -56,98 +55,33 @@ if True:
 # OK - func to import and transform all prepreped data
 #   > return all relevant dfs
 # OK - func to create pv topo dict
-#   OK A - add Ausrichtung and Neigung to the topo for later uses
-#   OK A - find a functional way to adjust production to Ausrichtung (Neigung)
-#   OK A - add a fictive node to kantons 11, 12, 13 egids (just a plain csv, then merge it with empty gridprem_ts) 
 #   > return dict
 # OK - func to attach all roof partition combos to dict
 #   > return dict
 # OK - filter all input data again by alloc settings such that the allocation algorithm is applicable also on larger preped data sets
 
+# B - func to create the feedin tarif TS (empty)
+#   > return TS
 
-#===============================
-# # BOOKMARK: 
-# - There is an issue with buildings that have a HUGE number of partitions. 
-#  > make either a function exporting all solkat with more than x rows for 1 egid
-#  > OR make a function after topo_df generation that matches the topo df to the geo data and exports it to a shape file
-#  > PLUS attach also exisiting pv installations to the topoology! so it is possible to see in topo_df which buildings have a pv installation already
-#===============================
 
-# OK:  A - define Construction capacity per month
+# A - define Construction capacity per month
 
 # ALLOCATION
+# - loop for month
 
-# LOOP for MONTE CARLO
-#   - #TODO:  - create copies of all the data objects that are needed "fresh" for each iteration. oterhwise iter2
-#               will be influenced by iter1 (will start where iter1 ended)
-#   - #TODO:OK A - create a directory to store all the monte carlo iterations
+#   - func to update pv topo dict
+#    . 
+#   > return dict   
 
-#        - LOOP for MONTH
-#          - update npv for all non pv buildings
-#            OK A - get all topo_time_subdf from many seperated sub_topo_dfs.parquet by EGID
-#            > return npv_df
-#       
-#          - func to update feedin premium
-#            OK A - get all installations from topo.dict
-#            OK A - calculate production HOYs and find where voltage level meets tier
-#            OK A - update gridprem_ts
-#            > return premium TS
-#       
-#          - pick installation
-#            OK A - create selection mechanism NPV based as function
-#            OK A - create random selection mechanism as function (for comparision)
-#       
-#          - add picked installation to topo.dict 
-#       
-#          - export built installations for later visualizations
-
-#   - #TODO:OK A - copy-paste the MC iteration to MC dir
-#   - #TODO:OK B - select only the relevant output files to store in MC dir
-
-
-# -----------------------------------------------------------------------------
-# visualizations_MASTER.py 
-# -----------------------------------------------------------------------------
-
-# Create plot functions for the following:
-
-# - individual scenarios
-#   TODO: A - Amount of installed capacity per node (avg incl std bands)
-#   TODO: A - Amount of installed capacity per bfs (avg incl std bands)
-#   TODO: ? - Map of covered regions (bfs) with installed capacity
-#   TODO: ? - Avg building characteristics (amount of houses in each class etc., with x roof partitions etc.)
-
-
-# - aggregated scenarios
-#   TODO: A - Avg Amount of installed capacity in months (avg incl std bands)
-#   TODO: A - Avg Production HOY per scenario (avg incl std bands)
-#   TODO: A - Final avg gridprem ts per scenario (avg incl std bands)
-
-# 
-
-
-
-
-
-
-
-
-
-#   - pick building for PV
-
-
+#   - func to update feedin premium
+#   > return premium TS
 
 # TO-DOs:
 # TODO: Adjust GBAUJ to other variable
 # TODO: Include WNART to only consider residential buildings for "primary living"
 # TODO: check in QGIS if GKLAS == 1273 are really also denkmalgeschützt buildings or just monuments
-# TODO: inst_power in allocation algorithm NOT weighted by angle tilt efficiency; But in updating of grid premium
-        # which one makes more sense?
-# TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
 
 
-
-#   - repick building for PV
 # -----------------------------------------------------------------------------
 # data / model extensions 
 # -----------------------------------------------------------------------------

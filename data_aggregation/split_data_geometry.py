@@ -94,7 +94,7 @@ def split_data_and_geometry(
     if not smaller_import_def:  
         solkat_all_gdf = gpd.read_file(f'{data_path_def}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH')
     elif smaller_import_def:
-        solkat_all_gdf = gpd.read_file(f'{data_path_def}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH', rows = 1000)
+        solkat_all_gdf = gpd.read_file(f'{data_path_def}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH', rows = 5000)
     checkpoint_to_logfile(f'import solkat, {solkat_all_gdf.shape[0]} rows (smaller_import: {smaller_import_def})', log_file_name_def, 2, show_debug_prints_def)
 
     solkat_all_gdf = attach_bfs_to_spatial_data(solkat_all_gdf, gm_shp_gdf)
@@ -112,19 +112,9 @@ def split_data_and_geometry(
         f.write(solkat_geo.to_json())
     checkpoint_to_logfile(f'exported solkat_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-
-    # subset for BSBLSO case -------------------
+    # subset for BSBLSO case
     bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13], data_path_def, log_file_name_def)
-
-    pv_bsblso_geo = pv_geo.loc[pv_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
-    if pv_bsblso_geo.shape[0] > 0:
-        with open (f'{data_path_def}/split_data_geometry/pv_bsblso_geo.geojson', 'w') as f:
-            f.write(pv_bsblso_geo.to_json())
-        checkpoint_to_logfile(f'exported pv_bsblso_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-
-                              
-
-    solkat_bsblso_geo = solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
+    solkat_bsblso_geo = solkat_geo[solkat_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
     if solkat_bsblso_geo.shape[0] > 0:
         with open (f'{data_path_def}/split_data_geometry/solkat_bsblso_geo.geojson', 'w') as f:
             f.write(solkat_bsblso_geo.to_json())
