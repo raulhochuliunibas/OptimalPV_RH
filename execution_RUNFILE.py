@@ -1,12 +1,107 @@
 import os
 
-import pv_allocation.default_settings
+import data_aggregation_MASTER
+import pv_allocation_MASTER
 
+from data_aggregation.default_settings import extend_dataag_scen_with_defaults
 from pv_allocation.default_settings import extend_pvalloc_scen_with_defaults
 
-# SETTINGS DEFINITION ==================================================================================================================
 
-# data_aggregation ------------------------------------------------------------
+# SETTINGS DEFINITION ==================================================================================================================
+os.chdir('C:/Models/OptimalPV_RH')
+
+# data_aggregation 
+datagg_scenarios = {
+    'preprep_BSBLSO_18to22':{
+        'show_debug_prints': True,
+        }, 
+}
+
+datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
+
+
+# pv_allocation 
+pvalloc_scenarios={
+    'pvalloc_smallBL_SLCTN_npv_weighted': {
+            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+  
+            'recreate_topology':            True, 
+            'recalc_economics_topo_df':     True,
+            'run_allocation_loop':          True,
+
+            'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
+    },
+    'pvalloc_smallBL_SLCTN_random': {
+            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+
+            'recreate_topology':            True, 
+            'recalc_economics_topo_df':     True,
+            'run_allocation_loop':          True,
+
+            'algorithm_specs': {'inst_selection_method': 'random',},
+        },
+
+    'pvalloc_BL_SLCTN_random': {
+            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+            'kt_numbers': [13, ],
+            'recreate_topology':            True,
+            'recalc_economics_topo_df':     True,
+            'run_allocation_loop':          True,
+
+            'algorithm_specs': {'inst_selection_method': 'random',      
+                                'topo_subdf_partitioner': 500,
+                                },
+        }, 
+        'pvalloc_BL_SLCTN_npv': {
+            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+            'kt_numbers': [13, ],
+            'recreate_topology':            True,
+            'recalc_economics_topo_df':     True,
+            'run_allocation_loop':          True,
+
+            'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',
+                                'topo_subdf_partitioner': 500,
+                                },
+        }
+}
+
+pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
+print(pvalloc_scenarios)
+
+
+# vsualiastion 
+visualisations_settings = {
+    }
+
+
+
+# EXECUTION ==================================================================================================================
+
+
+# DATA AGGREGATION RUNs  ------------------------------------------------------------------------
+for k_sett, scen_sett in datagg_scenarios.items():
+    dataagg_settings = scen_sett
+    # data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings)
+
+
+# ALLOCATION RUNs  ------------------------------------------------------------------------
+for k_sett, scen_sett in pvalloc_scenarios.items():
+    pvalloc_settings = scen_sett
+    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
+    
+    # with open(f'{pvalloc_settings["wd_path_laptop"]}/pv_allocation_MASTER.py', 'r') as f:
+    #     script_code = f.read()
+    # exec(script_code)
+
+
+
+# END ==========================================================================
+print(f'{54*"="}\n{5*" "}{10*"*"}{5*" "}END of RUNFILE{5*" "}{10*"*"}{5*" "}\n{54*"="}\n')
+
+
+
+
+# old settings dicts  >  to be deleted in Oct 2024
 dataagg_settings = {
         'name_dir_export': 'preprep_BSBLSO_18to22',     # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
         'script_run_on_server': False,                  # F: run on private computer, T: run on server
@@ -48,9 +143,6 @@ dataagg_settings = {
             }   
         }
 
-
-
-# pv_allocation ----------------------------------------------------------------
 pvalloc_settings = {
                 'name_dir_export': 'pvalloc_BL_smallsample',              # name of the directory where all proccessed data is stored at the end of the code file 
                 'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h', # name of the directory where preprepared data is stored and accessed by the code
@@ -142,62 +234,3 @@ pvalloc_settings = {
                                                         # GAZZI - total number of rooms in building
                 },
     }
-
-pvalloc_scenarios={
-    'pvalloc_smallBL_SLCTN_npv_weighted': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-
-            'recreate_topology':            False, 
-            'recalc_economics_topo_df':     False,
-            'run_allocation_loop':          True,
-
-            'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
-        },
-
-    'pvalloc_smallBL_SLCTN_random': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-
-            'recreate_topology':            False, 
-            'recalc_economics_topo_df':     False,
-            'run_allocation_loop':          True,
-
-            'algorithm_specs': {'inst_selection_method': 'random',},
-        },
-        'pvalloc_BL_SLCTN_random': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-
-            'kt_numbers': [13, ],
-
-            'recreate_topology':            True,
-            'recalc_economics_topo_df':     True,
-            'run_allocation_loop':          True,
-
-            'algorithm_specs': {'inst_selection_method': 'random',},
-
-        }
-
-}
-
-
-pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
-print(pvalloc_scenarios)
-# EXECUTION ==================================================================================================================
-
-
-# RUN  ------------------------------------------------------------------------
-# with open(f'{dataagg_settings["wd_path_laptop"]}/data_aggregation_MASTER.py', 'r') as f:
-#     script_code = f.read()
-# exec(script_code)
-
-
-
-for k_sett, scen_sett in pvalloc_scenarios.items():
-    pvalloc_settings = scen_sett
-    with open(f'{pvalloc_settings["wd_path_laptop"]}/pv_allocation_MASTER.py', 'r') as f:
-        script_code = f.read()
-    exec(script_code)
-
-
-
-# END ==========================================================================
-print(f'{54*"="}\n{5*" "}{10*"*"}{5*" "}END of RUNFILE{5*" "}{10*"*"}{5*" "}\n{54*"="}\n')
