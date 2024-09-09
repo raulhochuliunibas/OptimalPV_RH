@@ -64,7 +64,8 @@ objective:
 
 
 ## Nice to have for more utility later
-- make data import to prepreped data only for the selected number of municipalites, no just all of Switzerland
+- make data import to prepreped data only for the selected number of municipalites, no just all of Switzerland (# TODO: Alter import functions, such that you can only import a certain selection of cantons / gmeindes
+)
 - a single dict, py file for all model assumptions (numeric and boolean)
 
 - create a GWR>GM and SOLKAT>GM mapping for the spatial data

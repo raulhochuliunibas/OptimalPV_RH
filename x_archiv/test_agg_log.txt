@@ -1,0 +1,35 @@
+ 
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-12-12 10:15:03.841205 
+****************************************
+
+
+* finished loading administrative shp		runtime: N/A;   (stamp: 2023-12-12 10:15:05.398231)
+* finished loading roof solar kataster shp	runtime: 0 min 0 sec;   (stamp: 2023-12-12 10:15:05.603360)
+* finished loading building register pt		runtime: 0 min 46 sec;   (stamp: 2023-12-12 10:15:51.952658)
+* finished loading heat & cool demand pt	runtime: 0 min 0 sec;   (stamp: 2023-12-12 10:15:52.132490)
+* finished loading pv installation pt		runtime: 0 min 0 sec;   (stamp: 2023-12-12 10:15:52.234892)
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-12-12 10:16:30.378768 
+****************************************
+
+
+* finished loading administrative shp		runtime: 0 min 38 sec;   (stamp: 2023-12-12 10:16:31.028358)
+* finished loading roof solar kataster shp	runtime: 0 min 0 sec;   (stamp: 2023-12-12 10:16:31.123223)
+* finished loading building register pt		runtime: 0 min 49 sec;   (stamp: 2023-12-12 10:17:21.042495)
+* finished loading heat & cool demand pt	runtime: 0 min 0 sec;   (stamp: 2023-12-12 10:17:21.145825)
+* finished loading pv installation pt		runtime: 0 min 0 sec;   (stamp: 2023-12-12 10:17:21.221054)
+
+
+****************************************
+ started running main_file.py 
+ start at:2023-12-12 10:18:03.866065 
+****************************************
+
+

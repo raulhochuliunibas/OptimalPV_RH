@@ -1,0 +1,3 @@
+
+ try_map_roof_pv_from_server, time: 2024-01-05 09:44:09.938464 
+ ********** 
