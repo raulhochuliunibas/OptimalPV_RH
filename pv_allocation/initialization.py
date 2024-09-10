@@ -566,7 +566,7 @@ def import_ts_data(
     T0 = pd.to_datetime(f'{pvalloc_settings["T0_prediction"]}')
     start_loockback = T0 - pd.DateOffset(months=pvalloc_settings['months_lookback']) # + pd.DateOffset(hours=1)
     end_prediction = T0 + pd.DateOffset(months=pvalloc_settings['months_prediction']) - pd.DateOffset(hours=1)
-    date_range = pd.date_range(start=start_loockback, end=end_prediction, freq='H')
+    date_range = pd.date_range(start=start_loockback, end=end_prediction, freq='h')
     checkpoint_to_logfile(f'import TS: lookback range   {start_loockback} to {T0-pd.DateOffset(hours=1)}', log_file_name_def, 2)
     checkpoint_to_logfile(f'import TS: prediction range {T0} to {end_prediction}', log_file_name_def, 2)
 
@@ -714,9 +714,9 @@ def define_construction_capacity(
     T0 = pd.to_datetime(f'{pvalloc_settings["T0_prediction"]}')
     start_loockback = T0 - pd.DateOffset(months=pvalloc_settings['months_lookback']) #+ pd.DateOffset(hours=1)
     end_prediction = T0 + pd.DateOffset(months=pvalloc_settings['months_prediction']) - pd.DateOffset(hours=1)
-    month_range = pd.date_range(start=start_loockback, end=end_prediction, freq='M').to_period('M')
-    months_lookback = pd.date_range(start=start_loockback, end=T0, freq='M').to_period('M')
-    months_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='M').to_period('M')
+    month_range = pd.date_range(start=start_loockback, end=end_prediction, freq='ME').to_period('M')
+    months_lookback = pd.date_range(start=start_loockback, end=T0, freq='ME').to_period('M')
+    months_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME').to_period('M')
     checkpoint_to_logfile(f'constr_capacity: month lookback   {months_lookback[0]} to {months_lookback[-1]}', log_file_name_def, 2)
     checkpoint_to_logfile(f'constr_capacity: month prediction {months_prediction[0]} to {months_prediction[-1]}', log_file_name_def, 2)
 
