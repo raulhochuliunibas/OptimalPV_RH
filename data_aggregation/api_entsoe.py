@@ -124,7 +124,8 @@ def api_entsoe_ahead_elecpri_data(
     market_elecpri.columns = [col1, col2]
 
     # export
-    market_elecpri.to_parquet(f'{data_path_def}/output/preprep_data/market_elecpri.parquet')
+    market_elecpri.to_parquet(f'{data_path_def}/split_data_geometry/market_elecpri.parquet')
+    market_elecpri.to_csv(f'{data_path_def}/split_data_geometry/market_elecpri.csv', index=False)
     checkpoint_to_logfile(f'exported market_elecpri.parquet', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
 
 
