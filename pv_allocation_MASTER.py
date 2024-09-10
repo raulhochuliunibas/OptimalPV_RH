@@ -23,8 +23,6 @@ if True:
     import glob
     import shutil
     import winsound
-    import subprocess
-    import pprint
 
     # own packages and functions
     import auxiliary_functions
@@ -72,8 +70,9 @@ pvalloc_settings_local = {
         'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
         'rand_seed': 42,                            # random seed set to int or None
         'while_inst_counter_max': 5000,
-        'capacity_tweak_fact': 1, 
         'topo_subdf_partitioner': 800,
+
+        'tweak_capacity_fact': 1
     },
     'gridprem_adjustment_specs': {
         'voltage_assumption': '',
@@ -196,6 +195,9 @@ def pv_allocation_MASTER(pvalloc_settings_func):
 
     subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', log_name)
     constrcapa, months_prediction, months_lookback = define_construction_capacity(pvalloc_settings, topo, df_list, df_names, ts_list, ts_names)
+
+    #NOTE: changes from month to month are so small, that I need to tweak increase constrcapacity to see more changes in a shorter time period
+    constrcapa
 
 
 
@@ -339,6 +341,31 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                     safety_counter = 0
 
             checkpoint_to_logfile(f'end month allocation, runtime: {datetime.now() - start_allocation_month} (hh:mm:ss.s)', log_name, 1, show_debug_prints)
+
+
+
+    # GET TOPO_DF ---------------------------------------------------------------
+    # extract topo_df from topo dict for analysistopo = json.load(open(f'{data_path}/output/pvalloc_smallBL_SLCTN_npv_weighted/topo_egid.json', 'r'))
+    topo = json.load(open(f'{data_path}/output/pvalloc_run/topo_egid.json', 'r'))
+    egid_list, gklas_list, inst_tf_list, inst_info_list, inst_id_list, beginop_list, power_list = [], [], [], [], [], [], []
+    for k,v in topo.items():
+        # print(k)
+        egid_list.append(k)
+        gklas_list.append(v['gwr_info']['gklas'])
+        inst_tf_list.append(v['pv_inst']['inst_TF'])
+        inst_info_list.append(v['pv_inst']['info_source'])
+        if 'xtf_id' in v['pv_inst']:
+            inst_id_list.append(v['pv_inst']['xtf_id'])
+        else:   
+            inst_id_list.append('')
+        beginop_list.append(v['pv_inst']['BeginOp'])
+        power_list.append(v['pv_inst']['TotalPower'])
+
+    topo_df = pd.DataFrame({'egid': egid_list, 'gklas': gklas_list, 'inst_tf': inst_tf_list, 'inst_info': inst_info_list,
+                            'inst_id': inst_id_list, 'beginop': beginop_list, 'power': power_list})
+
+    topo_df['power'] = topo_df['power'].replace('',0).astype(float)
+    topo_df.to_parquet(f'{data_path}/output/pvalloc_run/topo_egid_df.parquet')
 
 
 

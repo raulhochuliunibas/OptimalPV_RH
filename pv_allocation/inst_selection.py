@@ -64,7 +64,7 @@ def select_AND_adjust_topology(pvalloc_settings,
     # else:
         # picked_uid = npv_pick['df_uid_combo']
 
-    inst_power = picked_flaech * conv_m2toKWP * pvalloc_settings['algorithm_specs']['capacity_tweak_fact']
+    inst_power = picked_flaech * conv_m2toKWP * pvalloc_settings['algorithm_specs']['tweak_capacity_fact']
     npv_pick['inst_power'] = inst_power
     
 

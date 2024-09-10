@@ -98,8 +98,6 @@ def calc_economics_in_topo_df(
                             'STROMERTRAG': stromertrag_list, 'NEIGUNG': neigung_list, 
                             'elecpri_Rp_kWh': elecpri_list})
     
-    topo_df.to_parquet(f'{data_path}/output/pvalloc_run/topo_df.parquet')
-
 
     # make or clear dir for subdfs ----------------------------------------------
     subdf_path = f'{data_path}/output/pvalloc_run/topo_time_subdf'
