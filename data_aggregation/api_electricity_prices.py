@@ -99,7 +99,7 @@ def api_electricity_prices_data(
     elecpri = elecpri[elecpri["bfs_number"].isin(bfs_numbers_str)]
 
     # export
-    elecpri.to_parquet(f'{data_path_def}/output/preprep_data/elecpri.parquet')
+    elecpri.to_parquet(f'{data_path_def}/split_data_geometry/elecpri.parquet')
     elecpri.to_csv(f'{data_path_def}/output/preprep_data/elecpri.csv', index=False)
     checkpoint_to_logfile(f'exported electricity prices', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 

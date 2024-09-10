@@ -5,6 +5,8 @@ import geopandas as gpd
 import  sqlite3
 import re
 
+from shapely.geometry import Point
+
 sys.path.append('..')
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
@@ -142,3 +144,15 @@ def sql_gwr_data(
     gwr.to_csv(f'{data_path_def}/output/preprep_data/gwr.csv', sep=';', index=False)
     gwr.to_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
     checkpoint_to_logfile(f'exported gwr data', log_file_name_def=log_file_name_def, n_tabs_def = 4)
+
+
+    # create spatial df and export -------------------
+    gwr = gwr.loc[(gwr['GKODE'] != '') & (gwr['GKODN'] != '')]
+    gwr[['GKODE', 'GKODN']] = gwr[['GKODE', 'GKODN']].astype(float)
+    gwr['geometry'] = gwr.apply(lambda row: Point(row['GKODE'], row['GKODN']), axis=1)
+    gwr_gdf = gpd.GeoDataFrame(gwr, geometry='geometry')
+    gwr_gdf.crs = 'EPSG:2056'
+    gwr_gdf = gwr_gdf.loc[:, ['EGID', 'geometry']]
+    gwr_gdf.to_file(f'{data_path_def}/split_data_geometry/gwr_gdf.geojson', driver='GeoJSON')
+
+
