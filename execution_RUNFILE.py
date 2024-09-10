@@ -1,6 +1,6 @@
 import os
 
-import data_aggregation_MASTER
+# import data_aggregation_MASTER
 import pv_allocation_MASTER
 import visualization_MASTER
 
@@ -30,24 +30,24 @@ pvalloc_scenarios={
     'pvalloc_smallBL_SLCTN_random': {
             'algorithm_specs': {'inst_selection_method': 'random',},
     },
-    'pvalloc_smallBL_10y_npv_weighted': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-            'months_prediction': 12*10,
-            'recreate_topology':            True, 
-            'recalc_economics_topo_df':     True,
-            'run_allocation_loop':          True,
+    # 'pvalloc_smallBL_10y_npv_weighted': {
+    #         'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+    #         'months_prediction': 12*10,
+    #         'recreate_topology':            True, 
+    #         'recalc_economics_topo_df':     True,
+    #         'run_allocation_loop':          True,
 
-            'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
-    },
-    'pvalloc_smallBL_10y_random': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',    
-            'months_prediction': 12*10,
-            'recreate_topology':            True,
-            'recalc_economics_topo_df':     True,
-            'run_allocation_loop':          True,
+    #         'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
+    # },
+    # 'pvalloc_smallBL_10y_random': {
+    #         'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',    
+    #         'months_prediction': 12*10,
+    #         'recreate_topology':            True,
+    #         'recalc_economics_topo_df':     True,
+    #         'run_allocation_loop':          True,
 
-            'algorithm_specs': {'inst_selection_method': 'random',},
-    },
+    #         'algorithm_specs': {'inst_selection_method': 'random',},
+    # },
 }
 
 parkplatz = {

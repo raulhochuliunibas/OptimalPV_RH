@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # pv_allocation_MASTER.py 
 # -----------------------------------------------------------------------------
-# Preamble: 
+# Preamble: sw
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
 # > description: 
 
@@ -17,7 +17,6 @@ if True:
     import pandas as pd
     import geopandas as gpd
     import numpy as np
-    import dask.dataframe as dd
     from datetime import datetime
     from pprint import pformat
 

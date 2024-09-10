@@ -84,7 +84,7 @@ def import_prepre_AND_create_topology(
         
 
     # data for topo --------------------------------
-    gm_shp = gpd.read_file(f'{data_path_def}\input\swissboundaries3d_2023-01_2056_5728.shp\swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
+    # gm_shp = gpd.read_file(f'{data_path_def}\input\swissboundaries3d_2023-01_2056_5728.shp\swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
 
     # GWR -------
     gwr = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/gwr.parquet')

@@ -19,7 +19,6 @@ if True:
     import pandas as pd
     import geopandas as gpd
     import numpy as np
-    import dask.dataframe as dd
     import glob
     import shutil
     import winsound

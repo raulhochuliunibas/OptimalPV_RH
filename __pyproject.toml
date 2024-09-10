@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "optimalpv-rh"
+version = "0.1.0"
+description = ""
+authors = ["raulhochuliunibas <raul.hochuli@unibas.ch>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13" 
+numpy = "^1.26.0"
+pandas = "^2.1.1"
+geopandas = "^0.14.0"
+datetime = "^5.2"
+shapely = "^2.0.1"
+matplotlib = "^3.8.0"
+pyogrio = "^0.6.0"
+plotly = "^5.18.0"
+scipy = "^1.11.3"
+requests = "^2.31.0"
+pyarrow = "^14.0.1"
+openpyxl = "^3.1.2"
+folium = "^0.15.1"
+mapclassify = "^2.6.1"
+graphly = {git = "https://github.com/zazuko/graphly.git"}
+dask = "^2024.1.1"
+geopy = "^2.4.1"
+kaleido = "0.2.1"
+psutil = "^6.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

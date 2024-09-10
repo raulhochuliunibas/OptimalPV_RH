@@ -212,8 +212,6 @@ def update_gridprem(
         if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //5 ) == 0:
             checkpoint_to_logfile(f'updated gridprem_ts (tranche {i} of {len(topo_subdf_paths)})', log_file_name_def, 2, show_debug_prints_def)
 
-        # import dask.dataframe as dd
-        # subinst = dd.read_parquet(path).compute()
         subinst = pd.read_parquet(path)
 
         # Only consider production for houses that have built a pv installation
