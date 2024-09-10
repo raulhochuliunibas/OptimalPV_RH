@@ -23,7 +23,6 @@ datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
 
 
 # pv_allocation 
-# MERGE TO MAIN
 pvalloc_scenarios={
     'pvalloc_smallBL_SLCTN_npv_weighted': {
             'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
