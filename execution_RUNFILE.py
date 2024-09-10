@@ -30,49 +30,34 @@ pvalloc_scenarios={
     'pvalloc_smallBL_SLCTN_random': {
             'algorithm_specs': {'inst_selection_method': 'random',},
     },
-    # 'pvalloc_smallBL_10y_npv_weighted': {
-    #         'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-    #         'months_prediction': 12*10,
-    #         'recreate_topology':            True, 
-    #         'recalc_economics_topo_df':     True,
-    #         'run_allocation_loop':          True,
 
-    #         'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
-    # },
-    # 'pvalloc_smallBL_10y_random': {
-    #         'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',    
-    #         'months_prediction': 12*10,
-    #         'recreate_topology':            True,
-    #         'recalc_economics_topo_df':     True,
-    #         'run_allocation_loop':          True,
+    'pvalloc_smallBL_10y_npv_weighted': {
+            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
+            'months_prediction': 12*5,
+            'recreate_topology':            True, 
+            'recalc_economics_topo_df':     True,
+            'run_allocation_loop':          True,
 
-    #         'algorithm_specs': {'inst_selection_method': 'random',},
-    # },
+            'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
+    }
 }
 
 parkplatz = {
-        'pvalloc_BL_SLCTN_random': {
+    'pvalloc_smallBL_5y_npv_weighted': {
             'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-            'kt_numbers': [13, ],
-            'recreate_topology':            True,
-            'recalc_economics_topo_df':     True,
-            'run_allocation_loop':          True,
+            'months_prediction': 12*5,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv',
+                'topo_subdf_partitioner' : 500,},
+    },
+    'pvalloc_smallBL_5y_random': {
+            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',    
+            'months_prediction': 12*5,
+            'algorithm_specs': {
+                'inst_selection_method': 'random',
+                'topo_subdf_partitioner' : 500,},
+    },
 
-            'algorithm_specs': {'inst_selection_method': 'random',      
-                                'topo_subdf_partitioner': 500,
-                                },
-        }, 
-        'pvalloc_BL_SLCTN_npv': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-            'kt_numbers': [13, ],
-            'recreate_topology':            True,
-            'recalc_economics_topo_df':     True,
-            'run_allocation_loop':          True,
-
-            'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',
-                                'topo_subdf_partitioner': 500,
-                                },
-        }
 }
 
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
@@ -97,7 +82,7 @@ for k_sett, scen_sett in datagg_scenarios.items():
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
+    # pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
     
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
