@@ -126,15 +126,15 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # universal func for plot adjustments ===========================
-    def add_scen_name_to_plot(fig, scen, pvalloc_scen):
+    def add_scen_name_to_plot(fig_func, scen, pvalloc_scen):
         # add scenario name
-        fig.add_annotation(
+        fig_func.add_annotation(
             text=f'Scen: {scen}, (start T0: {pvalloc_scen["T0_prediction"].split(" ")[0]}, {pvalloc_scen["months_prediction"]} prediction months)',
             xref="paper", yref="paper",
             x=0.5, y=1.05, showarrow=False,
             font=dict(size=12)
         )
-        return fig
+        return fig_func
     
     def add_multip_scen_name_to_plot(fig, scen_list, pvalloc_scen_list):
         # add scenario name
@@ -147,6 +147,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 font=dict(size=12)
             )
         return fig
+    
     # universal func for plot T0 tick ===========================
     def add_T0_tick_to_plot(fig, T0_prediction):
         fig.add_shape(
@@ -181,30 +182,25 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             scen_data_path = f'{data_path}/output/{scen}'
             pvalloc_scen = pvalloc_scen_list[i]
 
-            if not os.path.exists(f'{data_path}/output/visualizations/{scen}'):
-                os.makedirs(f'{data_path}/output/visualizations/{scen}')
-            elif os.path.exists(f'{data_path}/output/visualizations/{scen}'):
-                shutil.rmtree(f'{data_path}/output/visualizations/{scen}')
-                os.makedirs(f'{data_path}/output/visualizations/{scen}')
-
             gridnode_df = pd.read_parquet(f'{scen_data_path}/gridnode_df.parquet') 
             gridnode_df['t_int'] = gridnode_df['t'].str.extract('t_(\d+)').astype(int)
             gridnode_df.sort_values(by=['t_int'], inplace=True)
 
             # plot ----------------
-            fig = px.line(gridnode_df, x='t', y='pvprod_kW', color = 'grid_node', title = f'prod kWh, weather year: {pvalloc_scen["weather_specs"]["weather_year"]})' )
+            fig = px.line(gridnode_df, x='t', y='pvprod_kW', color = 'grid_node' )
     
             fig.update_layout(
                 xaxis_title='Hour of Year',
                 yaxis_title='Production (kWh)',
                 legend_title='Node ID',
+                title = f'Production per node (kWh, weather year: {pvalloc_scen["weather_specs"]["weather_year"]})'
             )
 
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i])
             if plot_show:
                 fig.show() 
 
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/plot_ind_line_productionHOY_per_node.html')
+            fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_productionHOY_per_node.html')
 
 
     # plot ind - line:
@@ -213,18 +209,12 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     
     if plot_ind_line_installedCap_per_month:
+        i, scen = 0, scen_dir_export_list[0]
         for i, scen in enumerate(scen_dir_export_list):
             scen_data_path = f'{data_path}/output/{scen}'
             T0_prediction = T0_prediction_list[0]
             months_prediction = months_prediction_list[0]
             pvalloc_scen = pvalloc_scen_list[i]
-
-
-            if not os.path.exists(f'{data_path}/output/visualizations/{scen}'):
-                os.makedirs(f'{data_path}/output/visualizations/{scen}')
-            elif os.path.exists(f'{data_path}/output/visualizations/{scen}'):
-                shutil.rmtree(f'{data_path}/output/visualizations/{scen}')
-                os.makedirs(f'{data_path}/output/visualizations/{scen}')
 
             topo = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
             egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
@@ -244,26 +234,27 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             pvinst_df['TotalPower'] = pd.to_numeric(pvinst_df['TotalPower'], errors='coerce')
             pvinst_df['BeginOp'] = pvinst_df['BeginOp'].apply(lambda x: x if len(x) == 10 else x + '-01')
             pvinst_df['BeginOp'] = pd.to_datetime(pvinst_df['BeginOp'], format='%Y-%m-%d')
-            pvinst_df['bf'] = pvinst_df['bfs'].astype(str)
+            pvinst_df['bfs'] = pvinst_df['bfs'].astype(str)
 
             # REMOVE some old historic data, because not interesting on Plot
-            pvinst_df = pvinst_df.loc[pvinst_df['BeginOp'] > pd.to_datetime('2015-01-01')]
+            # pvinst_df = pvinst_df.loc[pvinst_df['BeginOp'] > pd.to_datetime('2010-01-01')]
 
 
             # plot ind - line: Installed Capacity per Month ===========================
             if True: 
-                capa_inst_df = pvinst_df.copy()
-                capa_inst_df['BeginOp_month'] = capa_inst_df['BeginOp'].dt.to_period('M')
-                capa_month_df = capa_inst_df.groupby(['BeginOp_month', 'info_source'])['TotalPower'].sum().reset_index().copy()
+                capa_month_df = pvinst_df.copy()
+                capa_month_df['BeginOp_month'] = capa_month_df['BeginOp'].dt.to_period('M')
+                capa_month_df = capa_month_df.groupby(['BeginOp_month', 'info_source'])['TotalPower'].sum().reset_index().copy()
                 capa_month_df['BeginOp_month'] = capa_month_df['BeginOp_month'].dt.to_timestamp()
                 capa_month_built = capa_month_df.loc[capa_month_df['info_source'] == 'pv_df'].copy()
                 capa_month_predicted = capa_month_df.loc[capa_month_df['info_source'] == 'alloc_algorithm'].copy()
 
-                capa_inst_df['BeginOp_year'] = capa_inst_df['BeginOp'].dt.to_period('Y')
-                pvinst_year_df = capa_inst_df.groupby(['BeginOp_year', 'info_source'])['TotalPower'].sum().reset_index().copy()
-                pvinst_year_df['BeginOp_year'] = pvinst_year_df['BeginOp_year'].dt.to_timestamp()
-                pvinst_year_built = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'pv_df'].copy()
-                pvinst_year_predicted = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'alloc_algorithm'].copy()
+                capa_year_df = pvinst_df.copy()
+                capa_year_df['BeginOp_year'] = capa_year_df['BeginOp'].dt.to_period('Y')
+                capa_year_df = capa_year_df.groupby(['BeginOp_year', 'info_source'])['TotalPower'].sum().reset_index().copy()
+                capa_year_df['BeginOp_year'] = capa_year_df['BeginOp_year'].dt.to_timestamp()
+                capa_year_built = capa_year_df.loc[capa_year_df['info_source'] == 'pv_df'].copy()
+                capa_year_predicted = capa_year_df.loc[capa_year_df['info_source'] == 'alloc_algorithm'].copy()
 
                 # plot ----------------
                 fig1 = go.Figure()
@@ -303,11 +294,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     yshift=10
                 )
 
-                fig1 = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i])
+                fig1 = add_scen_name_to_plot(fig1, scen, pvalloc_scen_list[i])
                 if plot_show:
                     fig1.show()
-                fig1.write_html(f'{data_path}/output/visualizations/{scen}/plot_ind_line_installedCap_per_month.html')
-
+                fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_month.html')
 
             # plot ind - line: Installed Capacity per BFS ===========================
             if True: 
@@ -344,7 +334,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig2 = add_scen_name_to_plot(fig2, scen, pvalloc_scen_list[i])
                 if plot_show:
                     fig2.show()
-                fig2.write_html(f'{data_path}/output/visualizations/{scen}/plot_ind_line_installedCap_per_BFS.html')
+                fig2.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_BFS.html')
 
 
     # plot ind - map:  Covered Area of Allocation Model ========================
@@ -419,12 +409,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     # plot agg - line: Installed Capacity per Month ============================
     fig = go.Figure()
+    i, scen = 0, scen_dir_export_list[0]
+    i, scen = 1, scen_dir_export_list[1]
     for i, scen in enumerate(scen_dir_export_list):
         scen_data_path = f'{data_path}/output/{scen}'
         T0_prediction = T0_prediction_list[0]
         months_prediction = months_prediction_list[0]
         pvalloc_scen = pvalloc_scen_list[i]
-
 
         topo = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
         egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list = [], [], [], [], []
@@ -443,27 +434,30 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         pvinst_df['BeginOp'] = pd.to_datetime(pvinst_df['BeginOp'], format='%Y-%m-%d')
         pvinst_df['TotalPower'] = pd.to_numeric(pvinst_df['TotalPower'], errors='coerce')
 
-        pvinst_df['BeginOp_month'] = pvinst_df['BeginOp'].dt.to_period('M')
-        pvinst_month_df = pvinst_df.groupby(['BeginOp_month', 'info_source'])['TotalPower'].sum().reset_index().copy()
-        pvinst_month_df['BeginOp_month'] = pvinst_month_df['BeginOp_month'].dt.to_timestamp()
+        def agg_pvinst_df(df, freq, new_datecol, datecol, infocol, valcol):
+            df_agg = df.copy()
+            df_agg[new_datecol] = df_agg[datecol].dt.to_period(freq)
+            df_agg = df_agg.groupby([new_datecol, infocol])[valcol].sum().reset_index().copy()
+            df_agg[new_datecol] = df_agg[new_datecol].dt.to_timestamp()
+            return df_agg
+                
+        pvinst_month_df = agg_pvinst_df(pvinst_df, 'M', 'BeginOp_month', 'BeginOp', 'info_source', 'TotalPower')
         pvinst_month_built = pvinst_month_df.loc[pvinst_month_df['info_source'] == 'pv_df'].copy()
         capa_month_predicted = pvinst_month_df.loc[pvinst_month_df['info_source'] == 'alloc_algorithm'].copy()
 
-        pvinst_df['BeginOp_year'] = pvinst_df['BeginOp'].dt.to_period('Y')
-        pvinst_year_df = pvinst_df.groupby(['BeginOp_year', 'info_source'])['TotalPower'].sum().reset_index().copy()
-        pvinst_year_df['BeginOp_year'] = pvinst_year_df['BeginOp_year'].dt.to_timestamp()
+        pvinst_year_df = agg_pvinst_df(pvinst_df, 'Y', 'BeginOp_year', 'BeginOp', 'info_source', 'TotalPower')
         pvinst_year_built = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'pv_df'].copy()
         pvinst_year_predicted = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'alloc_algorithm'].copy()
 
 
         # plot ----------------
-        fig.add_trace(go.Scatter(x=pvinst_month_df['BeginOp_month'], y=pvinst_month_df['TotalPower'], line = dict(color = 'navy'),name=f'built + predicted (month)',  mode='lines+markers', legendgrouptitle_text=scen))
-        fig.add_trace(go.Scatter(x=pvinst_month_built['BeginOp_month'], y=pvinst_month_built['TotalPower'], line = dict(color = 'deepskyblue'), name=f'built (month)',  mode='lines+markers', legendgrouptitle_text=scen))
-        fig.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'], line = dict(color = 'cornflowerblue'), name=f'predicted (month)',  mode='lines+markers', legendgrouptitle_text=scen))
+        fig.add_trace(go.Scatter(x=pvinst_month_df['BeginOp_month'], y=pvinst_month_df['TotalPower'], line = dict(color = 'cornflowerblue'),name=f'built + predicted (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
+        # fig.add_trace(go.Scatter(x=pvinst_month_built['BeginOp_month'], y=pvinst_month_built['TotalPower'], line = dict(color = 'deepskyblue'), name=f'built (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
+        # fig.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'], line = dict(color = 'navy'), name=f'predicted (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
 
-        fig.add_trace(go.Scatter(x=pvinst_year_df['BeginOp_year'], y=pvinst_year_df['TotalPower'], line = dict(color = 'forestgreen'), name=f'built + predicted (year)',  mode='lines+markers', legendgrouptitle_text=scen))
-        fig.add_trace(go.Scatter(x=pvinst_year_built['BeginOp_year'], y=pvinst_year_built['TotalPower'], line = dict(color = 'lightgreen'), name=f'built (year)',  mode='lines+markers', legendgrouptitle_text=scen))   
-        fig.add_trace(go.Scatter(x=pvinst_year_predicted['BeginOp_year'], y=pvinst_year_predicted['TotalPower'], line = dict(color = 'limegreen'), name=f'predicted (year)',  mode='lines+markers', legendgrouptitle_text=scen))
+        fig.add_trace(go.Scatter(x=pvinst_year_df['BeginOp_year'], y=pvinst_year_df['TotalPower'], line = dict(color = 'limegreen'), name=f'built + predicted (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
+        # fig.add_trace(go.Scatter(x=pvinst_year_built['BeginOp_year'], y=pvinst_year_built['TotalPower'], line = dict(color = 'lightgreen'), name=f'built (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
+        # fig.add_trace(go.Scatter(x=pvinst_year_predicted['BeginOp_year'], y=pvinst_year_predicted['TotalPower'], line = dict(color = 'forestgreen'), name=f'predicted (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
 
     fig.update_layout(
         xaxis_title='Time',
