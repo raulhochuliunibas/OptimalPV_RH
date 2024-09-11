@@ -23,28 +23,24 @@ datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
+    # estim runtime 20min!
     'pvalloc_smallBL_6m_SLCTN_npv_weighted': {
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 10*3,},
+                'tweak_constr_capacity_fact': 10**1,},
             'months_prediction': 6,
 
     },
     'pvalloc_smallBL_6m_SLCTN_random': {
             'algorithm_specs': {
-                'inst_selection_method': 'prob_weighted_npv',
+                'inst_selection_method': 'random',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 10*3,},
+                'tweak_constr_capacity_fact': 10**1,},
             'months_prediction': 6,
 
     },
 
-    # 'pvalloc_smallBL_10y_npv_weighted': {
-    #         'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-    #         'months_prediction': 12*10,
-    #         'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
-    # }
 }
 
 parkplatz = {
@@ -70,8 +66,18 @@ print(pvalloc_scenarios)
 
 
 # vsualiastion 
-visual_settings= {
+visual_settings = {
+        'plot_show': True,
+
+        'default_zoom_year': [2012, 2030],
+
+        'plot_ind_line_productionHOY_per_node': False,
+        'plot_ind_line_installedCap_per_month': False,
+        'plot_ind_line_installedCap_per_BFS': False,
+        'map_ind_topo_egid': True,
+        
     }
+
 
 
 
@@ -87,7 +93,7 @@ for k_sett, scen_sett in datagg_scenarios.items():
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
+    # pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
     
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------

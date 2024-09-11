@@ -166,14 +166,15 @@ def pv_allocation_MASTER(pvalloc_settings_func):
             algo.update_gridprem(pvalloc_settings,
                         df_list, df_names,
                         ts_list, ts_names, 
-                        m)
+                        m, i)
             
 
             # NPV UPDATE ==========
             npv_df = algo.update_npv_df(pvalloc_settings,
                         groupby_cols_topoaggdf, agg_cols_topoaggdf, 
                         df_list, df_names,
-                        ts_list, ts_names,)
+                        ts_list, ts_names,
+                        m, i)
 
 
             # initialize constr capacity ----------
@@ -186,6 +187,7 @@ def pv_allocation_MASTER(pvalloc_settings_func):
 
             # INSTALLATION PICK ==========
             safety_counter = 0
+            print_to_logfile(f'run installation pick while loop', log_name)
             while( (constr_built_m < constr_capa_m) & (constr_built_y < constr_capa_y) & (safety_counter < safety_counter_max) ):
                 
                 if npv_df.shape[0] == 0:
@@ -209,12 +211,14 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                     constr_y_TF  = constr_built_y >= constr_capa_y
                     safety_TF = safety_counter >= safety_counter_max
 
-                    if safety_counter % 50 == 0:
-                        print(f'PRINT_SAFETY_COUNTER: {safety_counter}')
+                    if safety_counter % 25 == 0:
+                        checkpoint_to_logfile(f'\t safety_counter: {safety_counter} installations built, {round(constr_built_m/constr_capa_m*100, 2)}% of monthly constr capacity', log_name, 3, show_debug_prints)
+                
 
                 if any([constr_m_TF, constr_y_TF, safety_TF]):
-                    checkpoint_to_logfile(f' Exit While Loop, constraint met : constr_m_TF: {constr_m_TF}, constr_y_TF: {constr_y_TF}, safety_TF: {safety_TF}', log_name, 1, True)
-                    checkpoint_to_logfile(f' {safety_counter} pv installations allocated', log_name, 3, show_debug_prints)
+                    print_to_logfile(f'\nExit While Loop', log_name)
+                    checkpoint_to_logfile(f'constraint met : constr_m_TF: {constr_m_TF}, constr_y_TF: {constr_y_TF}, safety_TF: {safety_TF}', log_name, 1, True)
+                    checkpoint_to_logfile(f'{safety_counter} pv installations allocated', log_name, 3, show_debug_prints)
                     safety_counter = 0
 
             checkpoint_to_logfile(f'end month allocation, runtime: {datetime.now() - start_allocation_month} (hh:mm:ss.s)', log_name, 1, show_debug_prints)

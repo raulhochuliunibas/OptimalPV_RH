@@ -167,7 +167,7 @@ def update_gridprem(
         pvalloc_settings,
         df_list_func, df_names_func,
         ts_list_func, ts_names_func,
-        month_func,):
+        month_func, i_month_func):
     
     # setup -----------------------------------------------------
     name_dir_import_def = pvalloc_settings['name_dir_import']
@@ -186,6 +186,7 @@ def update_gridprem(
     df_list, df_names = df_list_func, df_names_func
     ts_list, ts_names = ts_list_func, ts_names_func
     m = month_func
+    i_m = i_month_func
 
     # import  -----------------------------------------------------
     topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
@@ -205,7 +206,7 @@ def update_gridprem(
     path = topo_subdf_paths[0]
     for i, path in enumerate(topo_subdf_paths):
         # print_to_logfile(f'  {2*"-"} update gridprem (tranche{i}/{len(topo_subdf_paths)}) {6*"-"}', log_file_name_def)
-        if i < 5 : 
+        if (i < 5) and (i_m < 6) : 
             checkpoint_to_logfile(f'\t updated gridprem_ts', log_file_name_def, 2, show_debug_prints_def)
         if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //5 ) == 0:
             checkpoint_to_logfile(f'updated gridprem_ts (tranche {i} of {len(topo_subdf_paths)})', log_file_name_def, 2, show_debug_prints_def)
@@ -222,7 +223,7 @@ def update_gridprem(
         subinst['pvprod_kW'] = np.where(subinst['has_pv'] == False, 0, subinst['copy_pvprod_kW'])
         # subinst.drop(columns=['copy_pvprod_kW', 'has_pv'], inplace=True)
 
-        # attempt for a more elaborate way to handle already installed installations
+        # NOTE: attempt for a more elaborate way to handle already installed installations
         if False:
             pv['pvsource'] = 'pv_df'
             pv['pvid'] = pv['xtf_id']
@@ -277,144 +278,6 @@ def update_gridprem(
     gridprem_ts.to_csv(f'{data_path_def}/output/pvalloc_run/pred_gridprem_by_M/gridprem_ts_{m}.csv', index=False)
 
 
-    if False: 
-        # ***===***===***===***===***===***===***===***===***===***===***===***===***===***===***===***===
-
-        # import -----------------------------------------------------
-        # get inst df ------
-        egid_with_inst = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == True]
-
-        egid_list, bfs_list, gklas_list, demandtype_list, grid_node_list = [], [], [], [], []
-        pvinst_list, pvsource_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
-        df_uid_list, flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_list = [], [], [], [], [], []
-
-        for egid in egid_with_inst:
-            topo_egid = topo[egid]
-            partitions = topo_egid.get('solkat_partitions')
-
-            for k_p, v_p in partitions.items():
-                egid_list.append(egid)
-                bfs_list.append(topo_egid.get('gwr_info').get('bfs'))
-                gklas_list.append(topo_egid.get('gwr_info').get('gklas'))
-                # demandtype_list.append(topo_egid.get('demand_type'))
-                grid_node_list.append(topo_egid.get('grid_node'))
-                pvinst_list.append(topo_egid.get('pv_inst').get('inst_TF'))
-                pvsource_list.append(topo_egid.get('pv_inst').get('info_source'))
-                pvid_list.append(topo_egid.get('pv_inst').get('xtf_id'))
-                df_uid_list.append(k_p)
-                flaeche_list.append(v_p.get('FLAECHE'))
-                stromertrag_list.append(v_p.get('STROMERTRAG'))
-                ausrichtung_list.append(v_p.get('AUSRICHTUNG'))
-                neigung_list.append(v_p.get('NEIGUNG'))
-                # elecpri_list.append(topo_egid.get('elecpri_Rp_kWh'))
-                
-        inst_df = pd.DataFrame({'EGID': egid_list, 'bfs': bfs_list, 'gklas': gklas_list, 'grid_node' : grid_node_list,
-                                'pvinst_TF': pvinst_list, 'pvsource': pvsource_list, 'pvid': pvid_list, 
-                                'df_uid': df_uid_list, 'FLAECHE': flaeche_list, 'STROMERTRAG': stromertrag_list, 
-                                'AUSRICHTUNG': ausrichtung_list, 'NEIGUNG': neigung_list})
-
-        # get gridtiers_df ------
-        data = [(k, v[0], v[1]) for k, v in gridtiers.items()]
-        gridtiers_df = pd.DataFrame(data, columns=gridtiers_colnames)
-
-        # get data from df_list + ts_list ------
-        meteo_ts = ts_list[ts_names.index('meteo_ts')]
-        gridprem_ts = ts_list[ts_names.index('gridprem_ts')]
-        angle_tilt_df = df_list[df_names.index('angle_tilt_df')]
-        pv = df_list[df_names.index('pv')]
-        Map_egid_nodes = df_list[df_names.index('Map_egid_nodes')]
-
-
-        # calculate feedin HOY ----------------------------------------
-        def lookup_angle_tilt_efficiency(row, angle_tilt_df):
-            try:
-                return angle_tilt_df.loc[(row['AUSRICHTUNG'], row['NEIGUNG']), 'efficiency_factor']
-            except KeyError:
-                return 0
-        inst_df['NEIGUNG'] = inst_df['NEIGUNG'].apply(lambda x: round(x / 5) * 5)
-        inst_df['AUSRICHTUNG'] = inst_df['AUSRICHTUNG'].apply(lambda x: round(x / 10) * 10)
-        inst_df['angletilt_factor'] = inst_df.apply(lambda r: lookup_angle_tilt_efficiency(r, angle_tilt_df), axis=1)
-        
-        pv['pvsource'] = 'pv_df'
-        pv['pvid'] = pv['xtf_id']
-
-        agg_gridnode_df_list = []
-        agg_gridnode_df_path = f'{data_path_def}/output/pvalloc_run/agg_gridnode_df'
-        if not os.path.exists(agg_gridnode_df_path):
-            os.makedirs(agg_gridnode_df_path)
-        
-        # ---
-        # dfuids = inst_df['df_uid'].unique()
-        egids = inst_df['EGID'].unique()
-
-        # ---
-        stepsize = topo_subdf_partitioner if len(egids) > topo_subdf_partitioner else len(egids)
-        tranche_counter = 0
-        for i in range(1, len(egids), stepsize):
-            tranche_counter += 1
-            # print_to_logfile(f'-- gridnode_subdf {tranche_counter}/{len(range(0, len(egids), stepsize))} {7*"-"}  (stamp: {datetime.now()})', log_file_name_def)
-            subinst = inst_df[inst_df['EGID'].isin(egids[i:i+stepsize])].copy()
-        # ---
-        # for i,egid in enumerate(egids):
-        #     subinst = inst_df[inst_df['EGID'] == egid].copy()
-            
-            subinst['meteo_loc'] = 'Basel'
-            meteo_ts['meteo_loc'] = 'Basel'
-            subinst = subinst.merge(meteo_ts[['t', 'radiation', 'meteo_loc']], how='left', on='meteo_loc')
-
-            # production per partition
-            subinst = subinst.assign(pvprod_kW = (subinst['radiation'] * subinst['FLAECHE'] * subinst['angletilt_factor']) / 1000)
-            subinst.drop(columns=['meteo_loc',], inplace=True)
-
-            # special case: inst from pv_df
-            if False:
-            # if 'pv_df' in subinst['pvsource'].unique():
-                TotalPower = pv.loc[pv['xtf_id'].isin(subinst.loc[subinst['EGID'] == egid, 'pvid']), 'TotalPower'].sum()
-
-                subinst = subinst.sort_values(by = 'STROMERTRAG', ascending=False)
-                subinst['pvprod_kW'] = 0
-                
-                # t_steps = subinst['t'].unique()
-                for t in subinst['t'].unique():
-                    timestep_df = subinst.loc[subinst['t'] == t]
-                    total_stromertrag = timestep_df['STROMERTRAG'].sum()
-
-                    for idx, row in timestep_df.iterrows():
-                        share = row['STROMERTRAG'] / total_stromertrag
-                        subinst.loc[idx, 'pvprod_kW'] = share * TotalPower
-
-            agg_subinst = subinst.groupby(['grid_node', 't']).agg({'pvprod_kW': 'sum'}).reset_index()
-            agg_gridnode_df_list.append(subinst)
-            agg_subinst.to_parquet(f'{agg_gridnode_df_path}/agg_gridnode_df_{i}to{i+stepsize-1}.parquet')
-
-            checkpoint_to_logfile(f'\t tranche {i} of {len(range(0, len(egids), stepsize))} update gridprem by node', log_file_name_def, 1, show_debug_prints_def)
-
-        gridnode_df = pd.concat(agg_gridnode_df_list)
-        gridnode_df = gridnode_df.groupby(['grid_node', 't']).agg({'pvprod_kW': 'sum'}).reset_index()
-        gridnode_df.to_parquet(f'{data_path_def}/output/pvalloc_run/gridnode_df.parquet')
-
-
-        # update gridprem_ts ----------------------------------------
-        gridnode_df.sort_values(by=['pvprod_kW'], ascending=False, inplace=True)
-        gridprem_ts = gridprem_ts.merge(gridnode_df[['grid_node', 't', 'pvprod_kW']], how='left', on=['grid_node', 't'])
-
-        conditions = [(gridprem_ts['pvprod_kW'] > gridtiers_df.loc[i, 'vltg_threshold']) for i in range(len(gridtiers_df))]
-        choices = [gridtiers_df.loc[i, 'gridprem_plusRp_kWh'] for i in range(len(gridtiers_df))]
-        gridprem_ts['prem_Rp_kWh'] = np.select(conditions, choices, default=0)
-
-        gridprem_ts.drop(columns='pvprod_kW', inplace=True)
-
-
-
-        # export gridprem_ts ----------------------------------------
-        gridprem_ts.to_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
-
-        gridprem_by_M_path = f'{data_path_def}/output/pvalloc_run/pred_gridprem_by_M'
-        if not os.path.exists(gridprem_by_M_path):
-            os.makedirs(gridprem_by_M_path)
-        gridprem_ts.to_parquet(f'{data_path_def}/output/pvalloc_run/pred_gridprem_by_M/gridprem_ts_{m}.parquet')
-        gridprem_ts.to_csv(f'{data_path_def}/output/pvalloc_run/pred_gridprem_by_M/gridprem_ts_{m}.csv', index=False)
-
 
 # ------------------------------------------------------------------------------------------------------
 # UPDATE NPV_DF with NEW GRID PREMIUM TS
@@ -423,6 +286,7 @@ def update_npv_df(pvalloc_settings,
                   groupby_cols_func, agg_cols_func, 
                   df_list, df_names,
                   ts_list, ts_names,
+                  month_func, i_month_func
                 ):
     
     # setup -----------------------------------------------------
@@ -442,9 +306,9 @@ def update_npv_df(pvalloc_settings,
 
     groupby_cols = groupby_cols_func
     agg_cols = agg_cols_func
+    i_m = i_month_func
 
-    # checkpoint_to_logfile(f'run: update_npv_df', log_file_name_def, 3, show_debug_prints_def)
-    print_to_logfile(f'run: update_npv_df', log_file_name_def)
+    print_to_logfile(f'run update_npv_df', log_file_name_def)
 
 
     # import -----------------------------------------------------
@@ -483,12 +347,12 @@ def update_npv_df(pvalloc_settings,
 
         subdf['selfconsum_kW'], subdf['netdemand_kW'], subdf['netfeedin_kW'], subdf['econ_inc_chf'], subdf['econ_spend_chf'] = selfconsum_kW, netdemand_kW, netfeedin_kW, econ_inc_chf, econ_spend_chf
 
-        if i <5: 
+        if (i <5) and (i_m < 6): 
             checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 2, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
 
         agg_subdf = subdf.groupby(groupby_cols).agg(agg_cols).reset_index()
         
-        if i <5:
+        if (i <5) and (i_m < 6): 
             checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 2, show_debug_prints_def)
 
         # create combinations ----------------------------------------------
@@ -553,7 +417,7 @@ def update_npv_df(pvalloc_settings,
                                     'selfconsum_kW': selfconsum_list, 'netdemand_kW': netdemand_list, 'netfeedin_kW': netfeedin_list,
                                     'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
                      
-        if i<5:
+        if (i <5) and (i_m < 6): 
             checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', log_file_name_def, 1, show_debug_prints_def)
 
         
@@ -567,7 +431,7 @@ def update_npv_df(pvalloc_settings,
             return npv
         aggsubdf_combo['NPV_uid'] = aggsubdf_combo.apply(compute_npv, axis=1)
 
-        if i<5:
+        if (i <5) and (i_m < 6): 
             checkpoint_to_logfile(f'\t computed NPV for agg_subdf', log_file_name_def, 2, show_debug_prints_def)
 
         agg_npv_df_list.append(aggsubdf_combo)

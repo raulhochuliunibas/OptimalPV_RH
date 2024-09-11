@@ -753,8 +753,8 @@ def define_construction_capacity(
 
         # Resample by week, month, and year and calculate the sum of TotalPower
         weekly_sum = pv_plot['TotalPower'].resample('W').sum()
-        monthly_sum = pv_plot['TotalPower'].resample('M').sum()
-        yearly_sum = pv_plot['TotalPower'].resample('Y').sum()
+        monthly_sum = pv_plot['TotalPower'].resample('ME').sum()
+        yearly_sum = pv_plot['TotalPower'].resample('YE').sum()
 
         # Create traces for each time period
         trace_weekly = go.Scatter(x=weekly_sum.index, y=weekly_sum.values, mode='lines', name='Weekly')
