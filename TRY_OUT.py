@@ -5,11 +5,11 @@ import json
 import winsound
 import glob
 
-
+scen = "pvalloc_smallBL_10y_npv_weighted"
 wd_path = 'C:/Models/OptimalPV_RH'
 data_path = f'{wd_path}_data'
 
-topo = json.load(open(f'{data_path}/output/pvalloc_smallBL_SLCTN_npv_weighted/topo_egid.json', 'r'))
+topo = json.load(open(f'{data_path}/output/{scen}/topo_egid.json', 'r'))
 
 # topo characteristics
 topo[list(topo.keys())[0]].keys()
@@ -45,7 +45,7 @@ for f in all_topo_m:
 
 
 
-topo = json.load(open(f'{data_path}/output/pvalloc_smallBL_SLCTN_npv_weighted/topo_egid.json', 'r'))
+topo = json.load(open(f'{data_path}/output\pvalloc_smallBL_1y_npv_weighted/topo_egid.json', 'r'))
 egid_list, gklas_list, inst_tf_list, inst_info_list, inst_id_list, beginop_list, power_list = [], [], [], [], [], [], []
 for k,v in topo.items():
     # print(k)
@@ -63,5 +63,6 @@ for k,v in topo.items():
 topo_df = pd.DataFrame({'egid': egid_list, 'gklas': gklas_list, 'inst_tf': inst_tf_list, 'inst_info': inst_info_list,
                         'inst_id': inst_id_list, 'beginop': beginop_list, 'power': power_list})
 
-topo_df.to_csv(f'{wd_path}/topo_df.csv')
-print(topo_df['PV_INST'].value_counts())
+# topo_df.to_parquet(f'{data_path}/output/pvalloc_run/topo_df.parquet')
+
+topo_df.to_csv(f'{wd_path}/topo3_df.csv')

@@ -18,19 +18,26 @@ datagg_scenarios = {
         'show_debug_prints': True,
         }, 
 }
-
 datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
 
 
 # pv_allocation 
 pvalloc_scenarios={
-    'pvalloc_smallBL_SLCTN_npv_weighted': {
-            'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',
-                                'tweak_constr_capacity_fact': 100,},
+    'pvalloc_smallBL_6m_SLCTN_npv_weighted': {
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv',
+                'rand_seed': None,
+                'tweak_constr_capacity_fact': 10*3,},
+            'months_prediction': 6,
+
     },
-    'pvalloc_smallBL_SLCTN_random': {
-            'algorithm_specs': {'inst_selection_method': 'random',
-                                'tweak_constr_capacity_fact': 100,},
+    'pvalloc_smallBL_6m_SLCTN_random': {
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv',
+                'rand_seed': None,
+                'tweak_constr_capacity_fact': 10*3,},
+            'months_prediction': 6,
+
     },
 
     # 'pvalloc_smallBL_10y_npv_weighted': {
@@ -84,7 +91,7 @@ for k_sett, scen_sett in pvalloc_scenarios.items():
     
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
-# visualization_MASTER.visualization_MASTER(pvalloc_scenarios, visual_settings)
+visualization_MASTER.visualization_MASTER(pvalloc_scenarios, visual_settings)
 
 
 

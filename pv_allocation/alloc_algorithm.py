@@ -538,8 +538,9 @@ def update_npv_df(pvalloc_settings,
                     econ_inc_chf_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('econ_inc_chf')].sum())
                     econ_spend_chf_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('econ_spend_chf')].sum())
 
-            # if i % combos_counter == 0:
-            #     print_to_logfile(f'    > {i} of {agg_subdf["EGID"].nunique()} EGIDs processed', log_file_name_def)
+            if i % combos_counter == 0:
+                # print_to_logfile(f'    > {i} of {agg_subdf["EGID"].nunique()} EGIDs processed', log_file_name_def)
+                checkpoint_to_logfile(f'\t\t{i} of {agg_subdf["EGID"].nunique()} EGIDs processed', log_file_name_def, 1, show_debug_prints_def)
 
         aggsubdf_combo = pd.DataFrame({'EGID': egid_list, 'df_uid_combo': combo_df_uid_list, 'bfs': bfs_list,
                                     'gklas': gklas_list, 'demandtype': demandtype_list, 'grid_node': grid_node_list,
