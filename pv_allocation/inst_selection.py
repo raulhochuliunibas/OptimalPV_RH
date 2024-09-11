@@ -57,12 +57,7 @@ def select_AND_adjust_topology(pvalloc_settings,
     else:
         picked_egid = npv_pick['EGID']
         picked_uid = npv_pick['df_uid_combo']
-        picked_flaech = sum(npv_pick['FLAECHE'])
-
-    # if isinstance(npv_pick['df_uid_combo'], pd.Series):
-        # picked_uid = npv_pick['df_uid_combo'].values[0]
-    # else:
-        # picked_uid = npv_pick['df_uid_combo']
+        picked_flaech = npv_pick['FLAECHE']
 
     inst_power = picked_flaech * conv_m2toKWP * pvalloc_settings['algorithm_specs']['tweak_capacity_fact']
     npv_pick['inst_power'] = inst_power

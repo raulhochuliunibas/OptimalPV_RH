@@ -30,7 +30,7 @@ pvalloc_default_settings = {
         'montecarlo_iterations': 1,
         'keep_files_each_iterations': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
         'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
-        'rand_seed': 42,                            # random seed set to int or None
+        'rand_seed': None,                            # random seed set to int or None
         'while_inst_counter_max': 5000,
         'topo_subdf_partitioner': 800,
 
@@ -112,4 +112,8 @@ def extend_pvalloc_scen_with_defaults(scen_dict, defaults=pvalloc_default_settin
             scen_dicts[scen_name] = default_dict     
 
     return scen_dicts
+
+
+def get_default_pvalloc_settings():
+    return pvalloc_default_settings
 
