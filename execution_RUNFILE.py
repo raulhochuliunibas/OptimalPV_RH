@@ -25,20 +25,20 @@ datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
 # pv_allocation 
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
-    'pvalloc_smallBL_3y_SLCTN_npv_weighted': {
+    'pvalloc_smallBL_6y_SLCTN_npv_weighted': {
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 10,},
-            'months_prediction': 12*3,
+                'tweak_constr_capacity_fact': 5,},
+            'months_prediction': 12*6,
 
     },
-    'pvalloc_smallBL_3y_SLCTN_random': {
+    'pvalloc_smallBL_6y_SLCTN_random': {
             'algorithm_specs': {
                 'inst_selection_method': 'random',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 10,},
-            'months_prediction': 12*3,
+                'tweak_constr_capacity_fact': 5,},
+            'months_prediction': 12*6,
 
     },
 
