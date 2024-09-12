@@ -25,40 +25,57 @@ datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
 # pv_allocation 
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
-    'pvalloc_smallBL_1y_SLCTN_npv_weighted': {
+    'pvalloc_smallBL_3y_SLCTN_npv_weighted': {
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 20,},
-            'months_prediction': 12,
+                'tweak_constr_capacity_fact': 10,},
+            'months_prediction': 12*3,
 
     },
-    'pvalloc_smallBL_1y_SLCTN_random': {
+    'pvalloc_smallBL_3y_SLCTN_random': {
             'algorithm_specs': {
                 'inst_selection_method': 'random',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 20,},
-            'months_prediction': 12,
+                'tweak_constr_capacity_fact': 10,},
+            'months_prediction': 12*3,
 
     },
 
 }
 
 parkplatz = {
-    'pvalloc_smallBL_6m_SLCTN_npv_weighted': {
+    'pvalloc_smallBL_5y_SLCTN_npv_weighted': {
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
                 'rand_seed': None,
                 'tweak_constr_capacity_fact': 20,},
-            'months_prediction': 6,
+            'months_prediction': 12*5,
 
     },
-    'pvalloc_smallBL_6m_SLCTN_random': {
+    'pvalloc_smallBL_5y_SLCTN_random': {
             'algorithm_specs': {
                 'inst_selection_method': 'random',
                 'rand_seed': None,
                 'tweak_constr_capacity_fact': 20,},
-            'months_prediction': 6,
+            'months_prediction': 12*5,
+
+    },
+
+        'pvalloc_smallBL_3m_npv_weighted': {
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv',
+                'rand_seed': None,
+                'tweak_constr_capacity_fact': 20,},
+            'months_prediction': 3,
+
+    },
+    'pvalloc_smallBL_3m_random': {
+            'algorithm_specs': {
+                'inst_selection_method': 'random',
+                'rand_seed': None,
+                'tweak_constr_capacity_fact': 20,},
+            'months_prediction': 3,
 
     },
 
@@ -73,12 +90,12 @@ visual_settings = {
         'plot_show': True,
 
         'plot_ind_line_productionHOY_per_node': True,
-        'plot_ind_line_installedCap_per_month': False,
+        'plot_ind_line_installedCap_per_month': True,
         'plot_ind_line_installedCap_per_BFS': False,
-        'map_ind_topo_egid': False,
+        'map_ind_topo_egid': True,
 
-        'plot_agg_line_installedCap_per_month': False,
-        'plot_agg_line_productionHOY_per_node': False,
+        'plot_agg_line_installedCap_per_month': True,
+        'plot_agg_line_productionHOY_per_node': True,
         'plot_agg_line_gridPremiumHOY_per_node': True,
 
         # single plots (just show once, not for all scenarios)
