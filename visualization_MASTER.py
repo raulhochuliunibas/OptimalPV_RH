@@ -12,7 +12,6 @@ if True:
     import os as os
     import sys
     sys.path.append(os.getcwd())
-    # sys.path.append(pvalloc_settings['wd_path_laptop']) if pvalloc_settings['script_run_on_server'] else sys.path.append(pvalloc_settings['wd_path_server'])
 
     # external packages
     import os as os
@@ -23,6 +22,8 @@ if True:
     import plotly.express as px
     import plotly.graph_objects as go
     import shapely
+    import copy
+    import glob
 
     from datetime import datetime
     from pprint import pformat
@@ -32,7 +33,7 @@ if True:
     import pv_allocation.default_settings as pvalloc_default_sett
     import visualisations.defaults_settings as visual_default_sett
 
-    from auxiliary_functions import chapter_to_logfile
+    from auxiliary_functions import chapter_to_logfile, checkpoint_to_logfile
     from pv_allocation.default_settings import *
     from visualisations.defaults_settings import *
 
@@ -77,18 +78,12 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     plot_ind_line_installedCap_per_month = visual_settings['plot_ind_line_installedCap_per_month']
     plot_ind_line_installedCap_per_BFS = visual_settings['plot_ind_line_installedCap_per_BFS']
     map_ind_topo_egid = visual_settings['map_ind_topo_egid']
+    map_ind_production = visual_settings['map_ind_production']
 
-
-    plot_show = True
-    zoom_window_HOY = [0, 8760]
-    export_png = False
-    # plot_width_cm = 20 THIS WILL ALL COME FROM GENERAL SETTIGNS!
-    # plot_height_cm = 20
-    
-    # ---
 
     # EXTRACT SCENARIO INFORMATION + IMPORT --------------------------------------------------------------------
 
+    # scen settings ----------------
     scen_dir_export_list, scen_dir_import_list, T0_prediction_list, months_prediction_list = [], [], [], []
     T0_prediction_list, months_lookback_list, months_prediction_list = [], [], []
     pvalloc_scen_list = []
@@ -99,12 +94,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         months_prediction_list.append(val['months_prediction'])
         pvalloc_scen_list.append(val)
 
-    gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
-    gm_shp['BFS_NUMMER'] = gm_shp['BFS_NUMMER'].astype(int).astype(str) 
+    # visual settings ----------------  
+    plot_show = visual_settings['plot_show']
+    default_zoom_year = visual_settings['default_zoom_year']
+    default_zoom_hour = visual_settings['default_zoom_hour']
 
 
-
-    # universal funcs --------------------------------------------------------------------
+    # UNIVERSIAL FUNCTIONS --------------------------------------------------------------------
     # universal func for plot adjustments -----
     def add_scen_name_to_plot(fig_func, scen, pvalloc_scen):
         # add scenario name
@@ -116,20 +112,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         )
         return fig_func
     
-    def add_multip_scen_name_to_plot(fig, scen_list, pvalloc_scen_list):
-        # add scenario name
-        for i, scen in enumerate(scen_list):
-            pvalloc_scen = pvalloc_scen_list[i]
-            fig.add_annotation(
-                text=f'Scen: {scen}, (start T0: {pvalloc_scen["T0_prediction"].split(" ")[0]}, {pvalloc_scen["months_prediction"]} prediction months)',
-                xref="paper", yref="paper",
-                x=0.5, y=1.05 + 0.05*i, showarrow=False,
-                font=dict(size=12)
-            )
-        return fig
-    
     # universal func for plot T0 tick -----
-    def add_T0_tick_to_plot(fig, T0_prediction):
+    def add_T0_tick_to_plot(fig, T0_prediction, df, df_col):
         fig.add_shape(
             # Line Vertical
             dict(
@@ -137,13 +121,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 x0=T0_prediction,
                 y0=0,
                 x1=T0_prediction,
-                y1=1,  # Dynamic height
+                y1= df[df_col].max(),  # Dynamic height
                 line=dict(color="black", width=1, dash="dot"),
             )
         )
         fig.add_annotation(
             x=  T0_prediction,
-            y=1,
+            y= df[df_col].max(),
             text="T0 Prediction",
             showarrow=False,
             yshift=10
@@ -151,7 +135,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         return fig
 
     # universial func to set default plot zoom -----
-    def set_default_fig_zoom(fig, zoom_window, df, datecol):
+    def set_default_fig_zoom_year(fig, zoom_window, df, datecol):
         start_zoom = pd.to_datetime(f'{zoom_window[0]}-01-01')
         max_date = df[datecol].max() + pd.DateOffset(years=1)
         if pd.to_datetime(f'{zoom_window[1]}-01-01') > max_date:
@@ -163,12 +147,29 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         )
         return fig 
     
+    def set_default_fig_zoom_hour(fig, zoom_window):
+        start_zoom, end_zoom = zoom_window[0], zoom_window[1]
+        fig.update_layout(
+            xaxis_range=[start_zoom, end_zoom])
+        return fig
+
+    # Function to flatten geometries to 2D (ignoring Z-dimension) -----
+    def flatten_geometry(geom):
+        if geom.has_z:
+            if geom.geom_type == 'Polygon':
+                exterior = [(x, y) for x, y, z in geom.exterior.coords]
+                interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
+                return Polygon(exterior, interiors)
+            elif geom.geom_type == 'MultiPolygon':
+                return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
+        return geom
 
 
     # PLOT INDIVIDUAL SCEN --------------------------------------------------------------------
        
     # plot ind - line: Production HOY per Node ============================
-    if plot_ind_line_productionHOY_per_node:
+    if visual_settings['plot_ind_line_productionHOY_per_node']:
+        checkpoint_to_logfile(f'plot_ind_line_productionHOY_per_node', log_name)
         i, scen = 0, scen_dir_export_list[0]
         for i, scen in enumerate(scen_dir_export_list):
             # setup + import ----------
@@ -176,7 +177,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             pvalloc_scen = pvalloc_scen_list[i]
 
             gridnode_df = pd.read_parquet(f'{scen_data_path}/gridnode_df.parquet') 
-            gridnode_df['t_int'] = gridnode_df['t'].str.extract('t_(\d+)').astype(int)
+            gridnode_df['t_int'] = gridnode_df['t'].str.extract(r't_(\d+)').astype(int)
             gridnode_df.sort_values(by=['t_int'], inplace=True)
 
             # plot ----------------
@@ -190,6 +191,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             )
 
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i])
+            fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
             if plot_show:
                 fig.show() 
 
@@ -199,7 +201,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # plot ind - line:
     #     plot ind - line: Installed Capacity per Month ===========================
     #     plot ind - line: Installed Capacity per BFS   ===========================
-    if plot_ind_line_installedCap_per_month or plot_ind_line_installedCap_per_BFS:
+    if visual_settings['plot_ind_line_installedCap_per_month'] or visual_settings['plot_ind_line_installedCap_per_BFS']:
         i, scen = 0, scen_dir_export_list[0]
         for i, scen in enumerate(scen_dir_export_list):
             scen_data_path = f'{data_path}/output/{scen}'
@@ -232,7 +234,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
             # plot ind - line: Installed Capacity per Month ===========================
-            if plot_ind_line_installedCap_per_month: 
+            if visual_settings['plot_ind_line_installedCap_per_month']: 
+                checkpoint_to_logfile(f'plot_ind_line_installedCap_per_month', log_name)
                 capa_month_df = pvinst_df.copy()
                 capa_month_df['BeginOp_month'] = capa_month_df['BeginOp'].dt.to_period('M')
                 capa_month_df = capa_month_df.groupby(['BeginOp_month', 'info_source'])['TotalPower'].sum().reset_index().copy()
@@ -286,16 +289,18 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 )
 
                 fig1 = add_scen_name_to_plot(fig1, scen, pvalloc_scen_list[i])
-                fig1 = set_default_fig_zoom(fig1, default_zoom_year, capa_year_df, 'BeginOp_year')
+                fig1 = set_default_fig_zoom_year(fig1, default_zoom_year, capa_year_df, 'BeginOp_year')
                 if plot_show:
                     fig1.show()
                 fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_month.html')
 
             # plot ind - line: Installed Capacity per BFS ===========================
-            if plot_ind_line_installedCap_per_BFS: 
+            if visual_settings['plot_ind_line_installedCap_per_BFS']: 
+                checkpoint_to_logfile(f'plot_ind_line_installedCap_per_BFS', log_name)
                 capa_bfs_df = pvinst_df.copy()
-                gm_shp.rename(columns={'BFS_NUMMER': 'bfs'}, inplace=True)
-                capa_bfs_df = capa_bfs_df.merge(gm_shp[['bfs', 'NAME']], on='bfs', how = 'left' )
+                gm_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
+                gm_gdf.rename(columns={'BFS_NUMMER': 'bfs'}, inplace=True)
+                capa_bfs_df = capa_bfs_df.merge(gm_gdf[['bfs', 'NAME']], on='bfs', how = 'left' )
                 capa_bfs_df['BeginOp_month'] = capa_bfs_df['BeginOp'].dt.to_period('M')
                 capa_bfs_month_df = capa_bfs_df.groupby(['BeginOp_month', 'bfs'])['TotalPower'].sum().reset_index().copy()
                 capa_bfs_month_df['BeginOp_month'] = capa_bfs_month_df['BeginOp_month'].dt.to_timestamp()
@@ -343,164 +348,247 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 )
                 
                 fig2 = add_scen_name_to_plot(fig2, scen, pvalloc_scen_list[i])
-                fig2 = set_default_fig_zoom(fig2, default_zoom_year, capa_bfs_year_df, 'BeginOp_year')
+                fig2 = set_default_fig_zoom_year(fig2, default_zoom_year, capa_bfs_year_df, 'BeginOp_year')
                 if plot_show:
                     fig2.show()
                 fig2.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_BFS.html')
 
 
-    # plot ind - map:  Covered Area of Allocation Model ========================
-    i = 0
-    if map_ind_topo_egid:
-        i, scen = 0, scen_dir_export_list[0]
+    # plot ind - map:  Model PV topology ========================
+    default_map_zoom = visual_settings['default_map_zoom']
+    uniform_municip_color = visual_settings['map_topo_specs']['uniform_municip_color']
+    map_topo_specs = visual_settings['map_topo_specs']
 
+    # get pvinst_gdf ----------------
+    if True: 
+        for i, scen in enumerate(scen_dir_export_list):
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
+            
+            # import 
+            gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/gwr_gdf.geojson')
+            gm_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
+
+            topo  = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
+            egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
+            gklas_list, node_list, demand_type_list, pvtarif_list, elecpri_list, elecpri_info_list = [], [], [], [], [], []
+
+            for k,v, in topo.items():
+                egid_list.append(k)
+                inst_TF_list.append(v['pv_inst']['inst_TF'])
+                info_source_list.append(v['pv_inst']['info_source'])
+                BeginOp_list.append(v['pv_inst']['BeginOp'])
+                TotalPower_list.append(v['pv_inst']['TotalPower'])
+                bfs_list.append(v['gwr_info']['bfs'])
+
+                gklas_list.append(v['gwr_info']['gklas'])
+                node_list.append(v['grid_node'])
+                demand_type_list.append(v['demand_type'])
+                pvtarif_list.append(v['pvtarif_Rp_kWh'])
+                elecpri_list.append(v['elecpri_Rp_kWh'])
+                elecpri_info_list.append(v['elecpri_info'])
+
+            pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,
+                                    'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list, 
+                                    'gklas': gklas_list, 'node': node_list, 'demand_type': demand_type_list,
+                                    'pvtarif': pvtarif_list, 'elecpri': elecpri_list, 'elecpri_info': elecpri_info_list })
+            
+            pvinst_df = pvinst_df.merge(gwr_gdf[['geometry', 'EGID']], on='EGID', how='left')
+            pvinst_gdf = gpd.GeoDataFrame(pvinst_df, crs='EPSG:2056', geometry='geometry')
+            firstkey_topo = topo[list(topo.keys())[0]]
+
+
+    # base map ----------------
+    if True: 
         # setup
         scen_data_path = f'{data_path}/output/{scen}'
         T0_prediction = T0_prediction_list[0]
         months_prediction = months_prediction_list[0]
         pvalloc_scen = pvalloc_scen_list[i]
 
-        # general import 
-        gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/gwr_gdf.geojson')
-        gm_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
-
-        topo  = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
-        egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
-
-        for k,v, in topo.items():
-            egid_list.append(k)
-            inst_TF_list.append(v['pv_inst']['inst_TF'])
-            info_source_list.append(v['pv_inst']['info_source'])
-            BeginOp_list.append(v['pv_inst']['BeginOp'])
-            TotalPower_list.append(v['pv_inst']['TotalPower'])
-            bfs_list.append(v['gwr_info']['bfs'])
-
-        pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,
-                                  'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list})
+        # transformations
+        gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
+        gm_gdf = gm_gdf.loc[gm_gdf['BFS_NUMMER'].isin(pvinst_df['bfs'].unique())].copy()
+        date_cols = [col for col in gm_gdf.columns if (gm_gdf[col].dtype == 'datetime64[ns]') or (gm_gdf[col].dtype == 'datetime64[ms]')]
+        gm_gdf.drop(columns=date_cols, inplace=True)
         
+        # add map relevant columns
+        gm_gdf['hover_text'] = gm_gdf.apply(lambda row: f"{row['NAME']}<br>BFS_NUMMER: {row['BFS_NUMMER']}", axis=1)
 
-        # plot GM map ============================
-        if True: 
-            # transformations
-            gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
-            gm_gdf = gm_gdf.loc[gm_gdf['BFS_NUMMER'].isin(pvinst_df['bfs'].unique())].copy()
-            date_cols = [col for col in gm_gdf.columns if (gm_gdf[col].dtype == 'datetime64[ns]') or (gm_gdf[col].dtype == 'datetime64[ms]')]
-            gm_gdf.drop(columns=date_cols, inplace=True)
-            
-            # add map relevant columns
-            gm_gdf['hover_text'] = gm_gdf.apply(lambda row: f"{row['NAME']}<br>BFS_NUMMER: {row['BFS_NUMMER']}", axis=1)
+        # geo transformations
+        gm_gdf = gm_gdf.to_crs('EPSG:4326')
+        # Function to flatten geometries to 2D (ignoring Z-dimension)
+        def flatten_geometry(geom):
+            if geom.has_z:
+                if geom.geom_type == 'Polygon':
+                    exterior = [(x, y) for x, y, z in geom.exterior.coords]
+                    interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
+                    return Polygon(exterior, interiors)
+                elif geom.geom_type == 'MultiPolygon':
+                    return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
+            return geom
+        gm_gdf['geometry'] = gm_gdf['geometry'].apply(flatten_geometry)
 
-            # geo transformations
-            gm_gdf = gm_gdf.to_crs('EPSG:4326')
-            # Function to flatten geometries to 2D (ignoring Z-dimension)
-            def flatten_geometry(geom):
-                if geom.has_z:
-                    if geom.geom_type == 'Polygon':
-                        exterior = [(x, y) for x, y, z in geom.exterior.coords]
-                        interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
-                        return Polygon(exterior, interiors)
-                    elif geom.geom_type == 'MultiPolygon':
-                        return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
-                return geom
-            gm_gdf['geometry'] = gm_gdf['geometry'].apply(flatten_geometry)
+        geojson = gm_gdf.__geo_interface__
 
-            geojson = gm_gdf.__geo_interface__
+        # Plot using Plotly Express
+        fig0 = px.choropleth_mapbox(
+            gm_gdf,
+            geojson=geojson,
+            locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
+            featureidkey="properties.BFS_NUMMER",  # This must match the GeoJSON's property for BFS_NUMMER
+            color_discrete_sequence=[uniform_municip_color],  # Apply the single color to all shapes
+            hover_name="hover_text",  # Use the new column for hover text
+            mapbox_style="carto-positron",  # Basemap style
+            center={"lat": 47.41, "lon": 7.49},  # Center the map on the region
+            zoom=default_map_zoom,  # Adjust zoom as needed
+            opacity=map_topo_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
+        )
+        # Update layout for borders and title
+        fig0.update_layout(
+            mapbox=dict(
+                layers=[{
+                    'source': geojson,
+                    'type': 'line',
+                    'color': 'black',  # Set border color for polygons
+                    'opacity': 0.25,
+                }]
+            ),
+            title=f"Map of PV topology (scen: {scen})", 
+            legend=dict(
+                itemsizing='constant',
+                title='Legend',
+                traceorder='normal'
+            ),
+        )
 
-            # Plot using Plotly Express
-            fig = px.choropleth_mapbox(
-                gm_gdf,
-                geojson=geojson,
-                locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
-                featureidkey="properties.BFS_NUMMER",  # This must match the GeoJSON's property for BFS_NUMMER
-                color_discrete_sequence=[uniform_color],  # Apply the single color to all shapes
-                hover_name="hover_text",  # Use the new column for hover text
-                mapbox_style="carto-positron",  # Basemap style
-                center={"lat": 47.41, "lon": 7.49},  # Center the map on the region
-                zoom=11,  # Adjust zoom as needed
-                opacity=0.25,   # Opacity to make shapes and basemap visible    
-                labels='GM map'
+        # Show the map
+        # fig.show()
 
-            )
-            # Update layout for borders and title
-            fig.update_layout(
-                mapbox=dict(
-                    layers=[{
-                        'source': geojson,
-                        'type': 'line',
-                        'color': 'black',  # Set border color for polygons
-                        'opacity': 0.25,
-                    }]
-                ),
-                title=f"Map of model range ({scen})"
-            )
 
-            # Show the map
-            fig.show()
+    # map ind - topo_egid ============================
+    if visual_settings['map_ind_topo_egid']:
+        checkpoint_to_logfile(f'map_ind_topo_egid', log_name)
+        fig1 = copy.deepcopy(fig0)
+        pvinst_gdf = pvinst_gdf.to_crs('EPSG:4326')
+        # Function to flatten geometries to 2D (ignoring Z-dimension)
+        def flatten_geometry(geom):
+            if geom.has_z:
+                if geom.geom_type == 'Polygon':
+                    exterior = [(x, y) for x, y, z in geom.exterior.coords]
+                    interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
+                    return Polygon(exterior, interiors)
+                elif geom.geom_type == 'MultiPolygon':
+                    return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
+            return geom
+        pvinst_gdf['geometry'] = pvinst_gdf['geometry'].apply(flatten_geometry)
 
-        # plot GWR map ============================
-        if True:
-            pvinst_df.dtypes
-            gwr_gdf.dtypes
-            pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list})
+        
+        # subset inst_gdf for different traces in map plot
+        pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>node: {row['node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
 
-            pvinst_df = pvinst_df.merge(gwr_gdf[['geometry', 'EGID']], on='EGID', how='left')
-            pvinst_gdf = gpd.GeoDataFrame(pvinst_df, crs='EPSG:2056', geometry='geometry')
+        subinst1_gdf, subinst2_gdf, subinst3_gdf  = pvinst_gdf.copy(), pvinst_gdf.copy(), pvinst_gdf.copy()
+        subinst1_gdf, subinst2_gdf, subinst3_gdf = subinst1_gdf.loc[(subinst1_gdf['inst_TF'] == True) & (subinst1_gdf['info_source'] == 'pv_df')], subinst2_gdf.loc[(subinst2_gdf['inst_TF'] == True) & (subinst2_gdf['info_source'] == 'alloc_algorithm')], subinst3_gdf.loc[(subinst3_gdf['inst_TF'] == False)]
 
-            pvinst_gdf = pvinst_gdf.to_crs('EPSG:4326')
-            # Function to flatten geometries to 2D (ignoring Z-dimension)
-            def flatten_geometry(geom):
-                if geom.has_z:
-                    if geom.geom_type == 'Polygon':
-                        exterior = [(x, y) for x, y, z in geom.exterior.coords]
-                        interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
-                        return Polygon(exterior, interiors)
-                    elif geom.geom_type == 'MultiPolygon':
-                        return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
-                return geom
-            pvinst_gdf['geometry'] = pvinst_gdf['geometry'].apply(flatten_geometry)
-
-            # set coloring
-            def determine_color(row):
-                if row['inst_TF'] and row['info_source'] == 'pv_df':
-                    return 'darkgreen'
-                elif row['inst_TF'] and row['info_source'] == 'alloc_algorithm':
-                    return 'yellow'
-                else:
-                    return 'grey'
-            pvinst_gdf['color'] = pvinst_gdf.apply(determine_color, axis=1)
-
-            pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>TotalPower: {row['TotalPower']}", axis=1)
-            
-            geojson = pvinst_gdf.__geo_interface__
-            
-            # Add the points using Scattermapbox
-            fig.add_trace(go.Scattermapbox(
-                lat=pvinst_gdf.geometry.y,
-                lon=pvinst_gdf.geometry.x,
-                mode='markers',
-                marker=dict(
-                    size=10,
-                    color=pvinst_gdf['color'],
-                    opacity=0.7
-                ),
-                text=pvinst_gdf['hover_text'],
-                hoverinfo='text'
-            ))
-
-            # Update layout
-            fig.update_layout(
+        # Add the points using Scattermapbox
+        fig1.add_trace(go.Scattermapbox(lat=subinst1_gdf.geometry.y,lon=subinst1_gdf.geometry.x, mode='markers',
+            marker=dict(
+                size=map_topo_specs['point_size_pv'],
+                color=map_topo_specs['point_color_pv_df'],
+                opacity=map_topo_specs['point_opacity']
+            ),
+            name = 'house w pv (real)',
+            text=subinst1_gdf['hover_text'],
+            hoverinfo='text'
+        ))
+        fig1.add_trace(go.Scattermapbox(lat=subinst2_gdf.geometry.y,lon=subinst2_gdf.geometry.x, mode='markers',
+            marker=dict(
+                size=map_topo_specs['point_size_pv'],
+                color=map_topo_specs['point_color_alloc_algo'],
+                opacity=map_topo_specs['point_opacity']
+            ),
+            name = 'house w pv (predicted)',
+            text=subinst2_gdf['hover_text'],
+            hoverinfo='text'
+        ))
+        fig1.add_trace(go.Scattermapbox(lat=subinst3_gdf.geometry.y,lon=subinst3_gdf.geometry.x, mode='markers',
+            marker=dict(
+                size=map_topo_specs['point_size_rest'],
+                color=map_topo_specs['point_color_rest'],
+                opacity=map_topo_specs['point_opacity']
+            ),
+            name = 'house w/o pv',
+            text=subinst3_gdf['hover_text'],
+            hoverinfo='text'
+        ))
+        
+        # Update layout
+        fig1.update_layout(
                 title=f"Map of model range with additional points ({scen})",
                 mapbox=dict(
                     style="carto-positron",
                     center={"lat": 47.41, "lon": 7.49},
-                    zoom=10
+                    zoom=default_map_zoom
                 )
             )
 
         if plot_show:
-            fig.show()
-        fig.write_html(f'{data_path}/output/visualizations/{scen}__map_ind_topo_egid.html')
+            fig1.show()
+        fig1.write_html(f'{data_path}/output/visualizations/{scen}__map_ind_topo_egid.html')
 
+
+    # V - NOT WORKING YET - V
+    # map_ind_production ============================ 
+    if visual_settings['map_ind_production']:
+   
+        # import
+        solkat_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/solkat_gdf.geojson', rows =1000)
+        solkat_gdf['DF_UID'] = solkat_gdf['DF_UID'].astype(int).astype(str)
+        solkat_gdf.dtypes
+        solkat_gdf.rename(columns={'DF_UID': 'df_uid'}, inplace=True)
+
+        topo_subdf_paths = glob.glob(f'{scen_data_path}/topo_time_subdf/*.parquet')
+        subdf_dfuid_list = []
+
+        path = topo_subdf_paths[0]
+        for i, path in enumerate(topo_subdf_paths):
+            subdf = pd.read_parquet(path)
+            subdf_dfuid = subdf.groupby('df_uid').agg({'pvprod_kW': 'sum'}).reset_index()
+            subdf_dfuid_list.append(subdf_dfuid)
+
+        aggdf_dfuid = pd.concat(subdf_dfuid_list)
+
+        # merge
+        solkat_gdf = solkat_gdf.merge(aggdf_dfuid, on='df_uid', how='left')
+
+        # plot ----------
+
+        solkat_gdf['hover_text'] = solkat_gdf.apply(lambda row: f"DF_UID: {row['df_uid']}<br>EGID: {row['EGID']}<br>pvprod_kW: {row['pvprod_kW']}<br>FLAECHE: {row['FLAECHE']}<br>AUSRICHTUNG: {row['AUSRICHTUNG']}<br>NEIGUNG: {row['NEIGUNG']}", axis=1)
+        
+        solkat_gdf['geometry'] = solkat_gdf['geometry'].apply(flatten_geometry)
+        solkat_gdf = solkat_gdf.to_crs('EPSG:4326')
+        solkat_gdf = solkat_gdf[solkat_gdf.is_valid]
+        geojson = solkat_gdf.__geo_interface__
+
+        # Add the shapes to figX
+        fig2 = px.choropleth_mapbox(
+            solkat_gdf, 
+            geojson=geojson,
+            locations="df_uid",
+            featureidkey="properties.df_uid",
+            color="pvprod_kW",
+            color_continuous_scale="Viridis",
+            range_color=(0, 100),
+            mapbox_style="carto-positron",
+            center={"lat": 47.41, "lon": 7.49},
+            zoom=default_map_zoom,
+            opacity=0.5,
+            hover_name="hover_text",
+            title=f"Map of production per DF_UID ({scen})",
+        )
+        if plot_show:
+            fig2.show()
+        fig2.write_html(f'{data_path}/output/visualizations/{scen}__map_ind_production.html')
 
 
 
@@ -510,138 +598,151 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # plot agg - line: Installed Capacity per Month ============================
-    fig = go.Figure()
-    i, scen = 0, scen_dir_export_list[0]
-    # i, scen = 1, scen_dir_export_list[1]
-    for i, scen in enumerate(scen_dir_export_list):
-        scen_data_path = f'{data_path}/output/{scen}'
-        T0_prediction = T0_prediction_list[0]
-        months_prediction = months_prediction_list[0]
-        pvalloc_scen = pvalloc_scen_list[i]
+    if visual_settings['plot_agg_line_installedCap_per_month']:
+        checkpoint_to_logfile(f'plot_agg_line_installedCap_per_month', log_name)
+        fig = go.Figure()
+        i, scen = 0, scen_dir_export_list[0]
+        # i, scen = 1, scen_dir_export_list[1]
+        for i, scen in enumerate(scen_dir_export_list):
+            scen_data_path = f'{data_path}/output/{scen}'
+            T0_prediction = T0_prediction_list[0]
+            months_prediction = months_prediction_list[0]
+            pvalloc_scen = pvalloc_scen_list[i]
 
-        topo = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
-        egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list = [], [], [], [], []
+            topo = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
+            egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list = [], [], [], [], []
 
-        for k,v, in topo.items():
-            egid_list.append(k)
-            inst_TF_list.append(v['pv_inst']['inst_TF'])
-            info_source_list.append(v['pv_inst']['info_source'])
-            BeginOp_list.append(v['pv_inst']['BeginOp'])
-            TotalPower_list.append(v['pv_inst']['TotalPower'])
+            for k,v, in topo.items():
+                egid_list.append(k)
+                inst_TF_list.append(v['pv_inst']['inst_TF'])
+                info_source_list.append(v['pv_inst']['info_source'])
+                BeginOp_list.append(v['pv_inst']['BeginOp'])
+                TotalPower_list.append(v['pv_inst']['TotalPower'])
 
-        pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list, 'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list})
-        pvinst_df = pvinst_df.loc[pvinst_df['inst_TF'] == True]
+            pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list, 'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list})
+            pvinst_df = pvinst_df.loc[pvinst_df['inst_TF'] == True]
 
-        pvinst_df['BeginOp'] = pvinst_df['BeginOp'].apply(lambda x: x if len(x) == 10 else x + '-01')
-        pvinst_df['BeginOp'] = pd.to_datetime(pvinst_df['BeginOp'], format='%Y-%m-%d')
-        pvinst_df['TotalPower'] = pd.to_numeric(pvinst_df['TotalPower'], errors='coerce')
+            pvinst_df['BeginOp'] = pvinst_df['BeginOp'].apply(lambda x: x if len(x) == 10 else x + '-01')
+            pvinst_df['BeginOp'] = pd.to_datetime(pvinst_df['BeginOp'], format='%Y-%m-%d')
+            pvinst_df['TotalPower'] = pd.to_numeric(pvinst_df['TotalPower'], errors='coerce')
 
-        def agg_pvinst_df(df, freq, new_datecol, datecol, infocol, valcol):
-            df_agg = df.copy()
-            df_agg[new_datecol] = df_agg[datecol].dt.to_period(freq)
-            df_agg = df_agg.groupby([new_datecol, infocol])[valcol].sum().reset_index().copy()
-            df_agg[new_datecol] = df_agg[new_datecol].dt.to_timestamp()
-            return df_agg
-                
-        pvinst_month_df = agg_pvinst_df(pvinst_df, 'M', 'BeginOp_month', 'BeginOp', 'info_source', 'TotalPower')
-        pvinst_month_built = pvinst_month_df.loc[pvinst_month_df['info_source'] == 'pv_df'].copy()
-        capa_month_predicted = pvinst_month_df.loc[pvinst_month_df['info_source'] == 'alloc_algorithm'].copy()
+            def agg_pvinst_df(df, freq, new_datecol, datecol, infocol, valcol):
+                df_agg = df.copy()
+                df_agg[new_datecol] = df_agg[datecol].dt.to_period(freq)
+                df_agg = df_agg.groupby([new_datecol, infocol])[valcol].sum().reset_index().copy()
+                df_agg[new_datecol] = df_agg[new_datecol].dt.to_timestamp()
+                return df_agg
+                    
+            pvinst_month_df = agg_pvinst_df(pvinst_df, 'M', 'BeginOp_month', 'BeginOp', 'info_source', 'TotalPower')
+            pvinst_month_built = pvinst_month_df.loc[pvinst_month_df['info_source'] == 'pv_df'].copy()
+            capa_month_predicted = pvinst_month_df.loc[pvinst_month_df['info_source'] == 'alloc_algorithm'].copy()
 
-        pvinst_year_df = agg_pvinst_df(pvinst_df, 'Y', 'BeginOp_year', 'BeginOp', 'info_source', 'TotalPower')
-        pvinst_year_built = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'pv_df'].copy()
-        pvinst_year_predicted = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'alloc_algorithm'].copy()
+            pvinst_year_df = agg_pvinst_df(pvinst_df, 'Y', 'BeginOp_year', 'BeginOp', 'info_source', 'TotalPower')
+            pvinst_year_built = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'pv_df'].copy()
+            pvinst_year_predicted = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'alloc_algorithm'].copy()
 
 
-        # plot ----------------
-        fig.add_trace(go.Scatter(x=pvinst_month_df['BeginOp_month'], y=pvinst_month_df['TotalPower'], line = dict(color = 'cornflowerblue'),name=f'built + predicted (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
-        # fig.add_trace(go.Scatter(x=pvinst_month_built['BeginOp_month'], y=pvinst_month_built['TotalPower'], line = dict(color = 'deepskyblue'), name=f'built (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
-        # fig.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'], line = dict(color = 'navy'), name=f'predicted (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
+            # plot ----------------
+            fig.add_trace(go.Scatter(x=pvinst_month_df['BeginOp_month'], y=pvinst_month_df['TotalPower'], name=f'built + predicted ({scen})',  mode='lines+markers', legendgroup = 'by Month', legendgrouptitle_text= 'by Month'))
+            # fig.add_trace(go.Scatter(x=pvinst_month_built['BeginOp_month'], y=pvinst_month_built['TotalPower'], line = dict(color = 'deepskyblue'), name=f'built (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
+            # fig.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'], line = dict(color = 'navy'), name=f'predicted (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
 
-        fig.add_trace(go.Scatter(x=pvinst_year_df['BeginOp_year'], y=pvinst_year_df['TotalPower'], line = dict(color = 'limegreen'), name=f'built + predicted (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
-        # fig.add_trace(go.Scatter(x=pvinst_year_built['BeginOp_year'], y=pvinst_year_built['TotalPower'], line = dict(color = 'lightgreen'), name=f'built (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
-        # fig.add_trace(go.Scatter(x=pvinst_year_predicted['BeginOp_year'], y=pvinst_year_predicted['TotalPower'], line = dict(color = 'forestgreen'), name=f'predicted (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
+            fig.add_trace(go.Scatter(x=pvinst_year_df['BeginOp_year'], y=pvinst_year_df['TotalPower'], name=f'built + predicted ({scen})',  mode='lines+markers', legendgroup = 'by Year', legendgrouptitle_text= 'by Year'))
+            # fig.add_trace(go.Scatter(x=pvinst_year_built['BeginOp_year'], y=pvinst_year_built['TotalPower'], line = dict(color = 'lightgreen'), name=f'built (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
+            # fig.add_trace(go.Scatter(x=pvinst_year_predicted['BeginOp_year'], y=pvinst_year_predicted['TotalPower'], line = dict(color = 'forestgreen'), name=f'predicted (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
 
-    fig.update_layout(
-        xaxis_title='Time',
-        yaxis_title='Installed Capacity (kW)',
-        legend_title='Scenarios',
-        title = f'Installed Capacity per Month (weather year: {pvalloc_scen["weather_specs"]["weather_year"]})'
-    )
+        fig.update_layout(
+            xaxis_title='Time',
+            yaxis_title='Installed Capacity (kW)',
+            legend_title='Scenarios',
+            title = f'Agg. Installed Capacity per Month (weather year: {pvalloc_scen["weather_specs"]["weather_year"]})'
+        )
 
-    fig = add_T0_tick_to_plot(fig, T0_pred_agg)
-    fig = set_default_fig_zoom(fig, [2010, 2030], pvinst_year_df, 'BeginOp_year')
-    if plot_show:
-        fig.show()
+        fig = add_T0_tick_to_plot(fig, T0_pred_agg, pvinst_year_df, 'TotalPower')
+        fig = set_default_fig_zoom_year(fig, default_zoom_year, pvinst_year_df, 'BeginOp_year')
+        if plot_show:
+            fig.show()
 
-    fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_installedCap_per_month.html')
+        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_installedCap_per_month.html')
 
 
 
     # plot agg - line: PV Production per Hour of Year ============================
-    fig = go.Figure()
-    for i, scen in enumerate(scen_dir_export_list):
-        # setup + import ----------
-        scen_data_path = f'{data_path}/output/{scen}'
-        pvalloc_scen = pvalloc_scen_list[i]
+    if visual_settings['plot_agg_line_productionHOY_per_node']:
+        checkpoint_to_logfile(f'plot_agg_line_productionHOY_per_node', log_name)
+        fig = go.Figure()
+        i, scen = 0, scen_dir_export_list[0]
+        for i, scen in enumerate(scen_dir_export_list):
+            # setup + import ----------
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
 
-        gridnode_df = pd.read_parquet(f'{scen_data_path}/gridnode_df.parquet') 
-        gridnode_df['t_int'] = gridnode_df['t'].str.extract('t_(\d+)').astype(int)
-        gridnode_df.sort_values(by=['t_int'], inplace=True)
+            gridnode_df = pd.read_parquet(f'{scen_data_path}/gridnode_df.parquet') 
+            gridnode_df['t_int'] = gridnode_df['t'].str.extract(r't_(\d+)').astype(int)
+            gridnode_df.sort_values(by=['t_int'], inplace=True)
 
-        # plot ----------------
-        fig = px.line(gridnode_df, x='t', y='pvprod_kW', color = 'grid_node',labels= f'{scen}, wy: {pvalloc_scen["weather_specs"]["weather_year"]})' )
-        
-        
-    fig.update_layout(
-        xaxis_title='Hour of Year',
-        yaxis_title='Production (kWh)',
-        legend_title='Node ID',
-        title = f'Production per Hour of Year, by Scenario (kW)'
-    )
-    if plot_show:
-        fig.show()
+            # plot ----------------
+            for grid_node in gridnode_df['grid_node'].unique():
+                node_df = gridnode_df[gridnode_df['grid_node'] == grid_node]
+                fig.add_trace(go.Scatter(
+                    x=node_df['t_int'], 
+                    y=node_df['pvprod_kW'], 
+                    mode='lines',
+                    name=f'{scen} - {grid_node}',  # Include both scen and grid_node in the legend
+                    showlegend=True
+            ))            
+                
+            
+        fig.update_layout(
+            xaxis_title='Hour of Year',
+            yaxis_title='Production (kWh)',
+            legend_title='Node ID',
+            title = f'Agg. Production per Hour of Year, by Scenario (kW)'
+        )
+        fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
+        if plot_show:
+            fig.show()
 
-    fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_productionHOY_per_node.html')
+        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_productionHOY_per_node.html')
 
 
 
     # plot agg - line: Grid Premium per Hour of Year ============================
-    fig = go.Figure()
-    for i, scen in enumerate(scen_dir_export_list):
-        # setup + import ----------
-        scen_data_path = f'{data_path}/output/{scen}'
-        pvalloc_scen = pvalloc_scen_list[i]
+    if visual_settings['plot_agg_line_gridPremiumHOY_per_node']:
+        checkpoint_to_logfile(f'plot_agg_line_gridPremiumHOY_per_node', log_name)
+        fig = go.Figure()
+        for i, scen in enumerate(scen_dir_export_list):
+            # setup + import ----------
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
 
-        gridprem_ts = pd.read_parquet(f'{scen_data_path}/gridprem_ts.parquet') 
-        gridprem_ts['t_int'] = gridprem_ts['t'].str.extract('t_(\d+)').astype(int)
-        gridprem_ts.sort_values(by=['t_int'], inplace=True)
+            gridprem_ts = pd.read_parquet(f'{scen_data_path}/gridprem_ts.parquet') 
+            gridprem_ts['t_int'] = gridprem_ts['t'].str.extract(r't_(\d+)').astype(int)
+            gridprem_ts.sort_values(by=['t_int'], inplace=True)
 
-        # plot ----------------
-        fig = px.line(gridprem_ts, x='t', y='prem_Rp_kWh', color = 'grid_node',labels = f'{scen}, wy: {pvalloc_scen["weather_specs"]["weather_year"]})' )
-    
-    fig.update_layout(
-        xaxis_title='Hour of Year',
-        yaxis_title='Grid Premium (CHF)',
-        legend_title='Node ID',
-        title = f'Grid Premium per Hour of Year, by Scenario (CHF)'
-    )
-    if plot_show:
-        fig.show()
-
-    fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_gridPremiumHOY_per_node.html')
-
+            # plot ----------------
+            for grid_node in gridprem_ts['grid_node'].unique():
+                node_df = gridprem_ts[gridprem_ts['grid_node'] == grid_node]
+                fig.add_trace(go.Scatter(
+                    x=node_df['t_int'], 
+                    y=node_df['prem_Rp_kWh'], 
+                    mode='lines',
+                    name=f'{scen} - {grid_node}',  # Include both scen and grid_node in the legend
+                    showlegend=True
+            ))
 
 
-
-
-
-
-
-
-# plot ind - ???: Buliding Charachteristics ===========================
-
-
-
+        fig.update_layout(
+            xaxis_title='Hour of Year',
+            yaxis_title='Grid Premium (CHF)',
+            legend_title='Node ID',
+            title = f'Agg Grid Premium per Hour of Year, by Scenario (CHF)'
+        )
+        fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
+        
+        if plot_show:
+            fig.show()
+        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_gridPremiumHOY_per_node.html')
 
 
 

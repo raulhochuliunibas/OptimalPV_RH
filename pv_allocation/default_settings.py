@@ -42,11 +42,11 @@ pvalloc_default_settings = {
         'tier_description': 'tier_level: (voltage_threshold, gridprem_plusRp_kWh)',
         'colnames': ['tier_level', 'vltg_threshold', 'gridprem_plusRp_kWh'],
         'tiers': { 
-            1: [200, 1], 
-            2: [400, 3],
-            4: [600, 7],
-            5: [800, 15], 
-            6: [1500, 50],
+            1: [20, 1], 
+            2: [40, 3],
+            4: [60, 7],
+            5: [80, 15], 
+            6: [150, 50],
             },},
         # 'tiers': { 
         #     1: [2000, 1], 

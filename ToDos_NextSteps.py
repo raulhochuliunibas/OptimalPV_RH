@@ -123,7 +123,8 @@ if True:
 #   TODO: A - Avg Production HOY per scenario (avg incl std bands)
 #   TODO: A - Final avg gridprem ts per scenario (avg incl std bands)
 
-# 
+#   OK A - Map of covered regions (bfs) with installed capacity
+#   TODO: A - Map of covered regions (bfs) with sum production (maybe incl solkat)
 
 
 

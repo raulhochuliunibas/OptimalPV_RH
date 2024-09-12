@@ -29,35 +29,37 @@ pvalloc_scenarios={
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 10,},
-            'months_prediction': 12*1,
+                'tweak_constr_capacity_fact': 20,},
+            'months_prediction': 12,
 
     },
-    'pvalloc_smallBL_3y_SLCTN_random': {
+    'pvalloc_smallBL_1y_SLCTN_random': {
             'algorithm_specs': {
                 'inst_selection_method': 'random',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 10,},
-            'months_prediction': 12*1,
+                'tweak_constr_capacity_fact': 20,},
+            'months_prediction': 12,
 
     },
 
 }
 
 parkplatz = {
-    'pvalloc_smallBL_5y_npv_weighted': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-            'months_prediction': 12*5,
+    'pvalloc_smallBL_6m_SLCTN_npv_weighted': {
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
-                'topo_subdf_partitioner' : 500,},
+                'rand_seed': None,
+                'tweak_constr_capacity_fact': 20,},
+            'months_prediction': 6,
+
     },
-    'pvalloc_smallBL_5y_random': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',    
-            'months_prediction': 12*5,
+    'pvalloc_smallBL_6m_SLCTN_random': {
             'algorithm_specs': {
                 'inst_selection_method': 'random',
-                'topo_subdf_partitioner' : 500,},
+                'rand_seed': None,
+                'tweak_constr_capacity_fact': 20,},
+            'months_prediction': 6,
+
     },
 
 }
@@ -68,21 +70,20 @@ print(pvalloc_scenarios)
 
 # vsualiastion 
 visual_settings = {
-        'check_defaults 2' : 'deez nuts',
         'plot_show': True,
 
-        'default_zoom_year': [2012, 2030],
-        'default_map_zoom': 11, 
-        
-
-        'plot_ind_line_productionHOY_per_node': False,
+        'plot_ind_line_productionHOY_per_node': True,
         'plot_ind_line_installedCap_per_month': False,
         'plot_ind_line_installedCap_per_BFS': False,
-        'map_ind_topo_egid': True,
-        'map_topo_specs': {
-            'uniform_municip_color ': '#fff2ae',
-        }
-        
+        'map_ind_topo_egid': False,
+
+        'plot_agg_line_installedCap_per_month': False,
+        'plot_agg_line_productionHOY_per_node': False,
+        'plot_agg_line_gridPremiumHOY_per_node': True,
+
+        # single plots (just show once, not for all scenarios)
+        'map_ind_production': False, # NOT WORKING YET
+
     }
 visual_settings = extend_visual_sett_with_defaults(visual_settings)
 
@@ -110,7 +111,7 @@ visualization_MASTER.visualization_MASTER(pvalloc_scenarios, visual_settings)
 
 
 # END ==========================================================================
-print(f'{54*"="}\n{5*" "}{10*"*"}{5*" "}END of RUNFILE{5*" "}{10*"*"}{5*" "}\n{54*"="}\n')
+print(f'\n\n{54*"="}\n{5*" "}{10*"*"}{5*" "}END of RUNFILE{5*" "}{10*"*"}{5*" "}\n{54*"="}\n')
 
 
 
