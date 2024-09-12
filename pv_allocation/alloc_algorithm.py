@@ -331,91 +331,93 @@ def update_npv_df(pvalloc_settings,
         # drop egids with pv installations
         subdf = subdf[subdf['EGID'].isin(no_pv_egid)]
 
-        # merge gridprem_ts
-        subdf = subdf.merge(gridprem_ts[['t', 'prem_Rp_kWh', 'grid_node']], how='left', on=['t', 'grid_node']) 
+        if not subdf.empty:
 
-        # compute selfconsumption + netdemand ----------------------------------------------
-        subdf_array = subdf[['pvprod_kW', 'demand_kW', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'prem_Rp_kWh']].to_numpy()
-        pvprod_kW, demand_kW, pv_tarif_Rp_kWh, elecpri_Rp_kWh, prem_Rp_kWh = subdf_array[:,0], subdf_array[:,1], subdf_array[:,2], subdf_array[:,3], subdf_array[:,4]
+            # merge gridprem_ts
+            subdf = subdf.merge(gridprem_ts[['t', 'prem_Rp_kWh', 'grid_node']], how='left', on=['t', 'grid_node']) 
 
-        selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * selfconsum_rate
-        netdemand_kW = demand_kW - selfconsum_kW
-        netfeedin_kW = pvprod_kW - selfconsum_kW
+            # compute selfconsumption + netdemand ----------------------------------------------
+            subdf_array = subdf[['pvprod_kW', 'demand_kW', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'prem_Rp_kWh']].to_numpy()
+            pvprod_kW, demand_kW, pv_tarif_Rp_kWh, elecpri_Rp_kWh, prem_Rp_kWh = subdf_array[:,0], subdf_array[:,1], subdf_array[:,2], subdf_array[:,3], subdf_array[:,4]
 
-        econ_inc_chf = ((netfeedin_kW * pv_tarif_Rp_kWh) /100) + ((selfconsum_kW * elecpri_Rp_kWh) /100)
-        econ_spend_chf = ((netfeedin_kW * prem_Rp_kWh)) + ((netdemand_kW * elecpri_Rp_kWh) /100)
+            selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * selfconsum_rate
+            netdemand_kW = demand_kW - selfconsum_kW
+            netfeedin_kW = pvprod_kW - selfconsum_kW
 
-        subdf['selfconsum_kW'], subdf['netdemand_kW'], subdf['netfeedin_kW'], subdf['econ_inc_chf'], subdf['econ_spend_chf'] = selfconsum_kW, netdemand_kW, netfeedin_kW, econ_inc_chf, econ_spend_chf
+            econ_inc_chf = ((netfeedin_kW * pv_tarif_Rp_kWh) /100) + ((selfconsum_kW * elecpri_Rp_kWh) /100)
+            econ_spend_chf = ((netfeedin_kW * prem_Rp_kWh)) + ((netdemand_kW * elecpri_Rp_kWh) /100)
 
-        if (i <5) and (i_m < 6): 
-            checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 2, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
+            subdf['selfconsum_kW'], subdf['netdemand_kW'], subdf['netfeedin_kW'], subdf['econ_inc_chf'], subdf['econ_spend_chf'] = selfconsum_kW, netdemand_kW, netfeedin_kW, econ_inc_chf, econ_spend_chf
 
-        agg_subdf = subdf.groupby(groupby_cols).agg(agg_cols).reset_index()
+            if (i <5) and (i_m < 6): 
+                checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 2, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
+
+            agg_subdf = subdf.groupby(groupby_cols).agg(agg_cols).reset_index()
+            
+            if (i <5) and (i_m < 6): 
+                checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 2, show_debug_prints_def)
+
+            # create combinations ----------------------------------------------
+            aggsub_npry = np.array(agg_subdf)
+
+            egid_list, combo_df_uid_list, df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list = [], [], [], [], [], [], []
+            pvinst_list, pvsource_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
+            flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_Rp_kWh_list = [], [], [], [], []
         
-        if (i <5) and (i_m < 6): 
-            checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 2, show_debug_prints_def)
+            flaech_angletilt_list, selfconsum_list, netdemand_list, netfeedin_list = [], [], [], []
+            econ_inc_chf_list, econ_spend_chf_list = [], []
 
-        # create combinations ----------------------------------------------
-        aggsub_npry = np.array(agg_subdf)
+            egid = agg_subdf['EGID'].unique()[0]
+            combos_counter = agg_subdf['EGID'].nunique() // 5
+            for i, egid in enumerate(agg_subdf['EGID'].unique()):
 
-        egid_list, combo_df_uid_list, df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list = [], [], [], [], [], [], []
-        pvinst_list, pvsource_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
-        flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_Rp_kWh_list = [], [], [], [], []
-    
-        flaech_angletilt_list, selfconsum_list, netdemand_list, netfeedin_list = [], [], [], []
-        econ_inc_chf_list, econ_spend_chf_list = [], []
+                mask_egid_subdf = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('EGID')], egid)
+                df_uids  = list(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('df_uid')])
 
-        egid = agg_subdf['EGID'].unique()[0]
-        combos_counter = agg_subdf['EGID'].nunique() // 5
-        for i, egid in enumerate(agg_subdf['EGID'].unique()):
+                for r in range(1,len(df_uids)+1):
+                    for combo in itertools.combinations(df_uids, r):
+                        combo_key_str = '_'.join([str(c) for c in combo])
 
-            mask_egid_subdf = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('EGID')], egid)
-            df_uids  = list(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('df_uid')])
+                        egid_list.append(egid)
+                        combo_df_uid_list.append(combo_key_str)
+                        # df_uid_list.append(list(combo))
+                        bfs_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('bfs')][0])
+                        gklas_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('gklas')][0])
+                        demandtype_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('demandtype')][0])
+                        grid_node_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('grid_node')][0])
 
-            for r in range(1,len(df_uids)+1):
-                for combo in itertools.combinations(df_uids, r):
-                    combo_key_str = '_'.join([str(c) for c in combo])
+                        pvinst_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pvinst_TF')][0])
+                        pvsource_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pvsource')][0])
+                        pvid_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pvid')][0])
+                        pv_tarif_Rp_kWh_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pv_tarif_Rp_kWh')][0]) 
+                        elecpri_Rp_kWh_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('elecpri_Rp_kWh')][0])
 
-                    egid_list.append(egid)
-                    combo_df_uid_list.append(combo_key_str)
-                    # df_uid_list.append(list(combo))
-                    bfs_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('bfs')][0])
-                    gklas_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('gklas')][0])
-                    demandtype_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('demandtype')][0])
-                    grid_node_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('grid_node')][0])
+                        flaeche_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('FLAECHE')].sum())
+                        # stromertrag_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('STROMERTRAG')].sum())
+                        # ausrichtung_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('AUSRICHTUNG')][0])
+                        # neigung_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('NEIGUNG')][0])
+                    
+                        # flaech_angletilt_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('FLAECH_angletilt')].sum())
+                        selfconsum_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('selfconsum_kW')].sum())
+                        netdemand_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('netdemand_kW')].sum())
+                        netfeedin_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('netfeedin_kW')].sum())
+                        econ_inc_chf_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('econ_inc_chf')].sum())
+                        econ_spend_chf_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('econ_spend_chf')].sum())
 
-                    pvinst_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pvinst_TF')][0])
-                    pvsource_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pvsource')][0])
-                    pvid_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pvid')][0])
-                    pv_tarif_Rp_kWh_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pv_tarif_Rp_kWh')][0]) 
-                    elecpri_Rp_kWh_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('elecpri_Rp_kWh')][0])
+                # if i % combos_counter == 0:
+                    # print_to_logfile(f'    > {i} of {agg_subdf["EGID"].nunique()} EGIDs processed', log_file_name_def)
+                    # checkpoint_to_logfile(f'\t\t{i} of {agg_subdf["EGID"].nunique()} EGIDs processed', log_file_name_def, 1, show_debug_prints_def)
 
-                    flaeche_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('FLAECHE')].sum())
-                    # stromertrag_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('STROMERTRAG')].sum())
-                    # ausrichtung_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('AUSRICHTUNG')][0])
-                    # neigung_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('NEIGUNG')][0])
-                
-                    # flaech_angletilt_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('FLAECH_angletilt')].sum())
-                    selfconsum_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('selfconsum_kW')].sum())
-                    netdemand_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('netdemand_kW')].sum())
-                    netfeedin_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('netfeedin_kW')].sum())
-                    econ_inc_chf_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('econ_inc_chf')].sum())
-                    econ_spend_chf_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('econ_spend_chf')].sum())
+            aggsubdf_combo = pd.DataFrame({'EGID': egid_list, 'df_uid_combo': combo_df_uid_list, 'bfs': bfs_list,
+                                        'gklas': gklas_list, 'demandtype': demandtype_list, 'grid_node': grid_node_list,
 
-            # if i % combos_counter == 0:
-                # print_to_logfile(f'    > {i} of {agg_subdf["EGID"].nunique()} EGIDs processed', log_file_name_def)
-                # checkpoint_to_logfile(f'\t\t{i} of {agg_subdf["EGID"].nunique()} EGIDs processed', log_file_name_def, 1, show_debug_prints_def)
+                                        'pvinst_TF': pvinst_list, 'pvsource': pvsource_list, 'pvid': pvid_list,
+                                        'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list, 'elecpri_Rp_kWh': elecpri_Rp_kWh_list,
 
-        aggsubdf_combo = pd.DataFrame({'EGID': egid_list, 'df_uid_combo': combo_df_uid_list, 'bfs': bfs_list,
-                                    'gklas': gklas_list, 'demandtype': demandtype_list, 'grid_node': grid_node_list,
-
-                                    'pvinst_TF': pvinst_list, 'pvsource': pvsource_list, 'pvid': pvid_list,
-                                    'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list, 'elecpri_Rp_kWh': elecpri_Rp_kWh_list,
-
-                                    'FLAECHE': flaeche_list, 
-                                    # 'FLAECH_angletilt': flaech_angletilt_list,
-                                    'selfconsum_kW': selfconsum_list, 'netdemand_kW': netdemand_list, 'netfeedin_kW': netfeedin_list,
-                                    'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
+                                        'FLAECHE': flaeche_list, 
+                                        # 'FLAECH_angletilt': flaech_angletilt_list,
+                                        'selfconsum_kW': selfconsum_list, 'netdemand_kW': netdemand_list, 'netfeedin_kW': netfeedin_list,
+                                        'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
                      
         if (i <5) and (i_m < 6): 
             checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', log_file_name_def, 1, show_debug_prints_def)

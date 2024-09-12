@@ -23,21 +23,20 @@ datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
-    # estim runtime 20min!
-    'pvalloc_smallBL_6m_SLCTN_npv_weighted': {
+    'pvalloc_smallBL_3y_SLCTN_npv_weighted': {
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 10**1,},
-            'months_prediction': 6,
+                'tweak_constr_capacity_fact': 10,},
+            'months_prediction': 12*3,
 
     },
-    'pvalloc_smallBL_6m_SLCTN_random': {
+    'pvalloc_smallBL_3y_SLCTN_random': {
             'algorithm_specs': {
                 'inst_selection_method': 'random',
                 'rand_seed': None,
-                'tweak_constr_capacity_fact': 10**1,},
-            'months_prediction': 6,
+                'tweak_constr_capacity_fact': 10,},
+            'months_prediction': 12*3,
 
     },
 
@@ -93,7 +92,7 @@ for k_sett, scen_sett in datagg_scenarios.items():
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    # pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
+    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
     
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
