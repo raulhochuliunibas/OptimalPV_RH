@@ -6,6 +6,7 @@ import visualization_MASTER
 
 from data_aggregation.default_settings import extend_dataag_scen_with_defaults
 from pv_allocation.default_settings import extend_pvalloc_scen_with_defaults
+from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
@@ -23,12 +24,13 @@ datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
-    'pvalloc_smallBL_3y_SLCTN_npv_weighted': {
+    # BL small sample, 1 y ~ca. 3h 1 scenario
+    'pvalloc_smallBL_1y_SLCTN_npv_weighted': {
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
                 'rand_seed': None,
                 'tweak_constr_capacity_fact': 10,},
-            'months_prediction': 12*3,
+            'months_prediction': 12*1,
 
     },
     'pvalloc_smallBL_3y_SLCTN_random': {
@@ -36,7 +38,7 @@ pvalloc_scenarios={
                 'inst_selection_method': 'random',
                 'rand_seed': None,
                 'tweak_constr_capacity_fact': 10,},
-            'months_prediction': 12*3,
+            'months_prediction': 12*1,
 
     },
 
@@ -66,16 +68,23 @@ print(pvalloc_scenarios)
 
 # vsualiastion 
 visual_settings = {
+        'check_defaults 2' : 'deez nuts',
         'plot_show': True,
 
         'default_zoom_year': [2012, 2030],
+        'default_map_zoom': 11, 
+        
 
         'plot_ind_line_productionHOY_per_node': False,
         'plot_ind_line_installedCap_per_month': False,
         'plot_ind_line_installedCap_per_BFS': False,
         'map_ind_topo_egid': True,
+        'map_topo_specs': {
+            'uniform_municip_color ': '#fff2ae',
+        }
         
     }
+visual_settings = extend_visual_sett_with_defaults(visual_settings)
 
 
 
@@ -92,7 +101,7 @@ for k_sett, scen_sett in datagg_scenarios.items():
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
+    # pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
     
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------

@@ -28,54 +28,27 @@ if True:
     from pprint import pformat
     from shapely.geometry import Polygon, MultiPolygon
 
+    # own packages and functions
+    import pv_allocation.default_settings as pvalloc_default_sett
+    import visualisations.defaults_settings as visual_default_sett
 
-    import auxiliary_functions
     from auxiliary_functions import chapter_to_logfile
+    from pv_allocation.default_settings import *
+    from visualisations.defaults_settings import *
 
-pvalloc_scenarios_local={
-    'pvalloc_smallBL_SLCTN_npv_weighted': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-  
-            'recreate_topology':            True, 
-            'recalc_economics_topo_df':     True,
-            'run_allocation_loop':          True,
-
-            'algorithm_specs': {'inst_selection_method': 'prob_weighted_npv',},
-    },
-    'pvalloc_smallBL_SLCTN_random': {
-            'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h',
-
-            'recreate_topology':            True, 
-            'recalc_economics_topo_df':     True,
-            'run_allocation_loop':          True,
-
-            'algorithm_specs': {'inst_selection_method': 'random',},
-        },
-
-}
-
-visual_settings_local = {
-        'plot_show': True,
-
-        'plot_ind_line_productionHOY_per_node': False,
-        'plot_ind_line_installedCap_per_month': False,
-        'plot_ind_line_installedCap_per_BFS': False,
-        'map_ind_topo_egid': True,
-        
-        'default_zoom_year': [2012, 2030],
-    }
 
 def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # SETTINGS --------------------------------------------------------------------
     if not isinstance(pvalloc_scenarios_func, dict):
         print(' USE LOCAL SETTINGS - DICT  ')
-        pvalloc_scenarios = pvalloc_scenarios_local
+        pvalloc_scenarios = pvalloc_default_sett.get_default_pvalloc_settings()
     else:
         pvalloc_scenarios = pvalloc_scenarios_func
 
     if not isinstance(visual_settings_func, dict) or visual_settings_func == {}:
-        print(' USE LOCAL SETTINGS - DICT  ')
-        visual_settings = visual_settings_local
+        visual_settings = visual_default_sett.get_default_visual_settings()
+    else:
+        visual_settings = visual_settings_func
 
     
     # SETUP =====================================================================
@@ -97,13 +70,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # SETTINGS LATER ADDED TO visual_settings ------------------------
-    plot_show = visual_settings_local['plot_show']
-    default_zoom_year = visual_settings_local['default_zoom_year']
+    plot_show = visual_settings['plot_show']
+    default_zoom_year = visual_settings['default_zoom_year']
 
-    plot_ind_line_productionHOY_per_node = visual_settings_local['plot_ind_line_productionHOY_per_node']
-    plot_ind_line_installedCap_per_month = visual_settings_local['plot_ind_line_installedCap_per_month']
-    plot_ind_line_installedCap_per_BFS = visual_settings_local['plot_ind_line_installedCap_per_BFS']
-    map_ind_topo_egid = visual_settings_local['map_ind_topo_egid']
+    plot_ind_line_productionHOY_per_node = visual_settings['plot_ind_line_productionHOY_per_node']
+    plot_ind_line_installedCap_per_month = visual_settings['plot_ind_line_installedCap_per_month']
+    plot_ind_line_installedCap_per_BFS = visual_settings['plot_ind_line_installedCap_per_BFS']
+    map_ind_topo_egid = visual_settings['map_ind_topo_egid']
 
 
     plot_show = True
@@ -414,8 +387,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             date_cols = [col for col in gm_gdf.columns if (gm_gdf[col].dtype == 'datetime64[ns]') or (gm_gdf[col].dtype == 'datetime64[ms]')]
             gm_gdf.drop(columns=date_cols, inplace=True)
             
-            gm_gdf['uniform_color'] = "#EF553B"
-            uniform_color = "#EF553B"
+            # add map relevant columns
             gm_gdf['hover_text'] = gm_gdf.apply(lambda row: f"{row['NAME']}<br>BFS_NUMMER: {row['BFS_NUMMER']}", axis=1)
 
             # geo transformations
@@ -440,13 +412,14 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 geojson=geojson,
                 locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
                 featureidkey="properties.BFS_NUMMER",  # This must match the GeoJSON's property for BFS_NUMMER
-                # color="uniform_color",  # Column to use for coloring the shapes
                 color_discrete_sequence=[uniform_color],  # Apply the single color to all shapes
                 hover_name="hover_text",  # Use the new column for hover text
                 mapbox_style="carto-positron",  # Basemap style
                 center={"lat": 47.41, "lon": 7.49},  # Center the map on the region
-                zoom=10,  # Adjust zoom as needed
-                opacity=0.25  # Opacity to make shapes and basemap visible
+                zoom=11,  # Adjust zoom as needed
+                opacity=0.25,   # Opacity to make shapes and basemap visible    
+                labels='GM map'
+
             )
             # Update layout for borders and title
             fig.update_layout(
@@ -462,7 +435,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             )
 
             # Show the map
-            # fig.show()
+            fig.show()
 
         # plot GWR map ============================
         if True:
