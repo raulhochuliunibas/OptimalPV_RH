@@ -31,14 +31,17 @@ def select_AND_adjust_topology(pvalloc_settings,
     if rand_seed is not None:
         np.random.seed(rand_seed)
 
-    
     # select a building ----------
     if inst_selection_method == 'random':
         npv_pick = npv_df.sample(n=1).copy()
 
+    elif inst_selection_method == 'max_npv':
+        npv_pick = npv_df[npv_df['NPV_uid'] == max(npv_df['NPV_uid'])].copy()
+
+
     elif inst_selection_method == 'prob_weighted_npv':
         rand_num = np.random.uniform(0, 1)
-
+        
         npv_df['NPV_stand'] = npv_df['NPV_uid'] / max(npv_df['NPV_uid'])
         npv_df['diff_NPV_rand'] = abs(npv_df['NPV_stand'] - rand_num)
         npv_pick = npv_df[npv_df['diff_NPV_rand'] == min(npv_df['diff_NPV_rand'])].copy()
@@ -48,6 +51,7 @@ def select_AND_adjust_topology(pvalloc_settings,
             npv_pick = npv_pick.iloc[rand_row]
 
         npv_df.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
+
 
     if isinstance(npv_pick['EGID'], pd.Series):
         picked_egid = npv_pick['EGID'].values[0]
