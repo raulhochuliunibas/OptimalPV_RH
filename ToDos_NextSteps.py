@@ -1,6 +1,49 @@
 # Preamble: 
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
 
+# -----------------------------------------------------------------------------
+# Errors / Sanity Checks /  Faults          ¯\_(ツ)_/¯
+# -----------------------------------------------------------------------------
+
+# A ====================
+
+    # TODO: EGID in solkat is a faulty data point - at least for the small developing data set (nrows = ca. 1000 - 5000). 
+    #       That's why a second attempt was started to aggregate roof partitions on the sbuuid and map those then to the EGID numbers. 
+    #       Problem there - the amount of missmatches was strikingly large (+- 70 vs 30%) that SB_UUID aggregation does not seem to 
+    #       be warrented. Also  in developing Map_solkatdfuid_egid, makes small overcounts (1 partition is attributed to two houses). 
+    #       --> Check the BSBL Case thoroughly for the EGID mapping if not multiple EGIDS are attributed to one "house" (building) which then 
+    #           would mean double counting
+    # ----------
+
+    # TODO: There is an issue with buildings that have a HUGE number of partitions. 
+    #   > make either a function exporting all solkat with more than x rows for 1 egid
+    #   > OR make a function after topo_df generation that matches the topo df to the geo data and exports it to a shape file
+    #   > PLUS attach also exisiting pv installations to the topoology! so it is possible to see in topo_df which buildings have a pv installation already
+    # ----------
+
+    # TODO: some large number of EGID has multiple pv-installations attributed to them
+    #   > maye use smaller buffer for gwr_gdf and pv_gdf intersection. 
+
+# TODO: Sanity check for all calculations
+    # TODO: check if production capacity calc makes sense
+    # TODO: check if production amount calc makes sense
+    # TODO: check if NPV calc makes sense
+# ----------
+
+# B ====================
+
+    # TODO: check in QGIS if GKLAS == 1273 are really also denkmalgeschützt buildings or just monuments
+    # TODO: inst_power in allocation algorithm NOT weighted by angle tilt efficiency; But in updating of grid premium
+            # which one makes more sense?
+    # TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
+
+
+    # TODO: Check EGIDs in solkat for BSBL for not to have double counting.
+
+    # ok - some egid in gwr.parquet are double up to 10 times in the column, check why!
+    #       ->> because merging GWR with dwelling data, means that a row is no longer just a building but also sometimes a dwelling => multiple dwellings in one building
+
+
 
 # -----------------------------------------------------------------------------
 # data_aggreation_MASTER.py 
@@ -43,8 +86,8 @@ if True:
     # OK A - remove unnecessary CUMSUM function for PV installation cost, find a way to export and store cost function params
     print('')
 
-# TODO: Check EGIDs in solkat for BSBL for not to have double counting.
-# TODO: some egid in gwr.parquet are double up to 10 times in the column, check why!
+# TODO: A - make a summary log file, detailing how many buildings are in the data set, 
+#           how many of where dropped (why) and the same with partitions and pv inst.
 
 # -----------------------------------------------------------------------------
 # pv_allocation__MASTER.py 
@@ -52,30 +95,30 @@ if True:
 
 
 # INITIALIZATION --------
+if True:
+    # OK - func to import and transform all prepreped data
+    #   > return all relevant dfs
+    # OK - func to create pv topo dict
+    #   OK A - add Ausrichtung and Neigung to the topo for later uses
+    #   OK A - find a functional way to adjust production to Ausrichtung (Neigung)
+    #   OK A - add a fictive node to kantons 11, 12, 13 egids (just a plain csv, then merge it with empty gridprem_ts) 
+    #   > return dict
+    # OK - func to attach all roof partition combos to dict
+    #   > return dict
+    # OK - filter all input data again by alloc settings such that the allocation algorithm is applicable also on larger preped data sets
 
-# OK - func to import and transform all prepreped data
-#   > return all relevant dfs
-# OK - func to create pv topo dict
-#   OK A - add Ausrichtung and Neigung to the topo for later uses
-#   OK A - find a functional way to adjust production to Ausrichtung (Neigung)
-#   OK A - add a fictive node to kantons 11, 12, 13 egids (just a plain csv, then merge it with empty gridprem_ts) 
-#   > return dict
-# OK - func to attach all roof partition combos to dict
-#   > return dict
-# OK - filter all input data again by alloc settings such that the allocation algorithm is applicable also on larger preped data sets
 
+    #===============================
+    # # BOOKMARK: 
+    # - There is an issue with buildings that have a HUGE number of partitions. 
+    #  > make either a function exporting all solkat with more than x rows for 1 egid
+    #  > OR make a function after topo_df generation that matches the topo df to the geo data and exports it to a shape file
+    #  > PLUS attach also exisiting pv installations to the topoology! so it is possible to see in topo_df which buildings have a pv installation already
+    #===============================
 
-#===============================
-# # BOOKMARK: 
-# - There is an issue with buildings that have a HUGE number of partitions. 
-#  > make either a function exporting all solkat with more than x rows for 1 egid
-#  > OR make a function after topo_df generation that matches the topo df to the geo data and exports it to a shape file
-#  > PLUS attach also exisiting pv installations to the topoology! so it is possible to see in topo_df which buildings have a pv installation already
-#===============================
+    # OK:  A - define Construction capacity per month
 
-# OK:  A - define Construction capacity per month
-
-# ALLOCATION
+# ALLOCATION --------
 
 # LOOP for MONTE CARLO
 #   - #TODO:  - create copies of all the data objects that are needed "fresh" for each iteration. oterhwise iter2
@@ -126,25 +169,6 @@ if True:
 #   OK A - Map of covered regions (bfs) with installed capacity
 #   TODO: A - Map of covered regions (bfs) with sum production (maybe incl solkat)
 
-
-
-
-
-
-
-
-
-#   - pick building for PV
-
-
-
-# TO-DOs:
-# TODO: Adjust GBAUJ to other variable
-# TODO: Include WNART to only consider residential buildings for "primary living"
-# TODO: check in QGIS if GKLAS == 1273 are really also denkmalgeschützt buildings or just monuments
-# TODO: inst_power in allocation algorithm NOT weighted by angle tilt efficiency; But in updating of grid premium
-        # which one makes more sense?
-# TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
 
 
 
