@@ -115,9 +115,27 @@ def sql_gwr_data(
 
     gwr_dwelling_df = pd.DataFrame(sqlrows, columns=query_columns)
 
+    # get ALL BUILDING data
+    # select cols
+    query_columns = gwr_selection_specs_def['building_cols']
+    query_columns_str = ', '.join(query_columns)
+    query_bfs_numbers = ', '.join([str(i) for i in bfs_number_def])
+
+    conn = sqlite3.connect(f'{data_path_def}/input/GebWohnRegister.CH/data.sqlite')
+    cur = conn.cursor()
+    cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers})')
+    sqlrows = cur.fetchall()
+    conn.close()
+    checkpoint_to_logfile('sql query BUILDING done', log_file_name_def, 10, show_debug_prints_def)
+
+    gwr_all_building_df = pd.DataFrame(sqlrows, columns=query_columns)
+    gwr_all_building_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_building_df.csv', sep=';', index=False)
+    gwr_all_building_df.to_parquet(f'{data_path_def}/output/preprep_data/gwr_building_df.parquet')
+
 
     # merger & filter for specs -------------------
-    gwr = gwr_building_df.merge(gwr_dwelling_df, on='EGID', how='inner')
+    gwr = gwr_building_df.merge(gwr_dwelling_df, on='EGID', how='left')
+
 
     checkpoint_to_logfile(f'check gwr BEFORE filtering: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round(gwr["EGID"].nunique()/gwr.shape[0],2)*100} %', log_file_name_def, 3, True)
     gwr['GBAUJ'] = gwr['GBAUJ'].replace('', 0).astype(int)
@@ -127,6 +145,13 @@ def sql_gwr_data(
               (gwr['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
     gwr['GBAUJ'] = gwr['GBAUJ'].replace(0, '').astype(str)
     checkpoint_to_logfile(f'check gwr AFTER filtering: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round(gwr["EGID"].nunique()/gwr.shape[0],2)*100} %', log_file_name_def, 3, True)
+
+    # summary log
+    print_to_logfile(f'Building and Dwelling data import:', dataagg_settings_def['summary_file_name'])
+    checkpoint_to_logfile(f'gwr_all_building_df.shape: {gwr_all_building_df.shape}, EGID: {gwr_all_building_df["EGID"].nunique()}', dataagg_settings_def['summary_file_name'], 2, True)
+    checkpoint_to_logfile(f'gwr.shape: {gwr.shape}, EGID: {gwr["EGID"].nunique()} ({round(gwr.shape[0] / gwr_all_building_df.shape[0] * 100, 2)} % of all_bldng_df), {gwr["EGID"].nunique()} unique EGIDs ({round(gwr["EGID"].nunique() / gwr_all_building_df["EGID"].nunique() * 100, 2)} % of all_bldng_df)', dataagg_settings_def['summary_file_name'], 2, True)
+    checkpoint_to_logfile(f'settings: \n\tGSTAT: {gwr_selection_specs_def["GSTAT"]} "only existing bulidings"; \n\tGKLAS: {gwr_selection_specs_def["GKLAS"]} "1110 - building w 1 living space, 1121 - w 2 living spaces, 1276 - agricluture buildings (stables, barns )\n\tGBAUJ_minmax: {gwr_selection_specs_def["GBAUJ_minmax"]} "range of years of construction"', dataagg_settings_def['summary_file_name'], 2, True)
+    checkpoint_to_logfile(f'selection: \n\tOnly buildings within the BFS municicpalities: {bfs_number_def}', dataagg_settings_def['summary_file_name'], 2, True)
 
 
     # check proxy possiblity -------------------

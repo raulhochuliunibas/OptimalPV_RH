@@ -101,6 +101,11 @@ def data_aggregation_MASTER(dataagg_settings_func):
     log_name = f'{data_path}/output/preprep_data_log.txt'
     total_runtime_start = datetime.now()
 
+    summary_log = f'{data_path}/output/topo_summary_log.txt'
+    chapter_to_logfile(f'OptimalPV - Sample Summary of Building Topology', summary_log, overwrite_file=True)
+    subchapter_to_logfile(f'data_aggregation_MASTER', summary_log)
+
+
 
     # get bfs numbers from canton selection if applicable
     if not not dataagg_settings['kt_numbers']: 
@@ -110,6 +115,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
 
     # add information to dataagg_settings that's relevant for further functions
     dataagg_settings['log_file_name'] = log_name
+    dataagg_settings['summary_file_name'] = summary_log
     dataagg_settings['wd_path'] = wd_path
     dataagg_settings['data_path'] = data_path
 
@@ -188,42 +194,42 @@ def data_aggregation_MASTER(dataagg_settings_func):
         
         get_fake_gridnodes(dataagg_settings_def = dataagg_settings)
         
+    
+    # -----------------------------------------------------------------------------
+    # END 
+    chapter_to_logfile(f'END data_aggregation_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
+
+    if not dataagg_settings['script_run_on_server']:
+        winsound.Beep(1000, 300)
+        winsound.Beep(1000, 300)
+        winsound.Beep(1000, 1000)
 
     
     # COPY & RENAME AGGREGATED DATA FOLDER ---------------------------------------------------------------
     # > not to overwrite completed preprep folder while debugging 
 
-    if dataagg_settings['name_dir_export'] is None:    
+    if not os.path.exists(f'{data_path}/output/{dataagg_settings["name_dir_export"]}'):
+        dir_data_moveto = f'{data_path}/output/{dataagg_settings["name_dir_export"]}'
+        os.makedirs(dir_data_moveto)
+    else:
         today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        dirs_preprep_data_DATE = f'{data_path}/output/preprep_data_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
-        if not os.path.exists(dirs_preprep_data_DATE):
-            os.makedirs(dirs_preprep_data_DATE)
-        file_to_move = glob.glob(f'{data_path}/output/preprep_data/*')
-        for f in file_to_move:
-            shutil.copy(f, dirs_preprep_data_DATE)
-        shutil.copy(glob.glob(f'{data_path}/output/prepre*_log.txt')[0], dirs_preprep_data_DATE)
+        dir_data_moveto = f'{data_path}/output/{dataagg_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
+        if not os.path.exists(dir_data_moveto):
+            os.makedirs(dir_data_moveto)
+        elif os.path.exists(dir_data_moveto):
+            shutil.rmtree(dir_data_moveto)
+            os.makedirs(dir_data_moveto)
 
-    elif dataagg_settings['name_dir_export'] is not None:
-        today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        dirs_preprep_data_DATE = f'{data_path}/output/{dataagg_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
-        if not os.path.exists(dirs_preprep_data_DATE):
-            os.makedirs(dirs_preprep_data_DATE)
-        file_to_move = glob.glob(f'{data_path}/output/preprep_data/*')
-        for f in file_to_move:
-            shutil.copy(f, dirs_preprep_data_DATE)
-        shutil.copy(glob.glob(f'{data_path}/output/preprep_data_log.txt')[0], f'{dirs_preprep_data_DATE}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
-
-
+    file_to_move = glob.glob(f'{data_path}/output/preprep_data/*')
+    for f in file_to_move
+        if os.path.isfile(f):
+            shutil.copy(f, dir_data_moveto)
+        elif os.path.isdir(f):
+            shutil.copytree(f, f'{dir_data_moveto}/{f.split("/")[-1]}')
+    shutil.copy(glob.glob(f'{data_path}/output/preprep_data_log.txt')[0], f'{dir_data_moveto}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
+    shutil.copy(glob.glob(f'{data_path}/output/topo_summary_log.txt')[0], f'{dir_data_moveto}/topo_summary_log_{dataagg_settings["name_dir_export"]}.txt')
 
     # -----------------------------------------------------------------------------
-    # END 
-    subchapter_to_logfile(f'TOTAL RUNTIME (hh:mm:ss): {datetime.now() - total_runtime_start}', log_name)
-    chapter_to_logfile(f'END data_aggregation_MASTER', log_name, overwrite_file=False)
-
-    if not dataagg_settings['script_run_on_server']:
-        winsound.Beep(1000, 300)
-        winsound.Beep(1000, 300)
-        winsound.Beep(1000, 2000)
-        if dataagg_settings['turnoff_comp_after_run']:
-            subprocess.Popen(['shutdown', '/s'])
     # -----------------------------------------------------------------------------
+
+

@@ -1,6 +1,6 @@
 import os
 
-# import data_aggregation_MASTER
+import data_aggregation_MASTER
 import pv_allocation_MASTER
 import visualization_MASTER
 
@@ -15,33 +15,35 @@ os.chdir('C:/Models/OptimalPV_RH')
 
 # data_aggregation 
 datagg_scenarios = {
-    'preprep_BSBLSO_18to22':{
+    # 'preprep_BSBLSO_18to22_1and2homes_w_farms':{
+    #     'show_debug_prints': True,
+    # },
+    'preprep_BSBLSO_18to22_1and2homes':{
         'show_debug_prints': True,
-        }, 
-}
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}
+    },}
 datagg_scenarios = extend_dataag_scen_with_defaults(datagg_scenarios)
 
 
 # pv_allocation 
+months_pred = 2
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
-    'pvalloc_smallBL_6y_SLCTN_npv_weighted': {
+    f'pvalloc_smallBL_{months_pred}m_npv_weighted': {
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
-                'rand_seed': None,
-                'tweak_constr_capacity_fact': 5,},
-            'months_prediction': 12*6,
-
-    },
-    'pvalloc_smallBL_6y_SLCTN_random': {
+            'months_prediction': months_pred,
+    }},
+    f'pvalloc_smallBL_{months_pred}m_random': {
             'algorithm_specs': {
                 'inst_selection_method': 'random',
-                'rand_seed': None,
-                'tweak_constr_capacity_fact': 5,},
-            'months_prediction': 12*6,
-
-    },
-
+            'months_prediction': months_pred,
+    }}, 
+    f'pvalloc_smallBL_{months_pred}m_max_npv': {
+            'algorithm_specs': {
+                'inst_selection_method': 'max_npv',
+            'months_prediction': months_pred,
+    }},
 }
 
 parkplatz = {
@@ -113,13 +115,13 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 # DATA AGGREGATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in datagg_scenarios.items():
     dataagg_settings = scen_sett
-    # data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings)
+    data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings)
 
 
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    # pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
+    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
     
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
