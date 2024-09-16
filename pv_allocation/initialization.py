@@ -580,7 +580,7 @@ def import_ts_data(
     # IMPORT ----------------------------------------------------------------------------
 
     # demand types --------
-    demandtypes_tformat = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/demand_types.parquet')
+    demandtypes_tformat = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/demandtypes.parquet')
     demandtypes_ts = demandtypes_tformat.copy()
 
     # demandtypes_ts = demandtypes_ts.merge(Map_daterange[['date_range', 't']], how='left', on='t')

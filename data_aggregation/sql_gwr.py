@@ -149,9 +149,9 @@ def sql_gwr_data(
     # summary log
     print_to_logfile(f'Building and Dwelling data import:', dataagg_settings_def['summary_file_name'])
     checkpoint_to_logfile(f'gwr_all_building_df.shape: {gwr_all_building_df.shape}, EGID: {gwr_all_building_df["EGID"].nunique()}', dataagg_settings_def['summary_file_name'], 2, True)
-    checkpoint_to_logfile(f'gwr.shape: {gwr.shape}, EGID: {gwr["EGID"].nunique()} ({round(gwr.shape[0] / gwr_all_building_df.shape[0] * 100, 2)} % of all_bldng_df), {gwr["EGID"].nunique()} unique EGIDs ({round(gwr["EGID"].nunique() / gwr_all_building_df["EGID"].nunique() * 100, 2)} % of all_bldng_df)', dataagg_settings_def['summary_file_name'], 2, True)
-    checkpoint_to_logfile(f'settings: \n\tGSTAT: {gwr_selection_specs_def["GSTAT"]} "only existing bulidings"; \n\tGKLAS: {gwr_selection_specs_def["GKLAS"]} "1110 - building w 1 living space, 1121 - w 2 living spaces, 1276 - agricluture buildings (stables, barns )\n\tGBAUJ_minmax: {gwr_selection_specs_def["GBAUJ_minmax"]} "range of years of construction"', dataagg_settings_def['summary_file_name'], 2, True)
-    checkpoint_to_logfile(f'selection: \n\tOnly buildings within the BFS municicpalities: {bfs_number_def}', dataagg_settings_def['summary_file_name'], 2, True)
+    checkpoint_to_logfile(f'after selection gwr.shape: {gwr.shape}, EGID: {gwr["EGID"].nunique()} ({round(gwr.shape[0] / gwr_all_building_df.shape[0] * 100, 2)} % of all_bldng_df)', dataagg_settings_def['summary_file_name'], 2, True)
+    checkpoint_to_logfile(f'selection settings: \n\tGSTAT: {gwr_selection_specs_def["GSTAT"]} "only existing bulidings"; \n\tGKLAS: {gwr_selection_specs_def["GKLAS"]} "1110 - building w 1 living space, 1121 - w 2 living spaces, 1276 - agricluture buildings (stables, barns )\n\tGBAUJ_minmax: {gwr_selection_specs_def["GBAUJ_minmax"]} "range of years of construction"', dataagg_settings_def['summary_file_name'], 2, True)
+    checkpoint_to_logfile(f'selection range : \n\tOnly buildings within the BFS municicpalities: {bfs_number_def}', dataagg_settings_def['summary_file_name'], 2, True)
 
 
     # check proxy possiblity -------------------

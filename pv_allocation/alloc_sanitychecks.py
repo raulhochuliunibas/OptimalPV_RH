@@ -34,7 +34,7 @@ def create_gdf_export_of_topology(
 
 
     # import geo data -----------------------------------------------------
-    topo_df = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/topo_df.parquet')
+    topo_df = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
 
     if pvalloc_settings['fast_debug_run']:
         solkat_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/solkat_gdf.geojson', rows=50)

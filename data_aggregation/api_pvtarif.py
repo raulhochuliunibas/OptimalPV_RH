@@ -82,8 +82,8 @@ def api_pvtarif_data(
     pvtarif = pvtarif.drop(columns=empty_cols)
 
     # export
-    pvtarif.to_parquet(f'{data_path_def}/split_data_geometry/pvtarif.parquet')
-    pvtarif.to_csv(f'{data_path_def}/split_data_geometry/pvtarif.csv', index=False)
+    pvtarif.to_parquet(f'{data_path_def}/output/preprep_data/pvtarif.parquet')
+    pvtarif.to_csv(f'{data_path_def}/output/preprep_data/pvtarif.csv', index=False)
     checkpoint_to_logfile(f'exported electricity prices', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 
 
@@ -155,7 +155,7 @@ def api_pvtarif_gm_ewr_Mapping(
     checkpoint_to_logfile(f'exported Map_gm_ewr from API', log_file_name_def=log_file_name_def, n_tabs_def = 3)
 
     # NOTE: Is this still necessary? following script should pick up data from preprep_data folder
-    Map_gm_ewr.to_parquet(f'{data_path_def}/split_data_geometry/Map_gm_ewr.parquet')
+    Map_gm_ewr.to_parquet(f'{data_path_def}/output/preprep_data/Map_gm_ewr.parquet')
 
 
 
