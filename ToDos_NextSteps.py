@@ -7,6 +7,8 @@
 
 # A ====================
 
+    # TODO: Visualize the NPV distribution 
+
     # TODO: EGID in solkat is a faulty data point - at least for the small developing data set (nrows = ca. 1000 - 5000). 
     #       That's why a second attempt was started to aggregate roof partitions on the sbuuid and map those then to the EGID numbers. 
     #       Problem there - the amount of missmatches was strikingly large (+- 70 vs 30%) that SB_UUID aggregation does not seem to 
