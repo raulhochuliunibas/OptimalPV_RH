@@ -86,7 +86,6 @@ parkplatz = {
 }
 
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
-print(pvalloc_scenarios)
 
 
 # vsualiastion 

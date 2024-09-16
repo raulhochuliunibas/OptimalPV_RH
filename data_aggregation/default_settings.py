@@ -57,3 +57,7 @@ def extend_dataag_scen_with_defaults(scen_dict, defaults = dataagg_default_setti
             scen_dicts[scen_name] = default_dict
 
     return scen_dicts
+
+
+def get_default_dataag_settings():
+    return dataagg_default_settings
