@@ -7,7 +7,8 @@ import requests
 sys.path.append('..')
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
-sys.path.append(r'C:/Models/OptimalPV_RH_apikeys')
+# sys.path.append(r'C:/Models/OptimalPV_RH_apikeys')
+sys.path.append(f'{os.getcwd()}_apikeys')
 from apikeys import get_pvtarif_key
 
 print(get_pvtarif_key())

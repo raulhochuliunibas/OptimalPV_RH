@@ -372,7 +372,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 pvalloc_scen = pvalloc_scen_list[i]
                 
                 # import 
-                gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/gwr_gdf.geojson')
+                gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
                 gm_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
 
                 topo  = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
@@ -545,7 +545,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     if visual_settings['map_ind_production']:
    
         # import
-        solkat_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/solkat_gdf.geojson', rows =1000)
+        solkat_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/solkat_gdf.geojson', rows =1000)
         solkat_gdf['DF_UID'] = solkat_gdf['DF_UID'].astype(int).astype(str)
         solkat_gdf.dtypes
         solkat_gdf.rename(columns={'DF_UID': 'df_uid'}, inplace=True)

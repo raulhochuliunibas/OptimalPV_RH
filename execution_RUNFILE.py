@@ -10,7 +10,7 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-os.chdir('C:/Models/OptimalPV_RH')
+# os.chdir('C:/Models/OptimalPV_RH')
 
 
 # data_aggregation 
@@ -33,7 +33,7 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 months_pred = 3
-run_on_server = False
+run_on_server = True
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
     f'pvalloc_smallBL_{months_pred}m_npv_weighted': {
@@ -123,7 +123,7 @@ if not not dataagg_scenarios:
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    # pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
+    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
     
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------

@@ -150,7 +150,7 @@ def local_data_AND_spatial_mappings(
     # OMITTED SPATIAL POINTS / POLYS -------------------
     print_to_logfile(f'\nnumber of omitted buildings because EGID is (not) / present in GWR or Solkat data frame or vice-versa', dataagg_settings_def['summary_file_name'])
     omitt_gwregid_gdf = gwr_gdf.loc[~gwr_gdf['EGID'].isin(solkat_gdf['EGID'])].copy()
-    checkpoint_to_logfile(f'omitt_gwregid_gdf (gwr not in solkat): {omitt_gwregid_gdf.shape[0]} rows ({round((omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique {gwr_gdf['EGID'].nunique})', dataagg_settings_def['summary_file_name'], 2, True) 
+    checkpoint_to_logfile(f'omitt_gwregid_gdf (gwr not in solkat): {omitt_gwregid_gdf.shape[0]} rows ({round((omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique {gwr_gdf["EGID"].nunique})', dataagg_settings_def['summary_file_name'], 2, True) 
 
     omitt_solkat_gdf = solkat_gdf.loc[~solkat_gdf['EGID'].isin(gwr_gdf['EGID'])].copy()
     checkpoint_to_logfile(f'omitt_solkat_gdf (solkat not in gwr): {omitt_solkat_gdf.shape[0]} rows ({round((omitt_solkat_gdf.shape[0]/solkat_gdf.shape[0])*100, 2)}%), solkat[EGID].unique {solkat_gdf["EGID"].nunique()})', dataagg_settings_def['summary_file_name'], 2, True)
