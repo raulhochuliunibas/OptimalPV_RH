@@ -29,14 +29,14 @@ if True:
     from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr, format_MASTER_settings
     import pv_allocation.initialization as  initial
     import pv_allocation.alloc_algorithm as algo
-    import pv_allocation.topo_visualization as visual
+    import pv_allocation.alloc_sanitychecks as sanity
     import pv_allocation.inst_selection as select
     import pv_allocation.default_settings as pvalloc_default_sett
 
     from pv_allocation.initialization import *
     from pv_allocation.alloc_algorithm import *
     from pv_allocation.inst_selection import *
-    from pv_allocation.topo_visualization import *
+    from pv_allocation.alloc_sanitychecks import *
     from pv_allocation.default_settings import *
 
 
@@ -119,9 +119,9 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                                         df_list, df_names, ts_list, ts_names)
 
     # CREATE MAP OF TOPO_DF ----------------------------------------------------------------
-    if pvalloc_settings['create_map_of_topology']:
-        subchapter_to_logfile('visualization: CREATE MAP OF TOPOLOGY_DF', log_name)
-        visual.create_map_of_topology(pvalloc_settings)
+    if False:
+        subchapter_to_logfile('visualization: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
+        sanity.create_gdf_export_of_topology(pvalloc_settings)
 
 
     # ALLOCATION ALGORITHM ----------------------------------------------                   
@@ -248,10 +248,13 @@ def pv_allocation_MASTER(pvalloc_settings_func):
     topo_df['power'] = topo_df['power'].replace('',0).astype(float)
     topo_df.to_parquet(f'{data_path}/output/pvalloc_run/topo_egid_df.parquet')
 
+    
+    # CREATE MAP OF TOPO_DF ----------------------------------------------------------------
+    if pvalloc_settings['create_gdf_export_of_topology']:
+        subchapter_to_logfile('visualization: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
+        sanity.create_gdf_export_of_topology(pvalloc_settings)
 
 
-    # COPY & RENAME AGGREGATED DATA FOLDER ---------------------------------------------------------------
-    # > not to overwrite completed preprep folder while debugging 
 
     # -----------------------------------------------------------------------------
     # END 
@@ -261,8 +264,9 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         winsound.Beep(1000, 300)
         winsound.Beep(1000, 300)
         winsound.Beep(1000, 1000)
-    # -----------------------------------------------------------------------------
 
+    # COPY & RENAME PVALLOC DATA FOLDER ---------------------------------------------------------------
+    # > not to overwrite completed folder while debugging 
 
 
     if  not os.path.exists(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'):
@@ -285,6 +289,10 @@ def pv_allocation_MASTER(pvalloc_settings_func):
             shutil.copytree(f, os.path.join(dir_alloc_moveto, os.path.basename(f)))
     shutil.copy(glob.glob(f'{data_path}/output/pvalloc_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_log_{pvalloc_settings["name_dir_export"]}.txt')
         
+
+    # -----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
+
 
 
 
