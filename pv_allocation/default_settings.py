@@ -1,12 +1,12 @@
 pvalloc_default_settings = {
     'name_dir_export': 'pvalloc_BL_smallsample',              # name of the directory where all proccessed data is stored at the end of the code file 
-    'name_dir_import': 'preprep_BSBLSO_18to22_20240826_22h', # name of the directory where preprepared data is stored and accessed by the code
+    'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes', # name of the directory where preprepared data is stored and accessed by the code
     'wd_path_laptop': 'C:/Models/OptimalPV_RH',              # path to the working directory on Raul's laptop
     'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',   # path to the working directory on the server
 
-    'kt_numbers': [], # [13, ][11,12,13],                           # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain indiviual municipalities
-    'bfs_numbers': [2791, 2784, 2781, 2789, 2782, 2793, 2787, ], 
-                    # 2792, 2613, 2614, 2476, 2477, 2481, 2471, 2768, 2761, 2772, 2786, 2785],
+    'kt_numbers': [], #[12,13],                           # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain indiviual municipalities
+    'bfs_numbers': [2791, 2784, 2781, 2789, 2782, 2793, 2787, #], 
+                    2792, 2613, 2614, 2476, 2477, 2481, 2471, 2768, 2761, 2772, 2786, 2785],
     'T0_prediction': '2023-01-01 00:00:00', 
     'months_lookback': 12*1,
     'months_prediction': 3,
@@ -17,7 +17,7 @@ pvalloc_default_settings = {
     'n_egid_in_topo': 200, 
     'recreate_topology':                True, 
     'recalc_economics_topo_df':         True,
-    'create_gdf_export_of_topology':    True,
+    'create_gdf_export_of_topology':    False,
     'run_allocation_loop':              True,
 
     'recalc_npv_all_combinations':  True, 
@@ -34,7 +34,7 @@ pvalloc_default_settings = {
         'topo_subdf_partitioner': 800,
 
         'tweak_capacity_fact': 1,
-        'tweak_constr_capacity_fact': 10,
+        'tweak_constr_capacity_fact': 1,
     },
     'gridprem_adjustment_specs': {
         'voltage_assumption': '',
