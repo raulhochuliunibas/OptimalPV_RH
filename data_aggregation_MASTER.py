@@ -34,7 +34,7 @@ if True:
     from data_aggregation.sql_gwr import *
     from data_aggregation.api_pvtarif import *
     from data_aggregation.api_entsoe import *
-    from data_aggregation.preprepare_data import local_data_AND_spatial_mappings, local_data_to_parquet_AND_create_spatial_mappings_bySBUUID, import_demand_TS_AND_match_households, import_meteo_data
+    from data_aggregation.preprepare_data import local_data_AND_spatial_mappings, import_demand_TS_AND_match_households, import_meteo_data
     from data_aggregation.extend_data import *
 
 dataagg_settings_local = {
@@ -101,7 +101,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
     log_name = f'{data_path}/output/preprep_data_log.txt'
     total_runtime_start = datetime.now()
 
-    summary_log = f'{data_path}/output/topo_summary_log.txt'
+    summary_log = f'{data_path}/output/summary_data_selection_log.txt'
     chapter_to_logfile(f'OptimalPV - Sample Summary of Building Topology', summary_log, overwrite_file=True)
     subchapter_to_logfile(f'data_aggregation_MASTER', summary_log)
 
@@ -221,13 +221,13 @@ def data_aggregation_MASTER(dataagg_settings_func):
             os.makedirs(dir_data_moveto)
 
     file_to_move = glob.glob(f'{data_path}/output/preprep_data/*')
-    for f in file_to_move
+    for f in file_to_move:
         if os.path.isfile(f):
             shutil.copy(f, dir_data_moveto)
         elif os.path.isdir(f):
             shutil.copytree(f, f'{dir_data_moveto}/{f.split("/")[-1]}')
     shutil.copy(glob.glob(f'{data_path}/output/preprep_data_log.txt')[0], f'{dir_data_moveto}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
-    shutil.copy(glob.glob(f'{data_path}/output/topo_summary_log.txt')[0], f'{dir_data_moveto}/topo_summary_log_{dataagg_settings["name_dir_export"]}.txt')
+    shutil.copy(glob.glob(f'{data_path}/output/*summary*log.txt')[0], f'{dir_data_moveto}/summary_data_selection_log{dataagg_settings["name_dir_export"]}.txt')
 
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
