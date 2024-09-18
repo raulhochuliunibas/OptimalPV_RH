@@ -199,6 +199,13 @@ def update_gridprem(
     data = [(k, v[0], v[1]) for k, v in gridtiers.items()]
     gridtiers_df = pd.DataFrame(data, columns=gridtiers_colnames)
 
+    egid_list, pvsource_list, inst_TF_list = [], [], []
+    for k,v in topo.items():
+        if v.get('pv_inst', {}).get('inst_TF') == True:
+            pvsource_list.append(v.get('pv_inst').get('pvsource'))
+            inst_TF_list.append(v.get('pv_inst').get('inst_TF'))
+            egid_list.append(k)
+    Map_pvsource_egid = pd.DataFrame({'EGID': egid_list, 'pvsource': pvsource_list, 'pvinst_TF': inst_TF_list}, index=egid_list)
 
     # import topo_time_subdfs -----------------------------------------------------
     topo_subdf_paths = glob.glob(f'{data_path_def}/output/pvalloc_run/topo_time_subdf/*.parquet')
@@ -209,8 +216,12 @@ def update_gridprem(
 
     i, path = 0, topo_subdf_paths[0]
     for i, path in enumerate(topo_subdf_paths):
-
         subinst = pd.read_parquet(path)
+
+        subinst_updated = subinst.drop(columns=['pvsource', 'pvinst_TF']).copy()
+        subinst_updated = subinst_updated.merge(Map_pvsource_egid[['EGID', 'pvsource', 'pvinst_TF']], how='left', on='EGID')
+        subinst['pvinst_TF'] = subinst_updated['pvinst_TF'].fillna(subinst['pvinst_TF'])
+        subinst['pvsource'] = subinst_updated['pvsource'].fillna(subinst['pvsource'])
 
         # Only consider production for houses that have built a pv installation
         subinst['copy_pvprod_kW'] = subinst['pvprod_kW']

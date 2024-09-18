@@ -182,8 +182,28 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             gridnode_df.sort_values(by=['t_int'], inplace=True)
 
             # plot ----------------
-            if False:
-                fig = px.line(gridnode_df, x='t', y='pvprod_kW', color = 'pvsource', legend_group = 'grid_node')
+            if 'pvsource' in gridnode_df.columns:
+                nodes = gridnode_df['grid_node'].unique()
+                pvsources = gridnode_df['pvsource'].unique()
+                fig = go.Figure()
+
+                for node in nodes:
+                    for source in pvsources:
+                        if source != '':
+                        # if True:
+                            filter_df = gridnode_df.loc[
+                                (gridnode_df['grid_node'] == node) & (gridnode_df['pvsource'] == source)].copy()
+                            
+                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['pvprod_kW'], name=f'Node: {node}, Source: {source}'))
+                
+                gridnode_total_df = gridnode_df.groupby(['t', 't_int'])['pvprod_kW'].sum().reset_index()
+                gridnode_total_df.sort_values(by=['t_int'], inplace=True)
+                fig.add_trace(go.Scatter
+                    (x=gridnode_total_df['t'], y=gridnode_total_df['pvprod_kW'], name='Total Production', line=dict(color='black', width=2))
+                )
+            
+            else:
+                fig = px.line(gridnode_df, x='t', y='pvprod_kW', color = 'grid_node')
         
                 fig.update_layout(
                     xaxis_title='Hour of Year',
@@ -192,25 +212,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     title = f'Production per node (kWh, weather year: {pvalloc_scen["weather_specs"]["weather_year"]})'
                 )
 
-
-            nodes = gridnode_df['grid_node'].unique()
-            pvsources = gridnode_df['pvsource'].unique()
-            fig = go.Figure()
-
-            for node in nodes:
-                for source in pvsources:
-                    if source != '':
-                    # if True:
-                        filter_df = gridnode_df.loc[
-                            (gridnode_df['grid_node'] == node) & (gridnode_df['pvsource'] == source)].copy()
-                        
-                        fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['pvprod_kW'], name=f'Node: {node}, Source: {source}'))
-            
-            gridnode_total_df = gridnode_df.groupby(['t', 't_int'])['pvprod_kW'].sum().reset_index()
-            gridnode_total_df.sort_values(by=['t_int'], inplace=True)
-            fig.add_trace(go.Scatter
-                (x=gridnode_total_df['t'], y=gridnode_total_df['pvprod_kW'], name='Total Production', line=dict(color='black', width=2))
-            )
 
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i])
             fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
@@ -708,8 +709,17 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             gridnode_df.sort_values(by=['t_int'], inplace=True)
 
             # plot ----------------
-            # old version - to be deleted
-            if False:
+            if 'pvsource' in gridnode_df.columns:
+                pvsources = gridnode_df['pvsource'].unique()
+
+                gridnode_source_df = gridnode_df.groupby(['t', 't_int', 'pvsource']).agg({'pvprod_kW': 'sum'}).reset_index()
+                gridnode_source_df.sort_values(by=['t_int'], inplace=True)
+                for source in pvsources:
+                    if source != '':
+                        filter_df = gridnode_source_df.loc[gridnode_source_df['pvsource'] == source].copy()
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['pvprod_kW'], name=f'Scen: {scen}, Source: {source}'))
+            
+            else:
                 for grid_node in gridnode_df['grid_node'].unique():
                     node_df = gridnode_df[gridnode_df['grid_node'] == grid_node]
                     fig.add_trace(go.Scatter(
@@ -718,27 +728,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                         mode='lines',
                         name=f'{scen} - {grid_node}',  # Include both scen and grid_node in the legend
                         showlegend=True
-                ))            
-                    
-                # add total production
-                gridnode_total_df = gridnode_df.groupby('t','t_int').agg({'pvprod_kW': 'sum'}).reset_index()
-                fig.add_trace(go.Scatter(
-                    x = gridnode_total_df['t_int'],
-                    y = gridnode_total_df['pvprod_kW'],
-                    mode = 'lines',
-                    name = f'{scen} - Total',
-                    showlegend = True
-                ))
+                ))             
             
-            pvsources = gridnode_df['pvsource'].unique()
-
-            gridnode_source_df = gridnode_df.groupby(['t', 't_int', 'pvsource']).agg({'pvprod_kW': 'sum'}).reset_index()
-            gridnode_source_df.sort_values(by=['t_int'], inplace=True)
-            for source in pvsources:
-                if source != '':
-                    filter_df = gridnode_source_df.loc[gridnode_source_df['pvsource'] == source].copy()
-                    fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['pvprod_kW'], name=f'Scen: {scen}, Source: {source}'))
-
             # add total production
             gridnode_total_df = gridnode_df.groupby(['t', 't_int']).agg({'pvprod_kW': 'sum'}).reset_index()
             gridnode_total_df.sort_values(by=['t_int'], inplace=True)

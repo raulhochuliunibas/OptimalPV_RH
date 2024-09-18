@@ -20,6 +20,7 @@ pvalloc_default_settings = {
     'create_gdf_export_of_topology':    False,
     'run_allocation_loop':              True,
 
+
     'recalc_npv_all_combinations':  True, 
     'test_faster_if_subdf_deleted': False,
     'test_faster_npv_update_w_subdf_npry': True, 
@@ -31,7 +32,7 @@ pvalloc_default_settings = {
         'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
         'rand_seed': None,                            # random seed set to int or None
         'while_inst_counter_max': 5000,
-        'topo_subdf_partitioner': 800,
+        'topo_subdf_partitioner': 500,
 
         'tweak_capacity_fact': 1,
         'tweak_constr_capacity_fact': 1,
