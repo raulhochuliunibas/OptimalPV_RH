@@ -235,12 +235,7 @@ def import_prepre_AND_create_topology(
     log_str2 = f'Solkat specs (WTIH assigned EGID): {solkat.loc[solkat["EGID"] !="", "SB_UUID"].nunique()} of {solkat.loc[:, "SB_UUID"].nunique()} ({round((solkat.loc[solkat["EGID"] !="", "SB_UUID"].nunique() / solkat.loc[:, "SB_UUID"].nunique())*100,2)} %); {solkat.loc[solkat["EGID"] !="", "DF_UID"].nunique()} of {solkat.loc[:, "DF_UID"].nunique()} ({round((solkat.loc[solkat["EGID"] !="", "DF_UID"].nunique() / solkat.loc[:, "DF_UID"].nunique())*100,2)} %)'
     checkpoint_to_logfile(log_str1, log_file_name_def)
     checkpoint_to_logfile(log_str2, log_file_name_def)
-    
-    # egid = '425447' 
-    # len(gwr['EGID'])
-    # gwr = gwr.head(3)
-    # gwr['EGID'].isin(solkat['EGID'])
-    # egid = gwr['EGID'].iloc[0]
+
 
     if pvalloc_settings['fast_debug_run']:
         gwr_before_copy = gwr.copy()
@@ -715,9 +710,9 @@ def define_construction_capacity(
     T0 = pd.to_datetime(f'{pvalloc_settings["T0_prediction"]}')
     start_loockback = T0 - pd.DateOffset(months=pvalloc_settings['months_lookback']) #+ pd.DateOffset(hours=1)
     end_prediction = T0 + pd.DateOffset(months=pvalloc_settings['months_prediction']) - pd.DateOffset(hours=1)
-    month_range = pd.date_range(start=start_loockback, end=end_prediction, freq='ME').to_period('M')
-    months_lookback = pd.date_range(start=start_loockback, end=T0, freq='ME').to_period('M')
-    months_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME').to_period('M')
+    month_range = pd.date_range(start=start_loockback, end=end_prediction, freq='M').to_period('M')
+    months_lookback = pd.date_range(start=start_loockback, end=T0, freq='M').to_period('M')
+    months_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='M').to_period('M')
     checkpoint_to_logfile(f'constr_capacity: month lookback   {months_lookback[0]} to {months_lookback[-1]}', log_file_name_def, 2)
     checkpoint_to_logfile(f'constr_capacity: month prediction {months_prediction[0]} to {months_prediction[-1]}', log_file_name_def, 2)
 
@@ -753,8 +748,8 @@ def define_construction_capacity(
 
         # Resample by week, month, and year and calculate the sum of TotalPower
         weekly_sum = pv_plot['TotalPower'].resample('W').sum()
-        monthly_sum = pv_plot['TotalPower'].resample('ME').sum()
-        yearly_sum = pv_plot['TotalPower'].resample('YE').sum()
+        monthly_sum = pv_plot['TotalPower'].resample('M').sum()
+        yearly_sum = pv_plot['TotalPower'].resample('Y').sum()
 
         # Create traces for each time period
         trace_weekly = go.Scatter(x=weekly_sum.index, y=weekly_sum.values, mode='lines', name='Weekly')
