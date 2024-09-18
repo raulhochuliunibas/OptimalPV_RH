@@ -8,6 +8,9 @@
 # A ====================
 
     # TODO: Visualize the NPV distribution 
+    # TODO: Visualize all buildings with mulitple PV installations
+    # TODO: Visualize / export buildings, that are excluded because of too many partitions
+
 
     # TODO: EGID in solkat is a faulty data point - at least for the small developing data set (nrows = ca. 1000 - 5000). 
     #       That's why a second attempt was started to aggregate roof partitions on the sbuuid and map those then to the EGID numbers. 
@@ -125,7 +128,7 @@ if True:
 # LOOP for MONTE CARLO
 #   - #TODO:  - create copies of all the data objects that are needed "fresh" for each iteration. oterhwise iter2
 #               will be influenced by iter1 (will start where iter1 ended)
-#   - #TODO:OK A - create a directory to store all the monte carlo iterations
+#   - #TODO A - create a directory to store all the monte carlo iterations
 
 #        - LOOP for MONTH
 #          - update npv for all non pv buildings
