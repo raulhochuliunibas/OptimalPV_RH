@@ -62,7 +62,7 @@ pvalloc_scenarios={
                 'inst_selection_method': 'random',
     }}, 
     f'pvalloc_smallBL_{months_pred}m_npv_weighted_TEST_GDF_export': {
-            'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
+            'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes_w_farms',
             'script_run_on_server': run_on_server,
             'months_prediction': months_pred,
             'create_gdf_export_of_topology':    True,
@@ -70,7 +70,7 @@ pvalloc_scenarios={
                 'inst_selection_method': 'prob_weighted_npv',
     }}, 
     f'pvalloc_smallBL_{months_pred}m_random_TEST_GDF_export': {
-            'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
+            'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes_w_farms',
             'script_run_on_server': run_on_server,
             'months_prediction': months_pred,
             'create_gdf_export_of_topology':    True,
