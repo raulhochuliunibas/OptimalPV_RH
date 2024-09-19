@@ -65,6 +65,7 @@ pvalloc_scenarios={
             'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
             'script_run_on_server': run_on_server,
             'months_prediction': months_pred,
+<<<<<<< HEAD
             'create_gdf_export_of_topology':    True,
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
@@ -77,6 +78,12 @@ pvalloc_scenarios={
             'algorithm_specs': {
                 'inst_selection_method': 'random',
     }},
+=======
+            'create_gdf_export_of_topology':    False,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv',
+    }}
+>>>>>>> b8ebfcf4160a3b719ed9fe0e56f96239699a3f5f
 }
 
 parkplatz = {
