@@ -32,7 +32,7 @@ pvalloc_default_settings = {
         'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
         'rand_seed': None,                            # random seed set to int or None
         'while_inst_counter_max': 5000,
-        'topo_subdf_partitioner': 500,
+        'topo_subdf_partitioner': 400,
 
         'tweak_capacity_fact': 1,
         'tweak_constr_capacity_fact': 1,

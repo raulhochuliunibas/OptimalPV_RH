@@ -30,11 +30,29 @@ def create_gdf_export_of_topology(
     data_path_def = pvalloc_settings['data_path']
     log_file_name_def = pvalloc_settings['log_file_name']
 
-    # topo_df= topo_df_func 
+    # create topo_df -----------------------------------------------------
+    topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
+    egid_list, gklas_list, inst_tf_list, inst_info_list, inst_id_list, beginop_list, power_list = [], [], [], [], [], [], []
+    for k,v in topo.items():
+        egid_list.append(k)
+        gklas_list.append(v.get('gwr_info').get('gklas'))
+        inst_tf_list.append(v.get('pv_inst').get('inst_TF'))
+        inst_info_list.append(v.get('pv_inst').get('inst_info'))
+        inst_id_list.append(v.get('pv_inst').get('inst_id'))
+        beginop_list.append(v.get('pv_inst').get('BeginOp'))
+        power_list.append(v.get('pv_inst').get('TotalPower'))
+
+    topo_df = pd.DataFrame({'EGID': egid_list,'gklas': gklas_list,
+                            'inst_tf': inst_tf_list,'inst_info': inst_info_list,'inst_id': inst_id_list,'beginop': beginop_list,'power': power_list,
+    })
+    topo_df['power'] = topo_df['power'].replace('', 0).astype(float)
+    topo_df.to_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
+    topo_df.to_csv(f'{data_path_def}/output/pvalloc_run/topo_egid_df.csv')
+
 
 
     # import geo data -----------------------------------------------------
-    topo_df = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
+    # topo_df = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
 
     if pvalloc_settings['fast_debug_run']:
         solkat_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/solkat_gdf.geojson', rows=50)
@@ -54,18 +72,20 @@ def create_gdf_export_of_topology(
     # subset gwr + pv -----------------------------------------------------
     gwr_gdf_in_topo = gwr_gdf[gwr_gdf['EGID'].isin(topo_df['EGID'].unique())].copy()
     pv_gdf_in_topo = pv_gdf[pv_gdf['xtf_id'].isin(topo_df['pvid'].unique())].copy()
+    solkat_gdf_in_topo = solkat_gdf[solkat_gdf['df_uid'].isin(topo_df['df_uid'].unique())].copy()
 
-    topo_gdf = topo_df.merge(solkat_gdf[['df_uid', 'geometry']], on='df_uid', how='left')
+    # topo_gdf = topo_df.merge(solkat_gdf[['df_uid', 'geometry']], on='df_uid', how='left')
+    topo_gdf = topo_df.merge(gwr_gdf[['EGID', 'geometry']], on='EGID', how='left')
     topo_gdf = gpd.GeoDataFrame(topo_gdf, crs='EPSG:2056', geometry='geometry')
 
     # export to shp -----------------------------------------------------
     if not os.path.exists(f'{data_path_def}/output/pvalloc_run/topo_spatial_data'):
         os.makedirs(f'{data_path_def}/output/pvalloc_run/topo_spatial_data')
 
-    gwr_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf.shp')
-    pv_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf.shp')
-    topo_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_gdf.shp')
-
+    gwr_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_in_topo.shp')
+    pv_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_in_topo.shp')
+    solkat_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_in_topo.shp')
+    
 
     # subset to > max n partitions -----------------------------------------------------
     max_partitions = pvalloc_settings['gwr_selection_specs']['solkat_max_n_partitions']
@@ -74,9 +94,8 @@ def create_gdf_export_of_topology(
     topo_above_npart_gdf['EGID_count'] = topo_above_npart_gdf['EGID'].map(counts)
     topo_above_npart_gdf = topo_above_npart_gdf[topo_above_npart_gdf['EGID_count'] > max_partitions]
 
-    gwr_above_npart_gdf = gwr_gdf[gwr_gdf['EGID'].isin(topo_above_npart_gdf['EGID'].unique())].copy()
+    solkat_above_npoart_gdf = solkat_gdf_in_topo[solkat_gdf_in_topo['df_uid'].isin(topo_above_npart_gdf['df_uid'].unique())].copy()
 
     # export to shp -----------------------------------------------------
     topo_above_npart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp')
-    gwr_above_npart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_above_{max_partitions}_npart_gdf.shp')
-
+    solkat_above_npoart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_above_{max_partitions}_npart_gdf.shp')

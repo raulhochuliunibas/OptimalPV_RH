@@ -32,12 +32,12 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-months_pred = 3
+months_pred = 12
 run_on_server = False
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
-    # f'pvalloc_smallBL_{months_pred}m_npv_weighted': {
-        'pvalloc_BLBS_72m_npv_weighted':{
+    f'pvalloc_smallBL_{months_pred}m_npv_weighted': {
+        # 'pvalloc_BLBS_72m_npv_weighted':{
             'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
             'script_run_on_server': run_on_server,
             'months_prediction': months_pred,
@@ -46,8 +46,8 @@ pvalloc_scenarios={
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
     }},
-    # # f'pvalloc_smallBL_{months_pred}m_random': {
-    'pvalloc_BLBS_72m_random': {
+    f'pvalloc_smallBL_{months_pred}m_random': {
+    # 'pvalloc_BLBS_72m_random': {
             'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
             'script_run_on_server': run_on_server,
             'months_prediction': months_pred,
@@ -57,12 +57,12 @@ pvalloc_scenarios={
                 'inst_selection_method': 'random',
     }}, 
 
-    'pvalloc_BLBS_72m_npv_weighted_W_export_gdf_partition':{
+    f'DEV_pvalloc_smallBL_{months_pred}m_npvweight':{
             'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
             'script_run_on_server': run_on_server,
             'months_prediction': months_pred,
-            'recreate_topology':        True,
-            'recalc_economics_topo_df': True,
+            'recreate_topology':        False,
+            'recalc_economics_topo_df': False,
             'create_gdf_export_of_topology':    True,
 
             'algorithm_specs': {
