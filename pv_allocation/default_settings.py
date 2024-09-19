@@ -5,9 +5,7 @@ pvalloc_default_settings = {
     'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',   # path to the working directory on the server
 
     'kt_numbers': [], #[12,13],                           # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain indiviual municipalities
-    'bfs_numbers': [2791, 2787,   ],
-                    # 2792, 2784, 2793, 2782, 2781, 2789, 2786, 
-                    # 2768, 2772, 2785, 2761],
+    'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781, 2789, 2786, 2768, 2772, 2785, 2761],
     'T0_prediction': '2023-01-01 00:00:00', 
     'months_lookback': 12*1,
     'months_prediction': 3,
