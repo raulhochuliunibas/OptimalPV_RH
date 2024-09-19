@@ -14,7 +14,7 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # data_aggregation 
-dataagg_scenarios = {
+dataagg_scenarios = {   
     # 'preprep_BL_20to22_1and2homes':{
     #     'show_debug_prints': True,
     #     'kt_numbers': [13,], 
@@ -32,42 +32,43 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-months_pred = 12
+months_pred = 2
 run_on_server = False
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
-    f'pvalloc_smallBL_{months_pred}m_npv_weighted': {
+    f'dev_samllBL{months_pred}m_npv_weighted': {
         # 'pvalloc_BLBS_72m_npv_weighted':{
-            'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
-            'script_run_on_server': run_on_server,
-            'months_prediction': months_pred,
-            'recreate_topology':        True,
-            'recalc_economics_topo_df': True,
-            'algorithm_specs': {
-                'inst_selection_method': 'prob_weighted_npv',
-    }},
-    f'pvalloc_smallBL_{months_pred}m_random': {
-    # 'pvalloc_BLBS_72m_random': {
-            'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
-            'script_run_on_server': run_on_server,
-            'months_prediction': months_pred,
-            'recreate_topology':        True,
-            'recalc_economics_topo_df': True,
-            'algorithm_specs': {
-                'inst_selection_method': 'random',
-    }}, 
-
-    f'DEV_pvalloc_smallBL_{months_pred}m_npvweight':{
             'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
             'script_run_on_server': run_on_server,
             'months_prediction': months_pred,
             'recreate_topology':        False,
             'recalc_economics_topo_df': False,
             'create_gdf_export_of_topology':    True,
-
             'algorithm_specs': {
                 'inst_selection_method': 'prob_weighted_npv',
     }},
+    # f'pvalloc_smallBL_{months_pred}m_random': {
+    # # 'pvalloc_BLBS_72m_random': {
+    #         'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
+    #         'script_run_on_server': run_on_server,
+    #         'months_prediction': months_pred,
+    #         'recreate_topology':        True,
+    #         'recalc_economics_topo_df': True,
+    #         'algorithm_specs': {
+    #             'inst_selection_method': 'random',
+    # }}, 
+
+    # f'DEV_pvalloc_smallBL_{months_pred}m_npvweight':{
+    #         'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
+    #         'script_run_on_server': run_on_server,
+    #         'months_prediction': months_pred,
+    #         'recreate_topology':        False,
+    #         'recalc_economics_topo_df': False,
+    #         'create_gdf_export_of_topology':    True,
+
+    #         'algorithm_specs': {
+    #             'inst_selection_method': 'prob_weighted_npv',
+    # }},
     # # f'pvalloc_smallBL_{months_pred}m_npv_weighted_w_farms': {
     # 'pvalloc_BLBS_72m_npv_weighted_w_farms': {
     #         'name_dir_import': 'preprep_BSBLSO_18to22_1and2homes_w_farms', 

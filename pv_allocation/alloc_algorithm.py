@@ -164,6 +164,36 @@ def calc_economics_in_topo_df(
 
 
 # ------------------------------------------------------------------------------------------------------
+# INITIATE GRID PREMIUM TS
+# ------------------------------------------------------------------------------------------------------
+def initiate_gridprem(
+        pvalloc_settings,):
+    data_path_def = pvalloc_settings['data_path']
+    name_dir_import_def = pvalloc_settings['name_dir_import']
+
+    # setup -----------------------------------------------------
+    if os.path.exists(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet'):
+        os.remove(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')    
+
+    # import -----------------------------------------------------
+    dsonodes_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
+    t_range = [f't_{t}' for t in range(1,8760 + 1)]
+
+    dsonodes_df.drop(columns=['EGID'], inplace=True)
+    gridprem_ts = pd.DataFrame(np.repeat(dsonodes_df.values, len(t_range), axis=0), columns=dsonodes_df.columns)  
+    gridprem_ts['t'] = np.tile(t_range, len(dsonodes_df))
+    gridprem_ts['prem_Rp_kWh'] = 0
+
+    gridprem_ts = gridprem_ts[['t', 'grid_node', 'kVA_threshold', 'prem_Rp_kWh']]
+    gridprem_ts.drop(columns='kVA_threshold', inplace=True)
+
+    # export -----------------------------------------------------
+    gridprem_ts.to_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
+
+
+
+
+# ------------------------------------------------------------------------------------------------------
 # UPDATE GRID PREMIUM TS
 # ------------------------------------------------------------------------------------------------------
 def update_gridprem(
@@ -181,9 +211,9 @@ def update_gridprem(
 
     gridtiers = pvalloc_settings['gridprem_adjustment_specs']['tiers']
     gridtiers_colnames = pvalloc_settings['gridprem_adjustment_specs']['colnames']
+    gridtiers_power_factor = pvalloc_settings['gridprem_adjustment_specs']['power_factor']
     conv_m2toKWP = pvalloc_settings['tech_economic_specs']['conversion_m2tokW']
     topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
-    # checkpoint_to_logfile(f'    run function: update_gridprem', log_file_name_def, 2, show_debug_prints_def)
     print_to_logfile(f'run function: update_gridprem', log_file_name_def)
     
     df_list, df_names = df_list_func, df_names_func
@@ -193,6 +223,7 @@ def update_gridprem(
 
     # import  -----------------------------------------------------
     topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
+    dsonodes_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson')
     gridprem_ts = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
     pv = df_list[df_names.index('pv')]
 
@@ -223,9 +254,8 @@ def update_gridprem(
         subinst['pvinst_TF'] = subinst_updated['pvinst_TF'].fillna(subinst['pvinst_TF'])
         subinst['pvsource'] = subinst_updated['pvsource'].fillna(subinst['pvsource'])
 
-        # Only consider production for houses that have built a pv installation
-        subinst['copy_pvprod_kW'] = subinst['pvprod_kW']
-        subinst['pvprod_kW'] = np.where(subinst['pvinst_TF'] == False, 0, subinst['copy_pvprod_kW'])
+        # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
+        subinst['feedin_kW'] = np.where(subinst['pvprod_kW'] - subinst['demand_kW'] > 0, subinst['pvprod_kW'] - subinst['demand_kW'], 0)
 
         #---
         # NOTE: no longer needed, DELETE if gridnode_df is working properly in showing actual production per node
@@ -264,26 +294,40 @@ def update_gridprem(
                     share = row['STROMERTRAG'] / total_stromertrag
                     subinst.loc[idx, 'pvprod_kW'] = share * TotalPower
 
-        agg_subinst = subinst.groupby(['grid_node', 't', 'pvsource']).agg({'pvprod_kW': 'sum'}).reset_index()
+        agg_subinst = subinst.groupby(['grid_node', 't', 'pvsource']).agg({'feedin_kW': 'sum'}).reset_index()
         del subinst
         agg_subinst_df_list.append(agg_subinst)
     
     gridnode_df = pd.concat(agg_subinst_df_list)
-    gridnode_df = gridnode_df.groupby(['grid_node', 't', 'pvsource']).agg({'pvprod_kW': 'sum'}).reset_index() # groupby df again because grid nodes will be spreach accross multiple tranches
+    gridnode_df = gridnode_df.groupby(['grid_node', 't', 'pvsource']).agg({'feedin_kW': 'sum'}).reset_index() # groupby df again because grid nodes will be spreach accross multiple tranches
+
+    # attach node thresholds -----------------------------------------------------
+    gridnode_df = gridnode_df.merge(dsonodes_gdf[['grid_node', 'kVA_threshold']], how='left', on='grid_node')
+    gridnode_df['kW_threshold'] = gridnode_df['kVA_threshold'] / gridtiers_power_factor
+    # gridnode_df.drop(columns='kVA_threshold', inplace=True)
+
+    gridnode_df['feedin_kW_taken'] = np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['kW_threshold'], gridnode_df['feedin_kW'])
+    gridnode_df['feedin_kW_loss'] = np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['feedin_kW'] - gridnode_df['kW_threshold'], 0)
+
     gridnode_df.to_parquet(f'{data_path_def}/output/pvalloc_run/gridnode_df.parquet')
     gridnode_df.to_csv(f'{data_path_def}/output/pvalloc_run/gridnode_df.csv', index=False)
-    gridnode_update = gridnode_df.copy()
 
     
     # update gridprem_ts -----------------------------------------------------
-    gridnode_df.sort_values(by=['pvprod_kW'], ascending=False, inplace=True)
-    gridprem_ts = gridprem_ts.merge(gridnode_df[['grid_node', 't', 'pvprod_kW']], how='left', on=['grid_node', 't'])
+    gridnode_df.sort_values(by=['feedin_kW_taken'], ascending=False)
+    gridnode_df_for_prem = gridnode_df.groupby(['grid_node','kW_threshold', 't']).agg({'feedin_kW_taken': 'sum'}).reset_index().copy()
+    gridprem_ts = gridprem_ts.merge(gridnode_df_for_prem[['grid_node', 't', 'kW_threshold', 'feedin_kW_taken']], how='left', on=['grid_node', 't'])
+    gridprem_ts['feedin_kW_taken'].replace(np.nan, 0, inplace=True)
+    gridprem_ts.sort_values(by=['feedin_kW_taken'], ascending=False)
 
-    conditions = [(gridprem_ts['pvprod_kW'] > gridtiers_df.loc[i, 'vltg_threshold']) for i in range(len(gridtiers_df))]
-    choices = [gridtiers_df.loc[i, 'gridprem_plusRp_kWh'] for i in range(len(gridtiers_df))]
-    gridprem_ts['prem_Rp_kWh'] = np.select(conditions, choices, default=0)
-
-    gridprem_ts.drop(columns='pvprod_kW', inplace=True)
+    # gridtiers_df['kW_threshold'] = gridtiers_df['kVA_threshold'] / gridtiers_power_factor
+    conditions, choices = [], []
+    for i in range(len(gridtiers_df)):
+        i_adj = len(gridtiers_df) - i -1 # order needs to be reversed, because otherwise first condition is always met and disregards the higher tiers
+        conditions.append((gridprem_ts['feedin_kW_taken'] / gridprem_ts['kW_threshold'])  > gridtiers_df.loc[i_adj, 'used_node_capa_rate'])
+        choices.append(gridtiers_df.loc[i_adj, 'gridprem_plusRp_kWh'])
+    gridprem_ts['prem_Rp_kWh'] = np.select(conditions, choices, default=gridprem_ts['prem_Rp_kWh'])
+    gridprem_ts.drop(columns=['feedin_kW_taken', 'kW_threshold'], inplace=True)
 
 
     # export gridprem_ts -----------------------------------------------------
@@ -346,7 +390,7 @@ def update_npv_df(pvalloc_settings,
 
     path = topo_subdf_paths[0]
     for i, path in enumerate(topo_subdf_paths):
-        if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //5 ) == 0:
+        if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //3 ) == 0:
             # print_to_logfile(f'  {2*"-"} update npv (tranche {i}/{len(topo_subdf_paths)}) {6*"-"}', log_file_name_def)
             checkpoint_to_logfile(f'updated npv (tranche {i}/{len(topo_subdf_paths)})', log_file_name_def, 2, show_debug_prints_def)
         subdf = pd.read_parquet(path)
@@ -372,13 +416,13 @@ def update_npv_df(pvalloc_settings,
 
             subdf['selfconsum_kW'], subdf['netdemand_kW'], subdf['netfeedin_kW'], subdf['econ_inc_chf'], subdf['econ_spend_chf'] = selfconsum_kW, netdemand_kW, netfeedin_kW, econ_inc_chf, econ_spend_chf
 
-            if (i <5) and (i_m < 6): 
-                checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 2, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
+            if (i <3) and (i_m <3): 
+                checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 1, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
 
             agg_subdf = subdf.groupby(groupby_cols).agg(agg_cols).reset_index()
             
-            if (i <5) and (i_m < 6): 
-                checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 2, show_debug_prints_def)
+            if (i <3) and (i_m <3): 
+                checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 1, show_debug_prints_def)
 
 
             # create combinations ----------------------------------------------
@@ -392,7 +436,6 @@ def update_npv_df(pvalloc_settings,
             econ_inc_chf_list, econ_spend_chf_list = [], []
 
             egid = agg_subdf['EGID'].unique()[0]
-            combos_counter = agg_subdf['EGID'].nunique() // 5
             for i, egid in enumerate(agg_subdf['EGID'].unique()):
 
                 mask_egid_subdf = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('EGID')], egid)
@@ -428,9 +471,7 @@ def update_npv_df(pvalloc_settings,
                         econ_inc_chf_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('econ_inc_chf')].sum())
                         econ_spend_chf_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('econ_spend_chf')].sum())
 
-                # if i % combos_counter == 0:
-                    # print_to_logfile(f'    > {i} of {agg_subdf["EGID"].nunique()} EGIDs processed', log_file_name_def)
-                    # checkpoint_to_logfile(f'\t\t{i} of {agg_subdf["EGID"].nunique()} EGIDs processed', log_file_name_def, 1, show_debug_prints_def)
+
 
             aggsubdf_combo = pd.DataFrame({'EGID': egid_list, 'df_uid_combo': combo_df_uid_list, 'bfs': bfs_list,
                                         'gklas': gklas_list, 'demandtype': demandtype_list, 'grid_node': grid_node_list,
@@ -443,7 +484,7 @@ def update_npv_df(pvalloc_settings,
                                         'selfconsum_kW': selfconsum_list, 'netdemand_kW': netdemand_list, 'netfeedin_kW': netfeedin_list,
                                         'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
                      
-        if (i <5) and (i_m < 6): 
+        if (i <3) and (i_m <3): 
             checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', log_file_name_def, 1, show_debug_prints_def)
 
         
@@ -457,7 +498,7 @@ def update_npv_df(pvalloc_settings,
             return npv
         aggsubdf_combo['NPV_uid'] = aggsubdf_combo.apply(compute_npv, axis=1)
 
-        if (i <5) and (i_m < 6): 
+        if (i <3) and (i_m <3): 
             checkpoint_to_logfile(f'\t computed NPV for agg_subdf', log_file_name_def, 2, show_debug_prints_def)
 
         agg_npv_df_list.append(aggsubdf_combo)

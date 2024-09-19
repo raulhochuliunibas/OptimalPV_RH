@@ -167,7 +167,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     # PLOT INDIVIDUAL SCEN --------------------------------------------------------------------
        
-    # plot ind - line: Production HOY per Node ============================
+    # plot ind - line: Production + Feedin HOY per Node ============================
     if visual_settings['plot_ind_line_productionHOY_per_node']:
         checkpoint_to_logfile(f'plot_ind_line_productionHOY_per_node', log_name)
         i, scen = 0, scen_dir_export_list[0]
@@ -194,7 +194,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                             filter_df = gridnode_df.loc[
                                 (gridnode_df['grid_node'] == node) & (gridnode_df['pvsource'] == source)].copy()
                             
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['pvprod_kW'], name=f'Node: {node}, Source: {source}'))
+                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['pvprod_kW'], name=f'Prod Node: {node}, Source: {source}'))
+                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW'], name=f'Feed Node: {node}, Source: {source}'))
+
                 
                 gridnode_total_df = gridnode_df.groupby(['t', 't_int'])['pvprod_kW'].sum().reset_index()
                 gridnode_total_df.sort_values(by=['t_int'], inplace=True)
@@ -207,9 +209,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         
                 fig.update_layout(
                     xaxis_title='Hour of Year',
-                    yaxis_title='Production (kWh)',
+                    yaxis_title='Production / Feedin (kW)',
                     legend_title='Node ID',
-                    title = f'Production per node (kWh, weather year: {pvalloc_scen["weather_specs"]["weather_year"]})'
+                    title = f'Production / Feedin per node (kW, weather year: {pvalloc_scen["weather_specs"]["weather_year"]}, self consum. rate{pvalloc_scen["tech_economic_specs"]["self_consumption_ifapplicable"]})'
                 )
 
 
@@ -694,7 +696,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
 
-    # plot agg - line: PV Production per Hour of Year ============================
+    # plot agg - line: PV Production / Feedin per Hour of Year ============================
     if visual_settings['plot_agg_line_productionHOY_per_node']:
         checkpoint_to_logfile(f'plot_agg_line_productionHOY_per_node', log_name)
         fig = go.Figure()
@@ -717,8 +719,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 for source in pvsources:
                     if source != '':
                         filter_df = gridnode_source_df.loc[gridnode_source_df['pvsource'] == source].copy()
-                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['pvprod_kW'], name=f'Scen: {scen}, Source: {source}'))
-            
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['pvprod_kW'], name=f'Scen: {scen}, prod: {source}'))
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['feedin_kW'], name=f'Scen: {scen}, feedin: {source}'))
+
             else:
                 for grid_node in gridnode_df['grid_node'].unique():
                     node_df = gridnode_df[gridnode_df['grid_node'] == grid_node]
@@ -733,17 +736,15 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             # add total production
             gridnode_total_df = gridnode_df.groupby(['t', 't_int']).agg({'pvprod_kW': 'sum'}).reset_index()
             gridnode_total_df.sort_values(by=['t_int'], inplace=True)
-            fig.add_trace(go.Scatter(
-                x = gridnode_total_df['t_int'],
-                y = gridnode_total_df['pvprod_kW'],
-                mode = 'lines',
-                name = f'Scen: {scen} - Total',
-                showlegend = True
-            ))
+            fig.add_trace(go.Scatter(x = gridnode_total_df['t_int'],y = gridnode_total_df['pvprod_kW'],mode = 'lines',
+                                     name = f'Scen: {scen} - Total prod',showlegend = True))
+            fig.add_trace(go.Scatter(x = gridnode_total_df['t_int'],y = gridnode_total_df['feedin_kW'],mode = 'lines',
+                                     name = f'Scen: {scen} - Total feedin',showlegend = True))
+            
                              
         fig.update_layout(
             xaxis_title='Hour of Year',
-            yaxis_title='Production (kWh)',
+            yaxis_title='Production / Feedin (kW)',
             legend_title='Node ID',
             title = f'Agg. Production per Hour of Year, by Scenario (kW)'
         )

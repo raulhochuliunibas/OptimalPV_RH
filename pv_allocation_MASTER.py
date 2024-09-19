@@ -87,6 +87,8 @@ def pv_allocation_MASTER(pvalloc_settings_func):
     print_to_logfile(f'pvalloc_settings: \n{pformat(formated_pvalloc_settings)}', log_name)
 
 
+    # NOTE: this needs to be moved to data_aggregation_MASTER, or replaced with primeo data, whenever that is \_(ツ)_/¯
+    initial.get_fake_gridnodes_v2(pvalloc_settings)
 
     # INITIALIZATION ================================================================
     if pvalloc_settings['recreate_topology']:
@@ -160,9 +162,12 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         for i, m in enumerate(months_prediction):
             print_to_logfile(f'\n-- Allocation for month: {m} {25*"-"}', log_name)
             start_allocation_month = datetime.now()
+            i = i + 1
 
 
             # GRID PREM UPDATE ==========
+            if i == 1:
+                algo.initiate_gridprem(pvalloc_settings,)
             algo.update_gridprem(pvalloc_settings, 
                                  df_list, df_names, ts_list, ts_names, m, i)
             
@@ -197,12 +202,13 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                                                     m)
 
                     # Adjust constr_built capacity----------
-                    constr_builg_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
+                    constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
 
                     # State Loop Exit ----------
-                    constr_m_TF, constr_y_TF, safety_TF = constr_built_m >= constr_capa_m, constr_built_y >= constr_capa_y, safety_counter >= safety_counter_max
+                    overshoot_rate = pvalloc_settings['constr_capacity_specs']['constr_capa_overshoot_fact']
+                    constr_m_TF, constr_y_TF, safety_TF = constr_built_m >= constr_capa_m*overshoot_rate, constr_built_y >= constr_capa_y*overshoot_rate, safety_counter >= safety_counter_max
 
-                    if safety_counter % 25 == 0:
+                    if safety_counter % 3 == 0:
                         checkpoint_to_logfile(f'\t safety_counter: {safety_counter} installations built, {round(constr_built_m/constr_capa_m*100, 2)}% of monthly constr capacity', log_name, 3, show_debug_prints)
                 
 

@@ -11,7 +11,8 @@ import plotly.offline as pyo
 import geopandas as gpd
 
 from pyarrow.parquet import ParquetFile
-import pyarrow as pa
+from shapely.ops import nearest_points
+
 
 # own functions 
 sys.path.append('..')
@@ -99,7 +100,7 @@ def import_prepre_AND_create_topology(
 
     if pvalloc_settings['gwr_selection_specs']['dwelling_cols'] == None: 
         gwr = gwr.loc[:, pvalloc_settings['gwr_selection_specs']['building_cols']].copy()
-        gwr = gwr.drop_duplicates()
+        gwr = gwr.drop_duplicates(subset=['EGID'])
 
 
     gwr = gwr.loc[gwr['GGDENR'].isin(bfs_number_def)]
@@ -209,6 +210,7 @@ def import_prepre_AND_create_topology(
 
     # Map egid > node -------
     Map_egid_nodes = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.parquet')
+    Map_egid_nodes.index = Map_egid_nodes['EGID']
 
 
     # angle_tilt_df -------
@@ -816,6 +818,68 @@ def define_construction_capacity(
 
 
 
+# ------------------------------------------------------------------------------------------------------
+# FAKE TRAFO EGID MAPPING
+# ------------------------------------------------------------------------------------------------------
+def get_fake_gridnodes_v2(pvalloc_settings):
+    
+    # import settings + setup -------------------
+    data_path_def = pvalloc_settings['data_path']
+    log_file_name_def = pvalloc_settings['log_file_name']
+    name_dir_import_def = pvalloc_settings['name_dir_import']
+    bfs_numbers_def = pvalloc_settings['bfs_numbers']
+    gwr_selection_specs_def = pvalloc_settings['gwr_selection_specs']
+    print_to_logfile('run function: get_fake_gridnodes_v2', log_file_name_def)
+
+
+    # create fake gridnodes ----------------------
+    solkat = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/solkat.parquet')
+    gwr_geo = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson')
+    
+    gwr = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/gwr.parquet')
+    gwr = gwr.loc[gwr['GGDENR'].isin(bfs_numbers_def)]
+    gwr = gwr.drop_duplicates(subset=['EGID'])
+
+    gwr_nodes = gwr.merge(gwr_geo[['EGID', 'geometry']], how='left', on='EGID')
+    gwr_nodes = gpd.GeoDataFrame(gwr_nodes, geometry='geometry', crs='EPSG:2056')
+    gwr_nodes = gwr_nodes.drop_duplicates(subset=['EGID'])
+    # gwr_gdf = gwr_gdf.to_crs('EPSG:4326')
+
+
+    # define fake gridnodes ----------------------
+    gridnode_egid_list = ['245020448',  '245017872',    '1368998',  '1369579',  '245059729',    '245054705',    '245014566',    '391554',   '402070',   '1365736']
+    gridnode_name_list = ['node1',      'node2',        'node3',    'node4',    'node5',        'node6',        'node7',        'node8',    'node9',    'node10']
+    gridnode_kVA_list =  [10000,        2000,           6300,       10000,       1000,           6300,           10000,          10000,      2000,       6300]
+
+    dsonodes_df = pd.DataFrame({'EGID': gridnode_egid_list, 'grid_node': gridnode_name_list, 'kVA_threshold': gridnode_kVA_list})
+    dsonodes_df = dsonodes_df.loc[dsonodes_df['EGID'].isin(gwr_nodes['EGID'].unique())]
+
+    dsonodes_df = dsonodes_df.merge(gwr_nodes[['EGID', 'geometry']], how='left', on='EGID')
+    dsonodes_gdf = gpd.GeoDataFrame(dsonodes_df, crs = 'EPSG:2056', geometry='geometry')
+    # dsonodes_gdf.to_crs('EPSG:4326', inplace=True) 
+
+    # assign nearest nodes
+    def nearest_grid_node(row, nodes_gdf):
+        distances = nodes_gdf.geometry.distance(row.geometry)
+        nearest_idx = distances.idxmin()  # Find index of minimum distance
+        return nodes_gdf.loc[nearest_idx, 'grid_node']
+
+    gwr_nodes['grid_node'] = gwr_nodes.apply(nearest_grid_node, nodes_gdf=dsonodes_gdf, axis=1) 
+
+
+    # export df ----------
+    Map_egid_nodes = gwr_nodes[['EGID', 'grid_node']].copy()
+    Map_egid_nodes.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.parquet')
+    Map_egid_nodes.to_csv(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.csv')
+
+    dsonodes_df = dsonodes_df.loc[:,dsonodes_df.columns != 'geometry']
+    dsonodes_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
+    with open(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson', 'w') as f:
+        f.write(dsonodes_gdf.to_json())
+
+
+
+
 
 # TO BE DELETED
 
@@ -963,37 +1027,5 @@ def get_angle_tilt_table(pvalloc_settings):
     angle_tilt_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.parquet')
     angle_tilt_df.to_csv(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.csv')
     return angle_tilt_df
-
-
-# ------------------------------------------------------------------------------------------------------
-# FAKE TRAFO EGID MAPPING
-# ------------------------------------------------------------------------------------------------------
-def get_fake_gridnodes(pvalloc_settings):
-    
-    # import settings + setup -------------------
-    data_path_def = pvalloc_settings['data_path']
-    log_file_name_def = pvalloc_settings['log_file_name']
-    name_dir_import_def = pvalloc_settings['name_dir_import']
-    print_to_logfile('run function: get_fake_gridnodes', log_file_name_def)
-
-    # create fake gridnodes ----------------------
-    gwr = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/gwr.parquet')
-
-    gwr_nodes = gwr[['EGID', 'GDEKT']].copy()
-    gwr_nodes['EGID_int'] = gwr_nodes['EGID'].astype(int)
-
-    gwr_nodes.sort_values(by=['GDEKT','EGID_int'], inplace=True)
-    gwr_nodes['grid_node'] = pd.cut(gwr_nodes['EGID_int'], bins=4, labels=['node1', 'node2', 'node3', 'node4'])
-
-    gwr_nodes.drop(columns=['EGID_int', 'GDEKT'], inplace=True)
-    gwr_nodes.set_index('EGID', inplace=True)
-
-    # export df ----------
-    Map_egid_nodes = gwr_nodes.copy()
-    Map_egid_nodes.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.parquet')
-    Map_egid_nodes.to_csv(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.csv')
-
-    return gwr_nodes
-
 
 

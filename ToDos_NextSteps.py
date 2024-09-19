@@ -5,11 +5,22 @@
 # Errors / Sanity Checks /  Faults          ¯\_(ツ)_/¯
 # -----------------------------------------------------------------------------
 
-# A ====================
+# TESTING QUEUE: 
+    # TODO: Visualize / export buildings, that are excluded because of too many partitions
+    # TODO: gridprem_ts not adjusting properly to grid_tiers
+    # TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
+    # TODO: Assign nodes better, all nodes only to EGIDs that are in sample, also solkat
+    # TODO: Define a KPI Metric (production loss ? ) and export it in the runs; idea 1 line graph HOY, 1 agg line graph totla kwH produciton loss per month / iteration
 
+
+
+
+
+# A ====================
     # TODO: Visualize the NPV distribution 
     # TODO: Visualize all buildings with mulitple PV installations
-    # TODO: Visualize / export buildings, that are excluded because of too many partitions
+    # TODO: Check Loop for monthly assignments, December is always missing! => probably, december buffers out all the overshoots during the other months. different approach needed to set construction capacity constraint
+    # TODO: plot gridtiers stepf function 
 
 
     # TODO: EGID in solkat is a faulty data point - at least for the small developing data set (nrows = ca. 1000 - 5000). 
@@ -29,24 +40,27 @@
     # TODO: some large number of EGID has multiple pv-installations attributed to them
     #   > maye use smaller buffer for gwr_gdf and pv_gdf intersection. 
 
-# TODO: Sanity check for all calculations
-    # TODO: check if production capacity calc makes sense
-    # TODO: check if production amount calc makes sense
-    # TODO: check if NPV calc makes sense
-# ----------
+    # TODO: Sanity check for all calculations
+        # TODO: check if production capacity calc makes sense
+        # TODO: check if production amount calc makes sense
+        # TODO: check if NPV calc makes sense
+    # ----------
+
+
 
 # B ====================
 
     # TODO: check in QGIS if GKLAS == 1273 are really also denkmalgeschützt buildings or just monuments
     # TODO: inst_power in allocation algorithm NOT weighted by angle tilt efficiency; But in updating of grid premium
             # which one makes more sense?
-    # TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
 
 
     # TODO: Check EGIDs in solkat for BSBL for not to have double counting.
 
     # ok - some egid in gwr.parquet are double up to 10 times in the column, check why!
     #       ->> because merging GWR with dwelling data, means that a row is no longer just a building but also sometimes a dwelling => multiple dwellings in one building
+
+    # TODO: adjust zoom for map plots, so that zooming in enhances the main range of the area of interest, not the margin
 
 
 
@@ -122,6 +136,7 @@ if True:
     #===============================
 
     # OK:  A - define Construction capacity per month
+    print('')
 
 # ALLOCATION --------
 

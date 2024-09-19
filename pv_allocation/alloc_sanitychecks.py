@@ -50,7 +50,6 @@ def create_gdf_export_of_topology(
     topo_df.to_csv(f'{data_path_def}/output/pvalloc_run/topo_egid_df.csv')
 
 
-
     # import geo data -----------------------------------------------------
     # topo_df = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
 
