@@ -33,14 +33,19 @@ def create_gdf_export_of_topology(
     # create topo_df -----------------------------------------------------
     topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
     egid_list, gklas_list, inst_tf_list, inst_info_list, inst_id_list, beginop_list, power_list = [], [], [], [], [], [], []
+    topo_df_uid_list = []    
     for k,v in topo.items():
         egid_list.append(k)
         gklas_list.append(v.get('gwr_info').get('gklas'))
         inst_tf_list.append(v.get('pv_inst').get('inst_TF'))
         inst_info_list.append(v.get('pv_inst').get('inst_info'))
-        inst_id_list.append(v.get('pv_inst').get('inst_id'))
+        inst_id_list.append(v.get('pv_inst').get('xtf_id'))
         beginop_list.append(v.get('pv_inst').get('BeginOp'))
         power_list.append(v.get('pv_inst').get('TotalPower'))
+
+        for k_sub, v_sub in v.get('solkat_partitions').items():
+            topo_df_uid_list.append(k_sub)
+
 
     topo_df = pd.DataFrame({'EGID': egid_list,'gklas': gklas_list,
                             'inst_tf': inst_tf_list,'inst_info': inst_info_list,'inst_id': inst_id_list,'beginop': beginop_list,'power': power_list,
@@ -70,8 +75,8 @@ def create_gdf_export_of_topology(
 
     # subset gwr + pv -----------------------------------------------------
     gwr_gdf_in_topo = gwr_gdf[gwr_gdf['EGID'].isin(topo_df['EGID'].unique())].copy()
-    pv_gdf_in_topo = pv_gdf[pv_gdf['xtf_id'].isin(topo_df['pvid'].unique())].copy()
-    solkat_gdf_in_topo = solkat_gdf[solkat_gdf['df_uid'].isin(topo_df['df_uid'].unique())].copy()
+    pv_gdf_in_topo = pv_gdf[pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())].copy()
+    solkat_gdf_in_topo = solkat_gdf[solkat_gdf['df_uid'].isin(topo_df_uid_list)].copy()
 
     # topo_gdf = topo_df.merge(solkat_gdf[['df_uid', 'geometry']], on='df_uid', how='left')
     topo_gdf = topo_df.merge(gwr_gdf[['EGID', 'geometry']], on='EGID', how='left')
