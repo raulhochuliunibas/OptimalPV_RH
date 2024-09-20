@@ -39,7 +39,7 @@ if True:
 
 
 def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
-    # SETTINGS --------------------------------------------------------------------
+    # SETTINGS ------------------------------------------------------------------------------------------------------
     if not isinstance(pvalloc_scenarios_func, dict):
         print(' USE LOCAL SETTINGS - DICT  ')
         pvalloc_scenarios = pvalloc_default_sett.get_default_pvalloc_settings()
@@ -52,7 +52,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         visual_settings = visual_settings_func
 
     
-    # SETUP =====================================================================
+    # SETUP ------------------------------------------------------------------------------------------------------
     
     # general setup for paths etc.
     first_alloc_sett = pvalloc_scenarios[list(pvalloc_scenarios.keys())[0]]
@@ -74,14 +74,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     plot_show = visual_settings['plot_show']
     default_zoom_year = visual_settings['default_zoom_year']
 
-    plot_ind_line_productionHOY_per_node = visual_settings['plot_ind_line_productionHOY_per_node']
-    plot_ind_line_installedCap_per_month = visual_settings['plot_ind_line_installedCap_per_month']
-    plot_ind_line_installedCap_per_BFS = visual_settings['plot_ind_line_installedCap_per_BFS']
-    map_ind_topo_egid = visual_settings['map_ind_topo_egid']
-    map_ind_production = visual_settings['map_ind_production']
 
 
-    # EXTRACT SCENARIO INFORMATION + IMPORT --------------------------------------------------------------------
+    # EXTRACT SCENARIO INFORMATION + IMPORT -----------------------------------------------------------------------------------
 
     # scen settings ----------------
     scen_dir_export_list, scen_dir_import_list, T0_prediction_list, months_prediction_list = [], [], [], []
@@ -100,72 +95,73 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     default_zoom_hour = visual_settings['default_zoom_hour']
 
 
-    # UNIVERSIAL FUNCTIONS --------------------------------------------------------------------
-    # universal func for plot adjustments -----
-    def add_scen_name_to_plot(fig_func, scen, pvalloc_scen):
-        # add scenario name
-        fig_func.add_annotation(
-            text=f'Scen: {scen}, (start T0: {pvalloc_scen["T0_prediction"].split(" ")[0]}, {pvalloc_scen["months_prediction"]} prediction months)',
-            xref="paper", yref="paper",
-            x=0.5, y=1.05, showarrow=False,
-            font=dict(size=12)
-        )
-        return fig_func
-    
-    # universal func for plot T0 tick -----
-    def add_T0_tick_to_plot(fig, T0_prediction, df, df_col):
-        fig.add_shape(
-            # Line Vertical
-            dict(
-                type="line",
-                x0=T0_prediction,
-                y0=0,
-                x1=T0_prediction,
-                y1= df[df_col].max(),  # Dynamic height
-                line=dict(color="black", width=1, dash="dot"),
+    # UNIVERSIAL FUNCTIONS ------------------------------------------------------------------------------------------------------
+    if True:
+        # universal func for plot adjustments -----
+        def add_scen_name_to_plot(fig_func, scen, pvalloc_scen):
+            # add scenario name
+            fig_func.add_annotation(
+                text=f'Scen: {scen}, (start T0: {pvalloc_scen["T0_prediction"].split(" ")[0]}, {pvalloc_scen["months_prediction"]} prediction months)',
+                xref="paper", yref="paper",
+                x=0.5, y=1.05, showarrow=False,
+                font=dict(size=12)
             )
-        )
-        fig.add_annotation(
-            x=  T0_prediction,
-            y= df[df_col].max(),
-            text="T0 Prediction",
-            showarrow=False,
-            yshift=10
-        )
-        return fig
+            return fig_func
+        
+        # universal func for plot T0 tick -----
+        def add_T0_tick_to_plot(fig, T0_prediction, df, df_col):
+            fig.add_shape(
+                # Line Vertical
+                dict(
+                    type="line",
+                    x0=T0_prediction,
+                    y0=0,
+                    x1=T0_prediction,
+                    y1= df[df_col].max(),  # Dynamic height
+                    line=dict(color="black", width=1, dash="dot"),
+                )
+            )
+            fig.add_annotation(
+                x=  T0_prediction,
+                y= df[df_col].max(),
+                text="T0 Prediction",
+                showarrow=False,
+                yshift=10
+            )
+            return fig
 
-    # universial func to set default plot zoom -----
-    def set_default_fig_zoom_year(fig, zoom_window, df, datecol):
-        start_zoom = pd.to_datetime(f'{zoom_window[0]}-01-01')
-        max_date = df[datecol].max() + pd.DateOffset(years=1)
-        if pd.to_datetime(f'{zoom_window[1]}-01-01') > max_date:
-            end_zoom = max_date
-        else:
-            end_zoom = pd.to_datetime(f'{zoom_window[1]}-01-01')
-        fig.update_layout(
-            xaxis = dict(range=[start_zoom, end_zoom])
-        )
-        return fig 
-    
-    def set_default_fig_zoom_hour(fig, zoom_window):
-        start_zoom, end_zoom = zoom_window[0], zoom_window[1]
-        fig.update_layout(
-            xaxis_range=[start_zoom, end_zoom])
-        return fig
+        # universial func to set default plot zoom -----
+        def set_default_fig_zoom_year(fig, zoom_window, df, datecol):
+            start_zoom = pd.to_datetime(f'{zoom_window[0]}-01-01')
+            max_date = df[datecol].max() + pd.DateOffset(years=1)
+            if pd.to_datetime(f'{zoom_window[1]}-01-01') > max_date:
+                end_zoom = max_date
+            else:
+                end_zoom = pd.to_datetime(f'{zoom_window[1]}-01-01')
+            fig.update_layout(
+                xaxis = dict(range=[start_zoom, end_zoom])
+            )
+            return fig 
+        
+        def set_default_fig_zoom_hour(fig, zoom_window):
+            start_zoom, end_zoom = zoom_window[0], zoom_window[1]
+            fig.update_layout(
+                xaxis_range=[start_zoom, end_zoom])
+            return fig
 
-    # Function to flatten geometries to 2D (ignoring Z-dimension) -----
-    def flatten_geometry(geom):
-        if geom.has_z:
-            if geom.geom_type == 'Polygon':
-                exterior = [(x, y) for x, y, z in geom.exterior.coords]
-                interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
-                return Polygon(exterior, interiors)
-            elif geom.geom_type == 'MultiPolygon':
-                return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
-        return geom
+        # Function to flatten geometries to 2D (ignoring Z-dimension) -----
+        def flatten_geometry(geom):
+            if geom.has_z:
+                if geom.geom_type == 'Polygon':
+                    exterior = [(x, y) for x, y, z in geom.exterior.coords]
+                    interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
+                    return Polygon(exterior, interiors)
+                elif geom.geom_type == 'MultiPolygon':
+                    return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
+            return geom
 
 
-    # PLOT INDIVIDUAL SCEN --------------------------------------------------------------------
+    # PLOT INDIVIDUAL SCEN ------------------------------------------------------------------------------------------------------
        
     # plot ind - line: Production + Feedin HOY per Node ============================
     if visual_settings['plot_ind_line_productionHOY_per_node']:
@@ -194,15 +190,19 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                             filter_df = gridnode_df.loc[
                                 (gridnode_df['grid_node'] == node) & (gridnode_df['pvsource'] == source)].copy()
                             
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['pvprod_kW'], name=f'Prod Node: {node}, Source: {source}'))
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW'], name=f'Feed Node: {node}, Source: {source}'))
+                            # fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['pvprod_kW'], name=f'Prod Node: {node}, Source: {source}'))
+                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW'], name=f'{node} - feedin (all),  Source: {source}'))
+                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW_taken'], name= f'{node} - feedin_taken, Source: {source}'))
+                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW_loss'], name=f'{node} - feedin_loss, Source: {source}'))
 
                 
-                gridnode_total_df = gridnode_df.groupby(['t', 't_int'])['pvprod_kW'].sum().reset_index()
+                gridnode_total_df = gridnode_df.groupby(['t', 't_int'])['feedin_kW'].sum().reset_index()
+                gridnode_total_df = gridnode_df.groupby(['t', 't_int'])[{ 'feedin_kW', 'feedin_kW_taken', 'feedin_kW_loss' }].sum().reset_index()
                 gridnode_total_df.sort_values(by=['t_int'], inplace=True)
-                fig.add_trace(go.Scatter
-                    (x=gridnode_total_df['t'], y=gridnode_total_df['pvprod_kW'], name='Total Production', line=dict(color='black', width=2))
-                )
+
+                fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW'], name='Total feedin', line=dict(color='black', width=2)))
+                fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_taken'], name='Total feedin_taken', line=dict(color='green', width=2)))
+                fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_loss'], name='Total feedin_loss', line=dict(color='red', width=2)))
             
             else:
                 fig = px.line(gridnode_df, x='t', y='pvprod_kW', color = 'grid_node')
@@ -380,6 +380,40 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig2.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_BFS.html')
 
 
+    # plot ind - hist: NPV possible PV inst before / after ============================
+    if visual_settings['plot_ind_hist_NPV_freepartitions']:
+        checkpoint_to_logfile(f'plot_ind_hist_NPV_freepartitions', log_name)
+        i, scen = 0, scen_dir_export_list[0]
+        for i, scen in enumerate(scen_dir_export_list):
+            # setup + import ----------
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
+
+            npv_df_paths = glob.glob(f'{scen_data_path}/pred_npv_inst_by_M/npv_df_*.parquet')
+            periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
+            before_period, after_period = min(periods_list), max(periods_list)
+
+            npv_df_before = pd.read_parquet(f'{scen_data_path}/pred_npv_inst_by_M/npv_df_{before_period.to_period("M")}.parquet')
+            npv_df_after  = pd.read_parquet(f'{scen_data_path}/pred_npv_inst_by_M/npv_df_{after_period.to_period("M")}.parquet')
+
+            # plot ----------------
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation Algorithm', opacity=0.75))
+            fig.add_trace(go.Histogram(x=npv_df_after['NPV_uid'], name='After Allocation Algorithm', opacity=0.75))
+
+            fig.update_layout(
+                xaxis_title=f'Net Present Value (NPV, interest rate: {pvalloc_scen["tech_economic_specs"]["interest_rate"]}, maturity: {pvalloc_scen["tech_economic_specs"]["invst_maturity"]} yr)',
+                yaxis_title='Frequency',
+                title = f'NPV Distribution of possible PV installations, first / last year (weather year: {pvalloc_scen["weather_specs"]["weather_year"]})',
+                barmode = 'overlay')
+            fig.update_traces(bingroup=1, opacity=0.75)
+
+            fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i])
+            if plot_show:
+                fig.show()
+            fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_NPV_freepartitions.html')
+
+
     # plot ind - map:  Model PV topology ========================
     default_map_zoom = visual_settings['default_map_zoom']
     uniform_municip_color = visual_settings['map_topo_specs']['uniform_municip_color']
@@ -387,8 +421,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # map ind - topo_egid ============================
-    if visual_settings['map_ind_topo_egid']:
-        checkpoint_to_logfile(f'map_ind_topo_egid', log_name)
+    if visual_settings['plot_ind_map_topo_egid']:
+        checkpoint_to_logfile(f'plot_ind_map_topo_egid', log_name)
 
         for i, scen in enumerate(scen_dir_export_list):
             
@@ -563,7 +597,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
                 if plot_show:
                     fig1.show()
-                fig1.write_html(f'{data_path}/output/visualizations/{scen}__map_ind_topo_egid.html')
+                fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
+
 
 
     # V - NOT WORKING YET - V
@@ -621,7 +656,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
 
-    # PLOT AGGREGATED SCEN --------------------------------------------------------------------
+    # PLOT AGGREGATED SCEN ------------------------------------------------------------------------------------------------------
     if len(list(set(T0_prediction_list))) ==1:
         T0_pred_agg = T0_prediction_list[0]
 
@@ -792,6 +827,40 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig.show()
         fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_gridPremiumHOY_per_node.html')
 
+
+
+    # plot agg - line: Grid Premium per Hour of Year ============================
+    if visual_settings['plot_agg_line_gridpremium_structure']:
+        checkpoint_to_logfile(f'plot_agg_line_gridpremium_structure', log_name)
+        fig = go.Figure()
+        for i, scen in enumerate(scen_dir_export_list):
+            # setup + import ----------
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
+
+            gridtiers = pvalloc_scen['gridprem_adjustment_specs']['tiers']
+            gridtiers_colnames = pvalloc_scen['gridprem_adjustment_specs']['colnames']
+
+            data = [(k, v[0], v[1]) for k, v in gridtiers.items()]
+            gridtiers_df = pd.DataFrame(data, columns=gridtiers_colnames) 
+
+            # plot ----------------
+            if 'gridprem_plusRp_kWh'  in gridtiers_df.columns:
+                fig.add_trace(go.Scatter(x=gridtiers_df['used_node_capa_rate'], y=gridtiers_df['gridprem_plusRp_kWh'], name=f'{scen}', mode='lines+markers'))
+            else:
+                fig.add_trace(go.Scatter(x=gridtiers_df['used_node_capa_rate'], y=gridtiers_df['gridprem_Rp_kWh'], name=f'{scen}', mode='lines+markers'))
+
+        fig.update_layout(
+            xaxis_title=r'Used Node Capacity Rate (% of individual node capacity)',
+            yaxis_title='Grid Premium (Rp)',
+            legend_title='Scenarios',
+            title = f'Grid Premium Structure, by Scenario (Rp)'
+        )
+        if plot_show:
+            fig.show()
+        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_gridpremium_structure.html')
+
+ 
 
 
 
