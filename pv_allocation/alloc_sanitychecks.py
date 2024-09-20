@@ -104,3 +104,45 @@ def create_gdf_export_of_topology(
     # export to shp -----------------------------------------------------
     topo_above_npart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp')
     solkat_above_npoart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_above_{max_partitions}_npart_gdf.shp')
+
+
+
+# ------------------------------------------------------------------------------------------------------
+# check multiple BUILT installations per EGID
+# ------------------------------------------------------------------------------------------------------
+def check_multiple_xtf_ids_per_EGID(
+        pvalloc_settings, ):
+    
+    # setup -----------------------------------------------------
+    name_dir_import_def = pvalloc_settings['name_dir_import']
+    data_path_def = pvalloc_settings['data_path']
+    log_file_name_def = pvalloc_settings['log_file_name']
+
+    # import -----------------------------------------------------
+    gwr_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson')
+    pv_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/pv_gdf.geojson')
+
+    check_egid = json.load(open(f'{data_path_def}/output/pvalloc_run/CHECK_egid_with_problems.json', 'r'))
+    egid_list, issue_list= [], []
+    for k,v in check_egid.items():
+        egid_list.append(k)
+        issue_list.append(v)
+    check_df = pd.DataFrame({'EGID': egid_list,'issue': issue_list})
+
+    check_df = check_df.loc[check_df['issue'] == 'multiple xtf_ids']
+
+    gwr_gdf_multiple_xtf_id = gwr_gdf[gwr_gdf['EGID'].isin(check_df['EGID'].unique())].copy()
+    pv_gdf_multiple_xtf_id = pv_gdf[pv_gdf['EGID'].isin(check_df['EGID'].unique())].copy()
+
+    # export to shp -----------------------------------------------------
+    if not os.path.exists(f'{data_path_def}/output/pvalloc_run/topo_spatial_data'):
+        os.makedirs(f'{data_path_def}/output/pvalloc_run/topo_spatial_data')
+    
+    gwr_gdf_multiple_xtf_id.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_multiple_xtf_id.shp')
+    pv_gdf_multiple_xtf_id.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_multiple_xtf_id.shp')
+
+    
+
+
+
+        

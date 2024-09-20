@@ -41,12 +41,15 @@ pvalloc_scenarios={
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
         'bfs_numbers': [2791, 2787,],
-        'recreate_topology':                False, 
-        'recalc_economics_topo_df':         False,
+        'recreate_topology':                True, 
+        'recalc_economics_topo_df':         True,
         'run_allocation_loop':              True,
         'create_gdf_export_of_topology':    False,
         'algorithm_specs': {
-                'inst_selection_method': 'prob_weighted_npv',
+            'inst_selection_method': 'prob_weighted_npv',
+            'tweak_npv_calc': 1,
+            'tweak_npv_excl_elec_demand': True,
+            'tweak_gridnode_df_prod_demand_fact': 10000,
     }},
 
 }

@@ -248,8 +248,11 @@ def pv_allocation_MASTER(pvalloc_settings_func):
     
     # CREATE MAP OF TOPO_DF ----------------------------------------------------------------
     if pvalloc_settings['create_gdf_export_of_topology']:
-        subchapter_to_logfile('visualization: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
+        subchapter_to_logfile('sanity_check: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
         sanity.create_gdf_export_of_topology(pvalloc_settings)
+
+    subchapter_to_logfile('sanity_check: MULTIPLE INSTALLATIONS PER EGID', log_name)
+    sanity.check_multiple_xtf_ids_per_EGID(pvalloc_settings)
 
 
 
