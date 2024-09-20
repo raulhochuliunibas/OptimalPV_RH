@@ -114,7 +114,6 @@ def calc_economics_in_topo_df(
 
     # MERGE + GET ECONOMIC VALUES FOR NPV CALCULATION =============================================
     topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
-    selfconsum_rate = pvalloc_settings['tech_economic_specs']['self_consumption_ifapplicable']
 
     # round NEIGUNG + AUSRICHTUNG to 5 for easier computation
     topo_df['NEIGUNG'] = topo_df['NEIGUNG'].apply(lambda x: round(x / 5) * 5)
@@ -255,24 +254,16 @@ def update_gridprem(
         subinst['pvsource'] = subinst_updated['pvsource'].fillna(subinst['pvsource'])
 
         # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
-        subinst['feedin_kW'] = np.where(subinst['pvprod_kW'] - subinst['demand_kW'] > 0, subinst['pvprod_kW'] - subinst['demand_kW'], 0)
+        # NOTE: Demand to production ration does not make sense yet. Adjust and controll when real consumption data is used!
+        subdf_array = subinst[['demand_kW', 'pvprod_kW']].to_numpy()
+        pvprod_kW, demand_kW = subdf_array[:,1], subdf_array[:,0]
 
-        #---
-        # NOTE: no longer needed, DELETE if gridnode_df is working properly in showing actual production per node
-                # if any(subinst['pvinst_TF'] == True):
-            # print('PV installation found')
-        # print_to_logfile(f'  {2*"-"} update gridprem (tranche{i}/{len(topo_subdf_paths)}) {6*"-"}', log_file_name_def)
-        # if (i < 5) and (i_m < 6) : 
-        #     checkpoint_to_logfile(f'\t updated gridprem_ts', log_file_name_def, 2, show_debug_prints_def)
-        # if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //5 ) == 0:
-        #     checkpoint_to_logfile(f'updated gridprem_ts (tranche {i} of {len(topo_subdf_paths)})', log_file_name_def, 2, show_debug_prints_def)
+        subinst['demand_kW'] = subinst['demand_kW'] * pvalloc_settings['algorithm_specs']['tweak_gridnode_df_prod_demand_fact']
+        selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * pvalloc_settings['tech_economic_specs']['self_consumption_ifapplicable']
+        netdemand_kW = demand_kW - selfconsum_kW
+        netfeedin_kW = pvprod_kW - selfconsum_kW
 
-        # subinst['has_pv'] = subinst.loc[subinst['EGID'].isin(no_pv_egid), 'has_pv'] = False
-        # subinst['has_pv'] = subinst.loc[subinst['EGID'].isin(no_pv_egid) == False, 'has_pv'] = True
-
-        # subinst['pvprod_kW'] = np.where(subinst['has_pv'] == False, 0, subinst['copy_pvprod_kW'])
-        # subinst.drop(columns=['copy_pvprod_kW', 'has_pv'], inplace=True)
-        #---
+        subinst['feedin_kW'] = netfeedin_kW
 
         # NOTE: attempt for a more elaborate way to handle already installed installations
         if False:
@@ -307,7 +298,7 @@ def update_gridprem(
     # gridnode_df.drop(columns='kVA_threshold', inplace=True)
 
     gridnode_df['feedin_kW_taken'] = np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['kW_threshold'], gridnode_df['feedin_kW'])
-    gridnode_df['feedin_kW_loss'] = np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['feedin_kW'] - gridnode_df['kW_threshold'], 0)
+    gridnode_df['feedin_kW_loss'] =  np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['feedin_kW'] - gridnode_df['kW_threshold'], 0)
 
     gridnode_df.to_parquet(f'{data_path_def}/output/pvalloc_run/gridnode_df.parquet')
     gridnode_df.to_csv(f'{data_path_def}/output/pvalloc_run/gridnode_df.csv', index=False)
@@ -409,6 +400,7 @@ def update_npv_df(pvalloc_settings,
             subdf_array = subdf[['pvprod_kW', 'demand_kW', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'prem_Rp_kWh']].to_numpy()
             pvprod_kW, demand_kW, pv_tarif_Rp_kWh, elecpri_Rp_kWh, prem_Rp_kWh = subdf_array[:,0], subdf_array[:,1], subdf_array[:,2], subdf_array[:,3], subdf_array[:,4]
 
+            demand_kW = demand_kW * pvalloc_settings['algorithm_specs']['tweak_gridnode_df_prod_demand_fact']
             selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * selfconsum_rate
             netdemand_kW = demand_kW - selfconsum_kW
             netfeedin_kW = pvprod_kW - selfconsum_kW

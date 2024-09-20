@@ -33,6 +33,7 @@ pvalloc_default_settings = {
         'tweak_constr_capacity_fact': 1,
         'tweak_npv_calc': 1,
         'tweak_npv_excl_elec_demand': True,
+        'tweak_gridnode_df_prod_demand_fact': 1,
     },
     'gridprem_adjustment_specs': {
         'voltage_assumption': '',
@@ -44,7 +45,7 @@ pvalloc_default_settings = {
             2: [0.8, 3],
             4: [0.9, 7],
             5: [0.95, 15], 
-            6: [0.975, 50],
+            6: [10, 50],
             },},
         # 'tiers': { 
         #     1: [2000, 1], 
