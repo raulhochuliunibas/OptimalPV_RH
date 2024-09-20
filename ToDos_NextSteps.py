@@ -11,13 +11,14 @@
     # TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
     # TODO: Assign nodes better, all nodes only to EGIDs that are in sample, also solkat
     # TODO: Define a KPI Metric (production loss ? ) and export it in the runs; idea 1 line graph HOY, 1 agg line graph totla kwH produciton loss per month / iteration
+    # TODO: Visualize the NPV distribution 
+
 
 
 
 
 
 # A ====================
-    # TODO: Visualize the NPV distribution 
     # TODO: Visualize all buildings with mulitple PV installations
     # TODO: Check Loop for monthly assignments, December is always missing! => probably, december buffers out all the overshoots during the other months. different approach needed to set construction capacity constraint
     # TODO: plot gridtiers stepf function 

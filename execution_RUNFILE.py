@@ -32,22 +32,27 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-months_pred = 120
+months_pred = 2
 run_on_server = False
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
-    # f'dev_samllBL{months_pred}m_npv_weighted': {
-    #     # 'pvalloc_BLBS_72m_npv_weighted':{
-    #         'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
-    #         'script_run_on_server': run_on_server,
-    #         'months_prediction': months_pred,
-    #         'recreate_topology':        False,
-    #         'recalc_economics_topo_df': False,
-    #         'create_gdf_export_of_topology':    True,
-    #         'algorithm_specs': {
-    #             'inst_selection_method': 'prob_weighted_npv',
-    # }},
-    f'pvalloc_smallBL_{months_pred}m_npv_weighted': {
+    f'dev_samllBL{months_pred}m_npv_weighted': {
+        'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'bfs_numbers': [2791, 2787,],
+        'recreate_topology':                False, 
+        'recalc_economics_topo_df':         False,
+        'run_allocation_loop':              True,
+        'create_gdf_export_of_topology':    False,
+        'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv',
+    }},
+
+}
+
+parkplatz = {
+        f'pvalloc_smallBL_{months_pred}m_npv_weighted': {
             'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
             'script_run_on_server': run_on_server,
             'months_prediction': months_pred,
@@ -77,25 +82,7 @@ pvalloc_scenarios={
             'algorithm_specs': {
                 'inst_selection_method': 'random',
     }},
-}
 
-parkplatz = {
-    'pvalloc_smallBL_5y_SLCTN_npv_weighted': {
-            'algorithm_specs': {
-                'inst_selection_method': 'prob_weighted_npv',
-                'rand_seed': None,
-                'tweak_constr_capacity_fact': 20,},
-            'months_prediction': 12*5,
-
-    },
-    'pvalloc_smallBL_5y_SLCTN_random': {
-            'algorithm_specs': {
-                'inst_selection_method': 'random',
-                'rand_seed': None,
-                'tweak_constr_capacity_fact': 20,},
-            'months_prediction': 12*5,
-
-    },
 }
 
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
@@ -106,13 +93,15 @@ visual_settings = {
         'plot_show': True,
 
         'plot_ind_line_productionHOY_per_node': True,
-        'plot_ind_line_installedCap_per_month': False,
+        'plot_ind_line_installedCap_per_month': True,
         'plot_ind_line_installedCap_per_BFS': False,
-        'map_ind_topo_egid': True,
+        'plot_ind_hist_NPV_freepartitions': True,
+        'plot_ind_map_topo_egid': True,
 
         'plot_agg_line_installedCap_per_month': True,
         'plot_agg_line_productionHOY_per_node': True,
         'plot_agg_line_gridPremiumHOY_per_node': True,
+        'plot_agg_line_gridpremium_structure': True,
 
         # single plots (just show once, not for all scenarios)
         'map_ind_production': False, # NOT WORKING YET
