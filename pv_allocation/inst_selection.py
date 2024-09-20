@@ -94,13 +94,13 @@ def select_AND_adjust_topology(pvalloc_settings,
 
 
     # saves to interim folder ----------
-    npv_df.to_parquet(f'{data_path_def}/output/pvalloc_run/interim_predictions/npv_df_{m}.parquet')
-    pred_inst_df.to_parquet(f'{data_path_def}/output/pvalloc_run/interim_predictions/pred_inst_df_{m}.parquet')
-    with open(f'{data_path_def}/output/pvalloc_run/interim_predictions/topo_{m}.json', 'w') as f:
+    npv_df.to_parquet(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_{m}.parquet')
+    pred_inst_df.to_parquet(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
+    with open(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/topo_{m}.json', 'w') as f:
         json.dump(topo, f)
 
-    npv_df.to_csv(f'{data_path_def}/output/pvalloc_run/interim_predictions/npv_df_{m}.csv')
-    pred_inst_df.to_csv(f'{data_path_def}/output/pvalloc_run/interim_predictions/pred_inst_df_{m}.csv')
+    npv_df.to_csv(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_{m}.csv')
+    pred_inst_df.to_csv(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_{m}.csv')
 
 
     return  inst_power # , picked_uid, picked_combo_uid, pred_inst_df, dfuid_installed_list, topo

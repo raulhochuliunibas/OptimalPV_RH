@@ -148,11 +148,11 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         dfuid_installed_list = []
         pred_inst_df = pd.DataFrame()
 
-        # create interim_predictions folder to see month by month changes
-        if not os.path.exists(f'{data_path}/output/pvalloc_run/interim_predictions'):
-            os.makedirs(f'{data_path}/output/pvalloc_run/interim_predictions')
+        # create pred_npv_inst_by_M folder to see month by month changes
+        if not os.path.exists(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M'):
+            os.makedirs(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M')
         else:
-            old_files = glob.glob(f'{data_path}/output/pvalloc_run/interim_predictions/*')
+            old_files = glob.glob(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/*')
             for f in old_files:
                 os.remove(f)
 
