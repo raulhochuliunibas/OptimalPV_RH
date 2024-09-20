@@ -456,6 +456,10 @@ def import_prepre_AND_create_topology(
         f.write(f'\n ** EGID with problems: {len(CHECK_egid_with_problems)} **\n\n')
         f.write(str(CHECK_egid_with_problems))
 
+    CHECK_egid_with_problems_dict = {egid: problem for egid, problem in CHECK_egid_with_problems}
+    with open(f'{data_path_def}/output/pvalloc_run/CHECK_egid_with_problems.json', 'w') as f:
+        json.dump(CHECK_egid_with_problems_dict, f)
+
 
     df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   pv,  pvtarif,   elecpri,    angle_tilt_df,  Map_egid_nodes]
     df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_nodes']
