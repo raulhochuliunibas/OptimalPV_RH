@@ -294,12 +294,12 @@ def update_gridprem(
                     share = row['STROMERTRAG'] / total_stromertrag
                     subinst.loc[idx, 'pvprod_kW'] = share * TotalPower
 
-        agg_subinst = subinst.groupby(['grid_node', 't', 'pvsource']).agg({'feedin_kW': 'sum'}).reset_index()
+        agg_subinst = subinst.groupby(['grid_node', 't', 'pvsource']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index()
         del subinst
         agg_subinst_df_list.append(agg_subinst)
     
     gridnode_df = pd.concat(agg_subinst_df_list)
-    gridnode_df = gridnode_df.groupby(['grid_node', 't', 'pvsource']).agg({'feedin_kW': 'sum'}).reset_index() # groupby df again because grid nodes will be spreach accross multiple tranches
+    gridnode_df = gridnode_df.groupby(['grid_node', 't', 'pvsource']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index() # groupby df again because grid nodes will be spreach accross multiple tranches
 
     # attach node thresholds -----------------------------------------------------
     gridnode_df = gridnode_df.merge(dsonodes_gdf[['grid_node', 'kVA_threshold']], how='left', on='grid_node')
@@ -325,7 +325,7 @@ def update_gridprem(
     for i in range(len(gridtiers_df)):
         i_adj = len(gridtiers_df) - i -1 # order needs to be reversed, because otherwise first condition is always met and disregards the higher tiers
         conditions.append((gridprem_ts['feedin_kW_taken'] / gridprem_ts['kW_threshold'])  > gridtiers_df.loc[i_adj, 'used_node_capa_rate'])
-        choices.append(gridtiers_df.loc[i_adj, 'gridprem_plusRp_kWh'])
+        choices.append(gridtiers_df.loc[i_adj, 'gridprem_Rp_kWh'])
     gridprem_ts['prem_Rp_kWh'] = np.select(conditions, choices, default=gridprem_ts['prem_Rp_kWh'])
     gridprem_ts.drop(columns=['feedin_kW_taken', 'kW_threshold'], inplace=True)
 
@@ -368,6 +368,8 @@ def update_npv_df(pvalloc_settings,
     interest_rate = pvalloc_settings['tech_economic_specs']['interest_rate']
     invst_maturity = pvalloc_settings['tech_economic_specs']['invst_maturity']
     conv_m2toKWP = pvalloc_settings['tech_economic_specs']['conversion_m2tokW']
+    tweak_npv_excl_elec_demand = pvalloc_settings['algorithm_specs']['tweak_npv_excl_elec_demand']
+
 
     estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
 
@@ -412,7 +414,10 @@ def update_npv_df(pvalloc_settings,
             netfeedin_kW = pvprod_kW - selfconsum_kW
 
             econ_inc_chf = ((netfeedin_kW * pv_tarif_Rp_kWh) /100) + ((selfconsum_kW * elecpri_Rp_kWh) /100)
-            econ_spend_chf = ((netfeedin_kW * prem_Rp_kWh)) + ((netdemand_kW * elecpri_Rp_kWh) /100)
+            if not tweak_npv_excl_elec_demand:
+                econ_spend_chf = ((netfeedin_kW * prem_Rp_kWh) / 100)  + ((netdemand_kW * elecpri_Rp_kWh) /100)
+            else:
+                econ_spend_chf = ((netfeedin_kW * prem_Rp_kWh) / 100)
 
             subdf['selfconsum_kW'], subdf['netdemand_kW'], subdf['netfeedin_kW'], subdf['econ_inc_chf'], subdf['econ_spend_chf'] = selfconsum_kW, netdemand_kW, netfeedin_kW, econ_inc_chf, econ_spend_chf
 

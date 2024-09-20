@@ -98,7 +98,8 @@ def create_gdf_export_of_topology(
     topo_above_npart_gdf['EGID_count'] = topo_above_npart_gdf['EGID'].map(counts)
     topo_above_npart_gdf = topo_above_npart_gdf[topo_above_npart_gdf['EGID_count'] > max_partitions]
 
-    solkat_above_npoart_gdf = solkat_gdf_in_topo[solkat_gdf_in_topo['df_uid'].isin(topo_above_npart_gdf['df_uid'].unique())].copy()
+    solkat_above_npoart_gdf = solkat_gdf_in_topo[solkat_gdf_in_topo['df_uid'].isin(topo_df_uid_list)].copy()
+    # solkat_above_npoart_gdf = 
 
     # export to shp -----------------------------------------------------
     topo_above_npart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp')

@@ -16,13 +16,9 @@ pvalloc_default_settings = {
     'n_egid_in_topo': 200, 
     'recreate_topology':                True, 
     'recalc_economics_topo_df':         True,
-    'create_gdf_export_of_topology':    False,
     'run_allocation_loop':              True,
+    'create_gdf_export_of_topology':    False,
 
-
-    'recalc_npv_all_combinations':  True, 
-    'test_faster_if_subdf_deleted': False,
-    'test_faster_npv_update_w_subdf_npry': True, 
 
     'algorithm_specs': {
         'inst_selection_method': 'prob_weighted_npv', # random, prob_weighted_npv, max_npv 
@@ -35,12 +31,14 @@ pvalloc_default_settings = {
 
         'tweak_capacity_fact': 1,
         'tweak_constr_capacity_fact': 1,
+        'tweak_npv_calc': 1,
+        'tweak_npv_excl_elec_demand': True,
     },
     'gridprem_adjustment_specs': {
         'voltage_assumption': '',
-        'tier_description': 'tier_level: (voltage_threshold, gridprem_plusRp_kWh)',
+        'tier_description': 'tier_level: (voltage_threshold, gridprem_Rp_kWh)',
         'power_factor': 1, 
-        'colnames': ['tier_level', 'used_node_capa_rate', 'gridprem_plusRp_kWh'],
+        'colnames': ['tier_level', 'used_node_capa_rate', 'gridprem_Rp_kWh'],
         'tiers': { 
             1: [0.7, 1], 
             2: [0.8, 3],
