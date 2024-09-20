@@ -15,42 +15,78 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 # data_aggregation 
 dataagg_scenarios = {   
-    # 'preprep_BL_20to22_1and2homes':{
-    #     'show_debug_prints': True,
-    #     'kt_numbers': [13,], 
-    #     'year_range': [2020, 2022], 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],}
-    # },
-    # 'preprep_BL_20to22_1and2homes_w_farms':{
-    #     'show_debug_prints': True,
-    #     'kt_numbers': [13,],
-    #     'year_range': [2020, 2022], 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}
-    # },
-    }
+    'preprep_BL_20to22_1and2homes_buff005':{
+        'show_debug_prints': True,
+        'kt_numbers': [13,], 
+        'year_range': [2020, 2022], 
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.05,}, 
+    }, 
+    'prep_BL_20to22_1and2homes_buff01':{
+        'show_debug_prints': True,
+        'kt_numbers': [13,], 
+        'year_range': [2020, 2022], 
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.1,}, 
+    },
+    'preprep_BL_20to22_1and2homes_buff02':{
+        'show_debug_prints': True,
+        'kt_numbers': [13,], 
+        'year_range': [2020, 2022], 
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.2,}, 
+    },
+    'preprep_BL_20to22_1and2homes_buff05':{
+        'show_debug_prints': True,
+        'kt_numbers': [13,],
+        'year_range': [2020, 2022],
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],},
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.5,},
+    },
+}
+
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-months_pred = 2
+months_pred = 6
 run_on_server = False
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
-    f'dev_samllBL{months_pred}m_npv_weighted': {
-        'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
+    f'dev_samllBL{months_pred}m_buff005': {
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff005',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787,],
-        'recreate_topology':                True, 
-        'recalc_economics_topo_df':         True,
-        'run_allocation_loop':              True,
-        'create_gdf_export_of_topology':    False,
+        # 'bfs_numbers': [2791, 2787,],
+        # 'recreate_topology':                True, 
+        # 'recalc_economics_topo_df':         True,
+        # 'run_allocation_loop':              True,
+        # 'create_gdf_export_of_topology':    False,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv',
-            'tweak_npv_calc': 1,
-            'tweak_npv_excl_elec_demand': True,
             'tweak_gridnode_df_prod_demand_fact': 10000,
     }},
+    f'dev_samllBL{months_pred}m_buff01': {
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff01',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv',
+    }},
+    f'dev_samllBL{months_pred}m_buff02': {
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff02',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv',
+    }},
+    f'dev_samllBL{months_pred}m_buff05': {
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff05',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv',
+    }}
 
 }
 
