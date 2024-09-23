@@ -1,3 +1,5 @@
+import copy
+
 pvalloc_default_settings = {
     'name_dir_export': 'pvalloc_BL_smallsample',              # name of the directory where all proccessed data is stored at the end of the code file 
     'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes', # name of the directory where preprepared data is stored and accessed by the code
@@ -98,7 +100,7 @@ def extend_pvalloc_scen_with_defaults(scen_dict, defaults=pvalloc_default_settin
     scen_dicts = {}
 
     for scen_name, scen_sett in scen_dict.items():
-        default_dict = defaults.copy()
+        default_dict = copy.deepcopy(defaults)
         default_dict['name_dir_export'] = scen_name
 
         for k_sett, v_sett in scen_sett.items():
@@ -109,7 +111,7 @@ def extend_pvalloc_scen_with_defaults(scen_dict, defaults=pvalloc_default_settin
                 for k_sett_sub, v_sett_sub in v_sett.items():
                     default_dict[k_sett][k_sett_sub] = v_sett_sub
             
-            scen_dicts[scen_name] = default_dict     
+        scen_dicts[scen_name] = default_dict     
 
     return scen_dicts
 

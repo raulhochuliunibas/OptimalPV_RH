@@ -1,3 +1,5 @@
+import copy
+
 dataagg_default_settings = {
         'name_dir_export': 'preprep_BSBLSO_18to22',             # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
         'script_run_on_server':     False,                      # F: run on private computer, T: run on server
@@ -20,12 +22,12 @@ dataagg_default_settings = {
         # settings for gwr selection
         'gwr_selection_specs': {
             'building_cols': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
-                        'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
-                        'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1', 'GEBF', 'GAREA'],
-            'dwelling_cols':['EGID', 'WAZIM', 'WAREA', ],
+                              'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                              'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1', 'GEBF', 'GAREA'],
+            'dwelling_cols': ['EGID', 'WAZIM', 'WAREA', ],
             'DEMAND_proxy': 'GAREA',
             'GSTAT': ['1004',],                                 # GSTAT - 1004: only existing, fully constructed buildings
-            'GKLAS': ['1110','1121','1276'],                    # GKLAS - 1110: only 1 living space per building; 1121: Double-, row houses with each appartment (living unit) having it's own roof; 1276: structure for animal keeping (most likely still one owner)
+            'GKLAS': ['1110','1121'], # ,'1276'],                # GKLAS - 1110: only 1 living space per building; 1121: Double-, row houses with each appartment (living unit) having it's own roof; 1276: structure for animal keeping (most likely still one owner)
             'GBAUJ_minmax': [1950, 2022],                       # GBAUJ_minmax: range of years of construction
             'GWAERZH': ['7410', '7411',],                       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
             # 'GENH': ['7580', '7581', '7582'],                 # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
@@ -40,10 +42,10 @@ dataagg_default_settings = {
 
 
 def extend_dataag_scen_with_defaults(scen_dict, defaults = dataagg_default_settings):
-    scen_dicts = {}
+    new_scen_dict = {}
 
     for scen_name, scen_sett in scen_dict.items():
-        default_dict = defaults.copy()
+        default_dict = copy.deepcopy(defaults)
         default_dict['name_dir_export'] = scen_name
 
         for k_sett, v_sett in scen_sett.items():
@@ -54,9 +56,9 @@ def extend_dataag_scen_with_defaults(scen_dict, defaults = dataagg_default_setti
                 for k_sett_sub, v_sett_sub in v_sett.items():
                     default_dict[k_sett][k_sett_sub] = v_sett_sub
             
-            scen_dicts[scen_name] = default_dict
+        new_scen_dict[scen_name] = default_dict
 
-    return scen_dicts
+    return new_scen_dict
 
 
 def get_default_dataag_settings():
