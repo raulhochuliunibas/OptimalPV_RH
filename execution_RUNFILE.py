@@ -16,82 +16,90 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 # data_aggregation 
 dataagg_scenarios = {   
     'preprep_BL_20to22_1and2homes_buff005':{
-        'show_debug_prints': True,
         'kt_numbers': [13,], 
         'year_range': [2020, 2022], 
         'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
         'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.05,}, 
     }, 
-    'prep_BL_20to22_1and2homes_buff01':{
-        'show_debug_prints': True,
-        'kt_numbers': [13,], 
-        'year_range': [2020, 2022], 
-        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
-        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.1,}, 
-    },
     'preprep_BL_20to22_1and2homes_buff02':{
-        'show_debug_prints': True,
-        'kt_numbers': [13,], 
-        'year_range': [2020, 2022], 
-        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
-        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.2,}, 
-    },
-    'preprep_BL_20to22_1and2homes_buff05':{
-        'show_debug_prints': True,
         'kt_numbers': [13,],
         'year_range': [2020, 2022],
         'gwr_selection_specs': {'GKLAS': ['1110','1121',],},
-        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.5,},
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.2,},
     },
 }
-
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-months_pred = 6
+months_pred =  5 #36
 run_on_server = False
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
-    f'dev_samllBL{months_pred}m_buff005': {
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff005',
+    f'dev_samllBL{months_pred}m_npv': {
+        'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
         # 'bfs_numbers': [2791, 2787,],
-        # 'recreate_topology':                True, 
-        # 'recalc_economics_topo_df':         True,
-        # 'run_allocation_loop':              True,
-        # 'create_gdf_export_of_topology':    False,
+        'recreate_topology':                True, 
+        'recalc_economics_topo_df':         True,
+        'run_allocation_loop':              True,
+        'create_gdf_export_of_topology':    False,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv',
-            'tweak_gridnode_df_prod_demand_fact': 10000,
+            'tweak_gridnode_df_prod_demand_fact': 100000,
     }},
-    f'dev_samllBL{months_pred}m_buff01': {
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff01',
+    f'dev_samllBL{months_pred}m_random': {
+        'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
+        # 'bfs_numbers': [2791, 2787,],
+        'recreate_topology':                True, 
+        'recalc_economics_topo_df':         True,
+        'run_allocation_loop':              True,
+        'create_gdf_export_of_topology':    False,
         'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv',
+            'inst_selection_method': 'random',
+            'tweak_gridnode_df_prod_demand_fact': 100000,
     }},
-    f'dev_samllBL{months_pred}m_buff02': {
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff02',
+    f'dev_samllBL{months_pred}m_npv_TEST_GDF_EXPORT': {
+        'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
+        # 'bfs_numbers': [2791, 2787,],
+        'recreate_topology':                True, 
+        'recalc_economics_topo_df':         True,
+        'run_allocation_loop':              True,
+        'create_gdf_export_of_topology':    True,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv',
+            'tweak_gridnode_df_prod_demand_fact': 100000,
     }},
-    f'dev_samllBL{months_pred}m_buff05': {
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff05',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv',
-    }}
 
 }
 
 parkplatz = {
-        f'pvalloc_smallBL_{months_pred}m_npv_weighted': {
+    f'dev_samllBL{months_pred}m_buff005': {
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff005',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'create_gdf_export_of_topology':    True,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv',
+            'tweak_gridnode_df_prod_demand_fact': 10000,}
+            },
+    f'dev_samllBL{months_pred}m_buff02': {    
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff02',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'create_gdf_export_of_topology':    True,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv',
+            'tweak_gridnode_df_prod_demand_fact': 10000, }
+            }, 
+    # 
+    # 
+    f'pvalloc_smallBL_{months_pred}m_npv_weighted': {
             'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
             'script_run_on_server': run_on_server,
             'months_prediction': months_pred,
@@ -158,13 +166,13 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 if not not dataagg_scenarios:
     for k_sett, scen_sett in dataagg_scenarios.items():
         dataagg_settings = scen_sett
-        data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings)
+        # data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings)
 
 
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
+    # pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
     
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
