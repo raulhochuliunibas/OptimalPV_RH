@@ -1,23 +1,29 @@
 # Preamble: 
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
 
-# -----------------------------------------------------------------------------
-# Errors / Sanity Checks /  Faults          ¯\_(ツ)_/¯
-# -----------------------------------------------------------------------------
+# **********************************************************************************************************************************************************
+# BURN LOG: Errors / Sanity Checks /  Faults          ¯\_(ツ)_/¯
+# **********************************************************************************************************************************************************
 
 # TESTING QUEUE: 
+  # Check after preprep was rerun
     # TODO: Visualize / export buildings, that are excluded because of too many partitions
-    # TODO: gridprem_ts not adjusting properly to grid_tiers
-    # TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
-    # TODO: Assign nodes better, all nodes only to EGIDs that are in sample, also solkat
-    # TODO: Define a KPI Metric (production loss ? ) and export it in the runs; idea 1 line graph HOY, 1 agg line graph totla kwH produciton loss per month / iteration
-    # TODO: Visualize the NPV distribution 
-    # TODO: plot gridtiers stepf function 
     # TODO: Visualize all buildings with mulitple PV installations
+
+    # TODO: pred_inst_df shows instTF as false, which should be TRUE and also no pvsource
+    # TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
+    # TODO: Define a KPI Metric (production loss ? ) and export it in the runs; idea 1 line graph HOY, 1 agg line graph totla kwH produciton loss per month / iteration
+
+
+    # OK - Assign nodes better, all nodes only to EGIDs that are in sample, also solkat
+    # OK - Visualize the NPV distribution 
+    # OK - plot gridtiers stepf function 
 
 
 
 # A ====================
+
+    # TODO: NPV calc is not correct, way too high returns, mean around 0.5 mio. CHF 
     # TODO: Check Loop for monthly assignments, December is always missing! => probably, december buffers out all the overshoots during the other months. different approach needed to set construction capacity constraint
 
 
@@ -51,6 +57,8 @@
     # TODO: check in QGIS if GKLAS == 1273 are really also denkmalgeschützt buildings or just monuments
     # TODO: inst_power in allocation algorithm NOT weighted by angle tilt efficiency; But in updating of grid premium
             # which one makes more sense?
+    # TODO: Get Electricity prices using another package for SPARQL APIS than the one from Elcom// from local CSV / XLSX, not through API!! => not possible
+
 
 
     # TODO: Check EGIDs in solkat for BSBL for not to have double counting.
@@ -61,6 +69,14 @@
     # TODO: adjust zoom for map plots, so that zooming in enhances the main range of the area of interest, not the margin
 
 
+# SOLVED ====================
+if True:
+    # OK -  gridprem_ts not adjusting properly to grid_tiers
+    print('')
+
+# **********************************************************************************************************************************************************
+# CODE STRUCTURE AND next steps 
+# **********************************************************************************************************************************************************
 
 # -----------------------------------------------------------------------------
 # data_aggreation_MASTER.py 

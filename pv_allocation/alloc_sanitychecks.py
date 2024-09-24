@@ -121,6 +121,7 @@ def check_multiple_xtf_ids_per_EGID(
     # import -----------------------------------------------------
     gwr_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson')
     pv_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/pv_gdf.geojson')
+    Map_egid_pv = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_pv.parquet')
 
     check_egid = json.load(open(f'{data_path_def}/output/pvalloc_run/CHECK_egid_with_problems.json', 'r'))
     egid_list, issue_list= [], []
@@ -131,8 +132,17 @@ def check_multiple_xtf_ids_per_EGID(
 
     check_df = check_df.loc[check_df['issue'] == 'multiple xtf_ids']
 
+    # Map egid to xtf_id 
+    multip_xtf_list = []
+    for i, row in Map_egid_pv.iterrows():
+        if row['EGID'] in check_df['EGID'].unique():
+            multip_xtf_list.append(row['xtf_id'])
+    
+    multip_xtf_list_unique = list(set(multip_xtf_list))
+    
+
     gwr_gdf_multiple_xtf_id = gwr_gdf[gwr_gdf['EGID'].isin(check_df['EGID'].unique())].copy()
-    pv_gdf_multiple_xtf_id = pv_gdf[pv_gdf['EGID'].isin(check_df['EGID'].unique())].copy()
+    pv_gdf_multiple_xtf_id = pv_gdf[pv_gdf['xtf_id'].isin(multip_xtf_list_unique)].copy()
 
     # export to shp -----------------------------------------------------
     if not os.path.exists(f'{data_path_def}/output/pvalloc_run/topo_spatial_data'):

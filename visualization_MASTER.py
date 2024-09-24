@@ -178,9 +178,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             gridnode_df.sort_values(by=['t_int'], inplace=True)
 
             # plot ----------------
-            if 'pvsource' in gridnode_df.columns:
+            if 'info_source' in gridnode_df.columns:
                 nodes = gridnode_df['grid_node'].unique()
-                pvsources = gridnode_df['pvsource'].unique()
+                pvsources = gridnode_df['info_source'].unique()
                 fig = go.Figure()
 
                 for node in nodes:
@@ -188,7 +188,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                         if source != '':
                         # if True:
                             filter_df = gridnode_df.loc[
-                                (gridnode_df['grid_node'] == node) & (gridnode_df['pvsource'] == source)].copy()
+                                (gridnode_df['grid_node'] == node) & (gridnode_df['info_source'] == source)].copy()
                             
                             # fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['pvprod_kW'], name=f'Prod Node: {node}, Source: {source}'))
                             fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW'], name=f'{node} - feedin (all),  Source: {source}'))
@@ -761,10 +761,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             # add total production
             gridnode_total_df = gridnode_df.groupby(['t', 't_int']).agg({'pvprod_kW': 'sum', 'feedin_kW': 'sum','feedin_kW_taken': 'sum','feedin_kW_loss': 'sum'}).reset_index()
             gridnode_total_df.sort_values(by=['t_int'], inplace=True)
-            fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['pvprod_kW'], name='Total production'))
-            fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW'], name='Total feedin'))
-            fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_taken'], name='Total feedin_taken'))
-            fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_loss'], name='Total feedin_loss'))
+            fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['pvprod_kW'], name=f'{scen}: Total production'))
+            fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW'], name=f'{scen}: Total feedin'))
+            fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_taken'], name=f'{scen}: Total feedin_taken'))
+            fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_loss'], name=f'{scen}: Total feedin_loss'))
 
                              
         fig.update_layout(

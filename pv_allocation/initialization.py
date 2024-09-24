@@ -851,9 +851,9 @@ def get_fake_gridnodes_v2(pvalloc_settings):
 
 
     # define fake gridnodes ----------------------
-    gridnode_egid_list = ['245020448',  '245017872',    '1368998',  '1369579',  '245059729',    '245054705',    '245014566',    '391554',   '402070',   '1365736']
-    gridnode_name_list = ['node1',      'node2',        'node3',    'node4',    'node5',        'node6',        'node7',        'node8',    'node9',    'node10']
-    gridnode_kVA_list =  [10000,        2000,           6300,       10000,       1000,           6300,           10000,          10000,      2000,       6300]
+    gridnode_egid_list = ['245020448',  '245017872',    '1368998',  '1369579',  '245059729',    '245054705',    '245014566',    '391554',]
+    gridnode_name_list = ['node1',      'node2',        'node3',    'node4',    'node5',        'node6',        'node7',        'node8',]
+    gridnode_kVA_list =  [100000,       20000,          63000,      100000,      10000,          63000,          100000,         100000, ]
 
     dsonodes_df = pd.DataFrame({'EGID': gridnode_egid_list, 'grid_node': gridnode_name_list, 'kVA_threshold': gridnode_kVA_list})
     dsonodes_df = dsonodes_df.loc[dsonodes_df['EGID'].isin(gwr_nodes['EGID'].unique())]
