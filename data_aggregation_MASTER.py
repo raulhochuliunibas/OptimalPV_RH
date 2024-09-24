@@ -144,15 +144,15 @@ def data_aggregation_MASTER(dataagg_settings_func):
 
 
     # EXTEND WITH TIME FIXED DATA ---------------------------------------------------------------
-    cost_df_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/pvinstcost.parquet')
+    # cost_df_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/pvinstcost.parquet')
     reextend_fixed_data = dataagg_settings['reextend_fixed_data']
 
-    if not cost_df_exists_TF or reextend_fixed_data:
+    if reextend_fixed_data: # or not cost_df_exists_TF:
         subchapter_to_logfile('extend data: ESTIM PV INSTALLTION COST FUNCTION,  ', log_name)
         estimate_pv_cost(dataagg_settings_def = dataagg_settings)
 
         subchapter_to_logfile('extend data: GET ANGLE+TILT FACTOR + NODE MAPPING', log_name)
-        
+        get_angle_tilt_table(dataagg_settings_def = dataagg_settings)
         get_fake_gridnodes(dataagg_settings_def = dataagg_settings)
         
     
@@ -190,6 +190,8 @@ def data_aggregation_MASTER(dataagg_settings_func):
     shutil.copy(glob.glob(f'{data_path}/output/preprep_data_log.txt')[0], f'{dir_data_moveto}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
     shutil.copy(glob.glob(f'{data_path}/output/*summary*log.txt')[0], f'{dir_data_moveto}/summary_data_selection_log{dataagg_settings["name_dir_export"]}.txt')
 
+    preprepd_path = f'{data_path}/output/preprep_data'
+    shutil.rmtree(preprepd_path)
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
 

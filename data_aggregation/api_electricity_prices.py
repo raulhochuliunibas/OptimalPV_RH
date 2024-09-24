@@ -17,7 +17,7 @@ import string
 # import plotly.graph_objects as go
 # from plotly.subplots import make_subplots
 
-# from graphly.api_client import SparqlClient
+from graphly.api_client import SparqlClient
 
 sys.path.append('..')
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
