@@ -336,12 +336,12 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 # plot ----------------
                 fig2 = go.Figure()
                 for bfs in capa_bfs_month_df['bfs'].unique():
-                    name = gm_shp.loc[gm_shp['bfs'] == bfs, 'NAME'].values[0]
+                    name = gm_gdf.loc[gm_gdf['bfs'] == bfs, 'NAME'].values[0]
                     subdf = capa_bfs_month_df.loc[capa_bfs_month_df['bfs'] == bfs].copy()
                     fig2.add_trace(go.Scatter(x=subdf['BeginOp_month'], y=subdf['TotalPower'], name=f'{name}', legendgroup = 'By Month',  mode = 'lines'))
 
                 for bfs in capa_bfs_year_df['bfs'].unique():
-                    name = gm_shp.loc[gm_shp['bfs'] == bfs, 'NAME'].values[0]
+                    name = gm_gdf.loc[gm_gdf['bfs'] == bfs, 'NAME'].values[0]
                     subdf = capa_bfs_year_df.loc[capa_bfs_year_df['bfs'] == bfs].copy()
                     fig2.add_trace(go.Scatter(x=subdf['BeginOp_year'], y=subdf['TotalPower'], name=f'{name}', legendgroup = 'By Year', mode = 'lines'))
 
@@ -598,7 +598,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
 
 
-
     # V - NOT WORKING YET - V
     # map_ind_production ============================ 
     if visual_settings['map_ind_production']:
@@ -651,7 +650,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         if plot_show:
             fig2.show()
         fig2.write_html(f'{data_path}/output/visualizations/{scen}__map_ind_production.html')
-
 
 
     # PLOT AGGREGATED SCEN ------------------------------------------------------------------------------------------------------
@@ -728,6 +726,74 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_installedCap_per_month.html')
 
 
+    # plot agg - line: Grid Premium per Hour of Year ============================
+    if visual_settings['plot_agg_line_gridPremiumHOY_per_node']:
+        checkpoint_to_logfile(f'plot_agg_line_gridPremiumHOY_per_node', log_name)
+        fig = go.Figure()
+        for i, scen in enumerate(scen_dir_export_list):
+            # setup + import ----------
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
+
+            gridprem_ts = pd.read_parquet(f'{scen_data_path}/gridprem_ts.parquet') 
+            gridprem_ts['t_int'] = gridprem_ts['t'].str.extract(r't_(\d+)').astype(int)
+            gridprem_ts.sort_values(by=['t_int', 'grid_node'], inplace=True)
+
+            # plot ----------------
+            for grid_node in gridprem_ts['grid_node'].unique():
+                node_df = gridprem_ts[gridprem_ts['grid_node'] == grid_node]
+                fig.add_trace(go.Scatter(
+                    x=node_df['t_int'], 
+                    y=node_df['prem_Rp_kWh'], 
+                    mode='lines',
+                    name=f'{scen} - {grid_node}',  # Include both scen and grid_node in the legend
+                    showlegend=True
+            ))
+
+        fig.update_layout(
+            xaxis_title='Hour of Year',
+            yaxis_title='Grid Premium (CHF)',
+            legend_title='Node ID',
+            title = f'Agg Grid Premium per Hour of Year, by Scenario (CHF)'
+        )
+        fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
+        
+        if plot_show:
+            fig.show()
+        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_gridPremiumHOY_per_node.html')
+
+
+    # plot agg - line: Grid Structure ============================
+    if visual_settings['plot_agg_line_gridpremium_structure']:
+        checkpoint_to_logfile(f'plot_agg_line_gridpremium_structure', log_name)
+        fig = go.Figure()
+        for i, scen in enumerate(scen_dir_export_list):
+            # setup + import ----------
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
+
+            gridtiers = pvalloc_scen['gridprem_adjustment_specs']['tiers']
+            gridtiers_colnames = pvalloc_scen['gridprem_adjustment_specs']['colnames']
+
+            data = [(k, v[0], v[1]) for k, v in gridtiers.items()]
+            gridtiers_df = pd.DataFrame(data, columns=gridtiers_colnames) 
+
+            # plot ----------------
+            if 'gridprem_plusRp_kWh'  in gridtiers_df.columns:
+                fig.add_trace(go.Scatter(x=gridtiers_df['used_node_capa_rate'], y=gridtiers_df['gridprem_plusRp_kWh'], name=f'{scen}', mode='lines+markers'))
+            else:
+                fig.add_trace(go.Scatter(x=gridtiers_df['used_node_capa_rate'], y=gridtiers_df['gridprem_Rp_kWh'], name=f'{scen}', mode='lines+markers'))
+
+        fig.update_layout(
+            xaxis_title=r'Used Node Capacity Rate (% of individual node capacity)',
+            yaxis_title='Grid Premium (Rp)',
+            legend_title='Scenarios',
+            title = f'Grid Premium Structure, by Scenario (Rp)'
+        )
+        if plot_show:
+            fig.show()
+        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_gridpremium_structure.html')
+
 
     # plot agg - line: PV Production / Feedin per Hour of Year ============================
     if visual_settings['plot_agg_line_productionHOY_per_node']:
@@ -779,76 +845,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
         fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_productionHOY_per_node.html')
 
-
-
-    # plot agg - line: Grid Premium per Hour of Year ============================
-    if visual_settings['plot_agg_line_gridPremiumHOY_per_node']:
-        checkpoint_to_logfile(f'plot_agg_line_gridPremiumHOY_per_node', log_name)
-        fig = go.Figure()
-        for i, scen in enumerate(scen_dir_export_list):
-            # setup + import ----------
-            scen_data_path = f'{data_path}/output/{scen}'
-            pvalloc_scen = pvalloc_scen_list[i]
-
-            gridprem_ts = pd.read_parquet(f'{scen_data_path}/gridprem_ts.parquet') 
-            gridprem_ts['t_int'] = gridprem_ts['t'].str.extract(r't_(\d+)').astype(int)
-            gridprem_ts.sort_values(by=['t_int', 'grid_node'], inplace=True)
-
-            # plot ----------------
-            for grid_node in gridprem_ts['grid_node'].unique():
-                node_df = gridprem_ts[gridprem_ts['grid_node'] == grid_node]
-                fig.add_trace(go.Scatter(
-                    x=node_df['t_int'], 
-                    y=node_df['prem_Rp_kWh'], 
-                    mode='lines',
-                    name=f'{scen} - {grid_node}',  # Include both scen and grid_node in the legend
-                    showlegend=True
-            ))
-
-        fig.update_layout(
-            xaxis_title='Hour of Year',
-            yaxis_title='Grid Premium (CHF)',
-            legend_title='Node ID',
-            title = f'Agg Grid Premium per Hour of Year, by Scenario (CHF)'
-        )
-        fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
-        
-        if plot_show:
-            fig.show()
-        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_gridPremiumHOY_per_node.html')
-
-
-
-    # plot agg - line: Grid Premium per Hour of Year ============================
-    if visual_settings['plot_agg_line_gridpremium_structure']:
-        checkpoint_to_logfile(f'plot_agg_line_gridpremium_structure', log_name)
-        fig = go.Figure()
-        for i, scen in enumerate(scen_dir_export_list):
-            # setup + import ----------
-            scen_data_path = f'{data_path}/output/{scen}'
-            pvalloc_scen = pvalloc_scen_list[i]
-
-            gridtiers = pvalloc_scen['gridprem_adjustment_specs']['tiers']
-            gridtiers_colnames = pvalloc_scen['gridprem_adjustment_specs']['colnames']
-
-            data = [(k, v[0], v[1]) for k, v in gridtiers.items()]
-            gridtiers_df = pd.DataFrame(data, columns=gridtiers_colnames) 
-
-            # plot ----------------
-            if 'gridprem_plusRp_kWh'  in gridtiers_df.columns:
-                fig.add_trace(go.Scatter(x=gridtiers_df['used_node_capa_rate'], y=gridtiers_df['gridprem_plusRp_kWh'], name=f'{scen}', mode='lines+markers'))
-            else:
-                fig.add_trace(go.Scatter(x=gridtiers_df['used_node_capa_rate'], y=gridtiers_df['gridprem_Rp_kWh'], name=f'{scen}', mode='lines+markers'))
-
-        fig.update_layout(
-            xaxis_title=r'Used Node Capacity Rate (% of individual node capacity)',
-            yaxis_title='Grid Premium (Rp)',
-            legend_title='Scenarios',
-            title = f'Grid Premium Structure, by Scenario (Rp)'
-        )
-        if plot_show:
-            fig.show()
-        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_gridpremium_structure.html')
 
  
 
