@@ -32,12 +32,12 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-months_pred =  5 #36
+months_pred =  12 #36
 run_on_server = False
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
     f'dev_samllBL{months_pred}m_npv': {
-        'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff005', #'preprep_BSBLSO_21to22_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
         # 'bfs_numbers': [2791, 2787,],
@@ -50,7 +50,7 @@ pvalloc_scenarios={
             'tweak_gridnode_df_prod_demand_fact': 100000,
     }},
     f'dev_samllBL{months_pred}m_random': {
-        'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff02', #preprep_BSBLSO_21to22_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
         # 'bfs_numbers': [2791, 2787,],
@@ -166,17 +166,17 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 if not not dataagg_scenarios:
     for k_sett, scen_sett in dataagg_scenarios.items():
         dataagg_settings = scen_sett
-        # data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings)
+        data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings)
 
 
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    # pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
+    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings)
     
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
-visualization_MASTER.visualization_MASTER(pvalloc_scenarios, visual_settings)
+# visualization_MASTER.visualization_MASTER(pvalloc_scenarios, visual_settings)
 
 
 
