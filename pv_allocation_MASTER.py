@@ -133,7 +133,7 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         
         # aggregation cols for npv update
         groupby_cols_topoaggdf = ['EGID', 'df_uid', 'grid_node', 'bfs', 'gklas', 'demandtype',
-                        'pvinst_TF', 'info_source', 'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 
+                        'inst_TF', 'info_source', 'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 
                         'FLAECHE', 'AUSRICHTUNG', 'STROMERTRAG', 'NEIGUNG', 'angletilt_factor']
         agg_cols_topoaggdf = {'FLAECH_angletilt': 'sum','pvprod_kW': 'sum', 
                             'demand_kW': 'sum', 'selfconsum_kW': 'sum', 
@@ -163,9 +163,8 @@ def pv_allocation_MASTER(pvalloc_settings_func):
             # GRID PREM UPDATE ==========
             if i == 1:
                 algo.initiate_gridprem(pvalloc_settings,)
-            else:
-                algo.update_gridprem(pvalloc_settings, 
-                                    df_list, df_names, ts_list, ts_names, m, i)
+            algo.update_gridprem(pvalloc_settings, 
+                                df_list, df_names, ts_list, ts_names, m, i)
             
 
             # NPV UPDATE ==========

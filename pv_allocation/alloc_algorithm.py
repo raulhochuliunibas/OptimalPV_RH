@@ -9,6 +9,7 @@ import glob
 import plotly.graph_objs as go
 import plotly.offline as pyo
 import geopandas as gpd
+import copy
 from datetime import datetime
 
 from pyarrow.parquet import ParquetFile
@@ -59,7 +60,7 @@ def calc_economics_in_topo_df(
     with_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == True]
 
     egid_list, df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list  = [], [], [], [], [], []
-    pvinst_list, info_source_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
+    inst_list, info_source_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
     flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_list = [], [], [], [], []
 
     keys = list(topo.keys())
@@ -78,7 +79,7 @@ def calc_economics_in_topo_df(
             demandtype_list.append(v.get('demand_type'))
             grid_node_list.append(v.get('grid_node'))
 
-            pvinst_list.append(v.get('pv_inst').get('inst_TF'))
+            inst_list.append(v.get('pv_inst').get('inst_TF'))
             info_source_list.append(v.get('pv_inst').get('info_source'))
             pvid_list.append(v.get('pv_inst').get('xtf_id'))
             pv_tarif_Rp_kWh_list.append(v.get('pvtarif_Rp_kWh'))
@@ -93,7 +94,7 @@ def calc_economics_in_topo_df(
     topo_df = pd.DataFrame({'EGID': egid_list, 'df_uid': df_uid_list, 'bfs': bfs_list,
                             'gklas': gklas_list, 'demandtype': demandtype_list, 'grid_node': grid_node_list,
 
-                            'pvinst_TF': pvinst_list, 'info_source': info_source_list, 'pvid': pvid_list,
+                            'inst_TF': inst_list, 'info_source': info_source_list, 'pvid': pvid_list,
                             'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list,
 
                             'FLAECHE': flaeche_list, 'AUSRICHTUNG': ausrichtung_list, 
@@ -236,7 +237,7 @@ def update_gridprem(
             info_source_list.append(v.get('pv_inst').get('info_source'))
             inst_TF_list.append(v.get('pv_inst').get('inst_TF'))
             egid_list.append(k)
-    Map_infosource_egid = pd.DataFrame({'EGID': egid_list, 'info_source': info_source_list, 'pvinst_TF': inst_TF_list}, index=egid_list)
+    Map_infosource_egid = pd.DataFrame({'EGID': egid_list, 'info_source': info_source_list, 'inst_TF': inst_TF_list}, index=egid_list)
 
     # import topo_time_subdfs -----------------------------------------------------
     topo_subdf_paths = glob.glob(f'{data_path_def}/output/pvalloc_run/topo_time_subdf/*.parquet')
@@ -244,22 +245,31 @@ def update_gridprem(
     no_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == False]
     wi_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == True]
 
-
     i, path = 0, topo_subdf_paths[0]
     for i, path in enumerate(topo_subdf_paths):
-        subinst = pd.read_parquet(path)
+        subdf = pd.read_parquet(path)
 
-        subinst_updated = subinst.drop(columns=['info_source', 'pvinst_TF']).copy()
-        subinst_updated = subinst_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'pvinst_TF']], how='left', on='EGID')
-        subinst['pvinst_TF'] = subinst_updated['pvinst_TF'].fillna(subinst['pvinst_TF'])
-        subinst['info_source'] = subinst_updated['info_source'].fillna(subinst['info_source'])
+        subdf_updated = copy.deepcopy(subdf)
+        subdf_updated.drop(columns=['info_source', 'inst_TF'], inplace=True)
+        subdf_updated = subdf_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
+        subdf['inst_TF'] = subdf_updated['inst_TF'].fillna(subdf['inst_TF'])
+        subdf['info_source'] = subdf_updated['info_source'].fillna(subdf['info_source'])
+        # subinst_updated = copy.deepcopy(subinst)
+        # subinst_updated.drop(columns=['info_source', 'inst_TF'], inplace=True)
+        # subinst_updated = subinst_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
+        # subinst['inst_TF'] = subinst_updated['inst_TF'].fillna(subinst['inst_TF'])
+        # subinst['info_source'] = subinst_updated['info_source'].fillna(subinst['info_source'])
+
+        subinst = copy.deepcopy(subdf.loc[subdf['inst_TF']==True])
 
         # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
-        subdf_array = subinst[['demand_kW', 'pvprod_kW']].to_numpy()
-        pvprod_kW, demand_kW = subdf_array[:,1], subdf_array[:,0]
+        # subdf_array = subinst[['demand_kW', 'pvprod_kW']].to_numpy()
+        # pvprod_kW, demand_kW = subdf_array[:,1], subdf_array[:,0]
+        pvprod_kW, demand_kW = subinst['pvprod_kW'].to_numpy(), subinst['demand_kW'].to_numpy()
 
         # NOTE: Demand to production ration does not make sense yet. Adjust and controll when real consumption data is used!
-        subinst['demand_kW'] = subinst['demand_kW'] * pvalloc_settings['algorithm_specs']['tweak_gridnode_df_prod_demand_fact'] 
+        # subinst['demand_kW'] = subinst['demand_kW'] * pvalloc_settings['algorithm_specs']['tweak_gridnode_df_prod_demand_fact'] 
+        demand_kW = demand_kW * pvalloc_settings['algorithm_specs']['tweak_gridnode_df_prod_demand_fact']
         selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * pvalloc_settings['tech_economic_specs']['self_consumption_ifapplicable']
         netdemand_kW = demand_kW - selfconsum_kW
         netfeedin_kW = pvprod_kW - selfconsum_kW
@@ -427,7 +437,7 @@ def update_npv_df(pvalloc_settings,
             aggsub_npry = np.array(agg_subdf)
 
             egid_list, combo_df_uid_list, df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list = [], [], [], [], [], [], []
-            pvinst_list, info_source_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
+            inst_list, info_source_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
             flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_Rp_kWh_list = [], [], [], [], []
         
             flaech_angletilt_list, selfconsum_list, netdemand_list, netfeedin_list = [], [], [], []
@@ -451,7 +461,7 @@ def update_npv_df(pvalloc_settings,
                         demandtype_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('demandtype')][0])
                         grid_node_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('grid_node')][0])
 
-                        pvinst_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pvinst_TF')][0])
+                        inst_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('inst_TF')][0])
                         info_source_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('info_source')][0])
                         pvid_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pvid')][0])
                         pv_tarif_Rp_kWh_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pv_tarif_Rp_kWh')][0]) 
@@ -474,7 +484,7 @@ def update_npv_df(pvalloc_settings,
             aggsubdf_combo = pd.DataFrame({'EGID': egid_list, 'df_uid_combo': combo_df_uid_list, 'bfs': bfs_list,
                                         'gklas': gklas_list, 'demandtype': demandtype_list, 'grid_node': grid_node_list,
 
-                                        'pvinst_TF': pvinst_list, 'info_source': info_source_list, 'pvid': pvid_list,
+                                        'inst_TF': inst_list, 'info_source': info_source_list, 'pvid': pvid_list,
                                         'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list, 'elecpri_Rp_kWh': elecpri_Rp_kWh_list,
 
                                         'FLAECHE': flaeche_list, 

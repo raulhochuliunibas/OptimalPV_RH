@@ -19,7 +19,7 @@ pvalloc_default_settings = {
     'recreate_topology':                True, 
     'recalc_economics_topo_df':         True,
     'run_allocation_loop':              True,
-    'create_gdf_export_of_topology':    False,
+    'create_gdf_export_of_topology':    True,
 
 
     'algorithm_specs': {
