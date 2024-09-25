@@ -56,7 +56,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     
     # general setup for paths etc.
     first_alloc_sett = pvalloc_scenarios[list(pvalloc_scenarios.keys())[0]]
-    wd_path = first_alloc_sett['wd_path_laptop']
+    wd_path = first_alloc_sett['wd_path_laptop'] if not first_alloc_sett['script_run_on_server'] else first_alloc_sett['wd_path_server']
     data_path = f'{wd_path}_data'
 
     # create directory + log file
