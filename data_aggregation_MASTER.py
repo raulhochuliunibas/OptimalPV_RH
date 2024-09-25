@@ -90,7 +90,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
     # split data and geometry to avoid memory issues when importing data
     if dataagg_settings['split_data_geometry_AND_slow_api']:
         subchapter_to_logfile('pre-prep data: SPLIT DATA GEOMETRY + IMPORT SLOW APIs', log_name)
-        # split_data_and_geometry(dataagg_settings_def = dataagg_settings)
+        split_data_and_geometry(dataagg_settings_def = dataagg_settings)
 
 
 
