@@ -137,17 +137,11 @@ if False:
 
 # ------------------------------------------------------------------------------------------------------
 
-path = 'C:\Models\OptimalPV_RH_data\output\dev_samllBL36m_buff05\pred_gridprem_by_M'
-csv_paths = glob.glob(f'{path}/*.csv')
-file_list = []
+scens = ['dev_samllBL24m_npv', 'dev_samllBL24m_random']
 
-for f in csv_paths:
-    m = f.split('gridprem_ts_')[1].split('.csv')[0]
-    df = pd.read_csv(f, sep=',')
-    df['month'] = m
-    file_list.append(df)
+scen = scens[0]
+if True:
 
-df = pd.concat(file_list)
 
 
 

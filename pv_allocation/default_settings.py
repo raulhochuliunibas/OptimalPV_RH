@@ -64,7 +64,7 @@ pvalloc_default_settings = {
         'elecpri_year': 2022,
         'elecpri_category': 'H8', 
         'invst_maturity': 25,
-        'conversion_m2tokW': 0.1,  # A 1m2 area can fit 0.1 kWp of PV Panels
+        'kWpeak_per_m2': 0.2,  # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2
     },
     'weather_specs': {
         'meteoblue_col_radiation_proxy': 'Basel Direct Shortwave Radiation',
