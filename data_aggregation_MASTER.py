@@ -31,7 +31,7 @@ if True:
     import data_aggregation.default_settings as dataagg_default_sett
 
     from data_aggregation.split_data_geometry import *
-    from data_aggregation.api_electricity_prices import *
+    from data_aggregation.get_elecpri_data import *
     from data_aggregation.sql_gwr import *
     from data_aggregation.api_pvtarif import *
     from data_aggregation.api_entsoe import *
@@ -90,7 +90,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
     # split data and geometry to avoid memory issues when importing data
     if dataagg_settings['split_data_geometry_AND_slow_api']:
         subchapter_to_logfile('pre-prep data: SPLIT DATA GEOMETRY + IMPORT SLOW APIs', log_name)
-        split_data_and_geometry(dataagg_settings_def = dataagg_settings)
+        # split_data_and_geometry(dataagg_settings_def = dataagg_settings)
 
 
 
@@ -98,7 +98,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
     if dataagg_settings['split_data_geometry_AND_slow_api']:
         dataagg_settings['year_range'] = [2015, 2023] 
         subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-        api_electricity_prices_data(dataagg_settings_def = dataagg_settings)
+        get_elecpri_data_earlier_api_import(dataagg_settings_def = dataagg_settings)
 
         subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', log_name)
         api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
