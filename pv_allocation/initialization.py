@@ -150,17 +150,11 @@ def import_prepre_AND_create_topology(
     pvtarif = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/pvtarif.parquet')
     pvtarif = pvtarif.merge(Map_gm_ewr, how='left', on='nrElcom')
 
-
-    # ELECTRICITY PRICE -------
-    elecpri = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/elecpri.parquet')
-    elecpri['bfs_number'] = elecpri['bfs_number'].astype(str)
-
-
-    # transformation
     pvtarif['bfs'] = pvtarif['bfs'].astype(str)
     # pvtarif[pvtarif_col] = pvtarif[pvtarif_col].fillna(0).astype(float)
     pvtarif[pvtarif_col] = pvtarif[pvtarif_col].replace('', 0).astype(float)
 
+    # transformation
     pvtarif = pvtarif.loc[(pvtarif['year'] == str(pvtarif_year)[2:4]) & 
                           (pvtarif['bfs'].isin(pvalloc_settings['bfs_numbers']))]
 
@@ -169,6 +163,11 @@ def import_prepre_AND_create_topology(
 
     select_cols = ['nrElcom', 'nomEw', 'year', 'bfs', 'idofs'] + pvtarif_col
     pvtarif = pvtarif[select_cols].copy()
+
+
+    # ELECTRICITY PRICE -------
+    elecpri = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/elecpri.parquet')
+    elecpri['bfs_number'] = elecpri['bfs_number'].astype(str)
 
 
     # Map solkat_dfuid > egid -------
@@ -475,42 +474,9 @@ def import_prepre_AND_create_topology(
     # RETURN OBJECTS ============================================================================
     return topo_egid, df_list, df_names
 
-    # ARCHIV ============================================================================
-            # add solkat partitions --------
-    if False: # pvalloc_settings['topo_type'] in [1,2]:
-
-            if egid in solkat['EGID'].unique():
-                solkat_sub = solkat.loc[solkat['EGID'] == egid]
-            
-                # drop EGID DF_UID duplicates
-                if solkat.duplicated(subset=['DF_UID', 'EGID']).any():
-                    # checkpoint_to_logfile(f'\n ATTENTION: EGID-DF_UID duplicates present for EGID {egid} > now dropped', log_file_name_def)
-                    solkat_sub = solkat_sub.drop_duplicates(subset=['DF_UID', 'EGID'])
-                solkat_partitions = solkat_sub.set_index('DF_UID')[['FLAECHE', 'STROMERTRAG']].to_dict(orient='index')  
 
 
-                # add solkat combos 
-                solkat_combos = {}
-                df_uids = solkat_sub['DF_NUMMER'].unique()
-                df_uids = solkat_sub['DF_UID'].unique()
-                r=2
-                total_combinations = sum(math.comb(len(df_uids), r) for r in range(1, len(df_uids) + 1))
 
-                checkpoint_to_logfile(f'---- compute combos for {egid} > {solkat_sub["DF_UID"].nunique()} partitions, {total_combinations} combinations', log_file_name_def, 3, show_debug_prints_def)
-                for r in range(1, len(df_uids) + 1):
-                    for combo in itertools.combinations(df_uids, r):
-                        combo_key_str = '_'.join(map(str, combo))
-                        flaeche  = solkat_sub.loc[solkat_sub['DF_UID'].isin(combo), 'FLAECHE'].sum()
-                        conv_m2toKWP = pvalloc_settings['assumed_parameters']['conversion_m2_to_kw']
-
-                        solkat_combos[combo_key_str] = {
-                            'DF_UID': list(combo),
-                            'DF_NUMMER': list(solkat_sub.loc[solkat_sub['DF_UID'].isin(combo), 'DF_NUMMER']),
-                            'FLAECHE': flaeche,
-                            'STROMERTRAG': solkat_sub.loc[solkat_sub['DF_UID'].isin(combo), 'STROMERTRAG'].sum(),
-                            'estim_pvinstcost': estim_instcost_chfpkW(flaeche * conv_m2toKWP), 
-                        }
-     
 # ------------------------------------------------------------------------------------------------------
 # import existing topology
 # ------------------------------------------------------------------------------------------------------
@@ -584,9 +550,6 @@ def import_ts_data(
     demandtypes_tformat = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/demandtypes.parquet')
     demandtypes_ts = demandtypes_tformat.copy()
 
-    # demandtypes_ts = demandtypes_ts.merge(Map_daterange[['date_range', 't']], how='left', on='t')
-    # demandtypes_ts.drop(columns=['t'], inplace=True)
-    # demandtypes_ts.sort_values(by='date_range', inplace=True)
     nas =   sum([demandtypes_ts[col].isna().sum() for col in demandtypes_ts.columns])
     nulls = sum([demandtypes_ts[col].isnull().sum() for col in demandtypes_ts.columns])
     checkpoint_to_logfile(f'sanity check demand_ts: {nas} NaNs or {nulls} Nulls for any column in df', log_file_name_def)
@@ -607,44 +570,23 @@ def import_ts_data(
     meteo_ts = meteo.copy()
 
 
-    # grid premium --------
-    t_list = [f't_{i}' for i in range(1, 8761)]
-    grid_nodes = ['node1', 'node2', 'node3', 'node4']
-    rep_t = t_list * len(grid_nodes)
-    rep_nodes = np.repeat(grid_nodes, len(t_list))
+    # # grid premium --------
+    # t_list = [f't_{i}' for i in range(1, 8761)]
+    # grid_nodes = ['node1', 'node2', 'node3', 'node4']
+    # rep_t = t_list * len(grid_nodes)
+    # rep_nodes = np.repeat(grid_nodes, len(t_list))
 
-    gridprem = pd.DataFrame({'t': rep_t, 
-                             'grid_node': rep_nodes, 
-                             'prem_Rp_kWh': 0.0})
+    # gridprem = pd.DataFrame({'t': rep_t, 
+    #                          'grid_node': rep_nodes, 
+    #                          'prem_Rp_kWh': 0.0})
     
-    gridprem_ts = gridprem.copy()
+    # gridprem_ts = gridprem.copy()
 
-
-    # pvtarif --------
-    # is covered in import and prepare topology
-    """
-    pvtarif_year = pvalloc_settings['pricing_specs']['pvtarif_year']
-    pvtarif_col = pvalloc_settings['pricing_specs']['pvtarif_col']
-    
-    Map_gm_ewr = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_gm_ewr.parquet')
-    pvtarif = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/pvtarif.parquet')
-    pvtarif = pvtarif.merge(Map_gm_ewr, how='left', on='nrElcom')
-
-    # transformation
-    pvtarif = pvtarif.loc[(pvtarif['year'] == str(pvtarif_year)[2:4]) & 
-                          (pvtarif['bfs'].astype(str).isin(pvalloc_settings['bfs_numbers']))]
-
-    empty_cols = [col for col in pvtarif.columns if pvtarif[col].isna().all()]
-    pvtarif = pvtarif.drop(columns=empty_cols)
-
-    select_cols = ['nrElcom', 'nomEw', 'year', 'bfs', 'idofs'] + pvtarif_col
-    pvtarif.drop(columns = select_cols, inplace=True)
-    """
     
 
     # EXPORT ----------------------------------------------------------------------------
-    ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts', 'gridprem_ts']
-    ts_list = [Map_daterange, demandtypes_ts, meteo_ts, gridprem_ts]
+    ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts', ]
+    ts_list = [Map_daterange, demandtypes_ts, meteo_ts, ]
     for i, ts in enumerate(ts_list):
         ts.to_parquet(f'{data_path_def}/output/pvalloc_run/{ts_names[i]}.parquet')
 

@@ -53,7 +53,7 @@
 
 
 # B ====================
-
+    # TODO: Move gridprem initialization to the part of code where all TS data is imported in pvallocatio_MASTER
     # TODO: check in QGIS if GKLAS == 1273 are really also denkmalgeschützt buildings or just monuments
     # TODO: inst_power in allocation algorithm NOT weighted by angle tilt efficiency; But in updating of grid premium
             # which one makes more sense?

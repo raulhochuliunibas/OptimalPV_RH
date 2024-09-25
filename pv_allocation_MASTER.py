@@ -99,13 +99,12 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         subchapter_to_logfile('initialization: IMPORT EXISITNG TOPOLOGY', log_name) 
         df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_nodes']
         topo, df_list, df_names = initial.import_exisitng_topology(pvalloc_settings, df_search_names= df_names)
-        shutil.copy(f'{data_path}/output/pvalloc_run/topo_egid.json', f'{data_path}/output/pvalloc_run/topo_egid_before_alloc.json')
 
     subchapter_to_logfile('initialization: IMPORT TS DATA', log_name)
     ts_list, ts_names = initial.import_ts_data(pvalloc_settings)
 
     subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', log_name)
-    constrcapa, months_prediction, months_lookback = define_construction_capacity(pvalloc_settings, topo, df_list, df_names, ts_list, ts_names)
+    constrcapa, months_prediction, months_lookback = initial.define_construction_capacity(pvalloc_settings, topo, df_list, df_names, ts_list, ts_names)
 
     #NOTE: changes from month to month are so small, that I need to tweak increase constrcapacity to see more changes in a shorter time period
     constrcapa['constr_capacity_kw'] = constrcapa['constr_capacity_kw'] * pvalloc_settings['algorithm_specs']['tweak_constr_capacity_fact']
@@ -120,15 +119,12 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         algo.calc_economics_in_topo_df(pvalloc_settings, topo, 
                                         df_list, df_names, ts_list, ts_names)
 
-    # CREATE MAP OF TOPO_DF ----------------------------------------------------------------
-    if False:
-        subchapter_to_logfile('visualization: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
-        sanity.create_gdf_export_of_topology(pvalloc_settings)
 
 
     # ALLOCATION ALGORITHM ----------------------------------------------                   
     if pvalloc_settings['run_allocation_loop']: 
         subchapter_to_logfile('allocation algorithm: START LOOP FOR PRED MONTH', log_name)
+        shutil.copy(f'{data_path}/output/pvalloc_run/topo_egid.json', f'{data_path}/output/pvalloc_run/topo_egid_before_alloc.json')
 
 
         months_lookback = pvalloc_settings['months_lookback']
@@ -157,8 +153,7 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                 os.remove(f)
 
 
-
-    # ALLOCATION LOOP ----------------------------------------------
+        # ALLOCATION LOOP ----------------------------------------------
         for i, m in enumerate(months_prediction):
             print_to_logfile(f'\n-- Allocation for month: {m} {25*"-"}', log_name)
             start_allocation_month = datetime.now()
