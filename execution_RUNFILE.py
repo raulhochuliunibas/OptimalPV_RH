@@ -12,28 +12,29 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 # SETTINGS DEFINITION ==================================================================================================================
 # os.chdir('C:/Models/OptimalPV_RH')
 
-
+months_pred =  3 #36
+run_on_server = False
 # data_aggregation 
 dataagg_scenarios = {   
-    # 'preprep_BL_20to22_1and2homes_buff005':{
-    #     'kt_numbers': [13,], 
-    #     'year_range': [2020, 2022], 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
-    #     'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.05,}, 
-    # }, 
-    # 'preprep_BL_20to22_1and2homes_buff02':{
-    #     'kt_numbers': [13,],
-    #     'year_range': [2020, 2022],
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],},
-    #     'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.2,},
-    # },
+    'preprep_BL_20to22_1and2homes_buff005':{
+        'script_run_on_server':run_on_server,
+        'kt_numbers': [13,], 
+        'year_range': [2020, 2022], 
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.05,}, 
+    }, 
+    'preprep_BL_20to22_1and2homes_buff02':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13,],
+        'year_range': [2020, 2022],
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],},
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.2,},
+    },
 }
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-months_pred =  3 #36
-run_on_server = False
 pvalloc_scenarios={
     # BL small sample, 1 y ~ca. 3h 1 scenario
     f'dev_samllBL{months_pred}m_npv_buff005': {
