@@ -80,7 +80,6 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         interim_path = get_interim_path(pvalloc_settings)
         pvalloc_settings['interim_path'] = interim_path
         show_debug_prints = pvalloc_settings['show_debug_prints']
-        conv_m2toKWP = pvalloc_settings['tech_economic_specs']['conversion_m2tokW']
 
     chapter_to_logfile(f'start pv_allocation_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
     formated_pvalloc_settings = format_MASTER_settings(pvalloc_settings)
@@ -140,9 +139,6 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                             'netdemand_kW': 'sum', 'netfeedin_kW': 'sum', 
                             'econ_inc_chf': 'sum', 'econ_spend_chf': 'sum'}
 
-        # empty lists and dfs for aggregation later
-        dfuid_installed_list = []
-        pred_inst_df = pd.DataFrame()
 
         # create pred_npv_inst_by_M folder to see month by month changes
         if not os.path.exists(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M'):
@@ -152,6 +148,9 @@ def pv_allocation_MASTER(pvalloc_settings_func):
             for f in old_files:
                 os.remove(f)
 
+        # empty lists and dfs for aggregation later
+        dfuid_installed_list = []
+        pred_inst_df = pd.DataFrame()
 
         # ALLOCATION LOOP ----------------------------------------------
         for i, m in enumerate(months_prediction):

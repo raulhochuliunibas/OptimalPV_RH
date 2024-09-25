@@ -14,7 +14,7 @@ def select_AND_adjust_topology(pvalloc_settings,
     # select a random building out of npv_df_func to attribute a PV system to
 
     rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
-    conv_m2toKWP = pvalloc_settings['tech_economic_specs']['conversion_m2tokW']
+    kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
     data_path_def = pvalloc_settings['data_path']
 
     npv_df = npv_df_func
@@ -31,7 +31,7 @@ def select_AND_adjust_topology(pvalloc_settings,
     if rand_seed is not None:
         np.random.seed(rand_seed)
 
-    # select a building ----------
+    # SELECTION BY METHOD ---------------
     if inst_selection_method == 'random':
         npv_pick = npv_df.sample(n=1).copy()
 
@@ -49,22 +49,26 @@ def select_AND_adjust_topology(pvalloc_settings,
         if npv_pick.shape[0] > 1:
             rand_row = np.random.randint(0, npv_pick.shape[0])
             npv_pick = npv_pick.iloc[rand_row]
+    # ---------------
 
-        npv_df.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
+    npv_df.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
 
 
-    if isinstance(npv_pick['EGID'], pd.Series):
+    # if isinstance(npv_pick['EGID'], pd.Series):
+    if isinstance(npv_pick, pd.DataFrame):
         picked_egid = npv_pick['EGID'].values[0]
         picked_uid = npv_pick['df_uid_combo'].values[0]
         picked_flaech = npv_pick['FLAECHE'].values[0]
+        npv_pick.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
 
-    else:
+    elif isinstance(npv_pick, pd.Series):
         picked_egid = npv_pick['EGID']
         picked_uid = npv_pick['df_uid_combo']
         picked_flaech = npv_pick['FLAECHE']
+        npv_pick.drop(['NPV_stand', 'diff_NPV_rand'], inplace=True)
 
-    inst_power = picked_flaech * conv_m2toKWP * pvalloc_settings['algorithm_specs']['tweak_capacity_fact']
-    npv_pick['inst_power'] = inst_power
+    inst_power = picked_flaech * kWpeak_per_m2 * pvalloc_settings['algorithm_specs']['tweak_capacity_fact']
+    npv_pick['inst_TF'], npv_pick['info_source'], npv_pick['xtf_id'], npv_pick['BeginOp'], npv_pick['TotalPower'] = [True, 'alloc_algorithm', picked_uid, f'{m}', inst_power]
     
 
     # Adjust export lists / df
@@ -75,11 +79,10 @@ def select_AND_adjust_topology(pvalloc_settings,
     else:
         picked_combo_uid = [picked_uid]
 
-    if isinstance(npv_pick, pd.Series):
-        pred_inst_df = pd.concat([pred_inst_df, npv_pick.to_frame().T])
-    elif isinstance(npv_pick, pd.DataFrame):
+    if isinstance(npv_pick, pd.DataFrame):
         pred_inst_df = pd.concat([pred_inst_df, npv_pick])
-
+    elif isinstance(npv_pick, pd.Series):
+        pred_inst_df = pd.concat([pred_inst_df, npv_pick.to_frame().T])
     
     # Adjust topo
     topo[picked_egid]['pv_inst'] = {'inst_TF': True, 'info_source': 'alloc_algorithm', 'xtf_id': picked_uid, 'BeginOp': f'{m}', 'TotalPower': inst_power}

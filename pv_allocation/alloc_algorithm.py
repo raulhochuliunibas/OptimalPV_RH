@@ -213,7 +213,7 @@ def update_gridprem(
     gridtiers = pvalloc_settings['gridprem_adjustment_specs']['tiers']
     gridtiers_colnames = pvalloc_settings['gridprem_adjustment_specs']['colnames']
     gridtiers_power_factor = pvalloc_settings['gridprem_adjustment_specs']['power_factor']
-    conv_m2toKWP = pvalloc_settings['tech_economic_specs']['conversion_m2tokW']
+    kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
     topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
     print_to_logfile(f'run function: update_gridprem', log_file_name_def)
     
@@ -369,7 +369,7 @@ def update_npv_df(pvalloc_settings,
     selfconsum_rate = pvalloc_settings['tech_economic_specs']['self_consumption_ifapplicable']
     interest_rate = pvalloc_settings['tech_economic_specs']['interest_rate']
     invst_maturity = pvalloc_settings['tech_economic_specs']['invst_maturity']
-    conv_m2toKWP = pvalloc_settings['tech_economic_specs']['conversion_m2tokW']
+    kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
     tweak_npv_excl_elec_demand = pvalloc_settings['algorithm_specs']['tweak_npv_excl_elec_demand']
 
 
@@ -498,7 +498,7 @@ def update_npv_df(pvalloc_settings,
         
 
         # NPV calculation -----------------------------------------------------
-        aggsubdf_combo['estim_pvinstcost_chf'] = estim_instcost_chfpkW(aggsubdf_combo['FLAECHE'] * conv_m2toKWP)
+        aggsubdf_combo['estim_pvinstcost_chf'] = estim_instcost_chftotal(aggsubdf_combo['FLAECHE'] * kWpeak_per_m2)
 
         def compute_npv(row):
             pv_cashflow = (row['econ_inc_chf'] - row['econ_spend_chf']) / (1+interest_rate)**np.arange(1, invst_maturity+1)
