@@ -571,22 +571,30 @@ def import_ts_data(
 
 
     # # grid premium --------
-    # t_list = [f't_{i}' for i in range(1, 8761)]
-    # grid_nodes = ['node1', 'node2', 'node3', 'node4']
-    # rep_t = t_list * len(grid_nodes)
-    # rep_nodes = np.repeat(grid_nodes, len(t_list))
+    # setup 
+    if os.path.exists(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet'):
+        os.remove(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')    
 
-    # gridprem = pd.DataFrame({'t': rep_t, 
-    #                          'grid_node': rep_nodes, 
-    #                          'prem_Rp_kWh': 0.0})
-    
-    # gridprem_ts = gridprem.copy()
+    # import 
+    dsonodes_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
+    t_range = [f't_{t}' for t in range(1,8760 + 1)]
+
+    dsonodes_df.drop(columns=['EGID'], inplace=True)
+    gridprem_ts = pd.DataFrame(np.repeat(dsonodes_df.values, len(t_range), axis=0), columns=dsonodes_df.columns)  
+    gridprem_ts['t'] = np.tile(t_range, len(dsonodes_df))
+    gridprem_ts['prem_Rp_kWh'] = 0
+
+    gridprem_ts = gridprem_ts[['t', 'grid_node', 'kVA_threshold', 'prem_Rp_kWh']]
+    gridprem_ts.drop(columns='kVA_threshold', inplace=True)
+
+    # export 
+    gridprem_ts.to_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
 
     
 
     # EXPORT ----------------------------------------------------------------------------
-    ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts', ]
-    ts_list = [Map_daterange, demandtypes_ts, meteo_ts, ]
+    ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts', 'gridprem_ts' ]
+    ts_list =  [ Map_daterange,   demandtypes_ts,   meteo_ts,   gridprem_ts]
     for i, ts in enumerate(ts_list):
         ts.to_parquet(f'{data_path_def}/output/pvalloc_run/{ts_names[i]}.parquet')
 

@@ -161,8 +161,8 @@ def pv_allocation_MASTER(pvalloc_settings_func):
 
 
             # GRID PREM UPDATE ==========
-            if i == 1:
-                algo.initiate_gridprem(pvalloc_settings,)
+            # if i == 1:
+            #     algo.initiate_gridprem(pvalloc_settings,)
             algo.update_gridprem(pvalloc_settings, 
                                 df_list, df_names, ts_list, ts_names, m, i)
             
