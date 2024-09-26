@@ -96,7 +96,6 @@ def data_aggregation_MASTER(dataagg_settings_func):
 
     # IMPORT SLOW API DATA ---------------------------------------------------------------
     if dataagg_settings['split_data_geometry_AND_slow_api']:
-        dataagg_settings['year_range'] = [2015, 2023] 
         subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
         get_elecpri_data_earlier_api_import(dataagg_settings_def = dataagg_settings)
 
