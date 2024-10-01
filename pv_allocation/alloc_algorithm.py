@@ -472,7 +472,7 @@ def update_npv_df(pvalloc_settings,
                         # ausrichtung_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('AUSRICHTUNG')][0])
                         # neigung_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('NEIGUNG')][0])
                     
-                        # flaech_angletilt_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('FLAECH_angletilt')].sum())
+                        flaech_angletilt_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('FLAECH_angletilt')].sum())
                         selfconsum_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('selfconsum_kW')].sum())
                         netdemand_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('netdemand_kW')].sum())
                         netfeedin_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('netfeedin_kW')].sum())

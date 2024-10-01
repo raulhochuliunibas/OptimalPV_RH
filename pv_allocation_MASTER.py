@@ -133,8 +133,8 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         # aggregation cols for npv update
         groupby_cols_topoaggdf = ['EGID', 'df_uid', 'grid_node', 'bfs', 'gklas', 'demandtype',
                         'inst_TF', 'info_source', 'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 
-                        'FLAECHE', 'AUSRICHTUNG', 'STROMERTRAG', 'NEIGUNG', 'angletilt_factor']
-        agg_cols_topoaggdf = {'FLAECH_angletilt': 'sum','pvprod_kW': 'sum', 
+                        'FLAECHE', 'FLAECH_angletilt']
+        agg_cols_topoaggdf = {'pvprod_kW': 'sum', 
                             'demand_kW': 'sum', 'selfconsum_kW': 'sum', 
                             'netdemand_kW': 'sum', 'netfeedin_kW': 'sum', 
                             'econ_inc_chf': 'sum', 'econ_spend_chf': 'sum'}
