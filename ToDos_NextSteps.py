@@ -22,6 +22,12 @@
 
 # A ====================
 
+    # TODO: Sanity check for all calculations
+        # TODO: check if production capacity calc makes sense
+        # TODO: check if production amount calc makes sense
+        # TODO: check if NPV calc makes sense
+    # ----------
+
     # TODO: Visualize / export buildings, that are excluded because of too many partitions
     #       > solkat of both subsets appear to be identical (also solkats with 2-3 partitions in solkat_n_above_partitions set)
 
@@ -46,34 +52,27 @@
     # TODO: some large number of EGID has multiple pv-installations attributed to them
     #   > maye use smaller buffer for gwr_gdf and pv_gdf intersection. 
 
-    # TODO: Sanity check for all calculations
-        # TODO: check if production capacity calc makes sense
-        # TODO: check if production amount calc makes sense
-        # TODO: check if NPV calc makes sense
-    # ----------
+
 
 
 
 # B ====================
     # TODO: Move gridprem initialization to the part of code where all TS data is imported in pvallocatio_MASTER
-    # TODO: check in QGIS if GKLAS == 1273 are really also denkmalgeschützt buildings or just monuments
     # TODO: inst_power in allocation algorithm NOT weighted by angle tilt efficiency; But in updating of grid premium
             # which one makes more sense?
-    # TODO: Get Electricity prices using another package for SPARQL APIS than the one from Elcom// from local CSV / XLSX, not through API!! => not possible
-
-
 
     # TODO: Check EGIDs in solkat for BSBL for not to have double counting.
 
     # ok - some egid in gwr.parquet are double up to 10 times in the column, check why!
     #       ->> because merging GWR with dwelling data, means that a row is no longer just a building but also sometimes a dwelling => multiple dwellings in one building
 
-    # TODO: adjust zoom for map plots, so that zooming in enhances the main range of the area of interest, not the margin
 
 
 # SOLVED ====================
 if True:
     # OK -  gridprem_ts not adjusting properly to grid_tiers
+    # OK adjust zoom for map plots, so that zooming in enhances the main range of the area of interest, not the margin
+    # OK Get Electricity prices using another package for SPARQL APIS than the one from Elcom// from local CSV / XLSX, not through API!! => not possible
     print('')
 
 # **********************************************************************************************************************************************************
