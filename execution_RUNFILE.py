@@ -12,31 +12,33 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 # SETTINGS DEFINITION ==================================================================================================================
 # os.chdir('C:/Models/OptimalPV_RH')
 
-months_pred =  3 #36
-run_on_server = False
-run_alloc =     False
+months_pred =  60 #36
+run_on_server = True
+run_alloc =     True
 run_visual =    True
 
 # data_aggregation 
 dataagg_scenarios = {   
-    # 'preprep_BL_20to22_1and2homes_buff002':{
-    #     'kt_numbers': [13,], 
-    #     'year_range': [2020, 2022], 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
-    #     'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.02,}, 
-    # }, 
-    # 'preprep_BL_20to22_1and2homes_buff05':{
-    #     'kt_numbers': [13,],
-    #     'year_range': [2020, 2022],
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],},
-    #     'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.5,},
-    # },
+    'preprep_BL_20to22_1and2homes_buff002':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13,], 
+        'year_range': [2020, 2022], 
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.02,}, 
+    }, 
+    'preprep_BL_20to22_1and2homes_buff05':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13,],
+        'year_range': [2020, 2022],
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],},
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.5,},
+    },
 }
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-pvalloc_scenarios={
+asdf={
     f'ongoing_dev_{months_pred}m':{
         'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
         'script_run_on_server': run_on_server,
@@ -49,8 +51,7 @@ pvalloc_scenarios={
     }},
 
 }
-
-parkplatz = {
+pvalloc_scenarios = {
     f'smallBL_{months_pred}m_npvweight':{
         'name_dir_import': 'preprep_BSBLSO_21to22_1and2homes',
         'script_run_on_server': run_on_server,
@@ -128,7 +129,7 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 if not not dataagg_scenarios:
     for k_sett, scen_sett in dataagg_scenarios.items():
         dataagg_settings = scen_sett
-        # data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings)
+        data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings)
 
 
 # ALLOCATION RUNs  ------------------------------------------------------------------------
