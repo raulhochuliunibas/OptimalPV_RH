@@ -4,9 +4,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import json
-import itertools
-import math
-import glob
+import copy
 import plotly.graph_objs as go
 import plotly.offline as pyo
 
@@ -74,9 +72,13 @@ def create_gdf_export_of_topology(
 
 
     # subset gwr + pv -----------------------------------------------------
-    gwr_gdf_in_topo = gwr_gdf[gwr_gdf['EGID'].isin(topo_df['EGID'].unique())].copy()
-    pv_gdf_in_topo = pv_gdf[pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())].copy()
-    solkat_gdf_in_topo = solkat_gdf[solkat_gdf['df_uid'].isin(topo_df_uid_list)].copy()
+    solkat_gdf_in_topo = copy.deepcopy(solkat_gdf.loc[solkat_gdf['df_uid'].isin(topo_df_uid_list)])
+    gwr_gdf_in_topo = copy.deepcopy(gwr_gdf.loc[gwr_gdf['EGID'].isin(topo_df['EGID'].unique())])
+    pv_gdf_in_topo = copy.deepcopy(pv_gdf.loc[pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())])
+    # solkat_gdf_in_topo = solkat_gdf[solkat_gdf['df_uid'].isin(topo_df_uid_list)].copy#()
+    # gwr_gdf_in_topo = gwr_gdf[gwr_gdf['EGID'].isin(topo_df['EGID'].unique())].copy#()
+    # pv_gdf_in_topo = pv_gdf[pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())].copy#()
+    
 
     # topo_gdf = topo_df.merge(solkat_gdf[['df_uid', 'geometry']], on='df_uid', how='left')
     topo_gdf = topo_df.merge(gwr_gdf[['EGID', 'geometry']], on='EGID', how='left')
@@ -93,13 +95,15 @@ def create_gdf_export_of_topology(
 
     # subset to > max n partitions -----------------------------------------------------
     max_partitions = pvalloc_settings['gwr_selection_specs']['solkat_max_n_partitions']
-    topo_above_npart_gdf = topo_gdf.copy()
+    topo_above_npart_gdf = copy.deepcopy(topo_gdf)
     counts = topo_above_npart_gdf['EGID'].value_counts()
     topo_above_npart_gdf['EGID_count'] = topo_above_npart_gdf['EGID'].map(counts)
     topo_above_npart_gdf = topo_above_npart_gdf[topo_above_npart_gdf['EGID_count'] > max_partitions]
 
-    solkat_above_npoart_gdf = solkat_gdf_in_topo[solkat_gdf_in_topo['df_uid'].isin(topo_df_uid_list)].copy()
+    solkat_above_npoart_gdf = copy.deepcopy(solkat_gdf_in_topo)
+    solkat_gdf_in_topo[solkat_gdf_in_topo['df_uid'].isin(topo_df_uid_list)].copy()
     # solkat_above_npoart_gdf = 
+    ## BOOKMARK => 
 
     # export to shp -----------------------------------------------------
     topo_above_npart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp')

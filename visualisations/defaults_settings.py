@@ -4,11 +4,12 @@ visual_default_settings = {
         'default_zoom_year': [2012, 2030],
         'default_zoom_hour': [2400, 2400+(24*7)],
         'default_map_zoom': 11, 
+        'default_map_center': [47.24, 7.5],
     
 
         'plot_ind_line_productionHOY_per_node': True,
         'plot_ind_line_installedCap_per_month': True,
-        'plot_ind_line_installedCap_per_BFS': True,
+        'plot_ind_line_installedCap_per_BFS': False,
         'plot_ind_hist_NPV_freepartitions': True,
         'plot_ind_map_topo_egid': True,
 
