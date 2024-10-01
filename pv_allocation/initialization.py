@@ -797,13 +797,23 @@ def get_fake_gridnodes_v2(pvalloc_settings):
     gwr_nodes = gwr.merge(gwr_geo[['EGID', 'geometry']], how='left', on='EGID')
     gwr_nodes = gpd.GeoDataFrame(gwr_nodes, geometry='geometry', crs='EPSG:2056')
     gwr_nodes = gwr_nodes.drop_duplicates(subset=['EGID'])
-    # gwr_gdf = gwr_gdf.to_crs('EPSG:4326')
 
 
-    # define fake gridnodes ----------------------
-    gridnode_egid_list = ['245020448',  '245017872',    '1368998',  '1369579',  '245059729',    '245054705',    '245014566',    '391554',]
-    gridnode_name_list = ['node1',      'node2',        'node3',    'node4',    'node5',        'node6',        'node7',        'node8',]
-    gridnode_kVA_list =  [100000,       20000,          63000,      100000,      10000,          63000,          100000,         100000, ]
+    # sample random lists for generic node creation ---------------
+    node_bldn_ration = 1700 / 42500
+    n_nodes = int(gwr.shape[0] * node_bldn_ration)
+
+    state = np.random.get_state()
+    np.random.seed(42)    
+    gridnode_egid_list = gwr.sample(n_nodes)['EGID'].tolist()
+    gridnode_name_list = [f'node{i}' for i in range(1, n_nodes + 1)]
+    gridnode_kVA_list  = np.random.choice([160, 320, 640, 800, 960], n_nodes, replace=True)
+    np.random.set_state(state)
+
+    # # small scale grid node creation ----------------
+    # gridnode_egid_list = ['245020448',  '245017872',    '1368998',  '1369579',  '245059729',    '245054705',    '245014566',    '391554',]
+    # gridnode_name_list = ['node1',      'node2',        'node3',    'node4',    'node5',        'node6',        'node7',        'node8',]
+    # gridnode_kVA_list =  [100000,       20000,          63000,      100000,      10000,          63000,          100000,         100000, ]
 
     dsonodes_df = pd.DataFrame({'EGID': gridnode_egid_list, 'grid_node': gridnode_name_list, 'kVA_threshold': gridnode_kVA_list})
     dsonodes_df = dsonodes_df.loc[dsonodes_df['EGID'].isin(gwr_nodes['EGID'].unique())]

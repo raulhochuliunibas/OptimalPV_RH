@@ -419,12 +419,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # plot ind - map:  Model PV topology ========================
     default_map_zoom = visual_settings['default_map_zoom']
     default_map_center = visual_settings['default_map_center']
-    uniform_municip_color = visual_settings['map_topo_specs']['uniform_municip_color']
-    map_topo_specs = visual_settings['map_topo_specs']
 
 
     # map ind - topo_egid ============================
     if visual_settings['plot_ind_map_topo_egid']:
+        map_topo_egid_specs = visual_settings['plot_ind_map_topo_egid_specs']
         checkpoint_to_logfile(f'plot_ind_map_topo_egid', log_name)
 
         for i, scen in enumerate(scen_dir_export_list):
@@ -505,12 +504,12 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     geojson=geojson,
                     locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
                     featureidkey="properties.BFS_NUMMER",  # This must match the GeoJSON's property for BFS_NUMMER
-                    color_discrete_sequence=[uniform_municip_color],  # Apply the single color to all shapes
+                    color_discrete_sequence=[map_topo_egid_specs['uniform_municip_color']],  # Apply the single color to all shapes
                     hover_name="hover_text",  # Use the new column for hover text
                     mapbox_style="carto-positron",  # Basemap style
                     center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
                     zoom=default_map_zoom,  # Adjust zoom as needed
-                    opacity=map_topo_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
+                    opacity=map_topo_egid_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
                 )
                 # Update layout for borders and title
                 fig0.update_layout(
@@ -559,9 +558,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 # Add the points using Scattermapbox
                 fig1.add_trace(go.Scattermapbox(lat=subinst1_gdf.geometry.y,lon=subinst1_gdf.geometry.x, mode='markers',
                     marker=dict(
-                        size=map_topo_specs['point_size_pv'],
-                        color=map_topo_specs['point_color_pv_df'],
-                        opacity=map_topo_specs['point_opacity']
+                        size=map_topo_egid_specs['point_size_pv'],
+                        color=map_topo_egid_specs['point_color_pv_df'],
+                        opacity=map_topo_egid_specs['point_opacity']
                     ),
                     name = 'house w pv (real)',
                     text=subinst1_gdf['hover_text'],
@@ -569,9 +568,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 ))
                 fig1.add_trace(go.Scattermapbox(lat=subinst2_gdf.geometry.y,lon=subinst2_gdf.geometry.x, mode='markers',
                     marker=dict(
-                        size=map_topo_specs['point_size_pv'],
-                        color=map_topo_specs['point_color_alloc_algo'],
-                        opacity=map_topo_specs['point_opacity']
+                        size=map_topo_egid_specs['point_size_pv'],
+                        color=map_topo_egid_specs['point_color_alloc_algo'],
+                        opacity=map_topo_egid_specs['point_opacity']
                     ),
                     name = 'house w pv (predicted)',
                     text=subinst2_gdf['hover_text'],
@@ -579,9 +578,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 ))
                 fig1.add_trace(go.Scattermapbox(lat=subinst3_gdf.geometry.y,lon=subinst3_gdf.geometry.x, mode='markers',
                     marker=dict(
-                        size=map_topo_specs['point_size_rest'],
-                        color=map_topo_specs['point_color_rest'],
-                        opacity=map_topo_specs['point_opacity']
+                        size=map_topo_egid_specs['point_size_rest'],
+                        color=map_topo_egid_specs['point_color_rest'],
+                        opacity=map_topo_egid_specs['point_opacity']
                     ),
                     name = 'house w/o pv',
                     text=subinst3_gdf['hover_text'],
@@ -601,6 +600,148 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 if plot_show:
                     fig1.show()
                 fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
+
+
+    # map ind - node_connections ============================
+    if visual_settings['plot_ind_map_node_connections']:
+        map_node_connections_specs = visual_settings['plot_ind_map_node_connections_specs']
+        checkpoint_to_logfile(f'plot_ind_map_node_connections', log_name)
+        
+        for i_scen, scen in enumerate(scen_dir_export_list):
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i_scen]            
+
+            # import
+            gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
+            gm_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
+            
+            Map_egid_nodes = pd.read_parquet(f'{scen_data_path}/Map_egid_nodes.parquet')
+            topo  = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
+            
+            # transformations
+            egid_in_topo = [k for k in topo.keys()]
+            gwr_gdf = copy.deepcopy(gwr_gdf.loc[gwr_gdf['EGID'].isin(egid_in_topo)])
+            Map_egid_nodes.reset_index(drop=True, inplace=True)
+
+            gwr_gdf = gwr_gdf.merge(Map_egid_nodes, on='EGID', how='left')
+
+            # base map ----------
+            if True: 
+                # setup
+                scen_data_path = f'{data_path}/output/{scen}'
+                T0_prediction = T0_prediction_list[0]
+                months_prediction = months_prediction_list[0]
+                pvalloc_scen = pvalloc_scen_list[i]
+
+                # transformations
+                gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
+                gm_gdf = gm_gdf.loc[gm_gdf['BFS_NUMMER'].isin(pvinst_df['bfs'].unique())].copy()
+                date_cols = [col for col in gm_gdf.columns if (gm_gdf[col].dtype == 'datetime64[ns]') or (gm_gdf[col].dtype == 'datetime64[ms]')]
+                gm_gdf.drop(columns=date_cols, inplace=True)
+                
+                # add map relevant columns
+                gm_gdf['hover_text'] = gm_gdf.apply(lambda row: f"{row['NAME']}<br>BFS_NUMMER: {row['BFS_NUMMER']}", axis=1)
+
+                # geo transformations
+                gm_gdf = gm_gdf.to_crs('EPSG:4326')
+                # Function to flatten geometries to 2D (ignoring Z-dimension)
+                def flatten_geometry(geom):
+                    if geom.has_z:
+                        if geom.geom_type == 'Polygon':
+                            exterior = [(x, y) for x, y, z in geom.exterior.coords]
+                            interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
+                            return Polygon(exterior, interiors)
+                        elif geom.geom_type == 'MultiPolygon':
+                            return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
+                    return geom
+                gm_gdf['geometry'] = gm_gdf['geometry'].apply(flatten_geometry)
+
+                geojson = gm_gdf.__geo_interface__
+
+                # Plot using Plotly Express
+                fig0 = px.choropleth_mapbox(
+                    gm_gdf,
+                    geojson=geojson,
+                    locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
+                    featureidkey="properties.BFS_NUMMER",  # This must match the GeoJSON's property for BFS_NUMMER
+                    color_discrete_sequence=[map_topo_egid_specs['uniform_municip_color']],  # Apply the single color to all shapes
+                    hover_name="hover_text",  # Use the new column for hover text
+                    mapbox_style="carto-positron",  # Basemap style
+                    center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
+                    zoom=default_map_zoom,  # Adjust zoom as needed
+                    opacity=map_topo_egid_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
+                )
+                # Update layout for borders and title
+                fig0.update_layout(
+                    mapbox=dict(
+                        layers=[{
+                            'source': geojson,
+                            'type': 'line',
+                            'color': 'black',  # Set border color for polygons
+                            'opacity': 0.25,
+                        }]
+                    ),
+                    title=f"Map of PV topology (scen: {scen})", 
+                    legend=dict(
+                        itemsizing='constant',
+                        title='Legend',
+                        traceorder='normal'
+                    ),
+                )
+
+            # egid node map ----------
+            gwr_gdf = gwr_gdf.set_crs('EPSG:2056', allow_override=True)
+            gwr_gdf = gwr_gdf.to_crs('EPSG:4326')
+
+            def flatten_geometry(geom):
+                if geom.has_z:
+                    if geom.geom_type == 'Polygon':
+                        exterior = [(x, y) for x, y, z in geom.exterior.coords]
+                        interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
+                        return Polygon(exterior, interiors)
+                    elif geom.geom_type == 'MultiPolygon':
+                        return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
+                return geom
+            gwr_gdf['geometry'] = gwr_gdf['geometry'].apply(flatten_geometry)
+
+            # plot ----------
+            # define point coloring
+            unique_nodes = gwr_gdf['grid_node'].unique()
+            colors = pc.sample_colorscale(map-map_node_connections_specs['point_color_palette'], [n/(len(unique_nodes)) for n in range(len(unique_nodes))])
+            node_colors = [colors[i] for i in range(len(unique_nodes))]
+            colors_df = pd.DataFrame({'grid_node': unique_nodes, 'node_color': node_colors})
+            
+            gwr_gdf = gwr_gdf.merge(colors_df, on='grid_node', how='left')
+
+            fig1 = copy.deepcopy(fig0)
+            # plot points as Scattermapbox
+            gwr_gdf['hover_text'] = gwr_gdf['EGID'].apply(lambda egid: f'EGID: {egid}')
+            fig1.add_trace(go.Scattermapbox(lat=gwr_gdf.geometry.y,lon=gwr_gdf.geometry.x, mode='markers',
+                marker=dict(
+                    size=map_node_connections_specs['point_size_all'],
+                    color=map_node_connections_specs['point_color_all'],
+                    opacity=map_node_connections_specs['point_opacity_all']
+                    ),
+                    text=gwr_gdf['hover_text'],
+                    hoverinfo='text',
+                    showlegend=False
+                    ))
+            for un in unique_nodes:
+                gwr_gdf_node = gwr_gdf.loc[gwr_gdf['grid_node'] == un]
+                fig1.add_trace(go.Scattermapbox(lat=gwr_gdf_node.geometry.y,lon=gwr_gdf_node.geometry.x, mode='markers',
+                    marker=dict(
+                        size=map_node_connections_specs['point_size_bynode'],
+                        color=gwr_gdf_node['node_color'],
+                        opacity=map_node_connections_specs['point_opacity_bynode']
+                        ),
+                        name= f'{un}',
+                        text=gwr_gdf_node['grid_node'],
+                        hoverinfo='text',
+                        showlegend=True
+                        ))
+            if plot_show:
+                fig1.show()
+            fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_node_connections.html')
 
 
     # V - NOT WORKING YET - V
