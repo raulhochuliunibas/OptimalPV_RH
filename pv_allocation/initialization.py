@@ -816,6 +816,8 @@ def get_fake_gridnodes_v2(pvalloc_settings):
     def nearest_grid_node(row, nodes_gdf):
         distances = nodes_gdf.geometry.distance(row.geometry)
         nearest_idx = distances.idxmin()  # Find index of minimum distance
+        #
+
         return nodes_gdf.loc[nearest_idx, 'grid_node']
 
     gwr_nodes['grid_node'] = gwr_nodes.apply(nearest_grid_node, nodes_gdf=dsonodes_gdf, axis=1) 

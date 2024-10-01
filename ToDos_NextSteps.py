@@ -7,7 +7,6 @@
 
 # TESTING QUEUE: 
   # Check after preprep was rerun
-    # TODO: Visualize / export buildings, that are excluded because of too many partitions
     # TODO: Visualize all buildings with mulitple PV installations
 
     # TODO: pred_inst_df shows instTF as false, which should be TRUE and also no pvsource
@@ -22,6 +21,9 @@
 
 
 # A ====================
+
+    # TODO: Visualize / export buildings, that are excluded because of too many partitions
+    #       > solkat of both subsets appear to be identical (also solkats with 2-3 partitions in solkat_n_above_partitions set)
 
     # TODO: NPV calc is not correct, way too high returns, mean around 0.5 mio. CHF 
     # TODO: Check Loop for monthly assignments, December is always missing! => probably, december buffers out all the overshoots during the other months. different approach needed to set construction capacity constraint
@@ -142,7 +144,6 @@ if True:
 
 
     #===============================
-    # # BOOKMARK: 
     # - There is an issue with buildings that have a HUGE number of partitions. 
     #  > make either a function exporting all solkat with more than x rows for 1 egid
     #  > OR make a function after topo_df generation that matches the topo df to the geo data and exports it to a shape file

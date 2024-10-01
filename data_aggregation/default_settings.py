@@ -11,7 +11,7 @@ dataagg_default_settings = {
 
         'kt_numbers': [11,12,13],                               # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
         'bfs_numbers': [],                                      # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        'year_range': [2018, 2022],                             # range of years to import
+        'year_range': [2021, 2022],                             # range of years to import
         
         # switch on/off parts of aggregation
         'split_data_geometry_AND_slow_api': True, 

@@ -53,7 +53,7 @@ def api_pvtarif_data(
     url = "https://opendata.vese.ch/pvtarif/api/getData/evu?"
 
     for y in year_range_list:
-        checkpoint_to_logfile(f'api call pvtarif for year: {y} started', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
+        checkpoint_to_logfile(f'start api call pvtarif for year: {y}', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
         response_ew_list = []
 
         for i_ew, ew in enumerate(ew_id):
@@ -64,13 +64,13 @@ def api_pvtarif_data(
             if response_json['valid'] == True:
                 response_ew_list.append(response_json)
 
-            if i_ew % ew_id_counter == 0:
-                checkpoint_to_logfile(f'-- year: {y}, ew: {ew}, {i_ew+1} of {len(ew_id)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
+            # if i_ew % ew_id_counter == 0:
+            #     checkpoint_to_logfile(f'-- year: {y}, ew: {ew}, {i_ew+1} of {len(ew_id)} in list', log_file_name_def=log_file_name_def, n_tabs_def = 2, show_debug_prints_def=show_debug_prints_def)
 
         response_ew_df = pd.DataFrame(response_ew_list)
         response_ew_df['year'] = y
         response_all_df_list.append(response_ew_df)
-        checkpoint_to_logfile(f'api call year: {y} completed', log_file_name_def=log_file_name_def, n_tabs_def = 4, show_debug_prints_def=show_debug_prints_def)
+        checkpoint_to_logfile(f'call year: {y} completed', log_file_name_def=log_file_name_def, n_tabs_def = 4, show_debug_prints_def=show_debug_prints_def)
 
     pvtarif_raw = pd.concat(response_all_df_list)
 

@@ -45,13 +45,17 @@ def select_AND_adjust_topology(pvalloc_settings,
         npv_df['NPV_stand'] = npv_df['NPV_uid'] / max(npv_df['NPV_uid'])
         npv_df['diff_NPV_rand'] = abs(npv_df['NPV_stand'] - rand_num)
         npv_pick = npv_df[npv_df['diff_NPV_rand'] == min(npv_df['diff_NPV_rand'])].copy()
-
+        
+        # if multiple rows at min to rand num 
         if npv_pick.shape[0] > 1:
             rand_row = np.random.randint(0, npv_pick.shape[0])
             npv_pick = npv_pick.iloc[rand_row]
-    # ---------------
 
-    npv_df.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
+        # remove cols for uniform format between selection methods
+        for col in ['NPV_stand', 'diff_NPV_rand']:
+            if col in npv_df.columns:
+                npv_df.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
+    # ---------------
 
 
     # if isinstance(npv_pick['EGID'], pd.Series):
@@ -59,13 +63,11 @@ def select_AND_adjust_topology(pvalloc_settings,
         picked_egid = npv_pick['EGID'].values[0]
         picked_uid = npv_pick['df_uid_combo'].values[0]
         picked_flaech = npv_pick['FLAECHE'].values[0]
-        npv_pick.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
 
     elif isinstance(npv_pick, pd.Series):
         picked_egid = npv_pick['EGID']
         picked_uid = npv_pick['df_uid_combo']
         picked_flaech = npv_pick['FLAECHE']
-        npv_pick.drop(['NPV_stand', 'diff_NPV_rand'], inplace=True)
 
     inst_power = picked_flaech * kWpeak_per_m2 * pvalloc_settings['algorithm_specs']['tweak_capacity_fact']
     npv_pick['inst_TF'], npv_pick['info_source'], npv_pick['xtf_id'], npv_pick['BeginOp'], npv_pick['TotalPower'] = [True, 'alloc_algorithm', picked_uid, f'{m}', inst_power]

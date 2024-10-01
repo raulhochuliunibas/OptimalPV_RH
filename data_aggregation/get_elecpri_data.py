@@ -20,6 +20,8 @@ def get_elecpri_data_earlier_api_import(dataagg_settings_def):
     elecpri = elecpri_all.loc[elecpri_all['bfs_number'].isin(dataagg_settings_def['bfs_numbers'])]
     
     # export -------------------
+    checkpoint_to_logfile(f'export elecpri of local data from former api import', log_name)
     elecpri.to_parquet(f'{data_path_def}/output/preprep_data/elecpri.parquet')
     elecpri.to_csv(f'{data_path_def}/output/preprep_data/elecpri.csv', index=False)
+    
 
