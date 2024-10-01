@@ -193,7 +193,7 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                                                     pvalloc_settings['algorithm_specs']['inst_selection_method'],
                                                     dfuid_installed_list, 
                                                     pred_inst_df,
-                                                    m)
+                                                    i, m)
 
                     # Adjust constr_built capacity----------
                     constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
