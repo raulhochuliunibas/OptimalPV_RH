@@ -170,6 +170,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             scen_data_path = f'{data_path}/output/{scen}'
             pvalloc_scen = pvalloc_scen_list[i]
 
+            node_selection = visual_settings['node_selection_for_plots']
+
             gridnode_df = pd.read_parquet(f'{scen_data_path}/gridnode_df.parquet')
             # gridnode_df = pd.read_parquet("C:\Models\OptimalPV_RH_data\output\pvalloc_run\gridnode_df.parquet")
             gridnode_df['t_int'] = gridnode_df['t'].str.extract(r't_(\d+)').astype(int)
@@ -177,7 +179,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             # plot ----------------
             if 'info_source' in gridnode_df.columns:
-                nodes = gridnode_df['grid_node'].unique()
+                if isinstance(node_selection, list):
+                    nodes = node_selection
+                elif node_selection == None:
+                    nodes = gridnode_df['grid_node'].unique()
+                    
                 pvsources = gridnode_df['info_source'].unique()
                 fig = go.Figure()
 
@@ -207,7 +213,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 xaxis_title='Hour of Year',
                 yaxis_title='Production / Feedin (kW)',
                 legend_title='Node ID',
-                title = f'Production per node (kW, weather year: {pvalloc_scen["weather_specs"]["weather_year"]}, self consum. rate{pvalloc_scen["tech_economic_specs"]["self_consumption_ifapplicable"]})'
+                title = f'Production per node (kW, weather year: {pvalloc_scen["weather_specs"]["weather_year"]}, self consum. rate: {pvalloc_scen["tech_economic_specs"]["self_consumption_ifapplicable"]})'
             )
 
 
@@ -637,7 +643,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             locations="df_uid",
             featureidkey="properties.df_uid",
             color="pvprod_kW",
-            color_continuous_scale="Viridis",
+            color_continuous_scale="Turbo",
             range_color=(0, 100),
             mapbox_style="carto-positron",
             center={"lat": default_map_center[0], "lon": default_map_center[1]}, 
@@ -727,6 +733,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     # plot agg - line: Grid Premium per Hour of Year ============================
     if visual_settings['plot_agg_line_gridPremiumHOY_per_node']:
+        node_in_plot_selection = []
+
         checkpoint_to_logfile(f'plot_agg_line_gridPremiumHOY_per_node', log_name)
         fig = go.Figure()
         for i, scen in enumerate(scen_dir_export_list):
@@ -738,8 +746,15 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             gridprem_ts['t_int'] = gridprem_ts['t'].str.extract(r't_(\d+)').astype(int)
             gridprem_ts.sort_values(by=['t_int', 'grid_node'], inplace=True)
 
+            node_selection = visual_settings['node_selection_for_plots']
+
             # plot ----------------
-            for grid_node in gridprem_ts['grid_node'].unique():
+            if isinstance(node_selection, list): 
+                grid_node_loop_list = node_selection
+            elif node_selection == None:
+                grid_node_loop_list = gridprem_ts['grid_node'].unique()
+
+            for grid_node in grid_node_loop_list:
                 node_df = gridprem_ts[gridprem_ts['grid_node'] == grid_node]
                 fig.add_trace(go.Scatter(
                     x=node_df['t_int'], 
@@ -836,22 +851,23 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     
         fig = go.Figure()
         i, scen = 0, scen_dir_export_list[0]
-        for i, scen in enumerate(scen_dir_export_list):
+        for i_scen, scen in enumerate(scen_dir_export_list):
             # setup + import ----------
             scen_data_path = f'{data_path}/output/{scen}'
-            pvalloc_scen = pvalloc_scen_list[i]
+            pvalloc_scen = pvalloc_scen_list[i_scen]
             T0_scen = pd.to_datetime(pvalloc_scen['T0_prediction'])
             months_prediction_scen = pvalloc_scen['months_prediction']
 
             plot_df = pd.DataFrame()
             months_prediction_range = pd.date_range(start=T0_scen + pd.DateOffset(days=1), periods=months_prediction_scen, freq='M').to_period('M')
             m, month = 0, months_prediction_range[0]
-            for i, m in enumerate(months_prediction_range):
+            for i_m, m in enumerate(months_prediction_range):
                 subgridnode_df = pd.read_parquet(f'{scen_data_path}/pred_gridprem_node_by_M/gridnode_df_{m}.parquet')
                 subgridnode_df['scen'], subgridnode_df['month'] = scen, m
                 subgridnode_total_df = subgridnode_df.groupby(['scen', 'month']).agg({'pvprod_kW': 'sum', 'feedin_kW': 'sum','feedin_kW_taken': 'sum','feedin_kW_loss': 'sum'}).reset_index()
                 
                 plot_df = pd.concat([plot_df, subgridnode_total_df])
+            plot_df['month'] = plot_df['month'].dt.to_timestamp()
 
             # plot ----------------
             fig.add_trace(go.Scatter(x=plot_df['month'], y=plot_df['pvprod_kW'], name=f'{scen}: pv_production'))
@@ -872,7 +888,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # plot agg - line: Charachteristics Newly Installed Buildings  per Month ============================
-    colnames_cont_charact_installations = ['pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'netdemand_kW', 'estim_pvinstcost_chf']
     if visual_settings['plot_agg_line_cont_charact_new_inst']:
         
         fig = go.Figure()
@@ -887,7 +902,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             
             colnames_cont_charact_installations = visual_settings['plot_agg_line_cont_charact_new_inst_specs']['colnames_cont_charact_installations']
             num_colors = (len(pvalloc_scen_list) * len(colnames_cont_charact_installations) ) + 5
-            colors = pc.sample_colorscale('Viridis', [n/(num_colors-1) for n in range(num_colors)])
+            colors = pc.sample_colorscale('Turbo', [n/(num_colors-1) for n in range(num_colors)])
             
             predinst_all= pd.read_parquet(f'{scen_data_path}/pred_inst_df.parquet')
 
@@ -915,11 +930,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             col = colnames_cont_charact_installations[0]    
             for i_col, col in enumerate(colnames_cont_charact_installations):
             # if True:
+                scen_col = f'{scen}__{col}'                
                 xaxis = agg_predinst_absdf['iter_round']
                 y_mean, y_lower, y_upper = agg_predinst_absdf[col]['mean'], agg_predinst_absdf[col]['mean'] - agg_predinst_absdf[col]['std'], agg_predinst_absdf[col]['mean'] + agg_predinst_absdf[col]['std']
                 line_color = colors[i_col % len(colors)]
+
                 # mean
-                fig.add_trace(go.Scatter(x=xaxis, y=y_mean, name=f'{col}', line=dict(color=line_color), mode='lines+markers'))
+                fig.add_trace(go.Scatter(x=xaxis, y=y_mean, name=f'{scen_col}', legendgroup = f'{scen_col}', line=dict(color=line_color), mode='lines+markers', showlegend=True))
                 # upper / lower bound
                 fig.add_trace(go.Scatter(
                     x=xaxis.tolist() + xaxis.tolist()[::-1],  # Concatenate xaxis with its reverse
@@ -929,9 +946,18 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     opacity = 0.2,
                     line=dict(color='rgba(255,255,255,0)'),  # No boundary line
                     hoverinfo="skip",  # Don't show info on hover
-                    showlegend=False  # Don't show this in the legend
+                    showlegend=False,  # Do not show this trace in the legend
+                    legendgroup=f'{scen_col}',  # Group with the mean line
+                    visible=True  # Make this visible/toggleable with the mean line
                 ))
 
+        fig.update_layout(
+            xaxis_title='Iteration Round',
+            yaxis_title='Mean (+/- 1 std)',
+            legend_title='Scenarios',
+            title = f'Agg. Cont. Charact. of Newly Installed Buildings per Iteration Round'
+        )
+        
         if plot_show:
             fig.show()
         fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_cont_charact_new_inst_abs_values.html')

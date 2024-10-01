@@ -5,10 +5,13 @@ visual_default_settings = {
         'default_zoom_hour': [2400, 2400+(24*7)],
         'default_map_zoom': 11, 
         'default_map_center': [47.24, 7.5],
+
+        'node_selection_for_plots': ['node1', 'node3', 'node5'], # or None for all nodes
     
 
         'plot_ind_line_productionHOY_per_node':  False,
         'plot_ind_line_installedCap_per_month':  False,
+        'plot_ind_line_installedCap_per_BFS':    False,
         'plot_ind_hist_NPV_freepartitions':      False,
         'plot_ind_map_topo_egid':                False,
             'map_topo_specs': {
@@ -28,6 +31,7 @@ visual_default_settings = {
         'plot_agg_line_gridPremiumHOY_per_node': False,
         'plot_agg_line_gridpremium_structure':   False,
         'plot_agg_line_production_per_month':    True,
+
 
         'plot_agg_line_cont_charact_new_inst':   True,
             'plot_agg_line_cont_charact_new_inst_specs': {
