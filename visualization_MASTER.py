@@ -53,46 +53,43 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     
     # SETUP ------------------------------------------------------------------------------------------------------
-    
-    # general setup for paths etc.
-    first_alloc_sett = pvalloc_scenarios[list(pvalloc_scenarios.keys())[0]]
-    wd_path = first_alloc_sett['wd_path_laptop'] if not first_alloc_sett['script_run_on_server'] else first_alloc_sett['wd_path_server']
-    data_path = f'{wd_path}_data'
+    if True: 
+        # general setup for paths etc.
+        first_alloc_sett = pvalloc_scenarios[list(pvalloc_scenarios.keys())[0]]
+        wd_path = first_alloc_sett['wd_path_laptop'] if not first_alloc_sett['script_run_on_server'] else first_alloc_sett['wd_path_server']
+        data_path = f'{wd_path}_data'
 
-    # create directory + log file
-    visual_path = f'{data_path}/output/visualizations'
-    if not os.path.exists(visual_path):
-        os.makedirs(visual_path)
+        # create directory + log file
+        visual_path = f'{data_path}/output/visualizations'
+        if not os.path.exists(visual_path):
+            os.makedirs(visual_path)
 
-    log_name = f'{data_path}/output/visual_log.txt'
-
-
-    chapter_to_logfile(f'start run_visualisations MASTER ', log_name, overwrite_file=True)
+        log_name = f'{data_path}/output/visual_log.txt'
+        chapter_to_logfile(f'start run_visualisations MASTER ', log_name, overwrite_file=True)
 
 
-    # SETTINGS LATER ADDED TO visual_settings ------------------------
-    plot_show = visual_settings['plot_show']
-    default_zoom_year = visual_settings['default_zoom_year']
+        # SETTINGS LATER ADDED TO visual_settings ------------------------
+        plot_show = visual_settings['plot_show']
+        default_zoom_year = visual_settings['default_zoom_year']
 
 
+        # EXTRACT SCENARIO INFORMATION + IMPORT ------------------------
 
-    # EXTRACT SCENARIO INFORMATION + IMPORT -----------------------------------------------------------------------------------
+        # scen settings ----------------
+        scen_dir_export_list, scen_dir_import_list, T0_prediction_list, months_prediction_list = [], [], [], []
+        T0_prediction_list, months_lookback_list, months_prediction_list = [], [], []
+        pvalloc_scen_list = []
+        for key, val in pvalloc_scenarios.items():
+            scen_dir_export_list.append(val['name_dir_export'])
+            scen_dir_import_list.append(val['name_dir_import'])
+            T0_prediction_list.append(val['T0_prediction'])
+            months_prediction_list.append(val['months_prediction'])
+            pvalloc_scen_list.append(val)
 
-    # scen settings ----------------
-    scen_dir_export_list, scen_dir_import_list, T0_prediction_list, months_prediction_list = [], [], [], []
-    T0_prediction_list, months_lookback_list, months_prediction_list = [], [], []
-    pvalloc_scen_list = []
-    for key, val in pvalloc_scenarios.items():
-        scen_dir_export_list.append(val['name_dir_export'])
-        scen_dir_import_list.append(val['name_dir_import'])
-        T0_prediction_list.append(val['T0_prediction'])
-        months_prediction_list.append(val['months_prediction'])
-        pvalloc_scen_list.append(val)
-
-    # visual settings ----------------  
-    plot_show = visual_settings['plot_show']
-    default_zoom_year = visual_settings['default_zoom_year']
-    default_zoom_hour = visual_settings['default_zoom_hour']
+        # visual settings ----------------  
+        plot_show = visual_settings['plot_show']
+        default_zoom_year = visual_settings['default_zoom_year']
+        default_zoom_hour = visual_settings['default_zoom_hour']
 
 
     # UNIVERSIAL FUNCTIONS ------------------------------------------------------------------------------------------------------
@@ -414,6 +411,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     # plot ind - map:  Model PV topology ========================
     default_map_zoom = visual_settings['default_map_zoom']
+    default_map_center = visual_settings['default_map_center']
     uniform_municip_color = visual_settings['map_topo_specs']['uniform_municip_color']
     map_topo_specs = visual_settings['map_topo_specs']
 
@@ -503,7 +501,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     color_discrete_sequence=[uniform_municip_color],  # Apply the single color to all shapes
                     hover_name="hover_text",  # Use the new column for hover text
                     mapbox_style="carto-positron",  # Basemap style
-                    center={"lat": 47.41, "lon": 7.49},  # Center the map on the region
+                    center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
                     zoom=default_map_zoom,  # Adjust zoom as needed
                     opacity=map_topo_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
                 )
@@ -588,7 +586,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                         title=f"Map of model PV Topology ({scen})",
                         mapbox=dict(
                             style="carto-positron",
-                            center={"lat": 47.41, "lon": 7.49},
+                            center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
                             zoom=default_map_zoom
                         )
                     )
@@ -641,7 +639,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             color_continuous_scale="Viridis",
             range_color=(0, 100),
             mapbox_style="carto-positron",
-            center={"lat": 47.41, "lon": 7.49},
+            center={"lat": default_map_center[0], "lon": default_map_center[1]}, 
             zoom=default_map_zoom,
             opacity=0.5,
             hover_name="hover_text",
@@ -810,20 +808,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             gridnode_df.sort_values(by=['t_int'], inplace=True)
 
             # plot ----------------
-            if False:
-            # if 'pvsource' in gridnode_df.columns:
-                pvsources = gridnode_df['pvsource'].unique()
-
-                # gridnode_source_df = gridnode_df.groupby(['t', 't_int', 'pvsource']).agg({'pvprod_kW': 'sum'}).reset_index()
-                gridnode_source_df = gridnode_df.groupby(['t', 't_int', 'pvsource']).agg({'pvprod_kW': 'sum', 'feedin_kW': 'sum', 'feedin_kW_taken': 'sum', 'feedin_kW_loss': 'sum'}).reset_index()
-                gridnode_source_df.sort_values(by=['t_int'], inplace=True)
-                for source in pvsources:
-                    if source != '':
-                        filter_df = gridnode_source_df.loc[gridnode_source_df['pvsource'] == source].copy()
-                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['feedin_kW'], name = f'{node} - feedin (all), Source: {source}', mode = 'lines'))
-                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['feedin_kW_taken'], name = f'{node} - feedin_taken, Source: {source}', mode = 'lines'))
-                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['feedin_kW_loss'], name = f'{node} - feedin_loss, Source: {source}', mode = 'lines'))        
-            
             # add total production
             gridnode_total_df = gridnode_df.groupby(['t', 't_int']).agg({'pvprod_kW': 'sum', 'feedin_kW': 'sum','feedin_kW_taken': 'sum','feedin_kW_loss': 'sum'}).reset_index()
             gridnode_total_df.sort_values(by=['t_int'], inplace=True)
@@ -846,7 +830,110 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_productionHOY_per_node.html')
 
 
- 
+    # plot agg - line: PV Production / Feedin per Month ============================
+    if visual_settings['plot_agg_line_production_per_month']:
+    
+        fig = go.Figure()
+        i, scen = 0, scen_dir_export_list[0]
+        for i, scen in enumerate(scen_dir_export_list):
+            # setup + import ----------
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
+            T0_scen = pd.to_datetime(pvalloc_scen['T0_prediction'])
+            months_prediction_scen = pvalloc_scen['months_prediction']
+
+            plot_df = pd.DataFrame()
+            months_prediction_range = pd.date_range(start=T0_scen + pd.DateOffset(days=1), periods=months_prediction_scen, freq='M').to_period('M')
+            m, month = 0, months_prediction_range[0]
+            for m, month in enumerate(months_prediction_range):
+                subgridnode_df = pd.read_parquet(f'{scen_data_path}/pred_gridprem_node_by_M/gridnode_df_{month}.parquet')
+                subgridnode_df['scen'], subgridnode_df['month'] = scen, m
+                subgridnode_total_df = subgridnode_df.groupby(['scen', 'month']).agg({'pvprod_kW': 'sum', 'feedin_kW': 'sum','feedin_kW_taken': 'sum','feedin_kW_loss': 'sum'}).reset_index()
+                
+                plot_df = pd.concat([plot_df, subgridnode_total_df])
+
+            # plot ----------------
+            fig.add_trace(go.Scatter(x=plot_df['month'], y=plot_df['pvprod_kW'], name=f'{scen}: pv_production'))
+            fig.add_trace(go.Scatter(x=plot_df['month'], y=plot_df['feedin_kW'], name=f'{scen}: feedin (prod-self_consum)'))
+            fig.add_trace(go.Scatter(x=plot_df['month'], y=plot_df['feedin_kW_taken'], name=f'{scen}: feedin_taken (by grid)'))
+            fig.add_trace(go.Scatter(x=plot_df['month'], y=plot_df['feedin_kW_loss'], name=f'{scen}: feedin_loss (excess grid nodes capa)'))
+
+        fig.update_layout(
+            xaxis_title='Perdicion Iterations',
+            yaxis_title='Production / Feedin (kWh)',
+            legend_title='Scenarios',
+            title = f'Agg. Production per Month, by Iteration Step (diff Scenarios)'
+        )
+
+        if plot_show:
+            fig.show()
+        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_production_per_month.html')
+
+
+    # plot agg - line: Charachteristics Newly Installed Buildings  per Month ============================
+    colnames_cont_charact_installations = ['pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'netdemand_kW', 'estim_pvinstcost_chf']
+    if True: #visual_settings['plot_agg_line_cont_charact_new_inst']:
+        
+        fig = go.Figure()
+        i, scen = 0, scen_dir_export_list[0]
+        for i, scen in enumerate(scen_dir_export_list):
+        
+            # setup + import ----------
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
+            T0_scen = pd.to_datetime(pvalloc_scen['T0_prediction'])
+            months_prediction_scen = pvalloc_scen['months_prediction']
+
+            plot_df = pd.DataFrame()
+            # months_prediction_range = pd.date_range(start=T0_scen + pd.DateOffset(days=1), periods=months_prediction_scen, freq='M').to_period('M')
+
+
+            # BOOKMARK
+
+            pred_inst_df= pd.read_parquet(f'{scen_data_path}/pred_inst_df.parquet')
+            # pred_inst_df['BeginOp'] = pd.to_datetime(pred_inst_df['BeginOp']).dt.to_period('M')
+            pred_inst_df.dtypes
+
+            # standardize certain col values so that they are comparable on graph
+            pred_inst_stand = copy.deepcopy(pred_inst_df[['BeginOp']+colnames_cont_charact_installations])
+            pred_inst_stand = pred_inst_stand.groupby('BeginOp').transform(lambda x: (x - x.mean()) / x.std())
+
+
+            agg_dict ={}
+            for colname in colnames_cont_charact_installations:
+                agg_dict[f'{colname}'] = ['mean', 'std']
+
+            # agg_predinst_df = predinst_all.groupby('BeginOp').agg(agg_dict)
+
+
+
+    # ----------------------------------------------------------------------------------------------------------------------
+            agg_predinst_df_list = []
+            m, month = 0, months_prediction_range[0]
+            for m, month in enumerate(months_prediction_range):
+                print(m)
+                # subpredinst = copy.deepcopy(predinst_all.loc[predinst_all['BeginOp'] == month])
+
+
+                # subpredinst = predinst_all.groupby('BeginOp').agg({colname: 
+
+
+
+            
+
+                    # compute std's
+                    # col_list = ['pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
