@@ -64,11 +64,13 @@ def select_AND_adjust_topology(pvalloc_settings,
         picked_egid = npv_pick['EGID'].values[0]
         picked_uid = npv_pick['df_uid_combo'].values[0]
         picked_flaech = npv_pick['FLAECHE'].values[0]
+        npv_pick.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
 
     elif isinstance(npv_pick, pd.Series):
         picked_egid = npv_pick['EGID']
         picked_uid = npv_pick['df_uid_combo']
         picked_flaech = npv_pick['FLAECHE']
+        npv_pick.drop(index=['NPV_stand', 'diff_NPV_rand'], inplace=True)
 
     inst_power = picked_flaech * kWpeak_per_m2 * pvalloc_settings['algorithm_specs']['tweak_capacity_fact']
     npv_pick['inst_TF'], npv_pick['info_source'], npv_pick['xtf_id'], npv_pick['BeginOp'], npv_pick['TotalPower'], npv_pick['iter_round'] = [True, 'alloc_algorithm', picked_uid, f'{m}', inst_power, i_alloc_loop]

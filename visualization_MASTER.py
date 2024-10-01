@@ -707,7 +707,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             # plot ----------
             # define point coloring
             unique_nodes = gwr_gdf['grid_node'].unique()
-            colors = pc.sample_colorscale(map-map_node_connections_specs['point_color_palette'], [n/(len(unique_nodes)) for n in range(len(unique_nodes))])
+            colors = pc.sample_colorscale(map_node_connections_specs['point_color_palette'], [n/(len(unique_nodes)) for n in range(len(unique_nodes))])
             node_colors = [colors[i] for i in range(len(unique_nodes))]
             colors_df = pd.DataFrame({'grid_node': unique_nodes, 'node_color': node_colors})
             
@@ -1061,6 +1061,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 agg_predinst_absdf['iter_round'] = range(1, len(agg_predinst_absdf)+1)   
             else:
                 agg_predinst_absdf = preinst_absdf.groupby('iter_round').agg(agg_dict)
+                agg_predinst_absdf['iter_round'] = agg_predinst_absdf.index
 
             agg_predinst_absdf.replace(np.nan, 0, inplace=True)   
             xaxis = agg_predinst_absdf['iter_round']
