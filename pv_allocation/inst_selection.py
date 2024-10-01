@@ -10,7 +10,7 @@ def select_AND_adjust_topology(pvalloc_settings,
            inst_selection_method_func,
            dfuid_installed_list_func, 
            pred_inst_df_func,
-           m):
+           i, m):
     # select a random building out of npv_df_func to attribute a PV system to
 
     rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
@@ -21,6 +21,7 @@ def select_AND_adjust_topology(pvalloc_settings,
     inst_selection_method = inst_selection_method_func
     dfuid_installed_list = dfuid_installed_list_func
     pred_inst_df = pred_inst_df_func
+    i_alloc_loop = i
 
 
     # import ----------
@@ -70,7 +71,7 @@ def select_AND_adjust_topology(pvalloc_settings,
         picked_flaech = npv_pick['FLAECHE']
 
     inst_power = picked_flaech * kWpeak_per_m2 * pvalloc_settings['algorithm_specs']['tweak_capacity_fact']
-    npv_pick['inst_TF'], npv_pick['info_source'], npv_pick['xtf_id'], npv_pick['BeginOp'], npv_pick['TotalPower'] = [True, 'alloc_algorithm', picked_uid, f'{m}', inst_power]
+    npv_pick['inst_TF'], npv_pick['info_source'], npv_pick['xtf_id'], npv_pick['BeginOp'], npv_pick['TotalPower'], npv_pick['iter_round'] = [True, 'alloc_algorithm', picked_uid, f'{m}', inst_power, i_alloc_loop]
     
 
     # Adjust export lists / df

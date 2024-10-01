@@ -21,13 +21,14 @@ if True:
     import json 
     import plotly.express as px
     import plotly.graph_objects as go
-    import shapely
+    import plotly.colors as pc
     import copy
     import glob
 
     from datetime import datetime
     from pprint import pformat
     from shapely.geometry import Polygon, MultiPolygon
+    
 
     # own packages and functions
     import pv_allocation.default_settings as pvalloc_default_sett
@@ -845,8 +846,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             plot_df = pd.DataFrame()
             months_prediction_range = pd.date_range(start=T0_scen + pd.DateOffset(days=1), periods=months_prediction_scen, freq='M').to_period('M')
             m, month = 0, months_prediction_range[0]
-            for m, month in enumerate(months_prediction_range):
-                subgridnode_df = pd.read_parquet(f'{scen_data_path}/pred_gridprem_node_by_M/gridnode_df_{month}.parquet')
+            for i, m in enumerate(months_prediction_range):
+                subgridnode_df = pd.read_parquet(f'{scen_data_path}/pred_gridprem_node_by_M/gridnode_df_{m}.parquet')
                 subgridnode_df['scen'], subgridnode_df['month'] = scen, m
                 subgridnode_total_df = subgridnode_df.groupby(['scen', 'month']).agg({'pvprod_kW': 'sum', 'feedin_kW': 'sum','feedin_kW_taken': 'sum','feedin_kW_loss': 'sum'}).reset_index()
                 
@@ -872,61 +873,72 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     # plot agg - line: Charachteristics Newly Installed Buildings  per Month ============================
     colnames_cont_charact_installations = ['pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'netdemand_kW', 'estim_pvinstcost_chf']
-    if True: #visual_settings['plot_agg_line_cont_charact_new_inst']:
+    if visual_settings['plot_agg_line_cont_charact_new_inst']:
         
         fig = go.Figure()
         i, scen = 0, scen_dir_export_list[0]
         for i, scen in enumerate(scen_dir_export_list):
         
             # setup + import ----------
-            scen_data_path = f'{data_path}/output/{scen}'
             pvalloc_scen = pvalloc_scen_list[i]
             T0_scen = pd.to_datetime(pvalloc_scen['T0_prediction'])
             months_prediction_scen = pvalloc_scen['months_prediction']
+            scen_data_path = f'{data_path}/output/{scen}'
+            
+            colnames_cont_charact_installations = visual_settings['plot_agg_line_cont_charact_new_inst_specs']['colnames_cont_charact_installations']
+            num_colors = (len(pvalloc_scen_list) * len(colnames_cont_charact_installations) ) + 5
+            colors = pc.sample_colorscale('Viridis', [n/(num_colors-1) for n in range(num_colors)])
+            
+            predinst_all= pd.read_parquet(f'{scen_data_path}/pred_inst_df.parquet')
 
-            plot_df = pd.DataFrame()
+
+            # plot absolute values -------------------------------------
+            preinst_absdf = copy.deepcopy(predinst_all)
             # months_prediction_range = pd.date_range(start=T0_scen + pd.DateOffset(days=1), periods=months_prediction_scen, freq='M').to_period('M')
-
-
-            # BOOKMARK
-
-            pred_inst_df= pd.read_parquet(f'{scen_data_path}/pred_inst_df.parquet')
-            # pred_inst_df['BeginOp'] = pd.to_datetime(pred_inst_df['BeginOp']).dt.to_period('M')
-            pred_inst_df.dtypes
-
-            # standardize certain col values so that they are comparable on graph
-            pred_inst_stand = copy.deepcopy(pred_inst_df[['BeginOp']+colnames_cont_charact_installations])
-            pred_inst_stand = pred_inst_stand.groupby('BeginOp').transform(lambda x: (x - x.mean()) / x.std())
-
-
             agg_dict ={}
             for colname in colnames_cont_charact_installations:
                 agg_dict[f'{colname}'] = ['mean', 'std']
 
-            # agg_predinst_df = predinst_all.groupby('BeginOp').agg(agg_dict)
+            # NOTE: remove if statement if 'iter_round' is present in later runs
+            if not 'iter_round' in preinst_absdf.columns:
+                agg_predinst_absdf = preinst_absdf.groupby('BeginOp').agg(agg_dict)
+                agg_predinst_absdf['iter_round'] = range(1, len(agg_predinst_absdf)+1)   
+            else:
+                agg_predinst_absdf = preinst_absdf.groupby('iter_round').agg(agg_dict)
+
+            agg_predinst_absdf.replace(np.nan, 0, inplace=True)   
+            xaxis = agg_predinst_absdf['iter_round']
 
 
+            # plot ----------------
+            # fig = go.Figure()
+            col = colnames_cont_charact_installations[0]    
+            for i_col, col in enumerate(colnames_cont_charact_installations):
+            # if True:
+                xaxis = agg_predinst_absdf['iter_round']
+                y_mean, y_lower, y_upper = agg_predinst_absdf[col]['mean'], agg_predinst_absdf[col]['mean'] - agg_predinst_absdf[col]['std'], agg_predinst_absdf[col]['mean'] + agg_predinst_absdf[col]['std']
+                line_color = colors[i_col % len(colors)]
+                # mean
+                fig.add_trace(go.Scatter(x=xaxis, y=y_mean, name=f'{col}', line=dict(color=line_color), mode='lines+markers'))
+                # upper / lower bound
+                fig.add_trace(go.Scatter(
+                    x=xaxis.tolist() + xaxis.tolist()[::-1],  # Concatenate xaxis with its reverse
+                    y=y_upper.tolist() + y_lower.tolist()[::-1],  # Concatenate y_upper with reversed y_lower
+                    fill='toself',
+                    fillcolor=line_color,  # Dynamic color with 50% transparency
+                    opacity = 0.2,
+                    line=dict(color='rgba(255,255,255,0)'),  # No boundary line
+                    hoverinfo="skip",  # Don't show info on hover
+                    showlegend=False  # Don't show this in the legend
+                ))
 
-    # ----------------------------------------------------------------------------------------------------------------------
-            agg_predinst_df_list = []
-            m, month = 0, months_prediction_range[0]
-            for m, month in enumerate(months_prediction_range):
-                print(m)
-                # subpredinst = copy.deepcopy(predinst_all.loc[predinst_all['BeginOp'] == month])
+        if plot_show:
+            fig.show()
+        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_cont_charact_new_inst_abs_values.html')
 
-
-                # subpredinst = predinst_all.groupby('BeginOp').agg({colname: 
-
-
-
-            
-
-                    # compute std's
-                    # col_list = ['pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 
-
-
-
-
+        # add standardized version => where all values within the df are first standardized before plotted for more comparable/readable plot
+        # pred_inst_df_stand = copy.deepcopy(pred_inst_df[['BeginOp']+colnames_cont_charact_installations])
+        # pred_inst_df_stand = pred_inst_df_stand.groupby('BeginOp').transform(lambda x: (x - x.mean()) / x.std())
 
 
 
