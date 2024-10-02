@@ -233,10 +233,13 @@ def update_gridprem(
 
     egid_list, info_source_list, inst_TF_list = [], [], []
     for k,v in topo.items():
+        egid_list.append(k)
         if v.get('pv_inst', {}).get('inst_TF') == True:
             info_source_list.append(v.get('pv_inst').get('info_source'))
             inst_TF_list.append(v.get('pv_inst').get('inst_TF'))
-            egid_list.append(k)
+        else: 
+            info_source_list.append('')
+            inst_TF_list.append(False)
     Map_infosource_egid = pd.DataFrame({'EGID': egid_list, 'info_source': info_source_list, 'inst_TF': inst_TF_list}, index=egid_list)
 
     # import topo_time_subdfs -----------------------------------------------------
@@ -252,13 +255,8 @@ def update_gridprem(
         subdf_updated = copy.deepcopy(subdf)
         subdf_updated.drop(columns=['info_source', 'inst_TF'], inplace=True)
         subdf_updated = subdf_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
-        subdf['inst_TF'] = subdf_updated['inst_TF'].fillna(subdf['inst_TF'])
-        subdf['info_source'] = subdf_updated['info_source'].fillna(subdf['info_source'])
-        # subinst_updated = copy.deepcopy(subinst)
-        # subinst_updated.drop(columns=['info_source', 'inst_TF'], inplace=True)
-        # subinst_updated = subinst_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
-        # subinst['inst_TF'] = subinst_updated['inst_TF'].fillna(subinst['inst_TF'])
-        # subinst['info_source'] = subinst_updated['info_source'].fillna(subinst['info_source'])
+        updated_instTF_srs, update_infosource_srs = subdf_updated['inst_TF'].fillna(subdf['inst_TF']), subdf_updated['info_source'].fillna(subdf['info_source'])
+        subdf['inst_TF'], subdf['info_source'] = updated_instTF_srs.infer_objects(copy=False), update_infosource_srs.infer_objects(copy=False)
 
         subinst = copy.deepcopy(subdf.loc[subdf['inst_TF']==True])
 
@@ -319,7 +317,7 @@ def update_gridprem(
     gridnode_df.sort_values(by=['feedin_kW_taken'], ascending=False)
     gridnode_df_for_prem = gridnode_df.groupby(['grid_node','kW_threshold', 't']).agg({'feedin_kW_taken': 'sum'}).reset_index().copy()
     gridprem_ts = gridprem_ts.merge(gridnode_df_for_prem[['grid_node', 't', 'kW_threshold', 'feedin_kW_taken']], how='left', on=['grid_node', 't'])
-    gridprem_ts['feedin_kW_taken'].replace(np.nan, 0, inplace=True)
+    gridprem_ts['feedin_kW_taken'] = gridprem_ts['feedin_kW_taken'].replace(np.nan, 0)
     gridprem_ts.sort_values(by=['feedin_kW_taken'], ascending=False)
 
     # gridtiers_df['kW_threshold'] = gridtiers_df['kVA_threshold'] / gridtiers_power_factor
