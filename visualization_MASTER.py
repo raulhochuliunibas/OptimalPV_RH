@@ -747,7 +747,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     
     # plot ind - var: summary statistics ============================
     if visual_settings['plot_ind_var_summary_stats']:
-        checkpoint_to_logfile(f'plot_ind_var_summary_stats')
+        checkpoint_to_logfile(f'plot_ind_var_summary_stats', log_name)
         i, scen = 0, scen_dir_export_list[0]
         if True:
             scen_data_path = f'{data_path}/output/{scen}'
@@ -774,18 +774,20 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             # density kWh production ------------
             topo = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
-            egid_list, inst_TF_list, info_source_list = [], [], []
+            egid_list, inst_TF_list, info_source_list, TotalPower_list = [], [], [], []
 
             for k,v, in topo.items():
                 egid_list.append(k)
                 if v['pv_inst']['inst_TF'] == True:
                     inst_TF_list.append(v['pv_inst']['inst_TF'])
                     info_source_list.append(v['pv_inst']['info_source'])
+                    TotalPower_list.append(v['pv_inst']['TotalPower'])
                 else: 
                     inst_TF_list.append(False)
                     info_source_list.append('')
+                    TotalPower_list.append(0)
 
-            pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list})
+            pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list, 'TotalPower': TotalPower_list})
 
             topo_subdf_paths = glob.glob(f'{scen_data_path}/topo_time_subdf/*.parquet')
             agg_subinst_df_list = []
@@ -793,28 +795,57 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             for i_path, path in enumerate(topo_subdf_paths):
                 subdf = pd.read_parquet(path)
                 agg_subdf = subdf.groupby('EGID')['pvprod_kW'].sum().reset_index()
-                agg_subdf.rename(columns={'pvprod_kW': 'pvprod_kWh'}, inplace=True)
+                agg_subdf = subdf.groupby('EGID').agg({'pvprod_kW': 'sum'})
                 agg_subinst_df_list.append(agg_subdf)
 
             agg_subinst_df = pd.concat(agg_subinst_df_list, axis=0)
             agg_subinst_df = agg_subinst_df.merge(pvinst_df, on='EGID', how='left')
 
             fig = go.Figure()
-            fig.add_trace(go.Histogram(x=agg_subinst_df['pvprod_kWh'], name='PV Production [kWh]'))
-            fig.add_trace(go.Histogram(x=agg_subinst_df.loc[agg_subinst_df['info_source'] == 'pv_df', 'pvprod_kWh'], name='PV Production pre-alloc installed', opacity=0.75))
-            fig.add_trace(go.Histogram(x=agg_subinst_df.loc[agg_subinst_df['info_source'] == 'alloc_algorithm', 'pvprod_kWh'], name='PV Production post-alloc installed', opacity=0.75))
+            color_rest, color_pv_df, color_alloc_algo = visual_settings['plot_ind_map_topo_egid_specs']['point_color_rest'], visual_settings['plot_ind_map_topo_egid_specs']['point_color_pv_df'], visual_settings['plot_ind_map_topo_egid_specs']['point_color_alloc_algo']
+
+            fig.add_trace(go.Histogram(x=agg_subinst_df['pvprod_kWh'], name='PV Production [kWh]', opacity = 0.2, marker_color = color_rest))
+            fig.add_trace(go.Histogram(x=agg_subinst_df.loc[agg_subinst_df['info_source'] == 'pv_df', 'pvprod_kWh'], 
+                                       name='PV Production pre-alloc installed', opacity=0.5, marker_color = color_pv_df))
+            fig.add_trace(go.Histogram(x=agg_subinst_df.loc[agg_subinst_df['info_source'] == 'alloc_algorithm', 'pvprod_kWh'], 
+                                       name='PV Production post-alloc installed', opacity=0.5, marker_color = color_alloc_algo))
 
             fig.update_layout(
                 xaxis_title='PV Production kWh',
                 yaxis_title='Frequency',
                 title = f'PV Production Distribution (scen: {scen})',
                 barmode = 'overlay')
-            fig.update_traces(bingroup=1, opacity=0.75)
+            fig.update_traces(bingroup=1, opacity=0.5)
 
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i])
             if plot_show:
                 fig.show()
             fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_pvprod_kWh.html')
+
+            
+            # installation power kW ------------
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(x=pvinst_df.loc[pvinst_df['inst_TF']==True,'TotalPower'], name='Installed Capacity [kW]', opacity=0.2, marker_color = color_rest))
+            fig.add_trace(go.Histogram(x=pvinst_df.loc[pvinst_df['info_source'] == 'pv_df', 'TotalPower'],
+                                        name='Installed Capacity pre-alloc installed', opacity=0.5, marker_color = color_pv_df))
+            fig.add_trace(go.Histogram(x=pvinst_df.loc[pvinst_df['info_source'] == 'alloc_algorithm', 'TotalPower'],
+                                        name='Installed Capacity post-alloc installed', opacity=0.5, marker_color = color_alloc_algo))
+
+            fig.update_layout(
+                xaxis_title='Installed Capacity [kW]',
+                yaxis_title='Frequency',
+                title = f'Installed Capacity Distribution (scen: {scen})',
+                barmode = 'overlay')
+            fig.update_traces(bingroup=1, opacity=0.5)
+
+            fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i])
+            if plot_show:
+                fig.show()
+                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_installedCap_kW.html')
+
+
+
+
 
 
 
