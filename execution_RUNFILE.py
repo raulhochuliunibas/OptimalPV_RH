@@ -19,13 +19,13 @@ run_visual =    True
 
 # data_aggregation 
 dataagg_scenarios = {   
-    # 'preprep_BL_20to22_1and2homes_buff002':{
-    #     'script_run_on_server': run_on_server, 
-    #     'kt_numbers': [13,], 
-    #     'year_range': [2020, 2022], 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
-    #     'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.02,}, 
-    # }, 
+    'preprep_BL_20to22_1and2homes_buff002':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13,], 
+        'year_range': [2020, 2022], 
+        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
+        'solkat_selection_specs': { 'GWR_EGID_buffer_size': 0.02,}, 
+    }, 
     # 'preprep_BL_20to22_1and2homes_buff05':{
     #     'script_run_on_server': run_on_server, 
     #     'kt_numbers': [13,],
