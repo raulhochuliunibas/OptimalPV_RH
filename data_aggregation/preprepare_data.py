@@ -250,6 +250,8 @@ def import_demand_TS_AND_match_households(
     # remove pv assets because they also have negative values
     agg_demand_df = agg_demand_df[agg_demand_df['tech'] != 'pv']
 
+    agg_demand_df['value'] = agg_demand_df['value'] * 1000 # it appears that values are calculated in MWh, need kWh
+
     # plot TS for certain consumers by assets
     plot_ids =['ID100', 'ID101', 'ID102', ]
     plot_df = agg_demand_df[agg_demand_df['id'].isin(plot_ids)]
@@ -319,6 +321,7 @@ def import_demand_TS_AND_match_households(
     # fig.show()
     fig.write_html(f'{data_path_def}/output/preprep_data/demandtypes.html')
 
+    demandtypes['high_DEMANDprox_wiHP'].sum(), demandtypes['low_DEMANDprox_wiHP'].sum(), demandtypes['high_DEMANDprox_noHP'].sum(), demandtypes['low_DEMANDprox_noHP'].sum()
 
 
     # MATCH DEMAND TYPES TO HOUSEHOLDS ============================================================================
