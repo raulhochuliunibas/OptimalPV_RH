@@ -57,7 +57,7 @@ pvalloc_default_settings = {
         #     6: [15000, 50],
         #     },},
     'tech_economic_specs': {
-        'self_consumption_ifapplicable': 1,
+        'self_consumption_ifapplicable': 0.5,
         'interest_rate': 0.01,
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],

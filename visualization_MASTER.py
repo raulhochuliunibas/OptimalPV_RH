@@ -795,10 +795,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             for i_path, path in enumerate(topo_subdf_paths):
                 subdf = pd.read_parquet(path)
                 agg_subdf = subdf.groupby('EGID')['pvprod_kW'].sum().reset_index()
-                agg_subdf = subdf.groupby('EGID').agg({'pvprod_kW': 'sum'})
                 agg_subinst_df_list.append(agg_subdf)
 
             agg_subinst_df = pd.concat(agg_subinst_df_list, axis=0)
+            agg_subinst_df.rename(columns={'pvprod_kW': 'pvprod_kWh'}, inplace=True)
             agg_subinst_df = agg_subinst_df.merge(pvinst_df, on='EGID', how='left')
 
             fig = go.Figure()

@@ -46,7 +46,7 @@ visual_default_settings = {
 
         'plot_agg_line_cont_charact_new_inst':   True,
             'plot_agg_line_cont_charact_new_inst_specs': {
-                'colnames_cont_charact_installations': ['pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'netdemand_kW', 'estim_pvinstcost_chf']},
+                'colnames_cont_charact_installations': ['pv_tarif_Rp_kWh', 'elecpri_Rp_kWh','selfconsum_kW','FLAECHE', 'netdemand_kW', 'estim_pvinstcost_chf', 'TotalPower']},
 
         # single plots (just show once, not for all scenarios)
         'map_ind_production': False, # NOT WORKING YET
