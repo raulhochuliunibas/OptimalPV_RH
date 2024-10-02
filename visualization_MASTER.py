@@ -41,16 +41,17 @@ if True:
 
 def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # SETTINGS ------------------------------------------------------------------------------------------------------
-    if not isinstance(pvalloc_scenarios_func, dict):
-        print(' USE LOCAL SETTINGS - DICT  ')
-        pvalloc_scenarios = pvalloc_default_sett.get_default_pvalloc_settings()
-    else:
-        pvalloc_scenarios = pvalloc_scenarios_func
+    if True:
+        if not isinstance(pvalloc_scenarios_func, dict):
+            print(' USE LOCAL SETTINGS - DICT  ')
+            pvalloc_scenarios = pvalloc_default_sett.get_default_pvalloc_settings()
+        else:
+            pvalloc_scenarios = pvalloc_scenarios_func
 
-    if not isinstance(visual_settings_func, dict) or visual_settings_func == {}:
-        visual_settings = visual_default_sett.get_default_visual_settings()
-    else:
-        visual_settings = visual_settings_func
+        if not isinstance(visual_settings_func, dict) or visual_settings_func == {}:
+            visual_settings = visual_default_sett.get_default_visual_settings()
+        else:
+            visual_settings = visual_settings_func
 
     
     # SETUP ------------------------------------------------------------------------------------------------------
@@ -743,59 +744,78 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig1.show()
             fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_node_connections.html')
 
+    
+    # plot ind - var: summary statistics ============================
+    if visual_settings['plot_ind_var_summary_stats']:
+        checkpoint_to_logfile(f'plot_ind_var_summary_stats')
+        i, scen = 0, scen_dir_export_list[0]
+        if True:
+            scen_data_path = f'{data_path}/output/{scen}'
+            pvalloc_scen = pvalloc_scen_list[i]
 
-    # V - NOT WORKING YET - V
-    # map_ind_production ============================ 
-    if visual_settings['map_ind_production']:
-   
-        # import
-        solkat_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/solkat_gdf.geojson', rows =1000)
-        solkat_gdf['DF_UID'] = solkat_gdf['DF_UID'].astype(int).astype(str)
-        solkat_gdf.dtypes
-        solkat_gdf.rename(columns={'DF_UID': 'df_uid'}, inplace=True)
 
-        topo_subdf_paths = glob.glob(f'{scen_data_path}/topo_time_subdf/*.parquet')
-        subdf_dfuid_list = []
+            # total kWh - demandtypes ------------
+            demandtypes = pd.read_parquet(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/demandtypes.parquet')
 
-        path = topo_subdf_paths[0]
-        for i, path in enumerate(topo_subdf_paths):
-            subdf = pd.read_parquet(path)
-            subdf_dfuid = subdf.groupby('df_uid').agg({'pvprod_kW': 'sum'}).reset_index()
-            subdf_dfuid_list.append(subdf_dfuid)
+            demandtypes_names = [col for col in demandtypes.columns if 't' not in col]
+            totaldemand_kWh = [demandtypes[type].sum() for type in demandtypes_names]
+            
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=demandtypes_names, y=totaldemand_kWh, name='Total Demand [kWh]'))
+            fig.update_layout(
+                xaxis_title='Demand Type',
+                yaxis_title='Total Demand [kWh], 1 year',
+                title = f'Total Demand per Demand Type (scen: {scen})'
+            )
+            if plot_show:
+                fig.show()
+            fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_bar_totaldemand_by_type.html')
 
-        aggdf_dfuid = pd.concat(subdf_dfuid_list)
 
-        # merge
-        solkat_gdf = solkat_gdf.merge(aggdf_dfuid, on='df_uid', how='left')
+            # density kWh production ------------
+            topo = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
+            egid_list, inst_TF_list, info_source_list = [], [], []
 
-        # plot ----------
+            for k,v, in topo.items():
+                egid_list.append(k)
+                if v['pv_inst']['inst_TF'] == True:
+                    inst_TF_list.append(v['pv_inst']['inst_TF'])
+                    info_source_list.append(v['pv_inst']['info_source'])
+                else: 
+                    inst_TF_list.append(False)
+                    info_source_list.append('')
 
-        solkat_gdf['hover_text'] = solkat_gdf.apply(lambda row: f"DF_UID: {row['df_uid']}<br>EGID: {row['EGID']}<br>pvprod_kW: {row['pvprod_kW']}<br>FLAECHE: {row['FLAECHE']}<br>AUSRICHTUNG: {row['AUSRICHTUNG']}<br>NEIGUNG: {row['NEIGUNG']}", axis=1)
-        
-        solkat_gdf['geometry'] = solkat_gdf['geometry'].apply(flatten_geometry)
-        solkat_gdf = solkat_gdf.to_crs('EPSG:4326')
-        solkat_gdf = solkat_gdf[solkat_gdf.is_valid]
-        geojson = solkat_gdf.__geo_interface__
+            pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list})
 
-        # Add the shapes to figX
-        fig2 = px.choropleth_mapbox(
-            solkat_gdf, 
-            geojson=geojson,
-            locations="df_uid",
-            featureidkey="properties.df_uid",
-            color="pvprod_kW",
-            color_continuous_scale="Turbo",
-            range_color=(0, 100),
-            mapbox_style="carto-positron",
-            center={"lat": default_map_center[0], "lon": default_map_center[1]}, 
-            zoom=default_map_zoom,
-            opacity=0.5,
-            hover_name="hover_text",
-            title=f"Map of production per DF_UID ({scen})",
-        )
-        if plot_show:
-            fig2.show()
-        fig2.write_html(f'{data_path}/output/visualizations/{scen}__map_ind_production.html')
+            topo_subdf_paths = glob.glob(f'{scen_data_path}/topo_time_subdf/*.parquet')
+            agg_subinst_df_list = []
+            i_path, path = 0, topo_subdf_paths[0]
+            for i_path, path in enumerate(topo_subdf_paths):
+                subdf = pd.read_parquet(path)
+                agg_subdf = subdf.groupby('EGID')['pvprod_kW'].sum().reset_index()
+                agg_subdf.rename(columns={'pvprod_kW': 'pvprod_kWh'}, inplace=True)
+                agg_subinst_df_list.append(agg_subdf)
+
+            agg_subinst_df = pd.concat(agg_subinst_df_list, axis=0)
+            agg_subinst_df = agg_subinst_df.merge(pvinst_df, on='EGID', how='left')
+
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(x=agg_subinst_df['pvprod_kWh'], name='PV Production [kWh]'))
+            fig.add_trace(go.Histogram(x=agg_subinst_df.loc[agg_subinst_df['info_source'] == 'pv_df', 'pvprod_kWh'], name='PV Production pre-alloc installed', opacity=0.75))
+            fig.add_trace(go.Histogram(x=agg_subinst_df.loc[agg_subinst_df['info_source'] == 'alloc_algorithm', 'pvprod_kWh'], name='PV Production post-alloc installed', opacity=0.75))
+
+            fig.update_layout(
+                xaxis_title='PV Production kWh',
+                yaxis_title='Frequency',
+                title = f'PV Production Distribution (scen: {scen})',
+                barmode = 'overlay')
+            fig.update_traces(bingroup=1, opacity=0.75)
+
+            fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i])
+            if plot_show:
+                fig.show()
+            fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_pvprod_kWh.html')
+
 
 
     # PLOT AGGREGATED SCEN ------------------------------------------------------------------------------------------------------
@@ -1109,7 +1129,63 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         # pred_inst_df_stand = pred_inst_df_stand.groupby('BeginOp').transform(lambda x: (x - x.mean()) / x.std())
 
 
+    # END ------------------------------------------------------------------------------------------------------
 
+
+
+
+    # V - NOT WORKING YET - V
+    # map_ind_production ============================ 
+    if visual_settings['map_ind_production']:
+   
+        # import
+        solkat_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/solkat_gdf.geojson', rows =1000)
+        solkat_gdf['DF_UID'] = solkat_gdf['DF_UID'].astype(int).astype(str)
+        solkat_gdf.dtypes
+        solkat_gdf.rename(columns={'DF_UID': 'df_uid'}, inplace=True)
+
+        topo_subdf_paths = glob.glob(f'{scen_data_path}/topo_time_subdf/*.parquet')
+        subdf_dfuid_list = []
+
+        path = topo_subdf_paths[0]
+        for i, path in enumerate(topo_subdf_paths):
+            subdf = pd.read_parquet(path)
+            subdf_dfuid = subdf.groupby('df_uid').agg({'pvprod_kW': 'sum'}).reset_index()
+            subdf_dfuid_list.append(subdf_dfuid)
+
+        aggdf_dfuid = pd.concat(subdf_dfuid_list)
+
+        # merge
+        solkat_gdf = solkat_gdf.merge(aggdf_dfuid, on='df_uid', how='left')
+
+        # plot ----------
+
+        solkat_gdf['hover_text'] = solkat_gdf.apply(lambda row: f"DF_UID: {row['df_uid']}<br>EGID: {row['EGID']}<br>pvprod_kW: {row['pvprod_kW']}<br>FLAECHE: {row['FLAECHE']}<br>AUSRICHTUNG: {row['AUSRICHTUNG']}<br>NEIGUNG: {row['NEIGUNG']}", axis=1)
+        
+        solkat_gdf['geometry'] = solkat_gdf['geometry'].apply(flatten_geometry)
+        solkat_gdf = solkat_gdf.to_crs('EPSG:4326')
+        solkat_gdf = solkat_gdf[solkat_gdf.is_valid]
+        geojson = solkat_gdf.__geo_interface__
+
+        # Add the shapes to figX
+        fig2 = px.choropleth_mapbox(
+            solkat_gdf, 
+            geojson=geojson,
+            locations="df_uid",
+            featureidkey="properties.df_uid",
+            color="pvprod_kW",
+            color_continuous_scale="Turbo",
+            range_color=(0, 100),
+            mapbox_style="carto-positron",
+            center={"lat": default_map_center[0], "lon": default_map_center[1]}, 
+            zoom=default_map_zoom,
+            opacity=0.5,
+            hover_name="hover_text",
+            title=f"Map of production per DF_UID ({scen})",
+        )
+        if plot_show:
+            fig2.show()
+        fig2.write_html(f'{data_path}/output/visualizations/{scen}__map_ind_production.html')
 
 
 

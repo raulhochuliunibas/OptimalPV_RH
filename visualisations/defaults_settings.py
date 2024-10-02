@@ -7,10 +7,12 @@ visual_default_settings = {
         'default_map_center': [47.42, 7.52],
         'node_selection_for_plots': ['node1', 'node3', 'node5'], # or None for all nodes
 
-        'plot_ind_line_productionHOY_per_node':  False,
-        'plot_ind_line_installedCap_per_month':  False,
+        'plot_ind_line_productionHOY_per_node':  True,
+        'plot_ind_line_installedCap_per_month':  True,
         'plot_ind_line_installedCap_per_BFS':    False,
-        'plot_ind_hist_NPV_freepartitions':      False,
+        'plot_ind_hist_NPV_freepartitions':      True,
+        'plot_ind_var_summary_stats':            True,
+
 
         'plot_ind_map_topo_egid':                True,
             'plot_ind_map_topo_egid_specs': {
@@ -37,8 +39,8 @@ visual_default_settings = {
 
         'plot_agg_line_installedCap_per_month':  True,
         'plot_agg_line_productionHOY_per_node':  True,
-        'plot_agg_line_gridPremiumHOY_per_node': False,
-        'plot_agg_line_gridpremium_structure':   False,
+        'plot_agg_line_gridPremiumHOY_per_node': True,
+        'plot_agg_line_gridpremium_structure':   True,
         'plot_agg_line_production_per_month':    True,
 
 
