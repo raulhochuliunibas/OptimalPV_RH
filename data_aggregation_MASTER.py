@@ -136,6 +136,8 @@ def data_aggregation_MASTER(dataagg_settings_func):
         subchapter_to_logfile('pre-prep data: IMPORT METEO SUNSHINE TS', log_name)
         import_meteo_data(dataagg_settings_def = dataagg_settings)
 
+
+
     else: 
         print_to_logfile('\n', log_name)
         checkpoint_to_logfile('use parquet files and mappings that exist already', log_name)
@@ -189,8 +191,8 @@ def data_aggregation_MASTER(dataagg_settings_func):
     shutil.copy(glob.glob(f'{data_path}/output/preprep_data_log.txt')[0], f'{dir_data_moveto}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
     shutil.copy(glob.glob(f'{data_path}/output/*summary*log.txt')[0], f'{dir_data_moveto}/summary_data_selection_log{dataagg_settings["name_dir_export"]}.txt')
 
-    preprepd_path = f'{data_path}/output/preprep_data'
-    shutil.rmtree(preprepd_path)
+    # preprepd_path = f'{data_path}/output/preprep_data'
+    # shutil.rmtree(preprepd_path)
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
 
