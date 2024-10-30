@@ -438,7 +438,8 @@ def import_prepre_AND_create_topology(
     # end loop ------------------------------------------------
     # gwr['EGID'].apply(populate_topo_byEGID)
     checkpoint_to_logfile('end attach to topo', log_file_name_def, 1 , True)
-
+    print_to_logfile(f'\nsanity check for installtions in topo_egid', pvalloc_settings['summary_file_name'])
+    checkpoint_to_logfile(f'number of EGIDs with multiple installations: {CHECK_egid_with_problems.count("multiple xtf_ids")}', pvalloc_settings['summary_file_name'])
 
 
     # EXPORT TOPO + Mappings ============================================================================

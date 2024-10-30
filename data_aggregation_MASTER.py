@@ -62,9 +62,9 @@ def data_aggregation_MASTER(dataagg_settings_func):
     log_name = f'{data_path}/output/preprep_data_log.txt'
     total_runtime_start = datetime.now()
 
-    summary_log = f'{data_path}/output/summary_data_selection_log.txt'
-    chapter_to_logfile(f'OptimalPV - Sample Summary of Building Topology', summary_log, overwrite_file=True)
-    subchapter_to_logfile(f'data_aggregation_MASTER', summary_log)
+    summary_name = f'{data_path}/output/summary_data_selection_log.txt'
+    chapter_to_logfile(f'OptimalPV - Sample Summary of Building Topology', summary_name, overwrite_file=True)
+    subchapter_to_logfile(f'data_aggregation_MASTER', summary_name)
 
 
 
@@ -76,7 +76,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
 
     # add information to dataagg_settings that's relevant for further functions
     dataagg_settings['log_file_name'] = log_name
-    dataagg_settings['summary_file_name'] = summary_log
+    dataagg_settings['summary_file_name'] = summary_name
     dataagg_settings['wd_path'] = wd_path
     dataagg_settings['data_path'] = data_path
 
@@ -111,12 +111,12 @@ def data_aggregation_MASTER(dataagg_settings_func):
 
 
     # IMPORT API DATA 2 ---------------------------------------------------------------
-    if dataagg_settings['reimport_api_data']:
-        subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
-        sql_gwr_data(dataagg_settings_def=dataagg_settings)
-    else:
-        print_to_logfile('\n\n', log_name)
-        checkpoint_to_logfile('use already downloaded data on electricity prices, GWR, PV Tarifs', log_name)
+    # if dataagg_settings['reimport_api_data']:
+        # subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
+        # sql_gwr_data(dataagg_settings_def=dataagg_settings)
+    # else:
+        # print_to_logfile('\n\n', log_name)
+        # checkpoint_to_logfile('use already downloaded data on electricity prices, GWR, PV Tarifs', log_name)
 
 
 
@@ -126,6 +126,9 @@ def data_aggregation_MASTER(dataagg_settings_func):
     pq_files_rerun = dataagg_settings['rerun_localimport_and_mappings']
 
     if not pq_dir_exists_TF or pq_files_rerun:
+        subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
+        sql_gwr_data(dataagg_settings_def=dataagg_settings)
+
         subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', log_name)
         # local_data_to_parquet_AND_create_spatial_mappings_bySBUUID(dataagg_settings_def = dataagg_settings)
         local_data_AND_spatial_mappings(dataagg_settings_def = dataagg_settings)
@@ -189,7 +192,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
         elif os.path.isdir(f):
             shutil.copytree(f, f'{dir_data_moveto}/{f.split("/")[-1]}')
     shutil.copy(glob.glob(f'{data_path}/output/preprep_data_log.txt')[0], f'{dir_data_moveto}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
-    shutil.copy(glob.glob(f'{data_path}/output/*summary*log.txt')[0], f'{dir_data_moveto}/summary_data_selection_log{dataagg_settings["name_dir_export"]}.txt')
+    shutil.copy(glob.glob(f'{data_path}/output/*summary*log.txt')[0], f'{dir_data_moveto}/summary_data_selection_log_{dataagg_settings["name_dir_export"]}.txt')
 
     # preprepd_path = f'{data_path}/output/preprep_data'
     # shutil.rmtree(preprepd_path)

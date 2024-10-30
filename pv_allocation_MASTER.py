@@ -63,6 +63,16 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         log_name = f'{data_path}/output/pvalloc_log.txt'
         total_runtime_start = datetime.now()
 
+        # transfer summary file from data_aggregation
+        summary_find_path = glob.glob(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/summary_data_selection_log*.txt')
+        summary_name = f'{data_path}/output/summary_data_selection_log.txt'
+        if len(summary_find_path) == 1:
+            shutil.copy(summary_find_path[0], summary_name)
+        else:
+            print_to_logfile(f' **ERROR** : summary file not found or multiple files found', log_name)
+        print_to_logfile(f'\n\n\n', summary_name)
+        subchapter_to_logfile(f'pv_allocation_MASTER', summary_name)
+
 
         # extend settings dict with relevant informations for later functions
         if not not pvalloc_settings['kt_numbers']:
@@ -74,11 +84,11 @@ def pv_allocation_MASTER(pvalloc_settings_func):
             pvalloc_settings['bfs_numbers'] = [str(bfs) for bfs in pvalloc_settings['bfs_numbers']]
 
         pvalloc_settings['log_file_name'] = log_name
+        pvalloc_settings['summary_file_name'] = summary_name
         pvalloc_settings['wd_path'] = wd_path
         pvalloc_settings['data_path'] = data_path
         pvalloc_settings['pvalloc_path'] = pvalloc_path
-        interim_path = get_interim_path(pvalloc_settings)
-        pvalloc_settings['interim_path'] = interim_path
+        pvalloc_settings['interim_path'] = get_interim_path(pvalloc_settings)
         show_debug_prints = pvalloc_settings['show_debug_prints']
 
     chapter_to_logfile(f'start pv_allocation_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
