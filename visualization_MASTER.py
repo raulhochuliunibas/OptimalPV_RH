@@ -24,6 +24,7 @@ if True:
     import plotly.colors as pc
     import copy
     import glob
+    import matplotlib.pyplot as plt
 
     from datetime import datetime
     from pprint import pformat
@@ -327,7 +328,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             if visual_settings['plot_ind_line_installedCap_per_BFS']: 
                 checkpoint_to_logfile(f'plot_ind_line_installedCap_per_BFS', log_name)
                 capa_bfs_df = pvinst_df.copy()
-                gm_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
+                gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/gm_shp_gdf.geojson')                                         
                 gm_gdf.rename(columns={'BFS_NUMMER': 'bfs'}, inplace=True)
                 capa_bfs_df = capa_bfs_df.merge(gm_gdf[['bfs', 'NAME']], on='bfs', how = 'left' )
                 capa_bfs_df['BeginOp_month'] = capa_bfs_df['BeginOp'].dt.to_period('M')
@@ -417,26 +418,89 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_NPV_freepartitions.html')
 
 
+    # plot ind - pie: disc charac omitted gwr_egids ============================
+    if visual_settings['plot_ind_charac_omitted_gwr']:
+        plot_ind_charac_omitted_gwr_specs = visual_settings['plot_ind_charac_omitted_gwr_specs']
+        checkpoint_to_logfile(f'plot_ind_charac_omitted_gwr', log_name)
+
+        for i_scen, scen in enumerate(scen_dir_export_list):
+            scen_sett = pvalloc_scen_list[i_scen]
+
+            # omitted egids from data prep -----            
+            omitt_gwregid_gdf_all = gpd.read_file(f'{data_path}/output/{scen_sett["name_dir_import"]}/omiitt_gwregid_gdf.geojson')
+            omitt_gwregid_gdf_all.rename(columns={'GGDENR': 'BFS_NUMMER'}, inplace=True)
+            omitt_gwregid_gdf_all['BFS_NUMMER'] = omitt_gwregid_gdf_all['BFS_NUMMER'].astype(int)
+            omitt_gwregid_gdf = omitt_gwregid_gdf_all.loc[omitt_gwregid_gdf_all['BFS_NUMMER'].isin(scen_sett['bfs_numbers'])]
+
+
+            # plot discrete characteristics -----
+            disc_cols = plot_ind_charac_omitted_gwr_specs['disc_cols']
+            ncols  = plot_ind_charac_omitted_gwr_specs['disc_ncols']
+            nrows = (len(disc_cols) + ncols - 1) // ncols  
+            figsize = plot_ind_charac_omitted_gwr_specs['disc_figsize']
+
+            fig, disc_ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=(figsize[0], figsize[1]))
+            disc_ax = disc_ax.flatten() if nrows > 1 else [disc_ax]
+
+            for i, col in enumerate(disc_cols):
+                ax = disc_ax[i]
+                ax.pie(
+                    omitt_gwregid_gdf[col].value_counts()/omitt_gwregid_gdf[col].value_counts().sum(), 
+                    labels=omitt_gwregid_gdf[col].value_counts().index,
+                    autopct='%1.1f%%'
+                )
+                ax.set_title(f'{col} Distribution')
+            for j in range(i + 1, len(disc_ax)):
+                disc_ax[j].axis('off')
+            fig.tight_layout()
+            
+            if plot_show:
+                plt.show()
+            fig.savefig(f'{data_path}/output/visualizations/{scen}__plot_ind_disc_charac_omitted_gwr.png')
+
+
+            # plot discrete characteristics -----
+            cont_cols = plot_ind_charac_omitted_gwr_specs['cont_cols']
+            ncols  = plot_ind_charac_omitted_gwr_specs['cont_ncols']
+            nrows = (len(cont_cols) + ncols - 1) // ncols
+            figsize = plot_ind_charac_omitted_gwr_specs['cont_figsize']
+
+            fig, cont_ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=(figsize[0], figsize[1]))
+            cont_ax = cont_ax.flatten() if nrows > 1 else [cont_ax]
+
+            for i, col in enumerate(cont_cols):
+                omitt_gwregid_gdf.loc[:, col] = omitt_gwregid_gdf[col].replace('', np.nan).astype(float)
+                ax = cont_ax[i]
+                omitt_gwregid_gdf[col].hist(ax=ax, bins=plot_ind_charac_omitted_gwr_specs['cont_bins'])
+                ax.set_title(f'{col} Distribution')
+            for j in range(i + 1, len(cont_ax)):
+                cont_ax[j].axis('off')
+            fig.tight_layout()
+
+            if plot_show:
+                plt.show()
+            fig.savefig(f'{data_path}/output/visualizations/{scen}__plot_ind_cont_charac_omitted_gwr.png')
+
+
     # plot ind - map:  Model PV topology ========================
     default_map_zoom = visual_settings['default_map_zoom']
     default_map_center = visual_settings['default_map_center']
-
 
     # map ind - topo_egid ============================
     if visual_settings['plot_ind_map_topo_egid']:
         map_topo_egid_specs = visual_settings['plot_ind_map_topo_egid_specs']
         checkpoint_to_logfile(f'plot_ind_map_topo_egid', log_name)
 
-        for i, scen in enumerate(scen_dir_export_list):
+        for i_scen, scen in enumerate(scen_dir_export_list):
             
             # get pvinst_gdf ----------------
             if True: 
                 scen_data_path = f'{data_path}/output/{scen}'
-                pvalloc_scen = pvalloc_scen_list[i]
+                pvalloc_scen = pvalloc_scen_list[i_scen]
                 
                 # import 
                 gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
-                gm_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
+                gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/gm_shp_gdf.geojson')                                         
 
                 topo  = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
                 egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
@@ -472,7 +536,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 scen_data_path = f'{data_path}/output/{scen}'
                 T0_prediction = T0_prediction_list[0]
                 months_prediction = months_prediction_list[0]
-                pvalloc_scen = pvalloc_scen_list[i]
+                pvalloc_scen = pvalloc_scen_list[i_scen]
 
                 # transformations
                 gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
@@ -497,10 +561,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     return geom
                 gm_gdf['geometry'] = gm_gdf['geometry'].apply(flatten_geometry)
 
-                geojson = gm_gdf.__geo_interface__
+                # geojson = gm_gdf.__geo_interface__
+                geojson = json.loads(gm_gdf.to_json())
 
                 # Plot using Plotly Express
-                fig0 = px.choropleth_mapbox(
+                fig_topobase = px.choropleth_mapbox(
                     gm_gdf,
                     geojson=geojson,
                     locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
@@ -513,7 +578,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     opacity=map_topo_egid_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
                 )
                 # Update layout for borders and title
-                fig0.update_layout(
+                fig_topobase.update_layout(
                     mapbox=dict(
                         layers=[{
                             'source': geojson,
@@ -531,11 +596,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 )
 
                 # Show the map
-                # fig.show()
+                # fig_topobase.show()
 
             # topo map ----------------
             if True:
-                fig1 = copy.deepcopy(fig0)
+                fig_topoegid = copy.deepcopy(fig_topobase)
                 pvinst_gdf = pvinst_gdf.to_crs('EPSG:4326')
                 # Function to flatten geometries to 2D (ignoring Z-dimension)
                 def flatten_geometry(geom):
@@ -557,7 +622,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 subinst1_gdf, subinst2_gdf, subinst3_gdf = subinst1_gdf.loc[(subinst1_gdf['inst_TF'] == True) & (subinst1_gdf['info_source'] == 'pv_df')], subinst2_gdf.loc[(subinst2_gdf['inst_TF'] == True) & (subinst2_gdf['info_source'] == 'alloc_algorithm')], subinst3_gdf.loc[(subinst3_gdf['inst_TF'] == False)]
 
                 # Add the points using Scattermapbox
-                fig1.add_trace(go.Scattermapbox(lat=subinst1_gdf.geometry.y,lon=subinst1_gdf.geometry.x, mode='markers',
+                fig_topoegid.add_trace(go.Scattermapbox(lat=subinst1_gdf.geometry.y,lon=subinst1_gdf.geometry.x, mode='markers',
                     marker=dict(
                         size=map_topo_egid_specs['point_size_pv'],
                         color=map_topo_egid_specs['point_color_pv_df'],
@@ -567,7 +632,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     text=subinst1_gdf['hover_text'],
                     hoverinfo='text'
                 ))
-                fig1.add_trace(go.Scattermapbox(lat=subinst2_gdf.geometry.y,lon=subinst2_gdf.geometry.x, mode='markers',
+                fig_topoegid.add_trace(go.Scattermapbox(lat=subinst2_gdf.geometry.y,lon=subinst2_gdf.geometry.x, mode='markers',
                     marker=dict(
                         size=map_topo_egid_specs['point_size_pv'],
                         color=map_topo_egid_specs['point_color_alloc_algo'],
@@ -577,7 +642,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     text=subinst2_gdf['hover_text'],
                     hoverinfo='text'
                 ))
-                fig1.add_trace(go.Scattermapbox(lat=subinst3_gdf.geometry.y,lon=subinst3_gdf.geometry.x, mode='markers',
+                fig_topoegid.add_trace(go.Scattermapbox(lat=subinst3_gdf.geometry.y,lon=subinst3_gdf.geometry.x, mode='markers',
                     marker=dict(
                         size=map_topo_egid_specs['point_size_rest'],
                         color=map_topo_egid_specs['point_color_rest'],
@@ -589,7 +654,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 ))
                 
                 # Update layout
-                fig1.update_layout(
+                fig_topopvinst = copy.deepcopy(fig_topoegid)
+                fig_topopvinst.update_layout(
                         title=f"Map of model PV Topology ({scen})",
                         mapbox=dict(
                             style="carto-positron",
@@ -599,8 +665,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     )
 
                 if plot_show:
-                    fig1.show()
-                fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
+                    fig_topopvinst.show()
+                fig_topopvinst.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
 
 
     # map ind - node_connections ============================
@@ -614,7 +680,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             # import
             gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
-            gm_gdf = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
+            gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/gm_shp_gdf.geojson')                                         
             
             Map_egid_nodes = pd.read_parquet(f'{scen_data_path}/Map_egid_nodes.parquet')
             topo  = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
@@ -632,7 +698,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 scen_data_path = f'{data_path}/output/{scen}'
                 T0_prediction = T0_prediction_list[0]
                 months_prediction = months_prediction_list[0]
-                pvalloc_scen = pvalloc_scen_list[i]
+                pvalloc_scen = pvalloc_scen_list[i_scen]
 
                 # transformations
                 gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
@@ -744,7 +810,65 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig1.show()
             fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_node_connections.html')
 
-    
+
+    # map ind - omitted gwr_egids ============================
+    if visual_settings['plot_ind_map_omitted_gwr_egids']:
+        map_topo_omit_specs = visual_settings['plot_ind_map_topo_omitt_specs']
+        checkpoint_to_logfile(f'plot_ind_map_ommitted_gwr_egids', log_name)
+
+        for i_scen, scen in enumerate(scen_dir_export_list):
+            scen_sett = pvalloc_scenarios[f'{scen}']
+
+            # omitted egids from data prep -----            
+            omitt_gwregid_gdf_all = gpd.read_file(f'{data_path}/output/{scen_sett["name_dir_import"]}/omiitt_gwregid_gdf.geojson')
+            omitt_gwregid_gdf_all.rename(columns={'GGDENR': 'BFS_NUMMER'}, inplace=True)
+            omitt_gwregid_gdf_all['BFS_NUMMER'] = omitt_gwregid_gdf_all['BFS_NUMMER'].astype(int)
+            omitt_gwregid_gdf = omitt_gwregid_gdf_all.loc[omitt_gwregid_gdf_all['BFS_NUMMER'].isin(scen_sett['bfs_numbers'])]
+
+            # topo omitt map ----------------
+            fig_topoomitt = copy.deepcopy(fig_topoegid)
+            
+            omitt_gwregid_gdf = omitt_gwregid_gdf.set_crs('EPSG:2056', allow_override=True)
+            omitt_gwregid_gdf = omitt_gwregid_gdf.to_crs('EPSG:4326')
+
+            def flatten_geometry(geom):
+                if geom.has_z:
+                    if geom.geom_type == 'Polygon':
+                        exterior = [(x, y) for x, y, z in geom.exterior.coords]
+                        interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
+                        return Polygon(exterior, interiors)
+                    elif geom.geom_type == 'MultiPolygon':
+                        return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
+                return geom
+            omitt_gwregid_gdf['geometry'] = omitt_gwregid_gdf['geometry'].apply(flatten_geometry)
+
+            omitt_gwregid_gdf['hover_text'] = omitt_gwregid_gdf.apply(lambda row: f'EGID: {row["EGID"]}<br>BFS_NUMMER: {str(row["BFS_NUMMER"])}<br>GSTAT: {row["GSTAT"]}<br>GKAT: {row["GKAT"]}<br>GKLAS: {row["GKLAS"]}<br>GBAUJ: {row["GBAUJ"]}<br>GBAUM: {row["GBAUM"]}<br>GANZWHG: {row["GANZWHG"]}<br>GAREA: {row["GAREA"]}<br>WAZIM: {row["WAZIM"]} (no. rooms)<br>WAREA: {row["WAREA"]} (living area m2)', axis = 1)
+
+            fig_topoomitt.add_trace(go.Scattermapbox(lat=omitt_gwregid_gdf.geometry.y,lon=omitt_gwregid_gdf.geometry.x, mode='markers',
+                marker=dict(
+                    size=map_topo_omit_specs['point_size'],
+                    color=map_topo_omit_specs['point_color'],
+                    opacity = map_topo_omit_specs['point_opacity']
+                ),
+                name = 'omitted EGIDs (not in solkat)',
+                text=omitt_gwregid_gdf['hover_text'],
+                hoverinfo='text'
+                ))         
+
+            fig_topoomitt.update_layout(
+                        title=f"Map of PV Topology ({scen}) and *omitted* EGIDs",
+                        mapbox=dict(
+                            style="carto-positron",
+                            center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
+                            zoom=default_map_zoom
+                        )
+                    )                                           
+
+            if plot_show:
+                fig_topoomitt.show()
+            fig_topoomitt.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_omitted_gwr_egids.html')
+
+
     # plot ind - var: summary statistics ============================
     if visual_settings['plot_ind_var_summary_stats']:
         checkpoint_to_logfile(f'plot_ind_var_summary_stats', log_name)

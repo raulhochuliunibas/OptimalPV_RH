@@ -6,7 +6,7 @@ import geopandas as gpd
 import winsound
 import json
 import plotly.express as px
-import glob
+import copy
 
 from datetime import datetime
 from shapely.geometry import Point
@@ -132,7 +132,7 @@ def local_data_AND_spatial_mappings(
         if gdf_b is not None:
             return gdf_a, gdf_b
         
-    gwr_buff_gdf = gwr_gdf.copy()
+    gwr_buff_gdf = copy.deepcopy(gwr_gdf)
     gwr_buff_gdf.set_crs("EPSG:32632", allow_override=True, inplace=True)
     gwr_buff_gdf['geometry'] = gwr_buff_gdf['geometry'].buffer(solkat_selection_specs_def['GWR_EGID_buffer_size'])
     gwr_buff_gdf, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, gwr_buff_gdf, pv_gdf)
@@ -149,14 +149,15 @@ def local_data_AND_spatial_mappings(
 
     # OMITTED SPATIAL POINTS / POLYS -------------------
     print_to_logfile(f'\nnumber of omitted buildings because EGID is (not) / present in GWR or Solkat data frame or vice-versa', dataagg_settings_def['summary_file_name'])
-    omitt_gwregid_gdf = gwr_gdf.loc[~gwr_gdf['EGID'].isin(solkat_gdf['EGID'])].copy()
-    checkpoint_to_logfile(f'omitt_gwregid_gdf (gwr not in solkat): {omitt_gwregid_gdf.shape[0]} rows ({round((omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique {gwr_gdf["EGID"].nunique})', dataagg_settings_def['summary_file_name'], 2, True) 
+    print_to_logfile(f'>gwr settings: \n n bfs_numbers: {len(bfs_number_def)}, \n year_range: {year_range_def}, \n building class GKLAS: {gwr_selection_specs_def["GKLAS"]}, \n building status GSTAT: {gwr_selection_specs_def["GSTAT"]}, \n year of construction GBAUJ: {gwr_selection_specs_def["GBAUJ_minmax"]}', dataagg_settings_def['summary_file_name'])
+    omitt_gwregid_gdf = copy.deepcopy(gwr_gdf.loc[~gwr_gdf['EGID'].isin(solkat_gdf['EGID'])])
+    checkpoint_to_logfile(f'omitt_gwregid_gdf (gwr not in solkat): {omitt_gwregid_gdf.shape[0]} rows ({round((omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique: {gwr_gdf["EGID"].nunique()})', dataagg_settings_def['summary_file_name'], 2, True) 
 
-    omitt_solkat_gdf = solkat_gdf.loc[~solkat_gdf['EGID'].isin(gwr_gdf['EGID'])].copy()
-    checkpoint_to_logfile(f'omitt_solkat_gdf (solkat not in gwr): {omitt_solkat_gdf.shape[0]} rows ({round((omitt_solkat_gdf.shape[0]/solkat_gdf.shape[0])*100, 2)}%), solkat[EGID].unique {solkat_gdf["EGID"].nunique()})', dataagg_settings_def['summary_file_name'], 2, True)
+    omitt_solkat_gdf = copy.deepcopy(solkat_gdf.loc[~solkat_gdf['EGID'].isin(gwr_gdf['EGID'])])
+    checkpoint_to_logfile(f'omitt_solkat_gdf (solkat not in gwr): {omitt_solkat_gdf.shape[0]} rows ({round((omitt_solkat_gdf.shape[0]/solkat_gdf.shape[0])*100, 2)}%), solkat[EGID].unique: {solkat_gdf["EGID"].nunique()})', dataagg_settings_def['summary_file_name'], 2, True)
 
-    omitt_pv_gdf = pv_gdf.loc[~pv_gdf['xtf_id'].isin(gwregid_pvid['xtf_id'])].copy()
-    checkpoint_to_logfile(f'omitt_pv_gdf (pv not in gwr): {omitt_pv_gdf.shape[0]} rows ({round((omitt_pv_gdf.shape[0]/pv_gdf.shape[0])*100, 2)}%, pv[xtf_id].unique {pv_gdf["xtf_id"].nunique()})', dataagg_settings_def['summary_file_name'], 2, True)
+    omitt_pv_gdf = copy.deepcopy(pv_gdf.loc[~pv_gdf['xtf_id'].isin(gwregid_pvid['xtf_id'])])
+    checkpoint_to_logfile(f'omitt_pv_gdf (pv not in gwr): {omitt_pv_gdf.shape[0]} rows ({round((omitt_pv_gdf.shape[0]/pv_gdf.shape[0])*100, 2)}%, pv[xtf_id].unique: {pv_gdf["xtf_id"].nunique()})', dataagg_settings_def['summary_file_name'], 2, True)
 
 
     # EXPORT SPATIAL DATA -------------------

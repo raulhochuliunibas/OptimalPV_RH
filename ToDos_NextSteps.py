@@ -7,32 +7,53 @@
 
 # TESTING QUEUE: 
   # Check after preprep was rerun
-    # TODO: Visualize all buildings with mulitple PV installations
+    # TODO: Visualize all buildings with mulitple PV installations => is problem solved with buff002 prepdata? 
+    #       OTHER SOLUTION: After pv inst and egids are mapped, subselect all egids with multiple inst and map only those inst to the closest egid coordinates
 
     # TODO: pred_inst_df shows instTF as false, which should be TRUE and also no pvsource
-    # TODO: gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
-    # TODO: Define a KPI Metric (production loss ? ) and export it in the runs; idea 1 line graph HOY, 1 agg line graph totla kwH produciton loss per month / iteration
-
-
-    # OK - Assign nodes better, all nodes only to EGIDs that are in sample, also solkat
-    # OK - Visualize the NPV distribution 
-    # OK - plot gridtiers stepf function 
-
 
 
 # A ====================
 
-    # TODO: Sanity check for all calculations
-        # TODO: check if production capacity calc makes sense
-        # TODO: check if production amount calc makes sense
-        # TODO: check if NPV calc makes sense
+    # TODO: Finalize ACCURACY:
+        # OK: Do I have more or less all the houses and their roof partitions? 
+            # OK > print numbers to summary log file
+            # OK: > add map plot for ommitted EGIDS 
+            # OK: > add charachteristics of the omitted EGIDS
+        # OK: Each PV installation only fits 1 house
+            # OK > print numbers to summary log file 
+
+        # TODO: Add CKW Loadcurve from Hector
+        # BOOKMARK!!
+
+        # TODO: Select 1 house, analyse
+            # > electricity prices / feedin tariffs / onetime subsidy (??)
+            # > load curve
+            # > production capacity, makes sense?
+            # > feedin makes sense?
+            # > self consumption
+            # > cost of installation assumption
+            # > NPV calc makes sense? 
     # ----------
+
+
+
+    # TODO: check if there is an inefficiency in npv and gridprem update, as the same data is loaded multiple times.
+
+    # TODO: SCICORE try 1 really long run for kt:13 in scicore
+        # TODO: find all instances where pvalloc script accesses data outside the output folder. Needed for scicore run
+        # TODO: load a solid input data set to the cluster
+        # TODO: first estimate how long it takes (how many partitions of EGIDS are stored?, what is the size of a partition?).
+    # ----------
+
+    # TODO: NPV calc is not correct, way too high returns, mean around 0.5 mio. CHF 
+    # TODO: Check Loop for monthly assignments, December is always missing! => probably, december buffers out all the overshoots during the other months. different approach needed to set construction capacity constraint
+    # TODO: export a map showing all the grid tarifs and DSO names per BFS
+
 
     # TODO: Visualize / export buildings, that are excluded because of too many partitions
     #       > solkat of both subsets appear to be identical (also solkats with 2-3 partitions in solkat_n_above_partitions set)
 
-    # TODO: NPV calc is not correct, way too high returns, mean around 0.5 mio. CHF 
-    # TODO: Check Loop for monthly assignments, December is always missing! => probably, december buffers out all the overshoots during the other months. different approach needed to set construction capacity constraint
 
 
     # TODO: EGID in solkat is a faulty data point - at least for the small developing data set (nrows = ca. 1000 - 5000). 
@@ -66,6 +87,8 @@
     # ok - some egid in gwr.parquet are double up to 10 times in the column, check why!
     #       ->> because merging GWR with dwelling data, means that a row is no longer just a building but also sometimes a dwelling => multiple dwellings in one building
 
+    # - use SolarGIS instead of meteoblue data? => not suitable for my needs
+
 
 
 # SOLVED ====================
@@ -73,6 +96,12 @@ if True:
     # OK -  gridprem_ts not adjusting properly to grid_tiers
     # OK adjust zoom for map plots, so that zooming in enhances the main range of the area of interest, not the margin
     # OK Get Electricity prices using another package for SPARQL APIS than the one from Elcom// from local CSV / XLSX, not through API!! => not possible
+    # OK - Assign nodes better, all nodes only to EGIDs that are in sample, also solkat
+    # OK - Visualize the NPV distribution 
+    # OK - plot gridtiers stepf function 
+    # OK gridprem update disregards selfconsumption rate; calculates 100% feedin, which would be possible. 
+    # OK Define a KPI Metric (production loss ? ) and export it in the runs; idea 1 line graph HOY, 1 agg line graph totla kwH produciton loss per month / iteration
+
     print('')
 
 # **********************************************************************************************************************************************************
@@ -189,19 +218,19 @@ if True:
 # Create plot functions for the following:
 
 # - individual scenarios
-#   TODO: A - Amount of installed capacity per node (avg incl std bands)
-#   TODO: A - Amount of installed capacity per bfs (avg incl std bands)
-#   TODO: ? - Map of covered regions (bfs) with installed capacity
+#   OK A - Amount of installed capacity per node (avg incl std bands)
+#   OK A - Amount of installed capacity per bfs (avg incl std bands)
+#   OK ? - Map of covered regions (bfs) with installed capacity
 #   TODO: ? - Avg building characteristics (amount of houses in each class etc., with x roof partitions etc.)
 
 
 # - aggregated scenarios
-#   TODO: A - Avg Amount of installed capacity in months (avg incl std bands)
-#   TODO: A - Avg Production HOY per scenario (avg incl std bands)
+#   OK A - Avg Amount of installed capacity in months (avg incl std bands)
+#   OK A - Avg Production HOY per scenario (avg incl std bands)
 #   TODO: A - Final avg gridprem ts per scenario (avg incl std bands)
 
 #   OK A - Map of covered regions (bfs) with installed capacity
-#   TODO: A - Map of covered regions (bfs) with sum production (maybe incl solkat)
+#   OK A - Map of covered regions (bfs) with sum production (maybe incl solkat)
 
 
 

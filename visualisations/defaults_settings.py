@@ -11,9 +11,16 @@ visual_default_settings = {
         'plot_ind_line_installedCap_per_month':  True,
         'plot_ind_line_installedCap_per_BFS':    False,
         'plot_ind_hist_NPV_freepartitions':      True,
-        'plot_ind_var_summary_stats':            True,
-
-
+        'plot_ind_charac_omitted_gwr':           True,
+            'plot_ind_charac_omitted_gwr_specs':{
+                'disc_cols': ['BFS_NUMMER','GSTAT','GKAT','GKLAS'], 
+                'disc_ncols': 2, 
+                'disc_figsize': [15, 10],
+                'cont_cols': ['GBAUJ','GBAUM','GAREA','GEBF','WAZIM','WAREA'],
+                'cont_ncols': 3,
+                'cont_figsize': [15, 10],
+                'cont_bins': 20,
+            },
         'plot_ind_map_topo_egid':                True,
             'plot_ind_map_topo_egid_specs': {
                 'uniform_municip_color': '#fff2ae',
@@ -25,6 +32,12 @@ visual_default_settings = {
                 'point_color_alloc_algo': '#ffa600', # yellow 
                 'point_color_rest': '#383838',       # dark grey
             }, 
+        'plot_ind_map_topo_omitt':              True,
+            'plot_ind_map_topo_omitt_specs':{
+                'point_opacity': 0.6, 
+                'point_size': 7.5, 
+                'point_color': '#f54242',           # red
+            },
         'plot_ind_map_node_connections':         True,
             'plot_ind_map_node_connections_specs': {
                 'uniform_municip_color': '#fff2ae',
@@ -36,6 +49,8 @@ visual_default_settings = {
                 'point_color_all': '#383838',       # dark grey
                 'point_color_palette': 'Turbo',
             },
+        'plot_ind_var_summary_stats':            True,
+
 
         'plot_agg_line_installedCap_per_month':  True,
         'plot_agg_line_productionHOY_per_node':  True,
