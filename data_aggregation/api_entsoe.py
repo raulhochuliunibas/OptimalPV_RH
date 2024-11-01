@@ -42,6 +42,11 @@ def api_entsoe_ahead_elecpri_data(
     print_to_logfile(f'run function: api_pvtarif.py', log_file_name_def=log_file_name_def)
 
 
+    # create directory in input folder -------------------
+    if not os.path.exists(f'{data_path_def}/input_api'):
+        os.makedirs(f'{data_path_def}/input_api')
+
+
     # year loop -------------------
     # necessary because api only ansers 1 year at a time
     market_elecpri = pd.DataFrame() # empty df to be filled with every loop later
@@ -64,7 +69,8 @@ def api_entsoe_ahead_elecpri_data(
         checkpoint_to_logfile(f'response.status_code: {response.status_code}', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
 
         # export response to check content
-        with open(f'{data_path_def}/output/preprep_data/entsoe_response.txt', 'w') as f:
+        # with open(f'{data_path_def}/output/preprep_data/entsoe_response.txt', 'w') as f:
+        with open(f'{data_path_def}/input_api/entsoe_response.txt', 'w') as f:
             f.write(response.text)
 
         # extract data from xml response
@@ -124,8 +130,10 @@ def api_entsoe_ahead_elecpri_data(
     market_elecpri.columns = [col1, col2]
 
     # export
-    market_elecpri.to_parquet(f'{data_path_def}/output/preprep_data/market_elecpri.parquet')
-    market_elecpri.to_csv(f'{data_path_def}/output/preprep_data/market_elecpri.csv', index=False)
+    # market_elecpri.to_parquet(f'{data_path_def}/output/preprep_data/market_elecpri.parquet')
+    # market_elecpri.to_csv(f'{data_path_def}/output/preprep_data/market_elecpri.csv', index=False)
+    market_elecpri.to_parquet(f'{data_path_def}/input_api/market_elecpri.parquet')
+    market_elecpri.to_csv(f'{data_path_def}/input_api/market_elecpri.csv')
     checkpoint_to_logfile(f'exported market_elecpri.parquet', log_file_name_def=log_file_name_def, n_tabs_def = 3, show_debug_prints_def=show_debug_prints_def)
 
 

@@ -14,6 +14,35 @@ from shapely.geometry import Point
 sys.path.append('..')
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
+# ------------------------------------------------------------------------------------------------------
+# BY SB_UUID - FALSE - IMPORT LOCAL DATA + create SPATIAL MAPPINGS
+# ------------------------------------------------------------------------------------------------------
+def get_input_api_data(dataagg_settings_def):
+    """
+    Function to import all api input data, previously downloaded and stored through various API calls
+    """
+
+    # import settings + setup -------------------
+    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
+    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
+    data_path_def = dataagg_settings_def['data_path']
+    year_range_def = dataagg_settings_def['year_range']
+    bfs_number_def = dataagg_settings_def['bfs_numbers']
+    input_api_path = f'{data_path_def}/input_api'
+
+    # import and store data in preprep data -------------------
+    Map_gm_ewr = pd.read_parquet(f'{input_api_path}/Map_gm_ewr.parquet')
+    Map_gm_ewr.to_parquet(f'{data_path_def}/output/preprep_data/Map_gm_ewr.parquet')
+    Map_gm_ewr.to_csv(f'{data_path_def}/output/preprep_data/Map_gm_ewr.csv', sep=';', index=False)
+    checkpoint_to_logfile(f'Map_gm_ewr stored in prepreped data', dataagg_settings_def['log_file_name'], 2, show_debug_prints_def)
+
+    pvtarif_all = pd.read_parquet(f'{input_api_path}/pvtarif.parquet')
+    pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_def), :])
+    pvtarif.to_parquet(f'{data_path_def}/output/preprep_data/pvtarif.parquet')
+    pvtarif.to_csv(f'{data_path_def}/output/preprep_data/pvtarif.csv', sep=';', index=False)
+    checkpoint_to_logfile(f'pvtarif stored in prepreped data', dataagg_settings_def['log_file_name'], 2, show_debug_prints_def)
+
+        
 
 # ------------------------------------------------------------------------------------------------------
 # BY SB_UUID - FALSE - IMPORT LOCAL DATA + create SPATIAL MAPPINGS

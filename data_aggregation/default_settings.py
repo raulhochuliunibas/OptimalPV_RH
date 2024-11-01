@@ -15,7 +15,6 @@ dataagg_default_settings = {
         
         # switch on/off parts of aggregation
         'split_data_geometry_AND_slow_api': True, 
-        'reimport_api_data':                True,
         'rerun_localimport_and_mappings':   True,               # F: use existi ng parquet files, T: recreate parquet files in data prep
         'reextend_fixed_data':              True,               # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again       
         

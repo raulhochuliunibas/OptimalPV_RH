@@ -35,7 +35,7 @@ if True:
     from data_aggregation.sql_gwr import *
     from data_aggregation.api_pvtarif import *
     from data_aggregation.api_entsoe import *
-    from data_aggregation.preprepare_data import local_data_AND_spatial_mappings, import_demand_TS_AND_match_households, import_meteo_data
+    from data_aggregation.preprepare_data import *
     from data_aggregation.extend_data import *
     from data_aggregation.default_settings import *
 
@@ -93,12 +93,8 @@ def data_aggregation_MASTER(dataagg_settings_func):
         split_data_and_geometry(dataagg_settings_def = dataagg_settings)
 
 
-
-    # IMPORT SLOW API DATA ---------------------------------------------------------------
+    # GET SLOW API DATA ---------------------------------------------------------------
     if dataagg_settings['split_data_geometry_AND_slow_api']:
-        subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
-        get_elecpri_data_earlier_api_import(dataagg_settings_def = dataagg_settings)
-
         subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', log_name)
         api_pvtarif_gm_ewr_Mapping(dataagg_settings_def = dataagg_settings)
 
@@ -106,18 +102,15 @@ def data_aggregation_MASTER(dataagg_settings_func):
         api_pvtarif_data(dataagg_settings_def=dataagg_settings)
 
         subchapter_to_logfile('pre-prep data: API ENTSOE DayAhead', log_name)
-        api_entsoe_ahead_elecpri_data(dataagg_settings_def = dataagg_settings)
+        # api_entsoe_ahead_elecpri_data(dataagg_settings_def = dataagg_settings)
 
 
+    # IMPORT API DATA ---------------------------------------------------------------
+    subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', log_name)
+    get_elecpri_data_earlier_api_import(dataagg_settings_def = dataagg_settings)
 
-    # IMPORT API DATA 2 ---------------------------------------------------------------
-    # if dataagg_settings['reimport_api_data']:
-        # subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
-        # sql_gwr_data(dataagg_settings_def=dataagg_settings)
-    # else:
-        # print_to_logfile('\n\n', log_name)
-        # checkpoint_to_logfile('use already downloaded data on electricity prices, GWR, PV Tarifs', log_name)
-
+    subchapter_to_logfile('pre-prep data: API INPUT DATA', log_name)
+    get_input_api_data(dataagg_settings_def = dataagg_settings)
 
 
     # IMPORT LOCAL DATA + SPATIAL MAPPINGS ------------------------------------------
@@ -138,7 +131,6 @@ def data_aggregation_MASTER(dataagg_settings_func):
 
         subchapter_to_logfile('pre-prep data: IMPORT METEO SUNSHINE TS', log_name)
         import_meteo_data(dataagg_settings_def = dataagg_settings)
-
 
 
     else: 
