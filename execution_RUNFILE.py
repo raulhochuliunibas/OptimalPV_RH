@@ -10,7 +10,7 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  2 #36
+months_pred =  12 #36
 run_on_server = False
 
 run_dataagg =   False
@@ -46,7 +46,7 @@ pvalloc_scenarios={
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787,],
+        'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781,],
         'create_gdf_export_of_topology':    True,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv',
