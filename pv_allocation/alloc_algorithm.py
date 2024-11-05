@@ -420,7 +420,8 @@ def update_npv_df(pvalloc_settings,
             else:
                 econ_spend_chf = ((netfeedin_kW * prem_Rp_kWh) / 100)
 
-            subdf['selfconsum_kW'], subdf['netdemand_kW'], subdf['netfeedin_kW'], subdf['econ_inc_chf'], subdf['econ_spend_chf'] = selfconsum_kW, netdemand_kW, netfeedin_kW, econ_inc_chf, econ_spend_chf
+            subdf['demand_kW'], subdf['pvprod_kW'], subdf['selfconsum_kW'], subdf['netdemand_kW'], subdf['netfeedin_kW'], subdf['econ_inc_chf'], subdf['econ_spend_chf'] = demand_kW, pvprod_kW, selfconsum_kW, netdemand_kW, netfeedin_kW, econ_inc_chf, econ_spend_chf
+            
 
             if (i <3) and (i_m <3): 
                 checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 1, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
@@ -438,7 +439,8 @@ def update_npv_df(pvalloc_settings,
             inst_list, info_source_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
             flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_Rp_kWh_list = [], [], [], [], []
         
-            flaech_angletilt_list, selfconsum_list, netdemand_list, netfeedin_list = [], [], [], []
+            flaech_angletilt_list = []
+            demand_list, pvprod_list, selfconsum_list, netdemand_list, netfeedin_list = [], [], [], [], []
             econ_inc_chf_list, econ_spend_chf_list = [], []
 
             egid = agg_subdf['EGID'].unique()[0]
@@ -471,6 +473,8 @@ def update_npv_df(pvalloc_settings,
                         # neigung_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('NEIGUNG')][0])
                     
                         flaech_angletilt_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('FLAECH_angletilt')].sum())
+                        demand_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('demand_kW')].sum())
+                        pvprod_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('pvprod_kW')].sum())
                         selfconsum_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('selfconsum_kW')].sum())
                         netdemand_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('netdemand_kW')].sum())
                         netfeedin_list.append(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('netfeedin_kW')].sum())
@@ -487,6 +491,7 @@ def update_npv_df(pvalloc_settings,
 
                                         'FLAECHE': flaeche_list, 
                                         # 'FLAECH_angletilt': flaech_angletilt_list,
+                                        'demand_kW': demand_list, 'pvprod_kW': pvprod_list,
                                         'selfconsum_kW': selfconsum_list, 'netdemand_kW': netdemand_list, 'netfeedin_kW': netfeedin_list,
                                         'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
                      
@@ -510,7 +515,7 @@ def update_npv_df(pvalloc_settings,
         agg_npv_df_list.append(aggsubdf_combo)
 
     agg_npv_df = pd.concat(agg_npv_df_list)
-    npv_df = agg_npv_df.copy()
+    npv_df = copy.deepcopy(agg_npv_df)
 
     # export -----------------------------------------------------
     with open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'w') as f:
