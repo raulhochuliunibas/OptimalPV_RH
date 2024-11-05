@@ -95,6 +95,7 @@ def select_AND_adjust_topology(pvalloc_settings,
 
     # export to main pvalloc folder ----------
     npv_df.to_parquet(f'{data_path_def}/output/pvalloc_run/npv_df.parquet')
+    npv_df.to_csv(f'{data_path_def}/output/pvalloc_run/npv_df.csv')
     pred_inst_df.to_parquet(f'{data_path_def}/output/pvalloc_run/pred_inst_df.parquet')
     pred_inst_df.to_csv(f'{data_path_def}/output/pvalloc_run/pred_inst_df.csv')
     with open (f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'w') as f:
