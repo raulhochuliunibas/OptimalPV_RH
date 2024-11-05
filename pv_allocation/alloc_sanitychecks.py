@@ -220,7 +220,7 @@ def sanity_check_summary_byEGID(
 
 
         # df_uid (roof partition) values ----------
-        if topo.get(egid).get('pv_inst').get('inst_TF'):
+        if not topo.get(egid).get('pv_inst').get('inst_TF'):
             npv_sub = npv_df.loc[npv_df['EGID'] == egid]
             npv_val_list = [
                 row_demand_kW,
@@ -262,7 +262,8 @@ def sanity_check_summary_byEGID(
             row_npv_chf_min['key'], row_npv_chf_min['descr'], row_npv_chf_min['val'], row_npv_chf_min['unit'] = 'npv_chf_min', 'min of possible NPV within all partition combinations',  npv_sub['npv_chf'].min(), 'CHF'
             row_npv_chf_max['key'], row_npv_chf_max['descr'], row_npv_chf_max['val'], row_npv_chf_max['unit'] = 'npv_chf_max', 'max of possible NPV within all partition combinations',  npv_sub['npv_chf'].max(), 'CHF'
 
-        elif not topo.get(egid).get('pv_inst').get('inst_TF'):
+        elif topo.get(egid).get('pv_inst').get('inst_TF'):
+            if
             pred_inst_sub = pred_inst_df.loc[pred_inst_df['EGID'] == egid]
             npv_val_list = [
                 row_demand_kW,
