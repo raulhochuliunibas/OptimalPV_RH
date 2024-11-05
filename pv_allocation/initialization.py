@@ -9,6 +9,7 @@ import glob
 import plotly.graph_objs as go
 import plotly.offline as pyo
 import geopandas as gpd
+import copy
 
 from pyarrow.parquet import ParquetFile
 from shapely.ops import nearest_points
@@ -388,13 +389,15 @@ def import_prepre_AND_create_topology(
             energy =   elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('energy')].sum()
             grid =     elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('grid')].sum()
             aidfee =   elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('aidfee')].sum()
+            taxes =    elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('taxes')].sum()
             fixcosts = elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('fixcosts')].sum()
 
-            elecpri_egid = energy + grid + aidfee + fixcosts
+            elecpri_egid = energy + grid + aidfee + taxes + fixcosts
             elecpri_info = {
                 'energy': energy,
                 'grid': grid,
                 'aidfee': aidfee,
+                'taxes': taxes,
                 'fixcosts': fixcosts,
             }
 
@@ -686,13 +689,13 @@ def define_construction_capacity(
     topo_keys = list(topo.keys())
 
     # subset pv to EGIDs in TOPO, and LOOKBACK period of pvalloc settings
-    pv_sub = pv.copy()
+    pv_sub = copy.deepcopy(pv)
     del_cols = ['MainCategory', 'SubCategory', 'PlantCategory']
     pv_sub.drop(columns=del_cols, inplace=True)
 
     pv_sub = pv_sub.merge(Map_egid_pv, how='left', on='xtf_id')
     pv_sub = pv_sub.loc[pv_sub['EGID'].isin(topo_keys)]
-    pv_plot = pv_sub.copy() # used for plotting later
+    pv_plot = copy.deepcopy(pv_sub) # used for plotting later
 
     pv_sub['BeginningOfOperation'] = pd.to_datetime(pv_sub['BeginningOfOperation'])
     pv_sub['MonthPeriod'] = pv_sub['BeginningOfOperation'].dt.to_period('M')
@@ -737,7 +740,7 @@ def define_construction_capacity(
         ]
         )
         fig = go.Figure(data=[trace_weekly, trace_monthly, trace_yearly], layout=layout)
-        # pyo.plot(fig)
+        fig.show()
         fig.write_html(f'{data_path_def}/output/pvalloc_run/pv_total_power_over_time.html')
 
 
