@@ -72,7 +72,7 @@ pvalloc_default_settings = {
     },
     'constr_capacity_specs': {
         'ann_capacity_growth': 0.05,         # annual growth of installed capacity# each year, X% more PV capacity can be built, 100% in year T0
-        'constr_capa_overshoot_fact': 0.9, 
+        'constr_capa_overshoot_fact': 1, 
         'summer_months': [4,5,6,7,8,9,],
         'winter_months': [10,11,12,1,2,3,],
         'share_to_summer': 0.6, 
@@ -93,6 +93,9 @@ pvalloc_default_settings = {
                                             # GANZWHG - total number of apartments in building
                                             # GAZZI - total number of rooms in building
     },
+    'sanity_check_summary_byEGID_specs': {
+        'egid_list': ['3031017','1367570', '245017418', '3030600'],
+    }
 }
 
 

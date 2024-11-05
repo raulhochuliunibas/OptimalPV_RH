@@ -5,6 +5,7 @@ import pandas as pd
 import geopandas as gpd
 import json
 import copy
+import glob
 import plotly.graph_objs as go
 import plotly.offline as pyo
 
@@ -102,8 +103,6 @@ def create_gdf_export_of_topology(
 
     solkat_above_npoart_gdf = copy.deepcopy(solkat_gdf_in_topo)
     solkat_gdf_in_topo[solkat_gdf_in_topo['df_uid'].isin(topo_df_uid_list)].copy()
-    # solkat_above_npoart_gdf = 
-    ## BOOKMARK => 
 
     # export to shp -----------------------------------------------------
     topo_above_npart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp')
@@ -155,8 +154,148 @@ def check_multiple_xtf_ids_per_EGID(
     gwr_gdf_multiple_xtf_id.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_multiple_xtf_id.shp')
     pv_gdf_multiple_xtf_id.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_multiple_xtf_id.shp')
 
+
+# ------------------------------------------------------------------------------------------------------
+# sanity check for sample of EGIDs
+# ------------------------------------------------------------------------------------------------------
+def sanity_check_summary_byEGID(
+        pvalloc_settings, ):
     
+    # setup -----------------------------------------------------
+    name_dir_export_def = pvalloc_settings['name_dir_export']
+    name_dir_import_def = pvalloc_settings['name_dir_import']
+    data_path_def = pvalloc_settings['data_path']
+    log_file_name_def = pvalloc_settings['log_file_name']
+    
+    sanity_check_summary_byEGID_specs = pvalloc_settings['sanity_check_summary_byEGID_specs']
+
+    if not os.path.exists(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID'):
+        os.makedirs(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID')
+
+    # import -----------------------------------------------------
+    topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
+    path_npv = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_*.parquet')
+    npv_df = pd.read_parquet(path_npv[0])
+    path_pred_inst = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_*.parquet')
+    pred_inst_df = pd.read_parquet(path_pred_inst[0])
 
 
+    # information extraction -----------------------------------------------------
+    colnames = ['key', 'descr', 'partition_id', 'col1', 'col2', 'val', 'unit']
+    def get_new_row():
+        return {col: None for col in colnames}
+    
+    summary_df_toExcel = []
+    egid = sanity_check_summary_byEGID_specs['egid_list'][2]
+    for egid in sanity_check_summary_byEGID_specs['egid_list']:
+        # single values ----------
+        if True:
+            single_val_list = [
+                row_egid, row_bfs, row_gklas, row_node, row_demand_type, 
+                row_pvinst_info, row_pvinst_BeginOp, row_pvinst_TotalPower,
+                row_elecpri, row_pvtarif, 
+                row_selfconsumption, row_interest_rate, row_years_maturity, row_kWpeak_per_m2] = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row()
+            
+            # row_egid, row_bfs, row_gklas, row_node, row_demand_type = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row()
+            row_egid['key'], row_egid['descr'], row_egid['val'] = 'EGID', 'house identifier ID', egid
+            row_bfs['key'], row_bfs['descr'], row_bfs['val'] = 'BFS', 'municipality identifier ID', topo.get(egid).get('gwr_info').get('bfs')
+            row_gklas['key'], row_gklas['descr'], row_gklas['val'] = 'GKLAS', 'building type classification', topo.get(egid).get('gwr_info').get('gklas')
+            row_node['key'], row_node['descr'], row_node['val'] = 'node', 'grid node identifier (artificial)', topo.get(egid).get('node')
+            row_demand_type['key'], row_demand_type['descr'], row_demand_type['val'] = 'demand_type', 'type of artifical demand profile (Netflex, maybe CKW later)', topo.get(egid).get('demand_type')
 
+            # row_pvinst_info, row_pvinst_BeginOp, row_pvinst_TotalPower = get_new_row(), get_new_row(), get_new_row() 
+            row_pvinst_info['key'], row_pvinst_info['descr'], row_pvinst_info['val'] = 'pv_inst > info_source', 'Origin behind pv inst on house (real data or model alloc)', topo.get(egid).get('pv_inst').get('inst_info')
+            row_pvinst_BeginOp['key'], row_pvinst_BeginOp['descr'], row_pvinst_BeginOp['val'] = 'pv_inst > BeginOp', 'begin of operation', topo.get(egid).get('pv_inst').get('BeginOp')
+            row_pvinst_TotalPower['key'], row_pvinst_TotalPower['descr'], row_pvinst_TotalPower['val'], row_pvinst_TotalPower['unit'] = 'pv_inst > TotalPower', 'total power of PV installation', topo.get(egid).get('pv_inst').get('TotalPower'), 'kW'
+
+            # row_elecpri, row_pvtarif = get_new_row(), get_new_row() 
+            row_elecpri['key'], row_elecpri['descr'], row_elecpri['val'], row_elecpri['unit'], row_elecpri['col1'], row_elecpri['col2'] = 'elecpri', 'mean electricity price per BFS area', topo.get(egid).get('elecpri_Rp_kWh'), 'Rp/kWh', f"elecpri_info: {topo.get(egid).get('elecpri_info')}",f"year: {pvalloc_settings.get('tech_economic_specs').get('elecpri_year')}"
+            row_pvtarif['key'], row_pvtarif['descr'], row_pvtarif['val'], row_pvtarif['unit'], row_pvtarif['col1'], row_pvtarif['col2'] = 'pvtarif', 'tariff for PV feedin to EWR',topo.get(egid).get('pvtarif_Rp_kWh'), 'Rp/kWh', f"EWRs: {topo.get(egid).get('EWR').get('name')}", f"year: {pvalloc_settings.get('tech_economic_specs').get('pvtarif_year')}"
+
+            # row_selfconsumption, row_interest_rate, row_years_maturity, row_kWpeak_per_m2  = get_new_row(), get_new_row(), get_new_row(), get_new_row()
+            row_selfconsumption['key'], row_selfconsumption['descr'], row_selfconsumption['val'] = 'self_consumption_ifapplicable', 'amount of production that can be consumed by the house at any hour during the year', pvalloc_settings.get('tech_economic_specs').get('self_consumption_ifapplicable')
+            row_interest_rate['key'], row_interest_rate['descr'],row_interest_rate['val'] = 'interest_rate', 'generic interest rate used for dicsounting NPV calculation', pvalloc_settings.get('tech_economic_specs').get('interest_rate')
+            row_years_maturity['key'], row_years_maturity['descr'], row_years_maturity['val'] = 'invst_maturity', 'number of years that consider pv production for NPV calculation', pvalloc_settings.get('tech_economic_specs').get('invst_maturity')
+            row_kWpeak_per_m2['key'], row_kWpeak_per_m2['descr'], row_kWpeak_per_m2['val'] = 'kWpeak_per_m2', 'transformation factor, how much kWp can be put on a square meter', pvalloc_settings.get('tech_economic_specs').get('kWpeak_per_m2')
+
+
+        # df_uid (roof partition) values ----------
+        if topo.get(egid).get('pv_inst').get('inst_TF'):
+            npv_sub = npv_df.loc[npv_df['EGID'] == egid]
+            npv_val_list = [
+                row_demand_kW,
+                row_pvprod_kW_min, row_pvprod_kW_max, row_pvprod_kW_mean, row_pvprod_kW_std, 
+                row_netfeedin_kW_min, row_netfeedin_kW_max, row_netfeedin_kW_mean, row_netfeedin_kW_std,
+                row_econ_inc_chf_min, row_econ_inc_chf_max, row_econ_inc_chf_mean, row_econ_inc_chf_std,
+                row_estim_pvinstcost_chf_min, row_estim_pvinstcost_chf_max, row_estim_pvinstcost_chf_mean, row_estim_pvinstcost_chf_std,
+                row_npv_chf_min, row_npv_chf_max, row_npv_chf_mean, row_npv_chf_std,
+                ] = [get_new_row(), 
+                get_new_row(), get_new_row(), get_new_row(), get_new_row(),
+                get_new_row(), get_new_row(), get_new_row(), get_new_row(),
+                get_new_row(), get_new_row(), get_new_row(), get_new_row(),
+                get_new_row(), get_new_row(), get_new_row(), get_new_row(),]
+            
+            row_demand_kW['key'], row_demand_kW['descr'], row_demand_kW['val'], row_demand_kW['unit'] = 'demand_kW_min', 'total demand of house over 1 year', npv_sub['demand_kW'].mean(), 'kWh'
+
+            row_pvprod_kW_mean['key'], row_pvprod_kW_mean['descr'], row_pvprod_kW_mean['val'], row_pvprod_kW_mean['unit'] = 'pvprod_kW_mean', 'mean of possible production within all partition combinations',  npv_sub['pvprod_kW'].mean(), 'kWh'
+            row_pvprod_kW_std['key'], row_pvprod_kW_std['descr'], row_pvprod_kW_std['val'], row_pvprod_kW_std['unit'] = 'pvprod_kW_std', 'std of possible production within all partition combinations',  npv_sub['pvprod_kW'].std(), 'kWh'
+            row_pvprod_kW_min['key'], row_pvprod_kW_min['descr'], row_pvprod_kW_min['val'], row_pvprod_kW_min['unit'] = 'pvprod_kW_min', 'min of possible production within all partition combinations',  npv_sub['pvprod_kW'].min(), 'kWh'
+            row_pvprod_kW_max['key'], row_pvprod_kW_max['descr'], row_pvprod_kW_max['val'], row_pvprod_kW_max['unit'] = 'pvprod_kW_max', 'max of possible production within all partition combinations',  npv_sub['pvprod_kW'].max(), 'kWh'
+
+            row_netfeedin_kW_mean['key'], row_netfeedin_kW_mean['descr'], row_netfeedin_kW_mean['val'], row_netfeedin_kW_mean['unit'] = 'netfeedin_kW_mean', 'mean of possible feedin within all partition combinations',  npv_sub['netfeedin_kW'].mean(), 'kWh'
+            row_netfeedin_kW_std['key'], row_netfeedin_kW_std['descr'], row_netfeedin_kW_std['val'], row_netfeedin_kW_std['unit'] = 'netfeedin_kW_std', 'std of possible feedin within all partition combinations',  npv_sub['netfeedin_kW'].std(), 'kWh'
+            row_netfeedin_kW_min['key'], row_netfeedin_kW_min['descr'], row_netfeedin_kW_min['val'], row_netfeedin_kW_min['unit'] = 'netfeedin_kW_min', 'min of possible feedin within all partition combinations',  npv_sub['netfeedin_kW'].min(), 'kWh'
+            row_netfeedin_kW_max['key'], row_netfeedin_kW_max['descr'], row_netfeedin_kW_max['val'], row_netfeedin_kW_max['unit'] = 'netfeedin_kW_max', 'max of possible feedin within all partition combinations',  npv_sub['netfeedin_kW'].max(), 'kWh'
+            
+            row_econ_inc_chf_mean['key'], row_econ_inc_chf_mean['descr'], row_econ_inc_chf_mean['val'], row_econ_inc_chf_mean['unit'] = 'econ_inc_chf_mean', 'mean of possible economic income within all partition combinations',  npv_sub['econ_inc_chf'].mean(), 'CHF'
+            row_econ_inc_chf_std['key'], row_econ_inc_chf_std['descr'], row_econ_inc_chf_std['val'], row_econ_inc_chf_std['unit'] = 'econ_inc_chf_std', 'std of possible economic income within all partition combinations',  npv_sub['econ_inc_chf'].std(), 'CHF'
+            row_econ_inc_chf_min['key'], row_econ_inc_chf_min['descr'], row_econ_inc_chf_min['val'], row_econ_inc_chf_min['unit'] = 'econ_inc_chf_min', 'min of possible economic income within all partition combinations',  npv_sub['econ_inc_chf'].min(), 'CHF'
+            row_econ_inc_chf_max['key'], row_econ_inc_chf_max['descr'], row_econ_inc_chf_max['val'], row_econ_inc_chf_max['unit'] = 'econ_inc_chf_max', 'max of possible economic income within all partition combinations',  npv_sub['econ_inc_chf'].max(), 'CHF'
+
+            row_estim_pvinstcost_chf_mean['key'], row_estim_pvinstcost_chf_mean['descr'], row_estim_pvinstcost_chf_mean['val'], row_estim_pvinstcost_chf_mean['unit'] = 'estim_pvinstcost_chf_mean', 'mean of possible installation costs within all partition combinations',  npv_sub['estim_pvinstcost_chf'].mean(), 'CHF'
+            row_estim_pvinstcost_chf_std['key'], row_estim_pvinstcost_chf_std['descr'], row_estim_pvinstcost_chf_std['val'], row_estim_pvinstcost_chf_std['unit'] = 'estim_pvinstcost_chf_std', 'std of possible installation costs within all partition combinations',  npv_sub['estim_pvinstcost_chf'].std(), 'CHF'
+            row_estim_pvinstcost_chf_min['key'], row_estim_pvinstcost_chf_min['descr'], row_estim_pvinstcost_chf_min['val'], row_estim_pvinstcost_chf_min['unit'] = 'estim_pvinstcost_chf_min', 'min of possible installation costs within all partition combinations',  npv_sub['estim_pvinstcost_chf'].min(), 'CHF'
+            row_estim_pvinstcost_chf_max['key'], row_estim_pvinstcost_chf_max['descr'], row_estim_pvinstcost_chf_max['val'], row_estim_pvinstcost_chf_max['unit'] = 'estim_pvinstcost_chf_max', 'max of possible installation costs within all partition combinations',  npv_sub['estim_pvinstcost_chf'].max(), 'CHF'
+
+            row_npv_chf_mean['key'], row_npv_chf_mean['descr'], row_npv_chf_mean['val'], row_npv_chf_mean['unit'] = 'npv_chf_mean', 'mean of possible NPV within all partition combinations',  npv_sub['npv_chf'].mean(), 'CHF'
+            row_npv_chf_std['key'], row_npv_chf_std['descr'], row_npv_chf_std['val'], row_npv_chf_std['unit'] = 'npv_chf_std', 'std of possible NPV within all partition combinations',  npv_sub['npv_chf'].std(), 'CHF'
+            row_npv_chf_min['key'], row_npv_chf_min['descr'], row_npv_chf_min['val'], row_npv_chf_min['unit'] = 'npv_chf_min', 'min of possible NPV within all partition combinations',  npv_sub['npv_chf'].min(), 'CHF'
+            row_npv_chf_max['key'], row_npv_chf_max['descr'], row_npv_chf_max['val'], row_npv_chf_max['unit'] = 'npv_chf_max', 'max of possible NPV within all partition combinations',  npv_sub['npv_chf'].max(), 'CHF'
+
+        elif not topo.get(egid).get('pv_inst').get('inst_TF'):
+            pred_inst_sub = pred_inst_df.loc[pred_inst_df['EGID'] == egid]
+            npv_val_list = [
+                row_demand_kW,
+                row_pvprod_kW,
+                row_netfeedin_kW, 
+                row_econ_inc_chf, 
+                row_estim_pvinstcost_chf, 
+                row_npv_chf
+                ] = [get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),] 
+            
+            row_demand_kW['key'], row_demand_kW['descr'], row_demand_kW['val'], row_demand_kW['unit'] = 'demand_kW_min', 'total demand of house over 1 year', pred_inst_sub['demand_kW'].values[0], 'kWh'
+            row_pvprod_kW['key'], row_pvprod_kW['descr'], row_pvprod_kW['val'], row_pvprod_kW['unit'] = 'pvprod_kW', 'total production of house over 1 year', pred_inst_sub['pvprod_kW'].values[0], 'kWh'
+            row_netfeedin_kW['key'], row_netfeedin_kW['descr'], row_netfeedin_kW['val'], row_netfeedin_kW['unit'] = 'netfeedin_kW', 'total feedin of house over 1 year', pred_inst_sub['netfeedin_kW'].values[0], 'kWh'
+            row_econ_inc_chf['key'], row_econ_inc_chf['descr'], row_econ_inc_chf['val'], row_econ_inc_chf['unit'] = 'econ_inc_chf', 'economic income of house over 1 year', pred_inst_sub['econ_inc_chf'].values[0], 'CHF'
+            row_estim_pvinstcost_chf['key'], row_estim_pvinstcost_chf['descr'], row_estim_pvinstcost_chf['val'], row_estim_pvinstcost_chf['unit'] = 'estim_pvinstcost_chf', 'estimated installation costs of house over 1 year', pred_inst_sub['estim_pvinstcost_chf'].values[0], 'CHF'
+            row_npv_chf['key'], row_npv_chf['descr'], row_npv_chf['val'], row_npv_chf['unit'] = 'npv_chf', 'net present value of house over 1 year', pred_inst_sub['npv_chf'].values[0], 'CHF'
+            
+        
+        # attache all rows to summary_df ----------
+        summary_rows = []
+        for row in single_val_list:
+            summary_rows.append(row)
+        for row in npv_val_list:
+            summary_rows.append(row)
+
+        egid_summary_df = pd.DataFrame(summary_rows)
+        egid_summary_df.to_csv(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID/summary_{egid}.csv')
+        summary_df_toExcel.append(egid_summary_df)
+    
+    with pd.ExcelWriter(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID/summary_all.xlsx') as writer:
+        for i, df in enumerate(summary_df_toExcel):
+            df.to_excel(writer, sheet_name=f'{egid}', index=False)
+
+    checkpoint_to_logfile(f'exported summary for {len(sanity_check_summary_byEGID_specs["egid_list"])} EGIDs to excel', log_file_name_def)
+    
         
