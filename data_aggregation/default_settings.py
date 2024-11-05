@@ -12,7 +12,7 @@ dataagg_default_settings = {
         'kt_numbers': [11,12,13],                               # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
         'bfs_numbers': [],                                      # list of municipalites to select for allocation (only used if kt_numbers == 0)
         'year_range': [2021, 2022],                             # range of years to import
-        
+            
         # switch on/off parts of aggregation
         'split_data_geometry_AND_slow_api': True, 
         'rerun_localimport_and_mappings':   True,               # F: use existi ng parquet files, T: recreate parquet files in data prep
@@ -23,7 +23,7 @@ dataagg_default_settings = {
             'building_cols': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
                               'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
                               'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1', 'GEBF', 'GAREA'],
-            'dwelling_cols': ['EGID', 'WAZIM', 'WAREA', ],
+            'dwelling_cols': ['EGID', 'EWID', 'WAZIM', 'WAREA', ],
             'DEMAND_proxy': 'GAREA',
             'GSTAT': ['1004',],                                 # GSTAT - 1004: only existing, fully constructed buildings
             'GKLAS': ['1110','1121'], # ,'1276'],                # GKLAS - 1110: only 1 living space per building; 1121: Double-, row houses with each appartment (living unit) having it's own roof; 1276: structure for animal keeping (most likely still one owner)
@@ -35,7 +35,9 @@ dataagg_default_settings = {
             },
         'solkat_selection_specs': {
             'col_partition_union': 'SB_UUID',                   # column name used for the union of partitions
-            'GWR_EGID_buffer_size': 0.75,                          # buffer size in meters for the GWR selection
+            'GWR_EGID_buffer_size': 7.5,                          # buffer size in meters for the GWR selection
+            'test_loop_optim_buff_size': False, 
+            'test_loop_optim_buff_arang': [0, 7.5, 0.1]
             }   
         }
 

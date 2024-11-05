@@ -126,7 +126,7 @@ def sql_gwr_data(
     cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers})')
     sqlrows = cur.fetchall()
     conn.close()
-    checkpoint_to_logfile('sql query BUILDING done', log_file_name_def, 10, show_debug_prints_def)
+    checkpoint_to_logfile('sql query ALL BUILDING done', log_file_name_def, 10, show_debug_prints_def)
 
     gwr_all_building_df = pd.DataFrame(sqlrows, columns=query_columns)
     gwr_all_building_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_building_df.csv', sep=';', index=False)
@@ -134,17 +134,36 @@ def sql_gwr_data(
 
 
     # merger & filter for specs -------------------
-    gwr = gwr_building_df.merge(gwr_dwelling_df, on='EGID', how='left')
+    # gwr = gwr_building_df.merge(gwr_dwelling_df, on='EGID', how='left')
+    gwr_mrg = gwr_all_building_df.merge(gwr_dwelling_df, on='EGID', how='left')
 
 
-    checkpoint_to_logfile(f'check gwr BEFORE filtering: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round(gwr["EGID"].nunique()/gwr.shape[0],2)*100} %', log_file_name_def, 3, True)
-    gwr['GBAUJ'] = gwr['GBAUJ'].replace('', 0).astype(int)
-    gwr = gwr[(gwr['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
-              (gwr['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) & 
-              (gwr['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
-              (gwr['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
-    gwr['GBAUJ'] = gwr['GBAUJ'].replace(0, '').astype(str)
-    checkpoint_to_logfile(f'check gwr AFTER filtering: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round(gwr["EGID"].nunique()/gwr.shape[0],2)*100} %', log_file_name_def, 3, True)
+    checkpoint_to_logfile(f'check gwr_mrg BEFORE filtering: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round(gwr_mrg["EGID"].nunique()/gwr_mrg.shape[0],2)*100} %', log_file_name_def, 3, True)
+    gwr_mrg['GBAUJ'] = gwr_mrg['GBAUJ'].replace('', 0).astype(int)
+    gwr_mrg = gwr_mrg[(gwr_mrg['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
+              (gwr_mrg['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) & 
+              (gwr_mrg['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
+              (gwr_mrg['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
+    gwr_mrg['GBAUJ'] = gwr_mrg['GBAUJ'].replace(0, '').astype(str)
+    checkpoint_to_logfile(f'check gwr_mrg AFTER filtering: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round(gwr_mrg["EGID"].nunique()/gwr_mrg.shape[0],2)*100} %', log_file_name_def, 3, True)
+
+    
+
+    # aggregate dwelling data per EGID -------------------
+    checkpoint_to_logfile('aggregate dwelling data per EGID', log_file_name_def, 3, True)
+    bldg_agg_cols = gwr_selection_specs_def['building_cols'].copy()
+    bldg_agg_cols.remove('EGID')
+    bldg_agg_meth = {col: 'first' for col in bldg_agg_cols}
+
+    gwr_mrg['nEWID'] = gwr_mrg['EWID']
+    def concat_strings(x):
+        return '_'.join(x.dropna().astype(str))
+    dwel_agg_meth = {'EWID':concat_strings,'nEWID': 'count', 'WAZIM': 'sum', 'WAREA': 'sum'}
+
+    agg_meth = {**bldg_agg_meth, **dwel_agg_meth}
+    gwr = gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
+    checkpoint_to_logfile(f'check gwr AFTER aggregation: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round(gwr["EGID"].nunique()/gwr.shape[0],2)*100} %', log_file_name_def, 3, True)
+
 
     # summary log
     print_to_logfile(f'Building and Dwelling data import:', dataagg_settings_def['summary_file_name'])
