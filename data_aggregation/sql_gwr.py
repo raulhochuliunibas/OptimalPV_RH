@@ -114,6 +114,9 @@ def sql_gwr_data(
     checkpoint_to_logfile('sql query DWELLING done', log_file_name_def, 10, show_debug_prints_def)
 
     gwr_dwelling_df = pd.DataFrame(sqlrows, columns=query_columns)
+    gwr_dwelling_df[['WAZIM', 'WAREA']] = gwr_dwelling_df[['WAZIM', 'WAREA']].replace('', 0).astype(float)
+    gwr_dwelling_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_dwelling_df.csv', sep=';', index=False)
+
 
     # get ALL BUILDING data
     # select cols
@@ -130,7 +133,6 @@ def sql_gwr_data(
 
     gwr_all_building_df = pd.DataFrame(sqlrows, columns=query_columns)
     gwr_all_building_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_building_df.csv', sep=';', index=False)
-    gwr_all_building_df.to_parquet(f'{data_path_def}/output/preprep_data/gwr_building_df.parquet')
 
 
     # merger & filter for specs -------------------

@@ -37,7 +37,8 @@ def get_input_api_data(dataagg_settings_def):
     checkpoint_to_logfile(f'Map_gm_ewr stored in prepreped data', dataagg_settings_def['log_file_name'], 2, show_debug_prints_def)
 
     pvtarif_all = pd.read_parquet(f'{input_api_path}/pvtarif.parquet')
-    pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_def), :])
+    year_range_2int = [str(year % 100).zfill(2) for year in range(year_range_def[0], year_range_def[1]+1)]
+    pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_2int), :])
     pvtarif.to_parquet(f'{data_path_def}/output/preprep_data/pvtarif.parquet')
     pvtarif.to_csv(f'{data_path_def}/output/preprep_data/pvtarif.csv', sep=';', index=False)
     checkpoint_to_logfile(f'pvtarif stored in prepreped data', dataagg_settings_def['log_file_name'], 2, show_debug_prints_def)
@@ -161,14 +162,61 @@ def local_data_AND_spatial_mappings(
         if gdf_b is not None:
             return gdf_a, gdf_b
         
+    # find optimal buffer size --------------------------------
+    if solkat_selection_specs_def['test_loop_optim_buff_size']: #
+        print_to_logfile(f'\n\n Check different buffersizes!', log_file_name_def)
+        arange_start, arange_end, arange_step = solkat_selection_specs_def['test_loop_optim_buff_arang'][0], solkat_selection_specs_def['test_loop_optim_buff_arang'][1], solkat_selection_specs_def['test_loop_optim_buff_arang'][2]
+        buff_range = np.arange(arange_start, arange_end, arange_step)
+        for i in buff_range:# [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 2]:
+            print_to_logfile(f'buffer size: {i}', log_file_name_def)
+
+            gwr_loop = copy.deepcopy(gwr_gdf)
+            gwr_loop.set_crs("EPSG:32632", allow_override=True, inplace=True)
+            gwr_loop['geometry'] = gwr_loop['geometry'].buffer(i)
+            pv_loop = copy.deepcopy(pv_gdf)
+            gwr_loop, pv_loop = set_crs_to_gm_shp(gm_shp_gdf, gwr_loop, pv_loop)
+            gwregid_pvid_loop = gpd.sjoin(pv_loop,gwr_loop, how="left", predicate="within")
+            gwregid_pvid_loop.drop(columns = ['index_right'] + [col for col in gwr_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
+
+            shares = [round(sum(gwregid_pvid_loop['xtf_id'].isna())           /gwregid_pvid_loop['xtf_id'].nunique(),2), 
+                    round(sum(gwregid_pvid_loop['xtf_id'].value_counts()==1)/gwregid_pvid_loop['xtf_id'].nunique(),2), 
+                    round(sum(gwregid_pvid_loop['xtf_id'].value_counts()==2)/gwregid_pvid_loop['xtf_id'].nunique(),2), 
+                    round(sum(gwregid_pvid_loop['xtf_id'].value_counts()>2) /gwregid_pvid_loop['xtf_id'].nunique(),2) ]
+
+            print_to_logfile(f'Mapping egid_pvid: {round(gwregid_pvid_loop["EGID"].isna().sum() / gwregid_pvid_loop.shape[0] *100,2)} % of pv rows ({gwregid_pvid_loop.shape[0]}) are missing EGID', log_file_name_def)
+            print_to_logfile(f'Duplicate shares: \tNANs\tunique\t2x\t>2x \n \t\t\t{shares[0]}\t{shares[1]}\t{shares[2]}\t{shares[3]}\t{sum(shares)}\n', log_file_name_def)
+
+
     gwr_buff_gdf = copy.deepcopy(gwr_gdf)
     gwr_buff_gdf.set_crs("EPSG:32632", allow_override=True, inplace=True)
     gwr_buff_gdf['geometry'] = gwr_buff_gdf['geometry'].buffer(solkat_selection_specs_def['GWR_EGID_buffer_size'])
     gwr_buff_gdf, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, gwr_buff_gdf, pv_gdf)
     checkpoint_to_logfile(f'gwr_gdf.crs == pv_gdf.crs: {gwr_buff_gdf.crs == pv_gdf.crs}', log_file_name_def, 6, show_debug_prints_def)
 
-    gwregid_pvid = gpd.sjoin(pv_gdf,gwr_buff_gdf, how="left", predicate="within")
-    gwregid_pvid.drop(columns = ['index_right'] + [col for col in gwr_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
+    gwregid_pvid_all = gpd.sjoin(pv_gdf,gwr_buff_gdf, how="left", predicate="within")
+    gwregid_pvid_all.drop(columns = ['index_right'] + [col for col in gwr_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
+
+    # keep only unique xtf_ids
+    gwregid_pvid_unique = copy.deepcopy(gwregid_pvid_all.loc[~gwregid_pvid_all.duplicated(subset='xtf_id', keep=False)])
+    xtf_duplicates =      copy.deepcopy(gwregid_pvid_all.loc[ gwregid_pvid_all.duplicated(subset='xtf_id', keep=False)])
+    checkpoint_to_logfile(f'sum n_unique xtf_ids: {gwregid_pvid_unique["xtf_id"].nunique()} (unique df) +{xtf_duplicates["xtf_id"].nunique()} (duplicates df) = {gwregid_pvid_unique["xtf_id"].nunique()+xtf_duplicates["xtf_id"].nunique() }; n_unique in pv_gdf: {pv_gdf["xtf_id"].nunique()}', log_file_name_def, 6, show_debug_prints_def)
+   
+    xtf_nearestmatch_list = []
+    xtf_id = xtf_duplicates['xtf_id'].unique()[0]
+    for xtf_id in xtf_duplicates['xtf_id'].unique():
+        gwr_sub = copy.deepcopy(gwr_buff_gdf.loc[gwr_buff_gdf['EGID'].isin(xtf_duplicates.loc[xtf_duplicates['xtf_id'] == xtf_id, 'EGID'])])
+        pv_sub = copy.deepcopy(pv_gdf.loc[pv_gdf['xtf_id'] == xtf_id])
+        
+        assert pv_sub.crs == gwr_sub.crs
+        gwr_sub['distance_to_pv'] = gwr_sub['geometry'].centroid.distance(pv_sub['geometry'].values[0])
+        pv_sub['EGID'] = gwr_sub.loc[gwr_sub['distance_to_pv'].idxmin()]['EGID']
+
+        xtf_nearestmatch_list.append(pv_sub)
+    
+    xtf_nearestmatches_df = pd.concat(xtf_nearestmatch_list, ignore_index=True)
+    gwregid_pvid = pd.concat([gwregid_pvid_unique, xtf_nearestmatches_df], ignore_index=True).drop_duplicates()
+    checkpoint_to_logfile(f'total unique xtf: {pv_gdf["xtf_id"].nunique()} (pv_gdf); {gwregid_pvid_unique["xtf_id"].nunique()+xtf_nearestmatches_df["xtf_id"].nunique()} (unique + nearest match)', log_file_name_def, 6, show_debug_prints_def)
+
     checkpoint_to_logfile(f'Mapping egid_pvid: {round(gwregid_pvid["EGID"].isna().sum() / gwregid_pvid.shape[0] *100,2)} % of pv rows ({gwregid_pvid.shape[0]}) are missing EGID', log_file_name_def, 2, show_debug_prints_def)
 
     Map_egid_pv = gwregid_pvid.loc[gwregid_pvid['EGID'].notna(), ['EGID', 'xtf_id']].copy()
@@ -196,8 +244,12 @@ def local_data_AND_spatial_mappings(
     for i,g in enumerate(gdf_to_export_list):
         cols_DATUM = [col for col in g.columns if 'DATUM' in col]
         g.drop(columns = cols_DATUM, inplace = True)
+        # for each gdf export needs to be adjusted so it is carried over into the geojson file.
+        g.set_crs("EPSG:2056", allow_override = True, inplace = True)   
 
-        checkpoint_to_logfile(f'exporting {gdf_to_export_names[i]}', log_file_name_def , 4, show_debug_prints_def)
+        print_to_logfile(f'CRS for {gdf_to_export_names[i]}: {g.crs}', log_file_name_def,)
+        checkpoint_to_logfile(f'exported {gdf_to_export_names[i]}', log_file_name_def , 4, show_debug_prints_def)
+        print_to_logfile(f'\n', log_file_name_def)
         with open(f'{data_path_def}/output/preprep_data/{gdf_to_export_names[i]}.geojson', 'w') as f:
             f.write(g.to_json())
 

@@ -129,7 +129,6 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                                         df_list, df_names, ts_list, ts_names)
 
 
-
     # ALLOCATION ALGORITHM ----------------------------------------------                   
     if pvalloc_settings['run_allocation_loop']: 
         subchapter_to_logfile('allocation algorithm: START LOOP FOR PRED MONTH', log_name)
@@ -192,13 +191,14 @@ def pv_allocation_MASTER(pvalloc_settings_func):
             # INSTALLATION PICK ==========
             safety_counter = 0
             print_to_logfile(f'run installation pick while loop', log_name)
-            while( (constr_built_m < constr_capa_m) & (constr_built_y < constr_capa_y) & (safety_counter < safety_counter_max) ):
+            while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
                 
                 if npv_df.shape[0] == 0:
                     checkpoint_to_logfile(f' npv_df is EMPTY, exit while loop', log_name, 1, show_debug_prints)
                     safety_counter = safety_counter_max
 
                 if npv_df.shape[0] > 0: 
+                    checkpoint_to_logfile(f' npv_df with 0< rows, select inst and adjust topology', log_name, 1, show_debug_prints)
                     inst_power = select.select_AND_adjust_topology(pvalloc_settings, npv_df, 
                                                     pvalloc_settings['algorithm_specs']['inst_selection_method'],
                                                     dfuid_installed_list, 
@@ -210,7 +210,7 @@ def pv_allocation_MASTER(pvalloc_settings_func):
 
                     # State Loop Exit ----------
                     overshoot_rate = pvalloc_settings['constr_capacity_specs']['constr_capa_overshoot_fact']
-                    constr_m_TF, constr_y_TF, safety_TF = constr_built_m >= constr_capa_m*overshoot_rate, constr_built_y >= constr_capa_y*overshoot_rate, safety_counter >= safety_counter_max
+                    constr_m_TF, constr_y_TF, safety_TF = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y*overshoot_rate, safety_counter > safety_counter_max
 
                     if safety_counter % 3 == 0:
                         checkpoint_to_logfile(f'\t safety_counter: {safety_counter} installations built, {round(constr_built_m/constr_capa_m*100, 2)}% of monthly constr capacity', log_name, 3, show_debug_prints)
@@ -218,14 +218,21 @@ def pv_allocation_MASTER(pvalloc_settings_func):
 
                 if any([constr_m_TF, constr_y_TF, safety_TF]):
                     print_to_logfile(f'\nExit While Loop', log_name)
-                    checkpoint_to_logfile(f'constraint met : constr_m_TF: {constr_m_TF}, constr_y_TF: {constr_y_TF}, safety_TF: {safety_TF}', log_name, 1, True)
+                    if constr_m_TF:
+                        checkpoint_to_logfile(f'constr_m_TF: {constr_m_TF} ({constr_built_m} built, {constr_capa_m} capacity in kW)', log_name, 1, show_debug_prints)
+                    if constr_y_TF:
+                        checkpoint_to_logfile(f'constr_y_TF: {constr_y_TF} ({constr_built_y} built, {constr_capa_y} capacity in kW)', log_name, 1, show_debug_prints)
+                    if safety_TF:
+                        checkpoint_to_logfile(f'safety_TF: {safety_TF} ({safety_counter} rounds for safety counter max of: {safety_counter_max})', log_name, 1, show_debug_prints)
+                        
                     checkpoint_to_logfile(f'{safety_counter} pv installations allocated', log_name, 3, show_debug_prints)
                     safety_counter = 0
 
             checkpoint_to_logfile(f'end month allocation, runtime: {datetime.now() - start_allocation_month} (hh:mm:ss.s)', log_name, 1, show_debug_prints)
 
-
-
+    # GET TOPO_DF ---------------------------------------------------------------
+    # probably not necessary for any steps down the line
+    """
     # GET TOPO_DF ---------------------------------------------------------------
     # extract topo_df from topo dict for analysistopo = json.load(open(f'{data_path}/output/pvalloc_smallBL_SLCTN_npv_weighted/topo_egid.json', 'r'))
     topo = json.load(open(f'{data_path}/output/pvalloc_run/topo_egid.json', 'r'))
@@ -248,8 +255,13 @@ def pv_allocation_MASTER(pvalloc_settings_func):
 
     topo_df['power'] = topo_df['power'].replace('',0).astype(float)
     topo_df.to_parquet(f'{data_path}/output/pvalloc_run/topo_egid_df.parquet')
+    """
 
-    
+    # TOPOLOGY SANITY CHECKS ----------------------------------------------------------------
+    sanity.sanity_check_summary_byEGID(pvalloc_settings)
+    # NOTE: this needs to be after at least 1 round of the update_npv.function, otherwise no NPV to compare. 
+
+
     # CREATE MAP OF TOPO_DF ----------------------------------------------------------------
     if pvalloc_settings['create_gdf_export_of_topology']:
         subchapter_to_logfile('sanity_check: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
