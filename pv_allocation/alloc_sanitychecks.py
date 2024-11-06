@@ -172,12 +172,31 @@ def sanity_check_summary_byEGID(
     if not os.path.exists(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID'):
         os.makedirs(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID')
 
+
     # import -----------------------------------------------------
     topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
     path_npv = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_*.parquet')
     npv_df = pd.read_parquet(path_npv[0])
     path_pred_inst = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_*.parquet')
-    pred_inst_df = pd.read_parquet(path_pred_inst[0])
+    pred_inst_df = pd.read_parquet(path_pred_inst[len(path_pred_inst)-1])
+
+    # add a EGID of model algorithm to the list
+    if pred_inst_df.shape[0]< sanity_check_summary_byEGID_specs['n_pvinst_of_alloc_algorithm']:
+        n_pvinst_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], pred_inst_df.shape[0], replace=False))
+    else:
+        n_pvinst_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], sanity_check_summary_byEGID_specs['n_pvinst_of_alloc_algorithm'], replace=False))
+    pred_inst_df.loc[pred_inst_df['EGID'].isin(n_pvinst_of_alloc_algorithm), ['EGID','info_source']]
+    pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] = pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] + n_pvinst_of_alloc_algorithm
+    
+    # remove any duplicates
+    pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] = list(set(pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list']))
+
+
+    # debugging and checking -----------------------------------------------------
+    prd_df = pd.read_parquet(path_pred_inst[len(path_pred_inst)-1])
+    prd_df['EGID'].value_counts()
+    prd_df.sort_values('EGID')  
+    # ----------------------------------------------------------------------------
 
 
     # information extraction -----------------------------------------------------
@@ -185,7 +204,7 @@ def sanity_check_summary_byEGID(
     def get_new_row():
         return {col: None for col in colnames}
     
-    summary_df_toExcel = []
+    summary_toExcel_list = []
     egid = sanity_check_summary_byEGID_specs['egid_list'][3]
     for egid in sanity_check_summary_byEGID_specs['egid_list']:
         # single values ----------
@@ -257,10 +276,10 @@ def sanity_check_summary_byEGID(
             row_estim_pvinstcost_chf_min['key'], row_estim_pvinstcost_chf_min['descr'], row_estim_pvinstcost_chf_min['val'], row_estim_pvinstcost_chf_min['unit'] = 'estim_pvinstcost_chf_min', 'min of possible installation costs within all partition combinations',  npv_sub['estim_pvinstcost_chf'].min(), 'CHF'
             row_estim_pvinstcost_chf_max['key'], row_estim_pvinstcost_chf_max['descr'], row_estim_pvinstcost_chf_max['val'], row_estim_pvinstcost_chf_max['unit'] = 'estim_pvinstcost_chf_max', 'max of possible installation costs within all partition combinations',  npv_sub['estim_pvinstcost_chf'].max(), 'CHF'
 
-            row_npv_chf_mean['key'], row_npv_chf_mean['descr'], row_npv_chf_mean['val'], row_npv_chf_mean['unit'] = 'npv_chf_mean', 'mean of possible NPV within all partition combinations',  npv_sub['npv_chf'].mean(), 'CHF'
-            row_npv_chf_std['key'], row_npv_chf_std['descr'], row_npv_chf_std['val'], row_npv_chf_std['unit'] = 'npv_chf_std', 'std of possible NPV within all partition combinations',  npv_sub['npv_chf'].std(), 'CHF'
-            row_npv_chf_min['key'], row_npv_chf_min['descr'], row_npv_chf_min['val'], row_npv_chf_min['unit'] = 'npv_chf_min', 'min of possible NPV within all partition combinations',  npv_sub['npv_chf'].min(), 'CHF'
-            row_npv_chf_max['key'], row_npv_chf_max['descr'], row_npv_chf_max['val'], row_npv_chf_max['unit'] = 'npv_chf_max', 'max of possible NPV within all partition combinations',  npv_sub['npv_chf'].max(), 'CHF'
+            row_npv_chf_mean['key'], row_npv_chf_mean['descr'], row_npv_chf_mean['val'], row_npv_chf_mean['unit'] = 'npv_chf_mean', 'mean of possible NPV within all partition combinations',  npv_sub['NPV_uid'].mean(), 'CHF'
+            row_npv_chf_std['key'], row_npv_chf_std['descr'], row_npv_chf_std['val'], row_npv_chf_std['unit'] = 'npv_chf_std', 'std of possible NPV within all partition combinations',  npv_sub['NPV_uid'].std(), 'CHF'
+            row_npv_chf_min['key'], row_npv_chf_min['descr'], row_npv_chf_min['val'], row_npv_chf_min['unit'] = 'npv_chf_min', 'min of possible NPV within all partition combinations',  npv_sub['NPV_uid'].min(), 'CHF'
+            row_npv_chf_max['key'], row_npv_chf_max['descr'], row_npv_chf_max['val'], row_npv_chf_max['unit'] = 'npv_chf_max', 'max of possible NPV within all partition combinations',  npv_sub['NPV_uid'].max(), 'CHF'
 
         if topo.get(egid).get('pv_inst').get('inst_TF') and topo.get(egid).get('pv_inst').get('info_source') == 'alloc_algorithm':
             pred_inst_sub = pred_inst_df.loc[pred_inst_df['EGID'] == egid]
@@ -278,7 +297,7 @@ def sanity_check_summary_byEGID(
             row_netfeedin_kW['key'], row_netfeedin_kW['descr'], row_netfeedin_kW['val'], row_netfeedin_kW['unit'] = 'netfeedin_kW', 'total feedin of house over 1 year', pred_inst_sub['netfeedin_kW'].values[0], 'kWh'
             row_econ_inc_chf['key'], row_econ_inc_chf['descr'], row_econ_inc_chf['val'], row_econ_inc_chf['unit'] = 'econ_inc_chf', 'economic income of house over 1 year', pred_inst_sub['econ_inc_chf'].values[0], 'CHF'
             row_estim_pvinstcost_chf['key'], row_estim_pvinstcost_chf['descr'], row_estim_pvinstcost_chf['val'], row_estim_pvinstcost_chf['unit'] = 'estim_pvinstcost_chf', 'estimated installation costs of house over 1 year', pred_inst_sub['estim_pvinstcost_chf'].values[0], 'CHF'
-            row_npv_chf['key'], row_npv_chf['descr'], row_npv_chf['val'], row_npv_chf['unit'] = 'npv_chf', 'net present value of house over 1 year', pred_inst_sub['npv_chf'].values[0], 'CHF'
+            row_npv_chf['key'], row_npv_chf['descr'], row_npv_chf['val'], row_npv_chf['unit'] = 'npv_chf', 'net present value of house over 1 year', pred_inst_sub['NPV_uid'].values[0], 'CHF'
         
         
         # attache all rows to summary_df ----------
@@ -290,12 +309,13 @@ def sanity_check_summary_byEGID(
 
         egid_summary_df = pd.DataFrame(summary_rows)
         egid_summary_df.to_csv(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID/summary_{egid}.csv')
-        summary_df_toExcel.append(egid_summary_df)
+        summary_toExcel_list.append(egid_summary_df)
+   
     
     with pd.ExcelWriter(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID/summary_all.xlsx') as writer:
-        for i, df in enumerate(summary_df_toExcel):
-            df.to_excel(writer, sheet_name=f'{egid}', index=False)
+        for i, df in enumerate(summary_toExcel_list):
+            sheet_egid = df.loc[df['key']=='EGID', 'val'].values[0]
+            df.to_excel(writer, sheet_name=sheet_egid, index=False)
 
     checkpoint_to_logfile(f'exported summary for {len(sanity_check_summary_byEGID_specs["egid_list"])} EGIDs to excel', log_file_name_def)
     
-        

@@ -344,6 +344,8 @@ def update_gridprem(
     gridprem_ts.to_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.parquet')
     gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
 
+    checkpoint_to_logfile(f'exported gridprem_ts and gridnode_df', log_file_name_def, 1)
+
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -390,15 +392,16 @@ def update_npv_df(pvalloc_settings,
     no_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == False]
     agg_npv_df_list = []
 
-    path = topo_subdf_paths[0]
+    j =2
+    i, path = j, topo_subdf_paths[j]
     for i, path in enumerate(topo_subdf_paths):
         if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //3 ) == 0:
             # print_to_logfile(f'  {2*"-"} update npv (tranche {i}/{len(topo_subdf_paths)}) {6*"-"}', log_file_name_def)
             checkpoint_to_logfile(f'updated npv (tranche {i}/{len(topo_subdf_paths)})', log_file_name_def, 2, show_debug_prints_def)
-        subdf = pd.read_parquet(path)
+        subdf_t0 = pd.read_parquet(path)
 
         # drop egids with pv installations
-        subdf = subdf[subdf['EGID'].isin(no_pv_egid)]
+        subdf = copy.deepcopy(subdf_t0[subdf_t0['EGID'].isin(no_pv_egid)])
 
         if not subdf.empty:
 

@@ -94,7 +94,8 @@ pvalloc_default_settings = {
                                             # GAZZI - total number of rooms in building
     },
     'sanity_check_summary_byEGID_specs': {
-        'egid_list': ['3031017','1367570', '245017418', '3030600'],
+        'egid_list': ['3031017','1367570', '3030600'], # '1367570', '245017418'
+        'n_pvinst_of_alloc_algorithm': 2,
     }
 }
 
