@@ -186,7 +186,7 @@ def sanity_check_summary_byEGID(
         return {col: None for col in colnames}
     
     summary_df_toExcel = []
-    egid = sanity_check_summary_byEGID_specs['egid_list'][2]
+    egid = sanity_check_summary_byEGID_specs['egid_list'][3]
     for egid in sanity_check_summary_byEGID_specs['egid_list']:
         # single values ----------
         if True:
@@ -204,7 +204,7 @@ def sanity_check_summary_byEGID(
             row_demand_type['key'], row_demand_type['descr'], row_demand_type['val'] = 'demand_type', 'type of artifical demand profile (Netflex, maybe CKW later)', topo.get(egid).get('demand_type')
 
             # row_pvinst_info, row_pvinst_BeginOp, row_pvinst_TotalPower = get_new_row(), get_new_row(), get_new_row() 
-            row_pvinst_info['key'], row_pvinst_info['descr'], row_pvinst_info['val'] = 'pv_inst > info_source', 'Origin behind pv inst on house (real data or model alloc)', topo.get(egid).get('pv_inst').get('inst_info')
+            row_pvinst_info['key'], row_pvinst_info['descr'], row_pvinst_info['val'] = 'pv_inst > info_source', 'Origin behind pv inst on house (real data or model alloc)', topo.get(egid).get('pv_inst').get('info_source')
             row_pvinst_BeginOp['key'], row_pvinst_BeginOp['descr'], row_pvinst_BeginOp['val'] = 'pv_inst > BeginOp', 'begin of operation', topo.get(egid).get('pv_inst').get('BeginOp')
             row_pvinst_TotalPower['key'], row_pvinst_TotalPower['descr'], row_pvinst_TotalPower['val'], row_pvinst_TotalPower['unit'] = 'pv_inst > TotalPower', 'total power of PV installation', topo.get(egid).get('pv_inst').get('TotalPower'), 'kW'
 
@@ -217,7 +217,6 @@ def sanity_check_summary_byEGID(
             row_interest_rate['key'], row_interest_rate['descr'],row_interest_rate['val'] = 'interest_rate', 'generic interest rate used for dicsounting NPV calculation', pvalloc_settings.get('tech_economic_specs').get('interest_rate')
             row_years_maturity['key'], row_years_maturity['descr'], row_years_maturity['val'] = 'invst_maturity', 'number of years that consider pv production for NPV calculation', pvalloc_settings.get('tech_economic_specs').get('invst_maturity')
             row_kWpeak_per_m2['key'], row_kWpeak_per_m2['descr'], row_kWpeak_per_m2['val'] = 'kWpeak_per_m2', 'transformation factor, how much kWp can be put on a square meter', pvalloc_settings.get('tech_economic_specs').get('kWpeak_per_m2')
-
 
         # df_uid (roof partition) values ----------
         if not topo.get(egid).get('pv_inst').get('inst_TF'):
@@ -262,8 +261,7 @@ def sanity_check_summary_byEGID(
             row_npv_chf_min['key'], row_npv_chf_min['descr'], row_npv_chf_min['val'], row_npv_chf_min['unit'] = 'npv_chf_min', 'min of possible NPV within all partition combinations',  npv_sub['npv_chf'].min(), 'CHF'
             row_npv_chf_max['key'], row_npv_chf_max['descr'], row_npv_chf_max['val'], row_npv_chf_max['unit'] = 'npv_chf_max', 'max of possible NPV within all partition combinations',  npv_sub['npv_chf'].max(), 'CHF'
 
-        elif topo.get(egid).get('pv_inst').get('inst_TF'):
-            if
+        if topo.get(egid).get('pv_inst').get('inst_TF') and topo.get(egid).get('pv_inst').get('info_source') == 'alloc_algorithm':
             pred_inst_sub = pred_inst_df.loc[pred_inst_df['EGID'] == egid]
             npv_val_list = [
                 row_demand_kW,
@@ -280,7 +278,7 @@ def sanity_check_summary_byEGID(
             row_econ_inc_chf['key'], row_econ_inc_chf['descr'], row_econ_inc_chf['val'], row_econ_inc_chf['unit'] = 'econ_inc_chf', 'economic income of house over 1 year', pred_inst_sub['econ_inc_chf'].values[0], 'CHF'
             row_estim_pvinstcost_chf['key'], row_estim_pvinstcost_chf['descr'], row_estim_pvinstcost_chf['val'], row_estim_pvinstcost_chf['unit'] = 'estim_pvinstcost_chf', 'estimated installation costs of house over 1 year', pred_inst_sub['estim_pvinstcost_chf'].values[0], 'CHF'
             row_npv_chf['key'], row_npv_chf['descr'], row_npv_chf['val'], row_npv_chf['unit'] = 'npv_chf', 'net present value of house over 1 year', pred_inst_sub['npv_chf'].values[0], 'CHF'
-            
+        
         
         # attache all rows to summary_df ----------
         summary_rows = []
