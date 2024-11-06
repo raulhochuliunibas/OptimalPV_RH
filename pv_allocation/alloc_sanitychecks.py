@@ -229,10 +229,11 @@ def sanity_check_summary_byEGID(
                 row_estim_pvinstcost_chf_min, row_estim_pvinstcost_chf_max, row_estim_pvinstcost_chf_mean, row_estim_pvinstcost_chf_std,
                 row_npv_chf_min, row_npv_chf_max, row_npv_chf_mean, row_npv_chf_std,
                 ] = [get_new_row(), 
-                get_new_row(), get_new_row(), get_new_row(), get_new_row(),
-                get_new_row(), get_new_row(), get_new_row(), get_new_row(),
-                get_new_row(), get_new_row(), get_new_row(), get_new_row(),
-                get_new_row(), get_new_row(), get_new_row(), get_new_row(),]
+                     get_new_row(), get_new_row(), get_new_row(), get_new_row(),
+                     get_new_row(), get_new_row(), get_new_row(), get_new_row(),
+                     get_new_row(), get_new_row(), get_new_row(), get_new_row(),
+                     get_new_row(), get_new_row(), get_new_row(), get_new_row(),
+                     get_new_row(), get_new_row(), get_new_row(), get_new_row(),]
             
             row_demand_kW['key'], row_demand_kW['descr'], row_demand_kW['val'], row_demand_kW['unit'] = 'demand_kW_min', 'total demand of house over 1 year', npv_sub['demand_kW'].mean(), 'kWh'
 
