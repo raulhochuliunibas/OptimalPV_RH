@@ -278,217 +278,224 @@ def import_demand_TS_AND_match_households(
     data_path_def = dataagg_settings_def['data_path']
 
     gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
+    demand_specs_def = dataagg_settings_def['demand_specs']
+
     print_to_logfile(f'run function: import_demand_TS_AND_match_households.py', log_file_name_def = log_file_name_def)
 
 
-
-    # IMPORT CONSUMER DATA ============================================================================
+    # IMPORT CONSUMER DATA -----------------------------------------------------------------
     print_to_logfile(f'\nIMPORT CONSUMER DATA {10*"*"}', log_file_name_def = log_file_name_def) 
        
-    # import demand TS --------
-    netflex_consumers_list = os.listdir(f'{data_path_def}/input/NETFLEX_consumers')
-    
-    all_assets_list = []
-    # c = netflex_consumers_list[1]
-    for c in netflex_consumers_list:
-        f = open(f'{data_path_def}/input/NETFLEX_consumers/{c}')
-        data = json.load(f)
-        assets = data['assets']['list'] 
-        all_assets_list.extend(assets)
-    
-    without_id = [a.split('_ID')[0] for a in all_assets_list]
-    all_assets_unique = list(set(without_id))
-    checkpoint_to_logfile(f'consumer demand TS contains assets: {all_assets_unique}', log_file_name_def, 2, show_debug_prints_def)
 
-    # aggregate demand for each consumer
-    agg_demand_df = pd.DataFrame()
-    netflex_consumers_list = netflex_consumers_list if not smaller_import_def else netflex_consumers_list[0:40]
-
-    c = netflex_consumers_list[2]
-    # for c, c_n in enumerate() netflex_consumers_list:
-    for c_number, c in enumerate(netflex_consumers_list):
-        c_demand_id, c_demand_tech, c_demand_asset, c_demand_t, c_demand_values = [], [], [], [], []
-
-        f = open(f'{data_path_def}/input/NETFLEX_consumers/{c}')
-        data = json.load(f)
-        assets = data['assets']['list'] 
-
-        a = assets[0]
-        for a in assets:
-            if 'asset_time_series' in data['assets'][a].keys():
-                demand = data['assets'][a]['asset_time_series']
-                c_demand_id.extend([f'ID{a.split("_ID")[1]}']*len(demand))
-                c_demand_tech.extend([a.split('_ID')[0]]*len(demand))
-                c_demand_asset.extend([a]*len(demand))
-                c_demand_t.extend(demand.keys())
-                c_demand_values.extend(demand.values())
-
-        c_demand_df = pd.DataFrame({'id': c_demand_id, 'tech': c_demand_tech, 'asset': c_demand_asset, 't': c_demand_t, 'value': c_demand_values})
-        agg_demand_df = pd.concat([agg_demand_df, c_demand_df])
+    # DEMAND DATA SOURCE: NETFLEX ============================================================
+    if demand_specs_def['input_data_source'] == "NETFLEX" :
+        # import demand TS --------
+        netflex_consumers_list = os.listdir(f'{data_path_def}/input/NETFLEX_consumers')
         
-        if (c_number + 1) % (len(netflex_consumers_list) // 4) == 0:
-            checkpoint_to_logfile(f'exported demand TS for consumer {c}, {c_number+1} of {len(netflex_consumers_list)}', log_file_name_def, 2, show_debug_prints_def)
-    
-    # remove pv assets because they also have negative values
-    agg_demand_df = agg_demand_df[agg_demand_df['tech'] != 'pv']
-
-    agg_demand_df['value'] = agg_demand_df['value'] * 1000 # it appears that values are calculated in MWh, need kWh
-
-    # plot TS for certain consumers by assets
-    plot_ids =['ID100', 'ID101', 'ID102', ]
-    plot_df = agg_demand_df[agg_demand_df['id'].isin(plot_ids)]
-    fig = px.line(plot_df, x='t', y='value', color='asset', title='Demand TS for selected consumers')
-    # fig.show()
-
-    # export aggregated demand for all NETFLEX consumer assets
-    agg_demand_df.to_parquet(f'{data_path_def}/output/preprep_data/demand_ts.parquet')
-    checkpoint_to_logfile(f'exported demand TS for all consumers', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
-    
-
-
-    # AGGREGATE DEMAND TYPES ============================================================================
-    # aggregate demand TS for defined consumer types 
-    # demand upper/lower 50 percentile, with/without heat pump
-    # get IDs for each subcatergory
-    print_to_logfile(f'\nAGGREGATE DEMAND TYPES {10*"*"}', log_file_name_def = log_file_name_def)
-    def get_IDs_upper_lower_totalconsumpttion_by_hp(df, hp_TF = True,  up_low50percent = "upper"):
-        id_with_hp = df[df['tech'] == 'hp']['id'].unique()
-        if hp_TF: 
-            filtered_df = df[df['id'].isin(id_with_hp)]
-        elif not hp_TF:
-            filtered_df = df[~df['id'].isin(id_with_hp)]
-
-        filtered_df = filtered_df.loc[filtered_df['tech'] != 'pv']
-
-        total_consumption = filtered_df.groupby('id')['value'].sum().reset_index()
-        mean_value = total_consumption['value'].mean()
-        id_upper_half = total_consumption.loc[total_consumption['value'] > mean_value, 'id']
-        id_lower_half = total_consumption.loc[total_consumption['value'] < mean_value, 'id']
-
-        if up_low50percent == "upper":
-            return id_upper_half
-        elif up_low50percent == "lower":
-            return id_lower_half
-    
-    # classify consumers to later aggregate them into demand types
-    ids_high_wiHP = get_IDs_upper_lower_totalconsumpttion_by_hp(agg_demand_df, hp_TF = True, up_low50percent = "upper")
-    ids_low_wiHP  = get_IDs_upper_lower_totalconsumpttion_by_hp(agg_demand_df, hp_TF = True, up_low50percent = "lower")
-    ids_high_noHP = get_IDs_upper_lower_totalconsumpttion_by_hp(agg_demand_df, hp_TF = False, up_low50percent = "upper")
-    ids_low_noHP  = get_IDs_upper_lower_totalconsumpttion_by_hp(agg_demand_df, hp_TF = False, up_low50percent = "lower")
-
-    # aggregate demand types
-    demandtypes = pd.DataFrame()
-    t_sequence = agg_demand_df['t'].unique()
-
-    demandtypes['t'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().keys()
-    # demandtypes['high_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().values
-    # demandtypes['low_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_wiHP)].groupby('t')['value'].mean().values
-    # demandtypes['high_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_noHP)].groupby('t')['value'].mean().values
-    # demandtypes['low_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_noHP)].groupby('t')['value'].mean().values
-    demandtypes['high_DEMANDprox_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().values
-    demandtypes['low_DEMANDprox_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_wiHP)].groupby('t')['value'].mean().values
-    demandtypes['high_DEMANDprox_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_noHP)].groupby('t')['value'].mean().values
-    demandtypes['low_DEMANDprox_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_noHP)].groupby('t')['value'].mean().values
-
-    demandtypes['t'] = pd.Categorical(demandtypes['t'], categories=t_sequence, ordered=True)
-    demandtypes = demandtypes.sort_values(by = 't')
-    demandtypes = demandtypes.reset_index(drop=True)
-
-    demandtypes.to_parquet(f'{data_path_def}/output/preprep_data/demandtypes.parquet')
-    demandtypes.to_csv(f'{data_path_def}/output/preprep_data/demandtypes.csv', sep=';', index=False)
-    checkpoint_to_logfile(f'exported demand types', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
-
-    # plot demand types with plotly
-    fig = px.line(demandtypes, x='t', y=['high_DEMANDprox_wiHP', 'low_DEMANDprox_wiHP', 'high_DEMANDprox_noHP', 'low_DEMANDprox_noHP'], title='Demand types')
-    # fig.show()
-    fig.write_html(f'{data_path_def}/output/preprep_data/demandtypes.html')
-
-    demandtypes['high_DEMANDprox_wiHP'].sum(), demandtypes['low_DEMANDprox_wiHP'].sum(), demandtypes['high_DEMANDprox_noHP'].sum(), demandtypes['low_DEMANDprox_noHP'].sum()
-
-
-    # MATCH DEMAND TYPES TO HOUSEHOLDS ============================================================================
-    print_to_logfile(f'\nMATCH DEMAND TYPES TO HOUSEHOLDS {10*"*"}', log_file_name_def = log_file_name_def)
-
-    # import GWR and PV --------
-    gwr_all = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
-    checkpoint_to_logfile(f'imported gwr data', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
-    
-    # transformations
-    gwr_all[gwr_selection_specs_def['DEMAND_proxy']] = pd.to_numeric(gwr_all[gwr_selection_specs_def['DEMAND_proxy']], errors='coerce')
-    gwr_all['GBAUJ'] = pd.to_numeric(gwr_all['GBAUJ'], errors='coerce')
-    gwr_all.dropna(subset = ['GBAUJ'], inplace = True)
-    gwr_all['GBAUJ'] = gwr_all['GBAUJ'].astype(int)
-
-    # selection based on GWR specifications -------- 
-    # select columns GSTAT that are within list ['1110','1112'] and GKLAS in ['1234','2345']
-    gwr = gwr_all[(gwr_all['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
-                  (gwr_all['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) & 
-                  (gwr_all['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
-                  (gwr_all['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
-    checkpoint_to_logfile(f'filtered vs unfiltered gwr: shape ({gwr.shape[0]} vs {gwr_all.shape[0]}), EGID.nunique ({gwr["EGID"].nunique()} vs {gwr_all ["EGID"].nunique()})', log_file_name_def, 2, show_debug_prints_def)
-    
-    def get_IDs_upper_lower_DEMAND_by_hp(df, DEMAND_col = gwr_selection_specs_def['DEMAND_proxy'],  hp_TF = True,  up_low50percent = "upper"):
-        id_with_hp = df[df['GWAERZH1'].isin(gwr_selection_specs_def['GWAERZH'])]['EGID'].unique()
-        if hp_TF: 
-            filtered_df = df[df['EGID'].isin(id_with_hp)]
-        elif not hp_TF:
-            filtered_df = df[~df['EGID'].isin(id_with_hp)]
+        all_assets_list = []
+        # c = netflex_consumers_list[1]
+        for c in netflex_consumers_list:
+            f = open(f'{data_path_def}/input/NETFLEX_consumers/{c}')
+            data = json.load(f)
+            assets = data['assets']['list'] 
+            all_assets_list.extend(assets)
         
-        mean_value = filtered_df[DEMAND_col].mean()
-        id_upper_half = filtered_df.loc[filtered_df[DEMAND_col] > mean_value, 'EGID']
-        id_lower_half = filtered_df.loc[filtered_df[DEMAND_col] < mean_value, 'EGID']
-        if up_low50percent == "upper":
-            return id_upper_half.tolist()
-        elif up_low50percent == "lower":
-            return id_lower_half.tolist()
+        without_id = [a.split('_ID')[0] for a in all_assets_list]
+        all_assets_unique = list(set(without_id))
+        checkpoint_to_logfile(f'consumer demand TS contains assets: {all_assets_unique}', log_file_name_def, 2, show_debug_prints_def)
+
+        # aggregate demand for each consumer
+        agg_demand_df = pd.DataFrame()
+        netflex_consumers_list = netflex_consumers_list if not smaller_import_def else netflex_consumers_list[0:40]
+
+        c = netflex_consumers_list[2]
+        # for c, c_n in enumerate() netflex_consumers_list:
+        for c_number, c in enumerate(netflex_consumers_list):
+            c_demand_id, c_demand_tech, c_demand_asset, c_demand_t, c_demand_values = [], [], [], [], []
+
+            f = open(f'{data_path_def}/input/NETFLEX_consumers/{c}')
+            data = json.load(f)
+            assets = data['assets']['list'] 
+
+            a = assets[0]
+            for a in assets:
+                if 'asset_time_series' in data['assets'][a].keys():
+                    demand = data['assets'][a]['asset_time_series']
+                    c_demand_id.extend([f'ID{a.split("_ID")[1]}']*len(demand))
+                    c_demand_tech.extend([a.split('_ID')[0]]*len(demand))
+                    c_demand_asset.extend([a]*len(demand))
+                    c_demand_t.extend(demand.keys())
+                    c_demand_values.extend(demand.values())
+
+            c_demand_df = pd.DataFrame({'id': c_demand_id, 'tech': c_demand_tech, 'asset': c_demand_asset, 't': c_demand_t, 'value': c_demand_values})
+            agg_demand_df = pd.concat([agg_demand_df, c_demand_df])
+            
+            if (c_number + 1) % (len(netflex_consumers_list) // 4) == 0:
+                checkpoint_to_logfile(f'exported demand TS for consumer {c}, {c_number+1} of {len(netflex_consumers_list)}', log_file_name_def, 2, show_debug_prints_def)
         
-    high_DEMANDprox_wiHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = True, up_low50percent = "upper")
-    low_DEMANDprox_wiHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = True, up_low50percent = "lower")
-    high_DEMANDprox_noHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = False, up_low50percent = "upper")
-    low_DEMANDprox_noHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = False, up_low50percent = "lower")
+        # remove pv assets because they also have negative values
+        agg_demand_df = agg_demand_df[agg_demand_df['tech'] != 'pv']
+
+        agg_demand_df['value'] = agg_demand_df['value'] * 1000 # it appears that values are calculated in MWh, need kWh
+
+        # plot TS for certain consumers by assets
+        plot_ids =['ID100', 'ID101', 'ID102', ]
+        plot_df = agg_demand_df[agg_demand_df['id'].isin(plot_ids)]
+        fig = px.line(plot_df, x='t', y='value', color='asset', title='Demand TS for selected consumers')
+        # fig.show()
+
+        # export aggregated demand for all NETFLEX consumer assets
+        agg_demand_df.to_parquet(f'{data_path_def}/output/preprep_data/demand_ts.parquet')
+        checkpoint_to_logfile(f'exported demand TS for all consumers', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        
+
+        # AGGREGATE DEMAND TYPES -----------------------------------------------------------------
+        # aggregate demand TS for defined consumer types 
+        # demand upper/lower 50 percentile, with/without heat pump
+        # get IDs for each subcatergory
+        print_to_logfile(f'\nAGGREGATE DEMAND TYPES {10*"*"}', log_file_name_def = log_file_name_def)
+        def get_IDs_upper_lower_totalconsumpttion_by_hp(df, hp_TF = True,  up_low50percent = "upper"):
+            id_with_hp = df[df['tech'] == 'hp']['id'].unique()
+            if hp_TF: 
+                filtered_df = df[df['id'].isin(id_with_hp)]
+            elif not hp_TF:
+                filtered_df = df[~df['id'].isin(id_with_hp)]
+
+            filtered_df = filtered_df.loc[filtered_df['tech'] != 'pv']
+
+            total_consumption = filtered_df.groupby('id')['value'].sum().reset_index()
+            mean_value = total_consumption['value'].mean()
+            id_upper_half = total_consumption.loc[total_consumption['value'] > mean_value, 'id']
+            id_lower_half = total_consumption.loc[total_consumption['value'] < mean_value, 'id']
+
+            if up_low50percent == "upper":
+                return id_upper_half
+            elif up_low50percent == "lower":
+                return id_lower_half
+        
+        # classify consumers to later aggregate them into demand types
+        ids_high_wiHP = get_IDs_upper_lower_totalconsumpttion_by_hp(agg_demand_df, hp_TF = True, up_low50percent = "upper")
+        ids_low_wiHP  = get_IDs_upper_lower_totalconsumpttion_by_hp(agg_demand_df, hp_TF = True, up_low50percent = "lower")
+        ids_high_noHP = get_IDs_upper_lower_totalconsumpttion_by_hp(agg_demand_df, hp_TF = False, up_low50percent = "upper")
+        ids_low_noHP  = get_IDs_upper_lower_totalconsumpttion_by_hp(agg_demand_df, hp_TF = False, up_low50percent = "lower")
+
+        # aggregate demand types
+        demandtypes = pd.DataFrame()
+        t_sequence = agg_demand_df['t'].unique()
+
+        demandtypes['t'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().keys()
+        # demandtypes['high_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().values
+        # demandtypes['low_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_wiHP)].groupby('t')['value'].mean().values
+        # demandtypes['high_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_noHP)].groupby('t')['value'].mean().values
+        # demandtypes['low_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_noHP)].groupby('t')['value'].mean().values
+        demandtypes['high_DEMANDprox_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_wiHP)].groupby('t')['value'].mean().values
+        demandtypes['low_DEMANDprox_wiHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_wiHP)].groupby('t')['value'].mean().values
+        demandtypes['high_DEMANDprox_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_high_noHP)].groupby('t')['value'].mean().values
+        demandtypes['low_DEMANDprox_noHP'] = agg_demand_df.loc[agg_demand_df['id'].isin(ids_low_noHP)].groupby('t')['value'].mean().values
+
+        demandtypes['t'] = pd.Categorical(demandtypes['t'], categories=t_sequence, ordered=True)
+        demandtypes = demandtypes.sort_values(by = 't')
+        demandtypes = demandtypes.reset_index(drop=True)
+
+        demandtypes.to_parquet(f'{data_path_def}/output/preprep_data/demandtypes.parquet')
+        demandtypes.to_csv(f'{data_path_def}/output/preprep_data/demandtypes.csv', sep=';', index=False)
+        checkpoint_to_logfile(f'exported demand types', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+        # plot demand types with plotly
+        fig = px.line(demandtypes, x='t', y=['high_DEMANDprox_wiHP', 'low_DEMANDprox_wiHP', 'high_DEMANDprox_noHP', 'low_DEMANDprox_noHP'], title='Demand types')
+        # fig.show()
+        fig.write_html(f'{data_path_def}/output/preprep_data/demandtypes.html')
+
+        demandtypes['high_DEMANDprox_wiHP'].sum(), demandtypes['low_DEMANDprox_wiHP'].sum(), demandtypes['high_DEMANDprox_noHP'].sum(), demandtypes['low_DEMANDprox_noHP'].sum()
 
 
-    # sanity check --------
-    print_to_logfile(f'sanity check gwr classifications', log_file_name_def = log_file_name_def)
-    gwr_egid_list = gwr['EGID'].tolist()
-    gwr_classified_list = [high_DEMANDprox_wiHP_list, low_DEMANDprox_wiHP_list, high_DEMANDprox_noHP_list, low_DEMANDprox_noHP_list]
-    gwr_classified_names= ['high_DEMANDprox_wiHP_list', 'low_DEMANDprox_wiHP_list', 'high_DEMANDprox_noHP_list', 'low_DEMANDprox_noHP_list']
+        # MATCH DEMAND TYPES TO HOUSEHOLDS -----------------------------------------------------------------
+        print_to_logfile(f'\nMATCH DEMAND TYPES TO HOUSEHOLDS {10*"*"}', log_file_name_def = log_file_name_def)
 
-    for chosen_lst_idx, chosen_list in enumerate(gwr_classified_list):
-        chosen_set = set(chosen_list)
+        # import GWR and PV --------
+        gwr_all = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
+        checkpoint_to_logfile(f'imported gwr data', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        
+        # transformations
+        gwr_all[gwr_selection_specs_def['DEMAND_proxy']] = pd.to_numeric(gwr_all[gwr_selection_specs_def['DEMAND_proxy']], errors='coerce')
+        gwr_all['GBAUJ'] = pd.to_numeric(gwr_all['GBAUJ'], errors='coerce')
+        gwr_all.dropna(subset = ['GBAUJ'], inplace = True)
+        gwr_all['GBAUJ'] = gwr_all['GBAUJ'].astype(int)
 
-        for i, lst in enumerate(gwr_classified_list):
-            if i != chosen_lst_idx:
-                other_set = set(lst)
-                common_ids = chosen_set.intersection(other_set)
-                print_to_logfile(f"No. of common IDs between {gwr_classified_names[chosen_lst_idx]} and {gwr_classified_names[i]}: {len(common_ids)}", log_file_name_def = log_file_name_def)
-        print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
+        # selection based on GWR specifications -------- 
+        # select columns GSTAT that are within list ['1110','1112'] and GKLAS in ['1234','2345']
+        gwr = gwr_all[(gwr_all['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
+                    (gwr_all['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) & 
+                    (gwr_all['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
+                    (gwr_all['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
+        checkpoint_to_logfile(f'filtered vs unfiltered gwr: shape ({gwr.shape[0]} vs {gwr_all.shape[0]}), EGID.nunique ({gwr["EGID"].nunique()} vs {gwr_all ["EGID"].nunique()})', log_file_name_def, 2, show_debug_prints_def)
+        
+        def get_IDs_upper_lower_DEMAND_by_hp(df, DEMAND_col = gwr_selection_specs_def['DEMAND_proxy'],  hp_TF = True,  up_low50percent = "upper"):
+            id_with_hp = df[df['GWAERZH1'].isin(gwr_selection_specs_def['GWAERZH'])]['EGID'].unique()
+            if hp_TF: 
+                filtered_df = df[df['EGID'].isin(id_with_hp)]
+            elif not hp_TF:
+                filtered_df = df[~df['EGID'].isin(id_with_hp)]
+            
+            mean_value = filtered_df[DEMAND_col].mean()
+            id_upper_half = filtered_df.loc[filtered_df[DEMAND_col] > mean_value, 'EGID']
+            id_lower_half = filtered_df.loc[filtered_df[DEMAND_col] < mean_value, 'EGID']
+            if up_low50percent == "upper":
+                return id_upper_half.tolist()
+            elif up_low50percent == "lower":
+                return id_lower_half.tolist()
+            
+        high_DEMANDprox_wiHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = True, up_low50percent = "upper")
+        low_DEMANDprox_wiHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = True, up_low50percent = "lower")
+        high_DEMANDprox_noHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = False, up_low50percent = "upper")
+        low_DEMANDprox_noHP_list = get_IDs_upper_lower_DEMAND_by_hp(gwr, hp_TF = False, up_low50percent = "lower")
 
-    # precent of classified buildings
-    n_classified = sum([len(lst) for lst in gwr_classified_list])
-    n_all = len(gwr['EGID'])
-    print_to_logfile(f'{n_classified} of {n_all} ({round(n_classified/n_all*100, 2)}%) gwr rows are classfied', log_file_name_def = log_file_name_def)
-    
 
-    # export to JSON --------
-    Map_demandtype_EGID ={
-        'high_DEMANDprox_wiHP': high_DEMANDprox_wiHP_list,
-        'low_DEMANDprox_wiHP': low_DEMANDprox_wiHP_list,
-        'high_DEMANDprox_noHP': high_DEMANDprox_noHP_list,
-        'low_DEMANDprox_noHP': low_DEMANDprox_noHP_list,
-    }
-    with open(f'{data_path_def}/output/preprep_data/Map_demandtype_EGID.json', 'w') as f:
-        json.dump(Map_demandtype_EGID, f)
-    checkpoint_to_logfile(f'exported Map_demandtype_EGID.json', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        # sanity check --------
+        print_to_logfile(f'sanity check gwr classifications', log_file_name_def = log_file_name_def)
+        gwr_egid_list = gwr['EGID'].tolist()
+        gwr_classified_list = [high_DEMANDprox_wiHP_list, low_DEMANDprox_wiHP_list, high_DEMANDprox_noHP_list, low_DEMANDprox_noHP_list]
+        gwr_classified_names= ['high_DEMANDprox_wiHP_list', 'low_DEMANDprox_wiHP_list', 'high_DEMANDprox_noHP_list', 'low_DEMANDprox_noHP_list']
 
-    Map_EGID_demandtypes = {}
-    for type, egid_list in Map_demandtype_EGID.items():
-        for egid in egid_list:
-            Map_EGID_demandtypes[egid] = type
-    with open(f'{data_path_def}/output/preprep_data/Map_EGID_demandtypes.json', 'w') as f:
-        json.dump(Map_EGID_demandtypes, f)
-    checkpoint_to_logfile(f'exported Map_EGID_demandtypes.json', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        for chosen_lst_idx, chosen_list in enumerate(gwr_classified_list):
+            chosen_set = set(chosen_list)
 
+            for i, lst in enumerate(gwr_classified_list):
+                if i != chosen_lst_idx:
+                    other_set = set(lst)
+                    common_ids = chosen_set.intersection(other_set)
+                    print_to_logfile(f"No. of common IDs between {gwr_classified_names[chosen_lst_idx]} and {gwr_classified_names[i]}: {len(common_ids)}", log_file_name_def = log_file_name_def)
+            print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
+
+        # precent of classified buildings
+        n_classified = sum([len(lst) for lst in gwr_classified_list])
+        n_all = len(gwr['EGID'])
+        print_to_logfile(f'{n_classified} of {n_all} ({round(n_classified/n_all*100, 2)}%) gwr rows are classfied', log_file_name_def = log_file_name_def)
+        
+
+        # export to JSON --------
+        Map_demandtype_EGID ={
+            'high_DEMANDprox_wiHP': high_DEMANDprox_wiHP_list,
+            'low_DEMANDprox_wiHP': low_DEMANDprox_wiHP_list,
+            'high_DEMANDprox_noHP': high_DEMANDprox_noHP_list,
+            'low_DEMANDprox_noHP': low_DEMANDprox_noHP_list,
+        }
+        with open(f'{data_path_def}/output/preprep_data/Map_demandtype_EGID.json', 'w') as f:
+            json.dump(Map_demandtype_EGID, f)
+        checkpoint_to_logfile(f'exported Map_demandtype_EGID.json', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+        Map_EGID_demandtypes = {}
+        for type, egid_list in Map_demandtype_EGID.items():
+            for egid in egid_list:
+                Map_EGID_demandtypes[egid] = type
+        with open(f'{data_path_def}/output/preprep_data/Map_EGID_demandtypes.json', 'w') as f:
+            json.dump(Map_EGID_demandtypes, f)
+        checkpoint_to_logfile(f'exported Map_EGID_demandtypes.json', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+
+
+    # DEMAND DATA SOURCE: SwissStore ============================================================
+    elif demand_specs_def['input_data_source'] == "SwissStore" :
+        print("BOOKMARK")     # BOOKMARK!
 
 
 # ------------------------------------------------------------------------------------------------------
