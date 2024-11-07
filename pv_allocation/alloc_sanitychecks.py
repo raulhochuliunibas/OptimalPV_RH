@@ -239,8 +239,9 @@ def sanity_check_summary_byEGID(
             row_kWpeak_per_m2['key'], row_kWpeak_per_m2['descr'], row_kWpeak_per_m2['val'] = 'kWpeak_per_m2', 'transformation factor, how much kWp can be put on a square meter', pvalloc_settings.get('tech_economic_specs').get('kWpeak_per_m2')
             row_share_roof_area['key'], row_share_roof_area['descr'], row_share_roof_area['val'] = 'share_roof_area_available',  'share of roof area that can be effectively used for PV installation', pvalloc_settings.get('tech_economic_specs').get('share_roof_area_available')
 
-        # df_uid (roof partition) values ----------
-        if not topo.get(egid).get('pv_inst').get('inst_TF'):
+        # df_uid (roof partition) values ----------   
+        no_pv_TF = not topo.get(egid).get('pv_inst').get('inst_TF') 
+        if no_pv_TF:
             npv_sub = npv_df.loc[npv_df['EGID'] == egid]
             npv_val_list = [
                 row_demand_kW,
@@ -283,7 +284,8 @@ def sanity_check_summary_byEGID(
             row_npv_chf_min['key'], row_npv_chf_min['descr'], row_npv_chf_min['val'], row_npv_chf_min['unit'] = 'npv_chf_min', 'min of possible NPV within all partition combinations',  npv_sub['NPV_uid'].min(), 'CHF'
             row_npv_chf_max['key'], row_npv_chf_max['descr'], row_npv_chf_max['val'], row_npv_chf_max['unit'] = 'npv_chf_max', 'max of possible NPV within all partition combinations',  npv_sub['NPV_uid'].max(), 'CHF'
 
-        if topo.get(egid).get('pv_inst').get('inst_TF') and topo.get(egid).get('pv_inst').get('info_source') == 'alloc_algorithm':
+        alloc_algo_pv_TF = topo.get(egid).get('pv_inst').get('inst_TF') and topo.get(egid).get('pv_inst').get('info_source') == 'alloc_algorithm'
+        if alloc_algo_pv_TF:
             pred_inst_sub = pred_inst_df.loc[pred_inst_df['EGID'] == egid]
             npv_val_list = [
                 row_demand_kW,
@@ -306,8 +308,9 @@ def sanity_check_summary_byEGID(
         summary_rows = []
         for row in single_val_list:
             summary_rows.append(row)
-        for row in npv_val_list:
-            summary_rows.append(row)
+        if no_pv_TF or alloc_algo_pv_TF:
+            for row in npv_val_list:
+                summary_rows.append(row)
 
         egid_summary_df = pd.DataFrame(summary_rows)
         egid_summary_df.to_csv(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID/summary_{egid}.csv')

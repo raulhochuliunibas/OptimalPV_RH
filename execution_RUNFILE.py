@@ -10,7 +10,7 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  240 #36
+months_pred =  480 #36
 run_on_server = False
 
 run_dataagg =   False
@@ -44,7 +44,19 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
-    f'pvalloc_DEV_{months_pred}m':{
+    f'pvalloc_DEV_{months_pred}m_small':{
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
+        # 'recalc_economics_topo_df': True, 
+        'create_gdf_export_of_topology':    True,
+        'algorithm_specs': {
+            'rand_seed': 42,
+            'inst_selection_method': 'prob_weighted_npv',
+            'tweak_gridnode_df_prod_demand_fact': 1,
+    }},
+    f'pvalloc_DEV_{months_pred}m_medium':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
@@ -54,7 +66,7 @@ pvalloc_scenarios={
         'algorithm_specs': {
             'rand_seed': 42,
             'inst_selection_method': 'prob_weighted_npv',
-            'tweak_gridnode_df_prod_demand_fact': 100000,
+            'tweak_gridnode_df_prod_demand_fact': 1,
     }},
 
 }
