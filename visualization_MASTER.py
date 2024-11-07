@@ -328,7 +328,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             if visual_settings['plot_ind_line_installedCap_per_BFS']: 
                 checkpoint_to_logfile(f'plot_ind_line_installedCap_per_BFS', log_name)
                 capa_bfs_df = pvinst_df.copy()
-                gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/gm_shp_gdf.geojson')                                         
+                gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gm_shp_gdf.geojson')                                         
                 gm_gdf.rename(columns={'BFS_NUMMER': 'bfs'}, inplace=True)
                 capa_bfs_df = capa_bfs_df.merge(gm_gdf[['bfs', 'NAME']], on='bfs', how = 'left' )
                 capa_bfs_df['BeginOp_month'] = capa_bfs_df['BeginOp'].dt.to_period('M')
@@ -500,7 +500,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 
                 # import 
                 gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
-                gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/gm_shp_gdf.geojson')                                         
+                gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gm_shp_gdf.geojson')                                         
 
                 topo  = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
                 egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
@@ -652,21 +652,28 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     text=subinst3_gdf['hover_text'],
                     hoverinfo='text'
                 ))
-                
-                # Update layout
-                fig_topopvinst = copy.deepcopy(fig_topoegid)
-                fig_topopvinst.update_layout(
-                        title=f"Map of model PV Topology ({scen})",
-                        mapbox=dict(
-                            style="carto-positron",
-                            center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
-                            zoom=default_map_zoom
-                        )
-                    )
 
-                if plot_show:
-                    fig_topopvinst.show()
-                fig_topopvinst.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
+            # highlight EGIDs selected for summary ----------------
+            if True:
+                # BOOKMARK
+                subinst4_gdf = pvinst_gdf.copy()
+                # scen_setting = pvalloc_scen_list[i_scen]['
+                subinst4_gdf = subinst4_gdf.loc[subinst4_gdf['EGID'].isin(scen_setting)]
+                
+            # Update layout
+            fig_topopvinst = copy.deepcopy(fig_topoegid)
+            fig_topopvinst.update_layout(
+                    title=f"Map of model PV Topology ({scen})",
+                    mapbox=dict(
+                        style="carto-positron",
+                        center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
+                        zoom=default_map_zoom
+                    )
+                )
+
+            if plot_show:
+                fig_topopvinst.show()
+            fig_topopvinst.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
 
 
     # map ind - node_connections ============================
@@ -680,7 +687,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             # import
             gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
-            gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen['name_dir_import']}/gm_shp_gdf.geojson')                                         
+            gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gm_shp_gdf.geojson')                                         
             
             Map_egid_nodes = pd.read_parquet(f'{scen_data_path}/Map_egid_nodes.parquet')
             topo  = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
@@ -966,9 +973,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             if plot_show:
                 fig.show()
                 fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_installedCap_kW.html')
-
-
-
 
 
 
