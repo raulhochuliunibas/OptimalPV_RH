@@ -26,11 +26,14 @@ visual_default_settings = {
                 'uniform_municip_color': '#fff2ae',
                 'shape_opacity': 0.2,
                 'point_opacity': 0.7,
+                'point_opacity_sanity_check': 0.4,
                 'point_size_pv': 6,
                 'point_size_rest': 4.5,
+                'point_size_sanity_check': 10,
                 'point_color_pv_df': '#54f533',      # green
                 'point_color_alloc_algo': '#ffa600', # yellow 
                 'point_color_rest': '#383838',       # dark grey
+                'point_color_sanity_check': '#f54242', # red
             }, 
         'plot_ind_map_topo_omitt':              True,
             'plot_ind_map_topo_omitt_specs':{

@@ -655,12 +655,25 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             # highlight EGIDs selected for summary ----------------
             if True:
-                # BOOKMARK
-                subinst4_gdf = pvinst_gdf.copy()
-                # scen_setting = pvalloc_scen_list[i_scen]['
-                subinst4_gdf = subinst4_gdf.loc[subinst4_gdf['EGID'].isin(scen_setting)]
+                if len(glob.glob(f'{data_path}/output/{scen}/sanity_check_byEGID/*.csv')) > 1:
+                    files_sanity_check = glob.glob(f'{data_path}/output/{scen}/sanity_check_byEGID/*.csv')
+                    file = files_sanity_check[0]
+                    egid_sanity_check = [file.split('summary_')[-1].split('.csv')[0] for file in files_sanity_check]
+
+                    subinst4_gdf = pvinst_gdf.copy()
+                    subinst4_gdf = subinst4_gdf.loc[subinst4_gdf['EGID'].isin(egid_sanity_check)]
+
+                    # Add the points using Scattermapbox
+                    fig_topoegid.add_trace(go.Scattermapbox(lat=subinst4_gdf.geometry.y,lon=subinst4_gdf.geometry.x, mode='markers',
+                        marker=dict(
+                            size=map_topo_egid_specs['point_size_sanity_check'],
+                            color=map_topo_egid_specs['point_color_sanity_check'],
+                            opacity=map_topo_egid_specs['point_opacity_sanity_check']
+                        ),
+                        name = 'EGIDs in sanity check xlsx',
+                    ))
                 
-            # Update layout
+            # Update layout ----------------
             fig_topopvinst = copy.deepcopy(fig_topoegid)
             fig_topopvinst.update_layout(
                     title=f"Map of model PV Topology ({scen})",
@@ -668,8 +681,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                         style="carto-positron",
                         center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
                         zoom=default_map_zoom
-                    )
-                )
+                    ))
 
             if plot_show:
                 fig_topopvinst.show()
