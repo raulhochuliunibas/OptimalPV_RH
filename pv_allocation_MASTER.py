@@ -217,7 +217,7 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                 
 
                 if any([constr_m_TF, constr_y_TF, safety_TF]):
-                    print_to_logfile(f'\nExit While Loop', log_name)
+                    print_to_logfile(f'exit While Loop', log_name)
                     if constr_m_TF:
                         checkpoint_to_logfile(f'constr_m_TF: {constr_m_TF} ({round(constr_built_m,3)} built, {round(constr_capa_m,3)} capacity in kW)', log_name, 1, show_debug_prints)
                     if constr_y_TF:
