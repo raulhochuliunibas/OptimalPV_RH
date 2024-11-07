@@ -249,7 +249,7 @@ def local_data_AND_spatial_mappings(
 
         print_to_logfile(f'CRS for {gdf_to_export_names[i]}: {g.crs}', log_file_name_def,)
         checkpoint_to_logfile(f'exported {gdf_to_export_names[i]}', log_file_name_def , 4, show_debug_prints_def)
-        print_to_logfile(f'\n', log_file_name_def)
+
         with open(f'{data_path_def}/output/preprep_data/{gdf_to_export_names[i]}.geojson', 'w') as f:
             f.write(g.to_json())
 
@@ -405,7 +405,6 @@ def import_demand_TS_AND_match_households(
         fig = px.line(demandtypes, x='t', y=['high_DEMANDprox_wiHP', 'low_DEMANDprox_wiHP', 'high_DEMANDprox_noHP', 'low_DEMANDprox_noHP'], title='Demand types')
         # fig.show()
         fig.write_html(f'{data_path_def}/output/preprep_data/demandtypes.html')
-
         demandtypes['high_DEMANDprox_wiHP'].sum(), demandtypes['low_DEMANDprox_wiHP'].sum(), demandtypes['high_DEMANDprox_noHP'].sum(), demandtypes['low_DEMANDprox_noHP'].sum()
 
 
@@ -496,6 +495,14 @@ def import_demand_TS_AND_match_households(
     # DEMAND DATA SOURCE: SwissStore ============================================================
     elif demand_specs_def['input_data_source'] == "SwissStore" :
         print("BOOKMARK")     # BOOKMARK!
+        swstore_demand_inclnan = pd.read_excel(f'{data_path_def}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx')
+        swstore_demand = swstore_demand_inclnan.loc[~swstore_demand_inclnan['time'].isna()]
+        swstore_demand['SFH'].sum(), swstore_demand['MFH'].sum()
+        swstore_demand.head()
+        swstore_demand.shape
+
+
+        os.listdir(f'{data_path_def}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx')
 
 
 # ------------------------------------------------------------------------------------------------------

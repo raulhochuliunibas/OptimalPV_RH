@@ -38,7 +38,10 @@ dataagg_default_settings = {
             'GWR_EGID_buffer_size': 7.5,                          # buffer size in meters for the GWR selection
             'test_loop_optim_buff_size': False, 
             'test_loop_optim_buff_arang': [0, 7.5, 0.1]
-            }   
+            },   
+        'demand_specs':{
+            'input_data_source': "NETFLEX", #    Netflex OR SwissStore
+        }
         }
 
 

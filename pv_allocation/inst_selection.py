@@ -15,6 +15,7 @@ def select_AND_adjust_topology(pvalloc_settings,
 
     rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
     kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
+    share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
     data_path_def = pvalloc_settings['data_path']
 
     npv_df = npv_df_func
@@ -72,7 +73,7 @@ def select_AND_adjust_topology(pvalloc_settings,
         picked_flaech = npv_pick['FLAECHE']
         npv_pick.drop(index=['NPV_stand', 'diff_NPV_rand'], inplace=True)
 
-    inst_power = picked_flaech * kWpeak_per_m2 * pvalloc_settings['algorithm_specs']['tweak_capacity_fact']
+    inst_power = picked_flaech * kWpeak_per_m2 * share_roof_area_available * pvalloc_settings['algorithm_specs']['tweak_capacity_fact']
     npv_pick['inst_TF'], npv_pick['info_source'], npv_pick['xtf_id'], npv_pick['BeginOp'], npv_pick['TotalPower'], npv_pick['iter_round'] = [True, 'alloc_algorithm', picked_uid, f'{m}', inst_power, i_alloc_loop]
     
 

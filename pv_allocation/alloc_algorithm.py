@@ -370,6 +370,7 @@ def update_npv_df(pvalloc_settings,
     interest_rate = pvalloc_settings['tech_economic_specs']['interest_rate']
     invst_maturity = pvalloc_settings['tech_economic_specs']['invst_maturity']
     kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
+    share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
     tweak_npv_excl_elec_demand = pvalloc_settings['algorithm_specs']['tweak_npv_excl_elec_demand']
 
 
@@ -506,7 +507,7 @@ def update_npv_df(pvalloc_settings,
         
 
         # NPV calculation -----------------------------------------------------
-        aggsubdf_combo['estim_pvinstcost_chf'] = estim_instcost_chftotal(aggsubdf_combo['FLAECHE'] * kWpeak_per_m2)
+        aggsubdf_combo['estim_pvinstcost_chf'] = estim_instcost_chftotal(aggsubdf_combo['FLAECHE'] * kWpeak_per_m2 * share_roof_area_available)
 
         def compute_npv(row):
             pv_cashflow = (row['econ_inc_chf'] - row['econ_spend_chf']) / (1+interest_rate)**np.arange(1, invst_maturity+1)
