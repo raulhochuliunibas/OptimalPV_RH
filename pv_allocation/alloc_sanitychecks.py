@@ -194,6 +194,7 @@ def sanity_check_summary_byEGID(
 
     # debugging and checking -----------------------------------------------------
     prd_df = pd.read_parquet(path_pred_inst[len(path_pred_inst)-1])
+    prd_df = pd.read_parquet(path_pred_inst[1])
     prd_df['EGID'].value_counts()
     prd_df.sort_values('EGID')  
     # ----------------------------------------------------------------------------
@@ -213,7 +214,7 @@ def sanity_check_summary_byEGID(
                 row_egid, row_bfs, row_gklas, row_node, row_demand_type, 
                 row_pvinst_info, row_pvinst_BeginOp, row_pvinst_TotalPower,
                 row_elecpri, row_pvtarif, 
-                row_selfconsumption, row_interest_rate, row_years_maturity, row_kWpeak_per_m2, row_share_roof_area] = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row
+                row_selfconsumption, row_interest_rate, row_years_maturity, row_kWpeak_per_m2, row_share_roof_area] = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row()
             
             # row_egid, row_bfs, row_gklas, row_node, row_demand_type = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row()
             row_egid['key'], row_egid['descr'], row_egid['val'] = 'EGID', 'house identifier ID', egid
@@ -236,7 +237,7 @@ def sanity_check_summary_byEGID(
             row_interest_rate['key'], row_interest_rate['descr'],row_interest_rate['val'] = 'interest_rate', 'generic interest rate used for dicsounting NPV calculation', pvalloc_settings.get('tech_economic_specs').get('interest_rate')
             row_years_maturity['key'], row_years_maturity['descr'], row_years_maturity['val'] = 'invst_maturity', 'number of years that consider pv production for NPV calculation', pvalloc_settings.get('tech_economic_specs').get('invst_maturity')
             row_kWpeak_per_m2['key'], row_kWpeak_per_m2['descr'], row_kWpeak_per_m2['val'] = 'kWpeak_per_m2', 'transformation factor, how much kWp can be put on a square meter', pvalloc_settings.get('tech_economic_specs').get('kWpeak_per_m2')
-            row_share_roof_area['key'], row_share_roof_area['descr'], row_share_roof_area['val'] = 'share_roof_area_available', 'share of roof area that can be effectively used for PV installation', pvalloc_settings.get('tech_economic_specs').get('share_roof_area_available')
+            row_share_roof_area['key'], row_share_roof_area['descr'], row_share_roof_area['val'] = 'share_roof_area_available',  'share of roof area that can be effectively used for PV installation', pvalloc_settings.get('tech_economic_specs').get('share_roof_area_available')
 
         # df_uid (roof partition) values ----------
         if not topo.get(egid).get('pv_inst').get('inst_TF'):

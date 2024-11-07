@@ -149,7 +149,13 @@ def pv_allocation_MASTER(pvalloc_settings_func):
                             'econ_inc_chf': 'sum', 'econ_spend_chf': 'sum'}
 
 
-        # create pred_npv_inst_by_M folder to see month by month changes
+        # remove old files to avoid concatenating old files to iteration-by-iteration interim saves
+        for df_type in ['npv_df', 'pred_inst_df']:
+            df_paths = glob.glob(f'{data_path}/output/pvalloc_run/{df_type}.*')
+            for f in df_paths:
+                os.remove(f)
+
+        # create pred_npv_inst_by_M folder to save month-by-month interim saves
         if not os.path.exists(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M'):
             os.makedirs(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M')
         else:
@@ -258,6 +264,9 @@ def pv_allocation_MASTER(pvalloc_settings_func):
     """
 
     # TOPOLOGY SANITY CHECKS ----------------------------------------------------------------
+    if os.path.exists(f'{data_path}/output/pvalloc_run/sanity_check_byEGID'):
+        for f in glob.glob(f'{data_path}/output/pvalloc_run/sanity_check_byEGID/*'):
+            os.remove(f)
     sanity.sanity_check_summary_byEGID(pvalloc_settings)
     # NOTE: this needs to be after at least 1 round of the update_npv.function, otherwise no NPV to compare. 
 

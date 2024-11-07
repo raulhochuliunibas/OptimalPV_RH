@@ -10,7 +10,7 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  12 #36
+months_pred =  240 #36
 run_on_server = False
 
 run_dataagg =   False
@@ -34,6 +34,8 @@ dataagg_scenarios = {
         'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781,],
         'year_range': [2020, 2022], 
         'split_data_geometry_AND_slow_api': False, 
+        'demand_specs':{
+            'input_data_source': "NETFLEX",},
         'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
     }, 
 }
@@ -47,13 +49,16 @@ pvalloc_scenarios={
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
         'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781,],
+        # 'recalc_economics_topo_df': True, 
         'create_gdf_export_of_topology':    True,
         'algorithm_specs': {
+            'rand_seed': 42,
             'inst_selection_method': 'prob_weighted_npv',
             'tweak_gridnode_df_prod_demand_fact': 100000,
     }},
 
 }
+[2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 parklplatz = {
     f'pvalloc_smallBL_{months_pred}m_npv_alloc':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
@@ -82,7 +87,7 @@ pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
 # vsualiastion 
 visual_settings = {
-        'plot_show': False,
+        'plot_show': True,
         'node_selection_for_plots': ['node1', 'node10', 'node15'], # or None for all nodes
 
         'plot_ind_line_productionHOY_per_node':  False,
