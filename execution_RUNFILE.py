@@ -10,7 +10,7 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  6 #36
+months_pred =  2 #36
 run_on_server = False
 
 run_dataagg =   False
