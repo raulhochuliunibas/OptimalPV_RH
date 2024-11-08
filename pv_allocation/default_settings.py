@@ -27,7 +27,7 @@ pvalloc_default_settings = {
         'montecarlo_iterations': 1,
         'keep_files_each_iterations': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
         'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
-        'rand_seed': None,                            # random seed set to int or None
+        'rand_seed': 42,                            # random seed set to int or None
         'while_inst_counter_max': 5000,
         'topo_subdf_partitioner': 400,
 
@@ -61,8 +61,10 @@ pvalloc_default_settings = {
         'interest_rate': 0.01,
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
+        'pvprod_calc_method': 'method1',
+        'pv_efficiency_grade': 0.20,        # XY% Wirkungsgrad
         'elecpri_year': 2022,
-        'elecpri_category': 'H8', 
+        'elecpri_category': 'H4', 
         'invst_maturity': 25,
         'kWpeak_per_m2': 0.2,  # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
         'share_roof_area_available': 0.7, # 70% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%
