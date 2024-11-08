@@ -10,7 +10,7 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  480 #36
+months_pred =  6 #36
 run_on_server = False
 
 run_dataagg =   False
@@ -44,31 +44,66 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
-    f'pvalloc_DEV_{months_pred}m_small':{
+    f'pvalloc_DEV_{months_pred}m_pvmethod4_selfconsum05':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
         'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
-        # 'recalc_economics_topo_df': True, 
-        'create_gdf_export_of_topology':    True,
+        # 'create_gdf_export_of_topology':    True,
+        'tech_economic_specs': {
+            'self_consumption_ifapplicable': 0.5,
+            'pvprod_calc_method': 'method4',
+        },
         'algorithm_specs': {
             'rand_seed': 42,
-            'inst_selection_method': 'prob_weighted_npv',
             'tweak_gridnode_df_prod_demand_fact': 1,
-    }},
-    f'pvalloc_DEV_{months_pred}m_medium':{
+        }},
+
+    f'pvalloc_DEV_{months_pred}m_pvmethod3_selfconsum05':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781,],
-        # 'recalc_economics_topo_df': True, 
-        'create_gdf_export_of_topology':    True,
-        'algorithm_specs': {
-            'rand_seed': 42,
-            'inst_selection_method': 'prob_weighted_npv',
-            'tweak_gridnode_df_prod_demand_fact': 1,
-    }},
-
+        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
+        'tech_economic_specs': {
+            'self_consumption_ifapplicable': 0.5,
+            'pvprod_calc_method': 'method3',
+        }},
+    f'pvalloc_DEV_{months_pred}m_pvmethod2_selfconsum05':{
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
+        'tech_economic_specs': {
+            'self_consumption_ifapplicable': 0.5,
+            'pvprod_calc_method': 'method2',
+        }},
+    f'pvalloc_DEV_{months_pred}m_pvmethod4_selfconsum00':{ 
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
+        'tech_economic_specs': {
+            'self_consumption_ifapplicable': 0,
+            'pvprod_calc_method': 'method4',
+        }},
+    f'pvalloc_DEV_{months_pred}m_pvmethod3_selfconsum00':{
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
+        'tech_economic_specs': {
+            'self_consumption_ifapplicable': 0,
+            'pvprod_calc_method': 'method3',
+        }},
+    f'pvalloc_DEV_{months_pred}m_pvmethod2_selfconsum00':{
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
+        'tech_economic_specs': {
+            'self_consumption_ifapplicable': 0,
+            'pvprod_calc_method': 'method2',
+        }},
 }
 [2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 parklplatz = {
@@ -102,19 +137,19 @@ visual_settings = {
         'plot_show': True,
         'node_selection_for_plots': ['node1', 'node10', 'node15'], # or None for all nodes
 
-        'plot_ind_line_productionHOY_per_node':  False,
-        'plot_ind_line_installedCap_per_month':  False,
-        'plot_ind_hist_NPV_freepartitions':      False,
-        'plot_ind_var_summary_stats':            False,
+        'plot_ind_line_productionHOY_per_node':  True,
+        'plot_ind_line_installedCap_per_month':  True,
+        'plot_ind_hist_NPV_freepartitions':      True,
+        'plot_ind_var_summary_stats':            True,
         #                                      # False,
         'plot_ind_map_topo_egid':                True,
-        'plot_ind_map_node_connections':         False,
+        'plot_ind_map_node_connections':         True,
         'plot_ind_map_omitted_gwr_egids':        True,
         #                                      # False,
         'plot_agg_line_installedCap_per_month':  True,
         'plot_agg_line_productionHOY_per_node':  True,
         'plot_agg_line_gridPremiumHOY_per_node': True,
-        'plot_agg_line_gridpremium_structure':   False,
+        'plot_agg_line_gridpremium_structure':   True,
         'plot_agg_line_production_per_month':    True,
         'plot_agg_line_cont_charact_new_inst':   True,
     }
