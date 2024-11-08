@@ -113,9 +113,6 @@ def calc_economics_in_topo_df(
             os.remove(f)
     
 
-    # MERGE + GET ECONOMIC VALUES FOR NPV CALCULATION =============================================
-    topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
-
     # round NEIGUNG + AUSRICHTUNG to 5 for easier computation
     topo_df['NEIGUNG'] = topo_df['NEIGUNG'].apply(lambda x: round(x / 5) * 5)
     topo_df['AUSRICHTUNG'] = topo_df['AUSRICHTUNG'].apply(lambda x: round(x / 10) * 10)
@@ -127,7 +124,13 @@ def calc_economics_in_topo_df(
             return 0
     topo_df['angletilt_factor'] = topo_df.apply(lambda r: lookup_angle_tilt_efficiency(r, angle_tilt_df), axis=1)
 
-    dfuids = topo_df['df_uid'].unique()
+    # MERGE + GET ECONOMIC VALUES FOR NPV CALCULATION =============================================
+    topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
+    share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
+    pv_efficiency_grade = pvalloc_settings['tech_economic_specs']['pv_efficiency_grade']
+    kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
+    pvprod_calc_method = pvalloc_settings['tech_economic_specs']['pvprod_calc_method']
+
     egids = topo_df['EGID'].unique()
 
     stepsize = topo_subdf_partitioner if len(egids) > topo_subdf_partitioner else len(egids)
@@ -152,10 +155,43 @@ def calc_economics_in_topo_df(
         subdf.rename(columns={'demand': 'demand_kW'}, inplace=True)
         # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', log_name, 1)
 
-        # compute production 
-        subdf = subdf.assign(pvprod_kW = (subdf['radiation'] * subdf['FLAECHE'] * subdf['angletilt_factor']) / 1000).drop(columns=['meteo_loc', 'radiation'])
-        subdf = subdf.assign(FLAECH_angletilt = subdf['FLAECHE'] * subdf['angletilt_factor'])
 
+        # compute production ---------- 
+        subdf = subdf.assign(FLAECH_angletilt = subdf['FLAECHE'] * subdf['angletilt_factor'])
+        
+        # pvprod method 1 (false, presented to frank 8.11.24. missing efficiency grade)
+        if pvprod_calc_method == 'method1':    
+            subdf = subdf.assign(pvprod_kW = (subdf['radiation'] * subdf['FLAECHE'] * subdf['angletilt_factor']) / 1000).drop(columns=['meteo_loc', 'radiation'])
+
+        # pvprod method 2
+        elif pvprod_calc_method == 'method2':   
+            subdf['pvprod_kW'] = pv_efficiency_grade * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
+            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = pv_efficiency_grade * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            
+        # pvprod method 3
+        elif pvprod_calc_method == 'method3':   
+            subdf['pvprod_kW'] = kWpeak_per_m2 * pv_efficiency_grade * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
+            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = kWpeak_per_m2 * pv_efficiency_grade * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+
+        # pvprod method 4
+        elif pvprod_calc_method == 'method4':   
+            subdf['pvprod_kW_noshade'] = kWpeak_per_m2 * pv_efficiency_grade * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf['pvprod_kW_noshade'].head(20)
+            
+            egid_subdf = subdf['EGID'].unique()
+            egid = egid_subdf[0]
+            for egid in egid_subdf:
+                egid_idx = subdf['EGID'] == egid
+                pvprod_kWhYear_noshade = subdf.loc[egid_idx,'pvprod_kW_noshade'].sum()
+                stromertrag_egid = subdf.loc[egid_idx]['STROMERTRAG'][0]
+                shading_factor = stromertrag_egid / pvprod_kWhYear_noshade
+
+                subdf.loc[egid_idx, 'pvprod_kW'] = subdf.loc[egid_idx, 'pvprod_kW_noshade'] * shading_factor
+            subdf.drop(columns=['meteo_loc', 'radiation', 'pvprod_kW_noshade'], inplace=True)
+            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = <retrofitted_shading_factor> * kWpeak_per_m2 * pv_efficiency_grade * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            
 
         # export subdf ----------------------------------------------
         subdf.to_parquet(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.parquet')
