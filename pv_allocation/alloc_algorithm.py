@@ -177,7 +177,7 @@ def calc_economics_in_topo_df(
 
         # pvprod method 4
         elif pvprod_calc_method == 'method4':   
-            subdf['pvprod_kW_noshade'] = pv_efficiency_grade  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf['pvprod_kW_noshade'] = (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] 
             subdf['pvprod_kW_noshade'].head(20)
             
             dfuid_subdf = subdf['df_uid'].unique()
