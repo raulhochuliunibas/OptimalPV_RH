@@ -1191,7 +1191,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             months_prediction_scen = pvalloc_scen['months_prediction']
 
             plot_df = pd.DataFrame()
-            months_prediction_range = pd.date_range(start=T0_scen + pd.DateOffset(days=1), periods=months_prediction_scen, freq='M').to_period('M')
+            months_prediction_range = pd.date_range(start=T0_scen + pd.DateOffset(days=1), periods=months_prediction_scen, freq='ME').to_period('M')
             m, month = 0, months_prediction_range[0]
             for i_m, m in enumerate(months_prediction_range):
                 subgridnode_df = pd.read_parquet(f'{scen_data_path}/pred_gridprem_node_by_M/gridnode_df_{m}.parquet')
