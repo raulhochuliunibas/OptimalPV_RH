@@ -673,8 +673,8 @@ def define_construction_capacity(
     month_range = pd.date_range(start=start_loockback, end=end_prediction, freq='ME').to_period('M')
     months_lookback = pd.date_range(start=start_loockback, end=T0, freq='ME').to_period('M')
     months_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME').to_period('M')
-    checkpoint_to_logfile(f'constr_capacity: month lookback   {months_lookback[0]} to {months_lookback[-1]}', log_file_name_def, 2)
-    checkpoint_to_logfile(f'constr_capacity: month prediction {months_prediction[0]} to {months_prediction[-1]}', log_file_name_def, 2)
+    # checkpoint_to_logfile(f'constr_capacity: month lookback   {months_lookback[0]} to {months_lookback[-1]}', log_file_name_def, 2)
+    # checkpoint_to_logfile(f'constr_capacity: month prediction {months_prediction[0]} to {months_prediction[-1]}', log_file_name_def, 2)
 
 
     # IMPORT ----------------------------------------------------------------------------
@@ -767,9 +767,20 @@ def define_construction_capacity(
                        (constrcapa['month'].isin(winter_months)), 'constr_capacity_kw'] = TP_y_winter_month
         
 
+    # PRINTs to LOGFILE ----------------------------------------------------------------------------
+    checkpoint_to_logfile(f'constr_capacity month lookback: {months_lookback[0]} to {months_lookback[-1]}', log_file_name_def, 2)
+    checkpoint_to_logfile(f'constr_capacity (sum_TP_kW_lookback) in that period: {sum_TP_kW_lookback} kW', log_file_name_def, 2)
+
+    checkpoint_to_logfile(f'constr_capacity: month prediction {months_prediction[0]} to {months_prediction[-1]}', log_file_name_def, 2)
+    checkpoint_to_logfile(f'Of {sum_TP_kW_lookback} kW, {share_to_summer*100}% built in summer months ({summer_months}) and {share_to_winter*100}% in winter months ({winter_months})', log_file_name_def, 2)
+    checkpoint_to_logfile(f'sum_TP_kW_lookback (T0: {sum_TP_kW_lookback} kW) increase by {capacity_growth*100}% per year', log_file_name_def, 2)
+
+
     # EXPORT ----------------------------------------------------------------------------
     constrcapa.to_parquet(f'{data_path_def}/output/pvalloc_run/constrcapa.parquet')
     constrcapa.to_csv(f'{data_path_def}/output/pvalloc_run/constrcapa.csv', index=False)
+
+
 
     return constrcapa, months_prediction, months_lookback
 
