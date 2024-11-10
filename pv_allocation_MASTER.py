@@ -98,6 +98,8 @@ def pv_allocation_MASTER(pvalloc_settings_func):
 
     # NOTE: this needs to be moved to data_aggregation_MASTER, or replaced with primeo data, whenever that is \_(ツ)_/¯
     initial.get_fake_gridnodes_v2(pvalloc_settings)
+    # sanity.sanity_check_summary_byEGID(pvalloc_settings)
+
 
     # INITIALIZATION ================================================================
     if pvalloc_settings['recreate_topology']:
