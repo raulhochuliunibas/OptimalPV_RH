@@ -7,7 +7,31 @@ import glob
 
 scen = "pvalloc_smallBL_10y_npv_weighted"
 wd_path = 'C:/Models/OptimalPV_RH'
-data_path = f'{wd_path}_data'
+data_path     = f'{wd_path}_data'
+data_path_def = f'{wd_path}_data'
+
+topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
+
+topo[list(topo.keys())[0]].get('pv_inst').get('info_source')
+
+egid_ls, alloc_algorithm_ls = [], []
+for k,v in topo.items():
+    egid_ls.append(k)
+    alloc_algorithm_ls.append(v.get('pv_inst').get('info_source'))
+
+df = pd.DataFrame({'EGID': egid_ls, 'info_source': alloc_algorithm_ls})
+df['info_source'].value_counts()
+egids = df.loc[df['info_source'] == 'alloc_algorithm', 'EGID'].to_list()
+egids 
+
+# -----------------------
+subdf_t0['EGID'].isin(egids).sum()
+subdf['EGID'].isin(egids).sum()
+
+aggsubdf_combo['EGID'].isin(egids).sum()
+
+npv_df['EGID'].isin(egids).sum()
+
 
 # ------------------------------------------------------------------------------------------------------
 """

@@ -156,9 +156,10 @@ def calc_economics_in_topo_df(
         # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', log_name, 1)
 
 
-        # compute production ---------- 
+        # attach FLAECH_angletilt, might be usefull for later calculations
         subdf = subdf.assign(FLAECH_angletilt = subdf['FLAECHE'] * subdf['angletilt_factor'])
-        
+
+        # compute production ---------- 
         # pvprod method 1 (false, presented to frank 8.11.24. missing efficiency grade)
         if pvprod_calc_method == 'method1':    
             subdf = subdf.assign(pvprod_kW = (subdf['radiation'] * subdf['FLAECHE'] * subdf['angletilt_factor']) / 1000).drop(columns=['meteo_loc', 'radiation'])
@@ -177,8 +178,9 @@ def calc_economics_in_topo_df(
 
         # pvprod method 4
         elif pvprod_calc_method == 'method4':   
-            subdf['pvprod_kW_noshade'] = (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] 
-            subdf['pvprod_kW_noshade'].head(20)
+            subdf['pvprod_kW_noshade'] =   (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] # * subdf['angletilt_factor']
+            # check if no_shade production calculation is larger than STROMERTRAG (should be, and then later corrected...)
+            sum(subdf.loc[subdf['df_uid'] == subdf['df_uid'].unique()[0], 'pvprod_kW_noshade']), subdf.loc[subdf['df_uid'] == subdf['df_uid'].unique()[0], 'STROMERTRAG'].iloc[0]
             
             dfuid_subdf = subdf['df_uid'].unique()
             dfuid = dfuid_subdf[0]
@@ -411,7 +413,6 @@ def update_npv_df(pvalloc_settings,
     share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
     tweak_npv_excl_elec_demand = pvalloc_settings['algorithm_specs']['tweak_npv_excl_elec_demand']
 
-
     estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
 
     groupby_cols = groupby_cols_func
@@ -511,12 +512,11 @@ def update_npv_df(pvalloc_settings,
                         elecpri_Rp_kWh_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('elecpri_Rp_kWh')][0])
                         demand_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('demand_kW')][0])
 
+                        ausrichtung_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('AUSRICHTUNG')][0])
+                        neigung_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('NEIGUNG')][0])
 
                         flaeche_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('FLAECHE')].sum())
-                        # stromertrag_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('STROMERTRAG')].sum())
-                        # ausrichtung_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('AUSRICHTUNG')][0])
-                        # neigung_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('NEIGUNG')][0])
-                    
+                        stromertrag_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('STROMERTRAG')].sum())                    
                         flaech_angletilt_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('FLAECH_angletilt')].sum())
                         pvprod_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pvprod_kW')].sum())
                         selfconsum_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('selfconsum_kW')].sum())
@@ -532,10 +532,13 @@ def update_npv_df(pvalloc_settings,
 
                                         'inst_TF': inst_list, 'info_source': info_source_list, 'pvid': pvid_list,
                                         'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list, 'elecpri_Rp_kWh': elecpri_Rp_kWh_list,
+                                        'demand_kW': demand_list,
 
-                                        'FLAECHE': flaeche_list, 
-                                        # 'FLAECH_angletilt': flaech_angletilt_list,
-                                        'demand_kW': demand_list, 'pvprod_kW': pvprod_list,
+                                        'AUSRICHTUNG': ausrichtung_list, 'NEIGUNG': neigung_list,
+                                        
+                                        'FLAECHE': flaeche_list, 'STROMERTRAG': stromertrag_list,
+                                        'FLAECH_angletilt': flaech_angletilt_list,
+                                        'pvprod_kW': pvprod_list,
                                         'selfconsum_kW': selfconsum_list, 'netdemand_kW': netdemand_list, 'netfeedin_kW': netfeedin_list,
                                         'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
                      

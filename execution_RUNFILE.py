@@ -10,10 +10,10 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  2 #36
+months_pred =  24 #36
 run_on_server = False
 
-run_dataagg =   False
+run_dataagg =   True
 run_alloc =     True
 run_visual =    True
 
@@ -44,7 +44,7 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
-    f'pvalloc_DEV_{months_pred}m_pvmethod4_selfconsum05':{
+    f'pvalloc_DEV_{months_pred}m_pvmethod2_selfconsum05':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
@@ -52,49 +52,13 @@ pvalloc_scenarios={
         # 'create_gdf_export_of_topology':    True,
         'tech_economic_specs': {
             'self_consumption_ifapplicable': 0.5,
-            'pvprod_calc_method': 'method4',
+            'pvprod_calc_method': 'method2',
         },
         'algorithm_specs': {
             'rand_seed': 42,
             'tweak_gridnode_df_prod_demand_fact': 1,
         }},
 
-    f'pvalloc_DEV_{months_pred}m_pvmethod3_selfconsum05':{
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
-        'tech_economic_specs': {
-            'self_consumption_ifapplicable': 0.5,
-            'pvprod_calc_method': 'method3',
-        }},
-    f'pvalloc_DEV_{months_pred}m_pvmethod2_selfconsum05':{
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
-        'tech_economic_specs': {
-            'self_consumption_ifapplicable': 0.5,
-            'pvprod_calc_method': 'method2',
-        }},
-    f'pvalloc_DEV_{months_pred}m_pvmethod4_selfconsum00':{ 
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
-        'tech_economic_specs': {
-            'self_consumption_ifapplicable': 0,
-            'pvprod_calc_method': 'method4',
-        }},
-    f'pvalloc_DEV_{months_pred}m_pvmethod3_selfconsum00':{
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
-        'tech_economic_specs': {
-            'self_consumption_ifapplicable': 0,
-            'pvprod_calc_method': 'method3',
-        }},
     f'pvalloc_DEV_{months_pred}m_pvmethod2_selfconsum00':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
@@ -127,7 +91,6 @@ parklplatz = {
             'inst_selection_method': 'random',
             'tweak_gridnode_df_prod_demand_fact': 1,
     }},
-
 }
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 

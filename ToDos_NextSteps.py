@@ -36,7 +36,7 @@
             # > NPV calc makes sense? 
     # ----------
 
-
+    # TODO: Find a way to estimate where the existing PV installations are placed on the roof partitions. 
 
     # TODO: check if there is an inefficiency in npv and gridprem update, as the same data is loaded multiple times.
 

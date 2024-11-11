@@ -140,16 +140,6 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         months_lookback = pvalloc_settings['months_lookback']
         rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
         safety_counter_max = pvalloc_settings['algorithm_specs']['while_inst_counter_max']
-        
-        # aggregation cols for npv update
-        groupby_cols_topoaggdf = ['EGID', 'df_uid', 'grid_node', 'bfs', 'gklas', 'demandtype',
-                        'inst_TF', 'info_source', 'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 
-                        'FLAECHE', 'FLAECH_angletilt']
-        agg_cols_topoaggdf = {'pvprod_kW': 'sum', 
-                            'demand_kW': 'sum', 'selfconsum_kW': 'sum', 
-                            'netdemand_kW': 'sum', 'netfeedin_kW': 'sum', 
-                            'econ_inc_chf': 'sum', 'econ_spend_chf': 'sum'}
-
 
         # remove old files to avoid concatenating old files to iteration-by-iteration interim saves
         for df_type in ['npv_df', 'pred_inst_df']:
@@ -184,6 +174,14 @@ def pv_allocation_MASTER(pvalloc_settings_func):
             
 
             # NPV UPDATE ==========
+                # aggregation cols for npv update
+            groupby_cols_topoaggdf = ['EGID', 'df_uid', 'grid_node', 'bfs', 'gklas', 'demandtype',
+                        'inst_TF', 'info_source', 'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 
+                        'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 'NEIGUNG','STROMERTRAG']
+            agg_cols_topoaggdf = {'pvprod_kW': 'sum', 
+                            'demand_kW': 'sum', 'selfconsum_kW': 'sum', 
+                            'netdemand_kW': 'sum', 'netfeedin_kW': 'sum', 
+                            'econ_inc_chf': 'sum', 'econ_spend_chf': 'sum'}
             npv_df = algo.update_npv_df(pvalloc_settings, groupby_cols_topoaggdf, agg_cols_topoaggdf, 
                                         df_list, df_names, ts_list, ts_names, m, i)
 
