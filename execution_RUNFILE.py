@@ -10,8 +10,9 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  12 #36
+months_pred =  480 #600 #36
 run_on_server = False
+bfs_numbers = [2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 
 run_dataagg =   True
 run_alloc =     True
@@ -31,9 +32,9 @@ dataagg_scenarios = {
     'preprep_BL_20to22_1and2homes_buff002':{
         'script_run_on_server': run_on_server, 
         # 'kt_numbers': [13,], 
-        'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781,],
+        'bfs_numbers': bfs_numbers,
         'year_range': [2020, 2022], 
-        'split_data_geometry_AND_slow_api': False, 
+        'split_data_geometry_AND_slow_api': True, 
         'demand_specs':{
             'input_data_source': "NETFLEX",},
         'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
@@ -48,7 +49,7 @@ pvalloc_scenarios={
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
+        'bfs_numbers': bfs_numbers,
         # 'create_gdf_export_of_topology':    True,
         'tech_economic_specs': {
             'self_consumption_ifapplicable': 0.5,
@@ -63,7 +64,7 @@ pvalloc_scenarios={
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787,],# 2792, 2784, 2793, 2782, 2781,],
+        'bfs_numbers': bfs_numbers,
         'tech_economic_specs': {
             'self_consumption_ifapplicable': 0,
             'pvprod_calc_method': 'method2',
