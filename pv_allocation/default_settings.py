@@ -6,71 +6,40 @@ pvalloc_default_settings = {
     'wd_path_laptop': 'C:/Models/OptimalPV_RH',              # path to the working directory on Raul's laptop
     'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',   # path to the working directory on the server
 
+    # main settings for allocation
     'kt_numbers': [], #[12,13],                           # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain indiviual municipalities
     'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781, 2789, 2786, 2768, 2772, 2785, 2761],
     'T0_prediction': '2023-01-01 00:00:00', 
     'months_lookback': 12*1,
     'months_prediction': 3,
-
     'script_run_on_server':     False,                           # F: run on private computer, T: run on server
     'show_debug_prints':        True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
     'fast_debug_run':           False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
     'n_egid_in_topo': 200, 
+
+
+    # switch on/off parts of aggregation 
     'recreate_topology':                True, 
     'recalc_economics_topo_df':         True,
     'run_allocation_loop':              True,
     'create_gdf_export_of_topology':    True,
 
-
-    'algorithm_specs': {
-        'inst_selection_method': 'prob_weighted_npv', # random, prob_weighted_npv, max_npv 
-        'montecarlo_iterations': 1,
-        'keep_files_each_iterations': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
-        'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
-        'rand_seed': 42,                            # random seed set to int or None
-        'while_inst_counter_max': 5000,
-        'topo_subdf_partitioner': 400,
-
-        'tweak_capacity_fact': 1,
-        'tweak_constr_capacity_fact': 1,
-        'tweak_npv_calc': 1,
-        'tweak_npv_excl_elec_demand': True,
-        'tweak_gridnode_df_prod_demand_fact': 1,
-    },
-    'gridprem_adjustment_specs': {
-        'voltage_assumption': '',
-        'tier_description': 'tier_level: (voltage_threshold, gridprem_Rp_kWh)',
-        'power_factor': 1, 
-        'colnames': ['tier_level', 'used_node_capa_rate', 'gridprem_Rp_kWh'],
-        'tiers': { 
-            1: [0.7, 1], 
-            2: [0.8, 3],
-            4: [0.9, 7],
-            5: [0.95, 15], 
-            6: [10, 50],
-            },},
-        # 'tiers': { 
-        #     1: [2000, 1], 
-        #     2: [4000, 3],
-        #     4: [6000, 7],
-        #     5: [8000, 15], 
-        #     6: [15000, 50],
-        #     },},
+    # PART I: settings for alloc_initialization --------------------
     'tech_economic_specs': {
         'self_consumption_ifapplicable': 0.5,
         'interest_rate': 0.01,
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
         'pvprod_calc_method': 'method1',
-        'pv_efficiency_grade': 0.20,        # XY% Wirkungsgrad
+        'inverter_efficiency': 0.95,        # XY% Wirkungsgrad
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
         'invst_maturity': 25,
         'kWpeak_per_m2': 0.2,  # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
-        'share_roof_area_available': 0.7, # 70% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%
+        'share_roof_area_available': 1, # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
         },
     'weather_specs': {
-        'meteoblue_col_radiation_proxy': 'Basel Direct Shortwave Radiation',
+        'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',],
         'weather_year': 2022,
     },
     'constr_capacity_specs': {
@@ -99,7 +68,40 @@ pvalloc_default_settings = {
     'sanity_check_summary_byEGID_specs': {
         'egid_list': ['3031017','1367570', '3030600'], # '1367570', '245017418'
         'n_pvinst_of_alloc_algorithm': 2,
-    }
+    },
+    'algorithm_specs': {
+        'inst_selection_method': 'prob_weighted_npv', # random, prob_weighted_npv, max_npv 
+        'montecarlo_iterations': 1,
+        'keep_files_each_iterations': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
+        'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
+        'rand_seed': 42,                            # random seed set to int or None
+        'while_inst_counter_max': 5000,
+        'topo_subdf_partitioner': 400,
+
+        'tweak_constr_capacity_fact': 1,
+        'tweak_npv_calc': 1,
+        'tweak_npv_excl_elec_demand': True,
+        'tweak_gridnode_df_prod_demand_fact': 1,
+    },  
+
+    # PART II: settings for MC algorithm --------------------
+    'gridprem_adjustment_specs': {
+        'voltage_assumption': '',
+        'tier_description': 'tier_level: (voltage_threshold, gridprem_Rp_kWh)',
+        'power_factor': 1, 
+        'perf_factor_1kVA_to_XkW': 0.8,
+        'colnames': ['tier_level', 'used_node_capa_rate', 'gridprem_Rp_kWh'],
+        'tiers': { 
+            1: [0.7, 1], 
+            2: [0.8, 3],
+            4: [0.9, 7],
+            5: [0.95, 15], 
+            6: [10, 100],
+            },},
+
+    # PART III: post processing of MC algorithm --------------------
+    # ...
+
 }
 
 
