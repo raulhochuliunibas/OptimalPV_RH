@@ -49,7 +49,7 @@ def create_gdf_export_of_topology(
     topo_df = pd.DataFrame({'EGID': egid_list,'gklas': gklas_list,
                             'inst_tf': inst_tf_list,'inst_info': inst_info_list,'inst_id': inst_id_list,'beginop': beginop_list,'power': power_list,
     })
-    topo_df['power'] = topo_df['power'].replace('', 0).astype(float)
+    topo_df['power'] = topo_df['power'].replace('', 0).infer_objects(copy=False).astype(float)
     topo_df.to_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
     topo_df.to_csv(f'{data_path_def}/output/pvalloc_run/topo_egid_df.csv')
 
@@ -214,7 +214,8 @@ def sanity_check_summary_byEGID(
                 row_egid, row_bfs, row_gklas, row_node, row_demand_type, 
                 row_pvinst_info, row_pvinst_BeginOp, row_pvinst_TotalPower,
                 row_elecpri, row_pvtarif, 
-                row_selfconsumption, row_interest_rate, row_years_maturity, row_kWpeak_per_m2, row_share_roof_area] = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row()
+                row_selfconsumption, row_interest_rate, row_years_maturity, row_kWpeak_per_m2, row_share_roof_area, 
+                empty_row ] = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row()
             
             # row_egid, row_bfs, row_gklas, row_node, row_demand_type = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row()
             row_egid['key'], row_egid['descr'], row_egid['val'] = 'EGID', 'house identifier ID', egid
@@ -245,6 +246,7 @@ def sanity_check_summary_byEGID(
             npv_sub = npv_df.loc[npv_df['EGID'] == egid]
             npv_val_list = [
                 row_demand_kW,
+                row_FLAECHE_m2_mean, row_FLAECHE_m2_sum, 
                 row_pvprod_kW_min, row_pvprod_kW_max, row_pvprod_kW_mean, row_pvprod_kW_std, 
                 row_stromertrag_kWh_min, row_stromertrag_kWh_max, row_stromertrag_kWh_mean, row_stromertrag_kWh_std,
                 row_netfeedin_kW_min, row_netfeedin_kW_max, row_netfeedin_kW_mean, row_netfeedin_kW_std,
@@ -252,6 +254,7 @@ def sanity_check_summary_byEGID(
                 row_estim_pvinstcost_chf_min, row_estim_pvinstcost_chf_max, row_estim_pvinstcost_chf_mean, row_estim_pvinstcost_chf_std,
                 row_npv_chf_min, row_npv_chf_max, row_npv_chf_mean, row_npv_chf_std,
                 ] = [get_new_row(), 
+                     get_new_row(), get_new_row(), 
                      get_new_row(), get_new_row(), get_new_row(), get_new_row(),
                      get_new_row(), get_new_row(), get_new_row(), get_new_row(),
                      get_new_row(), get_new_row(), get_new_row(), get_new_row(),
@@ -266,6 +269,9 @@ def sanity_check_summary_byEGID(
             row_pvprod_kW_min['key'], row_pvprod_kW_min['descr'], row_pvprod_kW_min['val'], row_pvprod_kW_min['unit'] = 'pvprod_kW_min', 'min of possible production within all partition combinations',  npv_sub['pvprod_kW'].min(), 'kWh'
             row_pvprod_kW_max['key'], row_pvprod_kW_max['descr'], row_pvprod_kW_max['val'], row_pvprod_kW_max['unit'] = 'pvprod_kW_max', 'max of possible production within all partition combinations',  npv_sub['pvprod_kW'].max(), 'kWh'
 
+            row_FLAECHE_m2_mean['key'], row_FLAECHE_m2_mean['descr'], row_FLAECHE_m2_mean['val'], row_FLAECHE_m2_mean['unit'] = 'FLAECHE_m2_mean', 'mean of possible roof area within all partition combinations',  npv_sub['FLAECHE'].mean(), 'm2'  
+            row_FLAECHE_m2_sum['key'], row_FLAECHE_m2_sum['descr'], row_FLAECHE_m2_sum['val'], row_FLAECHE_m2_sum['unit'] = 'FLAECHE_m2_sum', 'sum of possible roof area within all partition combinations',  npv_sub['FLAECHE'].sum(), 'm2'
+            
             # row_stromertrag_kWh_mean['key'], row_stromertrag_kWh_mean['descr'], row_stromertrag_kWh_mean['val'], row_stromertrag_kWh_mean['unit'] = 'STROMERTRAG_mean', 'mean of possible STROMERTRAG (solkat data)',  npv_sub['stromertrag_kWh'].mean(), 'kWh/year'
             # row_stromertrag_kWh_std['key'], row_stromertrag_kWh_std['descr'], row_stromertrag_kWh_std['val'], row_stromertrag_kWh_std['unit'] = 'STROMERTRAG_std', 'std of possible STROMERTRAG (solkat data)',  npv_sub['stromertrag_kWh'].std(), 'kWh/year'
             # row_stromertrag_kWh_min['key'], row_stromertrag_kWh_min['descr'], row_stromertrag_kWh_min['val'], row_stromertrag_kWh_min['unit'] = 'STROMERTRAG_min', 'min of possible STROMERTRAG (solkat data)',  npv_sub['stromertrag_kWh'].min(), 'kWh/year'
@@ -297,17 +303,24 @@ def sanity_check_summary_byEGID(
             pred_inst_sub = pred_inst_df.loc[pred_inst_df['EGID'] == egid]
             npv_val_list = [
                 row_demand_kW,
+                row_df_uid,
                 row_pvprod_kW,
+                row_FLAECHE, 
+                row_FLAECH_angletilt,
                 row_STROMERTRAG_kWh,
                 row_netfeedin_kW, 
                 row_econ_inc_chf, 
                 row_estim_pvinstcost_chf, 
                 row_npv_chf
-                ] = [get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row()] 
+                ] = [get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(), get_new_row(), get_new_row(),get_new_row(), ] 
             
             row_demand_kW['key'], row_demand_kW['descr'], row_demand_kW['val'], row_demand_kW['unit'] = 'demand_kW_min', 'total demand of house over 1 year', pred_inst_sub['demand_kW'].values[0], 'kWh'
+            row_df_uid['key'], row_df_uid['descr'], row_df_uid['val'], row_df_uid['unit'] = 'df_uid', 'roof partition identifier ID', pred_inst_sub['df_uid_combo'].values[0], 'ID'
+
             row_pvprod_kW['key'], row_pvprod_kW['descr'], row_pvprod_kW['val'], row_pvprod_kW['unit'] = 'pvprod_kW', 'total production of house over 1 year', pred_inst_sub['pvprod_kW'].values[0], 'kWh'
-            # row_STROMERTRAG_kWh['key'], row_STROMERTRAG_kWh['descr'], row_STROMERTRAG_kWh['val'], row_STROMERTRAG_kWh['unit'] = 'STROMERTRAG_kWh', 'total STROMERTRAG of house over 1 year', pred_inst_sub['STROMERTRAG_kWh'].values[0], 'kWh/year'
+            row_FLAECHE['key'], row_FLAECHE['descr'], row_FLAECHE['val'], row_FLAECHE['unit'] = 'FLAECHE_m2', 'total roof area of house', pred_inst_sub['FLAECHE'].values[0], 'm2'
+            row_FLAECH_angletilt['key'], row_FLAECH_angletilt['descr'], row_FLAECH_angletilt['val'], row_FLAECH_angletilt['unit'] = 'FLAECH_angletilt', 'total roof area of house with angle tilt', pred_inst_sub['FLAECH_angletilt'].values[0], 'm2'
+            row_STROMERTRAG_kWh['key'], row_STROMERTRAG_kWh['descr'], row_STROMERTRAG_kWh['val'], row_STROMERTRAG_kWh['unit'] = 'STROMERTRAG_kWh', 'total STROMERTRAG of house over 1 year', pred_inst_sub['STROMERTRAG'].values[0], 'kWh/year'
             # BOOKMARK STROMERTRAG IS NOT IN NPV_DFL
             row_netfeedin_kW['key'], row_netfeedin_kW['descr'], row_netfeedin_kW['val'], row_netfeedin_kW['unit'] = 'netfeedin_kW', 'total feedin of house over 1 year', pred_inst_sub['netfeedin_kW'].values[0], 'kWh'
             row_econ_inc_chf['key'], row_econ_inc_chf['descr'], row_econ_inc_chf['val'], row_econ_inc_chf['unit'] = 'econ_inc_chf', 'economic income of house over 1 year', pred_inst_sub['econ_inc_chf'].values[0], 'CHF'
