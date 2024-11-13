@@ -2,6 +2,9 @@ import os
 
 import data_aggregation_MASTER
 import pv_allocation_MASTER
+#mport pvalloc_initialization_MASTER
+#mport pvalloc_MCalgorithm_MASTER
+#mport pvalloc_postprocessing_MASTER
 import visualization_MASTER
 
 from data_aggregation.default_settings import extend_dataag_scen_with_defaults
@@ -10,11 +13,11 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  480 #600 #36
+months_pred =  12 #600 #36
 run_on_server = False
-bfs_numbers = [2791, 2787, 2792, 2784, 2793, 2782, 2781,]
+bfs_numbers = [2791, 2787 ]#, 2792, 2784, 2793, 2782, 2781,]
 
-run_dataagg =   True
+run_dataagg =   False
 run_alloc =     True
 run_visual =    True
 
@@ -53,22 +56,22 @@ pvalloc_scenarios={
         # 'create_gdf_export_of_topology':    True,
         'tech_economic_specs': {
             'self_consumption_ifapplicable': 0.5,
-            'pvprod_calc_method': 'method2',
+            'pvprod_calc_method': 'method3',
         },
         'algorithm_specs': {
             'rand_seed': 42,
             'tweak_gridnode_df_prod_demand_fact': 1,
         }},
 
-    f'pvalloc_DEV_{months_pred}m_pvmethod2_selfconsum00':{
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        'bfs_numbers': bfs_numbers,
-        'tech_economic_specs': {
-            'self_consumption_ifapplicable': 0,
-            'pvprod_calc_method': 'method2',
-        }},
+    # f'pvalloc_DEV_{months_pred}m_pvmethod2_selfconsum00':{
+    #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': months_pred,
+    #     'bfs_numbers': bfs_numbers,
+    #     'tech_economic_specs': {
+    #         'self_consumption_ifapplicable': 0,
+    #         'pvprod_calc_method': 'method2',
+    #     }},
 }
 [2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 parklplatz = {

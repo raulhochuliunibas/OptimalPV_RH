@@ -127,7 +127,7 @@ def calc_economics_in_topo_df(
     # MERGE + GET ECONOMIC VALUES FOR NPV CALCULATION =============================================
     topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
     share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
-    pv_efficiency_grade = pvalloc_settings['tech_economic_specs']['pv_efficiency_grade']
+    inverter_efficiency = pvalloc_settings['tech_economic_specs']['inverter_efficiency']
     kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
     pvprod_calc_method = pvalloc_settings['tech_economic_specs']['pvprod_calc_method']
 
@@ -166,15 +166,15 @@ def calc_economics_in_topo_df(
 
         # pvprod method 2
         elif pvprod_calc_method == 'method2':   
-            subdf['pvprod_kW'] = pv_efficiency_grade * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = pv_efficiency_grade * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
             
         # pvprod method 3
         elif pvprod_calc_method == 'method3':   
-            subdf['pvprod_kW'] = kWpeak_per_m2 * pv_efficiency_grade * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf['pvprod_kW'] = kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = kWpeak_per_m2 * pv_efficiency_grade * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
 
         # pvprod method 4
         elif pvprod_calc_method == 'method4':   
@@ -194,7 +194,7 @@ def calc_economics_in_topo_df(
                     checkpoint_to_logfile(f' *ERROR* shading factor > 1 for df_uid: {dfuid}, EGID: {subdf.loc[dfuid_TF, "EGID"].unique()} ', log_name, 1)
                 subdf.loc[dfuid_TF, 'pvprod_kW'] = subdf.loc[dfuid_TF, 'pvprod_kW_noshade'] * shading_factor
             subdf.drop(columns=['meteo_loc', 'radiation', 'pvprod_kW_noshade'], inplace=True)
-            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = <retrofitted_shading_factor> * pv_efficiency_grade  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = <retrofitted_shading_factor> * inverter_efficiency  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
             
 
         # export subdf ----------------------------------------------
@@ -253,8 +253,7 @@ def update_gridprem(
     gridtiers = pvalloc_settings['gridprem_adjustment_specs']['tiers']
     gridtiers_colnames = pvalloc_settings['gridprem_adjustment_specs']['colnames']
     gridtiers_power_factor = pvalloc_settings['gridprem_adjustment_specs']['power_factor']
-    kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
-    topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
+    perf_factor_1kVA_to_XkW = pvalloc_settings['gridprem_adjustment_specs']['perf_factor_1kVA_to_XkW']
     print_to_logfile(f'run function: update_gridprem', log_file_name_def)
     
     df_list, df_names = df_list_func, df_names_func
@@ -264,7 +263,8 @@ def update_gridprem(
 
     # import  -----------------------------------------------------
     topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
-    dsonodes_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson')
+    # dsonodes_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson')
+    dsonodes_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
     gridprem_ts = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
     pv = df_list[df_names.index('pv')]
 
@@ -295,19 +295,12 @@ def update_gridprem(
         subdf_updated = copy.deepcopy(subdf)
         subdf_updated.drop(columns=['info_source', 'inst_TF'], inplace=True)
         subdf_updated = subdf_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
-        updated_instTF_srs, update_infosource_srs = subdf_updated['inst_TF'].fillna(subdf['inst_TF']), subdf_updated['info_source'].fillna(subdf['info_source'])
-        subdf['inst_TF'], subdf['info_source'] = updated_instTF_srs.infer_objects(copy=False), update_infosource_srs.infer_objects(copy=False)
-
-        subinst = copy.deepcopy(subdf.loc[subdf['inst_TF']==True])
+        # updated_instTF_srs, update_infosource_srs = subdf_updated['inst_TF'].fillna(subdf['inst_TF']), subdf_updated['info_source'].fillna(subdf['info_source'])
+        # subdf['inst_TF'], subdf['info_source'] = updated_instTF_srs.infer_objects(copy=False), update_infosource_srs.infer_objects(copy=False)
 
         # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
-        # subdf_array = subinst[['demand_kW', 'pvprod_kW']].to_numpy()
-        # pvprod_kW, demand_kW = subdf_array[:,1], subdf_array[:,0]
+        subinst = copy.deepcopy(subdf_updated.loc[subdf_updated['inst_TF']==True])
         pvprod_kW, demand_kW = subinst['pvprod_kW'].to_numpy(), subinst['demand_kW'].to_numpy()
-
-        # NOTE: Demand to production ration does not make sense yet. Adjust and controll when real consumption data is used!
-        # subinst['demand_kW'] = subinst['demand_kW'] * pvalloc_settings['algorithm_specs']['tweak_gridnode_df_prod_demand_fact'] 
-        demand_kW = demand_kW * pvalloc_settings['algorithm_specs']['tweak_gridnode_df_prod_demand_fact']
         selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * pvalloc_settings['tech_economic_specs']['self_consumption_ifapplicable']
         netdemand_kW = demand_kW - selfconsum_kW
         netfeedin_kW = pvprod_kW - selfconsum_kW
@@ -334,17 +327,17 @@ def update_gridprem(
                     share = row['STROMERTRAG'] / total_stromertrag
                     subinst.loc[idx, 'pvprod_kW'] = share * TotalPower
 
-        agg_subinst = subinst.groupby(['grid_node', 't', 'info_source']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index()
+        agg_subinst = subinst.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index()
         del subinst
         agg_subinst_df_list.append(agg_subinst)
     
     gridnode_df = pd.concat(agg_subinst_df_list)
-    gridnode_df = gridnode_df.groupby(['grid_node', 't', 'info_source']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index() # groupby df again because grid nodes will be spreach accross multiple tranches
+    gridnode_df = gridnode_df.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index() # groupby df again because grid nodes will be spreach accross multiple tranches
+
 
     # attach node thresholds -----------------------------------------------------
-    gridnode_df = gridnode_df.merge(dsonodes_gdf[['grid_node', 'kVA_threshold']], how='left', on='grid_node')
-    gridnode_df['kW_threshold'] = gridnode_df['kVA_threshold'] / gridtiers_power_factor
-    # gridnode_df.drop(columns='kVA_threshold', inplace=True)
+    gridnode_df = gridnode_df.merge(dsonodes_df[['grid_node', 'kVA_threshold']], how='left', on='grid_node')
+    gridnode_df['kW_threshold'] = gridnode_df['kVA_threshold'] * perf_factor_1kVA_to_XkW
 
     gridnode_df['feedin_kW_taken'] = np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['kW_threshold'], gridnode_df['feedin_kW'])
     gridnode_df['feedin_kW_loss'] =  np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['feedin_kW'] - gridnode_df['kW_threshold'], 0)

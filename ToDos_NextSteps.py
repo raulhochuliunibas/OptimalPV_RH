@@ -7,13 +7,16 @@
 
 # TESTING QUEUE: 
   # Check after preprep was rerun
-    # TODO: Visualize all buildings with mulitple PV installations => is problem solved with buff002 prepdata? 
-    #       OTHER SOLUTION: After pv inst and egids are mapped, subselect all egids with multiple inst and map only those inst to the closest egid coordinates
+# TODO: pred_inst_df shows instTF as false, which should be TRUE and also no pvsource
 
-    # TODO: pred_inst_df shows instTF as false, which should be TRUE and also no pvsource
 
 
 # A ====================
+
+    # TODO: Visualize all buildings with mulitple PV installations => is problem solved with buff002 prepdata? 
+    #       OTHER SOLUTION: After pv inst and egids are mapped, subselect all egids with multiple inst and map only those inst to the closest egid coordinates
+
+
 
     # TODO: Finalize ACCURACY:
         # OK: Do I have more or less all the houses and their roof partitions? 
@@ -38,9 +41,9 @@
 
     # TODO: Find a way to estimate where the existing PV installations are placed on the roof partitions. 
 
-    # TODO: check if there is an inefficiency in npv and gridprem update, as the same data is loaded multiple times.
 
     # TODO: SCICORE try 1 really long run for kt:13 in scicore
+
         # TODO: find all instances where pvalloc script accesses data outside the output folder. Needed for scicore run
         # TODO: load a solid input data set to the cluster
         # TODO: first estimate how long it takes (how many partitions of EGIDS are stored?, what is the size of a partition?).
@@ -93,7 +96,7 @@
 
 # SOLVED ====================
 if True:
-    # OK -  gridprem_ts not adjusting properly to grid_tiers
+    # OK -  gridprem_ts not adjusting properly to grid_tiers > solved: reversed the order of conditions, so that the highest tier is checked first
     # OK adjust zoom for map plots, so that zooming in enhances the main range of the area of interest, not the margin
     # OK Get Electricity prices using another package for SPARQL APIS than the one from Elcom// from local CSV / XLSX, not through API!! => not possible
     # OK - Assign nodes better, all nodes only to EGIDs that are in sample, also solkat
@@ -103,6 +106,7 @@ if True:
     # OK Define a KPI Metric (production loss ? ) and export it in the runs; idea 1 line graph HOY, 1 agg line graph totla kwH produciton loss per month / iteration
 
     print('')
+
 
 # **********************************************************************************************************************************************************
 # CODE STRUCTURE AND next steps 
@@ -130,9 +134,7 @@ if True:
     #      > For now just imported the shortwave radiation data (visible sunlight, amongst other columns) for Basel SBB (?)
     #      > only. Will add more weather stations later
 
-    # TODO: B- TS electricity market price (maybe not relevant)
-
-    # TODO: Z - remove heat demand related code (not relevant if I have demand TS)
+    # (OK): Z - remove heat demand related code (not relevant if I have demand TS)
 
 
     # IMPORT LOCAL DATA + SPATIAL MAPPINGS --------
@@ -149,15 +151,13 @@ if True:
     # OK A - remove unnecessary CUMSUM function for PV installation cost, find a way to export and store cost function params
     print('')
 
-# TODO: A - make a summary log file, detailing how many buildings are in the data set, 
-#           how many of where dropped (why) and the same with partitions and pv inst.
+    # OK: A - make a summary log file, detailing how many buildings are in the data set, 
+    #           how many of where dropped (why) and the same with partitions and pv inst.
 
 # -----------------------------------------------------------------------------
-# pv_allocation__MASTER.py 
+# pv_allocation_MASTER.py 
 # -----------------------------------------------------------------------------
 
-
-# INITIALIZATION --------
 if True:
     # OK - func to import and transform all prepreped data
     #   > return all relevant dfs
@@ -170,7 +170,6 @@ if True:
     #   > return dict
     # OK - filter all input data again by alloc settings such that the allocation algorithm is applicable also on larger preped data sets
 
-
     #===============================
     # - There is an issue with buildings that have a HUGE number of partitions. 
     #  > make either a function exporting all solkat with more than x rows for 1 egid
@@ -178,15 +177,34 @@ if True:
     #  > PLUS attach also exisiting pv installations to the topoology! so it is possible to see in topo_df which buildings have a pv installation already
     #===============================
 
-    # OK:  A - define Construction capacity per month
+    # OK: A - define Construction capacity per month
+    # OK: A - calculate Economics for TOPO_DF and store the partitioned DFs
     print('')
 
-# ALLOCATION --------
+# TODO: A - add a part in calc_economic_factors that distributes existing installations to roof partitions, relative to the partition/total_roof_area ratio
+
+# TODO: A - adjust sanity_check part:
+#   > run the allocation (update gridprem_ts and update npv_df for at least 2-3 iterations)
+#   > export the sanity check summary by EGID
+
+
+
+# -----------------------------------------------------------------------------
+# pv_alloc_MCalgorithm_MASTER.py 
+# -----------------------------------------------------------------------------
+
+# TODO: rename "pv_allocation_MASTER.py" to "pv_alloc_initialization_MASTER.py"
+# TODO: rename "name_dir_export" in pvalloc_settings to "name_dir_pvalloc_init_export"
+# TODO: create a new setting in settingsfile :          "name_dir_pvalloc_MCalgo_export"
+
+
+# SETUP
+# TODO: A - create a directory to store all the monte carlo iterations
 
 # LOOP for MONTE CARLO
-#   - #TODO:  - create copies of all the data objects that are needed "fresh" for each iteration. oterhwise iter2
-#               will be influenced by iter1 (will start where iter1 ended)
-#   - #TODO A - create a directory to store all the monte carlo iterations
+#   > TODO: create dir for this single iteration
+#   > TODO: copy all the data objects that are needed "fresh" for each iteration. oterhwise iter2 
+#     will be influenced by iter1 (will start where iter1 ended. 
 
 #        - LOOP for MONTH
 #          - update npv for all non pv buildings
@@ -207,8 +225,7 @@ if True:
 #       
 #          - export built installations for later visualizations
 
-#   - #TODO:OK A - copy-paste the MC iteration to MC dir
-#   - #TODO:OK B - select only the relevant output files to store in MC dir
+#   - #TODO:OK A - select only the relevant output files to store in MC dir
 
 
 # -----------------------------------------------------------------------------
@@ -221,7 +238,7 @@ if True:
 #   OK A - Amount of installed capacity per node (avg incl std bands)
 #   OK A - Amount of installed capacity per bfs (avg incl std bands)
 #   OK ? - Map of covered regions (bfs) with installed capacity
-#   TODO: ? - Avg building characteristics (amount of houses in each class etc., with x roof partitions etc.)
+#   OK: ? - Avg building characteristics (amount of houses in each class etc., with x roof partitions etc.)
 
 
 # - aggregated scenarios
@@ -231,7 +248,6 @@ if True:
 
 #   OK A - Map of covered regions (bfs) with installed capacity
 #   OK A - Map of covered regions (bfs) with sum production (maybe incl solkat)
-
 
 
 
