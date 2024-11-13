@@ -13,9 +13,9 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  12 #600 #36
+months_pred =  20 #600 #36
 run_on_server = False
-bfs_numbers = [2791, 2787 ]#, 2792, 2784, 2793, 2782, 2781,]
+bfs_numbers = [2791, 2787 , 2792, 2784, 2793, 2782, 2781,]
 
 run_dataagg =   False
 run_alloc =     True
@@ -48,30 +48,46 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
-    f'pvalloc_DEV_{months_pred}m_pvmethod2_selfconsum05':{
+    f'pvalloc_DEV_{months_pred}m_meth3_selfcon00_DirDiffRad':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
         'bfs_numbers': bfs_numbers,
         # 'create_gdf_export_of_topology':    True,
         'tech_economic_specs': {
-            'self_consumption_ifapplicable': 0.5,
-            'pvprod_calc_method': 'method3',
-        },
+            'self_consumption_ifapplicable': 0,
+            'pvprod_calc_method': 'method3',},
         'algorithm_specs': {
-            'rand_seed': 42,
-            'tweak_gridnode_df_prod_demand_fact': 1,
-        }},
-
-    # f'pvalloc_DEV_{months_pred}m_pvmethod2_selfconsum00':{
-    #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-    #     'script_run_on_server': run_on_server,
-    #     'months_prediction': months_pred,
-    #     'bfs_numbers': bfs_numbers,
-    #     'tech_economic_specs': {
-    #         'self_consumption_ifapplicable': 0,
-    #         'pvprod_calc_method': 'method2',
-    #     }},
+            'rand_seed': 42,},
+        'weather_specs': {
+            'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
+        },
+    f'pvalloc_DEV_{months_pred}m_meth2_selfcon00_DirDiffRad':{
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'bfs_numbers': bfs_numbers,
+        'tech_economic_specs': {
+            'self_consumption_ifapplicable': 0,
+            'pvprod_calc_method': 'method2',},
+        'algorithm_specs': {
+            'rand_seed': 42,},
+        'weather_specs': {
+            'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
+        },
+    f'pvalloc_DEV_{months_pred}m_meth3_selfcon00_DirRad':{
+        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'bfs_numbers': bfs_numbers,
+        'tech_economic_specs': {
+            'self_consumption_ifapplicable': 0,
+            'pvprod_calc_method': 'method3',},
+        'algorithm_specs': {
+            'rand_seed': 42,},
+        'weather_specs': {
+            'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation',]}
+        },    
 }
 [2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 parklplatz = {

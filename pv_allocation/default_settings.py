@@ -30,13 +30,13 @@ pvalloc_default_settings = {
         'interest_rate': 0.01,
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
-        'pvprod_calc_method': 'method1',
+        'pvprod_calc_method': 'method3',
         'inverter_efficiency': 0.95,        # XY% Wirkungsgrad
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
         'invst_maturity': 25,
         'kWpeak_per_m2': 0.2,  # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
-        'share_roof_area_available': 1, # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
+        'share_roof_area_available': 0.7, # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
         },
     'weather_specs': {
         'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',],
