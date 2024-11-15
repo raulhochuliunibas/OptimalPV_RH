@@ -566,11 +566,8 @@ def import_ts_data(
     meteo = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/meteo.parquet')
     meteo_cols = ['timestamp',] + rad_proxy
     meteo = meteo.loc[:,meteo_cols]
-    if len(rad_proxy) == 1:    
-        meteo.rename(columns={rad_proxy: 'radiation'}, inplace=True)
-    elif len(rad_proxy) > 1:
-        meteo['radiation'] = meteo[rad_proxy].sum(axis=1)
-        meteo.drop(columns=rad_proxy, inplace=True)
+    meteo['radiation'] = meteo[rad_proxy].sum(axis=1)
+    meteo.drop(columns=rad_proxy, inplace=True)
     
     start_wy, end_wy = pd.to_datetime(f'{weater_year}-01-01 00:00:00'), pd.to_datetime(f'{weater_year}-12-31 23:00:00')
     meteo = meteo.loc[(meteo['timestamp'] >= start_wy) & (meteo['timestamp'] <= end_wy)]
