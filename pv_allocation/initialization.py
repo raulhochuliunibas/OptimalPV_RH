@@ -768,6 +768,7 @@ def define_construction_capacity(
         constrcapa.loc[(constrcapa['year'] == y) &
                        (constrcapa['month'].isin(winter_months)), 'constr_capacity_kw'] = TP_y_winter_month
         
+    months_prediction_df = pd.DataFrame({'date': months_prediction, 'year': months_prediction.year, 'month': months_prediction.month})
 
     # PRINTs to LOGFILE ----------------------------------------------------------------------------
     checkpoint_to_logfile(f'constr_capacity month lookback: {months_lookback[0]} to {months_lookback[-1]}', log_file_name_def, 2)
@@ -782,7 +783,8 @@ def define_construction_capacity(
     constrcapa.to_parquet(f'{data_path_def}/output/pvalloc_run/constrcapa.parquet')
     constrcapa.to_csv(f'{data_path_def}/output/pvalloc_run/constrcapa.csv', index=False)
 
-
+    months_prediction_df.to_parquet(f'{data_path_def}/output/pvalloc_run/months_prediction.parquet')
+    months_prediction_df.to_csv(f'{data_path_def}/output/pvalloc_run/months_prediction.csv', index=False)
 
     return constrcapa, months_prediction, months_lookback
 
