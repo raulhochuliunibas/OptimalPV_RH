@@ -27,11 +27,12 @@ if True:
     # own packages and functions
     import auxiliary_functions
     from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr, format_MASTER_settings
+    import pv_allocation.default_settings as pvalloc_default_sett
+
     import pv_allocation.initialization as  initial
     import pv_allocation.alloc_algorithm as algo
     import pv_allocation.alloc_sanitychecks as sanity
     import pv_allocation.inst_selection as select
-    import pv_allocation.default_settings as pvalloc_default_sett
 
     from pv_allocation.initialization import *
     from pv_allocation.alloc_algorithm import *
@@ -40,7 +41,7 @@ if True:
     from pv_allocation.default_settings import *
 
 
-def pv_allocation_MASTER(pvalloc_settings_func):
+def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
     # SETTIGNS --------------------------------------------------------------------
     if not isinstance(pvalloc_settings_func, dict):
@@ -50,7 +51,7 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         pvalloc_settings = pvalloc_settings_func
 
 
-        # SETUP ================================================================
+    # SETUP ================================================================
     if True: 
         # set working directory
         wd_path = pvalloc_settings['wd_path_laptop'] if not pvalloc_settings['script_run_on_server'] else pvalloc_settings['wd_path_server']
@@ -60,7 +61,7 @@ def pv_allocation_MASTER(pvalloc_settings_func):
         pvalloc_path = f'{data_path}/output/pvalloc_run'
         if not os.path.exists(pvalloc_path):
             os.makedirs(pvalloc_path)
-        log_name = f'{data_path}/output/pvalloc_log.txt'
+        log_name = f'{data_path}/output/pvalloc_init_log.txt'
         total_runtime_start = datetime.now()
 
         # transfer summary file from data_aggregation
@@ -312,7 +313,7 @@ def pv_allocation_MASTER(pvalloc_settings_func):
             shutil.copy(f, dir_alloc_moveto)
         elif os.path.isdir(f):
             shutil.copytree(f, os.path.join(dir_alloc_moveto, os.path.basename(f)))
-    shutil.copy(glob.glob(f'{data_path}/output/pvalloc_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_log_{pvalloc_settings["name_dir_export"]}.txt')
+    shutil.copy(glob.glob(f'{data_path}/output/pvalloc_init_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_init_log_{pvalloc_settings["name_dir_export"]}.txt')
         
 
     # -----------------------------------------------------------------------------
