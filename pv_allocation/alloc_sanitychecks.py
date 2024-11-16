@@ -194,7 +194,6 @@ def sanity_check_summary_byEGID(
 
     # debugging and checking -----------------------------------------------------
     prd_df = pd.read_parquet(path_pred_inst[len(path_pred_inst)-1])
-    prd_df = pd.read_parquet(path_pred_inst[1])
     prd_df['EGID'].value_counts()
     prd_df.sort_values('EGID')  
     # ----------------------------------------------------------------------------
