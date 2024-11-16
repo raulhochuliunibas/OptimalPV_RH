@@ -118,9 +118,6 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
     subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', log_name)
     constrcapa, months_prediction, months_lookback = initial.define_construction_capacity(pvalloc_settings, topo, df_list, df_names, ts_list, ts_names)
 
-    #NOTE: changes from month to month are so small, that I need to tweak increase constrcapacity to see more changes in a shorter time period
-    constrcapa['constr_capacity_kw'] = constrcapa['constr_capacity_kw'] * pvalloc_settings['algorithm_specs']['tweak_constr_capacity_fact']
-
 
 
     # PREPARE TOPO_TIME SPECIFIC DFs ================================================================
@@ -130,13 +127,94 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
         subchapter_to_logfile('prep: CALC ECONOMICS for TOPO_DF', log_name)
         algo.calc_economics_in_topo_df(pvalloc_settings, topo, 
                                         df_list, df_names, ts_list, ts_names)
+    
+    shutil.copy(f'{data_path}/output/pvalloc_run/topo_egid.json', f'{data_path}/output/pvalloc_run/topo_egid_before_alloc.json')
+
+
+    # TOPOLOGY SANITY CHECKS ================================================================
+    subchapter_to_logfile('sanity_check: RUN 1 ITERATION for CHECK', log_name)
+    sanitycheck_path = f'{data_path}/output/pvalloc_run/sanity_check_byEGID'
+    if not os.path.exists(sanitycheck_path):
+        os.makedirs(sanitycheck_path)
+    elif os.path.exists(sanitycheck_path):
+        for f in glob.glob(f'{sanitycheck_path}/*'):
+            if os.path.isfile(f):
+                os.remove(f)
+            elif os.path.isdir(f):
+                shutil.rmtree(f)
+
+    for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet', 'pv.parquet' ]:
+        shutil.copy(f'{data_path}/output/pvalloc_run/{file}', f'{sanitycheck_path}/{file}')
+
+
+    # sanity check: CALC 1 ITERATION OF NPV AND FEEDIN for check ---------------------------------------------------------------
+    dfuid_installed_list = []
+    pred_inst_df = pd.DataFrame()
+    i_m, m = 1, months_prediction[0]
+
+    algo.update_gridprem(pvalloc_settings, sanitycheck_path, m, i_m)
+
+    algo.update_npv_df(pvalloc_settings, sanitycheck_path, m, i_m)
+    
+    select.select_AND_adjust_topology(pvalloc_settings, sanitycheck_path,
+                                      dfuid_installed_list,pred_inst_df,
+                                      m, i_m)
+    
+    subchapter_to_logfile('sanity_check: SUMMARY BY EGID', log_name)
+    sanity.sanity_check_summary_byEGID(pvalloc_settings, sanitycheck_path)
+
+
+    # sanity check: CREATE MAP OF TOPO_DF ----------------------------------------------------------------
+    if pvalloc_settings['create_gdf_export_of_topology']:
+        subchapter_to_logfile('sanity_check: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
+        sanity.create_gdf_export_of_topology(pvalloc_settings)
+
+
+    # sanity check: CREATE MAP OF TOPO_DF ----------------------------------------------------------------
+    subchapter_to_logfile('sanity_check: MULTIPLE INSTALLATIONS PER EGID', log_name)
+    sanity.check_multiple_xtf_ids_per_EGID(pvalloc_settings)
+
+
+    # END  ================================================================
+    chapter_to_logfile(f'END pv_allocation_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
+    if not pvalloc_settings['script_run_on_server']:
+        winsound.Beep(1000, 300)
+        winsound.Beep(1000, 300)
+        winsound.Beep(1000, 1000)
+
+    # COPY & RENAME PVALLOC DATA FOLDER ---------------------------------------------------------------
+    # > not to overwrite completed folder while debugging 
+    if  not os.path.exists(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'):
+        dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'
+        os.makedirs(dir_alloc_moveto)
+    else:
+        today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
+        if not os.path.exists(dir_alloc_moveto):
+            os.makedirs(dir_alloc_moveto)
+        elif os.path.exists(dir_alloc_moveto):
+            shutil.rmtree(dir_alloc_moveto)
+            os.makedirs(dir_alloc_moveto)
+
+    file_to_move = glob.glob(f'{data_path}/output/pvalloc_run/*')
+    for f in file_to_move:
+        if os.path.isfile(f):
+            shutil.copy(f, dir_alloc_moveto)
+        elif os.path.isdir(f):
+            shutil.copytree(f, os.path.join(dir_alloc_moveto, os.path.basename(f)))
+    shutil.copy(glob.glob(f'{data_path}/output/pvalloc_init_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_init_log_{pvalloc_settings["name_dir_export"]}.txt')
+
+    # -----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
+
+
+
+
 
 
     # ALLOCATION ALGORITHM ----------------------------------------------                   
-    if pvalloc_settings['run_allocation_loop']: 
+    if False: #pvalloc_settings['run_allocation_loop']: 
         subchapter_to_logfile('allocation algorithm: START LOOP FOR PRED MONTH', log_name)
-        shutil.copy(f'{data_path}/output/pvalloc_run/topo_egid.json', f'{data_path}/output/pvalloc_run/topo_egid_before_alloc.json')
-
 
         months_lookback = pvalloc_settings['months_lookback']
         rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
@@ -175,7 +253,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
             
 
             # NPV UPDATE ==========
-                # aggregation cols for npv update
+            # aggregation cols for npv update
             groupby_cols_topoaggdf = ['EGID', 'df_uid', 'grid_node', 'bfs', 'gklas', 'demandtype',
                         'inst_TF', 'info_source', 'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 
                         'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 'NEIGUNG','STROMERTRAG']
@@ -264,59 +342,9 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
     topo_df.to_parquet(f'{data_path}/output/pvalloc_run/topo_egid_df.parquet')
     """
 
-    # TOPOLOGY SANITY CHECKS ----------------------------------------------------------------
-    if os.path.exists(f'{data_path}/output/pvalloc_run/sanity_check_byEGID'):
-        for f in glob.glob(f'{data_path}/output/pvalloc_run/sanity_check_byEGID/*'):
-            os.remove(f)
-    sanity.sanity_check_summary_byEGID(pvalloc_settings)
-    # NOTE: this needs to be after at least 1 round of the update_npv.function, otherwise no NPV to compare. 
-
-
-    # CREATE MAP OF TOPO_DF ----------------------------------------------------------------
-    if pvalloc_settings['create_gdf_export_of_topology']:
-        subchapter_to_logfile('sanity_check: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
-        sanity.create_gdf_export_of_topology(pvalloc_settings)
-
-    subchapter_to_logfile('sanity_check: MULTIPLE INSTALLATIONS PER EGID', log_name)
-    sanity.check_multiple_xtf_ids_per_EGID(pvalloc_settings)
 
 
 
-    # -----------------------------------------------------------------------------
-    # END 
-    chapter_to_logfile(f'END pv_allocation_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
 
-    if not pvalloc_settings['script_run_on_server']:
-        winsound.Beep(1000, 300)
-        winsound.Beep(1000, 300)
-        winsound.Beep(1000, 1000)
-
-    # COPY & RENAME PVALLOC DATA FOLDER ---------------------------------------------------------------
-    # > not to overwrite completed folder while debugging 
-
-
-    if  not os.path.exists(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'):
-        dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'
-        os.makedirs(dir_alloc_moveto)
-    else:
-        today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
-        if not os.path.exists(dir_alloc_moveto):
-            os.makedirs(dir_alloc_moveto)
-        elif os.path.exists(dir_alloc_moveto):
-            shutil.rmtree(dir_alloc_moveto)
-            os.makedirs(dir_alloc_moveto)
-
-    file_to_move = glob.glob(f'{data_path}/output/pvalloc_run/*')
-    for f in file_to_move:
-        if os.path.isfile(f):
-            shutil.copy(f, dir_alloc_moveto)
-        elif os.path.isdir(f):
-            shutil.copytree(f, os.path.join(dir_alloc_moveto, os.path.basename(f)))
-    shutil.copy(glob.glob(f'{data_path}/output/pvalloc_init_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_init_log_{pvalloc_settings["name_dir_export"]}.txt')
-        
-
-    # -----------------------------------------------------------------------------
-    # -----------------------------------------------------------------------------
 
 

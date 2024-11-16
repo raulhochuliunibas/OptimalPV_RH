@@ -21,7 +21,7 @@ pvalloc_default_settings = {
     # switch on/off parts of aggregation 
     'recreate_topology':                True, 
     'recalc_economics_topo_df':         True,
-    'run_allocation_loop':              True,
+    # 'run_allocation_loop':              True,
     'create_gdf_export_of_topology':    True,
 
     # PART I: settings for alloc_initialization --------------------
@@ -31,7 +31,8 @@ pvalloc_default_settings = {
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
         'pvprod_calc_method': 'method3',
-        'inverter_efficiency': 0.95,        # XY% Wirkungsgrad
+        'inverter_efficiency': 0.95,        # XY% Wirkungsgrad Wechselrichter
+        'panel_inefficiency': 0.12,         # XY% Wirkungsgrad PV Modul
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
         'invst_maturity': 25,
@@ -69,22 +70,37 @@ pvalloc_default_settings = {
         'egid_list': ['3031017','1367570', '3030600'], # '1367570', '245017418'
         'n_pvinst_of_alloc_algorithm': 2,
     },
+
+
+    # PART II: settings for MC algorithm --------------------
+    'MC_loop_specs': {
+        'montecarlo_iterations': 2,
+        'fresh_initial_files': ['topo_egid.json', 'gridprem_ts.parquet', ],
+        'keep_files_month_iter_TF': True,
+        
+        'keep_files_month_iter_list': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
+        # 'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
+
+    },
     'algorithm_specs': {
         'inst_selection_method': 'prob_weighted_npv', # random, prob_weighted_npv, max_npv 
-        'montecarlo_iterations': 1,
-        'keep_files_each_iterations': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
-        'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
         'rand_seed': 42,                            # random seed set to int or None
         'while_inst_counter_max': 5000,
         'topo_subdf_partitioner': 400,
+        'npv_update_grouby_cols_topo_aggdf': 
+            ['EGID', 'df_uid', 'grid_node', 'bfs', 'gklas', 'demandtype',
+            'inst_TF', 'info_source', 'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 
+            'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 'NEIGUNG','STROMERTRAG'], 
+        'npv_update_agg_cols_topo_aggdf': {
+            'pvprod_kW': 'sum', 'demand_kW': 'sum', 'selfconsum_kW': 'sum', 'netdemand_kW': 'sum', 
+            'netfeedin_kW': 'sum', 'econ_inc_chf': 'sum', 'econ_spend_chf': 'sum'}, 
 
         'tweak_constr_capacity_fact': 1,
         'tweak_npv_calc': 1,
         'tweak_npv_excl_elec_demand': True,
         'tweak_gridnode_df_prod_demand_fact': 1,
     },  
-
-    # PART II: settings for MC algorithm --------------------
+    
     'gridprem_adjustment_specs': {
         'voltage_assumption': '',
         'tier_description': 'tier_level: (voltage_threshold, gridprem_Rp_kWh)',

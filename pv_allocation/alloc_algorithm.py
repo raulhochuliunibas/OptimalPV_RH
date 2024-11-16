@@ -128,7 +128,7 @@ def calc_economics_in_topo_df(
     topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
     share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
     inverter_efficiency = pvalloc_settings['tech_economic_specs']['inverter_efficiency']
-    kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
+    panel_inefficiency = pvalloc_settings['tech_economic_specs']['panel_inefficiency']
     pvprod_calc_method = pvalloc_settings['tech_economic_specs']['pvprod_calc_method']
 
     egids = topo_df['EGID'].unique()
@@ -168,13 +168,13 @@ def calc_economics_in_topo_df(
         elif pvprod_calc_method == 'method2':   
             subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            checkpoint_to_logfile("calculation formula for pv production per roof:\n  >subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
             
         # pvprod method 3
         elif pvprod_calc_method == 'method3':   
-            subdf['pvprod_kW'] = kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            checkpoint_to_logfile("calculation formula for pv production per roof:\n  >subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
 
         # pvprod method 4
         elif pvprod_calc_method == 'method4':   
@@ -194,7 +194,7 @@ def calc_economics_in_topo_df(
                     checkpoint_to_logfile(f' *ERROR* shading factor > 1 for df_uid: {dfuid}, EGID: {subdf.loc[dfuid_TF, "EGID"].unique()} ', log_name, 1)
                 subdf.loc[dfuid_TF, 'pvprod_kW'] = subdf.loc[dfuid_TF, 'pvprod_kW_noshade'] * shading_factor
             subdf.drop(columns=['meteo_loc', 'radiation', 'pvprod_kW_noshade'], inplace=True)
-            print_to_logfile("\ncalculation formula for pv production per roof:\n>subdf['pvprod_kW'] = <retrofitted_shading_factor> * inverter_efficiency  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            checkpoint_to_logfile("calculation formula for pv production per roof:\n  >subdf['pvprod_kW'] = <retrofitted_shading_factor> * inverter_efficiency  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
             
 
         # export subdf ----------------------------------------------
@@ -239,13 +239,13 @@ def initiate_gridprem(
 # ------------------------------------------------------------------------------------------------------
 def update_gridprem(
         pvalloc_settings,
-        df_list_func, df_names_func,
-        ts_list_func, ts_names_func,
+        subdir_path,
         month_func, i_month_func):
     
     # setup -----------------------------------------------------
     name_dir_import_def = pvalloc_settings['name_dir_import']
     data_path_def = pvalloc_settings['data_path']
+    subdir_path_def = subdir_path
     wd_path_def = pvalloc_settings['wd_path']
     show_debug_prints_def = pvalloc_settings['show_debug_prints']
     log_file_name_def = pvalloc_settings['log_file_name']
@@ -255,18 +255,19 @@ def update_gridprem(
     gridtiers_power_factor = pvalloc_settings['gridprem_adjustment_specs']['power_factor']
     perf_factor_1kVA_to_XkW = pvalloc_settings['gridprem_adjustment_specs']['perf_factor_1kVA_to_XkW']
     print_to_logfile(f'run function: update_gridprem', log_file_name_def)
-    
-    df_list, df_names = df_list_func, df_names_func
-    ts_list, ts_names = ts_list_func, ts_names_func
+
     m = month_func
     i_m = i_month_func
 
     # import  -----------------------------------------------------
-    topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
-    # dsonodes_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson')
-    dsonodes_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
-    gridprem_ts = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
-    pv = df_list[df_names.index('pv')]
+    # topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
+    # dsonodes_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
+    # gridprem_ts = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
+    # pv = df_list[df_names.index('pv')]
+    topo = json.load(open(f'{subdir_path_def}/topo_egid.json', 'r'))
+    dsonodes_df = pd.read_parquet(f'{subdir_path_def}/dsonodes_df.parquet')
+    gridprem_ts = pd.read_parquet(f'{subdir_path_def}/gridprem_ts.parquet')
+    pv = pd.read_parquet(f'{subdir_path_def}/pv.parquet')
 
     data = [(k, v[0], v[1]) for k, v in gridtiers.items()]
     gridtiers_df = pd.DataFrame(data, columns=gridtiers_colnames)
@@ -364,18 +365,26 @@ def update_gridprem(
 
 
     # export gridprem_ts -----------------------------------------------------
-    gridprem_ts.to_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
+    # gridprem_ts.to_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
+    gridprem_ts.to_parquet(f'{subdir_path_def}/gridprem_ts.parquet')
+    gridnode_df.to_parquet(f'{subdir_path_def}/gridnode_df.parquet')
 
     # export by Month -----------------------------------------------------
-    gridprem_node_by_M_path = f'{data_path_def}/output/pvalloc_run/pred_gridprem_node_by_M'
-    if not os.path.exists(gridprem_node_by_M_path):
-        os.makedirs(gridprem_node_by_M_path)
+    if pvalloc_settings['MC_loop_specs']['keep_files_month_iter_TF']:
+        # gridprem_node_by_M_path = f'{data_path_def}/output/pvalloc_run/pred_gridprem_node_by_M'
+        gridprem_node_by_M_path = f'{subdir_path_def}/pred_gridprem_node_by_M'
+        if not os.path.exists(gridprem_node_by_M_path):
+            os.makedirs(gridprem_node_by_M_path)
+        elif os.path.exists(gridprem_node_by_M_path):
+            old_files = glob.glob(f'{gridprem_node_by_M_path}/*')
+            for f in old_files:
+                os.remove(f)
 
-    gridnode_df.to_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{m}.parquet')
-    gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
+        gridnode_df.to_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{m}.parquet')
+        gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
 
-    gridprem_ts.to_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.parquet')
-    gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
+        gridprem_ts.to_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.parquet')
+        gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
 
     checkpoint_to_logfile(f'exported gridprem_ts and gridnode_df', log_file_name_def, 1)
 
@@ -385,9 +394,8 @@ def update_gridprem(
 # UPDATE NPV_DF with NEW GRID PREMIUM TS
 # ------------------------------------------------------------------------------------------------------
 def update_npv_df(pvalloc_settings,
-                  groupby_cols_func, agg_cols_func, 
-                  df_list, df_names,
-                  ts_list, ts_names,
+                  subdir_path,
+                #   groupby_cols_func, agg_cols_func, 
                   month_func, i_month_func
                 ):
     
@@ -406,18 +414,22 @@ def update_npv_df(pvalloc_settings,
     share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
     tweak_npv_excl_elec_demand = pvalloc_settings['algorithm_specs']['tweak_npv_excl_elec_demand']
 
+    groupby_cols = pvalloc_settings['algorithm_specs']['npv_update_grouby_cols_topo_aggdf']
+    agg_cols = pvalloc_settings['algorithm_specs']['npv_update_agg_cols_topo_aggdf']
+
     estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
 
-    groupby_cols = groupby_cols_func
-    agg_cols = agg_cols_func
+    subdir_path_def = subdir_path
+    m = month_func
     i_m = i_month_func
-
     print_to_logfile(f'run update_npv_df', log_file_name_def)
 
 
     # import -----------------------------------------------------
-    gridprem_ts = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
-    topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
+    # gridprem_ts = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/gridprem_ts.parquet')
+    # topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
+    gridprem_ts = pd.read_parquet(f'{subdir_path_def}/gridprem_ts.parquet')
+    topo = json.load(open(f'{subdir_path_def}/topo_egid.json', 'r'))
 
 
     # import topo_time_subdfs -----------------------------------------------------
@@ -557,10 +569,24 @@ def update_npv_df(pvalloc_settings,
     agg_npv_df = pd.concat(agg_npv_df_list)
     npv_df = copy.deepcopy(agg_npv_df)
 
-    # export -----------------------------------------------------
-    with open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'w') as f:
-        json.dump(topo, f)
 
-    npv_df.to_parquet(f'{data_path_def}/output/pvalloc_run/agg_npv_df.parquet')
+    # export npv_df -----------------------------------------------------
+    npv_df.to_parquet(f'{subdir_path_def}/npv_df.parquet')
+    npv_df.to_csv(f'{subdir_path_def}/npv_df.csv', index=False)
+
+
+    # export by Month -----------------------------------------------------
+    if pvalloc_settings['MC_loop_specs']['keep_files_month_iter_TF']:
+        pred_npv_inst_by_M_path = f'{subdir_path_def}/pred_npv_inst_by_M'
+        if not os.path.exists(pred_npv_inst_by_M_path):
+            os.makedirs(pred_npv_inst_by_M_path)
+        elif os.path.exists(pred_npv_inst_by_M_path):
+            old_files = glob.glob(f'{pred_npv_inst_by_M_path}/*')
+            for f in old_files:
+                os.remove(f)
+
+        npv_df.to_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
+        npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
+        
     return npv_df
 

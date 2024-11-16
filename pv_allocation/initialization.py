@@ -94,9 +94,9 @@ def import_prepre_AND_create_topology(
     
     gwr['GBAUJ'] = gwr['GBAUJ'].replace('', 0).astype(int)
     gwr = gwr.loc[(gwr['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
-                  (gwr['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) &
-                  (gwr['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
-                  (gwr['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
+                (gwr['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) &
+                (gwr['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
+                (gwr['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
     gwr['GBAUJ'] = gwr['GBAUJ'].replace(0, '').astype(str)
 
     if pvalloc_settings['gwr_selection_specs']['dwelling_cols'] == None: 
@@ -105,7 +105,7 @@ def import_prepre_AND_create_topology(
 
 
     gwr = gwr.loc[gwr['GGDENR'].isin(bfs_number_def)]
-    gwr = gwr.copy()
+    gwr = copy.deepcopy(gwr)
 
     # SOLKAT -------
     solkat = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/solkat.parquet')
@@ -174,10 +174,10 @@ def import_prepre_AND_create_topology(
     # Map solkat_dfuid > egid -------
     Map_solkatdfuid_egid = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_solkatdfuid_egid.parquet')
     Map_solkatdfuid_egid['EGID'] = Map_solkatdfuid_egid['EGID'].fillna(0).astype(int).astype(str)
-    # Map_solkatdfuid_egid['EGID'].replace('0', '', inplace=True)  adjusted for pandas 3.0
     Map_solkatdfuid_egid.replace({'EGID': '0'}, '', inplace=True)
     Map_solkatdfuid_egid['DF_UID'] = Map_solkatdfuid_egid['DF_UID'].astype(int).astype(str)
     
+
     # Map solkat_egid > pv -------
     Map_egid_pv = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_pv.parquet')
     Map_egid_pv = Map_egid_pv.dropna()
@@ -215,6 +215,11 @@ def import_prepre_AND_create_topology(
 
     # angle_tilt_df -------
     angle_tilt_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.parquet')
+
+
+    # Grid node data -------
+    dsonodes_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
+    dsonodes_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson')
 
 
     # PV Cost functions --------
@@ -464,8 +469,8 @@ def import_prepre_AND_create_topology(
         json.dump(CHECK_egid_with_problems_dict, f)
 
 
-    df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   pv,  pvtarif,   elecpri,    angle_tilt_df,  Map_egid_nodes]
-    df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_nodes']
+    df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   pv,  pvtarif,   elecpri,    angle_tilt_df,  Map_egid_nodes,   dsonodes_df,   dsonodes_gdf]  
+    df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_nodes', 'dsonodes_df', 'dsonodes_gdf']
 
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):

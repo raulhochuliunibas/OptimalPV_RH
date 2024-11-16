@@ -159,26 +159,33 @@ def check_multiple_xtf_ids_per_EGID(
 # sanity check for sample of EGIDs
 # ------------------------------------------------------------------------------------------------------
 def sanity_check_summary_byEGID(
-        pvalloc_settings, ):
+        pvalloc_settings,
+        subdir_path ):
     
     # setup -----------------------------------------------------
     name_dir_export_def = pvalloc_settings['name_dir_export']
     name_dir_import_def = pvalloc_settings['name_dir_import']
     data_path_def = pvalloc_settings['data_path']
+    subdir_path_def = subdir_path
     log_file_name_def = pvalloc_settings['log_file_name']
     
     sanity_check_summary_byEGID_specs = pvalloc_settings['sanity_check_summary_byEGID_specs']
 
-    if not os.path.exists(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID'):
-        os.makedirs(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID')
+    # not needed because dir created in master file outside of function?
+    # if not os.path.exists(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID'):
+    #     os.makedirs(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID')
 
 
     # import -----------------------------------------------------
-    topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
-    path_npv = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_*.parquet')
-    npv_df = pd.read_parquet(path_npv[0])
-    path_pred_inst = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_*.parquet')
-    pred_inst_df = pd.read_parquet(path_pred_inst[len(path_pred_inst)-1])
+    # topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
+    # path_npv = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_*.parquet')
+    # npv_df = pd.read_parquet(path_npv[0])
+    # path_pred_inst = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_*.parquet')
+    # pred_inst_df = pd.read_parquet(path_pred_inst[len(path_pred_inst)-1])
+    topo = json.load(open(f'{subdir_path_def}/topo_egid.json', 'r'))
+    npv_df = pd.read_parquet(f'{subdir_path_def}/npv_df.parquet')
+    path_pred_inst = glob.glob(f'{subdir_path_def}/pred_npv_inst_by_M/pred_inst_df_*.parquet')
+    pred_inst_df = pd.read_parquet(f'{subdir_path_def}/pred_inst_df.parquet')
 
     # add a EGID of model algorithm to the list
     if pred_inst_df.shape[0]< sanity_check_summary_byEGID_specs['n_pvinst_of_alloc_algorithm']:
@@ -186,18 +193,10 @@ def sanity_check_summary_byEGID(
     else:
         n_pvinst_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], sanity_check_summary_byEGID_specs['n_pvinst_of_alloc_algorithm'], replace=False))
     pred_inst_df.loc[pred_inst_df['EGID'].isin(n_pvinst_of_alloc_algorithm), ['EGID','info_source']]
-    pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] = pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] + n_pvinst_of_alloc_algorithm
     
-    # remove any duplicates
-    pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] = list(set(pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list']))
-
-
-    # debugging and checking -----------------------------------------------------
-    prd_df = pd.read_parquet(path_pred_inst[len(path_pred_inst)-1])
-    prd_df['EGID'].value_counts()
-    prd_df.sort_values('EGID')  
-    # ----------------------------------------------------------------------------
-
+    # remove any duplicates + add to pvalloc_settings
+    pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] = list(set(pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] + n_pvinst_of_alloc_algorithm ))
+    
 
     # information extraction -----------------------------------------------------
     colnames = ['key', 'descr', 'partition_id', 'col1', 'col2', 'val', 'unit']
