@@ -131,6 +131,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
     shutil.copy(f'{data_path}/output/pvalloc_run/topo_egid.json', f'{data_path}/output/pvalloc_run/topo_egid_before_alloc.json')
 
 
+
     # TOPOLOGY SANITY CHECKS ================================================================
     subchapter_to_logfile('sanity_check: RUN 1 ITERATION for CHECK', log_name)
     sanitycheck_path = f'{data_path}/output/pvalloc_run/sanity_check_byEGID'
@@ -143,8 +144,12 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
             elif os.path.isdir(f):
                 shutil.rmtree(f)
 
-    for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet', 'pv.parquet' ]:
-        shutil.copy(f'{data_path}/output/pvalloc_run/{file}', f'{sanitycheck_path}/{file}')
+    fresh_initial_files = [f'{data_path}/output/pvalloc_run/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
+    topo_time_paths = glob.glob(f'{data_path}/output/pvalloc_run/topo_time_subdf/*.parquet')
+    all_initial_paths = fresh_initial_files + topo_time_paths
+
+    for f in all_initial_paths:
+        shutil.copy(f, f'{sanitycheck_path}/')
 
 
     # sanity check: CALC 1 ITERATION OF NPV AND FEEDIN for check ---------------------------------------------------------------

@@ -168,13 +168,13 @@ def calc_economics_in_topo_df(
         elif pvprod_calc_method == 'method2':   
             subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            checkpoint_to_logfile("calculation formula for pv production per roof:\n  >subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']\n", log_name)
             
         # pvprod method 3
         elif pvprod_calc_method == 'method3':   
             subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            checkpoint_to_logfile("calculation formula for pv production per roof:\n  >subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", log_name)
 
         # pvprod method 4
         elif pvprod_calc_method == 'method4':   
@@ -194,7 +194,7 @@ def calc_economics_in_topo_df(
                     checkpoint_to_logfile(f' *ERROR* shading factor > 1 for df_uid: {dfuid}, EGID: {subdf.loc[dfuid_TF, "EGID"].unique()} ', log_name, 1)
                 subdf.loc[dfuid_TF, 'pvprod_kW'] = subdf.loc[dfuid_TF, 'pvprod_kW_noshade'] * shading_factor
             subdf.drop(columns=['meteo_loc', 'radiation', 'pvprod_kW_noshade'], inplace=True)
-            checkpoint_to_logfile("calculation formula for pv production per roof:\n  >subdf['pvprod_kW'] = <retrofitted_shading_factor> * inverter_efficiency  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']", log_name)
+            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = <retrofitted_shading_factor> * inverter_efficiency  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", log_name)
             
 
         # export subdf ----------------------------------------------
@@ -267,7 +267,6 @@ def update_gridprem(
     topo = json.load(open(f'{subdir_path_def}/topo_egid.json', 'r'))
     dsonodes_df = pd.read_parquet(f'{subdir_path_def}/dsonodes_df.parquet')
     gridprem_ts = pd.read_parquet(f'{subdir_path_def}/gridprem_ts.parquet')
-    pv = pd.read_parquet(f'{subdir_path_def}/pv.parquet')
 
     data = [(k, v[0], v[1]) for k, v in gridtiers.items()]
     gridtiers_df = pd.DataFrame(data, columns=gridtiers_colnames)
@@ -283,8 +282,10 @@ def update_gridprem(
             inst_TF_list.append(False)
     Map_infosource_egid = pd.DataFrame({'EGID': egid_list, 'info_source': info_source_list, 'inst_TF': inst_TF_list}, index=egid_list)
 
+
     # import topo_time_subdfs -----------------------------------------------------
-    topo_subdf_paths = glob.glob(f'{data_path_def}/output/pvalloc_run/topo_time_subdf/*.parquet')
+    # topo_subdf_paths = glob.glob(f'{data_path_def}/output/pvalloc_run/topo_time_subdf/*.parquet')
+    topo_subdf_paths = glob.glob(f'{subdir_path_def}/topo_subdf_*.parquet')
     agg_subinst_df_list = []
     no_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == False]
     wi_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == True]
@@ -310,6 +311,7 @@ def update_gridprem(
 
         # NOTE: attempt for a more elaborate way to handle already installed installations
         if False:
+            pv = pd.read_parquet(f'{subdir_path_def}/pv.parquet')
             pv['pvsource'] = 'pv_df'
             pv['pvid'] = pv['xtf_id']
 
@@ -371,20 +373,21 @@ def update_gridprem(
 
     # export by Month -----------------------------------------------------
     if pvalloc_settings['MC_loop_specs']['keep_files_month_iter_TF']:
-        # gridprem_node_by_M_path = f'{data_path_def}/output/pvalloc_run/pred_gridprem_node_by_M'
-        gridprem_node_by_M_path = f'{subdir_path_def}/pred_gridprem_node_by_M'
-        if not os.path.exists(gridprem_node_by_M_path):
-            os.makedirs(gridprem_node_by_M_path)
-        elif os.path.exists(gridprem_node_by_M_path):
-            old_files = glob.glob(f'{gridprem_node_by_M_path}/*')
-            for f in old_files:
-                os.remove(f)
+        if i_m < pvalloc_settings['MC_loop_specs']['keep_files_month_iter_max']:
+            # gridprem_node_by_M_path = f'{data_path_def}/output/pvalloc_run/pred_gridprem_node_by_M'
+            gridprem_node_by_M_path = f'{subdir_path_def}/pred_gridprem_node_by_M'
+            if not os.path.exists(gridprem_node_by_M_path):
+                os.makedirs(gridprem_node_by_M_path)
+            elif os.path.exists(gridprem_node_by_M_path):
+                old_files = glob.glob(f'{gridprem_node_by_M_path}/*')
+                for f in old_files:
+                    os.remove(f)
 
-        gridnode_df.to_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{m}.parquet')
-        gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
+            gridnode_df.to_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{m}.parquet')
+            gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
 
-        gridprem_ts.to_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.parquet')
-        gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
+            gridprem_ts.to_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.parquet')
+            gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
 
     checkpoint_to_logfile(f'exported gridprem_ts and gridnode_df', log_file_name_def, 1)
 
@@ -433,7 +436,8 @@ def update_npv_df(pvalloc_settings,
 
 
     # import topo_time_subdfs -----------------------------------------------------
-    topo_subdf_paths = glob.glob(f'{data_path_def}/output/pvalloc_run/topo_time_subdf/*.parquet')
+    # topo_subdf_paths = glob.glob(f'{data_path_def}/output/pvalloc_run/topo_time_subdf/*.parquet')
+    topo_subdf_paths = glob.glob(f'{subdir_path_def}/topo_subdf_*.parquet')
     no_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == False]
     agg_npv_df_list = []
 
@@ -442,7 +446,7 @@ def update_npv_df(pvalloc_settings,
     for i, path in enumerate(topo_subdf_paths):
         if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //3 ) == 0:
             # print_to_logfile(f'  {2*"-"} update npv (tranche {i}/{len(topo_subdf_paths)}) {6*"-"}', log_file_name_def)
-            checkpoint_to_logfile(f'updated npv (tranche {i}/{len(topo_subdf_paths)})', log_file_name_def, 2, show_debug_prints_def)
+            checkpoint_to_logfile(f'updated npv (tranche {i}/{len(topo_subdf_paths)})', log_file_name_def, 0, show_debug_prints_def)
         subdf_t0 = pd.read_parquet(path)
 
         # drop egids with pv installations
@@ -472,12 +476,12 @@ def update_npv_df(pvalloc_settings,
             
 
             if (i <3) and (i_m <3): 
-                checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 1, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
+                checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 0, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
 
             agg_subdf = subdf.groupby(groupby_cols).agg(agg_cols).reset_index()
             
             if (i <3) and (i_m <3): 
-                checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 1, show_debug_prints_def)
+                checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 0, show_debug_prints_def)
 
 
             # create combinations ----------------------------------------------
@@ -548,7 +552,7 @@ def update_npv_df(pvalloc_settings,
                                         'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
                      
         if (i <3) and (i_m <3): 
-            checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', log_file_name_def, 1, show_debug_prints_def)
+            checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', log_file_name_def, 0, show_debug_prints_def)
 
         
 
@@ -562,7 +566,7 @@ def update_npv_df(pvalloc_settings,
         aggsubdf_combo['NPV_uid'] = aggsubdf_combo.apply(compute_npv, axis=1)
 
         if (i <3) and (i_m <3): 
-            checkpoint_to_logfile(f'\t computed NPV for agg_subdf', log_file_name_def, 2, show_debug_prints_def)
+            checkpoint_to_logfile(f'\t computed NPV for agg_subdf', log_file_name_def, 0, show_debug_prints_def)
 
         agg_npv_df_list.append(aggsubdf_combo)
 
@@ -577,16 +581,19 @@ def update_npv_df(pvalloc_settings,
 
     # export by Month -----------------------------------------------------
     if pvalloc_settings['MC_loop_specs']['keep_files_month_iter_TF']:
-        pred_npv_inst_by_M_path = f'{subdir_path_def}/pred_npv_inst_by_M'
-        if not os.path.exists(pred_npv_inst_by_M_path):
-            os.makedirs(pred_npv_inst_by_M_path)
-        elif os.path.exists(pred_npv_inst_by_M_path):
-            old_files = glob.glob(f'{pred_npv_inst_by_M_path}/*')
-            for f in old_files:
-                os.remove(f)
+        if i_m < pvalloc_settings['MC_loop_specs']['keep_files_month_iter_max']:
+            pred_npv_inst_by_M_path = f'{subdir_path_def}/pred_npv_inst_by_M'
+            if not os.path.exists(pred_npv_inst_by_M_path):
+                os.makedirs(pred_npv_inst_by_M_path)
+            elif os.path.exists(pred_npv_inst_by_M_path):
+                old_files = glob.glob(f'{pred_npv_inst_by_M_path}/*')
+                for f in old_files:
+                    os.remove(f)
 
-        npv_df.to_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
-        npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
+            npv_df.to_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
+            npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
+
+    checkpoint_to_logfile(f'exported npv_df', log_file_name_def, 1)
         
     return npv_df
 

@@ -75,8 +75,11 @@ pvalloc_default_settings = {
     # PART II: settings for MC algorithm --------------------
     'MC_loop_specs': {
         'montecarlo_iterations': 2,
-        'fresh_initial_files': ['topo_egid.json', 'gridprem_ts.parquet', ],
+        'fresh_initial_files': 
+            ['topo_egid.json', 'months_prediction.parquet', 'gridprem_ts.parquet', 
+             'gridnode_df.parquet', 'constrcapa.parquet', 'dsonodes_df.parquet'],
         'keep_files_month_iter_TF': True,
+        'keep_files_month_iter_max':8,
         
         'keep_files_month_iter_list': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
         # 'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],

@@ -1,9 +1,8 @@
 import os
 
 import data_aggregation_MASTER
-import pv_allocation_MASTER
-#mport pvalloc_initialization_MASTER
-#mport pvalloc_MCalgorithm_MASTER
+import pvalloc_initialization_MASTER
+import pvalloc_MCalgorithm_MASTER
 #mport pvalloc_postprocessing_MASTER
 import visualization_MASTER
 
@@ -13,13 +12,13 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred =  20 #600 #36
+months_pred = 12 #600 #36
 run_on_server = False
-bfs_numbers = [2791, 2787 , 2792, 2784, 2793, 2782, 2781,]
+bfs_numbers = [2791, 2787 ]#, 2792, 2784, 2793, 2782, 2781,]
 
 run_dataagg =   False
 run_alloc =     True
-run_visual =    True
+run_visual =    False
 
 
 # data_aggregation 
@@ -53,7 +52,9 @@ pvalloc_scenarios={
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
         'bfs_numbers': bfs_numbers,
-        # 'create_gdf_export_of_topology':    True,
+        'create_gdf_export_of_topology':    True,
+        'recalc_economics_topo_df':         True,
+
         'tech_economic_specs': {
             'self_consumption_ifapplicable': 0,
             'pvprod_calc_method': 'method3',},
@@ -62,6 +63,65 @@ pvalloc_scenarios={
         'weather_specs': {
             'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
         },
+
+    # f'pvalloc_DEV_{months_pred}m_meth3_selfcon00_DirDiffRad':{
+    #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': months_pred,
+    #     'bfs_numbers': bfs_numbers,
+    #     # 'create_gdf_export_of_topology':    True,
+    #     'tech_economic_specs': {
+    #         'self_consumption_ifapplicable': 0,
+    #         'pvprod_calc_method': 'method3',},
+    #     'algorithm_specs': {
+    #         'rand_seed': 42,},
+    #     'weather_specs': {
+    #         'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
+    #     },
+    # f'pvalloc_DEV_{months_pred}m_meth2_selfcon00_DirDiffRad':{
+    #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': months_pred,
+    #     'bfs_numbers': bfs_numbers,
+    #     'tech_economic_specs': {
+    #         'self_consumption_ifapplicable': 0,
+    #         'pvprod_calc_method': 'method2',},
+    #     'algorithm_specs': {
+    #         'rand_seed': 42,},
+    #     'weather_specs': {
+    #         'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
+    #     },
+    # f'pvalloc_DEV_{months_pred}m_meth3_selfcon00_DirRad':{
+    #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': months_pred,
+    #     'bfs_numbers': bfs_numbers,
+    #     'tech_economic_specs': {
+    #         'self_consumption_ifapplicable': 0,
+    #         'pvprod_calc_method': 'method3',},
+    #     'algorithm_specs': {
+    #         'rand_seed': 42,},
+    #     'weather_specs': {
+    #         'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation',]}
+    #     },  
+    # f'pvalloc_DEV_{months_pred}m_meth3_selfcon05_DirDiffRad':{
+    #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': months_pred,
+    #     'bfs_numbers': bfs_numbers,
+    #     # 'create_gdf_export_of_topology':    True,
+    #     'tech_economic_specs': {
+    #         'self_consumption_ifapplicable': 0.5,
+    #         'pvprod_calc_method': 'method3',},
+    #     'algorithm_specs': {
+    #         'rand_seed': 42,},
+    #     'weather_specs': {
+    #         'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
+    #     },
+  
+}
+
+parklplatz = {
     f'pvalloc_DEV_{months_pred}m_meth2_selfcon00_DirDiffRad':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
@@ -87,30 +147,7 @@ pvalloc_scenarios={
             'rand_seed': 42,},
         'weather_specs': {
             'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation',]}
-        },    
-}
-[2791, 2787, 2792, 2784, 2793, 2782, 2781,]
-parklplatz = {
-    f'pvalloc_smallBL_{months_pred}m_npv_alloc':{
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781,],
-        'create_gdf_export_of_topology':    True,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv',
-            'tweak_gridnode_df_prod_demand_fact': 1,
-    }},
-    f'pvalloc_smallBL_{months_pred}m_rand_alloc':{
-        'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781,],
-        'create_gdf_export_of_topology':    True,
-        'algorithm_specs': {
-            'inst_selection_method': 'random',
-            'tweak_gridnode_df_prod_demand_fact': 1,
-    }},
+        },  
 }
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
@@ -154,8 +191,9 @@ for k_sett, scen_sett in dataagg_scenarios.items():
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    pv_allocation_MASTER.pv_allocation_MASTER(pvalloc_settings) if run_alloc else print('')
-    
+    pvalloc_initialization_MASTER.pvalloc_initialization_MASTER(pvalloc_settings) if run_alloc else print('')
+    pvalloc_MCalgorithm_MASTER.pvalloc_MC_algorithm_MASTER(pvalloc_settings) if run_alloc else print('')
+
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
 visualization_MASTER.visualization_MASTER(pvalloc_scenarios, visual_settings) if run_visual else print('')
