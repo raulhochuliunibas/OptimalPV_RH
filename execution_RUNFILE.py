@@ -12,9 +12,9 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred = 12 #600 #36
+months_pred = 36 #600 #36
 run_on_server = False
-bfs_numbers = [2791, 2787 ]#, 2792, 2784, 2793, 2782, 2781,]
+bfs_numbers = [2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 
 run_dataagg =   False
 run_alloc =     True
@@ -58,6 +58,8 @@ pvalloc_scenarios={
         'tech_economic_specs': {
             'self_consumption_ifapplicable': 0,
             'pvprod_calc_method': 'method3',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 5,},
         'algorithm_specs': {
             'rand_seed': 42,},
         'weather_specs': {

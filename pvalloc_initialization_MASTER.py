@@ -140,7 +140,8 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
     elif os.path.exists(sanitycheck_path):
         for f in glob.glob(f'{sanitycheck_path}/*'):
             if os.path.isfile(f):
-                os.remove(f)
+                # os.remove(f)
+                print(f)
             elif os.path.isdir(f):
                 shutil.rmtree(f)
 
