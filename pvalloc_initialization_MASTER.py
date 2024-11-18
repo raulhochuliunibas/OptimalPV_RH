@@ -190,18 +190,16 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
     # COPY & RENAME PVALLOC DATA FOLDER ---------------------------------------------------------------
     # > not to overwrite completed folder while debugging 
-    if  not os.path.exists(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'):
-        dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'
-        os.makedirs(dir_alloc_moveto)
-    else:
-        today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
-        if not os.path.exists(dir_alloc_moveto):
-            os.makedirs(dir_alloc_moveto)
-        elif os.path.exists(dir_alloc_moveto):
-            shutil.rmtree(dir_alloc_moveto)
-            os.makedirs(dir_alloc_moveto)
+    dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'
+    if os.path.exists(dir_alloc_moveto):
+        # today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        # dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
+        
+        n_same_names = len(glob.glob(f'{dir_alloc_moveto}*'))
+        old_dir_rename = f'{dir_alloc_moveto} ({n_same_names+1})'
+        os.rename(f'{dir_alloc_moveto}', old_dir_rename)
 
+    os.makedirs(dir_alloc_moveto)
     file_to_move = glob.glob(f'{data_path}/output/pvalloc_run/*')
     for f in file_to_move:
         if os.path.isfile(f):

@@ -747,7 +747,7 @@ def define_construction_capacity(
         ]
         )
         fig = go.Figure(data=[trace_weekly, trace_monthly, trace_yearly], layout=layout)
-        fig.show()
+        # fig.show()
         fig.write_html(f'{data_path_def}/output/pvalloc_run/pv_total_power_over_time.html')
 
 

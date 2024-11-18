@@ -134,8 +134,8 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
 
                 if npv_df.shape[0] > 0: 
                     checkpoint_to_logfile(f' npv_df with 0< rows, select inst and adjust topology', log_name, 1, show_debug_prints)
-                    inst_power = select.select_AND_adjust_topology(pvalloc_settings, npv_df, 
-                                                    pvalloc_settings['algorithm_specs']['inst_selection_method'],
+                    inst_power = select.select_AND_adjust_topology(pvalloc_settings, 
+                                                    mc_data_path,
                                                     dfuid_installed_list, 
                                                     pred_inst_df,
                                                     i_m, m)
@@ -179,6 +179,12 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
         winsound.Beep(1000, 300)
         winsound.Beep(1000, 300)
         winsound.Beep(1000, 1000)
+
+    # COPY & RENAME PVALLOC DATA FOLDER ---------------------------------------------------------------
+    # > not to overwrite completed folder while debugging 
+    dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'
+
+    shutil.copy(glob.glob(f'{data_path}/output/pvalloc_MCalgo_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_MCalgo_log_{pvalloc_settings["name_dir_export"]}.txt')
 
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
