@@ -61,7 +61,10 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
 
     
     # MONTE CARLO ITERATION LOOP ================================================================================
-    
+    chapter_to_logfile(f'start pvalloc_MCalgorithm_MASTER for : {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
+    print_to_logfile(f'*model allocation specifications*:', log_name)
+    print_to_logfile(f'> n_bfs_municipalities: {len(pvalloc_settings["bfs_numbers"])} \n> n_months_prediction: {pvalloc_settings["months_prediction"]} \n> n_montecarlo_iterations: {pvalloc_settings["MC_loop_specs"]["montecarlo_iterations"]}', log_name)
+ 
 
     # CREATE MC DIR + TRANSFER INITIAL DATA FILES ----------------------------------------------
 
@@ -80,7 +83,9 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
     # mc_iter = montecarlo_iterations[0]
     # if True:    
     for mc_iter in montecarlo_iterations:
-        print_to_logfile(f'\n-- START MC{mc_iter:0{max_digits}} iteration  {25*"-"}', log_name)
+        mc_iter_start = datetime.now()
+        subchapter_to_logfile(f'START MC{mc_iter:0{max_digits}} iteration', log_name)
+        # print_to_logfile(f'\n-- START MC{mc_iter:0{max_digits}} iteration  {25*"-"}', log_name)
 
         # copy all initial files to MC directory
         mc_data_path = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/zMC_{mc_iter:0{max_digits}}'
@@ -103,7 +108,7 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
         constrcapa = pd.read_parquet(f'{mc_data_path}/constrcapa.parquet')
         
         for i_m, m in enumerate(months_prediction):
-            print_to_logfile(f'\n-- MC{mc_iter:0{max_digits}} -- Allocation for month: {m} {25*"-"}', log_name)
+            print_to_logfile(f'\n-- MC{mc_iter:0{max_digits}} -- allocation month: {m} --', log_name)
             start_allocation_month = datetime.now()
             i_m = i_m + 1        
 
@@ -133,34 +138,33 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
                     safety_counter = safety_counter_max
 
                 if npv_df.shape[0] > 0: 
-                    checkpoint_to_logfile(f' npv_df with 0< rows, select inst and adjust topology', log_name, 1, show_debug_prints)
+                    # checkpoint_to_logfile(f' npv_df with 0 < rows, select inst and adjust topology', log_name, 1, show_debug_prints)
                     inst_power = select.select_AND_adjust_topology(pvalloc_settings, 
                                                     mc_data_path,
                                                     dfuid_installed_list, 
                                                     pred_inst_df,
                                                     i_m, m)
                     
-                    # Adjust constr_built capacity ----------
-                    constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
+                # Adjust constr_built capacity ----------
+                constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
 
-                    # State Loop Exit ----------
-                    overshoot_rate = pvalloc_settings['constr_capacity_specs']['constr_capa_overshoot_fact']
-                    constr_m_TF, constr_y_TF, safety_TF = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y*overshoot_rate, safety_counter > safety_counter_max
+                # State Loop Exit ----------
+                overshoot_rate = pvalloc_settings['constr_capacity_specs']['constr_capa_overshoot_fact']
+                constr_m_TF, constr_y_TF, safety_TF = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y*overshoot_rate, safety_counter > safety_counter_max
 
-                    if safety_counter % 3 == 0:
-                        checkpoint_to_logfile(f'\t safety_counter: {safety_counter} installations built, {round(constr_built_m/constr_capa_m*100, 2)}% of monthly constr capacity', log_name, 3, show_debug_prints)
-                
+
                 if any([constr_m_TF, constr_y_TF, safety_TF]):
                     print_to_logfile(f'exit While Loop', log_name)
                     if constr_m_TF:
-                        checkpoint_to_logfile(f'constr_m_TF: {constr_m_TF} ({round(constr_built_m,3)} built, {round(constr_capa_m,3)} capacity in kW)', log_name, 1, show_debug_prints)
+                        checkpoint_to_logfile(f'exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built', log_name, 1, show_debug_prints)
                     if constr_y_TF:
-                        checkpoint_to_logfile(f'constr_y_TF: {constr_y_TF} ({round(constr_built_y,3)} built, {round(constr_capa_y,3)} capacity in kW)', log_name, 1, show_debug_prints)
+                        checkpoint_to_logfile(f'exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built', log_name, 1, show_debug_prints)
                     if safety_TF:
-                        checkpoint_to_logfile(f'safety_TF: {safety_TF} ({safety_counter} rounds for safety counter max of: {safety_counter_max})', log_name, 1, show_debug_prints)
-                        
-                    checkpoint_to_logfile(f'{safety_counter} pv installations allocated', log_name, 3, show_debug_prints)
-                    safety_counter = 0
+                        checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}', log_name, 1, show_debug_prints)
+
+                    if constr_m_TF or constr_y_TF:    
+                        checkpoint_to_logfile(f'{safety_counter} pv installations allocated', log_name, 3, show_debug_prints)                    
+                    # safety_counter = 0
 
             checkpoint_to_logfile(f'end month allocation, runtime: {datetime.now() - start_allocation_month} (hh:mm:ss.s)', log_name, 1, show_debug_prints)
 
@@ -169,7 +173,13 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
         topo_time_paths = glob.glob(f'{mc_data_path}/topo_subdf_*.parquet')
         for f in topo_time_paths:
             os.remove(f)
-        print_to_logfile(f'\n-- END MC{mc_iter:0{max_digits}} iteration  {25*"-"}\n-- runtime: () --\n\n', log_name)
+
+        mc_iter_end = datetime.now()
+        mc_iter_time = mc_iter_end - mc_iter_start
+        subchapter_to_logfile(f'END MC{mc_iter:0{max_digits}}, runtime: {mc_iter_time} (hh:mm:ss.s)', log_name)
+        print_to_logfile(f'\n\n', log_name)
+        # print_to_logfile(f'\n-- END MC{mc_iter:0{max_digits}} iteration  {25*"-"}\n-- runtime: () --\n\n', log_name)
+
 
 
 

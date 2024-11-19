@@ -92,7 +92,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
         pvalloc_settings['interim_path'] = get_interim_path(pvalloc_settings)
         show_debug_prints = pvalloc_settings['show_debug_prints']
 
-    chapter_to_logfile(f'start pv_allocation_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
+    chapter_to_logfile(f'start pvalloc_initialization_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
     formated_pvalloc_settings = format_MASTER_settings(pvalloc_settings)
     print_to_logfile(f'pvalloc_settings: \n{pformat(formated_pvalloc_settings)}', log_name)
 
