@@ -187,18 +187,21 @@ def calc_economics_in_topo_df(
 
         # pvprod method 2
         elif pvprod_calc_method == 'method2':   
+            subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_inefficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
+            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", log_name)
+
+        # pvprod method 3
+            # > 19.11.2024: no longer needed. from previous runs where I wanted to compare different pvprod_computations methods
+        elif False:   
             subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
             print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']\n", log_name)
             
-        # pvprod method 3
-        elif pvprod_calc_method == 'method3':   
-            subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
-            subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", log_name)
-
         # pvprod method 4
-        elif pvprod_calc_method == 'method4':   
+            # > 19.11.2024: because I dont have the same weather year as the calculations for the STROMERTRAG in solkat, it is not really feasible to back-engineer any type of shade deduction 
+            #   coefficient that might bring any additional information. 
+        elif False:  
             subdf['pvprod_kW_noshade'] =   (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] # * subdf['angletilt_factor']
             # check if no_shade production calculation is larger than STROMERTRAG (should be, and then later corrected...)
             sum(subdf.loc[subdf['df_uid'] == subdf['df_uid'].unique()[0], 'pvprod_kW_noshade']), subdf.loc[subdf['df_uid'] == subdf['df_uid'].unique()[0], 'STROMERTRAG'].iloc[0]
