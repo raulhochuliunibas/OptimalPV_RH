@@ -124,6 +124,8 @@ def calc_economics_in_topo_df(
             return 0
     topo_df['angletilt_factor'] = topo_df.apply(lambda r: lookup_angle_tilt_efficiency(r, angle_tilt_df), axis=1)
 
+
+
     # MERGE + GET ECONOMIC VALUES FOR NPV CALCULATION =============================================
     topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
     share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
@@ -139,7 +141,7 @@ def calc_economics_in_topo_df(
 
         tranche_counter += 1
         # print_to_logfile(f'-- merges to topo_time_subdf {tranche_counter}/{len(range(0, len(egids), stepsize))} tranches ({i} to {i+stepsize-1} egids.iloc) ,  {7*"-"}  (stamp: {datetime.now()})', log_name)
-        subdf = topo_df[topo_df['EGID'].isin(egids[i:i+stepsize])].copy()
+        subdf = copy.deepcopy(topo_df[topo_df['EGID'].isin(egids[i:i+stepsize])])
 
 
         # merge production, grid prem + demand to partitions ----------
@@ -149,6 +151,25 @@ def calc_economics_in_topo_df(
         subdf = subdf.assign(pvprod_kW = (subdf['radiation'] * subdf['FLAECHE'] * subdf['angletilt_factor']) / 1000)
         # checkpoint_to_logfile(f'  end merge meteo for subdf {i} to {i+stepsize-1}', log_name, 1)
 
+
+        # add panel_inefficiency by time ----------
+        if pvalloc_settings['panel_inefficiency_specs']['variable_panel_inefficiency_TF']:
+            summer_months = pvalloc_settings['panel_inefficiency_specs']['summer_months']
+            hotsummer_hours = pvalloc_settings['panel_inefficiency_specs']['hotsummer_hours']
+            hot_hours_discount = pvalloc_settings['panel_inefficiency_specs']['hot_hours_discount']
+
+            HOY_weatheryear_df = pd.read_parquet(f'{data_path}/output/pvalloc_run/HOY_weatheryear_df.parquet')
+            hot_hours_in_year = HOY_weatheryear_df.loc[(HOY_weatheryear_df['month'].isin(summer_months)) & (HOY_weatheryear_df['hour'].isin(hotsummer_hours))]
+            subdf['panel_inefficiency'] = np.where(
+                subdf['t'].isin(hot_hours_in_year['t']),
+                panel_inefficiency * (1-hot_hours_discount),
+                panel_inefficiency)
+            
+        elif not pvalloc_settings['panel_inefficiency_specs']['variable_panel_inefficiency_TF']:
+            subdf['panel_inefficiency'] = panel_inefficiency
+            
+
+        # attach demand profiles ----------
         demandtypes_names = [c for c in demandtypes_ts.columns if 'DEMANDprox' in c]
         demandtypes_melt = demandtypes_ts.melt(id_vars='t', value_vars=demandtypes_names, var_name= 'demandtype', value_name= 'demand')
         subdf = subdf.merge(demandtypes_melt, how='left', on=['t', 'demandtype'])
@@ -378,10 +399,10 @@ def update_gridprem(
             gridprem_node_by_M_path = f'{subdir_path_def}/pred_gridprem_node_by_M'
             if not os.path.exists(gridprem_node_by_M_path):
                 os.makedirs(gridprem_node_by_M_path)
-            elif os.path.exists(gridprem_node_by_M_path):
-                old_files = glob.glob(f'{gridprem_node_by_M_path}/*')
-                for f in old_files:
-                    os.remove(f)
+            # elif os.path.exists(gridprem_node_by_M_path):
+            #     old_files = glob.glob(f'{gridprem_node_by_M_path}/*')
+            #     for f in old_files:
+            #         os.remove(f)
 
             gridnode_df.to_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{m}.parquet')
             gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
@@ -425,7 +446,7 @@ def update_npv_df(pvalloc_settings,
     subdir_path_def = subdir_path
     m = month_func
     i_m = i_month_func
-    print_to_logfile(f'run update_npv_df', log_file_name_def)
+    print_to_logfile(f'run function: update_npv_df', log_file_name_def)
 
 
     # import -----------------------------------------------------
@@ -444,9 +465,9 @@ def update_npv_df(pvalloc_settings,
     j =2
     i, path = j, topo_subdf_paths[j]
     for i, path in enumerate(topo_subdf_paths):
-        if len(topo_subdf_paths) > 5 and i % (len(topo_subdf_paths) //3 ) == 0:
+        if len(topo_subdf_paths) > 5 and i <5 : # i% (len(topo_subdf_paths) //3 ) == 0:
             # print_to_logfile(f'  {2*"-"} update npv (tranche {i}/{len(topo_subdf_paths)}) {6*"-"}', log_file_name_def)
-            checkpoint_to_logfile(f'updated npv (tranche {i}/{len(topo_subdf_paths)})', log_file_name_def, 0, show_debug_prints_def)
+            checkpoint_to_logfile(f'updated npv (tranche {i+1}/{len(topo_subdf_paths)})', log_file_name_def, 1, show_debug_prints_def)
         subdf_t0 = pd.read_parquet(path)
 
         # drop egids with pv installations
@@ -476,12 +497,12 @@ def update_npv_df(pvalloc_settings,
             
 
             if (i <3) and (i_m <3): 
-                checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 0, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
+                checkpoint_to_logfile(f'\t end compute econ factors', log_file_name_def, 1, show_debug_prints_def) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', log_file_name_def, 1, show_debug_prints_def)
 
             agg_subdf = subdf.groupby(groupby_cols).agg(agg_cols).reset_index()
             
             if (i <3) and (i_m <3): 
-                checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 0, show_debug_prints_def)
+                checkpoint_to_logfile(f'\t groupby subdf to agg_subdf', log_file_name_def, 1, show_debug_prints_def)
 
 
             # create combinations ----------------------------------------------
@@ -552,7 +573,7 @@ def update_npv_df(pvalloc_settings,
                                         'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
                      
         if (i <3) and (i_m <3): 
-            checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', log_file_name_def, 0, show_debug_prints_def)
+            checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', log_file_name_def, 1, show_debug_prints_def)
 
         
 
@@ -566,7 +587,7 @@ def update_npv_df(pvalloc_settings,
         aggsubdf_combo['NPV_uid'] = aggsubdf_combo.apply(compute_npv, axis=1)
 
         if (i <3) and (i_m <3): 
-            checkpoint_to_logfile(f'\t computed NPV for agg_subdf', log_file_name_def, 0, show_debug_prints_def)
+            checkpoint_to_logfile(f'\t computed NPV for agg_subdf', log_file_name_def, 1, show_debug_prints_def)
 
         agg_npv_df_list.append(aggsubdf_combo)
 
@@ -585,10 +606,10 @@ def update_npv_df(pvalloc_settings,
             pred_npv_inst_by_M_path = f'{subdir_path_def}/pred_npv_inst_by_M'
             if not os.path.exists(pred_npv_inst_by_M_path):
                 os.makedirs(pred_npv_inst_by_M_path)
-            elif os.path.exists(pred_npv_inst_by_M_path):
-                old_files = glob.glob(f'{pred_npv_inst_by_M_path}/*')
-                for f in old_files:
-                    os.remove(f)
+            # elif os.path.exists(pred_npv_inst_by_M_path):
+            #     old_files = glob.glob(f'{pred_npv_inst_by_M_path}/*')
+            #     for f in old_files:
+            #         os.remove(f)
 
             npv_df.to_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
             npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
