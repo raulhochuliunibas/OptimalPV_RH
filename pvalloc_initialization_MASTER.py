@@ -99,24 +99,26 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
     # NOTE: this needs to be moved to data_aggregation_MASTER, or replaced with primeo data, whenever that is \_(ツ)_/¯
     initial.get_fake_gridnodes_v2(pvalloc_settings)
-    # sanity.sanity_check_summary_byEGID(pvalloc_settings)
 
+    initial.HOY_weatheryear_df(pvalloc_settings)
 
     # INITIALIZATION ================================================================
     if pvalloc_settings['recreate_topology']:
         subchapter_to_logfile('initialization: IMPORT PREPREP DATA & CREATE (building) TOPOLOGY', log_name)
         topo, df_list, df_names = initial.import_prepre_AND_create_topology(pvalloc_settings)
 
-    elif not pvalloc_settings['recreate_topology']:
-        subchapter_to_logfile('initialization: IMPORT EXISITNG TOPOLOGY', log_name) 
-        df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_nodes']
-        topo, df_list, df_names = initial.import_exisitng_topology(pvalloc_settings, df_search_names= df_names)
+        # elif not pvalloc_settings['recreate_topology']:
+        #     subchapter_to_logfile('initialization: IMPORT EXISITNG TOPOLOGY', log_name) 
+        #     df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_nodes']
+        #     topo, df_list, df_names = initial.import_exisitng_topology(pvalloc_settings, df_search_names= df_names)
 
-    subchapter_to_logfile('initialization: IMPORT TS DATA', log_name)
-    ts_list, ts_names = initial.import_ts_data(pvalloc_settings)
+        subchapter_to_logfile('initialization: IMPORT TS DATA', log_name)
+        ts_list, ts_names = initial.import_ts_data(pvalloc_settings)
+        initial.HOY_weatheryear_df(pvalloc_settings)
 
-    subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', log_name)
-    constrcapa, months_prediction, months_lookback = initial.define_construction_capacity(pvalloc_settings, topo, df_list, df_names, ts_list, ts_names)
+        subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', log_name)
+        constrcapa, months_prediction, months_lookback = initial.define_construction_capacity(pvalloc_settings, topo, df_list, df_names, ts_list, ts_names)
+
 
 
 
@@ -128,52 +130,50 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
         algo.calc_economics_in_topo_df(pvalloc_settings, topo, 
                                         df_list, df_names, ts_list, ts_names)
     
-    shutil.copy(f'{data_path}/output/pvalloc_run/topo_egid.json', f'{data_path}/output/pvalloc_run/topo_egid_before_alloc.json')
+        shutil.copy(f'{data_path}/output/pvalloc_run/topo_egid.json', f'{data_path}/output/pvalloc_run/topo_egid_before_alloc.json')
 
 
 
     # TOPOLOGY SANITY CHECKS ================================================================
-    subchapter_to_logfile('sanity_check: RUN 1 ITERATION for CHECK', log_name)
-    sanitycheck_path = f'{data_path}/output/pvalloc_run/sanity_check_byEGID'
-    if not os.path.exists(sanitycheck_path):
-        os.makedirs(sanitycheck_path)
-    elif os.path.exists(sanitycheck_path):
-        for f in glob.glob(f'{sanitycheck_path}/*'):
-            if os.path.isfile(f):
-                # os.remove(f)
-                print(f)
-            elif os.path.isdir(f):
-                shutil.rmtree(f)
+    if pvalloc_settings['sanitycheck_byEGID']:
+        subchapter_to_logfile('sanity_check: RUN FEW ITERATION for byCHECK', log_name)
+        sanitycheck_path = f'{data_path}/output/pvalloc_run/sanity_check_byEGID'
+        if not os.path.exists(sanitycheck_path):
+            os.makedirs(sanitycheck_path)
+        elif os.path.exists(sanitycheck_path):
+            for f in glob.glob(f'{sanitycheck_path}/*'):
+                if os.path.isfile(f):
+                    os.remove(f)
+                elif os.path.isdir(f):
+                    shutil.rmtree(f)
 
-    fresh_initial_files = [f'{data_path}/output/pvalloc_run/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
-    topo_time_paths = glob.glob(f'{data_path}/output/pvalloc_run/topo_time_subdf/*.parquet')
-    all_initial_paths = fresh_initial_files + topo_time_paths
+        fresh_initial_files = [f'{data_path}/output/pvalloc_run/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
+        topo_time_paths = glob.glob(f'{data_path}/output/pvalloc_run/topo_time_subdf/*.parquet')
+        all_initial_paths = fresh_initial_files + topo_time_paths
+        for f in all_initial_paths:
+            shutil.copy(f, f'{sanitycheck_path}/')
 
-    for f in all_initial_paths:
-        shutil.copy(f, f'{sanitycheck_path}/')
-
-
-    # sanity check: CALC 1 ITERATION OF NPV AND FEEDIN for check ---------------------------------------------------------------
-    dfuid_installed_list = []
-    pred_inst_df = pd.DataFrame()
-    i_m, m = 1, months_prediction[0]
-
-    algo.update_gridprem(pvalloc_settings, sanitycheck_path, m, i_m)
-
-    algo.update_npv_df(pvalloc_settings, sanitycheck_path, m, i_m)
-    
-    select.select_AND_adjust_topology(pvalloc_settings, sanitycheck_path,
-                                      dfuid_installed_list,pred_inst_df,
-                                      m, i_m)
-    
-    subchapter_to_logfile('sanity_check: SUMMARY BY EGID', log_name)
-    sanity.sanity_check_summary_byEGID(pvalloc_settings, sanitycheck_path)
+        # sanity check: CALC FEW ITERATION OF NPV AND FEEDIN for check ---------------------------------------------------------------
+        dfuid_installed_list = []
+        pred_inst_df = pd.DataFrame()
+        months_prediction_pq = pd.read_parquet(f'{data_path}/output/pvalloc_run/months_prediction.parquet')['date']
+        months_prediction = [str(m) for m in months_prediction_pq]
+        # i_m, m = 1, months_prediction[0:2]
+        for i_m, m in enumerate(months_prediction[0:pvalloc_settings['sanitycheck_summary_byEGID_specs']['n_iterations_before_sanitycheck']]):
+            print_to_logfile(f'\n-- month {m} -----', log_name)
+            algo.update_gridprem(pvalloc_settings, sanitycheck_path, m, i_m)
+            algo.update_npv_df(pvalloc_settings, sanitycheck_path, m, i_m)
+            select.select_AND_adjust_topology(pvalloc_settings, sanitycheck_path,
+                                            dfuid_installed_list,pred_inst_df,
+                                            m, i_m)
+        
+        sanity.sanity_check_summary_byEGID(pvalloc_settings, sanitycheck_path)
 
 
     # sanity check: CREATE MAP OF TOPO_DF ----------------------------------------------------------------
-    if pvalloc_settings['create_gdf_export_of_topology']:
+    if pvalloc_settings['sanitycheck_create_gdf_export_of_topology']:
         subchapter_to_logfile('sanity_check: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
-        sanity.create_gdf_export_of_topology(pvalloc_settings)
+        sanity.create_gdf_export_of_topology(pvalloc_settings)  
 
 
     # sanity check: CREATE MAP OF TOPO_DF ----------------------------------------------------------------
