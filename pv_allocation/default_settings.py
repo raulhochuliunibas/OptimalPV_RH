@@ -59,7 +59,7 @@ pvalloc_default_settings = {
         'interest_rate': 0.01,
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
-        'pvprod_calc_method': 'method3',
+        'pvprod_calc_method': 'method2',
         'panel_inefficiency': 0.15,         # XY% Wirkungsgrad PV Modul
         'inverter_efficiency': 0.95,        # XY% Wirkungsgrad Wechselrichter
         'elecpri_year': 2022,
@@ -90,7 +90,7 @@ pvalloc_default_settings = {
             ['topo_egid.json', 'months_prediction.parquet', 'gridprem_ts.parquet', 
              'gridnode_df.parquet', 'constrcapa.parquet', 'dsonodes_df.parquet'],
         'keep_files_month_iter_TF': True,
-        'keep_files_month_iter_max':8,
+        'keep_files_month_iter_max': 8,
         
         'keep_files_month_iter_list': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
         # 'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],
@@ -113,8 +113,8 @@ pvalloc_default_settings = {
         'tweak_npv_calc': 1,
         'tweak_npv_excl_elec_demand': True,
         'tweak_gridnode_df_prod_demand_fact': 1,
+        'constr_capa_overshoot_fact':1, # not in that dir but should be a single tweak factor dict. 
     },  
-    
     'gridprem_adjustment_specs': {
         'voltage_assumption': '',
         'tier_description': 'tier_level: (voltage_threshold, gridprem_Rp_kWh)',
