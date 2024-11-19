@@ -565,20 +565,34 @@ def import_ts_data(
 
 
     # meteo types --------
-    rad_proxy = pvalloc_settings['weather_specs']['meteoblue_col_radiation_proxy']
+    rad_proxy = pvalloc_settings['weather_specs']['meteo_col_radiation_proxy']
+    temp_proxy = pvalloc_settings['weather_specs']['meteo_col_temperature_proxy']
     weater_year = pvalloc_settings['weather_specs']['weather_year']
 
     meteo = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/meteo.parquet')
-    meteo_cols = ['timestamp',] + rad_proxy
+    meteo_cols = ['timestamp',] + rad_proxy + temp_proxy
     meteo = meteo.loc[:,meteo_cols]
-    meteo['radiation'] = meteo[rad_proxy].sum(axis=1)
+
+    # get radiation
+    if any(["Diffuse" in col for col in rad_proxy]):
+        diff_col_name = [col for col in rad_proxy if "Diffuse" in col][0]   
+        rest_col_name = [col for col in rad_proxy if "Diffuse" not in col]
+
+        meteo['radiation'] = meteo[rest_col_name].sum(axis=1) + (meteo[diff_col_name] * pvalloc_settings['weather_specs']['diffuse_to_direct_rad_factor'])
+    else:
+        meteo['radiation'] = meteo[rad_proxy].sum(axis=1)
     meteo.drop(columns=rad_proxy, inplace=True)
     
+    # get temperature
+    meteo['temperature'] = meteo[temp_proxy].sum(axis=1)
+    meteo.drop(columns=temp_proxy, inplace=True)
+
     start_wy, end_wy = pd.to_datetime(f'{weater_year}-01-01 00:00:00'), pd.to_datetime(f'{weater_year}-12-31 23:00:00')
     meteo = meteo.loc[(meteo['timestamp'] >= start_wy) & (meteo['timestamp'] <= end_wy)]
 
     meteo['t']= meteo['timestamp'].apply(lambda x: f't_{(x.dayofyear -1) * 24 + x.hour +1}')
     meteo_ts = meteo.copy()
+
 
 
     # # grid premium --------
@@ -795,7 +809,6 @@ def define_construction_capacity(
 
 
 
-
 # ------------------------------------------------------------------------------------------------------
 # FAKE TRAFO EGID MAPPING
 # ------------------------------------------------------------------------------------------------------
@@ -866,49 +879,6 @@ def get_fake_gridnodes_v2(pvalloc_settings):
     dsonodes_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
     with open(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson', 'w') as f:
         f.write(dsonodes_gdf.to_json())
-
-
-
-
-
-# TO BE DELETED
-
-# ------------------------------------------------------------------------------------------------------
-# import existing ts data
-# ------------------------------------------------------------------------------------------------------
-# > for now this part of the code runs in seconds, not needed to rely on previous runs to make it faster. 
-"""
-def import_exisitng_ts_data(
-        pvalloc_settings, ):
-    
-    name_dir_export_def = pvalloc_settings['name_dir_export']
-    data_path_def = pvalloc_settings['data_path']
-    log_file_name_def = pvalloc_settings['log_file_name']
-
-    print_to_logfile('run function: import_existing_topology', log_file_name_def)
-
-    # import existing topo & Mappings ---------
-    interim_pvalloc_folder = glob.glob(f'{data_path_def}/output/{name_dir_export_def}*')
-    if len(interim_pvalloc_folder) == 0:
-        checkpoint_to_logfile(f'ERROR: No existing interim pvalloc folder found', log_file_name_def)
-        interim_path = f'{data_path_def}/output/pvalloc_run' 
-
-    if len(interim_pvalloc_folder) >  1:
-        interim_path = interim_pvalloc_folder[-1]
-    else:
-        interim_path = interim_pvalloc_folder[0]
-
-    ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts']
-    ts_list = []
-
-    for t in ts_names:
-        f = glob.glob(f'{interim_path}/{t}.*')
-        if len(f) == 1:
-            ts_list.append(pd.read_parquet(f[0]))
-
-    return ts_list
-"""
-    
 
 
 
@@ -1019,3 +989,29 @@ def get_angle_tilt_table(pvalloc_settings):
     return angle_tilt_df
 
 
+
+
+# ------------------------------------------------------------------------------------------------------
+# CREATE HOY TIMESTAMP DF for WEATHER YEAR
+# ------------------------------------------------------------------------------------------------------
+def HOY_weatheryear_df(pvalloc_settings):
+    
+    # import settings + setup -------------------
+    data_path_def = pvalloc_settings['data_path']
+    log_file_name_def = pvalloc_settings['log_file_name']
+    name_dir_import_def = pvalloc_settings['name_dir_import']
+    bfs_numbers_def = pvalloc_settings['bfs_numbers']
+    gwr_selection_specs_def = pvalloc_settings['gwr_selection_specs']
+    print_to_logfile('run function: get_fake_gridnodes_v2', log_file_name_def)
+
+
+    # get every HOY of weather year ----------
+    weather_year = pvalloc_settings['weather_specs']['weather_year']
+    HOY_weatheryear_df = pd.DataFrame({'timestamp': pd.date_range(start=f'{weather_year}-01-01 00:00:00',end=f'{weather_year}-12-31 23:00:00', freq='h')})
+    HOY_weatheryear_df['t'] = HOY_weatheryear_df.index.to_series().apply(lambda idx: f't_{idx + 1}')        
+    HOY_weatheryear_df['month'] = HOY_weatheryear_df['timestamp'].dt.month
+    HOY_weatheryear_df['day'] = HOY_weatheryear_df['timestamp'].dt.day
+    HOY_weatheryear_df['hour'] = HOY_weatheryear_df['timestamp'].dt.hour
+
+    # export df ----------
+    HOY_weatheryear_df.to_parquet(f'{data_path_def}/output/pvalloc_run/HOY_weatheryear_df.parquet')
