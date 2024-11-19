@@ -49,7 +49,9 @@ def create_gdf_export_of_topology(
     topo_df = pd.DataFrame({'EGID': egid_list,'gklas': gklas_list,
                             'inst_tf': inst_tf_list,'inst_info': inst_info_list,'inst_id': inst_id_list,'beginop': beginop_list,'power': power_list,
     })
-    topo_df['power'] = topo_df['power'].replace('', 0).infer_objects(copy=False).astype(float)
+    # topo_df['power'] = topo_df['power'].replace('', 0).infer_objects(copy=False).astype(float)
+    topo_df['power'] = topo_df['power'].replace('', 0)
+    topo_df['power'] = pd.to_numeric(topo_df['power'], errors='coerce').fillna(0)    
     topo_df.to_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
     topo_df.to_csv(f'{data_path_def}/output/pvalloc_run/topo_egid_df.csv')
 
@@ -76,23 +78,36 @@ def create_gdf_export_of_topology(
     solkat_gdf_in_topo = copy.deepcopy(solkat_gdf.loc[solkat_gdf['df_uid'].isin(topo_df_uid_list)])
     gwr_gdf_in_topo = copy.deepcopy(gwr_gdf.loc[gwr_gdf['EGID'].isin(topo_df['EGID'].unique())])
     pv_gdf_in_topo = copy.deepcopy(pv_gdf.loc[pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())])
-    # solkat_gdf_in_topo = solkat_gdf[solkat_gdf['df_uid'].isin(topo_df_uid_list)].copy#()
-    # gwr_gdf_in_topo = gwr_gdf[gwr_gdf['EGID'].isin(topo_df['EGID'].unique())].copy#()
-    # pv_gdf_in_topo = pv_gdf[pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())].copy#()
+
+    solkat_gdf_notin_topo = copy.deepcopy(solkat_gdf.loc[~solkat_gdf['df_uid'].isin(topo_df_uid_list)])
+    gwr_gdf_notin_topo = copy.deepcopy(gwr_gdf.loc[~gwr_gdf['EGID'].isin(topo_df['EGID'].unique())])
+    pv_gdf_notin_topo = copy.deepcopy(pv_gdf.loc[~pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())])
     
 
     # topo_gdf = topo_df.merge(solkat_gdf[['df_uid', 'geometry']], on='df_uid', how='left')
     topo_gdf = topo_df.merge(gwr_gdf[['EGID', 'geometry']], on='EGID', how='left')
     topo_gdf = gpd.GeoDataFrame(topo_gdf, crs='EPSG:2056', geometry='geometry')
 
+    single_partition_houses = copy.deepcopy(solkat_gdf[solkat_gdf['EGID'].map(solkat_gdf['EGID'].value_counts()) == 1])
+    single_part_houses_w_tilt = copy.deepcopy(single_partition_houses.loc[single_partition_houses['NEIGUNG'] > 0])
+    # [f for f in single_part_houses_w_tilt.loc[single_part_houses_w_tilt['BFS_NUMMER'].isin(['2791', '2787']), 'EGID'][0:10]]
+
+
     # export to shp -----------------------------------------------------
     if not os.path.exists(f'{data_path_def}/output/pvalloc_run/topo_spatial_data'):
         os.makedirs(f'{data_path_def}/output/pvalloc_run/topo_spatial_data')
 
+    solkat_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_in_topo.shp')
     gwr_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_in_topo.shp')
     pv_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_in_topo.shp')
-    solkat_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_in_topo.shp')
-    
+
+    solkat_gdf_notin_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_notin_topo.shp')
+    gwr_gdf_notin_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_notin_topo.shp')
+    pv_gdf_notin_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_notin_topo.shp')
+
+    topo_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_gdf.shp')
+    single_part_houses_w_tilt.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/single_part_houses_w_tilt.shp')
+
 
     # subset to > max n partitions -----------------------------------------------------
     max_partitions = pvalloc_settings['gwr_selection_specs']['solkat_max_n_partitions']
@@ -169,7 +184,7 @@ def sanity_check_summary_byEGID(
     subdir_path_def = subdir_path
     log_file_name_def = pvalloc_settings['log_file_name']
     
-    sanity_check_summary_byEGID_specs = pvalloc_settings['sanity_check_summary_byEGID_specs']
+    sanitycheck_summary_byEGID_specs = pvalloc_settings['sanitycheck_summary_byEGID_specs']
 
     # not needed because dir created in master file outside of function?
     # if not os.path.exists(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID'):
@@ -188,14 +203,14 @@ def sanity_check_summary_byEGID(
     pred_inst_df = pd.read_parquet(f'{subdir_path_def}/pred_inst_df.parquet')
 
     # add a EGID of model algorithm to the list
-    if pred_inst_df.shape[0]< sanity_check_summary_byEGID_specs['n_pvinst_of_alloc_algorithm']:
-        n_pvinst_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], pred_inst_df.shape[0], replace=False))
+    if pred_inst_df.shape[0]< sanitycheck_summary_byEGID_specs['n_EGIDs_of_alloc_algorithm']:
+        n_EGIDs_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], pred_inst_df.shape[0], replace=False))
     else:
-        n_pvinst_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], sanity_check_summary_byEGID_specs['n_pvinst_of_alloc_algorithm'], replace=False))
-    pred_inst_df.loc[pred_inst_df['EGID'].isin(n_pvinst_of_alloc_algorithm), ['EGID','info_source']]
+        n_EGIDs_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], sanitycheck_summary_byEGID_specs['n_EGIDs_of_alloc_algorithm'], replace=False))
+    pred_inst_df.loc[pred_inst_df['EGID'].isin(n_EGIDs_of_alloc_algorithm), ['EGID','info_source']]
     
     # remove any duplicates + add to pvalloc_settings
-    pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] = list(set(pvalloc_settings['sanity_check_summary_byEGID_specs']['egid_list'] + n_pvinst_of_alloc_algorithm ))
+    pvalloc_settings['sanitycheck_summary_byEGID_specs']['egid_list'] = list(set(pvalloc_settings['sanitycheck_summary_byEGID_specs']['egid_list'] + n_EGIDs_of_alloc_algorithm ))
     
 
     # information extraction -----------------------------------------------------
@@ -204,16 +219,21 @@ def sanity_check_summary_byEGID(
         return {col: None for col in colnames}
     
     summary_toExcel_list = []
-    egid = sanity_check_summary_byEGID_specs['egid_list'][3]
-    for egid in sanity_check_summary_byEGID_specs['egid_list']:
+    egid = sanitycheck_summary_byEGID_specs['egid_list'][3]
+    for egid in sanitycheck_summary_byEGID_specs['egid_list']:
         # single values ----------
         if True:
             single_val_list = [
                 row_egid, row_bfs, row_gklas, row_node, row_demand_type, 
                 row_pvinst_info, row_pvinst_BeginOp, row_pvinst_TotalPower,
                 row_elecpri, row_pvtarif, 
-                row_selfconsumption, row_interest_rate, row_years_maturity, row_kWpeak_per_m2, row_share_roof_area, 
-                empty_row ] = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row()
+                row_interest_rate, row_years_maturity, row_selfconsumption, row_pvprod_method, 
+                row_panel_efficiency, row_inverter_efficiency, row_kWpeak_per_m2, row_share_roof_area, 
+                empty_row ] = [get_new_row(), get_new_row(), get_new_row(), get_new_row(),
+                               get_new_row(), get_new_row(), get_new_row(), get_new_row(), 
+                               get_new_row(), get_new_row(), get_new_row(), get_new_row(), 
+                               get_new_row(), get_new_row(), get_new_row(), get_new_row(),
+                               get_new_row(), get_new_row(), get_new_row(),  ]
             
             # row_egid, row_bfs, row_gklas, row_node, row_demand_type = get_new_row(), get_new_row(), get_new_row(), get_new_row(), get_new_row()
             row_egid['key'], row_egid['descr'], row_egid['val'] = 'EGID', 'house identifier ID', egid
@@ -230,11 +250,14 @@ def sanity_check_summary_byEGID(
             # row_elecpri, row_pvtarif = get_new_row(), get_new_row() 
             row_elecpri['key'], row_elecpri['descr'], row_elecpri['val'], row_elecpri['unit'], row_elecpri['col1'], row_elecpri['col2'] = 'elecpri', 'mean electricity price per BFS area', topo.get(egid).get('elecpri_Rp_kWh'), 'Rp/kWh', f"elecpri_info: {topo.get(egid).get('elecpri_info')}",f"year: {pvalloc_settings.get('tech_economic_specs').get('elecpri_year')}"
             row_pvtarif['key'], row_pvtarif['descr'], row_pvtarif['val'], row_pvtarif['unit'], row_pvtarif['col1'], row_pvtarif['col2'] = 'pvtarif', 'tariff for PV feedin to EWR',topo.get(egid).get('pvtarif_Rp_kWh'), 'Rp/kWh', f"EWRs: {topo.get(egid).get('EWR').get('name')}", f"year: {pvalloc_settings.get('tech_economic_specs').get('pvtarif_year')}"
+            row_interest_rate['key'], row_interest_rate['descr'],row_interest_rate['val'] = 'interest_rate', 'generic interest rate used for dicsounting NPV calculation', pvalloc_settings.get('tech_economic_specs').get('interest_rate')
+            row_years_maturity['key'], row_years_maturity['descr'], row_years_maturity['val'] = 'invst_maturity', 'number of years that consider pv production for NPV calculation', pvalloc_settings.get('tech_economic_specs').get('invst_maturity')
 
             # row_selfconsumption, row_interest_rate, row_years_maturity, row_kWpeak_per_m2  = get_new_row(), get_new_row(), get_new_row(), get_new_row()
             row_selfconsumption['key'], row_selfconsumption['descr'], row_selfconsumption['val'] = 'self_consumption_ifapplicable', 'amount of production that can be consumed by the house at any hour during the year', pvalloc_settings.get('tech_economic_specs').get('self_consumption_ifapplicable')
-            row_interest_rate['key'], row_interest_rate['descr'],row_interest_rate['val'] = 'interest_rate', 'generic interest rate used for dicsounting NPV calculation', pvalloc_settings.get('tech_economic_specs').get('interest_rate')
-            row_years_maturity['key'], row_years_maturity['descr'], row_years_maturity['val'] = 'invst_maturity', 'number of years that consider pv production for NPV calculation', pvalloc_settings.get('tech_economic_specs').get('invst_maturity')
+            row_pvprod_method['key'], row_pvprod_method['descr'], row_pvprod_method['val'] = 'pvprod_calc_method', 'method used to calculate PV production', pvalloc_settings.get('tech_economic_specs').get('pvprod_calc_method')
+            row_panel_efficiency['key'], row_panel_efficiency['descr'], row_panel_efficiency['val'] = 'panel_efficiency', 'transformation factor, how much solar energy can be transformed into electricity', pvalloc_settings.get('tech_economic_specs').get('panel_efficiency')
+            row_inverter_efficiency['key'], row_inverter_efficiency['descr'], row_inverter_efficiency['val'] = 'inverter_efficiency', 'transformation factor, how much DC can be transformed into AC', pvalloc_settings.get('tech_economic_specs').get('inverter_efficiency')
             row_kWpeak_per_m2['key'], row_kWpeak_per_m2['descr'], row_kWpeak_per_m2['val'] = 'kWpeak_per_m2', 'transformation factor, how much kWp can be put on a square meter', pvalloc_settings.get('tech_economic_specs').get('kWpeak_per_m2')
             row_share_roof_area['key'], row_share_roof_area['descr'], row_share_roof_area['val'] = 'share_roof_area_available',  'share of roof area that can be effectively used for PV installation', pvalloc_settings.get('tech_economic_specs').get('share_roof_area_available')
 
@@ -344,5 +367,5 @@ def sanity_check_summary_byEGID(
             sheet_egid = df.loc[df['key']=='EGID', 'val'].values[0]
             df.to_excel(writer, sheet_name=sheet_egid, index=False)
 
-    checkpoint_to_logfile(f'exported summary for {len(sanity_check_summary_byEGID_specs["egid_list"])} EGIDs to excel', log_file_name_def)
+    checkpoint_to_logfile(f'exported summary for {len(sanitycheck_summary_byEGID_specs["egid_list"])} EGIDs to excel', log_file_name_def)
     
