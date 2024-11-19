@@ -19,38 +19,12 @@ pvalloc_default_settings = {
 
 
     # switch on/off parts of aggregation 
-    'recreate_topology':                True, 
-    'recalc_economics_topo_df':         True,
-    # 'run_allocation_loop':              True,
-    'create_gdf_export_of_topology':    True,
+    'recreate_topology':                         True, 
+    'recalc_economics_topo_df':                  True,
+    'sanitycheck_byEGID':                        True,
+    'sanitycheck_create_gdf_export_of_topology': True,
 
     # PART I: settings for alloc_initialization --------------------
-    'tech_economic_specs': {
-        'self_consumption_ifapplicable': 0.5,
-        'interest_rate': 0.01,
-        'pvtarif_year': 2022, 
-        'pvtarif_col': ['energy1', 'eco1'],
-        'pvprod_calc_method': 'method3',
-        'inverter_efficiency': 0.95,        # XY% Wirkungsgrad Wechselrichter
-        'panel_inefficiency': 0.12,         # XY% Wirkungsgrad PV Modul
-        'elecpri_year': 2022,
-        'elecpri_category': 'H4', 
-        'invst_maturity': 25,
-        'kWpeak_per_m2': 0.2,  # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
-        'share_roof_area_available': 0.7, # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
-        },
-    'weather_specs': {
-        'meteoblue_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',],
-        'weather_year': 2022,
-    },
-    'constr_capacity_specs': {
-        'ann_capacity_growth': 0.05,         # annual growth of installed capacity# each year, X% more PV capacity can be built, 100% in year T0
-        'constr_capa_overshoot_fact': 1, 
-        'summer_months': [4,5,6,7,8,9,],
-        'winter_months': [10,11,12,1,2,3,],
-        'share_to_summer': 0.6, 
-        'share_to_winter': 0.4,
-    },
     'gwr_selection_specs': {
         'solkat_max_n_partitions': 10,
         'building_cols': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
@@ -66,9 +40,46 @@ pvalloc_default_settings = {
                                             # GANZWHG - total number of apartments in building
                                             # GAZZI - total number of rooms in building
     },
-    'sanity_check_summary_byEGID_specs': {
-        'egid_list': ['3031017','1367570', '3030600'], # '1367570', '245017418'
-        'n_pvinst_of_alloc_algorithm': 2,
+    'weather_specs': {
+        'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',],
+        'meteo_col_temperature_proxy': ['Basel Temperature [2 m elevation corrected]',], 
+        'diffuse_to_direct_rad_factor': 0.2,
+        'weather_year': 2022,
+    },
+    'constr_capacity_specs': {
+        'ann_capacity_growth': 0.05,         # annual growth of installed capacity# each year, X% more PV capacity can be built, 100% in year T0
+        'constr_capa_overshoot_fact': 1, 
+        'summer_months': [4,5,6,7,8,9,],
+        'winter_months': [10,11,12,1,2,3,],
+        'share_to_summer': 0.6, 
+        'share_to_winter': 0.4,
+    },
+    'tech_economic_specs': {
+        'self_consumption_ifapplicable': 0.5,
+        'interest_rate': 0.01,
+        'pvtarif_year': 2022, 
+        'pvtarif_col': ['energy1', 'eco1'],
+        'pvprod_calc_method': 'method3',
+        'panel_inefficiency': 0.15,         # XY% Wirkungsgrad PV Modul
+        'inverter_efficiency': 0.95,        # XY% Wirkungsgrad Wechselrichter
+        'elecpri_year': 2022,
+        'elecpri_category': 'H4', 
+        'invst_maturity': 25,
+        'kWpeak_per_m2': 0.2,  # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
+        'share_roof_area_available': 0.7, # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
+        },
+    'panel_inefficiency_specs': {
+        'variable_panel_inefficiency_TF': True,
+        'summer_months': [6,7,8,9],
+        'hotsummer_hours': [11, 12, 13, 14, 15, 16, 17,],
+        'hot_hours_discount': 0.1,
+    },
+    'sanitycheck_summary_byEGID_specs': {
+        'egid_list': ['3031017','1367570', '3030600', # '1367570', '245017418'      # known houses in the sample
+                     '245020685', '2353920', '1368721',     '1368723', '245020575',    # all EGIDs with only 1 roof partition that are NOT flat roofs
+                     '245020613', '1368817', '245020639', '245061550', '245020716'], 
+        'n_EGIDs_of_alloc_algorithm': 5,
+        'n_iterations_before_sanitycheck': 12,
     },
 
 
