@@ -50,8 +50,8 @@ def create_gdf_export_of_topology(
                             'inst_tf': inst_tf_list,'inst_info': inst_info_list,'inst_id': inst_id_list,'beginop': beginop_list,'power': power_list,
     })
     # topo_df['power'] = topo_df['power'].replace('', 0).infer_objects(copy=False).astype(float)
-    topo_df['power'] = topo_df['power'].replace('', 0)
-    topo_df['power'] = pd.to_numeric(topo_df['power'], errors='coerce').fillna(0)    
+    topo_df['power'] = topo_df['power'].replace('', 0).astype(object)
+    topo_df['power'] = pd.to_numeric(topo_df['power'], errors='coerce').fillna(0)
     topo_df.to_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
     topo_df.to_csv(f'{data_path_def}/output/pvalloc_run/topo_egid_df.csv')
 
@@ -97,16 +97,23 @@ def create_gdf_export_of_topology(
     if not os.path.exists(f'{data_path_def}/output/pvalloc_run/topo_spatial_data'):
         os.makedirs(f'{data_path_def}/output/pvalloc_run/topo_spatial_data')
 
-    solkat_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_in_topo.shp')
-    gwr_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_in_topo.shp')
-    pv_gdf_in_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_in_topo.shp')
+    shp_to_export=[(solkat_gdf_in_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_in_topo.shp'),
+                   (gwr_gdf_in_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_in_topo.shp'),
+                   (pv_gdf_in_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_in_topo.shp'),
+                   
+                   (solkat_gdf_notin_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_notin_topo.shp'),
+                   (gwr_gdf_notin_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_notin_topo.shp'),
+                   (pv_gdf_notin_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_notin_topo.shp'), 
 
-    solkat_gdf_notin_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_notin_topo.shp')
-    gwr_gdf_notin_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_notin_topo.shp')
-    pv_gdf_notin_topo.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_notin_topo.shp')
+                   (topo_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_gdf.shp'), 
+                   (single_part_houses_w_tilt, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/single_part_houses_w_tilt.shp'), 
+    ]
 
-    topo_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_gdf.shp')
-    single_part_houses_w_tilt.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/single_part_houses_w_tilt.shp')
+    for gdf, path in shp_to_export:
+        try:
+            gdf.to_file(path)
+        except Exception as e:
+            print(f"Failed to export {path}. Error: {e}")        
 
 
     # subset to > max n partitions -----------------------------------------------------
@@ -120,9 +127,15 @@ def create_gdf_export_of_topology(
     solkat_gdf_in_topo[solkat_gdf_in_topo['df_uid'].isin(topo_df_uid_list)].copy()
 
     # export to shp -----------------------------------------------------
-    topo_above_npart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp')
-    solkat_above_npoart_gdf.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_above_{max_partitions}_npart_gdf.shp')
+    shp_to_export2 = [(topo_above_npart_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp'),
+                      (solkat_above_npoart_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_above_{max_partitions}_npart_gdf.shp')]
+    for gdf, path in shp_to_export2:
+        try:
+            gdf.to_file(path)
+        except Exception as e:
+            print(f"Failed to export {path}. Error: {e}")
 
+    print_to_logfile(f'Exported topo spatial data to shp files (with possible expections, see prints statments).', log_file_name_def)
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -220,7 +233,7 @@ def sanity_check_summary_byEGID(
     
     summary_toExcel_list = []
     egid = sanitycheck_summary_byEGID_specs['egid_list'][3]
-    for egid in sanitycheck_summary_byEGID_specs['egid_list']:
+    for n_egid, egid in enumerate(sanitycheck_summary_byEGID_specs['egid_list']):
         # single values ----------
         if True:
             single_val_list = [
@@ -268,6 +281,8 @@ def sanity_check_summary_byEGID(
             npv_val_list = [
                 row_demand_kW,
                 row_FLAECHE_m2_mean, row_FLAECHE_m2_sum, 
+                row_AUSRICHTUNG_mean, row_AUSRICHTUNG_sum,
+                row_NEIGUNG_mean, row_NEIGUNG_sum,
                 row_pvprod_kW_min, row_pvprod_kW_max, row_pvprod_kW_mean, row_pvprod_kW_std, 
                 row_stromertrag_kWh_min, row_stromertrag_kWh_max, row_stromertrag_kWh_mean, row_stromertrag_kWh_std,
                 row_netfeedin_kW_min, row_netfeedin_kW_max, row_netfeedin_kW_mean, row_netfeedin_kW_std,
@@ -275,6 +290,8 @@ def sanity_check_summary_byEGID(
                 row_estim_pvinstcost_chf_min, row_estim_pvinstcost_chf_max, row_estim_pvinstcost_chf_mean, row_estim_pvinstcost_chf_std,
                 row_npv_chf_min, row_npv_chf_max, row_npv_chf_mean, row_npv_chf_std,
                 ] = [get_new_row(), 
+                     get_new_row(), get_new_row(), 
+                     get_new_row(), get_new_row(), 
                      get_new_row(), get_new_row(), 
                      get_new_row(), get_new_row(), get_new_row(), get_new_row(),
                      get_new_row(), get_new_row(), get_new_row(), get_new_row(),
@@ -292,7 +309,11 @@ def sanity_check_summary_byEGID(
 
             row_FLAECHE_m2_mean['key'], row_FLAECHE_m2_mean['descr'], row_FLAECHE_m2_mean['val'], row_FLAECHE_m2_mean['unit'] = 'FLAECHE_m2_mean', 'mean of possible roof area within all partition combinations',  npv_sub['FLAECHE'].mean(), 'm2'  
             row_FLAECHE_m2_sum['key'], row_FLAECHE_m2_sum['descr'], row_FLAECHE_m2_sum['val'], row_FLAECHE_m2_sum['unit'] = 'FLAECHE_m2_sum', 'sum of possible roof area within all partition combinations',  npv_sub['FLAECHE'].sum(), 'm2'
-            
+            row_AUSRICHTUNG_mean['key'], row_AUSRICHTUNG_mean['descr'], row_AUSRICHTUNG_mean['val'], row_AUSRICHTUNG_mean['unit'] = 'AUSRICHTUNG_mean', 'mean of possible orientation within all partition combinations',  npv_sub['AUSRICHTUNG'].mean(), 'degree'
+            row_AUSRICHTUNG_sum['key'], row_AUSRICHTUNG_sum['descr'], row_AUSRICHTUNG_sum['val'], row_AUSRICHTUNG_sum['unit'] = 'AUSRICHTUNG_sum', 'sum of possible orientation within all partition combinations',  npv_sub['AUSRICHTUNG'].sum(), 'degree'
+            row_NEIGUNG_mean['key'], row_NEIGUNG_mean['descr'], row_NEIGUNG_mean['val'], row_NEIGUNG_mean['unit'] = 'NEIGUNG_mean', 'mean of possible tilt within all partition combinations',  npv_sub['NEIGUNG'].mean(), 'degree'
+            row_NEIGUNG_sum['key'], row_NEIGUNG_sum['descr'], row_NEIGUNG_sum['val'], row_NEIGUNG_sum['unit'] = 'NEIGUNG_sum', 'sum of possible tilt within all partition combinations',  npv_sub['NEIGUNG'].sum(), 'degree'
+
             # row_stromertrag_kWh_mean['key'], row_stromertrag_kWh_mean['descr'], row_stromertrag_kWh_mean['val'], row_stromertrag_kWh_mean['unit'] = 'STROMERTRAG_mean', 'mean of possible STROMERTRAG (solkat data)',  npv_sub['stromertrag_kWh'].mean(), 'kWh/year'
             # row_stromertrag_kWh_std['key'], row_stromertrag_kWh_std['descr'], row_stromertrag_kWh_std['val'], row_stromertrag_kWh_std['unit'] = 'STROMERTRAG_std', 'std of possible STROMERTRAG (solkat data)',  npv_sub['stromertrag_kWh'].std(), 'kWh/year'
             # row_stromertrag_kWh_min['key'], row_stromertrag_kWh_min['descr'], row_stromertrag_kWh_min['val'], row_stromertrag_kWh_min['unit'] = 'STROMERTRAG_min', 'min of possible STROMERTRAG (solkat data)',  npv_sub['stromertrag_kWh'].min(), 'kWh/year'
@@ -328,12 +349,14 @@ def sanity_check_summary_byEGID(
                 row_pvprod_kW,
                 row_FLAECHE, 
                 row_FLAECH_angletilt,
+                row_AUSRICHTUNG,
+                row_NEIGUNG, 
                 row_STROMERTRAG_kWh,
                 row_netfeedin_kW, 
                 row_econ_inc_chf, 
                 row_estim_pvinstcost_chf, 
                 row_npv_chf
-                ] = [get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(), get_new_row(), get_new_row(),get_new_row(), ] 
+                ] = [get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(),get_new_row(), get_new_row(), get_new_row(),get_new_row(), ] 
             
             row_demand_kW['key'], row_demand_kW['descr'], row_demand_kW['val'], row_demand_kW['unit'] = 'demand_kW_min', 'total demand of house over 1 year', pred_inst_sub['demand_kW'].values[0], 'kWh'
             row_df_uid['key'], row_df_uid['descr'], row_df_uid['val'], row_df_uid['unit'] = 'df_uid', 'roof partition identifier ID', pred_inst_sub['df_uid_combo'].values[0], 'ID'
@@ -341,6 +364,8 @@ def sanity_check_summary_byEGID(
             row_pvprod_kW['key'], row_pvprod_kW['descr'], row_pvprod_kW['val'], row_pvprod_kW['unit'] = 'pvprod_kW', 'total production of house over 1 year', pred_inst_sub['pvprod_kW'].values[0], 'kWh'
             row_FLAECHE['key'], row_FLAECHE['descr'], row_FLAECHE['val'], row_FLAECHE['unit'] = 'FLAECHE_m2', 'total roof area of house', pred_inst_sub['FLAECHE'].values[0], 'm2'
             row_FLAECH_angletilt['key'], row_FLAECH_angletilt['descr'], row_FLAECH_angletilt['val'], row_FLAECH_angletilt['unit'] = 'FLAECH_angletilt', 'total roof area of house with angle tilt', pred_inst_sub['FLAECH_angletilt'].values[0], 'm2'
+            row_AUSRICHTUNG['key'], row_AUSRICHTUNG['descr'], row_AUSRICHTUNG['val'], row_AUSRICHTUNG['unit'] = 'AUSRICHTUNG', 'total orientation of house', pred_inst_sub['AUSRICHTUNG'].values[0], 'degree'
+            row_NEIGUNG['key'], row_NEIGUNG['descr'], row_NEIGUNG['val'], row_NEIGUNG['unit'] = 'NEIGUNG', 'total tilt of house', pred_inst_sub['NEIGUNG'].values[0], 'degree'
             row_STROMERTRAG_kWh['key'], row_STROMERTRAG_kWh['descr'], row_STROMERTRAG_kWh['val'], row_STROMERTRAG_kWh['unit'] = 'STROMERTRAG_kWh', 'total STROMERTRAG of house over 1 year', pred_inst_sub['STROMERTRAG'].values[0], 'kWh/year'
             # BOOKMARK STROMERTRAG IS NOT IN NPV_DFL
             row_netfeedin_kW['key'], row_netfeedin_kW['descr'], row_netfeedin_kW['val'], row_netfeedin_kW['unit'] = 'netfeedin_kW', 'total feedin of house over 1 year', pred_inst_sub['netfeedin_kW'].values[0], 'kWh'

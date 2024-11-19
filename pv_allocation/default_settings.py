@@ -19,10 +19,10 @@ pvalloc_default_settings = {
 
 
     # switch on/off parts of aggregation 
-    'recreate_topology':                         True, 
-    'recalc_economics_topo_df':                  True,
-    'sanitycheck_byEGID':                        True,
-    'sanitycheck_create_gdf_export_of_topology': True,
+    'recreate_topology':             True, 
+    'recalc_economics_topo_df':      True,
+    'sanitycheck_byEGID':            True,
+    'create_gdf_export_of_topology': True,
 
     # PART I: settings for alloc_initialization --------------------
     'gwr_selection_specs': {
@@ -76,8 +76,7 @@ pvalloc_default_settings = {
     },
     'sanitycheck_summary_byEGID_specs': {
         'egid_list': ['3031017','1367570', '3030600', # '1367570', '245017418'      # known houses in the sample
-                     '245020685', '2353920', '1368721',     '1368723', '245020575',    # all EGIDs with only 1 roof partition that are NOT flat roofs
-                     '245020613', '1368817', '245020639', '245061550', '245020716'], 
+                     '245058026', '245059549', '245050886', '3121823'], # flat roofs (1 partition) 
         'n_EGIDs_of_alloc_algorithm': 5,
         'n_iterations_before_sanitycheck': 12,
     },
@@ -97,8 +96,8 @@ pvalloc_default_settings = {
 
     },
     'algorithm_specs': {
-        'inst_selection_method': 'prob_weighted_npv', # random, prob_weighted_npv, max_npv 
-        'rand_seed': 42,                            # random seed set to int or None
+        'inst_selection_method': 'prob_weighted_npv',   # random, prob_weighted_npv, max_npv 
+        'rand_seed': 42,                                # random seed set to int or None
         'while_inst_counter_max': 5000,
         'topo_subdf_partitioner': 400,
         'npv_update_grouby_cols_topo_aggdf': 

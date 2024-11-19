@@ -12,14 +12,15 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred = 36 #600 #36
+months_pred = 5 #600 #36
+MC_iter = 10
 run_on_server = False
 bfs_numbers = [2791, 2787,]# 2792, 2784, 2793, 2782, 2781,]
 
 run_dataagg =       False
-run_alloc_init =    True
+run_alloc_init =    False
 run_alloc_MCalg =   False
-run_visual =        False
+run_visual =        True
 
 
 # data_aggregation 
@@ -48,84 +49,42 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
-    f'pvalloc_DEV_{months_pred}m_meth3_selfcon00_DirDiffRad':{
+    # f'pvalloc_DEV_{months_pred}m_meth2_npv':{
+    'pvalloc_DEV_5m_meth2_selfcon00_DirDiffRad':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
         'bfs_numbers': bfs_numbers,
         
-        'recreate_topology':                         True, 
-        'recalc_economics_topo_df':                  True,
-        'sanitycheck_byEGID':                        True,
-        'sanitycheck_create_gdf_export_of_topology': True,
+        'recreate_topology':             True, 
+        'recalc_economics_topo_df':      True,
+        'sanitycheck_byEGID':            True,
+        'create_gdf_export_of_topology': True,
 
-        'sanitycheck_summary_byEGID_specs':{
-            'n_iterations_before_sanitycheck': 2,
-            'n_EGIDs_of_alloc_algorithm' :5},
-        'tech_economic_specs': {
-            'self_consumption_ifapplicable': 0,
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 5,},
+        # 'sanitycheck_summary_byEGID_specs':{
+        #     'n_iterations_before_sanitycheck': 1,},
         'algorithm_specs': {
-            'rand_seed': 42,},
+            'inst_selection_method': 'prob_weighted_npv',},
+        'tech_economic_specs': {
+            'self_consumption_ifapplicable': 0,},
+        'MC_loop_specs': {
+            'montecarlo_iterations': MC_iter,},
         'weather_specs': {
-            'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
+            ' meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
         },
-
-    # f'pvalloc_DEV_{months_pred}m_meth3_selfcon00_DirDiffRad':{
+    # f'pvalloc_DEV_{months_pred}m_meth2_rand':{
     #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
     #     'script_run_on_server': run_on_server,
     #     'months_prediction': months_pred,
     #     'bfs_numbers': bfs_numbers,
-    #     # 'create_gdf_export_of_topology':    True,
+        # 'algorithm_specs': {
+            # 'inst_selection_method': 'random',},
     #     'tech_economic_specs': {
-    #         'self_consumption_ifapplicable': 0,
-    #         'pvprod_calc_method': 'method3',},
-    #     'algorithm_specs': {
-    #         'rand_seed': 42,},
+    #         'self_consumption_ifapplicable': 0,},
+    #     'MC_loop_specs': {
+    #         'montecarlo_iterations': MC_iter,},
     #     'weather_specs': {
-    #         'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
-    #     },
-    # f'pvalloc_DEV_{months_pred}m_meth2_selfcon00_DirDiffRad':{
-    #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-    #     'script_run_on_server': run_on_server,
-    #     'months_prediction': months_pred,
-    #     'bfs_numbers': bfs_numbers,
-    #     'tech_economic_specs': {
-    #         'self_consumption_ifapplicable': 0,
-    #         'pvprod_calc_method': 'method2',},
-    #     'algorithm_specs': {
-    #         'rand_seed': 42,},
-    #     'weather_specs': {
-    #         'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
-    #     },
-    # f'pvalloc_DEV_{months_pred}m_meth3_selfcon00_DirRad':{
-    #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-    #     'script_run_on_server': run_on_server,
-    #     'months_prediction': months_pred,
-    #     'bfs_numbers': bfs_numbers,
-    #     'tech_economic_specs': {
-    #         'self_consumption_ifapplicable': 0,
-    #         'pvprod_calc_method': 'method3',},
-    #     'algorithm_specs': {
-    #         'rand_seed': 42,},
-    #     'weather_specs': {
-    #         'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation',]}
-    #     },  
-    # f'pvalloc_DEV_{months_pred}m_meth3_selfcon05_DirDiffRad':{
-    #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
-    #     'script_run_on_server': run_on_server,
-    #     'months_prediction': months_pred,
-    #     'bfs_numbers': bfs_numbers,
-    #     # 'create_gdf_export_of_topology':    True,
-    #     'tech_economic_specs': {
-    #         'self_consumption_ifapplicable': 0.5,
-    #         'pvprod_calc_method': 'method3',},
-    #     'algorithm_specs': {
-    #         'rand_seed': 42,},
-    #     'weather_specs': {
-    #         'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
+    #         ' meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
     #     },
   
 }
@@ -163,24 +122,35 @@ pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
 # vsualiastion 
 visual_settings = {
-        'plot_show': True,
+        'plot_show': False,
+        'MC_subdir_for_plot': 'ASDFASDF', 
         'node_selection_for_plots': ['node1', 'node10', 'node15'], # or None for all nodes
 
-        'plot_ind_line_productionHOY_per_node':  True,
-        'plot_ind_line_installedCap_per_month':  True,
-        'plot_ind_hist_NPV_freepartitions':      False,
+        # for pvalloc_initalization + sanity check
         'plot_ind_var_summary_stats':            True,
+        'plot_ind_charac_omitted_gwr':           False,
+
+
+        # for pvalloc_MC_algorithm 
+
+        'plot_ind_line_productionHOY_per_node':  False,
+        'plot_ind_line_installedCap_per_month':  False,
+        'plot_ind_hist_NPV_freepartitions':      False,
+
+        # for aggregated pvalloc_MC_algorithm 
+
+
         #                                      # False,
-        'plot_ind_map_topo_egid':                True,
-        'plot_ind_map_node_connections':         True,
-        'plot_ind_map_omitted_gwr_egids':        True,
+        'plot_ind_map_topo_egid':                False,
+        'plot_ind_map_node_connections':         False,
+        'plot_ind_map_omitted_gwr_egids':        False,
         #                                      # False,
-        'plot_agg_line_installedCap_per_month':  True,
-        'plot_agg_line_productionHOY_per_node':  True,
-        'plot_agg_line_gridPremiumHOY_per_node': True,
-        'plot_agg_line_gridpremium_structure':   True,
+        'plot_agg_line_installedCap_per_month':  False,
+        'plot_agg_line_productionHOY_per_node':  False,
+        'plot_agg_line_gridPremiumHOY_per_node': False,
+        'plot_agg_line_gridpremium_structure':   False,
         'plot_agg_line_production_per_month':    False,
-        'plot_agg_line_cont_charact_new_inst':   True,
+        'plot_agg_line_cont_charact_new_inst':   False,
     }
 visual_settings = extend_visual_sett_with_defaults(visual_settings)
 

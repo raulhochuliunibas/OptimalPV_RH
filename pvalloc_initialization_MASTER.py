@@ -171,7 +171,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
 
     # sanity check: CREATE MAP OF TOPO_DF ----------------------------------------------------------------
-    if pvalloc_settings['sanitycheck_create_gdf_export_of_topology']:
+    if pvalloc_settings['create_gdf_export_of_topology']:
         subchapter_to_logfile('sanity_check: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', log_name)
         sanity.create_gdf_export_of_topology(pvalloc_settings)  
 
