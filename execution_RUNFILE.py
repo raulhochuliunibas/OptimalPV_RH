@@ -15,35 +15,31 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 months_pred = 5 #600 #36
 MC_iter = 10
 run_on_server = False
-bfs_numbers = [2791, 2787,]# 2792, 2784, 2793, 2782, 2781,]
+bfs_numbers = [2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 
-run_dataagg =       False
-run_alloc_init =    False
-run_alloc_MCalg =   False
+run_dataagg =       True
+run_alloc_init =    True
+run_alloc_MCalg =   True
 run_visual =        True
 
 
 # data_aggregation 
 dataagg_scenarios = {
-    # 'preprep_BLBSSO_18to22_1and2homes_API_reimport':{
-    #     'script_run_on_server': run_on_server, 
-    #     'kt_numbers': [13,12,11],
-    #     'year_range': [2018, 2022], 
-    #     'split_data_geometry_AND_slow_api': True, 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
-    # },
-    #  
-    'preprep_BL_20to22_1and2homes_buff002':{
+    'preprep_smallBL_22to23_1and2homes':{
         'script_run_on_server': run_on_server, 
-        # 'kt_numbers': [13,], 
+        'kt_numbers': [13,], 
         'bfs_numbers': bfs_numbers,
-        'year_range': [2020, 2022],   
-        'split_data_geometry_AND_slow_api': True, 
+        'year_range': [2022, 2023],   
+        'split_data_geometry_AND_slow_api': False, 
         'demand_specs':{
             'input_data_source': "NETFLEX",},
-        'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
+        'gwr_selection_specs': 
+            {'GKLAS': ['1110','1121',],},
+        'solkat_selection_specs': {
+            'test_loop_optim_buff_size': False, },
     }, 
 }
+
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
@@ -61,8 +57,8 @@ pvalloc_scenarios={
         'sanitycheck_byEGID':            True,
         'create_gdf_export_of_topology': True,
 
-        # 'sanitycheck_summary_byEGID_specs':{
-        #     'n_iterations_before_sanitycheck': 1,},
+        'sanitycheck_summary_byEGID_specs':{
+            'n_iterations_before_sanitycheck': 1,},
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv',},
         'tech_economic_specs': {
@@ -70,8 +66,9 @@ pvalloc_scenarios={
         'MC_loop_specs': {
             'montecarlo_iterations': MC_iter,},
         'weather_specs': {
-            ' meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
+            'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
         },
+
     # f'pvalloc_DEV_{months_pred}m_meth2_rand':{
     #     'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
     #     'script_run_on_server': run_on_server,
@@ -89,7 +86,17 @@ pvalloc_scenarios={
   
 }
 
-parklplatz = {
+# parklplatz
+"""
+    # 'preprep_BLBSSO_18to22_1and2homes_API_reimport':{
+    #     'script_run_on_server': run_on_server, 
+    #     'kt_numbers': [13,12,11],
+    #     'year_range': [2018, 2022], 
+    #     'split_data_geometry_AND_slow_api': True, 
+    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
+    # },
+    #  
+
     f'pvalloc_DEV_{months_pred}m_meth2_selfcon00_DirDiffRad':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
@@ -116,7 +123,8 @@ parklplatz = {
         'weather_specs': {
             'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation',]}
         },  
-}
+"""
+
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
 

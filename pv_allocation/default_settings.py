@@ -144,7 +144,7 @@ def extend_pvalloc_scen_with_defaults(scen_dict, defaults=pvalloc_default_settin
         for k_sett, v_sett in scen_sett.items():
             if not isinstance(v_sett, dict):
                 default_dict[k_sett] = v_sett
-
+                
             elif isinstance(v_sett, dict) and k_sett in default_dict.keys():
                 for k_sett_sub, v_sett_sub in v_sett.items():
                     default_dict[k_sett][k_sett_sub] = v_sett_sub
