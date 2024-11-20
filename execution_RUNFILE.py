@@ -25,7 +25,15 @@ run_visual =        True
 
 # data_aggregation 
 dataagg_scenarios = {
-    'preprep_smallBL_22to23_1and2homes':{
+    # 'preprep_BLBSSO_18to22_1and2homes_API_reimport':{
+    #     'script_run_on_server': run_on_server, 
+    #     'kt_numbers': [13,12,11],
+    #     'year_range': [2018, 2022], 
+    #     'split_data_geometry_AND_slow_api': True, 
+    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
+    # },
+    #  
+    'preprep_BL_20to22_1and2homes_buff002':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13,], 
         'bfs_numbers': bfs_numbers,
@@ -86,17 +94,7 @@ pvalloc_scenarios={
   
 }
 
-# parklplatz
-"""
-    # 'preprep_BLBSSO_18to22_1and2homes_API_reimport':{
-    #     'script_run_on_server': run_on_server, 
-    #     'kt_numbers': [13,12,11],
-    #     'year_range': [2018, 2022], 
-    #     'split_data_geometry_AND_slow_api': True, 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121',],}, 
-    # },
-    #  
-
+parklplatz = {
     f'pvalloc_DEV_{months_pred}m_meth2_selfcon00_DirDiffRad':{
         'name_dir_import': 'preprep_BL_20to22_1and2homes_buff002',
         'script_run_on_server': run_on_server,
@@ -123,8 +121,7 @@ pvalloc_scenarios={
         'weather_specs': {
             'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation',]}
         },  
-"""
-
+}
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
 
