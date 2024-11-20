@@ -35,9 +35,9 @@ dataagg_default_settings = {
             },
         'solkat_selection_specs': {
             'col_partition_union': 'SB_UUID',                   # column name used for the union of partitions
-            'GWR_EGID_buffer_size': 7.5,                          # buffer size in meters for the GWR selection
-            'test_loop_optim_buff_size': False, 
-            'test_loop_optim_buff_arang': [0, 7.5, 0.1]
+            'GWR_EGID_buffer_size': 10,                          # buffer size in meters for the GWR selection
+            'test_loop_optim_buff_size': True, 
+            'test_loop_optim_buff_arang': [0, 10, 0.1]
             },   
         'demand_specs':{
             'input_data_source': "NETFLEX", #    Netflex OR SwissStore

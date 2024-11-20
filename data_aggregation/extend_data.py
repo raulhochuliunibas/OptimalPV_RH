@@ -303,6 +303,8 @@ def get_angle_tilt_table(dataagg_settings_def):
     # return angle_tilt_df
 
 
+
+# NO LONGER USED - grid node data is copied to preprep_data and then later processed in pvalloc_initilization_MASTER.py
 # ------------------------------------------------------------------------------------------------------
 # FAKE TRAFO EGID MAPPING
 # ------------------------------------------------------------------------------------------------------

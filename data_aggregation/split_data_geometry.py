@@ -129,8 +129,7 @@ def split_data_and_geometry(
         with open (f'{data_path_def}/split_data_geometry/pv_bsblso_geo.geojson', 'w') as f:
             f.write(pv_bsblso_geo.to_json())
         checkpoint_to_logfile(f'exported pv_bsblso_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-
-                              
+                    
 
     solkat_bsblso_geo = solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
     if solkat_bsblso_geo.shape[0] > 0:
