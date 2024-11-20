@@ -89,7 +89,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
         pvalloc_settings['wd_path'] = wd_path
         pvalloc_settings['data_path'] = data_path
         pvalloc_settings['pvalloc_path'] = pvalloc_path
-        pvalloc_settings['interim_path'] = get_interim_path(pvalloc_settings)
+        pvalloc_settings['interim_path'] = initial.get_interim_path(pvalloc_settings)
         show_debug_prints = pvalloc_settings['show_debug_prints']
 
     chapter_to_logfile(f'start pvalloc_initialization_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
@@ -97,12 +97,12 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
     print_to_logfile(f'pvalloc_settings: \n{pformat(formated_pvalloc_settings)}', log_name)
 
 
-    # NOTE: this needs to be moved to data_aggregation_MASTER, or replaced with primeo data, whenever that is \_(ツ)_/¯
-    initial.get_fake_gridnodes_v2(pvalloc_settings)
-
-    initial.HOY_weatheryear_df(pvalloc_settings)
-
+    
     # INITIALIZATION ================================================================
+    subchapter_to_logfile('initialization: CREATE SMALLER AID DFs', log_name)
+    initial.HOY_weatheryear_df(pvalloc_settings)
+    initial.get_gridnodes_DSO(pvalloc_settings)
+    
     if pvalloc_settings['recreate_topology']:
         subchapter_to_logfile('initialization: IMPORT PREPREP DATA & CREATE (building) TOPOLOGY', log_name)
         topo, df_list, df_names = initial.import_prepre_AND_create_topology(pvalloc_settings)
@@ -192,9 +192,6 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
     # > not to overwrite completed folder while debugging 
     dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'
     if os.path.exists(dir_alloc_moveto):
-        # today = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        # dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}_{today.split("-")[0]}{today.split("-")[1]}{today.split("-")[2]}_{today.split("-")[3]}h'
-        
         n_same_names = len(glob.glob(f'{dir_alloc_moveto}*'))
         old_dir_rename = f'{dir_alloc_moveto} ({n_same_names+1})'
         os.rename(f'{dir_alloc_moveto}', old_dir_rename)

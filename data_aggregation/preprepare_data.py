@@ -134,12 +134,14 @@ def local_data_AND_spatial_mappings(
 
     # GWR ====================
     gwr = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
-    gwr_gdf = gpd.read_file(f'{data_path_def}/output/preprep_data/gwr.geojson')
+    gwr_gdf = gpd.read_file(f'{data_path_def}/output/preprep_data/gwr_gdf.geojson')
     checkpoint_to_logfile(f'import gwr, {gwr.shape[0]} rows', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
 
     # GRID_NODE ====================
     Map_egid_dsonode = pd.read_excel(f'{data_path_def}/input/Daten_Primeo_x_UniBasel_V2.0.xlsx')
     Map_egid_dsonode.rename(columns={'ID_Trafostation': 'grid_node', 'Trafoleistung_kVA': 'kVA_threshold'}, inplace=True)
+    Map_egid_dsonode['EGID'] = Map_egid_dsonode['EGID'].astype(str)
+    Map_egid_dsonode['grid_node'] = Map_egid_dsonode['grid_node'].astype(str)
 
 
 
@@ -244,7 +246,7 @@ def local_data_AND_spatial_mappings(
         df.to_parquet(f'{data_path_def}/output/preprep_data/{df_to_export_names[i]}.parquet')
         df.to_csv(f'{data_path_def}/output/preprep_data/{df_to_export_names[i]}.csv', sep=';', index=False)
         checkpoint_to_logfile(f'{df_to_export_names[i]} exported to prepreped data', log_file_name_def, 2, show_debug_prints_def)
-
+    
 
 
     # OMITTED SPATIAL POINTS / POLYS ---------------------------------------------------------------------------------
