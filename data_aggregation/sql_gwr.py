@@ -178,8 +178,8 @@ def sql_gwr_data(
     gwr_mrg1 = gwr_mrg0[(gwr_mrg0['GSTAT'].isin(gwr_selection_specs_def['GSTAT']))]
     gwr_mrg2 = gwr_mrg1[(gwr_mrg1['GKLAS'].isin(gwr_selection_specs_def['GKLAS']))]
     gwr_mrg3 = gwr_mrg2[(gwr_mrg2['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) & (gwr_mrg2['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
-    gwr_mrg = gwr_mrg3
-    checkpoint_to_logfile(f'check gwr_mrg AFTER filtering: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique() )/gwr_mrg.shape[0],2)*100} %', log_file_name_def, 3, True)
+    gwr = gwr_mrg3
+    checkpoint_to_logfile(f'check gwr AFTER filtering: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round((gwr["EGID"].nunique() )/gwr_mrg.shape[0],2)*100} %', log_file_name_def, 3, True)
     print_to_logfile(f'\n', log_file_name_def=summary_file_name)
 
 
@@ -229,6 +229,10 @@ def sql_gwr_data(
     gwr_gdf = gpd.GeoDataFrame(gwr, geometry='geometry')
     gwr_gdf.crs = 'EPSG:2056'
     gwr_gdf = gwr_gdf.loc[:, ['EGID', 'geometry']]
-    gwr_gdf.to_file(f'{data_path_def}/split_data_geometry/gwr_gdf.geojson', driver='GeoJSON')
+    gwr_gdf.to_file(f'{data_path_def}/output/preprep_data/gwr_gdf.geojson', driver='GeoJSON')
+    
+    if dataagg_settings_def['split_data_geometry_AND_slow_api']:
+        gwr_gdf.to_file(f'{data_path_def}/split_data_geometry/gwr_gdf.geojson', driver='GeoJSON')
+
 
 
