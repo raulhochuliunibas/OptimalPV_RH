@@ -65,19 +65,11 @@ def split_data_and_geometry(
         return gdf 
     
     # PV -------------------
-
-    # BOOKMARK!!
-    """
-        run function: split_data_and_geometry.py
-        c:\Models\OptimalPV_RH\.venv\Lib\site-packages\pyogrio\geopandas.py:261: UserWarning:
-
-        More than one layer found in 'ch.bfe.elektrizitaetsproduktionsanlagen.gpkg': 'ElectricityProductionPlant' (default), 'MainCategoryCatalogue', 'SubCategoryCatalogue', 'PlantCategoryCatalogue', 'OrientationCatalogue', 'PlantDetail'. Specify layer parameter to avoid this warning.
-    """
     if not smaller_import_def:
-        elec_prod_gdf = gpd.read_file(f'{data_path_def}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg')
+        elec_prod_gdf = gpd.read_file(f'{data_path_def}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', layer ='ElectricityProductionPlant')
         pv_all_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
     elif smaller_import_def:
-        elec_prod_gdf = gpd.read_file(f'{data_path_def}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', rows = 7000)
+        elec_prod_gdf = gpd.read_file(f'{data_path_def}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', layer ='ElectricityProductionPlant', rows = 7000)
         pv_all_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
     checkpoint_to_logfile(f'import pv, {pv_all_gdf.shape[0]} rows (smaller_import: {smaller_import_def})', log_file_name_def = log_file_name_def, n_tabs_def = 1, show_debug_prints_def = show_debug_prints_def)
 
