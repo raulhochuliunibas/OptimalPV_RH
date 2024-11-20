@@ -223,14 +223,23 @@ def sql_gwr_data(
 
 
     # create spatial df and export -------------------
-    gwr = gwr.loc[(gwr['GKODE'] != '') & (gwr['GKODN'] != '')]
-    gwr[['GKODE', 'GKODN']] = gwr[['GKODE', 'GKODN']].astype(float)
-    gwr['geometry'] = gwr.apply(lambda row: Point(row['GKODE'], row['GKODN']), axis=1)
-    gwr_gdf = gpd.GeoDataFrame(gwr, geometry='geometry')
-    gwr_gdf.crs = 'EPSG:2056'
+    def gwr_to_gdf(df):
+        df = df.loc[(df['GKODE'] != '') & (df['GKODN'] != '')]
+        df[['GKODE', 'GKODN']] = df[['GKODE', 'GKODN']].astype(float)
+        df['geometry'] = df.apply(lambda row: Point(row['GKODE'], row['GKODN']), axis=1)
+        gdf = gpd.GeoDataFrame(df, geometry='geometry')
+        gdf.crs = 'EPSG:2056'
+        return gdf
+
+    # gwr_gdf (will later be reimported and reexported again just because in preprep_data, all major geo spatial dfs are imported and exported)    
+    gwr_gdf = gwr_to_gdf(gwr)
     gwr_gdf = gwr_gdf.loc[:, ['EGID', 'geometry']]
     gwr_gdf.to_file(f'{data_path_def}/output/preprep_data/gwr_gdf.geojson', driver='GeoJSON')
-    
+
+    # gwr_all_building_gdf exported for DSO nodes location determination later
+    gwr_all_building_gdf = gwr_to_gdf(gwr_all_building_df)
+    gwr_all_building_gdf.to_file(f'{data_path_def}/output/preprep_data/gwr_all_building_gdf.geojson', driver='GeoJSON')
+
     if dataagg_settings_def['split_data_geometry_AND_slow_api']:
         gwr_gdf.to_file(f'{data_path_def}/split_data_geometry/gwr_gdf.geojson', driver='GeoJSON')
 

@@ -14,7 +14,7 @@ dataagg_default_settings = {
         'year_range': [2021, 2022],                             # range of years to import
             
         # switch on/off parts of aggregation
-        'split_data_geometry_AND_slow_api': True, 
+        'split_data_geometry_AND_slow_api': False, 
         'rerun_localimport_and_mappings':   True,               # F: use existi ng parquet files, T: recreate parquet files in data prep
         'reextend_fixed_data':              True,               # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again       
         

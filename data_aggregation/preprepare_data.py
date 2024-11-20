@@ -134,13 +134,8 @@ def local_data_AND_spatial_mappings(
 
     # GWR ====================
     gwr = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
+    gwr_gdf = gpd.read_file(f'{data_path_def}/output/preprep_data/gwr.geojson')
     checkpoint_to_logfile(f'import gwr, {gwr.shape[0]} rows', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
-
-    # transform to gdf
-    gwr = gwr.loc[(gwr['GKODE'] != '') & (gwr['GKODN'] != '')]
-    gwr[['GKODE', 'GKODN']] = gwr[['GKODE', 'GKODN']].astype(float)
-    gwr['geometry'] = gwr.apply(lambda row: Point(row['GKODE'], row['GKODN']), axis=1)
-    gwr_gdf = gpd.GeoDataFrame(gwr, geometry='geometry')
 
     # GRID_NODE ====================
     Map_egid_dsonode = pd.read_excel(f'{data_path_def}/input/Daten_Primeo_x_UniBasel_V2.0.xlsx')
@@ -238,7 +233,7 @@ def local_data_AND_spatial_mappings(
 
     checkpoint_to_logfile(f'Mapping egid_pvid: {round(gwregid_pvid["EGID"].isna().sum() / gwregid_pvid.shape[0] *100,2)} % of pv rows ({gwregid_pvid.shape[0]}) are missing EGID', log_file_name_def, 2, show_debug_prints_def)
     # Map_egid_pv = gwregid_pvid.loc[gwregid_pvid['EGID'].notna(), ['EGID', 'xtf_id']].copy()
-    Map_egid_pv = gwregid_pvid
+    Map_egid_pv = gwregid_pvid[['EGID', 'xtf_id']].copy()
 
 
 
