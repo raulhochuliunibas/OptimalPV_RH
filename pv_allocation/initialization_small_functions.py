@@ -264,7 +264,7 @@ def get_gridnodes_DSO(pvalloc_settings):
     log_file_name_def = pvalloc_settings['log_file_name']
     name_dir_import_def = pvalloc_settings['name_dir_import']
     bfs_numbers_def = pvalloc_settings['bfs_numbers']
-    
+    summary_file_name = pvalloc_settings['summary_file_name']
     print_to_logfile('run function: get_gridnodes_DSO', log_file_name_def)
 
 
@@ -289,11 +289,23 @@ def get_gridnodes_DSO(pvalloc_settings):
 
             node_centroid_list.append([node, kVA_treshold, node_centroid])
 
-    dsonode_gdf = gpd.GeoDataFrame(node_centroid_list, columns=['grid_node', 'kVA_threshold', 'geometry'], crs='EPSG:2056')
-    dsonode_df = dsonode_gdf.loc[:,dsonode_gdf.columns != 'geometry']
+    dsonodes_gdf = gpd.GeoDataFrame(node_centroid_list, columns=['grid_node', 'kVA_threshold', 'geometry'], crs='EPSG:2056')
+    dsonodes_df = dsonodes_gdf.loc[:,dsonodes_gdf.columns != 'geometry']
+
+    dsonodes_in_gwr_df = gwr_gdf.merge(Map_egid_dsonode, how='left', on='EGID')
+
+    # summary prints ----------------------
+    print_to_logfile(f'DSO grid nodes information:', summary_file_name)
+    checkpoint_to_logfile(f'Total: {Map_egid_dsonode["grid_node"].nunique()} DSO grid nodes for {Map_egid_dsonode["EGID"].nunique()} unique EGIDs (Map_egid_dsonode.shape {Map_egid_dsonode.shape[0]}, node/egid ratio: {round(Map_egid_dsonode["grid_node"].nunique() / Map_egid_dsonode["EGID"].nunique(),4)*100}%', summary_file_name)
+    checkpoint_to_logfile(f'In sample: {dsonodes_in_gwr_df["grid_node"].nunique()} DSO grid nodes for {dsonodes_in_gwr_df["EGID"].nunique()} EGIDs in {len(bfs_numbers_def)} BFSs , (node/egid ratio: {round(dsonodes_in_gwr_df["grid_node"].nunique()/dsonodes_in_gwr_df["EGID"].nunique(),4)*100}%)', summary_file_name)
+    
 
     # export ----------------------
-    dsonode_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonode_df.parquet')
-    dsonode_df.to_csv(f'{data_path_def}/output/{name_dir_import_def}/dsonode_df.csv')
-    with open(f'{data_path_def}/output/{name_dir_import_def}/dsonode_gdf.geojson', 'w') as f:
-        f.write(dsonode_gdf.to_json())
+    dsonodes_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
+    dsonodes_df.to_csv(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.csv')
+    with open(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson', 'w') as f:
+        f.write(dsonodes_gdf.to_json())
+
+    with open(f'{data_path_def}/output/pvalloc_run/dsonodes_gdf.geojson', 'w') as f:
+        f.write(dsonodes_gdf.to_json())
+
