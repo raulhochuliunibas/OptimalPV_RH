@@ -144,8 +144,8 @@ def sql_gwr_data(
     # aggregate dwelling data per EGID -------------------
     print_to_logfile('aggregate dwelling data per EGID', log_file_name_def)
     print_to_logfile('aggregate dwelling data per EGID', summary_file_name)
-    checkpoint_to_logfile(f'check gwr BEFORE aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],2)*100} %', log_file_name_def, 3, True)
-    checkpoint_to_logfile(f'check gwr BEFORE aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],2)*100} %', summary_file_name, 3, True)
+    checkpoint_to_logfile(f'check gwr BEFORE aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],1)*100} %', log_file_name_def, 3, True)
+    checkpoint_to_logfile(f'check gwr BEFORE aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],1)*100} %', summary_file_name, 3, True)
 
     bldg_agg_cols = copy.deepcopy(gwr_selection_specs_def['building_cols'])
     bldg_agg_cols.remove('EGID')
@@ -161,8 +161,8 @@ def sql_gwr_data(
     gwr_mrg_all_building_in_bfs = gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
     gwr_mrg = copy.deepcopy(gwr_mrg_after_agg)
 
-    checkpoint_to_logfile(f'check gwr AFTER aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],2)*100} %', log_file_name_def, 3, True)
-    checkpoint_to_logfile(f'check gwr AFTER aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],2)*100} %', summary_file_name, 3, True)
+    checkpoint_to_logfile(f'check gwr AFTER aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],1)*100} %', log_file_name_def, 3, True)
+    checkpoint_to_logfile(f'check gwr AFTER aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],1)*100} %', summary_file_name, 3, True)
 
 
     # filter for specs -------------------
@@ -178,7 +178,7 @@ def sql_gwr_data(
     gwr_mrg1 = gwr_mrg0[(gwr_mrg0['GSTAT'].isin(gwr_selection_specs_def['GSTAT']))]
     gwr_mrg2 = gwr_mrg1[(gwr_mrg1['GKLAS'].isin(gwr_selection_specs_def['GKLAS']))]
     gwr_mrg3 = gwr_mrg2[(gwr_mrg2['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) & (gwr_mrg2['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
-    gwr = gwr_mrg3
+    gwr = copy.deepcopy(gwr_mrg3)
     checkpoint_to_logfile(f'check gwr AFTER filtering: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round((gwr["EGID"].nunique() )/gwr_mrg.shape[0],2)*100} %', log_file_name_def, 3, True)
     print_to_logfile(f'\n', log_file_name_def=summary_file_name)
 

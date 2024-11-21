@@ -72,7 +72,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
             shutil.copy(summary_find_path[0], summary_name)
         else:
             print_to_logfile(f' **ERROR** : summary file not found or multiple files found', log_name)
-        print_to_logfile(f'\n\n\n', summary_name)
+        print_to_logfile(f'\n', summary_name)
         subchapter_to_logfile(f'pv_allocation_MASTER', summary_name)
 
 
@@ -90,7 +90,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
         pvalloc_settings['wd_path'] = wd_path
         pvalloc_settings['data_path'] = data_path
         pvalloc_settings['pvalloc_path'] = pvalloc_path
-        pvalloc_settings['interim_path'] = initial.get_interim_path(pvalloc_settings)
+        pvalloc_settings['interim_path'] = initial_sml.get_interim_path(pvalloc_settings)
         show_debug_prints = pvalloc_settings['show_debug_prints']
 
     chapter_to_logfile(f'start pvalloc_initialization_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
