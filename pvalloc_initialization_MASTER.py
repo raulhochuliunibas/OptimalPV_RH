@@ -29,12 +29,13 @@ if True:
     from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr, format_MASTER_settings
     import pv_allocation.default_settings as pvalloc_default_sett
 
-    import pv_allocation.initialization as  initial
+    import pv_allocation.initialization_small_functions as initial_sml
+    import pv_allocation.initialization_large_functions as  initial_lrg
     import pv_allocation.alloc_algorithm as algo
     import pv_allocation.alloc_sanitychecks as sanity
     import pv_allocation.inst_selection as select
 
-    from pv_allocation.initialization import *
+    from pv_allocation.initialization_large_functions import *
     from pv_allocation.alloc_algorithm import *
     from pv_allocation.inst_selection import *
     from pv_allocation.alloc_sanitychecks import *
@@ -100,8 +101,8 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
     
     # INITIALIZATION ================================================================
     subchapter_to_logfile('initialization: CREATE SMALLER AID DFs', log_name)
-    initial.HOY_weatheryear_df(pvalloc_settings)
-    initial.get_gridnodes_DSO(pvalloc_settings)
+    initial_sml.HOY_weatheryear_df(pvalloc_settings)
+    initial_sml.get_gridnodes_DSO(pvalloc_settings)
     
     if pvalloc_settings['recreate_topology']:
         subchapter_to_logfile('initialization: IMPORT PREPREP DATA & CREATE (building) TOPOLOGY', log_name)
@@ -114,7 +115,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
         subchapter_to_logfile('initialization: IMPORT TS DATA', log_name)
         ts_list, ts_names = initial.import_ts_data(pvalloc_settings)
-        initial.HOY_weatheryear_df(pvalloc_settings)
+        initial_sml.HOY_weatheryear_df(pvalloc_settings)
 
         subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', log_name)
         constrcapa, months_prediction, months_lookback = initial.define_construction_capacity(pvalloc_settings, topo, df_list, df_names, ts_list, ts_names)
