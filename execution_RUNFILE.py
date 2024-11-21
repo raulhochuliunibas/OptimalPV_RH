@@ -8,14 +8,14 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred = 5 #600 #36
-MC_iter = 2
-run_on_server = False
+months_pred = 36 #600 #36
+MC_iter = 10
+run_on_server = True
 bfs_numbers = [2768, 2761, 2473, 2475, 2785, 2480] #[2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 
-run_dataagg =       False
+run_dataagg =       True
 run_alloc_init =    True
-run_alloc_MCalg =   False
+run_alloc_MCalg =   True
 run_visual =        False
 
 
@@ -49,16 +49,15 @@ pvalloc_scenarios={
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
-        # 'kt_numbers': [13,],
-        'bfs_numbers': bfs_numbers,
-        
+        'kt_numbers': [13,],
+        # 'bfs_numbers': bfs_numbers,
         'recreate_topology':             True, 
         'recalc_economics_topo_df':      True,
         'sanitycheck_byEGID':            True,
         'create_gdf_export_of_topology': True,
 
-        'sanitycheck_summary_byEGID_specs':{
-            'n_iterations_before_sanitycheck': 3,},
+        # 'sanitycheck_summary_byEGID_specs':{
+        #     'n_iterations_before_sanitycheck': 3,},
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv',},
         'tech_economic_specs': {
@@ -69,20 +68,20 @@ pvalloc_scenarios={
             'montecarlo_iterations': MC_iter,},
     },
 
-    # f'pvalloc_DEV_{months_pred}m_meth2_rand':{
-    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
-    #     'script_run_on_server': run_on_server,
-    #     'months_prediction': months_pred,
-    #     'bfs_numbers': bfs_numbers,
-        # 'algorithm_specs': {
-            # 'inst_selection_method': 'random',},
-    #     'tech_economic_specs': {
-    #         'self_consumption_ifapplicable': 0,},
-    #     'MC_loop_specs': {
-    #         'montecarlo_iterations': MC_iter,},
-    #     'weather_specs': {
-    #         ' meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',]}
-    #     },
+    f'pvalloc_DEV_{months_pred}m_meth2_rand':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': months_pred,
+        'kt_numbers': [13,],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'tech_economic_specs': {
+            'max_distance_m_for_EGID_node_matching': 0,
+            'self_consumption_ifapplicable': 0,
+            },
+        'MC_loop_specs': {
+            'montecarlo_iterations': MC_iter,},
+    },
   
 }
 
