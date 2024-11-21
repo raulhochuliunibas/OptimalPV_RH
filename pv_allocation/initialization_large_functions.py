@@ -44,6 +44,7 @@ def import_prepre_AND_create_topology(
     wd_path_def = pvalloc_settings['wd_path']
     data_path_def = pvalloc_settings['data_path']
     log_file_name_def = pvalloc_settings['log_file_name']
+    summary_file_name = pvalloc_settings['summary_file_name']
     bfs_number_def = pvalloc_settings['bfs_numbers']
     gwr_selection_specs_def = pvalloc_settings['gwr_selection_specs']
     print_to_logfile('run function: import_prepreped_data', log_file_name_def)
@@ -70,20 +71,20 @@ def import_prepre_AND_create_topology(
     # gm_shp = gpd.read_file(f'{data_path_def}\input\swissboundaries3d_2023-01_2056_5728.shp\swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
 
     # GWR -------
+    gwr_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson')
     gwr = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/gwr.parquet')
     gwr['EGID'] = gwr['EGID'].astype(str)
     
-    gwr['GBAUJ'] = gwr['GBAUJ'].replace('', 0).astype(int)
-    gwr = gwr.loc[(gwr['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
-                (gwr['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) &
-                (gwr['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
-                (gwr['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
-    gwr['GBAUJ'] = gwr['GBAUJ'].replace(0, '').astype(str)
+    # gwr['GBAUJ'] = gwr['GBAUJ'].replace('', 0).astype(int)
+    # gwr = gwr.loc[(gwr['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
+    #             (gwr['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) &
+    #             (gwr['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
+    #             (gwr['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
+    # gwr['GBAUJ'] = gwr['GBAUJ'].replace(0, '').astype(str)
 
-    if pvalloc_settings['gwr_selection_specs']['dwelling_cols'] == None: 
-        gwr = gwr.loc[:, pvalloc_settings['gwr_selection_specs']['building_cols']].copy()
-        gwr = gwr.drop_duplicates(subset=['EGID'])
-
+    # if pvalloc_settings['gwr_selection_specs']['dwelling_cols'] == None: 
+    #     gwr = gwr.loc[:, pvalloc_settings['gwr_selection_specs']['building_cols']].copy()
+    #     gwr = gwr.drop_duplicates(subset=['EGID'])
 
     gwr = gwr.loc[gwr['GGDENR'].isin(bfs_number_def)]
     gwr = copy.deepcopy(gwr)
@@ -196,6 +197,10 @@ def import_prepre_AND_create_topology(
     Map_egid_dsonode.index = Map_egid_dsonode['EGID']
 
 
+    # dsonodes_gdf -------
+    dsonodes_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson')
+
+
     # angle_tilt_df -------
     angle_tilt_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.parquet')
 
@@ -213,6 +218,60 @@ def import_prepre_AND_create_topology(
     estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs_total)
 
 
+    # EGID SELECTION / EXCLUSION ------------------------------------------------
+    # check how many of gwr's EGIDs are in solkat and pv
+    len(np.intersect1d(gwr['EGID'].unique(), solkat['EGID'].unique()))
+    len(np.intersect1d(gwr['EGID'].unique(), Map_egid_pv['EGID'].unique()))
+
+
+    # gwr/solkat mismatch ----------
+    # throw out all EGIDs of GWR that are not in solkat
+    # >  NOTE: this could be troublesome :/ check in QGIS if large share of buildings are missing.  
+    gwr_before_solkat_selection = copy.deepcopy(gwr)
+    gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(solkat['EGID'].unique())])
+
+
+    # gwr/Map_egid_dsonodes mismatch ----------
+    # > Case 1 EGID in Map but not in GWR: => drop EGID; no problem, connection to a house that is not in sample; will happen automatically when creating topology on gwr EGIDs
+    # > Case 2 EGID in GWR but not in Map: more problematic; EGID "close" to next node => Match to nearest node; EGID "far away" => drop EGID
+    gwr_wo_node = gwr.loc[~gwr['EGID'].isin(Map_egid_dsonode['EGID'].unique()),]
+    Map_egid_dsonode_appendings =[]
+    egid = gwr_wo_node['EGID'].iloc[0]
+        
+    for egid in gwr_wo_node['EGID']:
+        egid_point = gwr_gdf.loc[gwr_gdf['EGID'] == egid, 'geometry'].iloc[0]
+        dsonodes_gdf['distances'] = dsonodes_gdf['geometry'].distance(egid_point)
+        min_idx = dsonodes_gdf['distances'].idxmin()
+        min_dist = dsonodes_gdf['distances'].min()
+        
+        if min_dist < pvalloc_settings['tech_economic_specs']['max_distance_m_for_EGID_node_matching']:
+            Map_egid_dsonode_appendings.append([egid, dsonodes_gdf.loc[min_idx, 'grid_node'], dsonodes_gdf.loc[min_idx, 'kVA_threshold']])
+    
+    Map_appendings_df = pd.DataFrame(Map_egid_dsonode_appendings, columns=['EGID', 'grid_node', 'kVA_threshold'])
+    Map_egid_dsonode = pd.concat([Map_egid_dsonode, Map_appendings_df], axis=0)
+
+    gwr_before_dsonode_selection = copy.deepcopy(gwr)
+    gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(Map_egid_dsonode['EGID'].unique())])
+        
+
+    # summary prints ----------
+    print_to_logfile(f'\nEGID selection for TOPOLOGY:', summary_file_name)
+    checkpoint_to_logfile(f'Loop for topology creation over GWR EGIDs', summary_file_name, 5, True)
+    checkpoint_to_logfile(f'In Total: {gwr["EGID"].nunique()} gwrEGIDs ({round(gwr["EGID"].nunique() / gwr_before_solkat_selection["EGID"].nunique() * 100,1)}% of {gwr_before_solkat_selection["EGID"].nunique()} total gwrEGIDs) are used for topology creation', summary_file_name, 3, True)
+    checkpoint_to_logfile(f'  The rest drops out because gwrEGID not present in all data sources', summary_file_name, 3, True)
+    
+    subtraction1 = gwr_before_solkat_selection["EGID"].nunique() - gwr_before_dsonode_selection["EGID"].nunique()
+    checkpoint_to_logfile(f'  > {subtraction1} ({round(subtraction1 / gwr_before_solkat_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in solkat', summary_file_name, 5, True)
+    
+    subtraction2 = gwr_before_dsonode_selection["EGID"].nunique() - gwr["EGID"].nunique()
+    checkpoint_to_logfile(f'  > {subtraction2} ({round(subtraction2 / gwr_before_dsonode_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in dsonodes', summary_file_name, 5, True)
+    if Map_appendings_df.shape[0] > 0:
+
+        checkpoint_to_logfile(f'  > (NOTE: Even matched {Map_appendings_df.shape[0]} EGIDs matched artificially to gridnode, because EGID lies in close node range, max_distance_m_for_EGID_node_matching: {pvalloc_settings['tech_economic_specs']['max_distance_m_for_EGID_node_matching']} meters', summary_file_name, 3, True)
+    elif Map_appendings_df.shape[0] == 0:
+        checkpoint_to_logfile(f'  > (NOTE: No EGIDs matched to nearest gridnode, max_distance_m_for_EGID_node_matching: {pvalloc_settings['tech_economic_specs']['max_distance_m_for_EGID_node_matching']} meters', summary_file_name, 3, True)
+
+
 
     # CREATE TOPOLOGY ============================================================================
     print_to_logfile(f'start creating topology - Taking EGIDs from GWR', log_file_name_def)
@@ -221,45 +280,18 @@ def import_prepre_AND_create_topology(
     checkpoint_to_logfile(log_str1, log_file_name_def)
     checkpoint_to_logfile(log_str2, log_file_name_def)
 
-    if pvalloc_settings['fast_debug_run']:
-        gwr_before_copy = gwr.copy()
-        # a more diverse small sample of gwr to have multiple BFS gemeinde in sample. 
-
-        num_strata = 10
-        n_egid_in_topo = pvalloc_settings['n_egid_in_topo']
-        gwr['GGDENR'] = pd.to_numeric(gwr['GGDENR'], errors='coerce')
-        gwr['strata'] = pd.qcut(gwr['GGDENR'], q=num_strata, labels=False)
-        samples_per_stratum = pvalloc_settings['n_egid_in_topo'] // num_strata
-        sampled_gwr = gwr.groupby('strata').apply(lambda x: x.sample(n=samples_per_stratum, random_state=1)).reset_index(drop=True)
-        if len(sampled_gwr) < n_egid_in_topo:
-            additional_samples = gwr.sample(n=n_egid_in_topo - len(sampled_gwr), random_state=1)
-            sampled_gwr = pd.concat([sampled_gwr, additional_samples])
-
-        sampled_gwr = sampled_gwr.drop(columns='strata')
-        sampled_gwr['GGDENR'] = sampled_gwr['GGDENR'].astype(str)
-        gwr = sampled_gwr.copy()
 
     # start loop ------------------------------------------------
-    # topo = {'EGID': {}}
     topo_egid = {}
     modulus_print = int(len(gwr['EGID'])//5)
+    CHECK_egid_with_problems = []
     print_to_logfile(f'\n', log_file_name_def)
     checkpoint_to_logfile(f'start attach to topo', log_file_name_def, 1 , True)
 
-    CHECK_egid_with_problems = []
-
     # transform to np.array for faster lookups
-    pv_npry = np.array(pv)
-    gwr_npry = np.array(gwr)
-    elecpri_npry = np.array(elecpri)
+    pv_npry, gwr_npry, elecpri_npry = np.array(pv), np.array(gwr), np.array(elecpri) 
 
-    # check how many of gwr's EGIDs are in solkat and pv
-    len(np.intersect1d(gwr['EGID'].unique(), solkat['EGID'].unique()))
-    len(np.intersect1d(gwr['EGID'].unique(), Map_egid_pv['EGID'].unique()))
 
-    # throw out all EGIDs of GWR that are not in solkat
-    # NOTE: this could be troublesome :/ check in QGIS if large share of buildings are missing.  
-    gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(solkat['EGID'].unique())])
 
     for i, egid in enumerate(gwr['EGID']):
 
@@ -386,19 +418,16 @@ def import_prepre_AND_create_topology(
             # add GWR --------
             bfs_of_egid = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0] 
             glkas_of_egid = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GKLAS')][0]
-
             gwr_info ={
                 'bfs': bfs_of_egid,
                 'gklas': glkas_of_egid,
             }
 
             # add grid node --------
-            # BOOKMARK, make distinction if grid node is available in Map_egid_dsonode or not
-            # IDEA: if not available, use nearest grid node from Map_egid_nodes
             if isinstance(Map_egid_dsonode.loc[egid, 'grid_node'], str):
-                grid_node = Map_egid_nodes.loc[egid, 'grid_node']
-            elif isinstance(Map_egid_nodes.loc[egid, 'grid_node'], pd.Series):
-                grid_node = Map_egid_nodes.loc[egid, 'grid_node'].iloc[0]
+                grid_node = Map_egid_dsonode.loc[egid, 'grid_node']
+            elif isinstance(Map_egid_dsonode.loc[egid, 'grid_node'], pd.Series):
+                grid_node = Map_egid_dsonode.loc[egid, 'grid_node'].iloc[0]
                 
 
         # attach to topo --------
@@ -448,9 +477,9 @@ def import_prepre_AND_create_topology(
 
 
     df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   
-                pv,  pvtarif,   elecpri,    angle_tilt_df,  Map_egid_nodes,   ]  
+                pv,  pvtarif,   elecpri,    angle_tilt_df,  Map_egid_dsonode,   ]  
     df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 
-                'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_nodes', ]
+                'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_dsonode', ]
 
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):

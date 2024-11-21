@@ -67,6 +67,7 @@ pvalloc_default_settings = {
         'invst_maturity': 25,
         'kWpeak_per_m2': 0.2,  # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
         'share_roof_area_available': 0.7, # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
+        'max_distance_m_for_EGID_node_matching': 500, # max distance in meters for matching GWR EGIDs that have no node assignment to the next grid node
         },
     'panel_inefficiency_specs': {
         'variable_panel_inefficiency_TF': True,
@@ -115,7 +116,6 @@ pvalloc_default_settings = {
         'constr_capa_overshoot_fact':1, # not in that dir but should be a single tweak factor dict. 
     },  
     'gridprem_adjustment_specs': {
-        'voltage_assumption': '',
         'tier_description': 'tier_level: (voltage_threshold, gridprem_Rp_kWh)',
         'power_factor': 1, 
         'perf_factor_1kVA_to_XkW': 0.8,
