@@ -483,8 +483,8 @@ def import_prepre_AND_create_topology(
     #             pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df ]
     # df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   
     #             pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df  ]  
-    df_names = ['pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df',]
-    df_list =  [ pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df, ]
+    df_names = ['Map_egid_pv', 'pv', 'pvtarif', 'elecpri', 'Map_egid_dsonode', 'dsonodes_df', 'dsonodes_gdf', 'angle_tilt_df', ]
+    df_list =  [ Map_egid_pv, pv,   pvtarif,   elecpri,   Map_egid_dsonode,   dsonodes_df,   dsonodes_gdf,   angle_tilt_df, ]
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):
             m.to_parquet(f'{data_path_def}/output/pvalloc_run/{df_names[i]}.parquet')
