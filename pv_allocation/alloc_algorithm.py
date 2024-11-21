@@ -19,7 +19,7 @@ import pyarrow as pa
 sys.path.append('..')
 from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
-import pv_allocation.initialization as initial
+import pv_allocation.initialization_large_functions as initial
 
 # ------------------------------------------------------------------------------------------------------
 # CALCULATE ECONOMIC INDICATORS OF TOPOLOGY
