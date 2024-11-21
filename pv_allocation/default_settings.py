@@ -55,7 +55,7 @@ pvalloc_default_settings = {
         'share_to_winter': 0.4,
     },
     'tech_economic_specs': {
-        'self_consumption_ifapplicable': 0.5,
+        'self_consumption_ifapplicable': 0,
         'interest_rate': 0.01,
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
@@ -65,9 +65,9 @@ pvalloc_default_settings = {
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
         'invst_maturity': 25,
-        'kWpeak_per_m2': 0.2,  # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
-        'share_roof_area_available': 0.7, # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
-        'max_distance_m_for_EGID_node_matching': 500, # max distance in meters for matching GWR EGIDs that have no node assignment to the next grid node
+        'kWpeak_per_m2': 0.2,                       # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
+        'share_roof_area_available': 0.7,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
+        'max_distance_m_for_EGID_node_matching': 0, # max distance in meters for matching GWR EGIDs that have no node assignment to the next grid node
         },
     'panel_inefficiency_specs': {
         'variable_panel_inefficiency_TF': True,
@@ -76,13 +76,11 @@ pvalloc_default_settings = {
         'hot_hours_discount': 0.1,
     },
     'sanitycheck_summary_byEGID_specs': {
-        'egid_list': ['3031017','1367570', '3030600', # '1367570', '245017418'      # known houses in the sample
-                     '245058026', '245059549', '245050886', '3121823'], # flat roofs (1 partition) 
+        'egid_list': [ # ['3031017','1367570', '3030600',], # '1367570', '245017418'      # known houses in the sample
+                     '245026587', '245045363', '245060695', ], # flat roofs (1 partition)  |>  245026587, 245045363, 245060695,    393264, 245025760, 245045361,    392573, 245045362, 245026046,    392722, 
         'n_EGIDs_of_alloc_algorithm': 5,
         'n_iterations_before_sanitycheck': 12,
     },
-
-
     # PART II: settings for MC algorithm --------------------
     'MC_loop_specs': {
         'montecarlo_iterations': 2,

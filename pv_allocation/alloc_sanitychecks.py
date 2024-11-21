@@ -28,6 +28,7 @@ def create_gdf_export_of_topology(
     name_dir_import_def = pvalloc_settings['name_dir_import']
     data_path_def = pvalloc_settings['data_path']
     log_file_name_def = pvalloc_settings['log_file_name']
+    bfs_numbers_def = pvalloc_settings['bfs_numbers']
 
     # create topo_df -----------------------------------------------------
     topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
@@ -50,10 +51,9 @@ def create_gdf_export_of_topology(
                             'inst_tf': inst_tf_list,'inst_info': inst_info_list,'inst_id': inst_id_list,'beginop': beginop_list,'power': power_list,
     })
     # topo_df['power'] = topo_df['power'].replace('', 0).infer_objects(copy=False).astype(float)
-    topo_df['power'] = topo_df['power'].replace('', 0).astype(object)
-    topo_df['power'] = pd.to_numeric(topo_df['power'], errors='coerce').fillna(0)
-    topo_df.to_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
-    topo_df.to_csv(f'{data_path_def}/output/pvalloc_run/topo_egid_df.csv')
+    # topo_df['power'] = topo_df['power'].replace('', 0).astype(object)
+    # topo_df['power'] = pd.to_numeric(topo_df['power'], errors='coerce').fillna(0)
+    topo_df['power'] = pd.to_numeric(topo_df['power'].replace('', '0'), errors='coerce').fillna(0)
 
 
     # import geo data -----------------------------------------------------
@@ -68,10 +68,18 @@ def create_gdf_export_of_topology(
         gwr_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson')
         pv_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/pv_gdf.geojson')
 
+    Map_egid_dsonode = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_dsonode.parquet')
+    gwr_bsblso_gdf = gpd.read_file(f'{data_path_def}/split_data_geometry/gwr_bsblso_gdf.geojson')
+
+
     # transformations
     pv_gdf['xtf_id'] = pv_gdf['xtf_id'].astype(int).replace(np.nan, "").astype(str)
     solkat_gdf['DF_UID'] = solkat_gdf['DF_UID'].astype(int).replace(np.nan, "").astype(str)
     solkat_gdf.rename(columns={'DF_UID': 'df_uid'}, inplace=True)
+
+    # DSO whole gridnet
+    dsonodes_withegids_gdf = Map_egid_dsonode.merge(gwr_bsblso_gdf, on='EGID', how='left')
+    dsonodes_withegids_gdf = gpd.GeoDataFrame(dsonodes_withegids_gdf, crs='EPSG:2056', geometry='geometry')
 
 
     # subset gwr + pv -----------------------------------------------------
@@ -84,16 +92,19 @@ def create_gdf_export_of_topology(
     pv_gdf_notin_topo = copy.deepcopy(pv_gdf.loc[~pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())])
     
 
-    # topo_gdf = topo_df.merge(solkat_gdf[['df_uid', 'geometry']], on='df_uid', how='left')
     topo_gdf = topo_df.merge(gwr_gdf[['EGID', 'geometry']], on='EGID', how='left')
     topo_gdf = gpd.GeoDataFrame(topo_gdf, crs='EPSG:2056', geometry='geometry')
 
-    single_partition_houses = copy.deepcopy(solkat_gdf[solkat_gdf['EGID'].map(solkat_gdf['EGID'].value_counts()) == 1])
+
+    solkat_in_grid = solkat_gdf.loc[solkat_gdf['EGID'].isin(Map_egid_dsonode['EGID'].unique())]
+    solkat_in_grid = solkat_in_grid.loc['BFS_NUMMER'].isin(bfs_numbers_def)
+    single_partition_houses = copy.deepcopy(solkat_in_grid[solkat_in_grid['EGID'].map(solkat_in_grid['EGID'].value_counts()) == 1])
     single_part_houses_w_tilt = copy.deepcopy(single_partition_houses.loc[single_partition_houses['NEIGUNG'] > 0])
-    # [f for f in single_part_houses_w_tilt.loc[single_part_houses_w_tilt['BFS_NUMMER'].isin(['2791', '2787']), 'EGID'][0:10]]
+    print_to_logfile(f'\n\nSINGLE PARTITION HOUSES WITH TILT for debugging:', log_file_name_def)
+    checkpoint_to_logfile(f'First 10 EGID rows: {single_part_houses_w_tilt["EGID"][0:10]}', log_file_name_def) 
 
 
-    # export to shp -----------------------------------------------------
+    # EXPORT to shp -----------------------------------------------------
     if not os.path.exists(f'{data_path_def}/output/pvalloc_run/topo_spatial_data'):
         os.makedirs(f'{data_path_def}/output/pvalloc_run/topo_spatial_data')
 
@@ -107,6 +118,8 @@ def create_gdf_export_of_topology(
 
                    (topo_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_gdf.shp'), 
                    (single_part_houses_w_tilt, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/single_part_houses_w_tilt.shp'), 
+
+                   (dsonodes_withegids_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/dsonodes_withegids_gdf.shp')
     ]
 
     for gdf, path in shp_to_export:
@@ -205,11 +218,6 @@ def sanity_check_summary_byEGID(
 
 
     # import -----------------------------------------------------
-    # topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
-    # path_npv = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_*.parquet')
-    # npv_df = pd.read_parquet(path_npv[0])
-    # path_pred_inst = glob.glob(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_*.parquet')
-    # pred_inst_df = pd.read_parquet(path_pred_inst[len(path_pred_inst)-1])
     topo = json.load(open(f'{subdir_path_def}/topo_egid.json', 'r'))
     npv_df = pd.read_parquet(f'{subdir_path_def}/npv_df.parquet')
     path_pred_inst = glob.glob(f'{subdir_path_def}/pred_npv_inst_by_M/pred_inst_df_*.parquet')
@@ -232,7 +240,7 @@ def sanity_check_summary_byEGID(
         return {col: None for col in colnames}
     
     summary_toExcel_list = []
-    egid = sanitycheck_summary_byEGID_specs['egid_list'][3]
+    # egid = sanitycheck_summary_byEGID_specs['egid_list'][3]
     for n_egid, egid in enumerate(sanitycheck_summary_byEGID_specs['egid_list']):
         # single values ----------
         if True:
