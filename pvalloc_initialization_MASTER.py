@@ -115,7 +115,6 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
         subchapter_to_logfile('initialization: IMPORT TS DATA', log_name)
         ts_list, ts_names = initial.import_ts_data(pvalloc_settings)
-        initial_sml.HOY_weatheryear_df(pvalloc_settings)
 
         subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', log_name)
         constrcapa, months_prediction, months_lookback = initial.define_construction_capacity(pvalloc_settings, topo, df_list, df_names, ts_list, ts_names)
@@ -139,6 +138,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
     if pvalloc_settings['sanitycheck_byEGID']:
         subchapter_to_logfile('sanity_check: RUN FEW ITERATION for byCHECK', log_name)
         sanitycheck_path = f'{data_path}/output/pvalloc_run/sanity_check_byEGID'
+        # make sanitycheck folder and move relevant initial files there (delete all old files, not distort results)
         if not os.path.exists(sanitycheck_path):
             os.makedirs(sanitycheck_path)
         elif os.path.exists(sanitycheck_path):

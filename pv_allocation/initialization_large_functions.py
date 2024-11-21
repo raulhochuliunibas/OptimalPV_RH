@@ -197,7 +197,8 @@ def import_prepre_AND_create_topology(
     Map_egid_dsonode.index = Map_egid_dsonode['EGID']
 
 
-    # dsonodes_gdf -------
+    # dsonodes data -------
+    dsonodes_df  = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
     dsonodes_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson')
 
 
@@ -476,11 +477,14 @@ def import_prepre_AND_create_topology(
         json.dump(CHECK_egid_with_problems_dict, f)
 
 
-    df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   
-                pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_gdf, angle_tilt_df  ]  
-    df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 
-                'pv', 'pvtarif', 'elecpri', 'Map_egid_dsonode', 'dsonodes_gdf', 'angle_tilt_df' ]
-
+    # EXPORT ----------------------------------------------------------------------------
+    # NOTE: pvalloc_run folder gets crowded, > only keep the most important files
+    # df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 
+    #             pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df ]
+    # df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   
+    #             pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df  ]  
+    df_names = ['pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df',]
+    df_list =  [ pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df, ]
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):
             m.to_parquet(f'{data_path_def}/output/pvalloc_run/{df_names[i]}.parquet')
@@ -625,6 +629,9 @@ def import_ts_data(
     
 
     # EXPORT ----------------------------------------------------------------------------
+    # NOTE: pvalloc_run folder gets crowded, > only keep the most important files
+    # ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts', 'gridprem_ts' ]
+    # ts_list =  [ Map_daterange,   demandtypes_ts,   meteo_ts,   gridprem_ts]
     ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts', 'gridprem_ts' ]
     ts_list =  [ Map_daterange,   demandtypes_ts,   meteo_ts,   gridprem_ts]
     for i, ts in enumerate(ts_list):

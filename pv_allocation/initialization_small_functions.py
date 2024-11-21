@@ -229,7 +229,7 @@ def get_fake_gridnodes_v2(pvalloc_settings):
 
     dsonodes_df = dsonodes_df.merge(gwr_nodes[['EGID', 'geometry']], how='left', on='EGID')
     dsonodes_gdf = gpd.GeoDataFrame(dsonodes_df, crs = 'EPSG:2056', geometry='geometry')
-    # dsonodes_gdf.to_crs('EPSG:4326', inplace=True) 
+
 
     # assign nearest nodes
     def nearest_grid_node(row, nodes_gdf):

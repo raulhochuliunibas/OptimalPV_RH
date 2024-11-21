@@ -460,12 +460,11 @@ def update_npv_df(pvalloc_settings,
 
 
     # import topo_time_subdfs -----------------------------------------------------
-    # topo_subdf_paths = glob.glob(f'{data_path_def}/output/pvalloc_run/topo_time_subdf/*.parquet')
-    topo_subdf_paths = glob.glob(f'{subdir_path_def}/topo_subdf_*.parquet')
+    topo_subdf_paths = glob.glob(f'{subdir_path_def}/topo_subdf_*.parquet') 
     no_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == False]
     agg_npv_df_list = []
 
-    j =2
+    j =0
     i, path = j, topo_subdf_paths[j]
     for i, path in enumerate(topo_subdf_paths):
         if len(topo_subdf_paths) > 5 and i <5 : # i% (len(topo_subdf_paths) //3 ) == 0:
