@@ -306,6 +306,4 @@ def get_gridnodes_DSO(pvalloc_settings):
     with open(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson', 'w') as f:
         f.write(dsonodes_gdf.to_json())
 
-    with open(f'{data_path_def}/output/pvalloc_run/dsonodes_gdf.geojson', 'w') as f:
-        f.write(dsonodes_gdf.to_json())
 

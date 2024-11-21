@@ -477,9 +477,9 @@ def import_prepre_AND_create_topology(
 
 
     df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   
-                pv,  pvtarif,   elecpri,    angle_tilt_df,  Map_egid_dsonode,   ]  
+                pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_gdf, angle_tilt_df  ]  
     df_names = ['Map_solkatdfuid_egid', 'Map_egid_pv', 'Map_demandtypes_egid', 'Map_egid_demandtypes', 
-                'pv', 'pvtarif', 'elecpri', 'angle_tilt_df', 'Map_egid_dsonode', ]
+                'pv', 'pvtarif', 'elecpri', 'Map_egid_dsonode', 'dsonodes_gdf', 'angle_tilt_df' ]
 
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):
@@ -612,7 +612,6 @@ def import_ts_data(
     dsonodes_df = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
     t_range = [f't_{t}' for t in range(1,8760 + 1)]
 
-    dsonodes_df.drop(columns=['EGID'], inplace=True)
     gridprem_ts = pd.DataFrame(np.repeat(dsonodes_df.values, len(t_range), axis=0), columns=dsonodes_df.columns)  
     gridprem_ts['t'] = np.tile(t_range, len(dsonodes_df))
     gridprem_ts['prem_Rp_kWh'] = 0
