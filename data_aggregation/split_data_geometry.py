@@ -7,6 +7,7 @@ import winsound
 import json
 import plotly.express as px
 import glob
+import  sqlite3
 import shutil
 
 from datetime import datetime
@@ -133,3 +134,50 @@ def split_data_and_geometry(
     # Copy Log File to split_data_geometry folder
     if os.path.exists(log_file_name_def):
         shutil.copy(log_file_name_def, f'{data_path_def}/split_data_geometry/split_data_geometry_logfile.txt')
+
+
+
+
+def get_kt_bsblso_sql_gwr(dataagg_settings_def):
+    """
+    Get the BFS numbers for the cantons Basel-Stadt, Basel-Landschaft, and Solothurn
+    """
+    # import settings + setup -------------------
+    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
+    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
+    log_file_name_def = dataagg_settings_def['log_file_name']
+    wd_path_def = dataagg_settings_def['wd_path']
+    data_path_def = dataagg_settings_def['data_path']
+    gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
+
+    # get bfs numbers from canton selection if applicable
+    bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13], data_path_def, log_file_name_def)
+    # get ALL BUILDING data
+
+    # select cols
+    query_columns = gwr_selection_specs_def['building_cols']
+    query_columns_str = ', '.join(query_columns)
+    query_bfs_numbers = ', '.join([str(i) for i in bsblso_bfs_numbers])
+
+    conn = sqlite3.connect(f'{data_path_def}/input/GebWohnRegister.CH/data.sqlite')
+    cur = conn.cursor()
+    cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers})')
+    sqlrows = cur.fetchall()
+    conn.close()
+    checkpoint_to_logfile('sql query ALL BUILDING done', log_file_name_def, 10, show_debug_prints_def)
+
+    gwr_bsblso_pq = pd.DataFrame(sqlrows, columns=query_columns)
+
+    # transform to gdf
+    def gwr_to_gdf(df):
+        df = df.loc[(df['GKODE'] != '') & (df['GKODN'] != '')]
+        df[['GKODE', 'GKODN']] = df[['GKODE', 'GKODN']].astype(float)
+        df['geometry'] = df.apply(lambda row: Point(row['GKODE'], row['GKODN']), axis=1)
+        gdf = gpd.GeoDataFrame(df, geometry='geometry')
+        gdf.crs = 'EPSG:2056'
+        return gdf
+    gwr_bsblso_gdf = gwr_to_gdf(gwr_bsblso_pq)
+
+    # export
+    gwr_bsblso_pq.to_parquet(f'{data_path_def}/split_data_geometry/gwr_bsblso_pq.parquet')
+    gwr_bsblso_gdf.to_file(f'{data_path_def}/split_data_geometry/gwr_bsblso_gdf.geojson', driver='GeoJSON')
