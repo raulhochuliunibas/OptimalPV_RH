@@ -135,14 +135,34 @@ def local_data_AND_spatial_mappings(
     # GWR ====================
     gwr = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
     gwr_gdf = gpd.read_file(f'{data_path_def}/output/preprep_data/gwr_gdf.geojson')
+    gwr_all_building_gdf = gpd.read_file(f'{data_path_def}/output/preprep_data/gwr_all_building_gdf.geojson')
     checkpoint_to_logfile(f'import gwr, {gwr.shape[0]} rows', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
 
     # GRID_NODE ====================
     Map_egid_dsonode = pd.read_excel(f'{data_path_def}/input/Daten_Primeo_x_UniBasel_V2.0.xlsx')
+    # transformations
     Map_egid_dsonode.rename(columns={'ID_Trafostation': 'grid_node', 'Trafoleistung_kVA': 'kVA_threshold'}, inplace=True)
     Map_egid_dsonode['EGID'] = Map_egid_dsonode['EGID'].astype(str)
     Map_egid_dsonode['grid_node'] = Map_egid_dsonode['grid_node'].astype(str)
 
+    egid_counts = Map_egid_dsonode['EGID'].value_counts()
+    multip_egid_dsonode = egid_counts[egid_counts > 1].index
+    single_egid_dsonode = []
+    egid = multip_egid_dsonode[1]
+    for egid in multip_egid_dsonode:
+        subegid = Map_egid_dsonode.loc[Map_egid_dsonode['EGID'] == egid,]
+
+        if subegid['grid_node'].nunique() == 1:
+            single_egid_dsonode.append([egid, subegid['grid_node'].iloc[0], subegid['kVA_threshold'].iloc[0]])
+        elif subegid['grid_node'].nunique() > 1:
+            subegid = subegid.loc[subegid['kVA_threshold'] == subegid['kVA_threshold'].max(),]
+            single_egid_dsonode.append([egid, subegid['grid_node'].iloc[0], subegid['kVA_threshold'].iloc[0]])
+
+    single_egid_dsonode_df = pd.DataFrame(single_egid_dsonode, columns = ['EGID', 'grid_node', 'kVA_threshold'])
+    # drop duplicates and append single_egid_dsonode_df
+    Map_egid_dsonode.drop(Map_egid_dsonode[Map_egid_dsonode['EGID'].isin(multip_egid_dsonode)].index, inplace = True)
+    Map_egid_dsonode = pd.concat([Map_egid_dsonode, single_egid_dsonode_df], ignore_index=True)
+    
 
 
     # MAP: solkatdfuid > egid ---------------------------------------------------------------------------------
@@ -255,6 +275,7 @@ def local_data_AND_spatial_mappings(
     omitt_gwregid_gdf = copy.deepcopy(gwr_gdf.loc[~gwr_gdf['EGID'].isin(solkat_gdf['EGID'])])
     checkpoint_to_logfile(f'omitt_gwregid_gdf (gwr not in solkat): {omitt_gwregid_gdf.shape[0]} rows ({round((omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique: {gwr_gdf["EGID"].nunique()})', summary_file_name, 2, True) 
 
+    omitt_solkat_all_gwr_gdf = copy.deepcopy(solkat_gdf.loc[~solkat_gdf['EGID'].isin(gwr_all_building_gdf['EGID'])])
     omitt_solkat_gdf = copy.deepcopy(solkat_gdf.loc[~solkat_gdf['EGID'].isin(gwr_gdf['EGID'])])
     checkpoint_to_logfile(f'omitt_solkat_gdf (solkat not in gwr): {omitt_solkat_gdf.shape[0]} rows ({round((omitt_solkat_gdf.shape[0]/solkat_gdf.shape[0])*100, 2)}%), solkat[EGID].unique: {solkat_gdf["EGID"].nunique()})', summary_file_name, 2, True)
 
@@ -272,11 +293,11 @@ def local_data_AND_spatial_mappings(
     # PRINTS TO SUMMARY LOG FILE ---------------------------------------------------------------------------------
     print_to_logfile(f'\n\nHow well does GWR cover other data sources', summary_file_name)
     checkpoint_to_logfile(f'gwr_EGID omitted in solkat: {round(omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
+    checkpoint_to_logfile(f'solkat_EGID omitted in gwr_all_bldng: {round(omitt_solkat_all_gwr_gdf.shape[0]/solkat_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
     checkpoint_to_logfile(f'solkat_EGID omitted in gwr: {round(omitt_solkat_gdf.shape[0]/solkat_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
     checkpoint_to_logfile(f'pv_xtf_id omitted in gwr: {round(omitt_pv_gdf.shape[0]/pv_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
     checkpoint_to_logfile(f'gwr_EGID omitted in gridnode: {round(omitt_gwregid_gridnode_gdf.shape[0]/gwr_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
     checkpoint_to_logfile(f'gridnode_EGID omitted in gwr: {round(omitt_gridnodeegid_gwr_df.shape[0]/Map_egid_dsonode.shape[0]*100, 2)} %', summary_file_name, 2, True)
-    print_to_logfile(f'\n\n', summary_file_name)
 
 
     # EXPORT SPATIAL DATA ---------------------------------------------------------------------------------
