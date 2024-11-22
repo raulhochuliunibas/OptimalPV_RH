@@ -88,6 +88,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
         pvalloc_settings['log_file_name'] = log_name
         pvalloc_settings['summary_file_name'] = summary_name
         pvalloc_settings['wd_path'] = wd_path
+        pvalloc_settings['data_path'] = data_path
         pvalloc_settings['pvalloc_path'] = pvalloc_path
         pvalloc_settings['interim_path'] = initial_sml.get_interim_path(pvalloc_settings)
         show_debug_prints = pvalloc_settings['show_debug_prints']
