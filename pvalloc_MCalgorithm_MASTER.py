@@ -108,7 +108,8 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
         constrcapa = pd.read_parquet(f'{mc_data_path}/constrcapa.parquet')
         
         for i_m, m in enumerate(months_prediction):
-            print_to_logfile(f'\n-- MC{mc_iter:0{max_digits}} -- allocation month: {m} --', log_name)
+            # print_to_logfile(f'\n-- MC{mc_iter:0{max_digits}} -- allocation month: {m} --', log_name)
+            print_to_logfile(f'-- month {m} -- iter MC{mc_iter:0{max_digits}} -- ', log_name)
             start_allocation_month = datetime.now()
             i_m = i_m + 1        
 
@@ -177,14 +178,12 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
         mc_iter_end = datetime.now()
         mc_iter_time = mc_iter_end - mc_iter_start
         subchapter_to_logfile(f'END MC{mc_iter:0{max_digits}}, runtime: {mc_iter_time} (hh:mm:ss.s)', log_name)
-        print_to_logfile(f'\n\n', log_name)
-        # print_to_logfile(f'\n-- END MC{mc_iter:0{max_digits}} iteration  {25*"-"}\n-- runtime: () --\n\n', log_name)
-
-
+        print_to_logfile(f'\n', log_name)
+        # print_to_logfile(f'\n-- END MC{mc_iter:0{max_digits}} iteration  {25*"-"}\n-- runtime: () --\n\n', log_name
 
 
     # END  ================================================================
-    # chapter_to_logfile(f'END pv_allocation_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
+    chapter_to_logfile(f'END pvalloc_MCalgorithmn_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
     if not pvalloc_settings['script_run_on_server']:
         winsound.Beep(1000, 300)
         winsound.Beep(1000, 300)

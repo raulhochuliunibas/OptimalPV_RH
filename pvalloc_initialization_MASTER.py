@@ -183,7 +183,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
 
     # END  ================================================================
-    chapter_to_logfile(f'END pv_allocation_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
+    chapter_to_logfile(f'END pvalloc_initialization_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
     if not pvalloc_settings['script_run_on_server']:
         winsound.Beep(1000, 300)
         winsound.Beep(1000, 300)
