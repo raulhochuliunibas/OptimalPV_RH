@@ -55,9 +55,30 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
         if not os.path.exists(pvalloc_path):
             os.makedirs(pvalloc_path)
         log_name = f'{data_path}/output/pvalloc_MCalgo_log.txt'
+        total_runtime_start = datetime.now()
+
+        # transfer summary file from data_aggregation
+        summary_find_path = glob.glob(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/summary_data_selection_log*.txt')
+        summary_name = f'{data_path}/output/summary_data_selection_log.txt'
+        # ... transfer summary file from data_aggregation NOT done because not needed yet
+
+
+        # extend settings dict with relevant informations for later functions
+        if not not pvalloc_settings['kt_numbers']:
+            pvalloc_settings['bfs_numbers'] = auxiliary_functions.get_bfs_from_ktnr(pvalloc_settings['kt_numbers'], data_path, log_name)
+            print_to_logfile(f' > no. of kt  numbers in selection: {len(pvalloc_settings["kt_numbers"])}', log_name)
+            print_to_logfile(f' > no. of bfs numbers in selection: {len(pvalloc_settings["bfs_numbers"])}', log_name) 
+
+        elif (not pvalloc_settings['kt_numbers']) and (not not pvalloc_settings['bfs_numbers']):
+            pvalloc_settings['bfs_numbers'] = [str(bfs) for bfs in pvalloc_settings['bfs_numbers']]
+
+        pvalloc_settings['log_file_name'] = log_name
+        pvalloc_settings['summary_file_name'] = summary_name
+        pvalloc_settings['wd_path'] = wd_path
+        pvalloc_settings['pvalloc_path'] = pvalloc_path
+        # pvalloc_settings['interim_path'] = initial_sml.get_interim_path(pvalloc_settings)
         show_debug_prints = pvalloc_settings['show_debug_prints']
 
-        total_runtime_start = datetime.now()
 
     
     # MONTE CARLO ITERATION LOOP ================================================================================
