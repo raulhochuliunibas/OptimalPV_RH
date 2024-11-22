@@ -125,8 +125,10 @@ def calc_economics_in_topo_df(
     topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
     share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
     inverter_efficiency = pvalloc_settings['tech_economic_specs']['inverter_efficiency']
-    panel_inefficiency = pvalloc_settings['tech_economic_specs']['panel_inefficiency']
+    panel_efficiency = pvalloc_settings['tech_economic_specs']['panel_efficiency']
     pvprod_calc_method = pvalloc_settings['tech_economic_specs']['pvprod_calc_method']
+    kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
+
 
     egids = topo_df['EGID'].unique()
 
@@ -149,21 +151,21 @@ def calc_economics_in_topo_df(
         subdf = subdf.merge(meteo_ts[['t', 'radiation', 'radiation_rel_locmax', 'meteo_loc']], how='left', on='meteo_loc')
 
 
-        # add panel_inefficiency by time ----------
-        if pvalloc_settings['panel_inefficiency_specs']['variable_panel_inefficiency_TF']:
-            summer_months = pvalloc_settings['panel_inefficiency_specs']['summer_months']
-            hotsummer_hours = pvalloc_settings['panel_inefficiency_specs']['hotsummer_hours']
-            hot_hours_discount = pvalloc_settings['panel_inefficiency_specs']['hot_hours_discount']
+        # add panel_efficiency by time ----------
+        if pvalloc_settings['panel_efficiency_specs']['variable_panel_efficiency_TF']:
+            summer_months = pvalloc_settings['panel_efficiency_specs']['summer_months']
+            hotsummer_hours = pvalloc_settings['panel_efficiency_specs']['hotsummer_hours']
+            hot_hours_discount = pvalloc_settings['panel_efficiency_specs']['hot_hours_discount']
 
             HOY_weatheryear_df = pd.read_parquet(f'{data_path}/output/pvalloc_run/HOY_weatheryear_df.parquet')
             hot_hours_in_year = HOY_weatheryear_df.loc[(HOY_weatheryear_df['month'].isin(summer_months)) & (HOY_weatheryear_df['hour'].isin(hotsummer_hours))]
-            subdf['panel_inefficiency'] = np.where(
+            subdf['panel_efficiency'] = np.where(
                 subdf['t'].isin(hot_hours_in_year['t']),
-                panel_inefficiency * (1-hot_hours_discount),
-                panel_inefficiency)
+                panel_efficiency * (1-hot_hours_discount),
+                panel_efficiency)
             
-        elif not pvalloc_settings['panel_inefficiency_specs']['variable_panel_inefficiency_TF']:
-            subdf['panel_inefficiency'] = panel_inefficiency
+        elif not pvalloc_settings['panel_efficiency_specs']['variable_panel_efficiency_TF']:
+            subdf['panel_efficiency'] = panel_efficiency
             
 
         # attach demand profiles ----------
@@ -184,14 +186,16 @@ def calc_economics_in_topo_df(
 
         # pvprod method 2
         elif pvprod_calc_method == 'method2':   
-            subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_inefficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
-            subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-
-            formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_inefficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']"
+            subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
+            formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']"
 
         # pvprod method 3
-        # elif pvprod_calc_method == 'method3':
-        
+        elif pvprod_calc_method == 'method3':
+            subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * kWpeak_per_m2 * subdf['radiation_rel_locmax'] * subdf['FLAECHE'] * subdf['angletilt_factor']
+            subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
+            formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * kWpeak_per_m2 * subdf['radiation_rel_locmax'] * subdf['FLAECHE'] * subdf['angletilt_factor']"
+
         # pvprod method 3
             # > 19.11.2024: no longer needed. from previous runs where I wanted to compare different pvprod_computations methods
         elif False:   

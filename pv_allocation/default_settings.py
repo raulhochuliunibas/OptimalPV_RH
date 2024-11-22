@@ -69,8 +69,8 @@ pvalloc_default_settings = {
         'share_roof_area_available': 0.7,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
         'max_distance_m_for_EGID_node_matching': 0, # max distance in meters for matching GWR EGIDs that have no node assignment to the next grid node
         },
-    'panel_inefficiency_specs': {
-        'variable_panel_inefficiency_TF': True,
+    'panel_efficiency_specs': {
+        'variable_panel_efficiency_TF': True,
         'summer_months': [6,7,8,9],
         'hotsummer_hours': [11, 12, 13, 14, 15, 16, 17,],
         'hot_hours_discount': 0.1,
