@@ -56,15 +56,14 @@ pvalloc_scenarios={
         'sanitycheck_byEGID':            True,
         'create_gdf_export_of_topology': True,
 
-        'sanitycheck_summary_byEGID_specs':{
-            'n_iterations_before_sanitycheck': 2,},
+        # 'sanitycheck_summary_byEGID_specs':{
+        #     'n_iterations_before_sanitycheck': 2,},
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv',},
         'tech_economic_specs': {
             'max_distance_m_for_EGID_node_matching': 0,
             'self_consumption_ifapplicable': 0,
-            'pvprod_calc_method': 'method2',
-            },
+            'pvprod_calc_method': 'method2',},
         'MC_loop_specs': {
             'montecarlo_iterations': MC_iter,},
 },
