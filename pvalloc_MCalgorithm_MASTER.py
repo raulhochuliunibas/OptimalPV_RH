@@ -69,7 +69,7 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
     # CREATE MC DIR + TRANSFER INITIAL DATA FILES ----------------------------------------------
 
     # pvalloc_settings["name_dir_export"] = 'pvalloc_DEV_12m_pvmethod2_selfconsum00'
-    montecarlo_iterations = [*range(1, pvalloc_settings['MC_loop_specs']['montecarlo_iterations'], 1)]
+    montecarlo_iterations = [*range(1, pvalloc_settings['MC_loop_specs']['montecarlo_iterations']+1, 1)]
     fresh_initial_files = pvalloc_settings['MC_loop_specs']['fresh_initial_files']
     rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
     safety_counter_max = pvalloc_settings['algorithm_specs']['while_inst_counter_max']
