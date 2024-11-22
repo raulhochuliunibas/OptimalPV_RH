@@ -8,12 +8,12 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred = 36 #600 #36
-MC_iter = 10
-run_on_server = True
+months_pred = 12 #600 #36
+MC_iter = 2
+run_on_server = False
 bfs_numbers = [2768, 2761, 2473, 2475, 2785, 2480] #[2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 
-run_dataagg =       True
+run_dataagg =       False
 run_alloc_init =    True
 run_alloc_MCalg =   True
 run_visual =        False
@@ -21,13 +21,13 @@ run_visual =        False
 
 # data_aggregation 
 dataagg_scenarios = {
-    # 'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
-    #     'script_run_on_server': run_on_server, 
-    #     'kt_numbers': [13,12,11],
-    #     'year_range': [2018, 2023], 
-    #     'split_data_geometry_AND_slow_api': True, 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
-    # },
+    'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13,12,11],
+        'year_range': [2018, 2023], 
+        'split_data_geometry_AND_slow_api': True, 
+        'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
+    },
     'preprep_BL_22to23_1and2homes':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13,], 
@@ -49,8 +49,8 @@ pvalloc_scenarios={
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
-        'kt_numbers': [13,],
-        # 'bfs_numbers': bfs_numbers,
+        # 'kt_numbers': [13,],
+        'bfs_numbers': bfs_numbers,
         'recreate_topology':             True, 
         'recalc_economics_topo_df':      True,
         'sanitycheck_byEGID':            True,
@@ -72,7 +72,12 @@ pvalloc_scenarios={
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
-        'kt_numbers': [13,],
+        # 'kt_numbers': [13,],
+        'bfs_numbers': bfs_numbers,
+        'recreate_topology':             False, 
+        'recalc_economics_topo_df':      False,
+        'sanitycheck_byEGID':            True,
+        'create_gdf_export_of_topology': True,
         'algorithm_specs': {
             'inst_selection_method': 'random',},
         'tech_economic_specs': {
