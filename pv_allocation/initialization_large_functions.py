@@ -809,7 +809,7 @@ def define_construction_capacity(
     checkpoint_to_logfile(f'constr_capacity KW built in period (sum_TP_kW_lookback): {round(sum_TP_kW_lookback,2)} kW', log_file_name, 2)
     print_to_logfile('\n', log_file_name)
     checkpoint_to_logfile(f'constr_capacity: month prediction {months_prediction[0]} to {months_prediction[-1]}', log_file_name, 2)
-    checkpoint_to_logfile(f'Of {round(sum_TP_kW_lookback,3)} kW, {share_to_summer*100}% built in summer months ({summer_months[0]} to {summer_months[-1]}) and {share_to_winter*100}% in winter months ({winter_months[0]} to {winter_months[-1]}', log_file_name, 2)    
+    checkpoint_to_logfile(f'Of {round(sum_TP_kW_lookback,3)} kW, {share_to_summer*100}% built in summer months ({summer_months[0]} to {summer_months[-1]}) and {share_to_winter*100}% in winter months ({winter_months[0]} to {winter_months[-1]})', log_file_name, 2)    
     print_to_logfile('\n', log_file_name)
     checkpoint_to_logfile(f'sum_TP_kW_lookback (T0: {round(sum_TP_kW_lookback,2)} kW) increase by {capacity_growth*100}% per year', log_file_name, 2)
 
