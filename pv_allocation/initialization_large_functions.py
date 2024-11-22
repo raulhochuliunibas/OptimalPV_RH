@@ -648,7 +648,7 @@ def import_ts_data(
 # ------------------------------------------------------------------------------------------------------
 def get_estim_instcost_function(pvalloc_settings):
     wd_path = pvalloc_settings['wd_path']
-    data_path = f'{wd_path}/data'
+    data_path = f'{wd_path}_data'
     name_dir_import = pvalloc_settings['name_dir_import']
     log_file_name = pvalloc_settings['log_file_name']
 

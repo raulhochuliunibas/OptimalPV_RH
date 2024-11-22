@@ -33,7 +33,7 @@ def calc_economics_in_topo_df(
     # setup -----------------------------------------------------
     name_dir_import = pvalloc_settings['name_dir_import']
     wd_path = pvalloc_settings['wd_path']
-    data_path = f'{wd_path}/data'
+    data_path = f'{wd_path}_data'
     show_debug_prints = pvalloc_settings['show_debug_prints']
     log_file_name = pvalloc_settings['log_file_name']
     print_to_logfile(f'run function: calc_economics_in_topo_df', log_file_name)
@@ -232,7 +232,7 @@ def calc_economics_in_topo_df(
 def initiate_gridprem(
         pvalloc_settings,):
     wd_path = pvalloc_settings['wd_path']
-    data_path = f'{wd_path}/data'
+    data_path = f'{wd_path}_data'
     name_dir_import = pvalloc_settings['name_dir_import']
     print_to_logfile(f'run function: initiate_gridprem', pvalloc_settings['log_file_name'])
 
@@ -270,7 +270,7 @@ def update_gridprem(
     name_dir_import = pvalloc_settings['name_dir_import']
     subdir_path_def = subdir_path
     wd_path = pvalloc_settings['wd_path']
-    data_path = f'{wd_path}/data'
+    data_path = f'{wd_path}_data'
     show_debug_prints = pvalloc_settings['show_debug_prints']
     log_file_name = pvalloc_settings['log_file_name']
 
@@ -429,7 +429,7 @@ def update_npv_df(pvalloc_settings,
     # setup -----------------------------------------------------
     name_dir_import = pvalloc_settings['name_dir_import']
     wd_path = pvalloc_settings['wd_path']
-    data_path = f'{wd_path}/data'
+    data_path = f'{wd_path}_data'
     show_debug_prints = pvalloc_settings['show_debug_prints']
     log_file_name = pvalloc_settings['log_file_name']
 

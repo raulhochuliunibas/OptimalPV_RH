@@ -13,24 +13,25 @@ def select_AND_adjust_topology(
         m, i):
     
     # select a random building out of npv_df_func to attribute a PV system to
+    wd_path = pvalloc_settings['wd_path']
+    data_path = f'{wd_path}_data'
     rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
     kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
     share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
-    data_path_def = pvalloc_settings['data_path']
     inst_selection_method = pvalloc_settings['algorithm_specs']['inst_selection_method']
     
-    subdir_path_def = subdir_path
+    subdir_path = subdir_path
     # dfuid_installed_list = dfuid_installed_list_func
     # pred_inst_df = pred_inst_df_func
     i_alloc_loop = i
 
 
     # import ----------
-    # topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
-    # pred_inst_df = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/pred_inst_df.parquet') if os.path.exists(f'{data_path_def}/output/pvalloc_run/pred_inst_df.parquet') else pd.DataFrame()
-    topo = json.load(open(f'{subdir_path_def}/topo_egid.json', 'r'))
-    npv_df = pd.read_parquet(f'{subdir_path_def}/npv_df.parquet') 
-    pred_inst_df = pd.read_parquet(f'{subdir_path_def}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path_def}/pred_inst_df.parquet') else pd.DataFrame()
+    # topo = json.load(open(f'{data_path}/output/pvalloc_run/topo_egid.json', 'r'))
+    # pred_inst_df = pd.read_parquet(f'{data_path}/output/pvalloc_run/pred_inst_df.parquet') if os.path.exists(f'{data_path}/output/pvalloc_run/pred_inst_df.parquet') else pd.DataFrame()
+    topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
+    npv_df = pd.read_parquet(f'{subdir_path}/npv_df.parquet') 
+    pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path}/pred_inst_df.parquet') else pd.DataFrame()
 
 
 
@@ -98,33 +99,33 @@ def select_AND_adjust_topology(
 
 
     # export main dfs ------------------------------------------
-    # npv_df.to_parquet(f'{data_path_def}/output/pvalloc_run/npv_df.parquet')
-    # npv_df.to_csv(f'{data_path_def}/output/pvalloc_run/npv_df.csv')
-    # pred_inst_df.to_parquet(f'{data_path_def}/output/pvalloc_run/pred_inst_df.parquet')
-    # pred_inst_df.to_csv(f'{data_path_def}/output/pvalloc_run/pred_inst_df.csv')
-    # with open (f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'w') as f:
+    # npv_df.to_parquet(f'{data_path}/output/pvalloc_run/npv_df.parquet')
+    # npv_df.to_csv(f'{data_path}/output/pvalloc_run/npv_df.csv')
+    # pred_inst_df.to_parquet(f'{data_path}/output/pvalloc_run/pred_inst_df.parquet')
+    # pred_inst_df.to_csv(f'{data_path}/output/pvalloc_run/pred_inst_df.csv')
+    # with open (f'{data_path}/output/pvalloc_run/topo_egid.json', 'w') as f:
     #     json.dump(topo, f)
-    npv_df.to_parquet(f'{subdir_path_def}/npv_df.parquet')
-    npv_df.to_csv(f'{subdir_path_def}/npv_df.csv')
-    pred_inst_df.to_parquet(f'{subdir_path_def}/pred_inst_df.parquet')
-    pred_inst_df.to_csv(f'{subdir_path_def}/pred_inst_df.csv')
-    with open (f'{subdir_path_def}/topo_egid.json', 'w') as f:
+    npv_df.to_parquet(f'{subdir_path}/npv_df.parquet')
+    npv_df.to_csv(f'{subdir_path}/npv_df.csv')
+    pred_inst_df.to_parquet(f'{subdir_path}/pred_inst_df.parquet')
+    pred_inst_df.to_csv(f'{subdir_path}/pred_inst_df.csv')
+    with open (f'{subdir_path}/topo_egid.json', 'w') as f:
         json.dump(topo, f)
 
 
     # export by Month ------------------------------------------
-    # npv_df.to_parquet(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_{m}.parquet')
-    # npv_df.to_csv(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_{m}.csv')
-    # pred_inst_df.to_parquet(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
-    # pred_inst_df.to_csv(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_{m}.csv')
-    # with open(f'{data_path_def}/output/pvalloc_run/pred_npv_inst_by_M/topo_{m}.json', 'w') as f:
+    # npv_df.to_parquet(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_{m}.parquet')
+    # npv_df.to_csv(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_{m}.csv')
+    # pred_inst_df.to_parquet(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
+    # pred_inst_df.to_csv(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_{m}.csv')
+    # with open(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/topo_{m}.json', 'w') as f:
     #     json.dump(topo, f)
 
-    npv_df.to_parquet(f'{subdir_path_def}/pred_npv_inst_by_M/npv_df_{m}.parquet')
-    npv_df.to_csv(f'{subdir_path_def}/pred_npv_inst_by_M/npv_df_{m}.csv')
-    pred_inst_df.to_parquet(f'{subdir_path_def}/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
-    pred_inst_df.to_csv(f'{subdir_path_def}/pred_npv_inst_by_M/pred_inst_df_{m}.csv')
-    with open(f'{subdir_path_def}/pred_npv_inst_by_M/topo_{m}.json', 'w') as f:
+    npv_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.parquet')
+    npv_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.csv')
+    pred_inst_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
+    pred_inst_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.csv')
+    with open(f'{subdir_path}/pred_npv_inst_by_M/topo_{m}.json', 'w') as f:
         json.dump(topo, f)
                 
     return  inst_power # , picked_uid, picked_combo_uid, pred_inst_df, dfuid_installed_list, topo
