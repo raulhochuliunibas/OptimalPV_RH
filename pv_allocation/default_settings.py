@@ -86,7 +86,7 @@ pvalloc_default_settings = {
         'montecarlo_iterations': 2,
         'fresh_initial_files': 
             ['topo_egid.json', 'months_prediction.parquet', 'gridprem_ts.parquet', 
-             'gridnode_df.parquet', 'constrcapa.parquet', 'dsonodes_df.parquet'],
+              'constrcapa.parquet', 'dsonodes_df.parquet'],  #'gridnode_df.parquet',
         'keep_files_month_iter_TF': True,
         'keep_files_month_iter_max': 8,
         

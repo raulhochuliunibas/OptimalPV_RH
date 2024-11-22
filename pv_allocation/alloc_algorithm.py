@@ -141,10 +141,12 @@ def calc_economics_in_topo_df(
 
         # merge production, grid prem + demand to partitions ----------
         subdf['meteo_loc'] = 'Basel'
-        meteo_ts['meteo_loc'] = 'Basel' 
-        subdf = subdf.merge(meteo_ts[['t', 'radiation', 'meteo_loc']], how='left', on='meteo_loc')
-        subdf = subdf.assign(pvprod_kW = (subdf['radiation'] * subdf['FLAECHE'] * subdf['angletilt_factor']) / 1000)
-        # checkpoint_to_logfile(f'  end merge meteo for subdf {i} to {i+stepsize-1}', log_file_name, 1)
+        meteo_ts['meteo_loc'] ='Basel' 
+        
+        mean_top_radiation = meteo_ts['radiation'].nlargest(20).mean()
+        meteo_ts['radiation_rel_locmax'] = meteo_ts['radiation'] / mean_top_radiation
+
+        subdf = subdf.merge(meteo_ts[['t', 'radiation', 'radiation_rel_locmax', 'meteo_loc']], how='left', on='meteo_loc')
 
 
         # add panel_inefficiency by time ----------
@@ -184,13 +186,12 @@ def calc_economics_in_topo_df(
         elif pvprod_calc_method == 'method2':   
             subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_inefficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", log_file_name)
+
+            formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_inefficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']"
 
         # pvprod method 3
         # elif pvprod_calc_method == 'method3':
-
-
-
+        
         # pvprod method 3
             # > 19.11.2024: no longer needed. from previous runs where I wanted to compare different pvprod_computations methods
         elif False:   
@@ -225,6 +226,11 @@ def calc_economics_in_topo_df(
         subdf.to_parquet(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.parquet')
         subdf.to_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv', index=False)
         checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', log_file_name, 1)
+
+
+    # print computation formula for comparing methods
+    print_to_logfile(f'* Computation formula for pv production per roof:\n{formla_for_log_print}', log_file_name)
+
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -362,7 +368,8 @@ def update_gridprem(
 
     # build gridnode_df -----------------------------------------------------
     gridnode_df = pd.concat(agg_subinst_df_list)
-    gridnode_df = gridnode_df.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index() # groupby df again because grid nodes will be spreach accross multiple tranches
+    # groupby df again because grid nodes will be spreach accross multiple tranches
+    gridnode_df = gridnode_df.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index() 
 
     # attach node thresholds 
     gridnode_df = gridnode_df.merge(dsonodes_df[['grid_node', 'kVA_threshold']], how='left', on='grid_node')

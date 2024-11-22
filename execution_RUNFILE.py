@@ -8,13 +8,13 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred = 3 #600 #36
+months_pred = 12 #600 #36
 MC_iter = 2
 run_on_server = False
-bfs_numbers = [2768, 2761, ]#2473, 2475, 2785, 2480] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,]
+bfs_numbers = [2768, 2761, 2473, 2475, 2785, 2480] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,]
 
 run_dataagg =       False
-run_alloc_init =    False
+run_alloc_init =    True
 run_alloc_MCalg =   True
 run_visual =        False
 
@@ -51,22 +51,23 @@ pvalloc_scenarios={
         'months_prediction': months_pred,
         # 'kt_numbers': [13,],
         'bfs_numbers': bfs_numbers,
-        'recreate_topology':             False, 
-        'recalc_economics_topo_df':      False,
+        'recreate_topology':             True, 
+        'recalc_economics_topo_df':      True,
         'sanitycheck_byEGID':            True,
         'create_gdf_export_of_topology': True,
 
-        # 'sanitycheck_summary_byEGID_specs':{
-        #     'n_iterations_before_sanitycheck': 3,},
+        'sanitycheck_summary_byEGID_specs':{
+            'n_iterations_before_sanitycheck': 2,},
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv',},
         'tech_economic_specs': {
             'max_distance_m_for_EGID_node_matching': 0,
             'self_consumption_ifapplicable': 0,
+            'pvprod_calc_method': 'method2',
             },
         'MC_loop_specs': {
             'montecarlo_iterations': MC_iter,},
-    },
+},
 
     # f'pvalloc_DEV_{months_pred}m_meth2_rand':{
     #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
@@ -137,8 +138,8 @@ visual_settings = {
         'plot_ind_line_productionHOY_per_node':  False,
         'plot_ind_line_installedCap_per_month':  False,
         'plot_ind_hist_NPV_freepartitions':      False,
-        #NEU 'plot_ind_hist_installedCap':
-        #NEU
+        #NEU 'plot_ind_hist_installedCap_kw':
+        #NEU plot_ind_hist_annualpvprod_kwh:
 
         # for aggregated pvalloc_MC_algorithm 
 

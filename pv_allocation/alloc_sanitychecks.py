@@ -401,7 +401,7 @@ def sanity_check_summary_byEGID(
         summary_toExcel_list.append(egid_summary_df)
    
     
-    with pd.ExcelWriter(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID/summary_all.xlsx') as writer:
+    with pd.ExcelWriter(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID/summary_all{name_dir_export_def}.xlsx') as writer:
         for i, df in enumerate(summary_toExcel_list):
             sheet_egid = df.loc[df['key']=='EGID', 'val'].values[0]
             df.to_excel(writer, sheet_name=sheet_egid, index=False)
