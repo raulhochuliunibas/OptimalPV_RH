@@ -268,9 +268,9 @@ def import_prepre_AND_create_topology(
     checkpoint_to_logfile(f'  > {subtraction2} ({round(subtraction2 / gwr_before_dsonode_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in dsonodes', summary_file_name, 5, True)
     if Map_appendings_df.shape[0] > 0:
 
-        checkpoint_to_logfile(f'  > (NOTE: Even matched {Map_appendings_df.shape[0]} EGIDs matched artificially to gridnode, because EGID lies in close node range, max_distance_m_for_EGID_node_matching: {pvalloc_settings['tech_economic_specs']['max_distance_m_for_EGID_node_matching']} meters', summary_file_name, 3, True)
+        checkpoint_to_logfile(f'  > (REMARK: Even matched {Map_appendings_df.shape[0]} EGIDs matched artificially to gridnode, because EGID lies in close node range, max_distance_m_for_EGID_node_matching: {pvalloc_settings['tech_economic_specs']['max_distance_m_for_EGID_node_matching']} meters', summary_file_name, 3, True)
     elif Map_appendings_df.shape[0] == 0:
-        checkpoint_to_logfile(f'  > (NOTE: No EGIDs matched to nearest gridnode, max_distance_m_for_EGID_node_matching: {pvalloc_settings['tech_economic_specs']['max_distance_m_for_EGID_node_matching']} meters', summary_file_name, 3, True)
+        checkpoint_to_logfile(f'  > (REMARK: No EGIDs matched to nearest gridnode, max_distance_m_for_EGID_node_matching: {pvalloc_settings['tech_economic_specs']['max_distance_m_for_EGID_node_matching']} meters', summary_file_name, 3, True)
 
 
 

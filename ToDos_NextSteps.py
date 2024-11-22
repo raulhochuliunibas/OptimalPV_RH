@@ -17,6 +17,13 @@
     #       OTHER SOLUTION: After pv inst and egids are mapped, subselect all egids with multiple inst and map only those inst to the closest egid coordinates
 
 
+    # TODO: EGID in solkat is a faulty data point - at least for the small developing data set (nrows = ca. 1000 - 5000). 
+    #       That's why a second attempt was started to aggregate roof partitions on the sbuuid and map those then to the EGID numbers. 
+    #       Problem there - the amount of missmatches was strikingly large (+- 70 vs 30%) that SB_UUID aggregation does not seem to 
+    #       be warrented. Also  in developing Map_solkatdfuid_egid, makes small overcounts (1 partition is attributed to two houses). 
+    #       --> Check the BSBL Case thoroughly for the EGID mapping if not multiple EGIDS are attributed to one "house" (building) which then 
+    #           would mean double counting
+    # ----------
 
     # TODO: Finalize ACCURACY:
         # OK: Do I have more or less all the houses and their roof partitions? 
@@ -59,13 +66,6 @@
 
 
 
-    # TODO: EGID in solkat is a faulty data point - at least for the small developing data set (nrows = ca. 1000 - 5000). 
-    #       That's why a second attempt was started to aggregate roof partitions on the sbuuid and map those then to the EGID numbers. 
-    #       Problem there - the amount of missmatches was strikingly large (+- 70 vs 30%) that SB_UUID aggregation does not seem to 
-    #       be warrented. Also  in developing Map_solkatdfuid_egid, makes small overcounts (1 partition is attributed to two houses). 
-    #       --> Check the BSBL Case thoroughly for the EGID mapping if not multiple EGIDS are attributed to one "house" (building) which then 
-    #           would mean double counting
-    # ----------
 
     # TODO: There is an issue with buildings that have a HUGE number of partitions. 
     #   > make either a function exporting all solkat with more than x rows for 1 egid

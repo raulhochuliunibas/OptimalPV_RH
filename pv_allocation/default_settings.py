@@ -60,7 +60,7 @@ pvalloc_default_settings = {
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
         'pvprod_calc_method': 'method2',
-        'panel_inefficiency': 0.15,         # XY% Wirkungsgrad PV Modul
+        'panel_efficiency': 0.15,         # XY% Wirkungsgrad PV Modul
         'inverter_efficiency': 0.95,        # XY% Wirkungsgrad Wechselrichter
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
@@ -77,8 +77,10 @@ pvalloc_default_settings = {
     },
     'sanitycheck_summary_byEGID_specs': {
         'egid_list': [ # ['3031017','1367570', '3030600',], # '1367570', '245017418'      # known houses in the sample
-                     '245026587', '245045363', '245060695', ], # flat roofs (1 partition)  |>  245026587, 245045363, 245060695,    393264, 245025760, 245045361,    392573, 245045362, 245026046,    392722, 
-        'n_EGIDs_of_alloc_algorithm': 5,
+                    '391292', '390601', '2347595', '401781'        # single roof houses in Aesch, Ettingen, 
+                    '391263', '245057295', '401753',  # houses with built pv in Aesch, Ettingen,
+            ],
+        'n_EGIDs_of_alloc_algorithm': 10,
         'n_iterations_before_sanitycheck': 12,
     },
     # PART II: settings for MC algorithm --------------------

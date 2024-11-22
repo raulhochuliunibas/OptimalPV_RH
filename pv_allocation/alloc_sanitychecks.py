@@ -70,6 +70,7 @@ def create_gdf_export_of_topology(
 
     Map_egid_dsonode = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_dsonode.parquet')
     gwr_bsblso_gdf = gpd.read_file(f'{data_path_def}/split_data_geometry/gwr_bsblso_gdf.geojson')
+    gm_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gm_shp_gdf.geojson')
 
 
     # transformations
@@ -120,6 +121,7 @@ def create_gdf_export_of_topology(
                    (single_part_houses_w_tilt, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/single_part_houses_w_tilt.shp'), 
 
                    (dsonodes_withegids_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/dsonodes_withegids_gdf.shp')
+                   (gm_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gm_gdf.shp')
     ]
 
     for gdf, path in shp_to_export:
