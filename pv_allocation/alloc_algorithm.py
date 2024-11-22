@@ -26,7 +26,7 @@ import pv_allocation.initialization_large_functions as initial
 # ------------------------------------------------------------------------------------------------------
 def calc_economics_in_topo_df(
         pvalloc_settings, 
-        topo_func, 
+        topo, 
         df_list, df_names, 
         ts_list, ts_names,):
     
