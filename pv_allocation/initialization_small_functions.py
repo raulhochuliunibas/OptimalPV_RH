@@ -31,14 +31,15 @@ def get_interim_path(pvalloc_settings):
     """
     Return the path to the latest interim folder that ran pvalloc file to the end (and renamed pvalloc_run accordingly)
     """
-    data_path_def = pvalloc_settings['data_path']
-    name_dir_export_def = pvalloc_settings['name_dir_export']
-    log_file_name_def = pvalloc_settings['log_file_name']
+    wd_path = pvalloc_settings['wd_path']
+    data_path = f'{wd_path}_data'
+    name_dir_export = pvalloc_settings['name_dir_export']
+    log_file_name = pvalloc_settings['log_file_name']
 
-    interim_pvalloc_folder = glob.glob(f'{data_path_def}/output/{name_dir_export_def}*')
+    interim_pvalloc_folder = glob.glob(f'{data_path}/output/{name_dir_export}*')
     if len(interim_pvalloc_folder) == 0:
-        checkpoint_to_logfile(f'ATTENTION! No existing interim pvalloc folder found, use "pvalloc_run" instead', log_file_name_def)
-        iterim_path = f'{data_path_def}/output/pvalloc_run'
+        checkpoint_to_logfile(f'ATTENTION! No existing interim pvalloc folder found, use "pvalloc_run" instead', log_file_name)
+        iterim_path = f'{data_path}/output/pvalloc_run'
 
     if len(interim_pvalloc_folder) > 0:
         iterim_path = interim_pvalloc_folder[-1]
@@ -53,10 +54,10 @@ def get_interim_path(pvalloc_settings):
 def get_angle_tilt_table(pvalloc_settings):
 
     # import settings + setup -------------------
-    data_path_def = pvalloc_settings['data_path']
-    log_file_name_def = pvalloc_settings['log_file_name']
-    name_dir_import_def = pvalloc_settings['name_dir_import']
-    print_to_logfile('run function: get_angle_tilt_table', log_file_name_def)
+    data_path = pvalloc_settings['data_path']
+    log_file_name = pvalloc_settings['log_file_name']
+    name_dir_import = pvalloc_settings['name_dir_import']
+    print_to_logfile('run function: get_angle_tilt_table', log_file_name)
 
     # SOURCE: table was retreived from this site: https://echtsolar.de/photovoltaik-neigungswinkel/
     # date 29.08.24
@@ -149,8 +150,8 @@ def get_angle_tilt_table(pvalloc_settings):
     angle_tilt_df['efficiency_factor'] = angle_tilt_df['efficiency_factor'] / 100
 
     # export df ----------
-    angle_tilt_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.parquet')
-    angle_tilt_df.to_csv(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.csv')
+    angle_tilt_df.to_parquet(f'{data_path}/output/{name_dir_import}/angle_tilt_df.parquet')
+    angle_tilt_df.to_csv(f'{data_path}/output/{name_dir_import}/angle_tilt_df.csv')
     return angle_tilt_df
 
 
@@ -161,12 +162,12 @@ def get_angle_tilt_table(pvalloc_settings):
 def HOY_weatheryear_df(pvalloc_settings):
     
     # import settings + setup -------------------
-    data_path_def = pvalloc_settings['data_path']
-    log_file_name_def = pvalloc_settings['log_file_name']
-    name_dir_import_def = pvalloc_settings['name_dir_import']
+    data_path = pvalloc_settings['data_path']
+    log_file_name = pvalloc_settings['log_file_name']
+    name_dir_import = pvalloc_settings['name_dir_import']
     bfs_numbers_def = pvalloc_settings['bfs_numbers']
     gwr_selection_specs_def = pvalloc_settings['gwr_selection_specs']
-    print_to_logfile('run function: get_fake_gridnodes_v2', log_file_name_def)
+    print_to_logfile('run function: get_fake_gridnodes_v2', log_file_name)
 
 
     # get every HOY of weather year ----------
@@ -178,7 +179,7 @@ def HOY_weatheryear_df(pvalloc_settings):
     HOY_weatheryear_df['hour'] = HOY_weatheryear_df['timestamp'].dt.hour
 
     # export df ----------
-    HOY_weatheryear_df.to_parquet(f'{data_path_def}/output/pvalloc_run/HOY_weatheryear_df.parquet')
+    HOY_weatheryear_df.to_parquet(f'{data_path}/output/pvalloc_run/HOY_weatheryear_df.parquet')
 
 
 
@@ -188,18 +189,18 @@ def HOY_weatheryear_df(pvalloc_settings):
 def get_fake_gridnodes_v2(pvalloc_settings):
     
     # import settings + setup -------------------
-    data_path_def = pvalloc_settings['data_path']
-    log_file_name_def = pvalloc_settings['log_file_name']
-    name_dir_import_def = pvalloc_settings['name_dir_import']
+    data_path = pvalloc_settings['data_path']
+    log_file_name = pvalloc_settings['log_file_name']
+    name_dir_import = pvalloc_settings['name_dir_import']
     bfs_numbers_def = pvalloc_settings['bfs_numbers']
     gwr_selection_specs_def = pvalloc_settings['gwr_selection_specs']
-    print_to_logfile('run function: get_fake_gridnodes_v2', log_file_name_def)
+    print_to_logfile('run function: get_fake_gridnodes_v2', log_file_name)
 
 
     # create fake gridnodes ----------------------
-    gwr_geo = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson')
+    gwr_geo = gpd.read_file(f'{data_path}/output/{name_dir_import}/gwr_gdf.geojson')
     
-    gwr = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/gwr.parquet')
+    gwr = pd.read_parquet(f'{data_path}/output/{name_dir_import}/gwr.parquet')
     gwr = gwr.loc[gwr['GGDENR'].isin(bfs_numbers_def)]
     gwr = gwr.drop_duplicates(subset=['EGID'])
 
@@ -244,12 +245,12 @@ def get_fake_gridnodes_v2(pvalloc_settings):
 
     # export df ----------
     Map_egid_nodes = gwr_nodes[['EGID', 'grid_node']].copy()
-    Map_egid_nodes.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.parquet')
-    Map_egid_nodes.to_csv(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.csv')
+    Map_egid_nodes.to_parquet(f'{data_path}/output/{name_dir_import}/Map_egid_nodes.parquet')
+    Map_egid_nodes.to_csv(f'{data_path}/output/{name_dir_import}/Map_egid_nodes.csv')
 
     dsonodes_df = dsonodes_df.loc[:,dsonodes_df.columns != 'geometry']
-    dsonodes_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
-    with open(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson', 'w') as f:
+    dsonodes_df.to_parquet(f'{data_path}/output/{name_dir_import}/dsonodes_df.parquet')
+    with open(f'{data_path}/output/{name_dir_import}/dsonodes_gdf.geojson', 'w') as f:
         f.write(dsonodes_gdf.to_json())
 
 
@@ -260,18 +261,18 @@ def get_fake_gridnodes_v2(pvalloc_settings):
 def get_gridnodes_DSO(pvalloc_settings):
     
     # import settings + setup -------------------
-    data_path_def = pvalloc_settings['data_path']
-    log_file_name_def = pvalloc_settings['log_file_name']
-    name_dir_import_def = pvalloc_settings['name_dir_import']
+    data_path = pvalloc_settings['data_path']
+    log_file_name = pvalloc_settings['log_file_name']
+    name_dir_import = pvalloc_settings['name_dir_import']
     bfs_numbers_def = pvalloc_settings['bfs_numbers']
     summary_file_name = pvalloc_settings['summary_file_name']
-    print_to_logfile('run function: get_gridnodes_DSO', log_file_name_def)
+    print_to_logfile('run function: get_gridnodes_DSO', log_file_name)
 
 
     # import ----------------------
-    Map_egid_dsonode = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_dsonode.parquet')
-    gwr_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson')
-    gwr_all_building_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_all_building_gdf.geojson')
+    Map_egid_dsonode = pd.read_parquet(f'{data_path}/output/{name_dir_import}/Map_egid_dsonode.parquet')
+    gwr_gdf = gpd.read_file(f'{data_path}/output/{name_dir_import}/gwr_gdf.geojson')
+    gwr_all_building_gdf = gpd.read_file(f'{data_path}/output/{name_dir_import}/gwr_all_building_gdf.geojson')
 
 
     # transformations ----------------------
@@ -301,9 +302,9 @@ def get_gridnodes_DSO(pvalloc_settings):
     
 
     # export ----------------------
-    dsonodes_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.parquet')
-    dsonodes_df.to_csv(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_df.csv')
-    with open(f'{data_path_def}/output/{name_dir_import_def}/dsonodes_gdf.geojson', 'w') as f:
+    dsonodes_df.to_parquet(f'{data_path}/output/{name_dir_import}/dsonodes_df.parquet')
+    dsonodes_df.to_csv(f'{data_path}/output/{name_dir_import}/dsonodes_df.csv')
+    with open(f'{data_path}/output/{name_dir_import}/dsonodes_gdf.geojson', 'w') as f:
         f.write(dsonodes_gdf.to_json())
 
 
