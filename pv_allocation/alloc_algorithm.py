@@ -50,6 +50,7 @@ def calc_economics_in_topo_df(
     # TOPO to DF =============================================
     # solkat_combo_df_exists = os.path.exists(f'{pvalloc_settings["interim_path"]}/solkat_combo_df.parquet')
     # if pvalloc_settings['recalc_economics_topo_df']:
+    topo = topo
     no_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == False]
     with_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == True]
 
@@ -134,7 +135,7 @@ def calc_economics_in_topo_df(
     for i in range(0, len(egids), stepsize):
 
         tranche_counter += 1
-        # print_to_logfile(f'-- merges to topo_time_subdf {tranche_counter}/{len(range(0, len(egids), stepsize))} tranches ({i} to {i+stepsize-1} egids.iloc) ,  {7*"-"}  (stamp: {datetime.now()})', log_name)
+        # print_to_logfile(f'-- merges to topo_time_subdf {tranche_counter}/{len(range(0, len(egids), stepsize))} tranches ({i} to {i+stepsize-1} egids.iloc) ,  {7*"-"}  (stamp: {datetime.now()})', log_file_name)
         subdf = copy.deepcopy(topo_df[topo_df['EGID'].isin(egids[i:i+stepsize])])
 
 
@@ -143,7 +144,7 @@ def calc_economics_in_topo_df(
         meteo_ts['meteo_loc'] = 'Basel' 
         subdf = subdf.merge(meteo_ts[['t', 'radiation', 'meteo_loc']], how='left', on='meteo_loc')
         subdf = subdf.assign(pvprod_kW = (subdf['radiation'] * subdf['FLAECHE'] * subdf['angletilt_factor']) / 1000)
-        # checkpoint_to_logfile(f'  end merge meteo for subdf {i} to {i+stepsize-1}', log_name, 1)
+        # checkpoint_to_logfile(f'  end merge meteo for subdf {i} to {i+stepsize-1}', log_file_name, 1)
 
 
         # add panel_inefficiency by time ----------
@@ -168,7 +169,7 @@ def calc_economics_in_topo_df(
         demandtypes_melt = demandtypes_ts.melt(id_vars='t', value_vars=demandtypes_names, var_name= 'demandtype', value_name= 'demand')
         subdf = subdf.merge(demandtypes_melt, how='left', on=['t', 'demandtype'])
         subdf.rename(columns={'demand': 'demand_kW'}, inplace=True)
-        # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', log_name, 1)
+        # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', log_file_name, 1)
 
 
         # attach FLAECH_angletilt, might be usefull for later calculations
@@ -183,7 +184,7 @@ def calc_economics_in_topo_df(
         elif pvprod_calc_method == 'method2':   
             subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_inefficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", log_name)
+            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = panel_inefficiency * inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", log_file_name)
 
         # pvprod method 3
         # elif pvprod_calc_method == 'method3':
@@ -195,7 +196,7 @@ def calc_economics_in_topo_df(
         elif False:   
             subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
             subdf.drop(columns=['meteo_loc', 'radiation'], inplace=True)
-            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']\n", log_name)
+            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']\n", log_file_name)
             
         # pvprod method 4
             # > 19.11.2024: because I dont have the same weather year as the calculations for the STROMERTRAG in solkat, it is not really feasible to back-engineer any type of shade deduction 
@@ -214,16 +215,16 @@ def calc_economics_in_topo_df(
                 shading_factor = stromertrag_dfuid / pvprod_kWhYear_noshade
                 
                 if shading_factor > 1:
-                    checkpoint_to_logfile(f' *ERROR* shading factor > 1 for df_uid: {dfuid}, EGID: {subdf.loc[dfuid_TF, "EGID"].unique()} ', log_name, 1)
+                    checkpoint_to_logfile(f' *ERROR* shading factor > 1 for df_uid: {dfuid}, EGID: {subdf.loc[dfuid_TF, "EGID"].unique()} ', log_file_name, 1)
                 subdf.loc[dfuid_TF, 'pvprod_kW'] = subdf.loc[dfuid_TF, 'pvprod_kW_noshade'] * shading_factor
             subdf.drop(columns=['meteo_loc', 'radiation', 'pvprod_kW_noshade'], inplace=True)
-            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = <retrofitted_shading_factor> * inverter_efficiency  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", log_name)
+            print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = <retrofitted_shading_factor> * inverter_efficiency  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", log_file_name)
             
 
         # export subdf ----------------------------------------------
         subdf.to_parquet(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.parquet')
         subdf.to_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv', index=False)
-        checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', log_name, 1)
+        checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', log_file_name, 1)
 
 
 # ------------------------------------------------------------------------------------------------------
