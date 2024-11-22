@@ -120,7 +120,7 @@ def create_gdf_export_of_topology(
                    (topo_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_gdf.shp'), 
                    (single_part_houses_w_tilt, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/single_part_houses_w_tilt.shp'), 
 
-                   (dsonodes_withegids_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/dsonodes_withegids_gdf.shp')
+                   (dsonodes_withegids_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/dsonodes_withegids_gdf.shp'),
                    (gm_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gm_gdf.shp')
     ]
 
