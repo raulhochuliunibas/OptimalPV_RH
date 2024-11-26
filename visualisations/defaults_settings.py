@@ -1,5 +1,7 @@
 visual_default_settings = {
         'plot_show': True,
+        'remove_previous_plots': False,
+        'MC_subdir_for_plot': '*MC*1',
 
         'default_zoom_year': [2012, 2030],
         'default_zoom_hour': [2400, 2400+(24*7)],
@@ -7,10 +9,8 @@ visual_default_settings = {
         'default_map_center': [47.42, 7.52],
         'node_selection_for_plots': ['node1', 'node3', 'node5'], # or None for all nodes
 
-        'plot_ind_line_productionHOY_per_node':  True,
-        'plot_ind_line_installedCap_per_month':  True,
-        'plot_ind_line_installedCap_per_BFS':    False,
-        'plot_ind_hist_NPV_freepartitions':      True,
+        # for pvalloc_initalization + sanity check
+        'plot_ind_var_summary_stats':            True,
         'plot_ind_charac_omitted_gwr':           True,
             'plot_ind_charac_omitted_gwr_specs':{
                 'disc_cols': ['BFS_NUMMER','GSTAT','GKAT','GKLAS'], 
@@ -21,6 +21,16 @@ visual_default_settings = {
                 'cont_figsize': [15, 10],
                 'cont_bins': 20,
             },
+
+        # for pvalloc_MC_algorithm 
+
+        # ------------------------
+
+        'plot_ind_line_productionHOY_per_node':  True,
+        'plot_ind_line_installedCap_per_month':  True,
+        'plot_ind_line_installedCap_per_BFS':    False,
+        'plot_ind_hist_NPV_freepartitions':      True,
+
         'plot_ind_map_topo_egid':                True,
             'plot_ind_map_topo_egid_specs': {
                 'uniform_municip_color': '#fff2ae',
@@ -52,7 +62,6 @@ visual_default_settings = {
                 'point_color_all': '#383838',       # dark grey
                 'point_color_palette': 'Turbo',
             },
-        'plot_ind_var_summary_stats':            True,
 
 
         'plot_agg_line_installedCap_per_month':  True,
