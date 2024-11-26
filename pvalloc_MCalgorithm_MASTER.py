@@ -166,7 +166,7 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
                                                     mc_data_path,
                                                     dfuid_installed_list, 
                                                     pred_inst_df,
-                                                    i_m, m)
+                                                    m, i_m)
                     
                 # Adjust constr_built capacity ----------
                 constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
