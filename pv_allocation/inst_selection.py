@@ -27,8 +27,6 @@ def select_AND_adjust_topology(
 
 
     # import ----------
-    # topo = json.load(open(f'{data_path}/output/pvalloc_run/topo_egid.json', 'r'))
-    # pred_inst_df = pd.read_parquet(f'{data_path}/output/pvalloc_run/pred_inst_df.parquet') if os.path.exists(f'{data_path}/output/pvalloc_run/pred_inst_df.parquet') else pd.DataFrame()
     topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
     npv_df = pd.read_parquet(f'{subdir_path}/npv_df.parquet') 
     pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path}/pred_inst_df.parquet') else pd.DataFrame()
@@ -99,12 +97,6 @@ def select_AND_adjust_topology(
 
 
     # export main dfs ------------------------------------------
-    # npv_df.to_parquet(f'{data_path}/output/pvalloc_run/npv_df.parquet')
-    # npv_df.to_csv(f'{data_path}/output/pvalloc_run/npv_df.csv')
-    # pred_inst_df.to_parquet(f'{data_path}/output/pvalloc_run/pred_inst_df.parquet')
-    # pred_inst_df.to_csv(f'{data_path}/output/pvalloc_run/pred_inst_df.csv')
-    # with open (f'{data_path}/output/pvalloc_run/topo_egid.json', 'w') as f:
-    #     json.dump(topo, f)
     npv_df.to_parquet(f'{subdir_path}/npv_df.parquet')
     npv_df.to_csv(f'{subdir_path}/npv_df.csv')
     pred_inst_df.to_parquet(f'{subdir_path}/pred_inst_df.parquet')
@@ -114,13 +106,6 @@ def select_AND_adjust_topology(
 
 
     # export by Month ------------------------------------------
-    # npv_df.to_parquet(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_{m}.parquet')
-    # npv_df.to_csv(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/npv_df_{m}.csv')
-    # pred_inst_df.to_parquet(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
-    # pred_inst_df.to_csv(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/pred_inst_df_{m}.csv')
-    # with open(f'{data_path}/output/pvalloc_run/pred_npv_inst_by_M/topo_{m}.json', 'w') as f:
-    #     json.dump(topo, f)
-
     npv_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.parquet')
     npv_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.csv')
     pred_inst_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
