@@ -32,12 +32,11 @@ def select_AND_adjust_topology(
     pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path}/pred_inst_df.parquet') else pd.DataFrame()
 
 
-
+    # SELECTION BY METHOD ---------------
     # set random seed
     if rand_seed is not None:
         np.random.seed(rand_seed)
 
-    # SELECTION BY METHOD ---------------
     if inst_selection_method == 'random':
         npv_pick = npv_df.sample(n=1).copy()
 
@@ -56,26 +55,29 @@ def select_AND_adjust_topology(
             rand_row = np.random.randint(0, npv_pick.shape[0])
             npv_pick = npv_pick.iloc[rand_row]
 
-        # remove cols for uniform format between selection methods
-        for col in ['NPV_stand', 'diff_NPV_rand']:
-            if col in npv_df.columns:
-                npv_df.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
+    # remove cols for uniform format between selection methods
+    for col in ['NPV_stand', 'diff_NPV_rand']:
+        if col in npv_df.columns:
+            npv_df.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
     # ---------------
 
 
-    # if isinstance(npv_pick['EGID'], pd.Series):
     if isinstance(npv_pick, pd.DataFrame):
         picked_egid = npv_pick['EGID'].values[0]
         picked_uid = npv_pick['df_uid_combo'].values[0]
         picked_flaech = npv_pick['FLAECHE'].values[0]
-        npv_pick.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
+        for col in ['NPV_stand', 'diff_NPV_rand']:
+            if col in npv_pick.columns:
+                npv_pick.drop(columns=['NPV_stand', 'diff_NPV_rand'], inplace=True)
 
     elif isinstance(npv_pick, pd.Series):
         picked_egid = npv_pick['EGID']
         picked_uid = npv_pick['df_uid_combo']
         picked_flaech = npv_pick['FLAECHE']
-        npv_pick.drop(index=['NPV_stand', 'diff_NPV_rand'], inplace=True)
-
+        for col in ['NPV_stand', 'diff_NPV_rand']:
+            if col in npv_pick.index:
+                npv_pick.drop(index=['NPV_stand', 'diff_NPV_rand'], inplace=True)
+                
     inst_power = picked_flaech * kWpeak_per_m2 * share_roof_area_available 
     npv_pick['inst_TF'], npv_pick['info_source'], npv_pick['xtf_id'], npv_pick['BeginOp'], npv_pick['TotalPower'], npv_pick['iter_round'] = [True, 'alloc_algorithm', picked_uid, f'{m}', inst_power, i_alloc_loop]
     
