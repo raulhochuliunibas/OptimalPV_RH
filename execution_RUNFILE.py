@@ -7,15 +7,15 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred = 48 #600 #36
-MC_iter = 2
+months_pred = 2 #600 #36
+MC_iter = 1
 run_on_server = False
-bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
+bfs_numbers = [2768, 2761,]# 2772, 2473, 2475, 2785, 2480, 2475] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
 run_dataagg =       False
-run_alloc_init =    True
-run_alloc_MCalg =   True
-run_visual =        False
+run_alloc_init =    False
+run_alloc_MCalg =   False
+run_visual =        True
 
 
 # data_aggregation 
@@ -44,79 +44,78 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
-    # f'pvalloc_DEV_{months_pred}m_meth2_npv':{
-    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
-    #     'script_run_on_server': run_on_server,
-    #     'months_prediction': months_pred,
-    #     # 'kt_numbers': [13,],
-    #     'bfs_numbers': bfs_numbers,
-    #     'recreate_topology':             True, 
-    #     'recalc_economics_topo_df':      True,
-    #     'sanitycheck_byEGID':            True,
-    #     'create_gdf_export_of_topology': True,
-
-    #     # 'sanitycheck_summary_byEGID_specs':{
-    #     #     'n_iterations_before_sanitycheck': 2,},
-    #     'algorithm_specs': {
-    #         'inst_selection_method': 'prob_weighted_npv',},
-    #     'tech_economic_specs': {
-    #         'max_distance_m_for_EGID_node_matching': 0,
-    #         'self_consumption_ifapplicable': 0,
-    #         'pvprod_calc_method': 'method2',},
-    #     'MC_loop_specs': {
-    #         'montecarlo_iterations': MC_iter,},
-    # },
-    f'pvalloc_{months_pred}m_meth2_npv':{
+    f'pvalloc_DEV_{months_pred}m_meth2_rnd':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': months_pred,
+        # 'kt_numbers': [13,],
         'bfs_numbers': bfs_numbers,
+        'recreate_topology':             True, 
+        'recalc_economics_topo_df':      True,
+        'sanitycheck_byEGID':            True,
+        'create_gdf_export_of_topology': True,
+
+        'sanitycheck_summary_byEGID_specs':{
+            'n_iterations_before_sanitycheck': 2,},
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2',},
         'MC_loop_specs': {
             'montecarlo_iterations': MC_iter,},
     },
-        f'pvalloc_{months_pred}m_meth3_npv':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        'bfs_numbers': bfs_numbers,
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': MC_iter,},
-    },
+    # f'pvalloc_24m_meth2_rnd':{
+    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': 24,
+    #     'bfs_numbers': bfs_numbers,
+    #     'algorithm_specs': {
+    #         'inst_selection_method': 'random',},
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2',},
+    #     'MC_loop_specs': {
+    #         'montecarlo_iterations': MC_iter,},
+    # },
+    #     f'pvalloc_24m_meth3_rnd':{
+    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': 24,
+    #     'bfs_numbers': bfs_numbers,
+    #     'algorithm_specs': {
+    #         'inst_selection_method': 'random',},
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method3',},
+    #     'MC_loop_specs': {
+    #         'montecarlo_iterations': MC_iter,},
+    # },
 }
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
 
 # vsualiastion 
 visual_settings = {
-        'plot_show': False,
-        'MC_subdir_for_plot': 'ASDFASDF', 
-        'node_selection_for_plots': ['node1', 'node10', 'node15'], # or None for all nodes
+        'plot_show': True,
+        'remove_previous_plots': True,
+        'MC_subdir_for_plot': '*MC*1', 
+        'node_selection_for_plots': ['8', '32', '10', '22'], # or None for all nodes
 
         # PLOT IND for pvalloc_initalization + sanity check
-        'plot_ind_var_summary_stats':            True,        # |> bookmark: add a histplot for pvprod_kwh.sum and STROMERTRAG.sum for comparison
-        'plot_ind_charac_omitted_gwr':           False,       # |> bookmark: if possible find a way to continue script, even if plots are shown
-        #NEU plot radiation over time
-        #NEU 'plot_ind_hist_installedCap_kw': > in plot_ind_var_summary_stats? 
-        #NEU plot_ind_hist_annualpvprod_kwh : > in plot_ind_var_summary_stats?
-
+        'plot_ind_var_summary_stats':            False,
+        'plot_ind_charac_omitted_gwr':           False,  # |> bookmark: NOT WORKING properly!! how to make such that code continues if plot still shown?
+        'plot_ind_line_meteo_radiation':         False,
 
         # PLOT IND for pvalloc_MC_algorithm 
-
-        'plot_ind_line_installedCap':            False,       # |> bookmark: Necessary to specify which MC iteration to plot! ctrlF: "MC_subdir_for_plot"
-        'plot_ind_line_productionHOY_per_node':  False,      
-        # 'plot_ind_line_installedCap_per_month':  False,     # |> bookmark: remove 
-        'plot_ind_hist_NPV_freepartitions':      False,
-
+        'plot_ind_line_installedCap':            False,       
+        'plot_ind_line_productionHOY_per_node':  True,      # |> bookmark: adjust so that "nodeselection" above is actually working. 
+        'plot_ind_hist_NPV_freepartitions':      True,
+        #NEU 'plot_ind_hist_installedCap_kw': > in plot_ind_var_summary_stats?
+        # |open> hist für FLACHE*70%*kWpeak_m2 for all egids
+        # |done> hist für FLACHE*70%*kWpeak_m2 only for buildings in pvdf => good comparison!
+        
 
         # for aggregated pvalloc_MC_algorithm 
 
         # PLOT IND for maps
-
-        #                                      # False,
         'plot_ind_map_topo_egid':                False,
         'plot_ind_map_node_connections':         False,
         'plot_ind_map_omitted_gwr_egids':        False,
@@ -137,7 +136,7 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 
 
 # DATA AGGREGATION RUNs  ------------------------------------------------------------------------
-# if not not dataagg_scenarios:
+# if not not dataagg_scenarios:/
 for k_sett, scen_sett in dataagg_scenarios.items():
     dataagg_settings = scen_sett
     data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings) if run_dataagg else print('')
