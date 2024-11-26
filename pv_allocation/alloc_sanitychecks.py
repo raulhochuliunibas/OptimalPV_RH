@@ -70,10 +70,14 @@ def create_gdf_export_of_topology(
 
     Map_egid_dsonode = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_dsonode.parquet')
     gwr_bsblso_gdf = gpd.read_file(f'{data_path_def}/split_data_geometry/gwr_bsblso_gdf.geojson')
-    gm_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gm_shp_gdf.geojson')
+    gm_shp_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gm_shp_gdf.geojson')
 
 
     # transformations
+    gm_shp_gdf['BFS_NUMMER'] = gm_shp_gdf['BFS_NUMMER'].astype(int)
+    gwr_gdf = gwr_gdf.loc[gwr_gdf['BFS_NUMMER'].isin(bfs_numbers_def)]
+
+
     pv_gdf['xtf_id'] = pv_gdf['xtf_id'].astype(int).replace(np.nan, "").astype(str)
     solkat_gdf['DF_UID'] = solkat_gdf['DF_UID'].astype(int).replace(np.nan, "").astype(str)
     solkat_gdf.rename(columns={'DF_UID': 'df_uid'}, inplace=True)
