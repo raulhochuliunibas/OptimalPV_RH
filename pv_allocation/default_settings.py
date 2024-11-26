@@ -80,7 +80,7 @@ pvalloc_default_settings = {
                     '391292', '390601', '2347595', '401781'        # single roof houses in Aesch, Ettingen, 
                     '391263', '245057295', '401753',  # houses with built pv in Aesch, Ettingen,
             ],
-        'n_EGIDs_of_alloc_algorithm': 10,
+        'n_EGIDs_of_alloc_algorithm': 20,
         'n_iterations_before_sanitycheck': 12,
     },
     # PART II: settings for MC algorithm --------------------
