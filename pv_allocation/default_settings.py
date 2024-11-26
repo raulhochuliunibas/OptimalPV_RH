@@ -13,9 +13,12 @@ pvalloc_default_settings = {
     'months_lookback': 12*1,
     'months_prediction': 3,
     'script_run_on_server':     False,                           # F: run on private computer, T: run on server
+    'export_csvs':              True, 
+    # no longer relevant
     'show_debug_prints':        True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
     'fast_debug_run':           False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
     'n_egid_in_topo': 200, 
+
 
 
     # switch on/off parts of aggregation 
@@ -65,8 +68,8 @@ pvalloc_default_settings = {
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
         'invst_maturity': 25,
-        'kWpeak_per_m2': 0.2,                       # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
-        'share_roof_area_available': 0.7,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
+        'kWpeak_per_m2': 0.15,                       # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
+        'share_roof_area_available': 0.6,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
         'max_distance_m_for_EGID_node_matching': 0, # max distance in meters for matching GWR EGIDs that have no node assignment to the next grid node
         },
     'panel_efficiency_specs': {

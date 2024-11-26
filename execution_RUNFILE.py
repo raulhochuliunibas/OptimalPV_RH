@@ -7,8 +7,8 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred = 2 #600 #36
-MC_iter = 1
+months_pred = 24 #600 #36
+MC_iter = 2
 run_on_server = False
 bfs_numbers = [2768, 2761,]# 2772, 2473, 2475, 2785, 2480, 2475] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
@@ -44,31 +44,19 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios={
-    f'pvalloc_DEV_{months_pred}m_meth2_rnd':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': months_pred,
-        # 'kt_numbers': [13,],
-        'bfs_numbers': bfs_numbers,
-        'recreate_topology':             True, 
-        'recalc_economics_topo_df':      True,
-        'sanitycheck_byEGID':            True,
-        'create_gdf_export_of_topology': True,
-
-        'sanitycheck_summary_byEGID_specs':{
-            'n_iterations_before_sanitycheck': 2,},
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': MC_iter,},
-    },
-    # f'pvalloc_24m_meth2_rnd':{
+    # f'pvalloc_DEV_{months_pred}m_meth2_rnd':{
     #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
     #     'script_run_on_server': run_on_server,
-    #     'months_prediction': 24,
+    #     'months_prediction': months_pred,
+    #     # 'kt_numbers': [13,],
     #     'bfs_numbers': bfs_numbers,
+    #     'recreate_topology':             True, 
+    #     'recalc_economics_topo_df':      True,
+    #     'sanitycheck_byEGID':            True,
+    #     'create_gdf_export_of_topology': True,
+
+    #     'sanitycheck_summary_byEGID_specs':{
+    #         'n_iterations_before_sanitycheck': 2,},
     #     'algorithm_specs': {
     #         'inst_selection_method': 'random',},
     #     'tech_economic_specs': {
@@ -76,18 +64,89 @@ pvalloc_scenarios={
     #     'MC_loop_specs': {
     #         'montecarlo_iterations': MC_iter,},
     # },
-    #     f'pvalloc_24m_meth3_rnd':{
-    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
-    #     'script_run_on_server': run_on_server,
-    #     'months_prediction': 24,
-    #     'bfs_numbers': bfs_numbers,
-    #     'algorithm_specs': {
-    #         'inst_selection_method': 'random',},
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method3',},
-    #     'MC_loop_specs': {
-    #         'montecarlo_iterations': MC_iter,},
-    # },
+    f'pvalloc_BLBSSO_24m_meth2_rnd_diffratio05':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 24,
+        'kt_numbers': [13, 12, 11],
+        'weather_specs': {
+            'wdiffuse_to_direct_rad_factor': 0.5,},
+        # 'bfs_numbers': bfs_numbers,
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': MC_iter,},
+    },
+    f'pvalloc_BLBSSO_24m_meth2_rnd_diffratio08':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 24,
+        'kt_numbers': [13, 12, 11],
+        'weather_specs': {
+            'wdiffuse_to_direct_rad_factor': 0.8,},
+        # 'bfs_numbers': bfs_numbers,
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': MC_iter,},
+    },
+    f'pvalloc_BLBSSO_24m_meth2_rnd':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 24,
+        'kt_numbers': [13, 12, 11],
+        # 'bfs_numbers': bfs_numbers,
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': MC_iter,},
+    },
+        f'pvalloc_BLBSSO_24m_meth2_npv':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 24,
+        'kt_numbers': [13, 12, 11],
+        # 'bfs_numbers': bfs_numbers,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv'},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': MC_iter,},
+    },
+    f'pvalloc_BLBSSO_24m_meth3_rnd':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 24,
+        'kt_numbers': [13, 12, 11],
+        # 'bfs_numbers': bfs_numbers,
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': MC_iter,},
+    },
+    f'pvalloc_BLBSSO_24m_meth3_npv':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 24,
+        'kt_numbers': [13, 12, 11],
+        # 'bfs_numbers': bfs_numbers,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv'},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': MC_iter,},
+    },
+
 }
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
