@@ -10,7 +10,7 @@ def select_AND_adjust_topology(
         subdir_path, 
         dfuid_installed_list_func, 
         pred_inst_df_func,
-        m, i):
+        m, i_m):
     
     # select a random building out of npv_df_func to attribute a PV system to
     wd_path = pvalloc_settings['wd_path']
@@ -23,7 +23,7 @@ def select_AND_adjust_topology(
     subdir_path = subdir_path
     # dfuid_installed_list = dfuid_installed_list_func
     # pred_inst_df = pred_inst_df_func
-    i_alloc_loop = i
+    i_alloc_loop = i_m
 
 
     # import ----------
