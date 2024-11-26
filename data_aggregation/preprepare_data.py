@@ -302,7 +302,7 @@ def local_data_AND_spatial_mappings(
 
     # EXPORT SPATIAL DATA ---------------------------------------------------------------------------------
     gdf_to_export_names = ['gm_shp_gdf', 'pv_gdf', 'solkat_gdf', 'gwr_gdf','gwr_buff_gdf', 
-                           'omiitt_gwregid_gdf', 'omitt_solkat_gdf', 'omitt_pv_gdf', 'omitt_gwregid_gridnode_gdf' ]
+                           'omitt_gwregid_gdf', 'omitt_solkat_gdf', 'omitt_pv_gdf', 'omitt_gwregid_gridnode_gdf' ]
     gdf_to_export_list = [gm_shp_gdf, pv_gdf, solkat_gdf, gwr_gdf, gwr_buff_gdf,
                            omitt_gwregid_gdf, omitt_solkat_gdf, omitt_pv_gdf, omitt_gwregid_gridnode_gdf]
     
