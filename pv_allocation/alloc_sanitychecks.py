@@ -75,7 +75,7 @@ def create_gdf_export_of_topology(
 
     # transformations
     gm_shp_gdf['BFS_NUMMER'] = gm_shp_gdf['BFS_NUMMER'].astype(int)
-    gwr_gdf = gwr_gdf.loc[gwr_gdf['BFS_NUMMER'].isin(bfs_numbers_def)]
+    gm_gdf = gm_shp_gdf.loc[gm_shp_gdf['BFS_NUMMER'].isin(bfs_numbers_def)]
 
 
     pv_gdf['xtf_id'] = pv_gdf['xtf_id'].astype(int).replace(np.nan, "").astype(str)
