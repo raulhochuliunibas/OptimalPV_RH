@@ -72,15 +72,11 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
             shutil.copy(summary_find_path[0], summary_name)
         else:
             print_to_logfile(f' **ERROR** : summary file not found or multiple files found', log_name)
-        print_to_logfile(f'\n', summary_name)
-        subchapter_to_logfile(f'pvalloc_initialization_MASTER', summary_name)
 
 
         # extend settings dict with relevant informations for later functions
         if not not pvalloc_settings['kt_numbers']:
             pvalloc_settings['bfs_numbers'] = auxiliary_functions.get_bfs_from_ktnr(pvalloc_settings['kt_numbers'], data_path, log_name)
-            print_to_logfile(f' > no. of kt  numbers in selection: {len(pvalloc_settings["kt_numbers"])}', log_name)
-            print_to_logfile(f' > no. of bfs numbers in selection: {len(pvalloc_settings["bfs_numbers"])}', log_name) 
 
         elif (not pvalloc_settings['kt_numbers']) and (not not pvalloc_settings['bfs_numbers']):
             pvalloc_settings['bfs_numbers'] = [str(bfs) for bfs in pvalloc_settings['bfs_numbers']]
@@ -95,7 +91,12 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
     chapter_to_logfile(f'start pvalloc_initialization_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
     formated_pvalloc_settings = format_MASTER_settings(pvalloc_settings)
+    print_to_logfile(f' > no. of kt  numbers in selection: {len(pvalloc_settings["kt_numbers"])}', log_name)
+    print_to_logfile(f' > no. of bfs numbers in selection: {len(pvalloc_settings["bfs_numbers"])}', log_name) 
     print_to_logfile(f'pvalloc_settings: \n{pformat(formated_pvalloc_settings)}', log_name)
+    # intitial print to summary file
+    subchapter_to_logfile(f'pvalloc_initialization_MASTER', summary_name)
+
 
 
     
