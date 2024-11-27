@@ -6,13 +6,14 @@ visual_default_settings = {
         'default_zoom_year': [2012, 2030],
         'default_zoom_hour': [2400, 2400+(24*7)],
         'default_map_zoom': 11, 
-        'default_map_center': [47.42, 7.52],
+        'default_map_center': [47.48, 7.57],
         'node_selection_for_plots': ['node1', 'node3', 'node5'], # or None for all nodes
 
-        # for pvalloc_initalization + sanity check
-        'plot_ind_var_summary_stats':            True,
-        'plot_ind_hist_sanitycheck':             True,
-        'plot_ind_charac_omitted_gwr':           True,
+        # PLOT CHUCK -------------------------> [run plot,  show plot]
+        # for pvalloc_inital + sanitycheck
+        'plot_ind_var_summary_stats':           [True,      True],
+        'plot_ind_hist_pvcapaprod_sanitycheck': [True,      True],
+        'plot_ind_charac_omitted_gwr':          [True,      True],
             'plot_ind_charac_omitted_gwr_specs':{
                 'disc_cols': ['BFS_NUMMER','GSTAT','GKAT','GKLAS'], 
                 'disc_ncols': 2, 
@@ -22,17 +23,16 @@ visual_default_settings = {
                 'cont_figsize': [15, 10],
                 'cont_bins': 20,
             },
+        'plot_ind_line_meteo_radiation':        [True,      True],
 
         # for pvalloc_MC_algorithm 
+        'plot_ind_line_installedCap':            [True,      True],
+        'plot_ind_line_productionHOY_per_node':  [True,      True],
+        'plot_ind_hist_NPV_freepartitions':      [True,      True],
+        'plot_ind_hist_pvcapaprod':              [True,    True],
 
-        # ------------------------
 
-        'plot_ind_line_productionHOY_per_node':  True,
-        'plot_ind_line_installedCap_per_month':  True,
-        'plot_ind_line_installedCap_per_BFS':    False,
-        'plot_ind_hist_NPV_freepartitions':      True,
-
-        'plot_ind_map_topo_egid':                True,
+        'plot_ind_map_topo_egid':                [True,    False],
             'plot_ind_map_topo_egid_specs': {
                 'uniform_municip_color': '#fff2ae',
                 'shape_opacity': 0.2,
@@ -46,22 +46,27 @@ visual_default_settings = {
                 'point_color_rest': '#383838',       # dark grey
                 'point_color_sanity_check': '#0041c2', # blue
             }, 
+        'plot_ind_map_node_connections':         [True,    False],
+            'plot_ind_map_node_connections_specs': {
+                'uniform_municip_color': '#fff2ae',
+                'shape_opacity': 0.2,   
+                'point_opacity_all': 0.5,
+                'point_size_all': 4,
+                'point_opacity_bynode': 0.7,
+                'point_size_bynode': 6,
+                'point_color_all': '#383838',       # dark grey
+                'point_color_palette': 'Turbo',
+                'point_size_dsonode_loc': 15,
+                'point_opacity_dsonode_loc': 1
+            },
+
+
+        
         'plot_ind_map_topo_omitt':              True,
             'plot_ind_map_topo_omitt_specs':{
                 'point_opacity': 0.6, 
                 'point_size': 7.5, 
                 'point_color': '#f54242',           # red
-            },
-        'plot_ind_map_node_connections':         True,
-            'plot_ind_map_node_connections_specs': {
-                'uniform_municip_color': '#fff2ae',
-                'shape_opacity': 0.2,   
-                'point_opacity_all': 0.7,
-                'point_size_all': 4.5,
-                'point_opacity_bynode': 0.9,
-                'point_size_bynode': 7,
-                'point_color_all': '#383838',       # dark grey
-                'point_color_palette': 'Turbo',
             },
 
 
