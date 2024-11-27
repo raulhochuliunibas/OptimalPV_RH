@@ -228,7 +228,10 @@ def calc_economics_in_topo_df(
 
         # export subdf ----------------------------------------------
         subdf.to_parquet(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.parquet')
-        subdf.to_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv', index=False)
+        if pvalloc_settings['export_csvs']:
+            subdf.to_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv', index=False)
+        if i == 0:
+            subdf.to_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv', index=False)
         checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', log_file_name, 1)
 
 
@@ -402,9 +405,10 @@ def update_gridprem(
 
     # EXPORT -----------------------------------------------------
     gridnode_df.to_parquet(f'{subdir_path_def}/gridnode_df.parquet')
-    # gridnode_df.to_csv(f'{subdir_path_def}/gridnode_df.csv', index=False)
     gridprem_ts.to_parquet(f'{subdir_path_def}/gridprem_ts.parquet')
-    # gridprem_ts.to_csv(f'{subdir_path_def}/gridprem_ts.csv', index=False)
+    if pvalloc_settings['export_csvs']:
+        gridnode_df.to_csv(f'{subdir_path_def}/gridnode_df.csv', index=False)
+        gridprem_ts.to_csv(f'{subdir_path_def}/gridprem_ts.csv', index=False)
 
 
     # export by Month -----------------------------------------------------
@@ -420,10 +424,14 @@ def update_gridprem(
             #         os.remove(f)
 
             gridnode_df.to_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{m}.parquet')
-            gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
-
             gridprem_ts.to_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.parquet')
-            gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
+
+            if pvalloc_settings['export_csvs']:
+                gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
+                gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
+            if i_m < 5:
+                gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
+                gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
 
     checkpoint_to_logfile(f'exported gridprem_ts and gridnode_df', log_file_name, 1)
 
@@ -611,7 +619,8 @@ def update_npv_df(pvalloc_settings,
 
     # export npv_df -----------------------------------------------------
     npv_df.to_parquet(f'{subdir_path_def}/npv_df.parquet')
-    npv_df.to_csv(f'{subdir_path_def}/npv_df.csv', index=False)
+    if pvalloc_settings['export_csvs']:
+        npv_df.to_csv(f'{subdir_path_def}/npv_df.csv', index=False)
 
 
     # export by Month -----------------------------------------------------
@@ -626,7 +635,11 @@ def update_npv_df(pvalloc_settings,
             #         os.remove(f)
 
             npv_df.to_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
-            npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
+            if pvalloc_settings['export_csvs']:
+                npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
+            if i_m < 5:
+                npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
+
 
     checkpoint_to_logfile(f'exported npv_df', log_file_name, 1)
         
