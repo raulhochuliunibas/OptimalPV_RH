@@ -193,7 +193,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # plot ind - var: summary statistics --------------------
-    if visual_settings['plot_ind_var_summary_stats']:
+    if visual_settings['plot_ind_var_summary_stats'][0]:
         checkpoint_to_logfile(f'plot_ind_var_summary_stats', log_name)
         i_scen, scen = 0, scen_dir_export_list[0]
 
@@ -215,7 +215,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 title = f'Total Demand per Demand Type (scen: {scen})'
             )
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen)
-            if plot_show:
+
+            if plot_show and visual_settings['plot_ind_var_summary_stats'][1]:
                 fig.show()
             fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_bar_totaldemand_by_type.html')
             print_to_logfile(f'\texport: plot_ind_bar_totaldemand_by_type.html (for: {scen})', log_name)
@@ -233,15 +234,16 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen)
             fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
-            if plot_show:
+
+            if plot_show and visual_settings['plot_ind_var_summary_stats'][1]:
                 fig.show()
             fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_demandTS.html')
             print_to_logfile(f'\texport: plot_ind_line_demandTS.html (for: {scen})', log_name)
             
 
     # plot ind - hist: sanity check capacity & production --------------------
-    if visual_settings['plot_ind_hist_sanitycheck']:
-        checkpoint_to_logfile(f'plot_ind_hist_sanitycheck', log_name)
+    if visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][0]:
+        checkpoint_to_logfile(f'plot_ind_hist_pvcapaprod_sanitycheck', log_name)
         i_scen, scen = 0, scen_dir_export_list[0]
 
         for i_scen, scen in enumerate(scen_dir_export_list):
@@ -329,14 +331,14 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 barmode='overlay', 
                 xaxis_title='Capacity [kW]',
                 yaxis_title='Frequency (Modelled Capacity, possible installations)',
-                title = f'SanityCheck: Modelled vs Installed CAPACITY (kWp_m2:{kWpeak_per_m2}, share roof available: {share_roof_area_available})'
+                title = f'SANITY CHECK: Modelled vs Installed Capacity (kWp_m2:{kWpeak_per_m2}, share roof available: {share_roof_area_available})'
             ) 
             fig.update_yaxes(title_text="Frequency (standardized)", secondary_y=True)
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen)
 
-            if plot_show:
+            if plot_show and visual_settings['plot_ind_hist_sanitycheck'][1]:
                 fig.show()
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_SanityCheck_instCapa_kW.html')
+            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
             print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
 
 
@@ -374,14 +376,14 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig.update_yaxes(title_text="Frequency (standardized)", secondary_y=True)
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen)
             
-            if plot_show:
+            if plot_show and visual_settings['plot_ind_hist_sanitycheck'][1]:
                 fig.show()
             fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_SanityCheck_annualPVprod_kWh.html')
             print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_annualPVprod_kWh.html (for: {scen})', log_name)
             
 
     # plot ind - var: disc charac omitted gwr_egids --------------------
-    if visual_settings['plot_ind_charac_omitted_gwr']:
+    if visual_settings['plot_ind_charac_omitted_gwr'][0]:
         plot_ind_charac_omitted_gwr_specs = visual_settings['plot_ind_charac_omitted_gwr_specs']
         checkpoint_to_logfile(f'plot_ind_charac_omitted_gwr', log_name)
 
@@ -416,7 +418,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 disc_ax[j].axis('off')
             fig.tight_layout()
             
-            if plot_show:
+            if plot_show and visual_settings['plot_ind_charac_omitted_gwr'][1]:
                 plt.show()
                 print('... script continues')
             fig.savefig(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_pie_disc_charac_omitted_gwr.png')
@@ -442,14 +444,14 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 cont_ax[j].axis('off')
             fig.tight_layout()
 
-            if plot_show:
+            if plot_show and visual_settings['plot_ind_charac_omitted_gwr'][1]:
                 plt.show()
             fig.savefig(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_cont_charac_omitted_gwr.png')
             print_to_logfile(f'\texport: plot_ind_hist_cont_charac_omitted_gwr.png (for: {scen})', log_name)
 
 
     # plot ind - line: meteo radiation over time --------------------
-    if visual_settings['plot_ind_line_meteo_radiation']:
+    if visual_settings['plot_ind_line_meteo_radiation'][0]:
         checkpoint_to_logfile(f'plot_ind_line_meteo_radiation', log_name)
 
         for i_scen, scen in enumerate(scen_dir_export_list):
@@ -489,7 +491,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i_scen])
             # fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
 
-            if plot_show:
+            if plot_show and visual_settings['plot_ind_line_meteo_radiation'][1]:
                 fig.show()
             fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_meteo_radiation.html')
 
@@ -500,7 +502,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     
     # plot ind - line: Installed Capacity per Month & per BFS --------------------
-    if visual_settings['plot_ind_line_installedCap']:#  or visual_settings['plot_ind_line_installedCap_per_BFS']:
+    if visual_settings['plot_ind_line_installedCap'][0]:#  or visual_settings['plot_ind_line_installedCap_per_BFS']:
         i_scen, scen = 0, scen_dir_export_list[0]
 
         for i_scen, scen in enumerate(scen_dir_export_list):
@@ -529,7 +531,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
             # plot ind - line: Installed Capacity per Month ===========================
-            if visual_settings['plot_ind_line_installedCap']:  #['plot_ind_line_installedCap_per_month']: 
+            if visual_settings['plot_ind_line_installedCap'][0]:  #['plot_ind_line_installedCap_per_month']: 
                 checkpoint_to_logfile(f'plot_ind_line_installedCap_per_month', log_name)
                 capa_month_df = pvinst_df.copy()
                 capa_month_df['BeginOp_month'] = capa_month_df['BeginOp'].dt.to_period('M')
@@ -586,14 +588,15 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
                 fig1 = add_scen_name_to_plot(fig1, scen, pvalloc_scen_list[i_scen])
                 fig1 = set_default_fig_zoom_year(fig1, default_zoom_year, capa_year_df, 'BeginOp_year')
-                if plot_show:
+                
+                if plot_show and visual_settings['plot_ind_line_installedCap'][1]:
                     fig1.show()
                 fig1.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_month.html')
                 print_to_logfile(f'\texport: plot_ind_line_installedCap_per_month.html (for: {scen})', log_name)
 
 
             # plot ind - line: Installed Capacity per BFS ===========================
-            if visual_settings['plot_ind_line_installedCap']:  #plot_ind_line_installedCap_per_BFS']: 
+            if visual_settings['plot_ind_line_installedCap'][0]:  #plot_ind_line_installedCap_per_BFS']: 
                 checkpoint_to_logfile(f'plot_ind_line_installedCap_per_BFS', log_name)
                 capa_bfs_df = pvinst_df.copy()
                 gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gm_shp_gdf.geojson')                                         
@@ -660,7 +663,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # plot ind - line: Production + Feedin HOY per Node --------------------
-    if visual_settings['plot_ind_line_productionHOY_per_node']:
+    if visual_settings['plot_ind_line_productionHOY_per_node'][0]:
         checkpoint_to_logfile(f'plot_ind_line_productionHOY_per_node', log_name)
         i_scen, scen = 0, scen_dir_export_list[0]
         for i_scen, scen in enumerate(scen_dir_export_list):
@@ -740,13 +743,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i_scen])
             fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
 
-            if plot_show:
+            if plot_show and visual_settings['plot_ind_line_productionHOY_per_node'][1]:	
                 fig.show() 
             fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_productionHOY_per_node.html')
 
 
     # plot ind - hist: NPV possible PV inst before / after --------------------
-    if visual_settings['plot_ind_hist_NPV_freepartitions']:
+    if visual_settings['plot_ind_hist_NPV_freepartitions'][0]:
         checkpoint_to_logfile(f'plot_ind_hist_NPV_freepartitions', log_name)
         i_scen, scen = 0, scen_dir_export_list[0]
         for i_scen, scen in enumerate(scen_dir_export_list):
@@ -774,48 +777,113 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig.update_traces(bingroup=1, opacity=0.75)
 
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i_scen])
-            if plot_show:
+            
+            if plot_show and visual_settings['plot_ind_hist_NPV_freepartitions'][1]:
                 fig.show()
             fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_NPV_freepartitions.html')
 
 
+    # plot ind - hist: PV Capacity and Production per Year --------------------
+    if visual_settings['plot_ind_hist_pvcapaprod'][0]:
+        checkpoint_to_logfile(f'plot_ind_hist_pvcapaprod', log_name)
+        i_scen, scen = 0, scen_dir_export_list[0]
+        for i_scen, scen in enumerate(scen_dir_export_list):
+            # setup + import ----------
+            mc_data_path = glob.glob(f'{data_path}/output/{scen}/{mc_str}')[0]
+            topo_subdf_paths = glob.glob(f'{data_path}/output/{scen}/topo_time_subdf/topo_subdf_*.parquet')
+            pv = pd.read_parquet(f'{data_path}/output/{scen}/pv.parquet')
+
+            kWpeak_per_m2, share_roof_area_available = pvalloc_scen['tech_economic_specs']['kWpeak_per_m2'],pvalloc_scen['tech_economic_specs']['share_roof_area_available']
+            inverter_efficiency = pvalloc_scen['tech_economic_specs']['inverter_efficiency']
+            panel_efficiency_print = 'dynamic' if pvalloc_scen['panel_efficiency_specs']['variable_panel_efficiency_TF'] else 'static'
+            color_pv_df, color_alloc_algo, color_rest = visual_settings['plot_ind_map_topo_egid_specs']['point_color_pv_df'], visual_settings['plot_ind_map_topo_egid_specs']['point_color_alloc_algo'], visual_settings['plot_ind_map_topo_egid_specs']['point_color_rest']
+            
+            xbins_hist_instcapa_abs, xbins_hist_instcapa_stand = 0.5,0.1
+            xbins_hist_totalprodkwh_abs, xbins_hist_totalprodkwh_stand = 500, 0.05
+
+            topo = json.load(open(f'{mc_data_path}/topo_egid.json', 'r'))
+            egid_in_topo = list(topo.keys())
+
+            # installed Capapcity kW --------------------------------            
+            egid_list, xtf_id_list, TotalPower_list, info_source_list = [], [], [], []
+            for k, v in topo.items():
+                if v['pv_inst']['inst_TF']:
+                    egid_list.append(k)
+                    TotalPower_list.append(v['pv_inst']['TotalPower'])
+                    info_source_list.append(v['pv_inst']['info_source'])
+                    xtf_id_list.append(v['pv_inst']['xtf_id'])
+            pvinst_df = pd.DataFrame({'EGID': egid_list, 'info_source': info_source_list, 'xtf_id': xtf_id_list, 'TotalPower': TotalPower_list})
+
+            # plot 
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(x=pvinst_df['TotalPower'], 
+                                       name='Total Capacity (kW)', 
+                                       opacity = 0.5, marker_color = color_rest,
+                                       xbins=dict(size=xbins_hist_instcapa_abs)))
+            fig.add_trace(go.Histogram(x=pvinst_df.loc[pvinst_df['info_source'] == 'pv_df', 'TotalPower'],
+                                       name='Built Capacity (kW) - PV_df', 
+                                       opacity = 0.5, marker_color = color_pv_df,
+                                       xbins=dict(size=xbins_hist_instcapa_abs)))
+            fig.add_trace(go.Histogram(x=pvinst_df.loc[pvinst_df['info_source'] == 'alloc_algorithm', 'TotalPower'],
+                                       name='Modelled Capacity (kW) - Alloc. Algorithm', 
+                                       opacity = 0.5, marker_color = color_alloc_algo,
+                                       xbins=dict(size=xbins_hist_instcapa_abs)))      
+            fig.update_layout(
+                barmode='overlay',
+                xaxis_title='Installed Capacity (kW)',
+                yaxis_title='Frequency',
+                title = f'Modelled vs Installed Capacity (MC_iter: {mc_str}, kWp_m2:{kWpeak_per_m2}, share roof available: {share_roof_area_available})'
+            )
+            fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i_scen])
+
+            if plot_show and visual_settings['plot_ind_hist_pvcapaprod'][1]:
+                fig.show()  
+            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvcapaprod.html')
 
 
+            # Production kWh --------------------------------
+            egid_with_inst = [k for k, v in topo.items() if v['pv_inst']['inst_TF']]
 
+            aggdf_combo_list = []
+            path = topo_subdf_paths[0]
+            for i_path, path in enumerate(topo_subdf_paths):
+                subdf = pd.read_parquet(path)
+                subdf = subdf.loc[subdf['EGID'].isin(pvinst_df['EGID'])]
 
+                agg_subdf = subdf.groupby(['EGID', 'df_uid', 'FLAECHE', 'STROMERTRAG',]).agg({'pvprod_kW': 'sum'}).reset_index()
 
+                egid_list, flaeche_list, pvprod_list, stromertrag_list = [], [], [], []
+                egid  = agg_subdf['EGID'].unique()[0]
+                for egid in subdf['EGID'].unique():
+                    egid_list.append(egid)
 
+                    # BOOKMARK!!!
+                    # > extract pvprod for all egids that have built in the MC iteration and sum them up
+                    # > later plot histogram similar to sanity check of installed capacity. 
+                    # problem !
+                    # > how to treat the installation on existing buildings? 
+                    # how did i treat these cases in the feedin to the grid part of the code?
+                    # would have to be identical approach
+                    if topo.get(egid).get('pv_inst').get('info_source') == 'pv_df':
 
-
-    # PLOT AGGREGATED SCEN ------------------------------------------------------------------------------------------------------
-
-
-
-
-    # ********************************************************************************************************************************************************
-    # ********************************************************************************************************************************************************
-    # ********************************************************************************************************************************************************
-    # ********************************************************************************************************************************************************
-
-
-
-
+                    pvinst_df.loc[pvinst_df['EGID'] == egid, 'info_source'].values
+                    df_uids = pvinst_df.loc[pvinst_df['EGID'] == egid, 'xtf_id'].values
 
     # plot ind - map:  Model PV topology ========================
     default_map_zoom = visual_settings['default_map_zoom']
     default_map_center = visual_settings['default_map_center']
 
-    # map ind - topo_egid ============================
-    if visual_settings['plot_ind_map_topo_egid']:
+    # map ind - topo_egid --------------------
+    if visual_settings['plot_ind_map_topo_egid'][0]:
         map_topo_egid_specs = visual_settings['plot_ind_map_topo_egid_specs']
         checkpoint_to_logfile(f'plot_ind_map_topo_egid', log_name)
 
         for i_scen, scen in enumerate(scen_dir_export_list):
+            pvalloc_scen = pvalloc_scen_list[i_scen]
             
             # get pvinst_gdf ----------------
             if True: 
                 mc_data_path = glob.glob(f'{data_path}/output/{scen}/{mc_str}')[0] # take first path if multiple apply, so code can still run properly
-                pvalloc_scen = pvalloc_scen_list[i_scen]
                 
                 # import 
                 gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
@@ -853,10 +921,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             if True: 
                 # setup
                 scen_data_path = f'{data_path}/output/{scen}'
-                T0_prediction = T0_prediction_list[0]
-                months_prediction = months_prediction_list[0]
-                pvalloc_scen = pvalloc_scen_list[i_scen]
-
+                T0_prediction = pvalloc_scen['T0_prediction']
+                
                 # transformations
                 gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
                 gm_gdf = gm_gdf.loc[gm_gdf['BFS_NUMMER'].isin(pvinst_df['bfs'].unique())].copy()
@@ -868,16 +934,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
                 # geo transformations
                 gm_gdf = gm_gdf.to_crs('EPSG:4326')
-                # Function to flatten geometries to 2D (ignoring Z-dimension)
-                def flatten_geometry(geom):
-                    if geom.has_z:
-                        if geom.geom_type == 'Polygon':
-                            exterior = [(x, y) for x, y, z in geom.exterior.coords]
-                            interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
-                            return Polygon(exterior, interiors)
-                        elif geom.geom_type == 'MultiPolygon':
-                            return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
-                    return geom
                 gm_gdf['geometry'] = gm_gdf['geometry'].apply(flatten_geometry)
 
                 # geojson = gm_gdf.__geo_interface__
@@ -917,23 +973,32 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 # Show the map
                 # fig_topobase.show()
 
-            # topo map ----------------
+            # topo egid map: highlight EGIDs selected for summary ----------------
             if True:
                 fig_topoegid = copy.deepcopy(fig_topobase)
                 pvinst_gdf = pvinst_gdf.to_crs('EPSG:4326')
-                # Function to flatten geometries to 2D (ignoring Z-dimension)
-                def flatten_geometry(geom):
-                    if geom.has_z:
-                        if geom.geom_type == 'Polygon':
-                            exterior = [(x, y) for x, y, z in geom.exterior.coords]
-                            interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
-                            return Polygon(exterior, interiors)
-                        elif geom.geom_type == 'MultiPolygon':
-                            return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
-                    return geom
                 pvinst_gdf['geometry'] = pvinst_gdf['geometry'].apply(flatten_geometry)
 
+                if len(glob.glob(f'{data_path}/output/{scen}/sanity_check_byEGID/summary*.csv')) > 1:
+                    files_sanity_check = glob.glob(f'{data_path}/output/{scen}/sanity_check_byEGID/summary*.csv')
+                    file = files_sanity_check[0]
+                    egid_sanity_check = [file.split('summary_')[-1].split('.csv')[0] for file in files_sanity_check]
+
+                    subinst4_gdf = pvinst_gdf.copy()
+                    subinst4_gdf = subinst4_gdf.loc[subinst4_gdf['EGID'].isin(egid_sanity_check)]
+
+                    # Add the points using Scattermapbox
+                    fig_topoegid.add_trace(go.Scattermapbox(lat=subinst4_gdf.geometry.y,lon=subinst4_gdf.geometry.x, mode='markers',
+                        marker=dict(
+                            size=map_topo_egid_specs['point_size_sanity_check'],
+                            color=map_topo_egid_specs['point_color_sanity_check'],
+                            opacity=map_topo_egid_specs['point_opacity_sanity_check']
+                        ),
+                        name = 'EGIDs in sanity check xlsx',
+                    ))
                 
+            # topo egid map: all buildings ----------------
+            if True:
                 # subset inst_gdf for different traces in map plot
                 pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>node: {row['node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
 
@@ -972,29 +1037,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     hoverinfo='text'
                 ))
 
-            # highlight EGIDs selected for summary ----------------
-            if True:
-                if len(glob.glob(f'{data_path}/output/{scen}/sanity_check_byEGID/*.csv')) > 1:
-                    files_sanity_check = glob.glob(f'{data_path}/output/{scen}/sanity_check_byEGID/*.csv')
-                    file = files_sanity_check[0]
-                    egid_sanity_check = [file.split('summary_')[-1].split('.csv')[0] for file in files_sanity_check]
 
-                    subinst4_gdf = pvinst_gdf.copy()
-                    subinst4_gdf = subinst4_gdf.loc[subinst4_gdf['EGID'].isin(egid_sanity_check)]
-
-                    # Add the points using Scattermapbox
-                    fig_topoegid.add_trace(go.Scattermapbox(lat=subinst4_gdf.geometry.y,lon=subinst4_gdf.geometry.x, mode='markers',
-                        marker=dict(
-                            size=map_topo_egid_specs['point_size_sanity_check'],
-                            color=map_topo_egid_specs['point_color_sanity_check'],
-                            opacity=map_topo_egid_specs['point_opacity_sanity_check']
-                        ),
-                        name = 'EGIDs in sanity check xlsx',
-                    ))
-                
             # Update layout ----------------
-            fig_topopvinst = copy.deepcopy(fig_topoegid)
-            fig_topopvinst.update_layout(
+            fig_topoegid.update_layout(
                     title=f"Map of model PV Topology ({scen})",
                     mapbox=dict(
                         style="carto-positron",
@@ -1002,13 +1047,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                         zoom=default_map_zoom
                     ))
 
-            if plot_show:
-                fig_topopvinst.show()
-            fig_topopvinst.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
+            if plot_show and visual_settings['plot_ind_map_topo_egid'][1]:
+                fig_topoegid.show()
+            fig_topoegid.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
 
 
     # map ind - node_connections ============================
-    if visual_settings['plot_ind_map_node_connections']:
+    if visual_settings['plot_ind_map_node_connections'][0]:
         map_node_connections_specs = visual_settings['plot_ind_map_node_connections_specs']
         checkpoint_to_logfile(f'plot_ind_map_node_connections', log_name)
         
@@ -1018,98 +1063,30 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             # import
             gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
-            gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gm_shp_gdf.geojson')                                         
+            gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gm_shp_gdf.geojson')   
+            dsonodes_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/dsonodes_gdf.geojson')                                      
             
-            Map_egid_nodes = pd.read_parquet(f'{scen_data_path}/Map_egid_nodes.parquet')
+            Map_egid_dsonode = pd.read_parquet(f'{scen_data_path}/Map_egid_dsonode.parquet')
             topo  = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
-            
+           
             # transformations
             egid_in_topo = [k for k in topo.keys()]
             gwr_gdf = copy.deepcopy(gwr_gdf.loc[gwr_gdf['EGID'].isin(egid_in_topo)])
-            Map_egid_nodes.reset_index(drop=True, inplace=True)
+            Map_egid_dsonode.reset_index(drop=True, inplace=True)
 
-            gwr_gdf = gwr_gdf.merge(Map_egid_nodes, on='EGID', how='left')
+            gwr_gdf = gwr_gdf.merge(Map_egid_dsonode, on='EGID', how='left')
 
-            # base map ----------
-            if True: 
-                # setup
-                scen_data_path = f'{data_path}/output/{scen}'
-                T0_prediction = T0_prediction_list[0]
-                months_prediction = months_prediction_list[0]
-                pvalloc_scen = pvalloc_scen_list[i_scen]
 
-                # transformations
-                gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
-                gm_gdf = gm_gdf.loc[gm_gdf['BFS_NUMMER'].isin(pvinst_df['bfs'].unique())].copy()
-                date_cols = [col for col in gm_gdf.columns if (gm_gdf[col].dtype == 'datetime64[ns]') or (gm_gdf[col].dtype == 'datetime64[ms]')]
-                gm_gdf.drop(columns=date_cols, inplace=True)
-                
-                # add map relevant columns
-                gm_gdf['hover_text'] = gm_gdf.apply(lambda row: f"{row['NAME']}<br>BFS_NUMMER: {row['BFS_NUMMER']}", axis=1)
-
-                # geo transformations
-                gm_gdf = gm_gdf.to_crs('EPSG:4326')
-                # Function to flatten geometries to 2D (ignoring Z-dimension)
-                def flatten_geometry(geom):
-                    if geom.has_z:
-                        if geom.geom_type == 'Polygon':
-                            exterior = [(x, y) for x, y, z in geom.exterior.coords]
-                            interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
-                            return Polygon(exterior, interiors)
-                        elif geom.geom_type == 'MultiPolygon':
-                            return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
-                    return geom
-                gm_gdf['geometry'] = gm_gdf['geometry'].apply(flatten_geometry)
-
-                geojson = gm_gdf.__geo_interface__
-
-                # Plot using Plotly Express
-                fig0 = px.choropleth_mapbox(
-                    gm_gdf,
-                    geojson=geojson,
-                    locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
-                    featureidkey="properties.BFS_NUMMER",  # This must match the GeoJSON's property for BFS_NUMMER
-                    color_discrete_sequence=[map_topo_egid_specs['uniform_municip_color']],  # Apply the single color to all shapes
-                    hover_name="hover_text",  # Use the new column for hover text
-                    mapbox_style="carto-positron",  # Basemap style
-                    center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
-                    zoom=default_map_zoom,  # Adjust zoom as needed
-                    opacity=map_topo_egid_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
-                )
-                # Update layout for borders and title
-                fig0.update_layout(
-                    mapbox=dict(
-                        layers=[{
-                            'source': geojson,
-                            'type': 'line',
-                            'color': 'black',  # Set border color for polygons
-                            'opacity': 0.25,
-                        }]
-                    ),
-                    title=f"Map of PV topology (scen: {scen})", 
-                    legend=dict(
-                        itemsizing='constant',
-                        title='Legend',
-                        traceorder='normal'
-                    ),
-                )
-
-            # egid node map ----------
+            # dsonode map ----------
+            fig_dsonodes = copy.deepcopy(fig_topobase)
             gwr_gdf = gwr_gdf.set_crs('EPSG:2056', allow_override=True)
             gwr_gdf = gwr_gdf.to_crs('EPSG:4326')
-
-            def flatten_geometry(geom):
-                if geom.has_z:
-                    if geom.geom_type == 'Polygon':
-                        exterior = [(x, y) for x, y, z in geom.exterior.coords]
-                        interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
-                        return Polygon(exterior, interiors)
-                    elif geom.geom_type == 'MultiPolygon':
-                        return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
-                return geom
             gwr_gdf['geometry'] = gwr_gdf['geometry'].apply(flatten_geometry)
 
-            # plot ----------
+            dsonodes_gdf = dsonodes_gdf.set_crs('EPSG:2056', allow_override=True)
+            dsonodes_gdf = dsonodes_gdf.to_crs('EPSG:4326')
+            dsonodes_gdf['geometry'] = dsonodes_gdf['geometry'].apply(flatten_geometry)
+
             # define point coloring
             unique_nodes = gwr_gdf['grid_node'].unique()
             colors = pc.sample_colorscale(map_node_connections_specs['point_color_palette'], [n/(len(unique_nodes)) for n in range(len(unique_nodes))])
@@ -1117,11 +1094,12 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             colors_df = pd.DataFrame({'grid_node': unique_nodes, 'node_color': node_colors})
             
             gwr_gdf = gwr_gdf.merge(colors_df, on='grid_node', how='left')
+            dsonodes_gdf = dsonodes_gdf.merge(colors_df, on='grid_node', how='left')
 
-            fig1 = copy.deepcopy(fig0)
             # plot points as Scattermapbox
             gwr_gdf['hover_text'] = gwr_gdf['EGID'].apply(lambda egid: f'EGID: {egid}')
-            fig1.add_trace(go.Scattermapbox(lat=gwr_gdf.geometry.y,lon=gwr_gdf.geometry.x, mode='markers',
+
+            fig_dsonodes.add_trace(go.Scattermapbox(lat=gwr_gdf.geometry.y,lon=gwr_gdf.geometry.x, mode='markers',
                 marker=dict(
                     size=map_node_connections_specs['point_size_all'],
                     color=map_node_connections_specs['point_color_all'],
@@ -1131,9 +1109,28 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     hoverinfo='text',
                     showlegend=False
                     ))
+
             for un in unique_nodes:
+                # node center / trafo location
+                dsonodes_gdf_node = dsonodes_gdf.loc[dsonodes_gdf['grid_node'] == un]
+                fig_dsonodes.add_trace(go.Scattermapbox(lat=dsonodes_gdf_node.geometry.y,lon=dsonodes_gdf_node.geometry.x, mode='markers',
+                    # marker_symbol = 'cross', 
+                    marker=dict(
+                        size=map_node_connections_specs['point_size_dsonode_loc'],
+                        color=dsonodes_gdf_node['node_color'],
+                        opacity=map_node_connections_specs['point_opacity_dsonode_loc']
+                        ),
+                        name= f'trafo: {un}',
+                        text=f'node: {un}, kVA_thres: {dsonodes_gdf_node["kVA_threshold"].sum()}',
+                        hoverinfo='text',
+                        legendgroup='trafo',
+                        legendgrouptitle=dict(text='Trafo Locations'),
+                        showlegend=True
+                        ))
+
+                # all buildings
                 gwr_gdf_node = gwr_gdf.loc[gwr_gdf['grid_node'] == un]
-                fig1.add_trace(go.Scattermapbox(lat=gwr_gdf_node.geometry.y,lon=gwr_gdf_node.geometry.x, mode='markers',
+                fig_dsonodes.add_trace(go.Scattermapbox(lat=gwr_gdf_node.geometry.y,lon=gwr_gdf_node.geometry.x, mode='markers',
                     marker=dict(
                         size=map_node_connections_specs['point_size_bynode'],
                         color=gwr_gdf_node['node_color'],
@@ -1144,9 +1141,29 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                         hoverinfo='text',
                         showlegend=True
                         ))
-            if plot_show:
-                fig1.show()
-            fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_node_connections.html')
+            if plot_show and visual_settings['plot_ind_map_node_connections'][1]:
+                fig_dsonodes.show()
+            fig_dsonodes.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_node_connections.html')
+
+
+
+
+
+
+
+    # PLOT AGGREGATED SCEN ------------------------------------------------------------------------------------------------------
+
+
+
+
+    # ********************************************************************************************************************************************************
+    # ********************************************************************************************************************************************************
+    # ********************************************************************************************************************************************************
+    # ********************************************************************************************************************************************************
+
+
+
+
 
 
     # map ind - omitted gwr_egids ============================
@@ -1168,16 +1185,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             
             omitt_gwregid_gdf = omitt_gwregid_gdf.set_crs('EPSG:2056', allow_override=True)
             omitt_gwregid_gdf = omitt_gwregid_gdf.to_crs('EPSG:4326')
-
-            def flatten_geometry(geom):
-                if geom.has_z:
-                    if geom.geom_type == 'Polygon':
-                        exterior = [(x, y) for x, y, z in geom.exterior.coords]
-                        interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
-                        return Polygon(exterior, interiors)
-                    elif geom.geom_type == 'MultiPolygon':
-                        return MultiPolygon([flatten_geometry(poly) for poly in geom.geoms])
-                return geom
             omitt_gwregid_gdf['geometry'] = omitt_gwregid_gdf['geometry'].apply(flatten_geometry)
 
             omitt_gwregid_gdf['hover_text'] = omitt_gwregid_gdf.apply(lambda row: f'EGID: {row["EGID"]}<br>BFS_NUMMER: {str(row["BFS_NUMMER"])}<br>GSTAT: {row["GSTAT"]}<br>GKAT: {row["GKAT"]}<br>GKLAS: {row["GKLAS"]}<br>GBAUJ: {row["GBAUJ"]}<br>GBAUM: {row["GBAUM"]}<br>GANZWHG: {row["GANZWHG"]}<br>GAREA: {row["GAREA"]}<br>WAZIM: {row["WAZIM"]} (no. rooms)<br>WAREA: {row["WAREA"]} (living area m2)', axis = 1)
