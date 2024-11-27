@@ -559,7 +559,8 @@ def import_demand_TS_AND_match_households(
 
     # DEMAND DATA SOURCE: SwissStore ============================================================
     elif demand_specs_def['input_data_source'] == "SwissStore" :
-        print("BOOKMARK")     # BOOKMARK!
+        print("STUCK")     # follow up call with Hector. => for match all houses to archetypes of Swisstore and then later extract demand profile
+        
         swstore_demand_inclnan = pd.read_excel(f'{data_path_def}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx')
         swstore_demand = swstore_demand_inclnan.loc[~swstore_demand_inclnan['time'].isna()]
         swstore_demand['SFH'].sum(), swstore_demand['MFH'].sum()
