@@ -64,13 +64,13 @@ pvalloc_scenarios={
     #     'MC_loop_specs': {
     #         'montecarlo_iterations': MC_iter,},
     # },
-    f'pvalloc_BLBSSO_24m_meth2_rnd_diffratio05':{
+        f'pvalloc_BL_1m_meth2_rnd_diffratio05':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
-        'months_prediction': 24,
-        'kt_numbers': [13, 12, 11],
+        'months_prediction': 1,
+        'kt_numbers': [13,],
         'weather_specs': {
-            'wdiffuse_to_direct_rad_factor': 0.5,},
+            'diffuse_to_direct_rad_factor': 0.5,},
         # 'bfs_numbers': bfs_numbers,
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -79,13 +79,13 @@ pvalloc_scenarios={
         'MC_loop_specs': {
             'montecarlo_iterations': MC_iter,},
     },
-    f'pvalloc_BLBSSO_24m_meth2_rnd_diffratio08':{
+    f'pvalloc_BL_1m_meth2_rnd_diffratio08':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
-        'months_prediction': 24,
-        'kt_numbers': [13, 12, 11],
+        'months_prediction': 1,
+        'kt_numbers': [13,],
         'weather_specs': {
-            'wdiffuse_to_direct_rad_factor': 0.8,},
+            'diffuse_to_direct_rad_factor': 0.8,},
         # 'bfs_numbers': bfs_numbers,
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -94,58 +94,7 @@ pvalloc_scenarios={
         'MC_loop_specs': {
             'montecarlo_iterations': MC_iter,},
     },
-    f'pvalloc_BLBSSO_24m_meth2_rnd':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 24,
-        'kt_numbers': [13, 12, 11],
-        # 'bfs_numbers': bfs_numbers,
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': MC_iter,},
-    },
-        f'pvalloc_BLBSSO_24m_meth2_npv':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 24,
-        'kt_numbers': [13, 12, 11],
-        # 'bfs_numbers': bfs_numbers,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv'},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': MC_iter,},
-    },
-    f'pvalloc_BLBSSO_24m_meth3_rnd':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 24,
-        'kt_numbers': [13, 12, 11],
-        # 'bfs_numbers': bfs_numbers,
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': MC_iter,},
-    },
-    f'pvalloc_BLBSSO_24m_meth3_npv':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 24,
-        'kt_numbers': [13, 12, 11],
-        # 'bfs_numbers': bfs_numbers,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv'},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': MC_iter,},
-    },
+
 
 }
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
@@ -159,12 +108,12 @@ visual_settings = {
         'node_selection_for_plots': ['8', '32', '10', '22'], # or None for all nodes
 
         # PLOT IND for pvalloc_initalization + sanity check
-        'plot_ind_var_summary_stats':            False,
+        'plot_ind_var_summary_stats':            True,
         'plot_ind_charac_omitted_gwr':           False,  # |> bookmark: NOT WORKING properly!! how to make such that code continues if plot still shown?
-        'plot_ind_line_meteo_radiation':         False,
+        'plot_ind_line_meteo_radiation':         True,
 
         # PLOT IND for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':            False,       
+        'plot_ind_line_installedCap':            True,       
         'plot_ind_line_productionHOY_per_node':  True,      # |> bookmark: adjust so that "nodeselection" above is actually working. 
         'plot_ind_hist_NPV_freepartitions':      True,
         #NEU 'plot_ind_hist_installedCap_kw': > in plot_ind_var_summary_stats?
