@@ -11,6 +11,7 @@ visual_default_settings = {
 
         # for pvalloc_initalization + sanity check
         'plot_ind_var_summary_stats':            True,
+        'plot_ind_hist_sanitycheck':             True,
         'plot_ind_charac_omitted_gwr':           True,
             'plot_ind_charac_omitted_gwr_specs':{
                 'disc_cols': ['BFS_NUMMER','GSTAT','GKAT','GKLAS'], 
