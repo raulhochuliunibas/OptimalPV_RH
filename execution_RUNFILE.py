@@ -7,14 +7,14 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred = 24 #600 #36
-MC_iter = 2
-run_on_server = False
-bfs_numbers = [2768, 2761,]# 2772, 2473, 2475, 2785, 2480, 2475] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
+months_pred = 6 #600 #36
+MC_iter = 1
+run_on_server = True
+bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
 run_dataagg =       False
-run_alloc_init =    False
-run_alloc_MCalg =   False
+run_alloc_init =    True
+run_alloc_MCalg =   True
 run_visual =        True
 
 
@@ -63,39 +63,97 @@ pvalloc_scenarios={
     #         'pvprod_calc_method': 'method2',},
     #     'MC_loop_specs': {
     #         'montecarlo_iterations': MC_iter,},
+    # }, 
+    # f'pvalloc_DEV_{months_pred}m_meth2_rnd_diff05':{
+    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': months_pred,
+    #     # 'kt_numbers': [13,],
+    #     'bfs_numbers': bfs_numbers,
+    #     'recreate_topology':             True, 
+    #     'recalc_economics_topo_df':      True,
+    #     'sanitycheck_byEGID':            True,
+    #     'create_gdf_export_of_topology': True,
+
+    #     'sanitycheck_summary_byEGID_specs':{
+    #         'n_iterations_before_sanitycheck': 2,},
+    #     'weather_specs': {
+    #         'diffuse_to_direct_rad_factor': 0.5,},
+    #     'algorithm_specs': {
+    #         'inst_selection_method': 'random',},
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2',},
+    #     'MC_loop_specs': {
+    #         'montecarlo_iterations': MC_iter,},
     # },
-        f'pvalloc_BL_1m_meth2_rnd_diffratio05':{
+    f'pvalloc_sample_12m_meth2_rnd_diffratio05':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
-        'months_prediction': 1,
-        'kt_numbers': [13,],
+        'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.5,},
-        # 'bfs_numbers': bfs_numbers,
+            'wdiffuse_to_direct_rad_factor': 0.5,},
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2',},
         'MC_loop_specs': {
-            'montecarlo_iterations': MC_iter,},
+            'montecarlo_iterations': 1,},
     },
-    f'pvalloc_BL_1m_meth2_rnd_diffratio08':{
+    f'pvalloc_sample_12m_meth2_rnd_diffratio08':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
-        'months_prediction': 1,
-        'kt_numbers': [13,],
+        'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.8,},
-        # 'bfs_numbers': bfs_numbers,
+            'wdiffuse_to_direct_rad_factor': 0.8,},
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2',},
         'MC_loop_specs': {
-            'montecarlo_iterations': MC_iter,},
+            'montecarlo_iterations': 1,},
     },
-
-
+    f'pvalloc_sample_12m_meth2_rnd':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 12,
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+    },
+    f'pvalloc_sample_12m_meth3_rnd_diffratio05':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 12,
+        'weather_specs': {
+            'wdiffuse_to_direct_rad_factor': 0.5,},
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+    },
+    f'pvalloc_sample_12m_meth3_rnd_diffratio08':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 12,
+        'weather_specs': {
+            'wdiffuse_to_direct_rad_factor': 0.8,},
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+    },
 }
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
@@ -107,25 +165,24 @@ visual_settings = {
         'MC_subdir_for_plot': '*MC*1', 
         'node_selection_for_plots': ['8', '32', '10', '22'], # or None for all nodes
 
-        # PLOT IND for pvalloc_initalization + sanity check
-        'plot_ind_var_summary_stats':            True,
-        'plot_ind_charac_omitted_gwr':           False,  # |> bookmark: NOT WORKING properly!! how to make such that code continues if plot still shown?
-        'plot_ind_line_meteo_radiation':         True,
-
-        # PLOT IND for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':            True,       
-        'plot_ind_line_productionHOY_per_node':  True,      # |> bookmark: adjust so that "nodeselection" above is actually working. 
-        'plot_ind_hist_NPV_freepartitions':      True,
+        # PLOT CHUCK -------------------------> [run plot,  show plot]
+        # for pvalloc_inital + sanitycheck
+        'plot_ind_var_summary_stats':            [False,    False], 
+        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,     True], 
+        'plot_ind_charac_omitted_gwr':      [False,         True],  # |> bookmark: NOT WORKING properly!! how to make such that code continues if plot still shown?
+        'plot_ind_line_meteo_radiation':         [False,    False], 
+        # for pvalloc_MC_algorithm 
+        'plot_ind_line_installedCap':            [True,    True],        
+        'plot_ind_line_productionHOY_per_node':  [True,     True],  
+        'plot_ind_hist_NPV_freepartitions':      [False,    False], 
         #NEU 'plot_ind_hist_installedCap_kw': > in plot_ind_var_summary_stats?
-        # |open> hist für FLACHE*70%*kWpeak_m2 for all egids
+        # |CURRENT WORKING ON > hist für FLACHE*70%*kWpeak_m2 for all egids
         # |done> hist für FLACHE*70%*kWpeak_m2 only for buildings in pvdf => good comparison!
-        
+        'plot_ind_hist_pvcapaprod':              [True,     True],
+        'plot_ind_map_topo_egid':                [False,    True],
+        'plot_ind_map_node_connections':         [False,    True],   
+        # for scen aggregation
 
-        # for aggregated pvalloc_MC_algorithm 
-
-        # PLOT IND for maps
-        'plot_ind_map_topo_egid':                False,
-        'plot_ind_map_node_connections':         False,
         'plot_ind_map_omitted_gwr_egids':        False,
         #                                      # False,
         'plot_agg_line_installedCap_per_month':  False,
