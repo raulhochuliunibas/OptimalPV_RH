@@ -197,13 +197,14 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
         old_dir_rename = f'{dir_alloc_moveto} ({n_same_names+1})'
         os.rename(f'{dir_alloc_moveto}', old_dir_rename)
 
-    os.makedirs(dir_alloc_moveto)
-    file_to_move = glob.glob(f'{data_path}/output/pvalloc_run/*')
-    for f in file_to_move:
-        if os.path.isfile(f):
-            shutil.copy(f, dir_alloc_moveto)
-        elif os.path.isdir(f):
-            shutil.copytree(f, os.path.join(dir_alloc_moveto, os.path.basename(f)))
+    # os.makedirs(dir_alloc_moveto)
+    # file_to_move = glob.glob(f'{data_path}/output/pvalloc_run/*')
+    # for f in file_to_move:
+    #     if os.path.isfile(f):
+    #         shutil.copy(f, dir_alloc_moveto)
+    #     elif os.path.isdir(f):
+    #         shutil.copytree(f, os.path.join(dir_alloc_moveto, os.path.basename(f)))
+    os.rename(f'{data_path}/output/pvalloc_run', dir_alloc_moveto)
     shutil.copy(glob.glob(f'{data_path}/output/pvalloc_init_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_init_log_{pvalloc_settings["name_dir_export"]}.txt')
 
     # -----------------------------------------------------------------------------
