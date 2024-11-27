@@ -491,7 +491,8 @@ def import_prepre_AND_create_topology(
         elif isinstance(m, dict):
             with open(f'{data_path}/output/pvalloc_run/{df_names[i]}.json', 'w') as f:
                 json.dump(m, f)        
-
+        elif isinstance(m, gpd.GeoDataFrame):
+            m.to_file(f'{data_path}/output/pvalloc_run/{df_names[i]}.geojson', driver='GeoJSON')
 
     # RETURN OBJECTS ============================================================================
     return topo_egid, df_list, df_names
