@@ -7,7 +7,7 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-months_pred = 6 #600 #36
+months_pred = 1 #600 #36
 MC_iter = 1
 run_on_server = True
 bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
@@ -86,38 +86,41 @@ pvalloc_scenarios={
     #     'MC_loop_specs': {
     #         'montecarlo_iterations': MC_iter,},
     # },
+
+    # f'pvalloc_sample_12m_meth2_rnd_diffratio02':{
+    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': 12,
+    #     'weather_specs': {
+    #         'diffuse_to_direct_rad_factor': 0.2,},
+    #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+    #     'algorithm_specs': {
+    #         'inst_selection_method': 'random',},
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2',},
+    #     'MC_loop_specs': {
+    #         'montecarlo_iterations': 1,},
+    # },
+    # f'pvalloc_sample_12m_meth3_rnd_diffratio02':{
+    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': 12,
+    #     'weather_specs': {
+    #         'diffuse_to_direct_rad_factor': 0.2,},
+    #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+    #     'algorithm_specs': {
+    #         'inst_selection_method': 'random',},
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method3',},
+    #     'MC_loop_specs': {
+    #         'montecarlo_iterations': 1,},
+    # },   
     f'pvalloc_sample_12m_meth2_rnd_diffratio05':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'wdiffuse_to_direct_rad_factor': 0.5,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth2_rnd_diffratio08':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'wdiffuse_to_direct_rad_factor': 0.8,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth2_rnd':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
+            'diffuse_to_direct_rad_factor': 0.5,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -131,12 +134,26 @@ pvalloc_scenarios={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'wdiffuse_to_direct_rad_factor': 0.5,},
+            'diffuse_to_direct_rad_factor': 0.5,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+    },   
+    f'pvalloc_sample_12m_meth2_rnd_diffratio08':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'months_prediction': 12,
+        'weather_specs': {
+            'diffuse_to_direct_rad_factor': 0.8,},
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2',},
         'MC_loop_specs': {
             'montecarlo_iterations': 1,},
     },
@@ -145,7 +162,7 @@ pvalloc_scenarios={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'wdiffuse_to_direct_rad_factor': 0.8,},
+            'diffuse_to_direct_rad_factor': 0.8,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -154,6 +171,7 @@ pvalloc_scenarios={
         'MC_loop_specs': {
             'montecarlo_iterations': 1,},
     },
+    
 }
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
@@ -168,12 +186,12 @@ visual_settings = {
         # PLOT CHUCK -------------------------> [run plot,  show plot]
         # for pvalloc_inital + sanitycheck
         'plot_ind_var_summary_stats':            [False,    False], 
-        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,     True], 
+        'plot_ind_hist_pvcapaprod_sanitycheck':  [True,     True], 
         'plot_ind_charac_omitted_gwr':      [False,         True],  # |> bookmark: NOT WORKING properly!! how to make such that code continues if plot still shown?
         'plot_ind_line_meteo_radiation':         [False,    False], 
         # for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':            [True,    True],        
-        'plot_ind_line_productionHOY_per_node':  [True,     True],  
+        'plot_ind_line_installedCap':            [False,    True],        
+        'plot_ind_line_productionHOY_per_node':  [False,     True],  
         'plot_ind_hist_NPV_freepartitions':      [False,    False], 
         #NEU 'plot_ind_hist_installedCap_kw': > in plot_ind_var_summary_stats?
         # |CURRENT WORKING ON > hist für FLACHE*70%*kWpeak_m2 for all egids
