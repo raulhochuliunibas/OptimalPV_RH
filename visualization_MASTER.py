@@ -336,7 +336,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig.update_yaxes(title_text="Frequency (standardized)", secondary_y=True)
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen)
 
-            if plot_show and visual_settings['plot_ind_hist_sanitycheck'][1]:
+            if plot_show and visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][1]:
                 fig.show()
             fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
             print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
@@ -376,9 +376,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig.update_yaxes(title_text="Frequency (standardized)", secondary_y=True)
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen)
             
-            if plot_show and visual_settings['plot_ind_hist_sanitycheck'][1]:
+            if plot_show and visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][1]:
                 fig.show()
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_SanityCheck_annualPVprod_kWh.html')
+            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_annualPVprod_kWh.html')
             print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_annualPVprod_kWh.html (for: {scen})', log_name)
             
 
@@ -784,7 +784,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # plot ind - hist: PV Capacity and Production per Year --------------------
-    if visual_settings['plot_ind_hist_pvcapaprod'][0]:
+    # if visual_settings['plot_ind_hist_pvcapaprod'][0]:
+    if False:
         checkpoint_to_logfile(f'plot_ind_hist_pvcapaprod', log_name)
         i_scen, scen = 0, scen_dir_export_list[0]
         for i_scen, scen in enumerate(scen_dir_export_list):
@@ -817,17 +818,17 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             # plot 
             fig = go.Figure()
             fig.add_trace(go.Histogram(x=pvinst_df['TotalPower'], 
-                                       name='Total Capacity (kW)', 
-                                       opacity = 0.5, marker_color = color_rest,
-                                       xbins=dict(size=xbins_hist_instcapa_abs)))
+                                    name='Total Capacity (kW)', 
+                                    opacity = 0.5, marker_color = color_rest,
+                                    xbins=dict(size=xbins_hist_instcapa_abs)))
             fig.add_trace(go.Histogram(x=pvinst_df.loc[pvinst_df['info_source'] == 'pv_df', 'TotalPower'],
-                                       name='Built Capacity (kW) - PV_df', 
-                                       opacity = 0.5, marker_color = color_pv_df,
-                                       xbins=dict(size=xbins_hist_instcapa_abs)))
+                                    name='Built Capacity (kW) - PV_df', 
+                                    opacity = 0.5, marker_color = color_pv_df,
+                                    xbins=dict(size=xbins_hist_instcapa_abs)))
             fig.add_trace(go.Histogram(x=pvinst_df.loc[pvinst_df['info_source'] == 'alloc_algorithm', 'TotalPower'],
-                                       name='Modelled Capacity (kW) - Alloc. Algorithm', 
-                                       opacity = 0.5, marker_color = color_alloc_algo,
-                                       xbins=dict(size=xbins_hist_instcapa_abs)))      
+                                    name='Modelled Capacity (kW) - Alloc. Algorithm', 
+                                    opacity = 0.5, marker_color = color_alloc_algo,
+                                    xbins=dict(size=xbins_hist_instcapa_abs)))      
             fig.update_layout(
                 barmode='overlay',
                 xaxis_title='Installed Capacity (kW)',
@@ -864,10 +865,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     # > how to treat the installation on existing buildings? 
                     # how did i treat these cases in the feedin to the grid part of the code?
                     # would have to be identical approach
-                    if topo.get(egid).get('pv_inst').get('info_source') == 'pv_df':
+                    
+                    # if topo.get(egid).get('pv_inst').get('info_source') == 'pv_df':
 
-                    pvinst_df.loc[pvinst_df['EGID'] == egid, 'info_source'].values
-                    df_uids = pvinst_df.loc[pvinst_df['EGID'] == egid, 'xtf_id'].values
+                    # pvinst_df.loc[pvinst_df['EGID'] == egid, 'info_source'].values
+                    # df_uids = pvinst_df.loc[pvinst_df['EGID'] == egid, 'xtf_id'].values
 
     # plot ind - map:  Model PV topology ========================
     default_map_zoom = visual_settings['default_map_zoom']
