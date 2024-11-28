@@ -215,7 +215,7 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
     # > not to overwrite completed folder while debugging 
     dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'
 
-    shutil.copy(glob.glob(f'{data_path}/output/pvalloc_MCalgo_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_MCalgo_log_{pvalloc_settings["name_dir_export"]}.txt')
+    shutil.move(glob.glob(f'{data_path}/output/pvalloc_MCalgo_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_MCalgo_log_{pvalloc_settings["name_dir_export"]}.txt')
 
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
