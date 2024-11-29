@@ -46,6 +46,7 @@ pvalloc_default_settings = {
     'weather_specs': {
         'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',],
         'meteo_col_temperature_proxy': ['Basel Temperature [2 m elevation corrected]',], 
+        'direct_rad_factor': 1,
         'diffuse_to_direct_rad_factor': 0.2,
         'weather_year': 2022,
     },
