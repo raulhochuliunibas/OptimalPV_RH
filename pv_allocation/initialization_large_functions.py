@@ -590,12 +590,16 @@ def import_ts_data(
 
     # get radiation
     if any(["Diffuse" in col for col in rad_proxy]):
-        diff_col_name = [col for col in rad_proxy if "Diffuse" in col][0]   
-        rest_col_name = [col for col in rad_proxy if "Diffuse" not in col]
+    #     diff_col_name = [col for col in rad_proxy if "Diffuse" in col][0]   
+    #     rest_col_name = [col for col in rad_proxy if "Diffuse" not in col]
+    #     meteo['radiation'] = meteo[rest_col_name].sum(axis=1) + (meteo[diff_col_name] * diffuse_to_direct_rad_factor)
+        dir_rad_col = 'Basel Direct Shortwave Radiation'
+        diff_rad_col = 'Basel Diffuse Shortwave Radiation'
+        meteo['radiation'] = (meteo[dir_rad_col] * direct_rad_factor) + (meteo[diff_rad_col] * diffuse_to_direct_rad_factor)
 
-        meteo['radiation'] = meteo[rest_col_name].sum(axis=1) + (meteo[diff_col_name] * pvalloc_settings['weather_specs']['diffuse_to_direct_rad_factor'])
     else:
         meteo['radiation'] = meteo[rad_proxy].sum(axis=1)
+    
     meteo.drop(columns=rad_proxy, inplace=True)
     
     # get temperature

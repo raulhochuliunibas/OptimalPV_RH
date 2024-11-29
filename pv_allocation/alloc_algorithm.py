@@ -55,7 +55,7 @@ def calc_economics_in_topo_df(
     with_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == True]
 
     egid_list, df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list  = [], [], [], [], [], []
-    inst_list, info_source_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
+    inst_list, info_source_list, pvdf_totalpower_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], [], []
     flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_list = [], [], [], [], []
 
     keys = list(topo.keys())
@@ -78,6 +78,7 @@ def calc_economics_in_topo_df(
             info_source_list.append(v.get('pv_inst').get('info_source'))
             pvid_list.append(v.get('pv_inst').get('xtf_id'))
             pv_tarif_Rp_kWh_list.append(v.get('pvtarif_Rp_kWh'))
+            pvdf_totalpower_list.append(v.get('pv_inst').get('TotalPower'))
 
             flaeche_list.append(v_p.get('FLAECHE'))
             ausrichtung_list.append(v_p.get('AUSRICHTUNG'))
@@ -90,7 +91,7 @@ def calc_economics_in_topo_df(
                             'gklas': gklas_list, 'demandtype': demandtype_list, 'grid_node': grid_node_list,
 
                             'inst_TF': inst_list, 'info_source': info_source_list, 'pvid': pvid_list,
-                            'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list,
+                            'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list, 'TotalPower': pvdf_totalpower_list,
 
                             'FLAECHE': flaeche_list, 'AUSRICHTUNG': ausrichtung_list, 
                             'STROMERTRAG': stromertrag_list, 'NEIGUNG': neigung_list, 
@@ -119,6 +120,8 @@ def calc_economics_in_topo_df(
             return 0
     topo_df['angletilt_factor'] = topo_df.apply(lambda r: lookup_angle_tilt_efficiency(r, angle_tilt_df), axis=1)
 
+    # transform TotalPower
+    topo_df['TotalPower'] = topo_df['TotalPower'].replace('', '0').astype(float)
 
 
     # MERGE + GET ECONOMIC VALUES FOR NPV CALCULATION =============================================
@@ -186,14 +189,14 @@ def calc_economics_in_topo_df(
 
         # pvprod method 2
         elif pvprod_calc_method == 'method2':   
-            subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']
-            subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
+            subdf['pvprod_kW'] = (subdf['radiation'] / 1000 ) * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] * subdf['angletilt_factor']
+            # subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
             formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']"
 
         # pvprod method 3
         elif pvprod_calc_method == 'method3':
-            subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * kWpeak_per_m2 * subdf['radiation_rel_locmax'] * subdf['FLAECHE'] * subdf['angletilt_factor']
-            subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
+            subdf['pvprod_kW'] =  subdf['radiation_rel_locmax'] * kWpeak_per_m2 *  inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] * subdf['angletilt_factor']
+            # subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
             formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * kWpeak_per_m2 * subdf['radiation_rel_locmax'] * subdf['FLAECHE'] * subdf['angletilt_factor']"
 
         # pvprod method 3

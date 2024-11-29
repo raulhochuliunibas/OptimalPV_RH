@@ -42,6 +42,7 @@ visual_default_settings = {
                 'point_size_rest': 4.5,
                 'point_size_sanity_check': 20,
                 'point_color_pv_df': '#54f533',      # green
+                'point_color_solkat': '#f06a1d',     # turquoise
                 'point_color_alloc_algo': '#ffa600', # yellow 
                 'point_color_rest': '#383838',       # dark grey
                 'point_color_sanity_check': '#0041c2', # blue
