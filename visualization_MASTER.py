@@ -218,7 +218,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             if plot_show and visual_settings['plot_ind_var_summary_stats'][1]:
                 fig.show()
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_bar_totaldemand_by_type.html')
+            if visual_settings['save_plot_by_scen_directory']:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_bar_totaldemand_by_type.html')
+            else:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_bar_totaldemand_by_type.html')
             print_to_logfile(f'\texport: plot_ind_bar_totaldemand_by_type.html (for: {scen})', log_name)
 
 
@@ -237,7 +240,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             if plot_show and visual_settings['plot_ind_var_summary_stats'][1]:
                 fig.show()
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_demandTS.html')
+            if visual_settings['save_plot_by_scen_directory']:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_demandTS.html')
+            else:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_demandTS.html')
             print_to_logfile(f'\texport: plot_ind_line_demandTS.html (for: {scen})', log_name)
             
 
@@ -338,8 +344,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             if plot_show and visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][1]:
                 fig.show()
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
-            print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
+                if visual_settings['save_plot_by_scen_directory']:
+                    fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
+                else:
+                    fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_instCapa_kW.html')    
+                print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
 
 
 
@@ -378,7 +387,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             
             if plot_show and visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][1]:
                 fig.show()
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_annualPVprod_kWh.html')
+            if visual_settings['save_plot_by_scen_directory']:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_annualPVprod_kWh.html')
+            else:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_annualPVprod_kWh.html')
             print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_annualPVprod_kWh.html (for: {scen})', log_name)
             
 
@@ -421,7 +433,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             if plot_show and visual_settings['plot_ind_charac_omitted_gwr'][1]:
                 plt.show()
                 print('... script continues')
-            fig.savefig(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_pie_disc_charac_omitted_gwr.png')
+            if visual_settings['save_plot_by_scen_directory']:
+                fig.savefig(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_pie_disc_charac_omitted_gwr.png')
+            else:
+                fig.savefig(f'{data_path}/output/visualizations/{scen}__plot_ind_pie_disc_charac_omitted_gwr.png')
             print_to_logfile(f'\texport: plot_ind_pie_disc_charac_omitted_gwr.png (for: {scen})', log_name)
 
 
@@ -446,7 +461,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             if plot_show and visual_settings['plot_ind_charac_omitted_gwr'][1]:
                 plt.show()
-            fig.savefig(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_cont_charac_omitted_gwr.png')
+            if visual_settings['save_plot_by_scen_directory']:
+                fig.savefig(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_cont_charac_omitted_gwr.png')
+            else:
+                fig.savefig(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_cont_charac_omitted_gwr.png')
             print_to_logfile(f'\texport: plot_ind_hist_cont_charac_omitted_gwr.png (for: {scen})', log_name)
 
 
@@ -478,7 +496,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             try: 
                 for col in rad_proxy:
                     fig.add_trace(go.Scatter(x=meteo_raw['timestamp'], y=meteo_raw[col], name=f'Rad. raw data: {col}'))
-                    
+                fig.add_trace(go.Scatter(x=meteo_raw['timestamp'], y=meteo_raw[rad_proxy].sum(axis=1), name=f'Rad. raw data: sum of rad types'))
                 fig.add_trace(go.Scatter(x=meteo_raw['timestamp'], y=meteo_raw[temp_proxy], name=f'Temp. raw data: {temp_proxy}'))
             except:
                 print('... no raw data available')
@@ -493,7 +511,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             if plot_show and visual_settings['plot_ind_line_meteo_radiation'][1]:
                 fig.show()
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_meteo_radiation.html')
+            if visual_settings['save_plot_by_scen_directory']:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_meteo_radiation.html')
+            else:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_meteo_radiation.html')
 
 
 
@@ -591,7 +612,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 
                 if plot_show and visual_settings['plot_ind_line_installedCap'][1]:
                     fig1.show()
-                fig1.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_month.html')
+                if visual_settings['save_plot_by_scen_directory']:
+                    fig1.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_month.html')
+                else:
+                    fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_month.html')
                 print_to_logfile(f'\texport: plot_ind_line_installedCap_per_month.html (for: {scen})', log_name)
 
 
@@ -658,7 +682,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig2 = set_default_fig_zoom_year(fig2, default_zoom_year, capa_bfs_year_df, 'BeginOp_year')
                 # if plot_show:
                 #     fig2.show()
-                fig2.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_BFS.html')
+                if visual_settings['save_plot_by_scen_directory']:
+                    fig2.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_BFS.html')
+                else:
+                    fig2.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_BFS.html')
                 print_to_logfile(f'\texport: plot_ind_line_installedCap_per_BFS.html (for: {scen})', log_name)
 
 
@@ -745,7 +772,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             if plot_show and visual_settings['plot_ind_line_productionHOY_per_node'][1]:	
                 fig.show() 
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_productionHOY_per_node.html')
+            if visual_settings['save_plot_by_scen_directory']:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_productionHOY_per_node.html')
+            else:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_productionHOY_per_node.html')
 
 
     # plot ind - hist: NPV possible PV inst before / after --------------------
@@ -780,7 +810,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             
             if plot_show and visual_settings['plot_ind_hist_NPV_freepartitions'][1]:
                 fig.show()
-            fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_NPV_freepartitions.html')
+            if visual_settings['save_plot_by_scen_directory']:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_NPV_freepartitions.html')
+            else:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_NPV_freepartitions.html')
 
 
     # plot ind - hist: PV Capacity and Production per Year --------------------

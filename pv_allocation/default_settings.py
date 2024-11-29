@@ -13,7 +13,7 @@ pvalloc_default_settings = {
     'months_lookback': 12*1,
     'months_prediction': 3,
     'script_run_on_server':     False,                           # F: run on private computer, T: run on server
-    'export_csvs':              True, 
+    'export_csvs':              False, 
     # no longer relevant
     'show_debug_prints':        True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
     'fast_debug_run':           False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
