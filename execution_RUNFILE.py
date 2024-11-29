@@ -9,12 +9,12 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 # SETTINGS DEFINITION ==================================================================================================================
 months_pred = 1 #600 #36
 MC_iter = 1
-run_on_server = False
+run_on_server = True
 bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
 run_dataagg =       False
-run_alloc_init =    False
-run_alloc_MCalg =   False
+run_alloc_init =    True
+run_alloc_MCalg =   True
 run_visual =        True
 
 
@@ -64,77 +64,151 @@ pvalloc_scenarios={
     #     'MC_loop_specs': {
     #         'montecarlo_iterations': MC_iter,},
     # }, 
-    # f'pvalloc_DEV_{months_pred}m_meth2_rnd_diff05':{
-    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
-    #     'script_run_on_server': run_on_server,
-    #     'months_prediction': months_pred,
-    #     # 'kt_numbers': [13,],
-    #     'bfs_numbers': bfs_numbers,
-    #     'recreate_topology':             True, 
-    #     'recalc_economics_topo_df':      True,
-    #     'sanitycheck_byEGID':            True,
-    #     'create_gdf_export_of_topology': True,
 
-    #     'sanitycheck_summary_byEGID_specs':{
-    #         'n_iterations_before_sanitycheck': 2,},
-    #     'weather_specs': {
-    #         'diffuse_to_direct_rad_factor': 0.5,},
-    #     'algorithm_specs': {
-    #         'inst_selection_method': 'random',},
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method2',},
-    #     'MC_loop_specs': {
-    #         'montecarlo_iterations': MC_iter,},
-    # },
-    'pvalloc_smlsample_12m_meth3_rnd_dir10_diff10':{
+    'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir1_diff0_flatWK':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
         'months_prediction': 12,
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',
+            'kWpeak_per_m2': 0.15,    
+            'share_roof_area_available': 0.6},
         'weather_specs': {
             'direct_rad_factor': 1,
-            'diffuse_to_direct_rad_factor': 1,},
-            'bfs_numbers': [2768, 2761, ],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'diffuse_to_direct_rad_factor': 0,},
+        'panel_efficiency_specs': {
+            'variable_panel_efficiency_TF': False,},
     },
-    'pvalloc_smlsample_12m_meth3_rnd_dir12_diff10':{
+    'pvalloc_BLsml_12m_1mc_meth2_panel1506_dir1_diff0_flatWK':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'direct_rad_factor': 1.5,
-            'diffuse_to_direct_rad_factor': 1,},
-            'bfs_numbers': [2768, 2761, ],
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-            
-    }, 
-    'pvalloc_smlsample_12m_meth3_rnd_dir20_diff10':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
         'months_prediction': 12,
-        'weather_specs': {
-            'direct_rad_factor': 2.0,
-            'diffuse_to_direct_rad_factor': 1,},
-            'bfs_numbers': [2768, 2761, ],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
         'MC_loop_specs': {
             'montecarlo_iterations': 1,},
-            
-    }, 
 
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2',
+            'kWpeak_per_m2': 0.15,    
+            'share_roof_area_available': 0.6},
+        'weather_specs': {
+            'direct_rad_factor': 1,
+            'diffuse_to_direct_rad_factor': 0,},
+        'panel_efficiency_specs': {
+            'variable_panel_efficiency_TF': False,},
+    },
+    'pvalloc_BLsml_12m_1mc_meth3_panel2010_dir1_diff0_flatWK':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'months_prediction': 12,
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',
+            'kWpeak_per_m2': 0.2,    
+            'share_roof_area_available': 1},
+        'weather_specs': {
+            'direct_rad_factor': 1,
+            'diffuse_to_direct_rad_factor': 0,},
+        'panel_efficiency_specs': {
+            'variable_panel_efficiency_TF': False,},
+    },
+    'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir10_diff1_flatWK':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'months_prediction': 12,
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',
+            'kWpeak_per_m2': 0.15,    
+            'share_roof_area_available': 0.6},
+        'weather_specs': {
+            'direct_rad_factor': 10,
+            'diffuse_to_direct_rad_factor': 1,},
+        'panel_efficiency_specs': {
+            'variable_panel_efficiency_TF': False,},
+    },
+    'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir1000_diff1_flatWK':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'months_prediction': 12,
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',
+            'kWpeak_per_m2': 0.15,    
+            'share_roof_area_available': 0.6},
+        'weather_specs': {
+            'direct_rad_factor': 1000,
+            'diffuse_to_direct_rad_factor': 1,},
+        'panel_efficiency_specs': {
+            'variable_panel_efficiency_TF': False,},
+    },
+        'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir100_diff1_flatWK':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'months_prediction': 12,
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',
+            'kWpeak_per_m2': 0.15,    
+            'share_roof_area_available': 0.6},
+        'weather_specs': {
+            'direct_rad_factor': 100,
+            'diffuse_to_direct_rad_factor': 1,},
+        'panel_efficiency_specs': {
+            'variable_panel_efficiency_TF': False,},
+    },
+
+        'pvalloc_BL_60m_1mc_meth3_panel1506_dir1000_diff1_flatWK':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        # 'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'kt_numbers': [13,],
+        'algorithm_specs': {
+            'inst_selection_method': 'random',},
+        'months_prediction': 60,
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,},
+
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',
+            'kWpeak_per_m2': 0.15,    
+            'share_roof_area_available': 0.6},
+        'weather_specs': {
+            'direct_rad_factor': 1000,
+            'diffuse_to_direct_rad_factor': 1,},
+        'panel_efficiency_specs': {
+            'variable_panel_efficiency_TF': False,},
+    },
 }
+
 
 
 parkplat = {
@@ -413,9 +487,9 @@ visual_settings = {
         # PLOT CHUCK -------------------------> [run plot,  show plot]
         # for pvalloc_inital + sanitycheck
         'plot_ind_var_summary_stats':            [False,    False], 
-        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,     True], 
+        'plot_ind_hist_pvcapaprod_sanitycheck':  [True,     True], 
         'plot_ind_charac_omitted_gwr':      [False,         True],  # |> bookmark: NOT WORKING properly!! how to make such that code continues if plot still shown?
-        'plot_ind_line_meteo_radiation':         [True,    True], 
+        'plot_ind_line_meteo_radiation':         [False,    True], 
         # for pvalloc_MC_algorithm 
         'plot_ind_line_installedCap':            [False,    True],        
         'plot_ind_line_productionHOY_per_node':  [False,     True],  
@@ -423,7 +497,7 @@ visual_settings = {
         #NEU 'plot_ind_hist_installedCap_kw': > in plot_ind_var_summary_stats?
         # |CURRENT WORKING ON > hist für FLACHE*70%*kWpeak_m2 for all egids
         # |done> hist für FLACHE*70%*kWpeak_m2 only for buildings in pvdf => good comparison!
-        'plot_ind_hist_pvcapaprod':              [True,     True],
+        'plot_ind_hist_pvcapaprod':              [False,     True],
         'plot_ind_map_topo_egid':                [False,    True],
         'plot_ind_map_node_connections':         [False,    True],   
         # for scen aggregation

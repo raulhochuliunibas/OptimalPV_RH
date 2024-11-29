@@ -63,8 +63,8 @@ pvalloc_default_settings = {
         'interest_rate': 0.01,
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
-        'pvprod_calc_method': 'method2',
-        'panel_efficiency': 0.15,         # XY% Wirkungsgrad PV Modul
+        'pvprod_calc_method': 'method3',
+        'panel_efficiency': 0.18,         # XY% Wirkungsgrad PV Modul
         'inverter_efficiency': 0.95,        # XY% Wirkungsgrad Wechselrichter
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
