@@ -581,6 +581,8 @@ def import_ts_data(
     rad_proxy = pvalloc_settings['weather_specs']['meteo_col_radiation_proxy']
     temp_proxy = pvalloc_settings['weather_specs']['meteo_col_temperature_proxy']
     weater_year = pvalloc_settings['weather_specs']['weather_year']
+    diffuse_to_direct_rad_factor = pvalloc_settings['weather_specs']['diffuse_to_direct_rad_factor']
+    direct_rad_factor = pvalloc_settings['weather_specs']['direct_rad_factor']
 
     meteo = pd.read_parquet(f'{data_path}/output/{name_dir_import}/meteo.parquet')
     meteo_cols = ['timestamp',] + rad_proxy + temp_proxy
