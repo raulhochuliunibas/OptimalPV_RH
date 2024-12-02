@@ -115,7 +115,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             for f in all_html:
                 os.remove(f)
 
-        print(visual_settings['remove_old_plot_scen_directories'])
         if visual_settings['remove_old_plot_scen_directories']:
             old_plot_scen_dirs = glob.glob(f'{data_path}/output/visualizations/*(*)')
             for dir in old_plot_scen_dirs:
