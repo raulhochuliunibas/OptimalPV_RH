@@ -267,8 +267,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             panel_efficiency_print = 'dynamic' if pvalloc_scen['panel_efficiency_specs']['variable_panel_efficiency_TF'] else 'static'
             color_pv_df, color_solkat, color_rest = visual_settings['plot_ind_map_topo_egid_specs']['point_color_pv_df'], visual_settings['plot_ind_map_topo_egid_specs']['point_color_solkat'],visual_settings['plot_ind_map_topo_egid_specs']['point_color_rest']
-            xbins_hist_instcapa_abs, xbins_hist_instcapa_stand = 0.5,0.1
-            xbins_hist_totalprodkwh_abs, xbins_hist_totalprodkwh_stand = 500, 0.1
+            xbins_hist_instcapa_abs, xbins_hist_instcapa_stand = visual_settings['plot_ind_hist_pvcapaprod_sanitycheck_specs']['xbins_hist_instcapa_abs'], visual_settings['plot_ind_hist_pvcapaprod_sanitycheck_specs']['xbins_hist_instcapa_stand']
+            xbins_hist_totalprodkwh_abs, xbins_hist_totalprodkwh_stand = visual_settings['plot_ind_hist_pvcapaprod_sanitycheck_specs']['xbins_hist_totalprodkwh_abs'], visual_settings['plot_ind_hist_pvcapaprod_sanitycheck_specs']['xbins_hist_totalprodkwh_stand']
 
             sanity_scen_data_path = f'{data_path}/output/{scen}/sanity_check_byEGID'
             pv = pd.read_parquet(f'{data_path}/output/{scen}/pv.parquet')
