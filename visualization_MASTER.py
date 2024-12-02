@@ -27,6 +27,7 @@ if True:
     import matplotlib.pyplot as plt
     import winsound
     import itertools
+    import shutil
 
     from datetime import datetime
     from pprint import pformat
@@ -113,6 +114,12 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             all_html = glob.glob(f'{data_path}/output/visualizations/*.html')
             for f in all_html:
                 os.remove(f)
+
+        print(visual_settings['remove_old_plot_scen_directories'])
+        if visual_settings['remove_old_plot_scen_directories']:
+            old_plot_scen_dirs = glob.glob(f'{data_path}/output/visualizations/*(*)')
+            for dir in old_plot_scen_dirs:
+                shutil.rmtree(dir)
 
 
     chapter_to_logfile(f'start run_visualisations MASTER ', log_name, overwrite_file=True)
