@@ -28,6 +28,7 @@ if True:
     import winsound
     import itertools
     import shutil
+    import scipy.stats as stats
 
     from datetime import datetime
     from pprint import pformat
@@ -258,7 +259,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         checkpoint_to_logfile(f'plot_ind_hist_pvcapaprod_sanitycheck', log_name)
         i_scen, scen = 0, scen_dir_export_list[0]
 
-        fig_agg_abs, fig_agg_stand = make_subplots(specs=[[{"secondary_y": True}]]), make_subplots(specs=[[{"secondary_y": True}]])
+        # fig_agg_abs, fig_agg_stand = make_subplots(specs=[[{"secondary_y": True}]]), make_subplots(specs=[[{"secondary_y": True}]])
+        fig_agg_abs, fig_agg_stand = go.Figure(), go.Figure()
 
         for i_scen, scen in enumerate(scen_dir_export_list):
             pvalloc_scen = pvalloc_scen_list[i_scen]
@@ -357,46 +359,47 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             if plot_show and visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][1]:
                 fig.show()
-                if visual_settings['save_plot_by_scen_directory']:
-                    fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
-                else:
-                    fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_instCapa_kW.html')    
-                print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
+            if visual_settings['save_plot_by_scen_directory']:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
+            else:
+                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_pvCapaProd_SanityCheck_instCapa_kW.html')    
+            print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
 
             # add traces for plot_agg
             if True:
+                fig_agg_abs.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
+                fig_agg_abs.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,))
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['inst_capa_kW'], 
-                                        name='Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df)', 
-                                        opacity=0.5, marker_color = color_rest, 
+                                        name='-- Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df)', 
+                                        opacity=0.5, 
+                                        marker_color = color_rest, 
                                         xbins=dict(size=xbins_hist_instcapa_abs), 
-                                        legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                        secondary_y=False, )
+                                        ))
                 fig_agg_abs.add_trace(go.Histogram(x=pv.loc[pv['xtf_id'].isin(xtf_in_topo), 'TotalPower'],
-                                            name='Installed Capacity (pv_df in topo)', 
-                                            opacity=0.5, marker_color = color_pv_df, 
+                                            name='-- Installed Capacity (pv_df in topo)', 
+                                            opacity=0.5, 
+                                            marker_color = color_pv_df, 
                                             xbins=dict(size = xbins_hist_instcapa_abs),
-                                            legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                            secondary_y=False, )
+                                            ))
+                
+                fig_agg_stand.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
+                fig_agg_stand.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,))                                                     
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['inst_capa_kW_stand'],
-                                            name='Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df), standardized', 
-                                            opacity=0.5, marker_color = color_rest,
+                                            name= '-- Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df), standardized', 
+                                            opacity=0.5, 
+                                            marker_color = color_rest,
                                             xbins=dict(size= xbins_hist_instcapa_stand),
-                                            legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                            secondary_y=True, )
+                                            ))
                 fig_agg_stand.add_trace(go.Histogram(x=pv['TotalPower_stand'],
-                                            name='Installed Capacity (pv_df in topo), standardized',
-                                            opacity=0.5, marker_color = color_pv_df,
+                                            name='-- Installed Capacity (pv_df in topo), standardized',
+                                            opacity=0.5, 
+                                            marker_color = color_pv_df,
                                             xbins=dict(size= xbins_hist_instcapa_stand),
-                                            legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                            secondary_y=True, )
-
-
-
+                                            ))
+              
             # annual PV production kWh --------------------------------
+            
+            # standardization for plot
             aggdf_combo['pvprod_kW_stand'] = (aggdf_combo['pvprod_kW'] - aggdf_combo['pvprod_kW'].mean()) / aggdf_combo['pvprod_kW'].std() 
             aggdf_combo['pvprod_ByTotalPower_kW_stand'] = (aggdf_combo['pvprod_ByTotalPower_kW'] - aggdf_combo['pvprod_ByTotalPower_kW'].mean()) / aggdf_combo['pvprod_ByTotalPower_kW'].std()
             aggdf_combo['STROMERTRAG_stand'] = (aggdf_combo['STROMERTRAG'] - aggdf_combo['STROMERTRAG'].mean()) / aggdf_combo['STROMERTRAG'].std()
@@ -446,49 +449,49 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             # add traces for plot_agg ----------
             if True:
+                # kernel density traces
+                x_range_pvproduction_abs = np.linspace(min(aggdf_combo['pvprod_kW'].min(), aggdf_combo['STROMERTRAG'].min(), aggdf_combo['pvprod_ByTotalPower_kW'].min()),
+                                                    max(aggdf_combo['pvprod_kW'].max(), aggdf_combo['STROMERTRAG'].max(), aggdf_combo['pvprod_ByTotalPower_kW'].max()), 500)
+                x_range_pvproduction_stand = np.linspace(min(aggdf_combo['pvprod_kW_stand'].min(), aggdf_combo['STROMERTRAG_stand'].min(), aggdf_combo['pvprod_ByTotalPower_kW_stand'].min()),
+                                                    max(aggdf_combo['pvprod_kW_stand'].max(), aggdf_combo['STROMERTRAG_stand'].max(), aggdf_combo['pvprod_ByTotalPower_kW_stand'].max()), 500) 
+
+                kde_pvprod_kW, kde_pvprod_kW_stand = stats.gaussian_kde(aggdf_combo['pvprod_kW']), stats.gaussian_kde(aggdf_combo['pvprod_kW_stand'])
+                kde_STROMERTRAG, kde_STROMERTRAG_stand = stats.gaussian_kde(aggdf_combo['STROMERTRAG']), stats.gaussian_kde(aggdf_combo['STROMERTRAG_stand'])
+                kde_pvprod_ByTotalPower_kW, kde_pvprod_ByTotalPower_kW_stand = stats.gaussian_kde(aggdf_combo['pvprod_ByTotalPower_kW']), stats.gaussian_kde(aggdf_combo['pvprod_ByTotalPower_kW_stand'])
+
+                # add pvprod abs
+
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['pvprod_kW'],
-                                        name='Modeled Potential Yearly Production (kWh)',
-                                        opacity=0.5, marker_color = color_rest,
-                                        xbins=dict(size=xbins_hist_totalprodkwh_abs),
-                                        legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                        secondary_y=False)
+                                        name=f'-- Modeled Potential Yearly Production (kWh) {scen}',
+                                        opacity=0.5, 
+                                        xbins=dict(size=xbins_hist_totalprodkwh_abs)
+                                        ))
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['STROMERTRAG'],
-                                        name='STROMERTRAG (solkat estimated production)',
-                                        opacity=0.5, marker_color = color_solkat,
+                                        name=f'STROMERTRAG (solkat estimated production) {scen}',
+                                        opacity=0.5, 
                                         xbins=dict(size=xbins_hist_totalprodkwh_abs),
-                                        legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                        secondary_y=False)
+                                        ))
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['pvprod_ByTotalPower_kW'],
-                                        name='Yearly Prod. TotalPower (pvdf estimated production)',
-                                        opacity=0.5, marker_color = color_pv_df,
+                                        name=f'Yearly Prod. TotalPower (pvdf estimated production) {scen}',
+                                        opacity=0.5, 
                                         xbins=dict(size=xbins_hist_totalprodkwh_abs),
-                                        legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                        secondary_y=False)
+                                        ))     
                 
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['pvprod_kW_stand'],
-                                        name='Modeled Potential Yearly Production (kWh), standardized',
-                                        opacity=0.5, marker_color = color_rest,
+                                        name=f'Modeled Potential Yearly Production (kWh), standardized {scen}',
+                                        opacity=0.5, 
                                         xbins=dict(size=xbins_hist_totalprodkwh_stand),
-                                        legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                        secondary_y=True)
+                                        ))
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['STROMERTRAG_stand'],
-                                        name='STROMERTRAG (solkat estimated production), standardized',
-                                        opacity=0.5, marker_color = color_solkat,
+                                        name=f'STROMERTRAG (solkat estimated production), standardized {scen}',
+                                        opacity=0.5, 
                                         xbins=dict(size=xbins_hist_totalprodkwh_stand),
-                                        legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                        secondary_y=True)
+                                        ))
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['pvprod_ByTotalPower_kW_stand'],
-                                        name='Yearly Prod. TotalPower (pvdf estimated production), standardized',
-                                        opacity=0.5, marker_color = color_pv_df,
+                                        name=f'Yearly Prod. TotalPower (pvdf estimated production), standardized {scen}',
+                                        opacity=0.5,
                                         xbins=dict(size=xbins_hist_totalprodkwh_stand),
-                                        legendgroup= f'{scen}',
-                                        legendgrouptitle= dict(text=f'{scen}')),
-                                        secondary_y=True)
+                                        ))
                 
         # export plot_agg
         fig_agg_abs.update_layout(
@@ -504,19 +507,17 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             title = f'SANITY CHECK: Agg. Modelled vs Estimated Yearly PRODUCTION (kWp_m2:{kWpeak_per_m2}, share roof available: {share_roof_area_available}, {panel_efficiency_print} panel efficiency, inverter efficiency: {inverter_efficiency})'
         )
 
-        fig_agg_abs.update_yaxes(title_text="Frequency (standardized)", secondary_y=True)
-        fig_agg_stand.update_yaxes(title_text="Frequency (standardized)", secondary_y=True)
 
         if plot_show and visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][1]:
             fig_agg_abs.show()
             fig_agg_stand.show()
-            if visual_settings['save_plot_by_scen_directory']:
-                fig_agg_abs.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
-                fig_agg_stand.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_annualPVprod_kWh.html')
-            else:
-                fig_agg_abs.write_html(f'{data_path}/output/visualizations/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
-                fig_agg_stand.write_html(f'{data_path}/output/visualizations/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_annualPVprod_kWh.html')
-            print_to_logfile(f'\texport: plot_agg_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
+            # if visual_settings['save_plot_by_scen_directory']:
+            #     fig_agg_abs.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
+            #     fig_agg_stand.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_annualPVprod_kWh.html')
+            # else:
+        fig_agg_abs.write_html(f'{data_path}/output/visualizations/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
+        fig_agg_stand.write_html(f'{data_path}/output/visualizations/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_annualPVprod_kWh.html')
+        print_to_logfile(f'\texport: plot_agg_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
 
             
 

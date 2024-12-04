@@ -15,7 +15,7 @@ visual_default_settings = {
         'plot_ind_var_summary_stats':           [True,      True],
         'plot_ind_hist_pvcapaprod_sanitycheck': [True,      True],
         'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
-            'xbins_hist_instcapa_abs': 0.75,
+            'xbins_hist_instcapa_abs': 0.5,
             'xbins_hist_instcapa_stand': 0.1,
             'xbins_hist_totalprodkwh_abs': 1000, 
             'xbins_hist_totalprodkwh_stand': 0.2,},
