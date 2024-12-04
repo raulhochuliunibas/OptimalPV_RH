@@ -132,6 +132,15 @@ def local_data_AND_spatial_mappings(
     solkat_wgeo = solkat.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID') # merge geometry for later use
     solkat_gdf = gpd.GeoDataFrame(solkat_wgeo, geometry='geometry')
 
+    # SOLKAT_MONTH ====================
+    solkat_month_all_pq = pd.read_parquet(f'{data_path_def}/split_data_geometry/solkat_month_pq.parquet')
+    checkpoint_to_logfile(f'import solkat_month_pq, {solkat_month_all_pq.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
+
+    # transformations
+    solkat_month_all_pq = cols_to_str(['SB_UUID', 'DF_UID',], solkat_month_all_pq)
+    solkat_month_all_pq = solkat_month_all_pq.merge(solkat_all_pq[['DF_UID', 'BFS_NUMMER']], how = 'left', on = 'DF_UID')
+    solkat_month = solkat_month_all_pq[solkat_month_all_pq['BFS_NUMMER'].isin(bfs_number_def)]  
+
     # GWR ====================
     gwr = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
     gwr_gdf = gpd.read_file(f'{data_path_def}/output/preprep_data/gwr_gdf.geojson')
@@ -260,8 +269,8 @@ def local_data_AND_spatial_mappings(
 
 
     # EXPORTS (parquet) ---------------------------------------------------------------------------------
-    df_to_export_names = ['pv', 'solkat', 'Map_egid_dsonode', 'Map_solkatdfuid_egid', 'Map_egid_pv']
-    df_to_export_list = [pv, solkat, Map_egid_dsonode, Map_solkatdfuid_egid, Map_egid_pv] 
+    df_to_export_names = ['pv', 'solkat', 'solkat_month', 'Map_egid_dsonode', 'Map_solkatdfuid_egid', 'Map_egid_pv']
+    df_to_export_list = [pv, solkat, solkat_month,  Map_egid_dsonode, Map_solkatdfuid_egid, Map_egid_pv] 
     for i, df in enumerate(df_to_export_list):
         df.to_parquet(f'{data_path_def}/output/preprep_data/{df_to_export_names[i]}.parquet')
         df.to_csv(f'{data_path_def}/output/preprep_data/{df_to_export_names[i]}.csv', sep=';', index=False)

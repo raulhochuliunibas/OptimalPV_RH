@@ -42,8 +42,10 @@ def calc_economics_in_topo_df(
 
     # import -----------------------------------------------------
     angle_tilt_df = df_list[df_names.index('angle_tilt_df')]
+    solkat_month = df_list[df_names.index('solkat_month')]
     demandtypes_ts = ts_list[ts_names.index('demandtypes_ts')]
     meteo_ts = ts_list[ts_names.index('meteo_ts')]
+
 
 
 
@@ -126,11 +128,15 @@ def calc_economics_in_topo_df(
 
     # MERGE + GET ECONOMIC VALUES FOR NPV CALCULATION =============================================
     topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
+    
     share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
     inverter_efficiency = pvalloc_settings['tech_economic_specs']['inverter_efficiency']
     panel_efficiency = pvalloc_settings['tech_economic_specs']['panel_efficiency']
     pvprod_calc_method = pvalloc_settings['tech_economic_specs']['pvprod_calc_method']
     kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
+
+    flat_direct_rad_factor = pvalloc_settings['weather_specs']['flat_direct_rad_factor']
+    flat_diffuse_rad_factor = pvalloc_settings['weather_specs']['flat_diffuse_rad_factor']
 
 
     egids = topo_df['EGID'].unique()
@@ -148,10 +154,39 @@ def calc_economics_in_topo_df(
         subdf['meteo_loc'] = 'Basel'
         meteo_ts['meteo_loc'] ='Basel' 
         
-        mean_top_radiation = meteo_ts['radiation'].nlargest(20).mean()
-        meteo_ts['radiation_rel_locmax'] = meteo_ts['radiation'] / mean_top_radiation
+        # subdf = subdf.merge(meteo_ts[['rad_direct', 'rad_diffuse', 'temperature', 't', 'meteo_loc']], how='left', on='meteo_loc')
+        subdf = subdf.merge(meteo_ts, how='left', on='meteo_loc')
+        
 
-        subdf = subdf.merge(meteo_ts[['t', 'radiation', 'radiation_rel_locmax', 'meteo_loc']], how='left', on='meteo_loc')
+        # add radiation per h to subdf ----------
+        if pvalloc_settings['weather_specs']['radiation_to_pvprod_method'] == 'flat':
+            subdf['radiation'] = subdf['rad_direct'] * flat_direct_rad_factor + subdf['rad_diffuse'] * flat_diffuse_rad_factor
+            meteo_ts['radiation'] = meteo_ts['rad_direct'] * flat_direct_rad_factor + meteo_ts['rad_diffuse'] * flat_diffuse_rad_factor
+            mean_top_radiation = meteo_ts['radiation'].nlargest(20).mean()
+
+            subdf['radiation_rel_locmax'] = subdf['radiation'] / mean_top_radiation
+
+
+        elif pvalloc_settings['weather_specs']['radiation_to_pvprod_method'] == 'dfuid_ind':
+            solkat_month.rename(columns={'DF_UID': 'df_uid', 'MONAT': 'month'}, inplace=True)
+            solkat_month['month'] = solkat_month['month'].astype(int)
+            subdf['month'] = subdf['timestamp'].dt.month.astype(int)
+            
+        
+            checkpoint_to_logfile(f'  start merge solkat_month to subdf {i} to {i+stepsize-1}', log_file_name, 1) if i < 2 else None
+            subdf = subdf.merge(solkat_month[['df_uid', 'month', 'A_PARAM', 'B_PARAM', 'C_PARAM']], how='left', on=['df_uid', 'month'])
+            checkpoint_to_logfile(f'  end merge solkat_month to subdf {i} to {i+stepsize-1}', log_file_name, 1) if i < 2 else None
+            subdf['radiation'] = subdf['A_PARAM'] * subdf['rad_direct'] + subdf['B_PARAM'] * subdf['rad_diffuse'] + subdf['C_PARAM']
+
+            meteo_ts['radiation'] = meteo_ts['rad_direct'] * flat_direct_rad_factor + meteo_ts['rad_diffuse'] * flat_diffuse_rad_factor
+            meteo_ts['radiation_abc_param_1dfuid'] = meteo_ts['rad_direct'] * subdf['A_PARAM'].mean() + meteo_ts['rad_diffuse'] * subdf['B_PARAM'].mean() + subdf['C_PARAM'].mean()
+
+            subdf_dfuid_topradation = subdf.groupby('df_uid')['radiation'].apply(lambda x: x.nlargest(20).mean()).reset_index()
+            subdf_dfuid_topradation.rename(columns={'radiation': 'mean_top_radiation'}, inplace=True)
+            subdf = subdf.merge(subdf_dfuid_topradation, how='left', on='df_uid')
+
+            subdf['radiation_rel_locmax'] = subdf['radiation'] / subdf['mean_top_radiation']
+            # BOOKMARK - check differences!
 
 
         # add panel_efficiency by time ----------
@@ -198,6 +233,13 @@ def calc_economics_in_topo_df(
             subdf['pvprod_kW'] =  subdf['radiation_rel_locmax'] * kWpeak_per_m2 *   inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] * subdf['angletilt_factor']
             # subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
             formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * kWpeak_per_m2 * subdf['radiation_rel_locmax'] * subdf['FLAECHE'] * subdf['angletilt_factor']"
+
+        # pvprod method 4
+        elif pvprod_calc_method == 'method4':
+            subdf['pvprod_kW'] =  subdf['radiation_rel_locmax'] * kWpeak_per_m2 *   inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] 
+            # subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
+            formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * kWpeak_per_m2 * subdf['radiation_rel_locmax'] * subdf['FLAECHE'] "
+
 
         # pvprod method 3
             # > 19.11.2024: no longer needed. from previous runs where I wanted to compare different pvprod_computations methods

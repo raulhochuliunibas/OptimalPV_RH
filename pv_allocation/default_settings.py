@@ -44,11 +44,14 @@ pvalloc_default_settings = {
                                             # GAZZI - total number of rooms in building
     },
     'weather_specs': {
-        'meteo_col_radiation_proxy': ['Basel Direct Shortwave Radiation','Basel Diffuse Shortwave Radiation',],
-        'meteo_col_temperature_proxy': ['Basel Temperature [2 m elevation corrected]',], 
-        'direct_rad_factor': 1,
-        'diffuse_to_direct_rad_factor': 0.2,
+        'meteo_col_dir_radiation': 'Basel Direct Shortwave Radiation',
+        'meteo_col_diff_radiation': 'Basel Diffuse Shortwave Radiation',
+        'meteo_col_temperature': 'Basel Temperature [2 m elevation corrected]', 
         'weather_year': 2022,
+
+        'radiation_to_pvprod_method': 'dfuid_ind',        #'flat', 'dfuid_ind'
+        'flat_direct_rad_factor': 1,
+        'flat_diffuse_rad_factor': 0.2,
     },
     'constr_capacity_specs': {
         'ann_capacity_growth': 0.05,         # annual growth of installed capacity# each year, X% more PV capacity can be built, 100% in year T0

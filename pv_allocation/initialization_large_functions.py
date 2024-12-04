@@ -111,6 +111,12 @@ def import_prepre_AND_create_topology(
     solkat = solkat.loc[solkat['BFS_NUMMER'].isin(bfs_number)]
     solkat = solkat.copy()
 
+
+    # SOLKAT MONTH -------
+    solkat_month = pd.read_parquet(f'{data_path}/output/{name_dir_import}/solkat_month.parquet')
+    solkat_month['DF_UID'] = solkat_month['DF_UID'].fillna('').astype(str)
+
+
     # PV -------
     pv = pd.read_parquet(f'{data_path}/output/{name_dir_import}/pv.parquet')
     pv['xtf_id'] = pv['xtf_id'].fillna(0).astype(int).replace(0, '').astype(str)    
@@ -483,8 +489,8 @@ def import_prepre_AND_create_topology(
     #             pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df ]
     # df_list =  [Map_solkatdfuid_egid,   Map_egid_pv,    Map_demandtypes_egid,   Map_egid_demandtypes,   
     #             pv,  pvtarif,   elecpri, Map_egid_dsonode, dsonodes_df, dsonodes_gdf, angle_tilt_df  ]  
-    df_names = ['Map_egid_pv', 'pv', 'pvtarif', 'elecpri', 'Map_egid_dsonode', 'dsonodes_df', 'dsonodes_gdf', 'angle_tilt_df', ]
-    df_list =  [ Map_egid_pv, pv,   pvtarif,   elecpri,   Map_egid_dsonode,   dsonodes_df,   dsonodes_gdf,   angle_tilt_df, ]
+    df_names = ['Map_egid_pv', 'solkat_month', 'pv', 'pvtarif', 'elecpri', 'Map_egid_dsonode', 'dsonodes_df', 'dsonodes_gdf', 'angle_tilt_df', ]
+    df_list =  [ Map_egid_pv,   solkat_month,   pv,   pvtarif,   elecpri,   Map_egid_dsonode,   dsonodes_df,   dsonodes_gdf,   angle_tilt_df, ]
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):
             m.to_parquet(f'{data_path}/output/pvalloc_run/{df_names[i]}.parquet')
@@ -577,34 +583,24 @@ def import_ts_data(
     checkpoint_to_logfile(f'sanity check demand_ts: {nas} NaNs or {nulls} Nulls for any column in df', log_file_name)
 
 
-    # meteo types --------
-    rad_proxy = pvalloc_settings['weather_specs']['meteo_col_radiation_proxy']
-    temp_proxy = pvalloc_settings['weather_specs']['meteo_col_temperature_proxy']
+    # meteo (radiation & temperature) --------
+    meteo_col_dir_radiation = pvalloc_settings['weather_specs']['meteo_col_dir_radiation']
+    meteo_col_diff_radiation = pvalloc_settings['weather_specs']['meteo_col_diff_radiation']
+    meteo_col_temperature = pvalloc_settings['weather_specs']['meteo_col_temperature']
     weater_year = pvalloc_settings['weather_specs']['weather_year']
-    diffuse_to_direct_rad_factor = pvalloc_settings['weather_specs']['diffuse_to_direct_rad_factor']
-    direct_rad_factor = pvalloc_settings['weather_specs']['direct_rad_factor']
 
     meteo = pd.read_parquet(f'{data_path}/output/{name_dir_import}/meteo.parquet')
-    meteo_cols = ['timestamp',] + rad_proxy + temp_proxy
+    meteo_cols = ['timestamp', meteo_col_dir_radiation, meteo_col_diff_radiation, meteo_col_temperature]
     meteo = meteo.loc[:,meteo_cols]
 
     # get radiation
-    if any(["Diffuse" in col for col in rad_proxy]):
-    #     diff_col_name = [col for col in rad_proxy if "Diffuse" in col][0]   
-    #     rest_col_name = [col for col in rad_proxy if "Diffuse" not in col]
-    #     meteo['radiation'] = meteo[rest_col_name].sum(axis=1) + (meteo[diff_col_name] * diffuse_to_direct_rad_factor)
-        dir_rad_col = 'Basel Direct Shortwave Radiation'
-        diff_rad_col = 'Basel Diffuse Shortwave Radiation'
-        meteo['radiation'] = (meteo[dir_rad_col] * direct_rad_factor) + (meteo[diff_rad_col] * diffuse_to_direct_rad_factor)
+    meteo['rad_direct'] = meteo[meteo_col_dir_radiation]
+    meteo['rad_diffuse'] = meteo[meteo_col_diff_radiation]
+    meteo.drop(columns=[meteo_col_dir_radiation, meteo_col_diff_radiation], inplace=True)
 
-    else:
-        meteo['radiation'] = meteo[rad_proxy].sum(axis=1)
-    
-    meteo.drop(columns=rad_proxy, inplace=True)
-    
     # get temperature
-    meteo['temperature'] = meteo[temp_proxy].sum(axis=1)
-    meteo.drop(columns=temp_proxy, inplace=True)
+    meteo['temperature'] = meteo[meteo_col_temperature]
+    meteo.drop(columns=meteo_col_temperature, inplace=True)
 
     start_wy, end_wy = pd.to_datetime(f'{weater_year}-01-01 00:00:00'), pd.to_datetime(f'{weater_year}-12-31 23:00:00')
     meteo = meteo.loc[(meteo['timestamp'] >= start_wy) & (meteo['timestamp'] <= end_wy)]

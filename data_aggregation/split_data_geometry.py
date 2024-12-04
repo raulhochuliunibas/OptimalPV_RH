@@ -113,6 +113,12 @@ def split_data_and_geometry(
         f.write(solkat_geo.to_json())
     checkpoint_to_logfile(f'exported solkat_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
+    
+    # SOLKAT MONTH -------------------
+    solkat_month_pq = gpd.read_file(f'{data_path_def}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
+    solkat_month_pq.to_parquet(f'{data_path_def}/split_data_geometry/solkat_month_pq.parquet')
+
+
 
     # subset for BSBLSO case -------------------
     bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13], data_path_def, log_file_name_def)
