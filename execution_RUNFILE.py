@@ -542,6 +542,7 @@ pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 visual_settings = {
         'plot_show': True,
         'remove_previous_plots': True,
+        'remove_old_plot_scen_directories': True,
         'save_plot_by_scen_directory': True,
         'MC_subdir_for_plot': '*MC*1', 
         'node_selection_for_plots': ['8', '32', '10', '22'], # or None for all nodes
