@@ -9,13 +9,13 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 # SETTINGS DEFINITION ==================================================================================================================
 months_pred = 1 #600 #36
 MC_iter = 1
-run_on_server = True
-bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475] # Laufen & Umgebung > [2791, 2787, 2792, 2784, 2793, 2782, 2781,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
+run_on_server = False
+bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
 run_dataagg =       False
-run_alloc_init =    False
-run_alloc_MCalg =   False
-run_visual =        True
+run_alloc_init =    True
+run_alloc_MCalg =   True
+run_visual =        False
 
 
 # data_aggregation 
@@ -64,48 +64,91 @@ pvalloc_scenarios={
     #     'MC_loop_specs': {
     #         'montecarlo_iterations': MC_iter,},
     # }, 
-
-
-    'pvalloc_BLsml_12m_1mc_meth2_panel1506_dir1_diff0_flatWK':{
+    'pvallco_BL_small_12m_meth3_rad_flat':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        # 'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',},
+        'weather_specs': {
+            'radiation_to_pvprod_method': 'flat',
+            'flat_direct_rad_factor': 1,
+            'flat_diffuse_rad_factor': 0.2,},
+    },
+    'pvallco_BL_small_12m_meth3_rad_dfuid_ind':{
+                'name_dir_import': 'preprep_BL_22to23_1and2homes',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3',},
+        'weather_specs': {
+            'radiation_to_pvprod_method': 'dfuid_ind',
+            'flat_direct_rad_factor': 1,
+            'flat_diffuse_rad_factor': 0.2,},
+    },
+    'pvallco_BL_small_12m_meth2_rad_flat':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'months_prediction': 12,
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',
-            'kWpeak_per_m2': 0.15,    
-            'share_roof_area_available': 0.6},
+            'pvprod_calc_method': 'method2',},
         'weather_specs': {
-            'direct_rad_factor': 1,
-            'diffuse_to_direct_rad_factor': 0,},
-        'panel_efficiency_specs': {
-            'variable_panel_efficiency_TF': False,},
+            'radiation_to_pvprod_method': 'flat',
+            'flat_direct_rad_factor': 1,
+            'flat_diffuse_rad_factor': 0.2,}
     },
-    'pvalloc_BLsml_12m_1mc_meth2_panel2010_dir1_diff0_flatWK':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    'pvallco_BL_small_12m_meth2_rad_dfuid_ind':{
+                'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'months_prediction': 12,
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',
-            'kWpeak_per_m2': 0.2,    
-            'share_roof_area_available': 1},
+            'pvprod_calc_method': 'method2',},
         'weather_specs': {
-            'direct_rad_factor': 1,
-            'diffuse_to_direct_rad_factor': 0,},
-        'panel_efficiency_specs': {
-            'variable_panel_efficiency_TF': False,},
+            'radiation_to_pvprod_method': 'dfuid_ind',
+            'flat_direct_rad_factor': 1,
+            'flat_diffuse_rad_factor': 0.2,},
     },
+
+    # 'pvalloc_BLsml_12m_1mc_meth2_panel1506_dir1_diff0_flatWK':{
+    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    #     'script_run_on_server': run_on_server,
+    #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+    #     'algorithm_specs': {
+    #         'inst_selection_method': 'random',},
+    #     'months_prediction': 12,
+    #     'MC_loop_specs': {
+    #         'montecarlo_iterations': 1,},
+
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2',
+    #         'kWpeak_per_m2': 0.15,    
+    #         'share_roof_area_available': 0.6},
+    #     'weather_specs': {
+    #         'flat_direct_rad_factor': 1,
+    #         'flat_diffuse_rad_factor': 0,},
+    #     'panel_efficiency_specs': {
+    #         'variable_panel_efficiency_TF': False,},
+    # },
+    # 'pvalloc_BLsml_12m_1mc_meth2_panel2010_dir1_diff0_flatWK':{
+    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    #     'script_run_on_server': run_on_server,
+    #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
+    #     'algorithm_specs': {
+    #         'inst_selection_method': 'random',},
+    #     'months_prediction': 12,
+    #     'MC_loop_specs': {
+    #         'montecarlo_iterations': 1,},
+
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2',
+    #         'kWpeak_per_m2': 0.2,    
+    #         'share_roof_area_available': 1},
+    #     'weather_specs': {
+    #         'flat_direct_rad_factor': 1,
+    #         'flat_diffuse_rad_factor': 0,},
+    #     'panel_efficiency_specs': {
+    #         'variable_panel_efficiency_TF': False,},
+    # },
     # 'pvalloc_BLsml_12m_1mc_meth2_panel1506_dir10_diff1_flatWK':{
     #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
     #     'script_run_on_server': run_on_server,
@@ -121,12 +164,13 @@ pvalloc_scenarios={
     #         'kWpeak_per_m2': 0.15,    
     #         'share_roof_area_available': 0.6},
     #     'weather_specs': {
-    #         'direct_rad_factor': 10,
-    #         'diffuse_to_direct_rad_factor': 1,},
+    #         'flat_direct_rad_factor': 10,
+    #         'flat_diffuse_rad_factor': 1,},
     #     'panel_efficiency_specs': {
     #         'variable_panel_efficiency_TF': False,},
     # },
-    # 'pvalloc_BLsml_12m_1mc_meth2_panel1506_dir100_diff1_flatWK':{
+    
+    # 'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir1_diff0_flatWK':{
     #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
     #     'script_run_on_server': run_on_server,
     #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
@@ -137,16 +181,16 @@ pvalloc_scenarios={
     #         'montecarlo_iterations': 1,},
 
     #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method2',
+    #         'pvprod_calc_method': 'method3',
     #         'kWpeak_per_m2': 0.15,    
     #         'share_roof_area_available': 0.6},
     #     'weather_specs': {
-    #         'direct_rad_factor': 100,
-    #         'diffuse_to_direct_rad_factor': 1,},
+    #         'flat_direct_rad_factor': 1,
+    #         'flat_diffuse_rad_factor': 0,},
     #     'panel_efficiency_specs': {
     #         'variable_panel_efficiency_TF': False,},
     # },
-    # 'pvalloc_BLsml_12m_1mc_meth2_panel1506_dir1000_diff1_flatWK':{
+    # 'pvalloc_BLsml_12m_1mc_meth3_panel2010_dir1_diff0_flatWK':{
     #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
     #     'script_run_on_server': run_on_server,
     #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
@@ -157,57 +201,15 @@ pvalloc_scenarios={
     #         'montecarlo_iterations': 1,},
 
     #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method2',
-    #         'kWpeak_per_m2': 0.15,    
-    #         'share_roof_area_available': 0.6},
+    #         'pvprod_calc_method': 'method3',
+    #         'kWpeak_per_m2': 0.2,    
+    #         'share_roof_area_available': 1},
     #     'weather_specs': {
-    #         'direct_rad_factor': 1000,
-    #         'diffuse_to_direct_rad_factor': 1,},
+    #         'flat_direct_rad_factor': 1,
+    #         'flat_diffuse_rad_factor': 0,},
     #     'panel_efficiency_specs': {
     #         'variable_panel_efficiency_TF': False,},
     # },
-
-
-    'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir1_diff0_flatWK':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'months_prediction': 12,
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',
-            'kWpeak_per_m2': 0.15,    
-            'share_roof_area_available': 0.6},
-        'weather_specs': {
-            'direct_rad_factor': 1,
-            'diffuse_to_direct_rad_factor': 0,},
-        'panel_efficiency_specs': {
-            'variable_panel_efficiency_TF': False,},
-    },
-    'pvalloc_BLsml_12m_1mc_meth3_panel2010_dir1_diff0_flatWK':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'months_prediction': 12,
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',
-            'kWpeak_per_m2': 0.2,    
-            'share_roof_area_available': 1},
-        'weather_specs': {
-            'direct_rad_factor': 1,
-            'diffuse_to_direct_rad_factor': 0,},
-        'panel_efficiency_specs': {
-            'variable_panel_efficiency_TF': False,},
-    },
     # 'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir10_diff1_flatWK':{
     #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
     #     'script_run_on_server': run_on_server,
@@ -223,317 +225,17 @@ pvalloc_scenarios={
     #         'kWpeak_per_m2': 0.15,    
     #         'share_roof_area_available': 0.6},
     #     'weather_specs': {
-    #         'direct_rad_factor': 10,
-    #         'diffuse_to_direct_rad_factor': 1,},
+    #         'flat_direct_rad_factor': 10,
+    #         'flat_diffuse_rad_factor': 1,},
     #     'panel_efficiency_specs': {
     #         'variable_panel_efficiency_TF': False,},
     # },
-    # 'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir1000_diff1_flatWK':{
-    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
-    #     'script_run_on_server': run_on_server,
-    #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-    #     'algorithm_specs': {
-    #         'inst_selection_method': 'random',},
-    #     'months_prediction': 12,
-    #     'MC_loop_specs': {
-    #         'montecarlo_iterations': 1,},
-
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method3',
-    #         'kWpeak_per_m2': 0.15,    
-    #         'share_roof_area_available': 0.6},
-    #     'weather_specs': {
-    #         'direct_rad_factor': 1000,
-    #         'diffuse_to_direct_rad_factor': 1,},
-    #     'panel_efficiency_specs': {
-    #         'variable_panel_efficiency_TF': False,},
-    # },
-    # 'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir100_diff1_flatWK':{
-    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
-    #     'script_run_on_server': run_on_server,
-    #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-    #     'algorithm_specs': {
-    #         'inst_selection_method': 'random',},
-    #     'months_prediction': 12,
-    #     'MC_loop_specs': {
-    #         'montecarlo_iterations': 1,},
-
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method3',
-    #         'kWpeak_per_m2': 0.15,    
-    #         'share_roof_area_available': 0.6},
-    #     'weather_specs': {
-    #         'direct_rad_factor': 100,
-    #         'diffuse_to_direct_rad_factor': 1,},
-    #     'panel_efficiency_specs': {
-    #         'variable_panel_efficiency_TF': False,},
-    # },
-
+    
 }
 
 
 
 parkplat = {
-    f'pvalloc_sample_12m_meth2_rnd_diffratio02':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio02':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },   
-
-    f'pvalloc_sample_12m_meth2_rnd_diffratio05':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.5,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio05':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.5,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },   
-    f'pvalloc_sample_12m_meth2_rnd_diffratio08':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.8,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio08':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.8,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-
-    f'pvalloc_sample_12m_meth2_rnd_diffratio10':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio10':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    }, 
-
-    f'pvalloc_sample_12m_meth2_rnd_diffratio12':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio12':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-
-    f'pvalloc_sample_12m_meth2_rnd_diffratio14':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.4,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio14':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.4,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-
-    f'pvalloc_sample_12m_meth2_rnd_diffratio16':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.6,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio16':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.6,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-
-    f'pvalloc_sample_12m_meth2_rnd_diffratio18':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.8,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio18':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.8,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-
-    f'pvalloc_sample_12m_meth2_rnd_diffratio20':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio20':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'diffuse_to_direct_rad_factor': 2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-
 }
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 

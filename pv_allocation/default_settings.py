@@ -11,7 +11,7 @@ pvalloc_default_settings = {
     'bfs_numbers': [2791, 2787, 2792, 2784, 2793, 2782, 2781, 2789, 2786, 2768, 2772, 2785, 2761],
     'T0_prediction': '2023-01-01 00:00:00', 
     'months_lookback': 12*1,
-    'months_prediction': 3,
+    'months_prediction': 12,
     'script_run_on_server':     False,                           # F: run on private computer, T: run on server
     'export_csvs':              False, 
     # no longer relevant
@@ -67,13 +67,13 @@ pvalloc_default_settings = {
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
         'pvprod_calc_method': 'method3',
-        'panel_efficiency': 0.18,         # XY% Wirkungsgrad PV Modul
-        'inverter_efficiency': 0.95,        # XY% Wirkungsgrad Wechselrichter
+        'panel_efficiency': 0.2,         # XY% Wirkungsgrad PV Modul
+        'inverter_efficiency': 0.8,        # XY% Wirkungsgrad Wechselrichter
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
         'invst_maturity': 25,
         'kWpeak_per_m2': 0.15,                       # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
-        'share_roof_area_available': 0.6,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
+        'share_roof_area_available': 0.7,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
         'max_distance_m_for_EGID_node_matching': 0, # max distance in meters for matching GWR EGIDs that have no node assignment to the next grid node
         },
     'panel_efficiency_specs': {
@@ -92,7 +92,7 @@ pvalloc_default_settings = {
     },
     # PART II: settings for MC algorithm --------------------
     'MC_loop_specs': {
-        'montecarlo_iterations': 2,
+        'montecarlo_iterations': 1,
         'fresh_initial_files': 
             ['topo_egid.json', 'months_prediction.parquet', 'gridprem_ts.parquet', 
               'constrcapa.parquet', 'dsonodes_df.parquet'],  #'gridnode_df.parquet',
@@ -104,7 +104,7 @@ pvalloc_default_settings = {
 
     },
     'algorithm_specs': {
-        'inst_selection_method': 'prob_weighted_npv',   # random, prob_weighted_npv, max_npv 
+        'inst_selection_method': 'random',   # random, prob_weighted_npv, max_npv 
         'rand_seed': 42,                                # random seed set to int or None
         'while_inst_counter_max': 5000,
         'topo_subdf_partitioner': 400,
