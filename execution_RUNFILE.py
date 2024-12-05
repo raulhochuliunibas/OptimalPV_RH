@@ -9,8 +9,8 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 # SETTINGS DEFINITION ==================================================================================================================
 months_pred = 1 #600 #36
 MC_iter = 1
-run_on_server = False
-bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
+run_on_server = True
+bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
 run_dataagg =       False
 run_alloc_init =    True
@@ -65,25 +65,98 @@ pvalloc_scenarios={
     #         'montecarlo_iterations': MC_iter,},
     # }, 
     
-    'pvallco_BL_small_12m_meth3_rad_flat':{
+    'pvallco_BL_small_12m_meth2.1_rad_flat':{
         'script_run_on_server': run_on_server,
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
+            'pvprod_calc_method': 'method2.1',},
         'weather_specs': {
-            'radiation_to_pvprod_method': 'flat',
-            'flat_direct_rad_factor': 1,
-            'flat_diffuse_rad_factor': 0.2,},
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'flat',}
     },
-    'pvallco_BL_small_12m_meth3_rad_dfuid_ind':{
+    'pvallco_BL_small_12m_meth2.1_rad_dfuid_ind':{
         'script_run_on_server': run_on_server,
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
+            'pvprod_calc_method': 'method2.1',},
         'weather_specs': {
-            'radiation_to_pvprod_method': 'dfuid_ind',
-            'flat_direct_rad_factor': 1,
-            'flat_diffuse_rad_factor': 0.2,},
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    'pvallco_BL_small_12m_meth2_rad_flat':{
+    'pvallco_BL_small_12m_meth2.2_rad_flat':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'flat',}
+    },
+    'pvallco_BL_small_12m_meth2.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+
+    'pvallco_BL_small_12m_meth3.1_rad_flat':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.1',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'flat',}
+    },
+    'pvallco_BL_small_12m_meth3.1_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.1',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvallco_BL_small_12m_meth3.2_rad_flat':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'flat',}
+    },
+    'pvallco_BL_small_12m_meth3.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+
+    'pvallco_BL_small_12m_meth3.1_rad_dfuid_ind_maxallHOY':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.1',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'all_HOY',}
+    },
+    'pvallco_BL_small_12m_meth3.2_rad_dfuid_ind_maxallHOY':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'all_HOY',}
+    },
+
+
+
+
+}
+
+
+
+parkplat = {
+        'pvallco_BL_small_12m_meth2_rad_flat':{
         'script_run_on_server': run_on_server,
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2',},
@@ -142,7 +215,7 @@ pvalloc_scenarios={
     #     'panel_efficiency_specs': {
     #         'variable_panel_efficiency_TF': False,},
     # },
-    # 'pvalloc_BLsml_12m_1mc_meth2_panel1506_dir10_diff1_flatWK':{
+    # 'pvalloc_BLsml_12m_1mc_meth2_panel1506_dir1_diff1_flatWK':{
     #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
     #     'script_run_on_server': run_on_server,
     #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
@@ -157,7 +230,7 @@ pvalloc_scenarios={
     #         'kWpeak_per_m2': 0.15,    
     #         'share_roof_area_available': 0.6},
     #     'weather_specs': {
-    #         'flat_direct_rad_factor': 10,
+    #         'flat_direct_rad_factor': 1,
     #         'flat_diffuse_rad_factor': 1,},
     #     'panel_efficiency_specs': {
     #         'variable_panel_efficiency_TF': False,},
@@ -203,32 +276,7 @@ pvalloc_scenarios={
     #     'panel_efficiency_specs': {
     #         'variable_panel_efficiency_TF': False,},
     # },
-    # 'pvalloc_BLsml_12m_1mc_meth3_panel1506_dir10_diff1_flatWK':{
-    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
-    #     'script_run_on_server': run_on_server,
-    #     'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-    #     'algorithm_specs': {
-    #         'inst_selection_method': 'random',},
-    #     'months_prediction': 12,
-    #     'MC_loop_specs': {
-    #         'montecarlo_iterations': 1,},
 
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method3',
-    #         'kWpeak_per_m2': 0.15,    
-    #         'share_roof_area_available': 0.6},
-    #     'weather_specs': {
-    #         'flat_direct_rad_factor': 10,
-    #         'flat_diffuse_rad_factor': 1,},
-    #     'panel_efficiency_specs': {
-    #         'variable_panel_efficiency_TF': False,},
-    # },
-    
-}
-
-
-
-parkplat = {
 }
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
@@ -237,31 +285,28 @@ pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 visual_settings = {
         'plot_show': True,
         'remove_previous_plots': True,
-        'remove_old_plot_scen_directories': True,
+        'remove_old_plot_scen_directories': False,
         'save_plot_by_scen_directory': True,
         'MC_subdir_for_plot': '*MC*1', 
         'node_selection_for_plots': ['8', '32', '10', '22'], # or None for all nodes
 
-        # PLOT CHUCK -------------------------> [run plot,  show plot]
+        # PLOT CHUCK -------------------------> [run plot,  show plot,  show all scen]
         # for pvalloc_inital + sanitycheck
-        'plot_ind_var_summary_stats':            [False,    False], 
-        'plot_ind_hist_pvcapaprod_sanitycheck':  [True,     True], 
-        'plot_ind_charac_omitted_gwr':      [False,         True],  # |> bookmark: NOT WORKING properly!! how to make such that code continues if plot still shown?
-        'plot_ind_line_meteo_radiation':         [True,     False], 
+        'plot_ind_var_summary_stats':            [False,     True,       False], 
+        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,      True,       True], 
+        'plot_ind_charac_omitted_gwr':           [False,     True,       False],
+        'plot_ind_line_meteo_radiation':         [False,      True,      False], 
         # for pvalloc_MC_algorithm 
         'plot_ind_line_installedCap':            [False,    True],        
-        'plot_ind_line_productionHOY_per_node':  [False,     True],  
+        'plot_ind_line_productionHOY_per_node':  [False,    True],  
         'plot_ind_hist_NPV_freepartitions':      [False,    False], 
-        #NEU 'plot_ind_hist_installedCap_kw': > in plot_ind_var_summary_stats?
-        # |CURRENT WORKING ON > hist für FLACHE*70%*kWpeak_m2 for all egids
-        # |done> hist für FLACHE*70%*kWpeak_m2 only for buildings in pvdf => good comparison!
-        'plot_ind_hist_pvcapaprod':              [False,     True],
-        'plot_ind_map_topo_egid':                [True,    True],
-        'plot_ind_map_node_connections':         [True,    True],   
-        # for scen aggregation
+        'plot_ind_hist_pvcapaprod':              [True,     True],  # |> bookmark
 
+        'plot_ind_map_topo_egid':                [True,     True,       False],
+        'plot_ind_map_node_connections':         [True,     True,       False],   
+        
+        # still to be updated
         'plot_ind_map_omitted_gwr_egids':        False,
-        #                                      # False,
         'plot_agg_line_installedCap_per_month':  False,
         'plot_agg_line_productionHOY_per_node':  False,
         'plot_agg_line_gridPremiumHOY_per_node': False,
