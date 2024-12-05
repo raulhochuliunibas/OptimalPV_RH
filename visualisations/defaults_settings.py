@@ -14,11 +14,11 @@ visual_default_settings = {
         # for pvalloc_inital + sanitycheck
         'plot_ind_var_summary_stats':           [True,      True],
         'plot_ind_hist_pvcapaprod_sanitycheck': [True,      True],
-        'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
-            'xbins_hist_instcapa_abs': 0.5,
-            'xbins_hist_instcapa_stand': 0.1,
-            'xbins_hist_totalprodkwh_abs': 1000, 
-            'xbins_hist_totalprodkwh_stand': 0.2,},
+            'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
+                'xbins_hist_instcapa_abs': 0.5,
+                'xbins_hist_instcapa_stand': 0.1,
+                'xbins_hist_totalprodkwh_abs': 1000, 
+                'xbins_hist_totalprodkwh_stand': 0.2,},
         'plot_ind_charac_omitted_gwr':          [True,      True],
             'plot_ind_charac_omitted_gwr_specs':{
                 'disc_cols': ['BFS_NUMMER','GSTAT','GKAT','GKLAS'], 
@@ -28,6 +28,12 @@ visual_default_settings = {
                 'cont_ncols': 3,
                 'cont_figsize': [15, 10],
                 'cont_bins': 20,
+                'gwr_code_name_tuples_GKLAS': [
+                    ('1110', 'Bldg. w one flat (incl double, row houses, w indiv roofs)'),
+                    ('1121', 'Bldg. w two flat (incl double, row houses, w 2 flats'),
+                    ('1276', 'Bldg. for animal shelter'), ],
+                'gwr_code_name_tuples_GSTAT': [
+                    ('1004', 'Existing bldg.'),]
             },
         'plot_ind_line_meteo_radiation':        [True,      True],
 
@@ -36,7 +42,6 @@ visual_default_settings = {
         'plot_ind_line_productionHOY_per_node':  [True,      True],
         'plot_ind_hist_NPV_freepartitions':      [True,      True],
         'plot_ind_hist_pvcapaprod':              [True,    True],
-
 
         'plot_ind_map_topo_egid':                [True,    False],
             'plot_ind_map_topo_egid_specs': {
@@ -68,7 +73,7 @@ visual_default_settings = {
             },
 
 
-        
+        # still to be updated ========================================
         'plot_ind_map_topo_omitt':              True,
             'plot_ind_map_topo_omitt_specs':{
                 'point_opacity': 0.6, 
@@ -76,13 +81,11 @@ visual_default_settings = {
                 'point_color': '#f54242',           # red
             },
 
-
         'plot_agg_line_installedCap_per_month':  True,
         'plot_agg_line_productionHOY_per_node':  True,
         'plot_agg_line_gridPremiumHOY_per_node': True,
         'plot_agg_line_gridpremium_structure':   True,
         'plot_agg_line_production_per_month':    True,
-
 
         'plot_agg_line_cont_charact_new_inst':   True,
             'plot_agg_line_cont_charact_new_inst_specs': {
