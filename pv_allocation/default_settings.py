@@ -7,7 +7,7 @@ pvalloc_default_settings = {
     'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',   # path to the working directory on the server
 
     # main settings for allocation
-    'kt_numbers': [], #[12,13],                           # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain indiviual municipalities
+    'kt_numbers': [], #[11,13],                           # list of cantons to be considered [11, Solothurn, 12 Basel-Stadt, 13 Basel-Landschaft], 0 used for NON canton-selection, selecting only certain indiviual municipalities
     'bfs_numbers': [
         2768, 2761, 2772, 2473, 2475, 2785, 2480,],
         # Ettingen, Aesch, Pfeffingen, Dornach, Hochwald, Duggingen, Seewen
@@ -38,7 +38,7 @@ pvalloc_default_settings = {
         'dwelling_cols': None, # ['EGID', 'WAZIM', 'WAREA', ],
         'DEMAND_proxy': 'GAREA',
         'GSTAT': ['1004',],                 # GSTAT - 1004: only existing, fully constructed buildings
-        'GKLAS': ['1110','1121','1276',],                 # GKLAS - 1110: only 1 living space per building
+        'GKLAS': ['1110','1121'], #,'1276',],                 # GKLAS - 1110: only 1 living space per building
         'GBAUJ_minmax': [1950, 2022],       # GBAUJ_minmax: range of years of construction
         # 'GWAERZH': ['7410', '7411',],       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
         # 'GENH': ['7580', '7581', '7582'],   # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
@@ -52,8 +52,9 @@ pvalloc_default_settings = {
         'weather_year': 2022,
 
         'radiation_to_pvprod_method': 'dfuid_ind',        #'flat', 'dfuid_ind'
+        'rad_rel_loc_max_by': 'dfuid_specific',                   # 'all_HOY', 'dfuid_specific'
         'flat_direct_rad_factor': 1,
-        'flat_diffuse_rad_factor': 0.2,
+        'flat_diffuse_rad_factor': 1,
     },
     'constr_capacity_specs': {
         'ann_capacity_growth': 0.05,         # annual growth of installed capacity# each year, X% more PV capacity can be built, 100% in year T0
@@ -69,12 +70,12 @@ pvalloc_default_settings = {
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
         'pvprod_calc_method': 'method3',
-        'panel_efficiency': 0.2,         # XY% Wirkungsgrad PV Modul
+        'panel_efficiency': 0.15,         # XY% Wirkungsgrad PV Modul
         'inverter_efficiency': 0.8,        # XY% Wirkungsgrad Wechselrichter
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
         'invst_maturity': 25,
-        'kWpeak_per_m2': 0.15,                       # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
+        'kWpeak_per_m2': 0.2,                       # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
         'share_roof_area_available': 0.7,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
         'max_distance_m_for_EGID_node_matching': 0, # max distance in meters for matching GWR EGIDs that have no node assignment to the next grid node
         },
@@ -372,3 +373,4 @@ BFS_NUMMER_SO = [
     2534,   # Zuchwil 	                  3
     2622,   # Zullwil 	                  9 
 ]
+
