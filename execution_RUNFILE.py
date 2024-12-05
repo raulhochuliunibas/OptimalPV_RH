@@ -15,7 +15,7 @@ bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475] # Breitenbach & U
 run_dataagg =       False
 run_alloc_init =    True
 run_alloc_MCalg =   True
-run_visual =        False
+run_visual =        True
 
 
 # data_aggregation 
@@ -64,10 +64,9 @@ pvalloc_scenarios={
     #     'MC_loop_specs': {
     #         'montecarlo_iterations': MC_iter,},
     # }, 
+    
     'pvallco_BL_small_12m_meth3_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
-        # 'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3',},
         'weather_specs': {
@@ -76,9 +75,7 @@ pvalloc_scenarios={
             'flat_diffuse_rad_factor': 0.2,},
     },
     'pvallco_BL_small_12m_meth3_rad_dfuid_ind':{
-                'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3',},
         'weather_specs': {
@@ -87,9 +84,7 @@ pvalloc_scenarios={
             'flat_diffuse_rad_factor': 0.2,},
     },
     'pvallco_BL_small_12m_meth2_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2',},
         'weather_specs': {
@@ -98,9 +93,7 @@ pvalloc_scenarios={
             'flat_diffuse_rad_factor': 0.2,}
     },
     'pvallco_BL_small_12m_meth2_rad_dfuid_ind':{
-                'name_dir_import': 'preprep_BL_22to23_1and2homes',
         'script_run_on_server': run_on_server,
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2',},
         'weather_specs': {
