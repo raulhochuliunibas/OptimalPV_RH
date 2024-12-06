@@ -61,7 +61,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
         pvalloc_sett_run_on_server = pvalloc_scenarios.get(next(iter(pvalloc_scenarios))).get('script_run_on_server')
 
-    
     # SETUP ------------------------------------------------------------------------------------------------------
     if True: 
         # general setup for paths etc.
@@ -121,9 +120,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             for dir in old_plot_scen_dirs:
                 shutil.rmtree(dir)
 
-
     chapter_to_logfile(f'start run_visualisations MASTER ', log_name, overwrite_file=True)
-
 
 
     # UNIVERSIAL FUNCTIONS ------------------------------------------------------------------------------------------------------
@@ -194,9 +191,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
 
-
     # PLOT IND SCEN: pvalloc_initalization + sanitycheck ------------------------------------------------------------------------------------------------------
-   
 
 
     # plot ind - var: summary statistics --------------------
@@ -434,13 +429,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig_agg_abs.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
                 fig_agg_abs.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,))
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['inst_capa_kW'], 
-                                        name='-- Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df)', 
+                                        name=' - Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df)', 
                                         opacity=0.5, 
                                         marker_color = color_rest, 
                                         xbins=dict(size=xbins_hist_instcapa_abs), 
                                         ))
                 fig_agg_abs.add_trace(go.Histogram(x=pv.loc[pv['xtf_id'].isin(xtf_in_topo), 'TotalPower'],
-                                            name='-- Installed Capacity (pv_df in topo)', 
+                                            name=' - Installed Capacity (pv_df in topo)', 
                                             opacity=0.5, 
                                             marker_color = color_pv_df, 
                                             xbins=dict(size = xbins_hist_instcapa_abs),
@@ -449,13 +444,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig_agg_stand.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
                 fig_agg_stand.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,))                                                     
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['inst_capa_kW_stand'],
-                                            name= '-- Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df), standardized', 
+                                            name= ' - Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df), standardized', 
                                             opacity=0.5, 
                                             marker_color = color_rest,
                                             xbins=dict(size= xbins_hist_instcapa_stand),
                                             ))
                 fig_agg_stand.add_trace(go.Histogram(x=pv['TotalPower_stand'],
-                                            name='-- Installed Capacity (pv_df in topo), standardized',
+                                            name=' - Installed Capacity (pv_df in topo), standardized',
                                             opacity=0.5, 
                                             marker_color = color_pv_df,
                                             xbins=dict(size= xbins_hist_instcapa_stand),
@@ -475,33 +470,33 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['pvprod_kW'],
-                                        name=f'-- Modeled Potential Yearly Production (kWh) {scen}',
+                                        name=f' - Modeled Potential Yearly Production (kWh) {scen}',
                                         opacity=0.5, 
                                         xbins=dict(size=xbins_hist_totalprodkwh_abs)
                                         ))
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['STROMERTRAG'],
-                                        name=f'STROMERTRAG (solkat estimated production) {scen}',
+                                        name=f' - STROMERTRAG (solkat estimated production) {scen}',
                                         opacity=0.5, 
                                         xbins=dict(size=xbins_hist_totalprodkwh_abs),
                                         ))
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['pvprod_ByTotalPower_kW'],
-                                        name=f'Yearly Prod. TotalPower (pvdf estimated production) {scen}',
+                                        name=f' - Yearly Prod. TotalPower (pvdf estimated production) {scen}',
                                         opacity=0.5, 
                                         xbins=dict(size=xbins_hist_totalprodkwh_abs),
                                         ))     
                 
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['pvprod_kW_stand'],
-                                        name=f'Modeled Potential Yearly Production (kWh), standardized {scen}',
+                                        name=f' - Modeled Potential Yearly Production (kWh), standardized {scen}',
                                         opacity=0.5, 
                                         xbins=dict(size=xbins_hist_totalprodkwh_stand),
                                         ))
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['STROMERTRAG_stand'],
-                                        name=f'STROMERTRAG (solkat estimated production), standardized {scen}',
+                                        name=f' - STROMERTRAG (solkat estimated production), standardized {scen}',
                                         opacity=0.5, 
                                         xbins=dict(size=xbins_hist_totalprodkwh_stand),
                                         ))
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['pvprod_ByTotalPower_kW_stand'],
-                                        name=f'Yearly Prod. TotalPower (pvdf estimated production), standardized {scen}',
+                                        name=f' - Yearly Prod. TotalPower (pvdf estimated production), standardized {scen}',
                                         opacity=0.5,
                                         xbins=dict(size=xbins_hist_totalprodkwh_stand),
                                         ))
@@ -513,13 +508,13 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 barmode='overlay',
                 xaxis_title='Capacity [kW]',
                 yaxis_title='Frequency (Modelled Capacity, possible installations)',
-                title = f'SANITY CHECK: Agg. Modelled vs Installed Capacity (kWp_m2:{kWpeak_per_m2}, share roof: {share_roof_area_available})'
+                title = f'SANITY CHECK: Agg. Modelled vs Installed Cap. & Yearly Prod. ABSOLUTE (kWp_m2:{kWpeak_per_m2}, share roof available: {share_roof_area_available}, {panel_efficiency_print} panel eff, inverter eff: {inverter_efficiency})'
             )
             fig_agg_stand.update_layout(
                 barmode='overlay',
                 xaxis_title='Production [kWh]',
                 yaxis_title='Frequency, absolute',
-                title = f'SANITY CHECK: Agg. Modelled vs Estimated Yearly PRODUCTION (kWp_m2:{kWpeak_per_m2}, share roof available: {share_roof_area_available}, {panel_efficiency_print} panel efficiency, inverter efficiency: {inverter_efficiency})'
+                title = f'SANITY CHECK: Agg. Modelled vs Installed Cap. & Yearly Prod. STANDARDIZED (kWp_m2:{kWpeak_per_m2}, share roof available: {share_roof_area_available}, {panel_efficiency_print} panel eff, inverter eff: {inverter_efficiency})'
             )
 
 
