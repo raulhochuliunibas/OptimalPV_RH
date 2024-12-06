@@ -5,7 +5,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.2,},
+            'flat_diffuse_rad_factor': 0.2,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -19,7 +19,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.2,},
+            'flat_diffuse_rad_factor': 0.2,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -34,7 +34,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.5,},
+            'flat_diffuse_rad_factor': 0.5,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -48,7 +48,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.5,},
+            'flat_diffuse_rad_factor': 0.5,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -63,7 +63,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.8,},
+            'flat_diffuse_rad_factor': 0.8,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -77,7 +77,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 0.8,},
+            'flat_diffuse_rad_factor': 0.8,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -92,7 +92,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1,},
+            'flat_diffuse_rad_factor': 1,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -106,7 +106,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1,},
+            'flat_diffuse_rad_factor': 1,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -121,7 +121,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.2,},
+            'flat_diffuse_rad_factor': 1.2,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -135,7 +135,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.2,},
+            'flat_diffuse_rad_factor': 1.2,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -150,7 +150,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.4,},
+            'flat_diffuse_rad_factor': 1.4,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -164,7 +164,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.4,},
+            'flat_diffuse_rad_factor': 1.4,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -179,7 +179,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.6,},
+            'flat_diffuse_rad_factor': 1.6,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -193,7 +193,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.6,},
+            'flat_diffuse_rad_factor': 1.6,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -208,7 +208,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.8,},
+            'flat_diffuse_rad_factor': 1.8,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -222,7 +222,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 1.8,},
+            'flat_diffuse_rad_factor': 1.8,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -237,7 +237,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 2,},
+            'flat_diffuse_rad_factor': 2,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
@@ -251,7 +251,7 @@ parkplatz={
         'script_run_on_server': run_on_server,
         'months_prediction': 12,
         'weather_specs': {
-            'diffuse_to_direct_rad_factor': 2,},
+            'flat_diffuse_rad_factor': 2,},
         'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
         'algorithm_specs': {
             'inst_selection_method': 'random',},
