@@ -9,7 +9,7 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 # SETTINGS DEFINITION ==================================================================================================================
 months_pred = 1 #600 #36
 MC_iter = 1
-run_on_server = True
+run_on_server = False
 bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
 run_dataagg =       False
@@ -43,29 +43,8 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-pvalloc_scenarios={
-    # f'pvalloc_DEV_{months_pred}m_meth2_rnd':{
-    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
-    #     'script_run_on_server': run_on_server,
-    #     'months_prediction': months_pred,
-    #     # 'kt_numbers': [13,],
-    #     'bfs_numbers': bfs_numbers,
-    #     'recreate_topology':             True, 
-    #     'recalc_economics_topo_df':      True,
-    #     'sanitycheck_byEGID':            True,
-    #     'create_gdf_export_of_topology': True,
-
-    #     'sanitycheck_summary_byEGID_specs':{
-    #         'n_iterations_before_sanitycheck': 2,},
-    #     'algorithm_specs': {
-    #         'inst_selection_method': 'random',},
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method2',},
-    #     'MC_loop_specs': {
-    #         'montecarlo_iterations': MC_iter,},
-    # }, 
-    
-    'pvallco_BL_small_12m_meth2.1_rad_flat':{
+parkplat = {
+        'pvallco_BL_small_12m_meth2.1_rad_flat':{
         'script_run_on_server': run_on_server,
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.1',},
@@ -130,50 +109,70 @@ pvalloc_scenarios={
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
+}
+
+pvalloc_scenarios={
+    # f'pvalloc_DEV_{months_pred}m_meth2_rnd':{
+    #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    #     'script_run_on_server': run_on_server,
+    #     'months_prediction': months_pred,
+    #     # 'kt_numbers': [13,],
+    #     'bfs_numbers': bfs_numbers,
+    #     'recreate_topology':             True, 
+    #     'recalc_economics_topo_df':      True,
+    #     'sanitycheck_byEGID':            True,
+    #     'create_gdf_export_of_topology': True,
+
+    #     'sanitycheck_summary_byEGID_specs':{
+    #         'n_iterations_before_sanitycheck': 2,},
+    #     'algorithm_specs': {
+    #         'inst_selection_method': 'random',},
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2',},
+    #     'MC_loop_specs': {
+    #         'montecarlo_iterations': MC_iter,},
+    # }, 
 
     'pvallco_BL_small_12m_meth3.1_rad_dfuid_ind_maxallHOY':{
         'script_run_on_server': run_on_server,
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.1',},
         'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'all_HOY',}
+            'radiation_to_pvprod_method': 'dfuid_ind', 
+            'rad_rel_loc_max_by': 'all_HOY',}
     },
     'pvallco_BL_small_12m_meth3.2_rad_dfuid_ind_maxallHOY':{
         'script_run_on_server': run_on_server,
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'all_HOY',}
+            'radiation_to_pvprod_method': 'dfuid_ind', 
+            'rad_rel_loc_max_by': 'all_HOY',}
     },
-
-
-
 
 }
 
 
 
-parkplat = {
-        'pvallco_BL_small_12m_meth2_rad_flat':{
-        'script_run_on_server': run_on_server,
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'weather_specs': {
-            'radiation_to_pvprod_method': 'flat',
-            'flat_direct_rad_factor': 1,
-            'flat_diffuse_rad_factor': 0.2,}
-    },
-    'pvallco_BL_small_12m_meth2_rad_dfuid_ind':{
-        'script_run_on_server': run_on_server,
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'weather_specs': {
-            'radiation_to_pvprod_method': 'dfuid_ind',
-            'flat_direct_rad_factor': 1,
-            'flat_diffuse_rad_factor': 0.2,},
-    },
+parkplatz = {  
+    # 'pvallco_BL_small_12m_meth2_rad_flat':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2',},
+    #     'weather_specs': {
+    #         'radiation_to_pvprod_method': 'flat',
+    #         'flat_direct_rad_factor': 1,
+    #         'flat_diffuse_rad_factor': 0.2,}
+    # },
+    # 'pvallco_BL_small_12m_meth2_rad_dfuid_ind':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2',},
+    #     'weather_specs': {
+    #         'radiation_to_pvprod_method': 'dfuid_ind',
+    #         'flat_direct_rad_factor': 1,
+    #         'flat_diffuse_rad_factor': 0.2,},
+    # },
 
     # 'pvalloc_BLsml_12m_1mc_meth2_panel1506_dir1_diff0_flatWK':{
     #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
