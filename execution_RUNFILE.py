@@ -12,22 +12,33 @@ MC_iter = 1
 run_on_server = False
 bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
-run_dataagg =       False
-run_alloc_init =    True
-run_alloc_MCalg =   True
-run_visual =        True
+run_dataagg =       True
+run_alloc_init =    False
+run_alloc_MCalg =   False
+run_visual =        False
 
 
 # data_aggregation 
 dataagg_scenarios = {
-    'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
-        'script_run_on_server': run_on_server, 
-        'kt_numbers': [13,12,11],
-        'year_range': [2018, 2023], 
-        'split_data_geometry_AND_slow_api': True, 
-        'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
-    },
-    'preprep_BL_22to23_1and2homes':{
+    # 'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
+    #     'script_run_on_server': run_on_server, 
+    #     'kt_numbers': [13,12,11],
+    #     'year_range': [2018, 2023], 
+    #     'split_data_geometry_AND_slow_api': True, 
+    #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
+    # },
+    # 'preprep_BL_22to23_1and2homes':{
+    #     'script_run_on_server': run_on_server, 
+    #     'kt_numbers': [13,], 
+    #     # 'bfs_numbers': bfs_numbers,
+    #     'year_range': [2022, 2023],   
+    #     'split_data_geometry_AND_slow_api': False, 
+    #     'gwr_selection_specs': 
+    #         {'GKLAS': ['1110','1121',],},
+    #     'solkat_selection_specs': {
+    #         'match_missing_EGIDs_to_solkat_TF': False, },
+    # }, 
+    'preprep_BL_22to23_1and2homes_incl_missingEGID':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13,], 
         # 'bfs_numbers': bfs_numbers,
@@ -36,15 +47,15 @@ dataagg_scenarios = {
         'gwr_selection_specs': 
             {'GKLAS': ['1110','1121',],},
         'solkat_selection_specs': {
-            'test_loop_optim_buff_size': False, },
+            'match_missing_EGIDs_to_solkat_TF': True, },
     }, 
 }
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-parkplat = {
-        'pvallco_BL_small_12m_meth2.1_rad_flat':{
+pvalloc_scenarios = {
+    'pvallco_BL_small_12m_meth2.1_rad_flat':{
         'script_run_on_server': run_on_server,
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.1',},
@@ -111,7 +122,7 @@ parkplat = {
     },
 }
 
-pvalloc_scenarios={
+parkplatz={
     # f'pvalloc_DEV_{months_pred}m_meth2_rnd':{
     #     'name_dir_import': 'preprep_BL_22to23_1and2homes',
     #     'script_run_on_server': run_on_server,
@@ -289,10 +300,10 @@ visual_settings = {
         'MC_subdir_for_plot': '*MC*1', 
         'node_selection_for_plots': ['8', '32', '10', '22'], # or None for all nodes
 
-        # PLOT CHUCK -------------------------> [run plot,  show plot,  show all scen]
+        # PLOT CHUNCK -------------------------> [run plot,  show plot,  show all scen]
         # for pvalloc_inital + sanitycheck
         'plot_ind_var_summary_stats':            [False,     True,       False], 
-        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,      True,       True], 
+        'plot_ind_hist_pvcapaprod_sanitycheck':  [True,      True,       False], 
         'plot_ind_charac_omitted_gwr':           [False,     True,       False],
         'plot_ind_line_meteo_radiation':         [False,      True,      False], 
         # for pvalloc_MC_algorithm 

@@ -9,7 +9,7 @@ dataagg_default_settings = {
         'wd_path_laptop': 'C:/Models/OptimalPV_RH',             # path to the working directory on Raul's laptop
         'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',  # path to the working directory on the server
 
-        'kt_numbers': [11,12,13],                               # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
+        'kt_numbers': [],                               # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
         'bfs_numbers': [],                                      # list of municipalites to select for allocation (only used if kt_numbers == 0)
         'year_range': [2021, 2022],                             # range of years to import
             
@@ -36,7 +36,9 @@ dataagg_default_settings = {
         'solkat_selection_specs': {
             'col_partition_union': 'SB_UUID',                   # column name used for the union of partitions
             'GWR_EGID_buffer_size': 10,                          # buffer size in meters for the GWR selection
-            'test_loop_optim_buff_size': True, 
+            'match_missing_EGIDs_to_solkat_TF': False, 
+            'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE',],
+            'test_loop_optim_buff_size_TF': False, 
             'test_loop_optim_buff_arang': [0, 10, 0.1]
             },   
         'demand_specs':{
