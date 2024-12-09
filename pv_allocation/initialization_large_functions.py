@@ -107,6 +107,15 @@ def import_prepre_AND_create_topology(
     egids_below_max = list(egid_counts[egid_counts < pvalloc_settings['gwr_selection_specs']['solkat_max_n_partitions']].index)
     solkat = solkat.loc[solkat['EGID'].isin(egids_below_max)]
     # -
+    # NOTE: remove buildings with a certain roof surface because they are too large to be residential houses
+    solkat_max_area_per_EGID = pvalloc_settings['gwr_selection_specs']['solkat_max_area_per_EGID']
+    if solkat_max_area_per_EGID != None:
+        solkat_agg_FLAECH = solkat.groupby('EGID')['FLAECHE'].sum()
+        solkat = solkat.merge(solkat_agg_FLAECH, how='left', on='EGID', suffixes=('', '_sum'))
+        solkat = solkat.rename(columns={'FLAECHE_sum': 'FLAECHE_total'})
+        solkat = solkat.loc[solkat['FLAECHE_total'] < solkat_max_area_per_EGID]
+        solkat.drop(columns='FLAECHE_total', inplace=True)
+    # -
 
     solkat = solkat.loc[solkat['BFS_NUMMER'].isin(bfs_number)]
     solkat = solkat.copy()

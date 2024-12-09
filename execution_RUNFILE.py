@@ -20,24 +20,24 @@ run_visual =        False
 
 # data_aggregation 
 dataagg_scenarios = {
-    # 'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
-    #     'script_run_on_server': run_on_server, 
-    #     'kt_numbers': [13,12,11],
-    #     'year_range': [2018, 2023], 
-    #     'split_data_geometry_AND_slow_api': True, 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
-    # },
-    # 'preprep_BL_22to23_1and2homes':{
-    #     'script_run_on_server': run_on_server, 
-    #     'kt_numbers': [13,], 
-    #     # 'bfs_numbers': bfs_numbers,
-    #     'year_range': [2022, 2023],   
-    #     'split_data_geometry_AND_slow_api': False, 
-    #     'gwr_selection_specs': 
-    #         {'GKLAS': ['1110','1121',],},
-    #     'solkat_selection_specs': {
-    #         'match_missing_EGIDs_to_solkat_TF': False, },
-    # }, 
+    'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13,12,11],
+        'year_range': [2018, 2023], 
+        'split_data_geometry_AND_slow_api': True, 
+        'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
+    },
+    'preprep_BL_22to23_1and2homes':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13,], 
+        # 'bfs_numbers': bfs_numbers,
+        'year_range': [2022, 2023],   
+        'split_data_geometry_AND_slow_api': False, 
+        'gwr_selection_specs': 
+            {'GKLAS': ['1110','1121',],},
+        'solkat_selection_specs': {
+            'match_missing_EGIDs_to_solkat_TF': False, },
+    }, 
     'preprep_BL_22to23_1and2homes_incl_missingEGID':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13,], 
@@ -55,32 +55,44 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios = {
-    'pvallco_BL_small_12m_meth2.1_rad_flat':{
+    'pvallco_BL_small_extSolkatEGID_12m_meth2.1_rad_flat':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},                             
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.1',},
         'weather_specs': {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'flat',}
     },
-    'pvallco_BL_small_12m_meth2.1_rad_dfuid_ind':{
+    'pvallco_BL_small_extSolkatEGID_12m_meth2.1_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.1',},
         'weather_specs': {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    'pvallco_BL_small_12m_meth2.2_rad_flat':{
+    'pvallco_BL_small_extSolkatEGID_12m_meth2.2_rad_flat':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'weather_specs': {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'flat',}
     },
-    'pvallco_BL_small_12m_meth2.2_rad_dfuid_ind':{
+    'pvallco_BL_small_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'weather_specs': {
@@ -88,38 +100,118 @@ pvalloc_scenarios = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
 
-    'pvallco_BL_small_12m_meth3.1_rad_flat':{
+    'pvallco_BL_small_extSolkatEGID_12m_meth3.1_rad_flat':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.1',},
         'weather_specs': {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'flat',}
     },
-    'pvallco_BL_small_12m_meth3.1_rad_dfuid_ind':{
+    'pvallco_BL_small_extSolkatEGID_12m_meth3.1_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.1',},
         'weather_specs': {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    'pvallco_BL_small_12m_meth3.2_rad_flat':{
+    'pvallco_BL_small_extSolkatEGID_12m_meth3.2_rad_flat':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'weather_specs': {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'flat',}
     },
-    'pvallco_BL_small_12m_meth3.2_rad_dfuid_ind':{
+    'pvallco_BL_small_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'weather_specs': {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
+    
+
+    # 'pvallco_BL_small_12m_meth2.1_rad_flat':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2.1',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'flat',}
+    # },
+    # 'pvallco_BL_small_12m_meth2.1_rad_dfuid_ind':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2.1',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
+    # 'pvallco_BL_small_12m_meth2.2_rad_flat':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'flat',}
+    # },
+    # 'pvallco_BL_small_12m_meth2.2_rad_dfuid_ind':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method2.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
+
+    # 'pvallco_BL_small_12m_meth3.1_rad_flat':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method3.1',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'flat',}
+    # },
+    # 'pvallco_BL_small_12m_meth3.1_rad_dfuid_ind':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method3.1',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
+    # 'pvallco_BL_small_12m_meth3.2_rad_flat':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method3.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'flat',}
+    # },
+    # 'pvallco_BL_small_12m_meth3.2_rad_dfuid_ind':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method3.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
+
 }
 
 parkplatz={

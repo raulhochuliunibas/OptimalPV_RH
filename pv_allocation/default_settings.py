@@ -32,6 +32,7 @@ pvalloc_default_settings = {
     # PART I: settings for alloc_initialization --------------------
     'gwr_selection_specs': {
         'solkat_max_n_partitions': 10,
+        'solkat_max_area_per_EGID': None,
         'building_cols': ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
                     'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
                     'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1', 'GEBF', 'GAREA'],
