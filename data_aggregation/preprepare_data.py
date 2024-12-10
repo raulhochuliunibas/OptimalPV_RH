@@ -133,12 +133,15 @@ def local_data_AND_spatial_mappings(
     checkpoint_to_logfile(f'import solkat_geo, {solkat_all_geo.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
 
     # minor transformations
-    solkat_all_pq = cols_to_str(['SB_UUID', 'DF_UID', 'GWR_EGID'], solkat_all_pq)
-    solkat_all_geo = cols_to_str(['DF_UID',], solkat_all_geo)
+    solkat_all_pq['SB_UUID'] = solkat_all_pq['SB_UUID'].astype(str)
+    solkat_all_pq['DF_UID'] = solkat_all_pq['DF_UID'].astype(str)
+    solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].astype(str)
+    solkat_all_geo['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
     solkat_all_pq.rename(columns = {'GWR_EGID': 'EGID'}, inplace = True)
     solkat_all_pq['EGID'] = solkat_all_pq['EGID'].replace('', 'NAN')
     solkat_all_pq['EGID_count'] = solkat_all_pq.groupby('EGID')['EGID'].transform('count')
     solkat_all_pq.dtypes
+
 
     # add omitted EGIDs to SOLKAT ====================
     # old version, no EGIDs matched to solkat
@@ -220,10 +223,14 @@ def local_data_AND_spatial_mappings(
                         # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
                         solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
                         solkat_addedEGID['EGID'] = egid_to_add
+                        solkat_v2_gdf.dtypes
                         
                         #extend the DF_UID with some numbers to have truely unique DF_UIDs
                         str_suffix = str(n+1).zfill(3)
-                        solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}-{str_suffix}')
+                        if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                        elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
 
                         # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
                         solkat_addedEGID[cols_adjust_for_missEGIDs_to_solkat] =  solkat_addedEGID[cols_adjust_for_missEGIDs_to_solkat] / egid_join_union['EGID_gwradded'].nunique()
