@@ -79,26 +79,6 @@ def local_data_AND_spatial_mappings(
     # IMPORT DATA ---------------------------------------------------------------------------------
     gm_shp_gdf = gpd.read_file(f'{data_path_def}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
     
-    def cols_to_str(col_list, df1, df2 = None, repl_val = ''):
-        for col in col_list:
-            if isinstance(df1[col].iloc[0], float):
-                df1[col] = df1[col].replace(np.nan, 0).astype(int).astype(str)
-                df1[col] = df1[col].replace('0', repl_val)
-            elif isinstance(df1[col].iloc[0], int):
-                df1[col] = df1[col].replace(np.nan, 0).astype(str)
-                df1[col] = df1[col].replace('0', repl_val)
-            if df2 is not None:
-                if isinstance(df2[col].iloc[0], float):
-                    df2[col] = df2[col].replace(np.nan, 0).astype(int).astype(str)
-                    df2[col] = df2[col].replace('0', repl_val)
-                elif isinstance(df2[col].iloc[0], int):
-                    df2[col] = df2[col].replace(np.nan, 0).astype(str)
-                    df2[col] = df2[col].replace('0', repl_val)
-        if df2 is None:
-            return df1
-        else:
-            return df1, df2
-    
 
     # PV ====================
     pv_all_pq = pd.read_parquet(f'{data_path_def}/split_data_geometry/pv_pq.parquet')
@@ -107,7 +87,8 @@ def local_data_AND_spatial_mappings(
     checkpoint_to_logfile(f'import pv_geo, {pv_all_geo.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  2, show_debug_prints_def)
 
     # transformations
-    pv_all_pq, pv_all_geo = cols_to_str(['xtf_id',], pv_all_pq, pv_all_geo)
+    pv_all_pq['xtf_id'] = pv_all_pq['xtf_id'].astype(str)
+    pv_all_geo['xtf_id'] = pv_all_geo['xtf_id'].astype(str)
 
     pv = pv_all_pq[pv_all_pq['BFS_NUMMER'].isin(bfs_number_def)]  # select and export pq for BFS numbers
     pv_wgeo = pv.merge(pv_all_geo[['xtf_id', 'geometry']], how = 'left', on = 'xtf_id') # merge geometry for later use
@@ -257,15 +238,16 @@ def local_data_AND_spatial_mappings(
         solkat, solkat_gdf = copy.deepcopy(new_solkat), copy.deepcopy(new_solkat_gdf)      
     
 
-
     # SOLKAT_MONTH ====================
     solkat_month_all_pq = pd.read_parquet(f'{data_path_def}/split_data_geometry/solkat_month_pq.parquet')
     checkpoint_to_logfile(f'import solkat_month_pq, {solkat_month_all_pq.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
 
     # transformations
-    solkat_month_all_pq = cols_to_str(['SB_UUID', 'DF_UID',], solkat_month_all_pq)
+    solkat_month_all_pq['SB_UUID'] = solkat_month_all_pq['SB_UUID'].astype(str)
+    solkat_month_all_pq['DF_UID'] = solkat_month_all_pq['DF_UID'].astype(str)
     solkat_month_all_pq = solkat_month_all_pq.merge(solkat_all_pq[['DF_UID', 'BFS_NUMMER']], how = 'left', on = 'DF_UID')
     solkat_month = solkat_month_all_pq[solkat_month_all_pq['BFS_NUMMER'].isin(bfs_number_def)]  
+
 
     # GRID_NODE ====================
     Map_egid_dsonode = pd.read_excel(f'{data_path_def}/input/Daten_Primeo_x_UniBasel_V2.0.xlsx')
@@ -293,12 +275,10 @@ def local_data_AND_spatial_mappings(
     Map_egid_dsonode = pd.concat([Map_egid_dsonode, single_egid_dsonode_df], ignore_index=True)
     
 
-
     # MAP: solkatdfuid > egid ---------------------------------------------------------------------------------
     Map_solkatdfuid_egid = solkat_gdf.loc[:,['DF_UID', 'DF_NUMMER', 'SB_UUID', 'EGID']].copy()
     Map_solkatdfuid_egid.rename(columns = {'GWR_EGID': 'EGID'}, inplace = True)
     Map_solkatdfuid_egid = Map_solkatdfuid_egid.loc[Map_solkatdfuid_egid['EGID'] != '']
-
 
 
     # MAP: egid > pv ---------------------------------------------------------------------------------
@@ -312,6 +292,7 @@ def local_data_AND_spatial_mappings(
         if gdf_b is not None:
             return gdf_a, gdf_b
         
+
     # find optimal buffer size ====================
     if solkat_selection_specs_def['test_loop_optim_buff_size_TF']: #
         print_to_logfile(f'\n\n Check different buffersizes!', log_file_name_def)
