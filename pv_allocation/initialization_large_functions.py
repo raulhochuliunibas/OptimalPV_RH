@@ -170,9 +170,9 @@ def import_prepre_AND_create_topology(
 
     # Map solkat_dfuid > egid -------
     Map_solkatdfuid_egid = pd.read_parquet(f'{data_path}/output/{name_dir_import}/Map_solkatdfuid_egid.parquet')
-    Map_solkatdfuid_egid['EGID'] = Map_solkatdfuid_egid['EGID'].fillna(0).astype(int).astype(str)
-    Map_solkatdfuid_egid.replace({'EGID': '0'}, '', inplace=True)
-    Map_solkatdfuid_egid['DF_UID'] = Map_solkatdfuid_egid['DF_UID'].astype(int).astype(str)
+    # Map_solkatdfuid_egid['EGID'] = Map_solkatdfuid_egid['EGID'].fillna(0).astype(int).astype(str)
+    # Map_solkatdfuid_egid.replace({'EGID': '0'}, '', inplace=True)
+    # Map_solkatdfuid_egid['DF_UID'] = Map_solkatdfuid_egid['DF_UID'].astype(int).astype(str)
     
 
     # Map solkat_egid > pv -------

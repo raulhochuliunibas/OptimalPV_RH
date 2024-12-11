@@ -114,12 +114,13 @@ def local_data_AND_spatial_mappings(
     checkpoint_to_logfile(f'import solkat_geo, {solkat_all_geo.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
 
     # minor transformations
+    solkat_all_geo['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
+
     solkat_all_pq['SB_UUID'] = solkat_all_pq['SB_UUID'].astype(str)
     solkat_all_pq['DF_UID'] = solkat_all_pq['DF_UID'].astype(str)
-    solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].astype(str)
-    solkat_all_geo['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
+    solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].replace(np.nan, 0).astype(int).astype(str)
+    solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].replace('0', 'NAN')
     solkat_all_pq.rename(columns = {'GWR_EGID': 'EGID'}, inplace = True)
-    solkat_all_pq['EGID'] = solkat_all_pq['EGID'].replace('', 'NAN')
     solkat_all_pq['EGID_count'] = solkat_all_pq.groupby('EGID')['EGID'].transform('count')
     solkat_all_pq.dtypes
 
@@ -136,15 +137,16 @@ def local_data_AND_spatial_mappings(
     # 1 - add roof (perfectly overlapping roofpartitions) to solkat for all the EGIDs within the unions shape
     # 2- reduce the FLAECHE for all theses partitions by dividing it through the number of EGIDs in the union shape
     elif solkat_selection_specs_def['match_missing_EGIDs_to_solkat_TF']:
-        print_to_logfile(f'\n\n Match missing EGIDs to solkat', log_file_name_def)
-        print_to_logfile(f'\n\n Match missing EGIDs to solkat (where gwrEGIDs overlapp solkat shape but are not present as a single solkat_row)', summary_file_name)
+        # print_to_logfile(f'\nMatch missing EGIDs to solkat', log_file_name_def)
+        print_to_logfile(f'\nMatch missing EGIDs to solkat (where gwrEGIDs overlapp solkat shape but are not present as a single solkat_row)', summary_file_name)
         cols_adjust_for_missEGIDs_to_solkat = solkat_selection_specs_def['cols_adjust_for_missEGIDs_to_solkat']
 
         solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(bfs_number_def)])
         solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
         solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
         solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
-        
+
+        # solkat_v2_gdf = solkat_v2_gdf.head(10000) # for testing purposes
 
         # create mapping of solkatEGIDs and missing gwrEGIDs -------------------
         # union all shapes with the same EGID 
@@ -160,12 +162,15 @@ def local_data_AND_spatial_mappings(
         solkat_union_v2EGID.set_crs(gwr_gdf.crs, allow_override=True, inplace=True)
         join_gwr_solkat_union = gpd.sjoin(solkat_union_v2EGID, gwr_gdf, how='left')
         join_gwr_solkat_union.rename(columns = {'EGID': 'EGID_gwradded'}, inplace = True)
-
+        checkpoint_to_logfile(f'nrows \n\tsolkat_all_pq: {solkat_all_pq.shape[0]}\t\tsolkat_v2_gdf: {solkat_v2_gdf.shape[0]} (remove EGID.NANs)\n\tsolkat_union_v2EGID: {solkat_union_v2EGID.shape[0]}\tjoin_gwr_solkat_union: {join_gwr_solkat_union.shape[0]}', log_file_name_def, 3, show_debug_prints_def = show_debug_prints_def)
+        checkpoint_to_logfile(f'nEGID \n\tsolkat_all_pq: {solkat_all_pq["EGID"].nunique()}\t\tsolkat_v2_gdf: {solkat_v2_gdf["EGID"].nunique()} (remove EGID.NANs)\n\tsolkat_union_v2EGID_EGID_old: {solkat_union_v2EGID["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_old: {join_gwr_solkat_union["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_gwradded: {join_gwr_solkat_union["EGID_gwradded"].nunique()}', log_file_name_def, 3, show_debug_prints_def = show_debug_prints_def)
+    
 
         # check EGID mapping case by case, add missing gwrEGIDs to solkat -------------------
         EGID_old_solkat_list = join_gwr_solkat_union['EGID_old_solkat'].unique()
         new_solkat_append_list = []
         add_solkat_counter = 1
+        n_egid, egid = 0, EGID_old_solkat_list[0]
         for n_egid, egid in enumerate(EGID_old_solkat_list):
             egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
             egid_join_union = egid_join_union.reset_index(drop = True)
@@ -223,11 +228,50 @@ def local_data_AND_spatial_mappings(
                     
                     # concat all EGIDs within the same shape that were previously missing
                     solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
-                    # checkpoint_to_logfile(f'EGID {egid}: added {n+1} gwrEGIDs to solkat', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
+                    
+                # Error case: Shapes of building that has multiple gwrEGIDs but does not overlap with the assigned / identical solkatEGID. 
+                # Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID being placed in another shape. 
+                elif (egid_join_union.shape[0] > 1) & (not egid in egid_join_union['EGID_gwradded'].to_list()):
+                    
+                    # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
+                    gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
+                    gwrEGID_row['EGID_gwradded'] = egid
+                    egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
+
+                    # next follow all steps as in "Intended Case" above (solkat_shape with solkatEGID and gwrEGIDs)
+                    solkat_subdf_addedEGID_list = []
+                    n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                    
+                    for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+
+                        # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                        solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                        solkat_addedEGID['EGID'] = egid_to_add
+                        solkat_v2_gdf.dtypes
+                        
+                        #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                        str_suffix = str(n+1).zfill(3)
+                        if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                        elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+
+                        # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                        solkat_addedEGID[cols_adjust_for_missEGIDs_to_solkat] =  solkat_addedEGID[cols_adjust_for_missEGIDs_to_solkat] / egid_join_union['EGID_gwradded'].nunique()
+                        
+                        # shrink topology to see which partitions are affected by EGID extensions
+                        solkat_addedEGID.buffer(-0.5, resolution=16)  
+
+                        solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                    
+                    # concat all EGIDs within the same shape that were previously missing
+                    solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+
+                    checkpoint_to_logfile(f'ERROR: EGID {egid}: multiple gwrEGIDs, without solkatEGID amongst them', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
 
             if n_egid == int(len(EGID_old_solkat_list)/4):
 
-                checkpoint_to_logfile(f'{add_solkat_counter}/4 part of solkat extended with gwrEGIDS', log_file_name_def, 3, show_debug_prints_def = show_debug_prints_def)
+                checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/4 partition', log_file_name_def, 3, show_debug_prints_def = show_debug_prints_def)
             # merge all solkat partitions to new solkat df
             new_solkat_append_list.append(solkat_subdf) 
 
