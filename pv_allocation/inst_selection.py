@@ -37,9 +37,28 @@ def select_AND_adjust_topology(
     if rand_seed is not None:
         np.random.seed(rand_seed)
 
+    # have a list of egids to install on for sanity check. If all build, start building on the rest of EGIDs
+    install_EGIDs_summary_sanitycheck = pvalloc_settings['sanitycheck_summary_byEGID_specs']['egid_list']
+    unique_EGID = []
+    for e in install_EGIDs_summary_sanitycheck:
+        if e not in unique_EGID:
+            unique_EGID.append(e)
+    install_EGIDs_summary_sanitycheck = unique_EGID
+
+    if isinstance(install_EGIDs_summary_sanitycheck, list):
+        remaining_egids = [
+            egid for egid in install_EGIDs_summary_sanitycheck 
+            if topo.get(egid, {}).get('pv_inst', {}).get('inst_TF', False) == False ]
+        
+        if len(remaining_egids) > 0:
+            npv_df = npv_df.loc[npv_df['EGID'].isin(remaining_egids)].copy()
+        else:
+            npv_df = npv_df.copy()
+            
+
     if inst_selection_method == 'random':
         npv_pick = npv_df.sample(n=1).copy()
-
+    
     elif inst_selection_method == 'max_npv':
         npv_pick = npv_df[npv_df['NPV_uid'] == max(npv_df['NPV_uid'])].copy()
 
@@ -54,6 +73,7 @@ def select_AND_adjust_topology(
         if npv_pick.shape[0] > 1:
             rand_row = np.random.randint(0, npv_pick.shape[0])
             npv_pick = npv_pick.iloc[rand_row]
+
 
     # remove cols for uniform format between selection methods
     for col in ['NPV_stand', 'diff_NPV_rand']:

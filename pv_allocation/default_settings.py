@@ -87,9 +87,14 @@ pvalloc_default_settings = {
         'hot_hours_discount': 0.1,
     },
     'sanitycheck_summary_byEGID_specs': {
-        'egid_list': [ # ['3031017','1367570', '3030600',], # '1367570', '245017418'      # known houses in the sample
+        'egid_list': [                                             # ['3031017','1367570', '3030600',], # '1367570', '245017418'      # known houses in the sample in Laufen
                     '391292', '390601', '2347595', '401781'        # single roof houses in Aesch, Ettingen, 
-                    '391263', '245057295', '401753',  # houses with built pv in Aesch, Ettingen,
+                    '391263', '245057295', '401753',               # houses with built pv in Aesch, Ettingen,
+                    
+                    '245054165','245054166','245054175','245060521', # EGID selection of neighborhood within Aesch to analyse closer
+                    '391253','391255','391257','391258','391262',
+                    '391263','391289','391290','391291','391292',
+                    '245057295', '245057294', '245011456', '391379', '391377'
             ],
         'n_EGIDs_of_alloc_algorithm': 20,
         'n_iterations_before_sanitycheck': 12,
