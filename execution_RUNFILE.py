@@ -9,12 +9,12 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 # SETTINGS DEFINITION ==================================================================================================================
 months_pred = 1 #600 #36
 MC_iter = 1
-run_on_server = False
+run_on_server = True
 bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
 run_dataagg =       True
-run_alloc_init =    False
-run_alloc_MCalg =   False
+run_alloc_init =    True
+run_alloc_MCalg =   True
 run_visual =        False
 
 
@@ -55,7 +55,7 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios = {
-    'pvallco_BL_small_extSolkatEGID_12m_meth2.1_rad_flat':{
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.1_rad_flat':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
@@ -66,7 +66,7 @@ pvalloc_scenarios = {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'flat',}
     },
-    'pvallco_BL_small_extSolkatEGID_12m_meth2.1_rad_dfuid_ind':{
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.1_rad_dfuid_ind':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
@@ -77,7 +77,7 @@ pvalloc_scenarios = {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    'pvallco_BL_small_extSolkatEGID_12m_meth2.2_rad_flat':{
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_flat':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
@@ -88,7 +88,7 @@ pvalloc_scenarios = {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'flat',}
     },
-    'pvallco_BL_small_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
@@ -100,7 +100,7 @@ pvalloc_scenarios = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
 
-    'pvallco_BL_small_extSolkatEGID_12m_meth3.1_rad_flat':{
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.1_rad_flat':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
@@ -111,7 +111,7 @@ pvalloc_scenarios = {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'flat',}
     },
-    'pvallco_BL_small_extSolkatEGID_12m_meth3.1_rad_dfuid_ind':{
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.1_rad_dfuid_ind':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
@@ -122,7 +122,7 @@ pvalloc_scenarios = {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    'pvallco_BL_small_extSolkatEGID_12m_meth3.2_rad_flat':{
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_flat':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
@@ -133,7 +133,7 @@ pvalloc_scenarios = {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'flat',}
     },
-    'pvallco_BL_small_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
@@ -146,71 +146,71 @@ pvalloc_scenarios = {
     },
     
 
-    # 'pvallco_BL_small_12m_meth2.1_rad_flat':{
-    #     'script_run_on_server': run_on_server,
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method2.1',},
-    #     'weather_specs': {
-    #         'rad_rel_loc_max_by': 'dfuid_specific',
-    #         'radiation_to_pvprod_method': 'flat',}
-    # },
-    # 'pvallco_BL_small_12m_meth2.1_rad_dfuid_ind':{
-    #     'script_run_on_server': run_on_server,
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method2.1',},
-    #     'weather_specs': {
-    #         'rad_rel_loc_max_by': 'dfuid_specific',
-    #         'radiation_to_pvprod_method': 'dfuid_ind',}
-    # },
-    # 'pvallco_BL_small_12m_meth2.2_rad_flat':{
-    #     'script_run_on_server': run_on_server,
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method2.2',},
-    #     'weather_specs': {
-    #         'rad_rel_loc_max_by': 'dfuid_specific',
-    #         'radiation_to_pvprod_method': 'flat',}
-    # },
-    # 'pvallco_BL_small_12m_meth2.2_rad_dfuid_ind':{
-    #     'script_run_on_server': run_on_server,
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method2.2',},
-    #     'weather_specs': {
-    #         'rad_rel_loc_max_by': 'dfuid_specific',
-    #         'radiation_to_pvprod_method': 'dfuid_ind',}
-    # },
+    'pvalloc_BLsml_07roof_12m_meth2.1_rad_flat':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.1',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'flat',}
+    },
+    'pvalloc_BLsml_07roof_12m_meth2.1_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.1',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLsml_07roof_12m_meth2.2_rad_flat':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'flat',}
+    },
+    'pvalloc_BLsml_07roof_12m_meth2.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
 
-    # 'pvallco_BL_small_12m_meth3.1_rad_flat':{
-    #     'script_run_on_server': run_on_server,
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method3.1',},
-    #     'weather_specs': {
-    #         'rad_rel_loc_max_by': 'dfuid_specific',
-    #         'radiation_to_pvprod_method': 'flat',}
-    # },
-    # 'pvallco_BL_small_12m_meth3.1_rad_dfuid_ind':{
-    #     'script_run_on_server': run_on_server,
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method3.1',},
-    #     'weather_specs': {
-    #         'rad_rel_loc_max_by': 'dfuid_specific',
-    #         'radiation_to_pvprod_method': 'dfuid_ind',}
-    # },
-    # 'pvallco_BL_small_12m_meth3.2_rad_flat':{
-    #     'script_run_on_server': run_on_server,
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method3.2',},
-    #     'weather_specs': {
-    #         'rad_rel_loc_max_by': 'dfuid_specific',
-    #         'radiation_to_pvprod_method': 'flat',}
-    # },
-    # 'pvallco_BL_small_12m_meth3.2_rad_dfuid_ind':{
-    #     'script_run_on_server': run_on_server,
-    #     'tech_economic_specs': {
-    #         'pvprod_calc_method': 'method3.2',},
-    #     'weather_specs': {
-    #         'rad_rel_loc_max_by': 'dfuid_specific',
-    #         'radiation_to_pvprod_method': 'dfuid_ind',}
-    # },
+    'pvalloc_BLsml_07roof_12m_meth3.1_rad_flat':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.1',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'flat',}
+    },
+    'pvalloc_BLsml_07roof_12m_meth3.1_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.1',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLsml_07roof_12m_meth3.2_rad_flat':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'flat',}
+    },
+    'pvalloc_BLsml_07roof_12m_meth3.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
 
 }
 
@@ -236,7 +236,7 @@ parkplatz={
     #         'montecarlo_iterations': MC_iter,},
     # }, 
 
-    'pvallco_BL_small_12m_meth3.1_rad_dfuid_ind_maxallHOY':{
+    'pvalloc_BLsml_07roof_12m_meth3.1_rad_dfuid_ind_maxallHOY':{
         'script_run_on_server': run_on_server,
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.1',},
@@ -244,7 +244,7 @@ parkplatz={
             'radiation_to_pvprod_method': 'dfuid_ind', 
             'rad_rel_loc_max_by': 'all_HOY',}
     },
-    'pvallco_BL_small_12m_meth3.2_rad_dfuid_ind_maxallHOY':{
+    'pvalloc_BLsml_07roof_12m_meth3.2_rad_dfuid_ind_maxallHOY':{
         'script_run_on_server': run_on_server,
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
@@ -254,11 +254,8 @@ parkplatz={
     },
 
 }
-
-
-
 parkplatz = {  
-    # 'pvallco_BL_small_12m_meth2_rad_flat':{
+    # 'pvalloc_BLsml_07roof_12m_meth2_rad_flat':{
     #     'script_run_on_server': run_on_server,
     #     'tech_economic_specs': {
     #         'pvprod_calc_method': 'method2',},
@@ -267,7 +264,7 @@ parkplatz = {
     #         'flat_direct_rad_factor': 1,
     #         'flat_diffuse_rad_factor': 0.2,}
     # },
-    # 'pvallco_BL_small_12m_meth2_rad_dfuid_ind':{
+    # 'pvalloc_BLsml_07roof_12m_meth2_rad_dfuid_ind':{
     #     'script_run_on_server': run_on_server,
     #     'tech_economic_specs': {
     #         'pvprod_calc_method': 'method2',},
