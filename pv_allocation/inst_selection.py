@@ -62,7 +62,7 @@ def select_AND_adjust_topology(
             egid for egid in install_EGIDs_summary_sanitycheck 
             if topo.get(egid, {}).get('pv_inst', {}).get('inst_TF', False) == False ]
         
-        if len(remaining_egids) > 0:
+        if any([True if egid in npv_df['EGID'] else False for egid in remaining_egids]):
             npv_df = npv_df.loc[npv_df['EGID'].isin(remaining_egids)].copy()
         else:
             npv_df = npv_df.copy()
