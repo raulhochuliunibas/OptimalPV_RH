@@ -3,6 +3,7 @@ import os as os
 import numpy as np
 import pandas as pd
 import json
+import copy
 
 
 def select_AND_adjust_topology(
@@ -32,6 +33,14 @@ def select_AND_adjust_topology(
     pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path}/pred_inst_df.parquet') else pd.DataFrame()
 
 
+    # drop installed partitions from npv_df 
+    #   -> otherwise multiple selection possible
+    #   -> easier to drop inst before each selection than to create a list / df and carry it through the entire code)
+    npv_df_start_inst_selection = copy.deepcopy(npv_df)
+    egid_wo_inst = [egid for egid in topo if topo.get(egid, {}).get('pv_inst', {}).get('inst_TF') == False ]
+    npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'].isin(egid_wo_inst)])
+
+
     # SELECTION BY METHOD ---------------
     # set random seed
     if rand_seed is not None:
@@ -39,13 +48,16 @@ def select_AND_adjust_topology(
 
     # have a list of egids to install on for sanity check. If all build, start building on the rest of EGIDs
     install_EGIDs_summary_sanitycheck = pvalloc_settings['sanitycheck_summary_byEGID_specs']['egid_list']
-    unique_EGID = []
-    for e in install_EGIDs_summary_sanitycheck:
-        if e not in unique_EGID:
-            unique_EGID.append(e)
-    install_EGIDs_summary_sanitycheck = unique_EGID
 
     if isinstance(install_EGIDs_summary_sanitycheck, list):
+        # remove duplicates from install_EGIDs_summary_sanitycheck
+        unique_EGID = []
+        for e in install_EGIDs_summary_sanitycheck:
+                if e not in unique_EGID:
+                    unique_EGID.append(e)
+        install_EGIDs_summary_sanitycheck = unique_EGID
+        # get remaining EGIDs of summary_sanitycheck_list that are not yet installed
+        # > not even necessary if installed EGIDs get dropped from npv_df?
         remaining_egids = [
             egid for egid in install_EGIDs_summary_sanitycheck 
             if topo.get(egid, {}).get('pv_inst', {}).get('inst_TF', False) == False ]
@@ -119,8 +131,9 @@ def select_AND_adjust_topology(
 
 
     # export main dfs ------------------------------------------
-    npv_df.to_parquet(f'{subdir_path}/npv_df.parquet')
-    npv_df.to_csv(f'{subdir_path}/npv_df.csv')
+    # do not overwrite the original npv_df, this way can reimport it every month and filter for sanitycheck
+    # npv_df.to_parquet(f'{subdir_path}/npv_df.parquet')
+    # npv_df.to_csv(f'{subdir_path}/npv_df.csv')
     pred_inst_df.to_parquet(f'{subdir_path}/pred_inst_df.parquet')
     pred_inst_df.to_csv(f'{subdir_path}/pred_inst_df.csv')
     with open (f'{subdir_path}/topo_egid.json', 'w') as f:
@@ -128,11 +141,11 @@ def select_AND_adjust_topology(
 
 
     # export by Month ------------------------------------------
-    npv_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.parquet')
-    npv_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.csv')
+    # npv_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.parquet')
+    # npv_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.csv')
     pred_inst_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
     pred_inst_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.csv')
     with open(f'{subdir_path}/pred_npv_inst_by_M/topo_{m}.json', 'w') as f:
         json.dump(topo, f)
                 
-    return  inst_power # , picked_uid, picked_combo_uid, pred_inst_df, dfuid_installed_list, topo
+    return  inst_power, npv_df# , picked_uid, picked_combo_uid, pred_inst_df, dfuid_installed_list, topo

@@ -131,7 +131,7 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
         
         for i_m, m in enumerate(months_prediction):
             # print_to_logfile(f'\n-- MC{mc_iter:0{max_digits}} -- allocation month: {m} --', log_name)
-            print_to_logfile(f'-- month {m} -- iter MC{mc_iter:0{max_digits}} -- ', log_name)
+            print_to_logfile(f'\n-- month {m} -- iter MC{mc_iter:0{max_digits}} -- ', log_name)
             start_allocation_month = datetime.now()
             i_m = i_m + 1        
 
@@ -162,7 +162,7 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
 
                 if npv_df.shape[0] > 0: 
                     # checkpoint_to_logfile(f' npv_df with 0 < rows, select inst and adjust topology', log_name, 1, show_debug_prints)
-                    inst_power = select.select_AND_adjust_topology(pvalloc_settings, 
+                    inst_power, npv_df = select.select_AND_adjust_topology(pvalloc_settings, 
                                                     mc_data_path,
                                                     dfuid_installed_list, 
                                                     pred_inst_df,
