@@ -431,13 +431,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['inst_capa_kW'], 
                                         name=' - Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df)', 
                                         opacity=0.5, 
-                                        marker_color = color_rest, 
                                         xbins=dict(size=xbins_hist_instcapa_abs), 
                                         ))
                 fig_agg_abs.add_trace(go.Histogram(x=pv.loc[pv['xtf_id'].isin(xtf_in_topo), 'TotalPower'],
                                             name=' - Installed Capacity (pv_df in topo)', 
                                             opacity=0.5, 
-                                            marker_color = color_pv_df, 
                                             xbins=dict(size = xbins_hist_instcapa_abs),
                                             ))
                 
@@ -446,13 +444,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['inst_capa_kW_stand'],
                                             name= ' - Modeled Potential Capacity (all partition combos, EGIDs in topo, in pv_df), standardized', 
                                             opacity=0.5, 
-                                            marker_color = color_rest,
                                             xbins=dict(size= xbins_hist_instcapa_stand),
                                             ))
                 fig_agg_stand.add_trace(go.Histogram(x=pv['TotalPower_stand'],
                                             name=' - Installed Capacity (pv_df in topo), standardized',
                                             opacity=0.5, 
-                                            marker_color = color_pv_df,
                                             xbins=dict(size= xbins_hist_instcapa_stand),
                                             ))
 
