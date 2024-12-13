@@ -73,6 +73,8 @@ def local_data_AND_spatial_mappings(
 
     gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
     solkat_selection_specs_def = dataagg_settings_def['solkat_selection_specs']
+
+    primeo_path = 'Q:/_shared\Projekt - Optimal PV Expantionspaths/'
     print_to_logfile(f'run function: local_data_AND_spatial_mappings.py', log_file_name_def = log_file_name_def)
 
 
@@ -294,7 +296,7 @@ def local_data_AND_spatial_mappings(
 
 
     # GRID_NODE ====================
-    Map_egid_dsonode = pd.read_excel(f'{data_path_def}/input/Daten_Primeo_x_UniBasel_V2.0.xlsx')
+    Map_egid_dsonode = pd.read_excel(f'{primeo_path}/Daten_Primeo_x_UniBasel_V2.0.xlsx')
     # transformations
     Map_egid_dsonode.rename(columns={'ID_Trafostation': 'grid_node', 'Trafoleistung_kVA': 'kVA_threshold'}, inplace=True)
     Map_egid_dsonode['EGID'] = Map_egid_dsonode['EGID'].astype(str)
