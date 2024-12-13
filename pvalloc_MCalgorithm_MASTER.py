@@ -86,7 +86,13 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
     chapter_to_logfile(f'start pvalloc_MCalgorithm_MASTER for : {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
     print_to_logfile(f'*model allocation specifications*:', log_name)
     print_to_logfile(f'> n_bfs_municipalities: {len(pvalloc_settings["bfs_numbers"])} \n> n_months_prediction: {pvalloc_settings["months_prediction"]} \n> n_montecarlo_iterations: {pvalloc_settings["MC_loop_specs"]["montecarlo_iterations"]}', log_name)
- 
+
+    # store settings in log file
+    with open(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/pvalloc_settings.json', 'w') as f:
+        f.write(pformat(pvalloc_settings))
+    with open(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/pvalloc_settings__MCallocMASTERpy__{pvalloc_settings["name_dir_export"]}.json', 'w') as f:
+        f.write(pformat(pvalloc_settings))
+        
 
     # CREATE MC DIR + TRANSFER INITIAL DATA FILES ----------------------------------------------
 
