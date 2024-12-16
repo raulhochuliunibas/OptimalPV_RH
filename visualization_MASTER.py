@@ -547,23 +547,33 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             # omitted egids from data prep -----            
             get_bfsnr_name_tuple_list()
+            gwr_mrg_all_building_in_bfs = pd.read_parquet(f'{data_path}/output/{scen_sett["name_dir_import"]}/gwr_mrg_all_building_in_bfs.parquet')
+            gwr = pd.read_parquet(f'{data_path}/output/{scen_sett["name_dir_import"]}/gwr.parquet')
+            topo = json.load(open(f'{data_path}/output/{scen_sett["name_dir_export"]}/topo_egid.json', 'r'))
 
-            omitt_gwregid_gdf_geo = gpd.read_file(f'{data_path}/output/{scen_sett["name_dir_import"]}/omitt_gwregid_gdf.geojson')
-            gwr_all_building_gdf = gpd.read_file(f'{data_path}/output/{scen_sett["name_dir_import"]}/gwr_all_building_gdf.geojson')
-            omitt_gwregid_gdf_all = omitt_gwregid_gdf_geo.merge(gwr_all_building_gdf, on='EGID', how='left')
-            omitt_gwregid_gdf_all.rename(columns={'GGDENR': 'BFS_NUMMER'}, inplace=True)
-            omitt_gwregid_gdf_all['BFS_NUMMER'] = omitt_gwregid_gdf_all['BFS_NUMMER'].astype(int)
-            omitt_gwregid_gdf = omitt_gwregid_gdf_all.loc[omitt_gwregid_gdf_all['BFS_NUMMER'].isin(scen_sett['bfs_numbers'])]
+            gwr_mrg_all_building_in_bfs.rename(columns={'GGDENR': 'BFS_NUMMER'}, inplace=True)
+            gwr_mrg_all_building_in_bfs['BFS_NUMMER'] = gwr_mrg_all_building_in_bfs['BFS_NUMMER'].astype(int)
+            gwr_mrg_all_building_in_bfs = gwr_mrg_all_building_in_bfs.loc[gwr_mrg_all_building_in_bfs['BFS_NUMMER'].isin([int(x) for x in scen_sett['bfs_numbers']])]
 
-
+            omitt_gwregid_from_topo = gwr_mrg_all_building_in_bfs.loc[~gwr_mrg_all_building_in_bfs['EGID'].isin(list(topo.keys()))]
+            
+            # subsamples to visualizse ratio of selected gwr in topo to all buildings
+            gwr_select_but_not_in_topo = gwr.loc[gwr['GGDENR'].isin([str(x) for x in scen_sett['bfs_numbers']])]
+            gwr_select_but_not_in_topo = gwr_select_but_not_in_topo.loc[~gwr_select_but_not_in_topo['EGID'].isin(list(topo.keys()))]
+            
+            gwr_rest = gwr_mrg_all_building_in_bfs.loc[~gwr_mrg_all_building_in_bfs['EGID'].isin(list(topo.keys()))]
+            gwr_rest = gwr_rest.loc[~gwr_rest['EGID'].isin(gwr_select_but_not_in_topo['EGID'])]
+            
+            
             # plot discrete characteristics -----
             disc_cols = plot_ind_charac_omitted_gwr_specs['disc_cols']
         
             fig = go.Figure()
-            i, col = 0, disc_cols[1]
+            i, col = 0, disc_cols[0]
             for i, col in enumerate(disc_cols):
-                unique_categories = omitt_gwregid_gdf[col].unique()
-                col_df = omitt_gwregid_gdf[col].value_counts().to_frame().reset_index() 
+                unique_categories = omitt_gwregid_from_topo[col].unique()
+                col_df = omitt_gwregid_from_topo[col].value_counts().to_frame().reset_index()
+
                 col_df ['count'] = col_df['count'] / col_df['count'].sum()
                 col_df.sum(axis=0)
                                     
@@ -572,18 +582,39 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                     if col == 'BFS_NUMMER':
                         cat_label = f'{get_bfsnr_name_tuple_list([cat,])}'
                     elif col == 'GKLAS':
-                        cat_label = f"{[x for x in plot_ind_charac_omitted_gwr_specs['gwr_code_name_tuples_GKLAS'] if x[0] == cat]}"                        
+                        if cat in [tpl[0] for tpl in plot_ind_charac_omitted_gwr_specs['gwr_code_name_tuples_GKLAS']]:
+                            cat_label = f"{[x for x in plot_ind_charac_omitted_gwr_specs['gwr_code_name_tuples_GKLAS'] if x[0] == cat]}"
+                        else:   
+                            cat_label = cat
                     elif col == 'GSTAT':
-                        cat_label = f"{[x for x in plot_ind_charac_omitted_gwr_specs['gwr_code_name_tuples_GSTAT'] if x[0] == cat]}"
+                        if cat in [tpl[0] for tpl in plot_ind_charac_omitted_gwr_specs['gwr_code_name_tuples_GSTAT']]:
+                            cat_label = f"{[x for x in plot_ind_charac_omitted_gwr_specs['gwr_code_name_tuples_GSTAT'] if x[0] == cat]}"
+                        else: 
+                            cat_label = cat
 
                     count_value = col_df.loc[col_df[col] == cat, 'count'].values[0]
                     fig.add_trace(go.Bar(x=[col], y=[count_value], 
                         name=cat_label,
-                        text=f'{count_value:.2f}',  # Add text to display the count
+                        text=f'{count_value:.2f} - {cat_label}',  # Add text to display the count
                         textposition='outside'    # Position the text outside the bar
                     ))
-                fig.add_trace(go.Bar(x=[col], y=[0], name=col))  
-                # fig.add_trace(go.Bar(x=[col], y=[0], name=''))  
+                fig.add_trace(go.Scatter(x=[col], y=[0], name=col, opacity=0,))  
+                fig.add_trace(go.Scatter(x=[col], y=[0], name='', opacity=0,))  
+
+            # add overview for all buildings covered by topo from gwr
+            fig.add_trace(go.Bar(x=['share EGID in topo',], y=[len(list(topo.keys()))/gwr_mrg_all_building_in_bfs['EGID'].nunique(),], 
+                                 name=f'gwrEGID_in_topo ({len(list(topo.keys()))} nr in sample)',
+                                 text=f'{len(list(topo.keys()))/len(gwr_mrg_all_building_in_bfs['EGID'].unique()):.2f} ({len(list(topo.keys()))} nEGIDs)',  # Add text to display the count
+                                 textposition='outside'))
+            fig.add_trace(go.Bar(x=['share EGID in topo',], y=[gwr_select_but_not_in_topo['EGID'].nunique()/gwr_mrg_all_building_in_bfs['EGID'].nunique(),],
+                                    name=f'gwrEGID_in_sample ({gwr_select_but_not_in_topo["EGID"].nunique()} nr in sample by gwr selection criteria)',
+                                    text=f'{gwr_select_but_not_in_topo["EGID"].nunique()/gwr_mrg_all_building_in_bfs["EGID"].nunique():.2f} ({gwr_select_but_not_in_topo["EGID"].nunique()} nEGIDs)',  # Add text to display the count
+                                    textposition='outside'))
+            fig.add_trace(go.Bar(x=['share EGID in topo',], y=[gwr_rest['EGID'].nunique()/gwr_mrg_all_building_in_bfs['EGID'].nunique(),],
+                                 name=f'gwrEGID_not_in_sample ({gwr_mrg_all_building_in_bfs["EGID"].nunique()} nr bldngs in bfs region',
+                                 text=f'{gwr_rest['EGID'].nunique()/gwr_mrg_all_building_in_bfs["EGID"].nunique():.2f} ({gwr_rest["EGID"].nunique()}, total {gwr_mrg_all_building_in_bfs['EGID'].nunique()} nEGIDs)',  # Add text to display the count
+                                 textposition='outside'))
+            fig.add_trace(go.Scatter(x=[col], y=[0], name='share EGID in topo', opacity=0,))  
             
             fig.update_layout(  
                 barmode='stack',
