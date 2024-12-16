@@ -80,15 +80,25 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         # extract scenario information + import ------------------------
 
         # scen settings ----------------
-        scen_dir_export_list, scen_dir_import_list, T0_prediction_list, months_prediction_list = [], [], [], []
-        T0_prediction_list, months_lookback_list, months_prediction_list = [], [], []
-        pvalloc_scen_list = []
+        scen_dir_export_list, pvalloc_scen_list = [], []
+        # scen_dir_import_list, T0_prediction_list, months_prediction_list = [], [], [], [] T0_prediction_list, months_lookback_list, months_prediction_list = [], [], [] pvalloc_scen_list = []
         for key, val in pvalloc_scenarios.items():
-            pvalloc_scen_list.append(val)
-            scen_dir_export_list.append(val['name_dir_export'])
-            # scen_dir_import_list.append(val['name_dir_import'])
-            # T0_prediction_list.append(val['T0_prediction'])
-            # months_prediction_list.append(val['months_prediction'])
+            pvalloc_settings_path = glob.glob(f'{data_path}/output/{key}/pvalloc_settings.json')
+            
+            if len(pvalloc_settings_path) == 1:
+                try:
+                    scen_sett = json.load(open(pvalloc_settings_path[0], 'r'))
+                    pvalloc_scen_list.append(scen_sett)
+                    scen_dir_export_list.append(scen_sett['name_dir_export'])
+                except:
+                    print(f'ERROR: could not load pvalloc_settings.json for {key}, take function input')
+                    pvalloc_scen_list.append(val)
+                    scen_dir_export_list.append(val['name_dir_export'])
+
+            else:
+                pvalloc_scen_list.append(val)
+                scen_dir_export_list.append(val['name_dir_export'])
+    
 
         # visual settings ----------------  
         plot_show = visual_settings['plot_show']

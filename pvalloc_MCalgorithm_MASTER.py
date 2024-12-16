@@ -20,6 +20,7 @@ if True:
     from datetime import datetime
     from pprint import pformat
 
+    import json
     import glob
     import shutil
     import winsound
@@ -89,9 +90,10 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
 
     # store settings in log file
     with open(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/pvalloc_settings.json', 'w') as f:
-        f.write(pformat(pvalloc_settings))
+        json.dump(pvalloc_settings, f, indent=4)
     with open(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/pvalloc_settings__MCallocMASTERpy__{pvalloc_settings["name_dir_export"]}.json', 'w') as f:
-        f.write(pformat(pvalloc_settings))
+        json.dump(pvalloc_settings, f, indent=4)
+
         
 
     # CREATE MC DIR + TRANSFER INITIAL DATA FILES ----------------------------------------------
