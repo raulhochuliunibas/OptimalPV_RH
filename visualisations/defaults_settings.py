@@ -10,16 +10,16 @@ visual_default_settings = {
         'default_map_center': [47.48, 7.57],
         'node_selection_for_plots': ['node1', 'node3', 'node5'], # or None for all nodes
 
-        # PLOT CHUCK -------------------------> [run plot,  show plot]
+        # PLOT CHUCK -------------------------> [run plot,  show plot,  show all scen]
         # for pvalloc_inital + sanitycheck
-        'plot_ind_var_summary_stats':           [True,      True],
-        'plot_ind_hist_pvcapaprod_sanitycheck': [True,      True],
+        'plot_ind_var_summary_stats':           [False,     True,       False],
+        'plot_ind_hist_pvcapaprod_sanitycheck': [False,     True,       False],
             'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
                 'xbins_hist_instcapa_abs': 0.5,
                 'xbins_hist_instcapa_stand': 0.1,
                 'xbins_hist_totalprodkwh_abs': 1000, 
                 'xbins_hist_totalprodkwh_stand': 0.2,},
-        'plot_ind_charac_omitted_gwr':          [True,      True],
+        'plot_ind_charac_omitted_gwr':          [False,     True,       False],
             'plot_ind_charac_omitted_gwr_specs':{
                 'disc_cols': ['BFS_NUMMER','GSTAT','GKAT','GKLAS'], 
                 'disc_ncols': 2, 
@@ -35,15 +35,15 @@ visual_default_settings = {
                 'gwr_code_name_tuples_GSTAT': [
                     ('1004', 'Existing bldg.'),]
             },
-        'plot_ind_line_meteo_radiation':        [True,      True],
+        'plot_ind_line_meteo_radiation':        [False,     True,       False],
 
         # for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':            [True,      True],
-        'plot_ind_line_productionHOY_per_node':  [True,      True],
-        'plot_ind_hist_NPV_freepartitions':      [True,      True],
-        'plot_ind_hist_pvcapaprod':              [True,    True],
+        'plot_ind_line_installedCap':            [False,    True,       False],
+        'plot_ind_line_productionHOY_per_node':  [False,    True,       False],
+        'plot_ind_hist_NPV_freepartitions':      [False,    True,       False],
+        'plot_ind_hist_pvcapaprod':              [False,    True,       False],
 
-        'plot_ind_map_topo_egid':                [True,    False],
+        'plot_ind_map_topo_egid':                [False,    False,      False],
             'plot_ind_map_topo_egid_specs': {
                 'uniform_municip_color': '#fff2ae',
                 'shape_opacity': 0.2,
@@ -58,7 +58,7 @@ visual_default_settings = {
                 'point_color_rest': '#383838',       # dark grey
                 'point_color_sanity_check': '#0041c2', # blue
             }, 
-        'plot_ind_map_node_connections':         [True,    False],
+        'plot_ind_map_node_connections':         [False,    False,      False],
             'plot_ind_map_node_connections_specs': {
                 'uniform_municip_color': '#fff2ae',
                 'shape_opacity': 0.2,   
