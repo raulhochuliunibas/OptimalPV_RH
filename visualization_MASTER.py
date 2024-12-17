@@ -391,7 +391,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig.add_trace(go.Histogram(x=aggdf_combo['pvprod_kW'], 
                                         name='Modeled Potential Yearly Production (kWh)',
                                         opacity=0.5, marker_color = color_rest, 
-                                        xbins = dict(size=xbins_hist_totalprodkwh_abs)), secondary_y=False)
+                                        xbins = dict(size=xbins_hist_totalprodkwh_abs/5)), secondary_y=False)
                 fig.add_trace(go.Histogram(x=aggdf_combo['STROMERTRAG'], 
                                         name='STROMERTRAG (solkat estimated production)',
                                         opacity=0.5, marker_color = color_solkat, 
@@ -399,7 +399,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig.add_trace(go.Histogram(x=aggdf_combo['pvprod_ByTotalPower_kW'],
                                             name='Yearly Prod. TotalPower (pvdf estimated production)', 
                                             opacity=0.5, marker_color = color_pv_df,
-                                            xbins=dict(size=xbins_hist_totalprodkwh_abs)), secondary_y=False)
+                                            xbins=dict(size=xbins_hist_totalprodkwh_abs/5)), secondary_y=False)
 
                 fig.add_trace(go.Histogram(x=aggdf_combo['pvprod_kW_stand'], 
                                         name='Modeled Potential Yearly Production (kWh), standardized',
@@ -478,7 +478,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['pvprod_kW'],
                                         name=f' - Modeled Potential Yearly Production (kWh) {scen}',
                                         opacity=0.5, 
-                                        xbins=dict(size=xbins_hist_totalprodkwh_abs)
+                                        xbins=dict(size=xbins_hist_totalprodkwh_abs/5)
                                         ))
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['STROMERTRAG'],
                                         name=f' - STROMERTRAG (solkat estimated production) {scen}',
@@ -488,7 +488,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig_agg_abs.add_trace(go.Histogram(x=aggdf_combo['pvprod_ByTotalPower_kW'],
                                         name=f' - Yearly Prod. TotalPower (pvdf estimated production) {scen}',
                                         opacity=0.5, 
-                                        xbins=dict(size=xbins_hist_totalprodkwh_abs),
+                                        xbins=dict(size=xbins_hist_totalprodkwh_abs/5),
                                         ))     
                 
                 fig_agg_stand.add_trace(go.Histogram(x=aggdf_combo['pvprod_kW_stand'],
