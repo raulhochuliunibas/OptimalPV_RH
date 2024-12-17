@@ -534,8 +534,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig_agg_abs.write_html(f'{data_path}/output/visualizations/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_instCapa_kW.html')
             fig_agg_stand.write_html(f'{data_path}/output/visualizations/{scen}__plot_agg_hist_pvCapaProd_SanityCheck_annualPVprod_kWh.html')
             print_to_logfile(f'\texport: plot_agg_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
-
-            
+   
 
     # plot ind - var: disc charac omitted gwr_egids --------------------
     if visual_settings['plot_ind_charac_omitted_gwr'][0]:
@@ -554,6 +553,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             gwr_mrg_all_building_in_bfs.rename(columns={'GGDENR': 'BFS_NUMMER'}, inplace=True)
             gwr_mrg_all_building_in_bfs['BFS_NUMMER'] = gwr_mrg_all_building_in_bfs['BFS_NUMMER'].astype(int)
             gwr_mrg_all_building_in_bfs = gwr_mrg_all_building_in_bfs.loc[gwr_mrg_all_building_in_bfs['BFS_NUMMER'].isin([int(x) for x in scen_sett['bfs_numbers']])]
+            
+            # only look at existing buildings!
+            gwr_mrg_all_building_in_bfs = gwr_mrg_all_building_in_bfs.loc[gwr_mrg_all_building_in_bfs['GSTAT'] == '1004']
 
             omitt_gwregid_from_topo = gwr_mrg_all_building_in_bfs.loc[~gwr_mrg_all_building_in_bfs['EGID'].isin(list(topo.keys()))]
             
@@ -824,7 +826,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 fig1 = set_default_fig_zoom_year(fig1, default_zoom_year, capa_year_df, 'BeginOp_year')
                 
                 if plot_show and visual_settings['plot_ind_line_installedCap'][1]:
-                    fig1.show()
+                    if visual_settings['plot_ind_line_installedCap'][2]:
+                        fig1.show()
+                    elif not visual_settings['plot_ind_line_installedCap'][2]:
+                        fig1.show() if i_scen == 0 else None
                 if visual_settings['save_plot_by_scen_directory']:
                     fig1.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_month.html')
                 else:
@@ -984,7 +989,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
 
             if plot_show and visual_settings['plot_ind_line_productionHOY_per_node'][1]:	
-                fig.show() 
+                if visual_settings['plot_ind_line_productionHOY_per_node'][2]:
+                    fig.show()
+                elif not visual_settings['plot_ind_line_productionHOY_per_node'][2]:
+                    fig.show() if i_scen == 0 else None
             if visual_settings['save_plot_by_scen_directory']:
                 fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_productionHOY_per_node.html')
             else:
@@ -1022,7 +1030,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i_scen])
             
             if plot_show and visual_settings['plot_ind_hist_NPV_freepartitions'][1]:
-                fig.show()
+                if visual_settings['plot_ind_hist_NPV_freepartitions'][2]:
+                    fig.show()
+                elif not visual_settings['plot_ind_hist_NPV_freepartitions'][2]:
+                    fig.show() if i_scen == 0 else None
             if visual_settings['save_plot_by_scen_directory']:
                 fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_NPV_freepartitions.html')
             else:
@@ -1472,8 +1483,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # PLOT AGGREGATED SCEN ------------------------------------------------------------------------------------------------------
-    if len(list(set(T0_prediction_list))) ==1:
-        T0_pred_agg = T0_prediction_list[0]
+    if False:
+        if len(list(set(T0_prediction_list))) ==1:
+            T0_pred_agg = T0_prediction_list[0]
 
 
     # plot agg - line: Installed Capacity per Month ============================
