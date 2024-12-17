@@ -645,9 +645,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
             i, col = 0, cont_cols[1]
             for i, col in enumerate(cont_cols):
-                if col in omitt_gwregid_gdf.columns:
-                    omitt_gwregid_gdf[col].value_counts()
-                    col_df  = omitt_gwregid_gdf[col].replace('', np.nan).dropna().astype(float)
+                if col in omitt_gwregid_from_topo.columns:
+                    omitt_gwregid_from_topo[col].value_counts()
+                    col_df  = omitt_gwregid_from_topo[col].replace('', np.nan).dropna().astype(float)
                     # if col in ['GBAUJ', 'GBAUM']:
                         # col_df.sort_values(inplace=True)
                     fig.add_trace(go.Histogram(x=col_df, name=col), row = int(i / ncols) + 1, col = i % ncols + 1)
