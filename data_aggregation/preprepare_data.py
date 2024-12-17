@@ -224,7 +224,7 @@ def local_data_AND_spatial_mappings(
                         solkat_addedEGID[cols_adjust_for_missEGIDs_to_solkat] =  solkat_addedEGID[cols_adjust_for_missEGIDs_to_solkat] / egid_join_union['EGID_gwradded'].nunique()
                         
                         # shrink topology to see which partitions are affected by EGID extensions
-                        solkat_addedEGID.buffer(-0.5, resolution=16)  
+                        solkat_addedEGID = solkat_addedEGID.buffer(-0.5, resolution=16)  
 
                         solkat_subdf_addedEGID_list.append(solkat_addedEGID)
                     
