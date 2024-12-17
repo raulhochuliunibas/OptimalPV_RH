@@ -74,7 +74,7 @@ def local_data_AND_spatial_mappings(
     gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
     solkat_selection_specs_def = dataagg_settings_def['solkat_selection_specs']
 
-    primeo_path = 'Q:/_shared\Projekt - Optimal PV Expantionspaths/'
+    primeo_path = 'Q:/_shared/Projekt - Optimal PV Expantionspaths'
     print_to_logfile(f'run function: local_data_AND_spatial_mappings.py', log_file_name_def = log_file_name_def)
 
 
