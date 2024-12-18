@@ -10,12 +10,12 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 # SETTINGS DEFINITION ==================================================================================================================
 months_pred = 1 #600 #36
 MC_iter = 1
-run_on_server = False
+run_on_server = True
 bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
-run_dataagg =       False
-run_alloc_init =    False
-run_alloc_MCalg =   False
+run_dataagg =       True
+run_alloc_init =    True
+run_alloc_MCalg =   True
 run_visual =        True
 
 
@@ -48,6 +48,7 @@ dataagg_scenarios = {
         'gwr_selection_specs': 
             {'GKLAS': ['1110','1121',],},
         'solkat_selection_specs': {
+            'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
             'match_missing_EGIDs_to_solkat_TF': True, },
     }, 
 }
