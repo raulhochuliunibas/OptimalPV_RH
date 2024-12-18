@@ -13,7 +13,7 @@ MC_iter = 1
 run_on_server = True
 bfs_numbers = [2768, 2761, 2772, 2473, 2475, 2785, 2480,] # Breitenbach & Umgebung [2617, 2615, 2614, 2613, 2782, 2620, 2622]
 
-run_dataagg =       True
+run_dataagg =       False
 run_alloc_init =    True
 run_alloc_MCalg =   True
 run_visual =        True
@@ -108,6 +108,7 @@ pvalloc_scenarios = {
             'rad_rel_loc_max_by': 'dfuid_specific',
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
+
     
     'pvalloc_BLsml_1roof_12m_meth2.2_rad_dfuid_ind':{
         'script_run_on_server': run_on_server,
