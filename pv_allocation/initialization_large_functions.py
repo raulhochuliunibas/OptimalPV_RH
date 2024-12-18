@@ -252,7 +252,6 @@ def import_prepre_AND_create_topology(
     # > Case 2 EGID in GWR but not in Map: more problematic; EGID "close" to next node => Match to nearest node; EGID "far away" => drop EGID
     gwr_wo_node = gwr.loc[~gwr['EGID'].isin(Map_egid_dsonode['EGID'].unique()),]
     Map_egid_dsonode_appendings =[]
-    egid = gwr_wo_node['EGID'].iloc[0]
         
     for egid in gwr_wo_node['EGID']:
         egid_point = gwr_gdf.loc[gwr_gdf['EGID'] == egid, 'geometry'].iloc[0]
