@@ -146,7 +146,6 @@ def local_data_AND_spatial_mappings(
         solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
         solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
         solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
-        # solkat_v2_gdf = solkat_v2_gdf.head(10000) # for testing purposes
 
         # create mapping of solkatEGIDs and missing gwrEGIDs -------------------
         # union all shapes with the same EGID 
@@ -155,7 +154,7 @@ def local_data_AND_spatial_mappings(
             'DF_UID': lambda x: '_'.join(map(str, x))  # Concatenate DF_UID values as a single string
             }).reset_index()
         solkat_union_v2EGID = gpd.GeoDataFrame(solkat_union_v2EGID, geometry='geometry')
-        solkat_union_v2EGID = solkat_union_v2EGID.head(500) # for testing purposes
+        # solkat_union_v2EGID = solkat_union_v2EGID.head(500) # for testing purposes
         
         # rename EGID colum because gwr_EGIDs are now matched to union_shapes
         solkat_union_v2EGID = solkat_union_v2EGID.rename(columns = {'EGID': 'EGID_old_solkat'})
