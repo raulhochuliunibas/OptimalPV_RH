@@ -496,9 +496,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                         fig.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,))         
 
 
-                # Agg: installed Capacity kW --------------------------------   
+                # Agg: Absolute Values --------------------------------   
                 if True:
                     add_scen_title_traces(fig_agg_abs, scen)
+
+                    # inst capacity kW
                     add_histogram_trace(fig_agg_abs, aggdf_combo['inst_capa_kW'],
                                         f' - Modeled Potential Capacity (kW)',   
                                         col_from_palette(trace_colpal, trace_colval), xbins_hist_instcapa_abs)
@@ -509,23 +511,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                                         col_from_palette(trace_colpal, trace_colval), xbins_hist_instcapa_abs)
                     trace_colval = update_trace_color(trace_colval, trace_colincr)
 
-                    add_scen_title_traces(fig_agg_stand, scen)  
-                    add_histogram_trace(fig_agg_stand, aggdf_combo['inst_capa_kW_stand'],
-                                        f' - Modeled Potential Capacity (kW), standardized',   
-                                        col_from_palette(trace_colpal, trace_colval), xbins_hist_instcapa_stand)
-                    add_kde_gaussian_trace(fig_agg_stand, aggdf_combo['inst_capa_kW_stand'],f'  KDE Modeled Potential Capacity (kW)',col_from_palette(trace_colpal,trace_colval), )
-                    trace_colval = update_trace_color(trace_colval, trace_colincr)
-
-                    add_histogram_trace(fig_agg_stand, pv['TotalPower_stand'],
-                                        f' - Installed Capacity (pv_df in topo), standardized',
-                                        col_from_palette(trace_colpal, trace_colval), xbins_hist_instcapa_stand)
-                    add_kde_gaussian_trace(fig_agg_stand, pv['TotalPower_stand'],f'  KDE Installed Capacity (pv_df in topo, kW)',col_from_palette(trace_colpal,trace_colval), )
-                    trace_colval = update_trace_color(trace_colval, trace_colincr)
-
-
-                # Agg: annual PV production kWh --------------------------------
-                if True:
-                    # Absolute Values ----                 
+                    # annual PV production kWh
                     add_histogram_trace(fig_agg_abs, aggdf_combo['pvprod_kW'], 
                                         f' - Modeled Potential Yearly Production (kWh)', 
                                         col_from_palette(trace_colpal, trace_colval), xbins_hist_totalprodkwh_abs)
@@ -542,10 +528,28 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                                         f' - Yearly Prod. TotalPower (pvdf estimated production)', 
                                         col_from_palette(trace_colpal, trace_colval), xbins_hist_totalprodkwh_abs)
                     add_kde_gaussian_trace(fig_agg_abs, aggdf_combo['pvprod_ByTotalPower_kW'],f'  KDE Yearly Prod. TotalPower (pvdf estimated production)',col_from_palette(trace_colpal,trace_colval), )
-                    trace_colval = update_trace_color(trace_colval, trace_colincr)                
+                    trace_colval = update_trace_color(trace_colval, trace_colincr) 
 
 
-                    # Standardized Values ----
+                # Agg: Standardized Values --------------------------------
+                if True:
+                    trace_colval = trace_colval_max
+                    add_scen_title_traces(fig_agg_stand, scen)  
+
+                    # inst capacity kW
+                    add_histogram_trace(fig_agg_stand, aggdf_combo['inst_capa_kW_stand'],
+                                        f' - Modeled Potential Capacity (kW), standardized',   
+                                        col_from_palette(trace_colpal, trace_colval), xbins_hist_instcapa_stand)
+                    add_kde_gaussian_trace(fig_agg_stand, aggdf_combo['inst_capa_kW_stand'],f'  KDE Modeled Potential Capacity (kW)',col_from_palette(trace_colpal,trace_colval), )
+                    trace_colval = update_trace_color(trace_colval, trace_colincr)
+
+                    add_histogram_trace(fig_agg_stand, pv['TotalPower_stand'],
+                                        f' - Installed Capacity (pv_df in topo), standardized',
+                                        col_from_palette(trace_colpal, trace_colval), xbins_hist_instcapa_stand)
+                    add_kde_gaussian_trace(fig_agg_stand, pv['TotalPower_stand'],f'  KDE Installed Capacity (pv_df in topo, kW)',col_from_palette(trace_colpal,trace_colval), )
+                    trace_colval = update_trace_color(trace_colval, trace_colincr)
+
+                    # annual PV production kWh
                     add_histogram_trace(fig_agg_stand, aggdf_combo['pvprod_kW_stand'],
                                         f' - Modeled Potential Yearly Production (kWh), standardized', 
                                         col_from_palette(trace_colpal, trace_colval), xbins_hist_totalprodkwh_stand)
