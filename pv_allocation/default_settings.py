@@ -9,8 +9,10 @@ pvalloc_default_settings = {
     # main settings for allocation
     'kt_numbers': [], #[11,13],                           # list of cantons to be considered [11, Solothurn, 12 Basel-Stadt, 13 Basel-Landschaft], 0 used for NON canton-selection, selecting only certain indiviual municipalities
     'bfs_numbers': [
-        2768, 2761, 2772, 2473, 2475, 2785, 2480,],
-        # Ettingen, Aesch, Pfeffingen, Dornach, Hochwald, Duggingen, Seewen
+        2473, 2475, 2480,                                   # SO: Dornach, Hochwald, Seewen
+        2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+        2476, 2471, 2481, 2764, 2775, 2773, 2786,           # BLmed: Hofstetten-Flüh, Bättwil, Witterswil, Biel-Benken, Therwil, Reinach, Grellingen
+    ],
     'T0_prediction': '2023-01-01 00:00:00', 
     'months_lookback': 12*1,
     'months_prediction': 12,
