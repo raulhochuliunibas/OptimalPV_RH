@@ -45,7 +45,7 @@ def plot(pvalloc_scen_list,
 
         checkpoint_to_logfile(f'plot_ind_hist_pvcapaprod_sanitycheck', log_name)
 
-        # setup
+        # available color palettes
         trace_color_dict = {
             'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
             'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
@@ -64,15 +64,15 @@ def plot(pvalloc_scen_list,
 
         color_pv_df, color_solkat, color_rest = visual_settings['plot_ind_map_topo_egid_specs']['point_color_pv_df'], visual_settings['plot_ind_map_topo_egid_specs']['point_color_solkat'],visual_settings['plot_ind_map_topo_egid_specs']['point_color_rest']
         
+        # switch to rerun plot for uniform_scencolor_and_KDE_TF if turned on 
+        if uniform_scencolor_and_KDE_TF:
+            uniform_scencolor_and_KDE_TF_list = [True, False]
+        elif not uniform_scencolor_and_KDE_TF:
+            uniform_scencolor_and_KDE_TF_list = [False,]
 
-        # trace_color_names_list = ['Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar', 'Teal', 'Magenta']
-        trace_color_palettes_list = [
-            # pc.sequential.Blues, pc.sequential.Greens, pc.sequential.Reds, pc.sequential.Oranges, pc.sequential.Purples, pc.sequential.Greys,
-            # pc.sequential.Mint, pc.sequential.solar, pc.sequential.Teal, pc.sequential.Magenta, 
-            pc.sequential.Plotly3, pc.sequential.Viridis, pc.sequential.Turbo, 
-            pc.sequential.Blackbody, ]
 
-        for uniform_scencolor_and_KDE_TF in [True, False]:
+        # plot --------------------
+        for uniform_scencolor_and_KDE_TF in uniform_scencolor_and_KDE_TF_list:
             fig_agg_abs, fig_agg_stand = go.Figure(), go.Figure()
 
             i_scen, scen = 0, scen_dir_export_list[0]
