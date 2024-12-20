@@ -375,7 +375,7 @@ def plot(pvalloc_scen_list,
                 print_to_logfile(f'\texport: plot_agg_hist_SanityCheck_instCapa_kW.html ({len(scen_dir_export_list)} scens, KDE: {uniform_scencolor_and_KDE_TF})', log_name)
     
             # Export shapes with 0 kWh annual production --------------------
-            if False:
+            if plot_ind_hist_pvcapaprod_sanitycheck_specs['export_spatial_data_for_prod0']:
                 # EGID_no_prod = aggdf_combo.loc[aggdf_combo['pvprod_kW'] == 0, 'EGID'].unique()
                 aggdf_combo_noprod = aggdf_combo.loc[aggdf_combo['pvprod_kW'] == 0]
                 aggdf_noprod_gdf = aggdf_combo_noprod.merge(gwr_gdf, on='EGID', how='left')

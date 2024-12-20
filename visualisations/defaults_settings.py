@@ -23,6 +23,7 @@ visual_default_settings = {
                 'trace_colval_max': 100, 
                 'trace_colincr': 10, 
                 'uniform_scencolor_and_KDE_TF': True,
+                'export_spatial_data_for_prod0': True, 
                 },
         'plot_ind_charac_omitted_gwr':          [False,     True,       False],
             'plot_ind_charac_omitted_gwr_specs':{
