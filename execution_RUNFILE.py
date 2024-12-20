@@ -8,12 +8,12 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-run_on_server =     True
+run_on_server =     False
 
-run_dataagg =       False
+run_dataagg =       True
 run_alloc_init =    False
 run_alloc_MCalg =   False
-run_visual =        True
+run_visual =        False
 
 
 # data_aggregation 
@@ -54,92 +54,92 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 pvalloc_scenarios = {
 
     
-    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
-        'script_run_on_server': run_on_server,
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1500,},
-        'tech_economic_specs': {
-            'share_roof_area_available': 1, 
-            'pvprod_calc_method': 'method2.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
-    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
-        'script_run_on_server': run_on_server,
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1500,},
-        'tech_economic_specs': {
-            'share_roof_area_available': 1, 
-            'pvprod_calc_method': 'method3.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
+    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+    #     'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+    #     'script_run_on_server': run_on_server,
+    #     'gwr_selection_specs': {
+    #         'solkat_max_area_per_EGID': 1500,},
+    #     'tech_economic_specs': {
+    #         'share_roof_area_available': 1, 
+    #         'pvprod_calc_method': 'method2.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
+    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+    #     'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+    #     'script_run_on_server': run_on_server,
+    #     'gwr_selection_specs': {
+    #         'solkat_max_area_per_EGID': 1500,},
+    #     'tech_economic_specs': {
+    #         'share_roof_area_available': 1, 
+    #         'pvprod_calc_method': 'method3.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
 
-    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
-        'script_run_on_server': run_on_server,
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1500,},
-        'tech_economic_specs': {
-            'share_roof_area_available': 0.7,
-            'pvprod_calc_method': 'method2.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
-    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
-        'script_run_on_server': run_on_server,
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1500,},
-        'tech_economic_specs': {
-            'share_roof_area_available': 0.7,
-            'pvprod_calc_method': 'method3.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
+    # 'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+    #     'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+    #     'script_run_on_server': run_on_server,
+    #     'gwr_selection_specs': {
+    #         'solkat_max_area_per_EGID': 1500,},
+    #     'tech_economic_specs': {
+    #         'share_roof_area_available': 0.7,
+    #         'pvprod_calc_method': 'method2.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
+    # 'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+    #     'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+    #     'script_run_on_server': run_on_server,
+    #     'gwr_selection_specs': {
+    #         'solkat_max_area_per_EGID': 1500,},
+    #     'tech_economic_specs': {
+    #         'share_roof_area_available': 0.7,
+    #         'pvprod_calc_method': 'method3.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
     
-    'pvalloc_BLsml_1roof_12m_meth2.2_rad_dfuid_ind':{
-        'script_run_on_server': run_on_server,
-        'tech_economic_specs': {
-            'share_roof_area_available': 1, 
-            'pvprod_calc_method': 'method2.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
-    'pvalloc_BLsml_1roof_12m_meth3.2_rad_dfuid_ind':{
-        'script_run_on_server': run_on_server,
-        'tech_economic_specs': {
-            'share_roof_area_available': 1, 
-            'pvprod_calc_method': 'method3.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
+    # 'pvalloc_BLsml_1roof_12m_meth2.2_rad_dfuid_ind':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'share_roof_area_available': 1, 
+    #         'pvprod_calc_method': 'method2.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
+    # 'pvalloc_BLsml_1roof_12m_meth3.2_rad_dfuid_ind':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'share_roof_area_available': 1, 
+    #         'pvprod_calc_method': 'method3.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
    
-    'pvalloc_BLsml_07roof_12m_meth2.2_rad_dfuid_ind':{
-                'script_run_on_server': run_on_server,
-                'tech_economic_specs': {
-                    'share_roof_area_available': 0.7,
-                    'pvprod_calc_method': 'method2.2',},
-                'weather_specs': {
-                    'rad_rel_loc_max_by': 'dfuid_specific',
-                    'radiation_to_pvprod_method': 'dfuid_ind',}
-            },
-    'pvalloc_BLsml_07roof_12m_meth3.2_rad_dfuid_ind':{
-        'script_run_on_server': run_on_server,
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
+    # 'pvalloc_BLsml_07roof_12m_meth2.2_rad_dfuid_ind':{
+    #             'script_run_on_server': run_on_server,
+    #             'tech_economic_specs': {
+    #                 'share_roof_area_available': 0.7,
+    #                 'pvprod_calc_method': 'method2.2',},
+    #             'weather_specs': {
+    #                 'rad_rel_loc_max_by': 'dfuid_specific',
+    #                 'radiation_to_pvprod_method': 'dfuid_ind',}
+    #         },
+    # 'pvalloc_BLsml_07roof_12m_meth3.2_rad_dfuid_ind':{
+    #     'script_run_on_server': run_on_server,
+    #     'tech_economic_specs': {
+    #         'pvprod_calc_method': 'method3.2',},
+    #     'weather_specs': {
+    #         'rad_rel_loc_max_by': 'dfuid_specific',
+    #         'radiation_to_pvprod_method': 'dfuid_ind',}
+    # },
  
     'pvalloc_BLmed_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
         'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
