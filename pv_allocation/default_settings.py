@@ -2,7 +2,7 @@ import copy
 
 pvalloc_default_settings = {
     'name_dir_export': 'pvalloc_BL_smallsample',              # name of the directory where all proccessed data is stored at the end of the code file 
-    'name_dir_import': 'preprep_BL_22to23_1and2homes', # name of the directory where preprepared data is stored and accessed by the code
+    'name_dir_import': 'preprep_BLSO_22to23_1and2homes', # name of the directory where preprepared data is stored and accessed by the code
     'wd_path_laptop': 'C:/Models/OptimalPV_RH',              # path to the working directory on Raul's laptop
     'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',   # path to the working directory on the server
 

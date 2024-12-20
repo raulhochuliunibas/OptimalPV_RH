@@ -11,8 +11,8 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 run_on_server =     True
 
 run_dataagg =       False
-run_alloc_init =    True
-run_alloc_MCalg =   True
+run_alloc_init =    False
+run_alloc_MCalg =   False
 run_visual =        True
 
 
@@ -25,9 +25,9 @@ dataagg_scenarios = {
     #     'split_data_geometry_AND_slow_api': True, 
     #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
     # },
-    'preprep_BL_22to23_1and2homes':{
+    'preprep_BLSO_22to23_1and2homes':{
         'script_run_on_server': run_on_server, 
-        'kt_numbers': [13,], 
+        'kt_numbers': [13, 11], 
         'year_range': [2022, 2023],   
         'split_data_geometry_AND_slow_api': False, 
         'gwr_selection_specs': 
@@ -35,9 +35,9 @@ dataagg_scenarios = {
         'solkat_selection_specs': {
             'match_missing_EGIDs_to_solkat_TF': False, },
     }, 
-    'preprep_BL_22to23_1and2homes_incl_missingEGID':{
+    'preprep_BLSO_22to23_1and2homes_incl_missingEGID':{
         'script_run_on_server': run_on_server, 
-        'kt_numbers': [13,], 
+        'kt_numbers': [13,11], 
         'year_range': [2022, 2023],   
         'split_data_geometry_AND_slow_api': False, 
         'gwr_selection_specs': 
@@ -55,7 +55,7 @@ pvalloc_scenarios = {
 
     
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -67,7 +67,7 @@ pvalloc_scenarios = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -80,7 +80,7 @@ pvalloc_scenarios = {
     },
 
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -92,7 +92,7 @@ pvalloc_scenarios = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -141,9 +141,8 @@ pvalloc_scenarios = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
  
-
     'pvalloc_BLmed_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -155,7 +154,7 @@ pvalloc_scenarios = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
     'pvalloc_BLmed_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -167,47 +166,7 @@ pvalloc_scenarios = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
     'pvalloc_BLmed_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
-        'script_run_on_server': run_on_server,
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1500,},
-        'tech_economic_specs': {
-            'share_roof_area_available': 0.7,
-            'pvprod_calc_method': 'method2.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
-
-}
-
-parkplatz = {
-    'pvalloc_BLmed_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
-        'script_run_on_server': run_on_server,
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1500,},
-        'tech_economic_specs': {
-            'share_roof_area_available': 1, 
-            'pvprod_calc_method': 'method2.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
-    'pvalloc_BLmed_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
-        'script_run_on_server': run_on_server,
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1500,},
-        'tech_economic_specs': {
-            'share_roof_area_available': 1, 
-            'pvprod_calc_method': 'method3.2',},
-        'weather_specs': {
-            'rad_rel_loc_max_by': 'dfuid_specific',
-            'radiation_to_pvprod_method': 'dfuid_ind',}
-    },
-    'pvalloc_BLmed_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -219,7 +178,95 @@ parkplatz = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
     'pvalloc_BLmed_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+        'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
+        'tech_economic_specs': {
+            'share_roof_area_available': 0.7,
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    
+    'pvalloc_BLmed_1roof_12m_meth2.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLmed_1roof_12m_meth3.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLmed_07roof_12m_meth2.2_rad_dfuid_ind':{
+                'script_run_on_server': run_on_server,
+                'tech_economic_specs': {
+                    'share_roof_area_available': 0.7,
+                    'pvprod_calc_method': 'method2.2',},
+                'weather_specs': {
+                    'rad_rel_loc_max_by': 'dfuid_specific',
+                    'radiation_to_pvprod_method': 'dfuid_ind',}
+            },
+    'pvalloc_BLmed_07roof_12m_meth3.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+ 
+}
+
+parkplatz = {
+    'pvalloc_BLmed_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+        'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
+        'tech_economic_specs': {
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLmed_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+        'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
+        'tech_economic_specs': {
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLmed_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+        'script_run_on_server': run_on_server,
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1500,},
+        'tech_economic_specs': {
+            'share_roof_area_available': 0.7,
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLmed_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -342,7 +389,7 @@ parkplatz = {
     },
 
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.1_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},                             
@@ -354,7 +401,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'flat',}
     },
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.1_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -366,7 +413,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -378,7 +425,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'flat',}
     },
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -391,7 +438,7 @@ parkplatz = {
     },
 
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.1_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -403,7 +450,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'flat',}
     },
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.1_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -415,7 +462,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -427,7 +474,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'flat',}
     },
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -516,7 +563,7 @@ parkplatz = {
     },
 
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.1_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},                             
@@ -528,7 +575,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'flat',}
     },
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.1_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -540,7 +587,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -552,7 +599,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'flat',}
     },
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -565,7 +612,7 @@ parkplatz = {
     },
 
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.1_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -577,7 +624,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'flat',}
     },
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.1_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -589,7 +636,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'dfuid_ind',}
     },
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_flat':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -601,7 +648,7 @@ parkplatz = {
             'radiation_to_pvprod_method': 'flat',}
     },
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
         'gwr_selection_specs': {
             'solkat_max_area_per_EGID': 1500,},
@@ -628,17 +675,17 @@ visual_settings = {
 
         # PLOT CHUNCK -------------------------> [run plot,  show plot,  show all scen]
         # for pvalloc_inital + sanitycheck
-        'plot_ind_var_summary_stats':            [False,     True,        True], 
+        'plot_ind_var_summary_stats':            [True,     True,        False], 
         'plot_ind_hist_pvcapaprod_sanitycheck':  [True,      True,       False], 
-        'plot_ind_charac_omitted_gwr':           [False,      True,        True],
+        'plot_ind_charac_omitted_gwr':           [True,      True,        True],
         'plot_ind_line_meteo_radiation':         [False,     True,      False], 
         # for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':            [False,    True,      False],       
+        'plot_ind_line_installedCap':            [True,    True,      False],       
         'plot_ind_line_productionHOY_per_node':  [False,    True,      False],
-        'plot_ind_hist_NPV_freepartitions':      [False,    False,     False],
+        'plot_ind_hist_NPV_freepartitions':      [True,    False,     False],
         'plot_ind_hist_pvcapaprod':              [False,     True],  # |> bookmark
 
-        'plot_ind_map_topo_egid':                [False,     True,       True],
+        'plot_ind_map_topo_egid':                [True,     True,       False],
         'plot_ind_map_node_connections':         [False,     True,       False],   
         
         # still to be updated
