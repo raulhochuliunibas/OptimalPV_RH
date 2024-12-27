@@ -1,264 +1,245 @@
-[2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475]
-parkplatz={
-        f'pvalloc_sample_12m_meth2_rnd_diffratio02':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 0.2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio02':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 0.2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },   
 
-    f'pvalloc_sample_12m_meth2_rnd_diffratio05':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 0.5,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio05':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 0.5,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },   
+def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
+    scen_group_dir = {}
+    
 
-    f'pvalloc_sample_12m_meth2_rnd_diffratio08':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    all_scenarios = {
+    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 0.8,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],        
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1000,},
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio08':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 0.8,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1000,},
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
+    
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1000,},
+        'tech_economic_specs': {
+            'share_roof_area_available': 0.7,
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1000,},
+        'tech_economic_specs': {
+            'share_roof_area_available': 0.7,
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    
+    'pvalloc_BLsml_1roof_12m_meth2.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'tech_economic_specs': {
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLsml_1roof_12m_meth3.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'tech_economic_specs': {
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },  
 
-    f'pvalloc_sample_12m_meth2_rnd_diffratio10':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    'pvalloc_BLsml_07roof_12m_meth2.2_rad_dfuid_ind':{
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 1,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'share_roof_area_available': 0.7,
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio10':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    'pvalloc_BLsml_07roof_12m_meth3.2_rad_dfuid_ind':{
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 1,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    }, 
-
-    f'pvalloc_sample_12m_meth2_rnd_diffratio12':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
+            'pvprod_calc_method': 'method3.2',},
         'weather_specs': {
-            'flat_diffuse_rad_factor': 1.2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio12':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 1.2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
 
-    f'pvalloc_sample_12m_meth2_rnd_diffratio14':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+
+
+    'pvalloc_BLSOsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 1.4,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,
+            2473, 2475, 2480,   
+        ],
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1000,},
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio14':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    'pvalloc_BLSOsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 1.4,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,
+            2473, 2475, 2480,   
+        ],
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1000,},
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
 
-    f'pvalloc_sample_12m_meth2_rnd_diffratio16':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    'pvalloc_BLSOsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 1.6,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,
+            2473, 2475, 2480,   
+        ],
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1000,},
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'share_roof_area_available': 0.7,
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio16':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    'pvalloc_BLSOsml_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind':{
+        'name_dir_import': 'preprep_BLSO_22to23_1and2homes_incl_missingEGID',
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 1.6,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,
+            2473, 2475, 2480,   
+        ],
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 1000,},
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-
-    f'pvalloc_sample_12m_meth2_rnd_diffratio18':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
+            'share_roof_area_available': 0.7,
+            'pvprod_calc_method': 'method3.2',},
         'weather_specs': {
-            'flat_diffuse_rad_factor': 1.8,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
-    },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio18':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
-        'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 1.8,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
 
-    f'pvalloc_sample_12m_meth2_rnd_diffratio20':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    'pvalloc_BLSOsml_1roof_12m_meth2.2_rad_dfuid_ind':{
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,
+            2473, 2475, 2480,   
+        ],
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
-    f'pvalloc_sample_12m_meth3_rnd_diffratio20':{
-        'name_dir_import': 'preprep_BL_22to23_1and2homes',
+    'pvalloc_BLSOsml_1roof_12m_meth3.2_rad_dfuid_ind':{
         'script_run_on_server': run_on_server,
-        'months_prediction': 12,
-        'weather_specs': {
-            'flat_diffuse_rad_factor': 2,},
-        'bfs_numbers': [2768, 2761, 2772, 2473, 2475, 2785, 2480, 2475],
-        'algorithm_specs': {
-            'inst_selection_method': 'random',},
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,
+            2473, 2475, 2480,   
+        ],
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method3',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,},
+            'share_roof_area_available': 1, 
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
     },
 
-}
+    'pvalloc_BLSOsml_07roof_12m_meth2.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,
+            2473, 2475, 2480,   
+        ],
+        'tech_economic_specs': {
+            'share_roof_area_available': 0.7,
+            'pvprod_calc_method': 'method2.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    'pvalloc_BLSOsml_07roof_12m_meth3.2_rad_dfuid_ind':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,
+            2473, 2475, 2480,   
+        ],
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'weather_specs': {
+            'rad_rel_loc_max_by': 'dfuid_specific',
+            'radiation_to_pvprod_method': 'dfuid_ind',}
+    },
+    }
+
+    for scen_name in scen_group_names:
+        all_scen_names = all_scenarios.keys()
+        if scen_name in all_scen_names:
+            scen_group_dir[scen_name] = all_scenarios[scen_name]
+
+    return scen_group_dir
