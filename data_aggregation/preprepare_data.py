@@ -199,9 +199,13 @@ def local_data_AND_spatial_mappings(
                 # "Best" case (unless step above applies): Shapes of building that only has 1 GWR EGID
                 if (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid): 
                     solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                    solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                    
                 # Not best case but for consistency better to keep individual solkatEGIs matches (otherwise missmatch of newer buildings with old shape partitions possible)
                 elif (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid): 
                     solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                    solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+
                 elif (egid_join_union.shape[0] > 1) & (egid_join_union['EGID_gwradded'].isna().any() == True):
                     checkpoint_to_logfile(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
 
@@ -214,6 +218,7 @@ def local_data_AND_spatial_mappings(
                         
                         # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
                         solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                        solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
                         solkat_addedEGID['EGID'] = egid_to_add
                         
                         #extend the DF_UID with some numbers to have truely unique DF_UIDs
@@ -228,7 +233,7 @@ def local_data_AND_spatial_mappings(
                             solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
                         
                         # shrink topology to see which partitions are affected by EGID extensions
-                        solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
+                        # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
 
                         solkat_subdf_addedEGID_list.append(solkat_addedEGID)
                     
@@ -241,6 +246,7 @@ def local_data_AND_spatial_mappings(
                     
                     # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
                     gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
+                    solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
                     gwrEGID_row['EGID_gwradded'] = egid
                     egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
 
@@ -266,7 +272,7 @@ def local_data_AND_spatial_mappings(
                             solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
                         
                         # shrink topology to see which partitions are affected by EGID extensions
-                        solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
+                        # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
 
                         solkat_subdf_addedEGID_list.append(solkat_addedEGID)
                     
