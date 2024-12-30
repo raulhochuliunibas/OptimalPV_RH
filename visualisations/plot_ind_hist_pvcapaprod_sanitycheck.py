@@ -83,7 +83,7 @@ def plot(pvalloc_scen_list,
                 inverter_efficiency = pvalloc_scen['tech_economic_specs']['inverter_efficiency']
                 panel_efficiency_print = 'dynamic' if pvalloc_scen['panel_efficiency_specs']['variable_panel_efficiency_TF'] else 'static'
 
-
+                # data import
                 sanity_scen_data_path = f'{data_path}/output/{scen}/sanity_check_byEGID'
                 pv = pd.read_parquet(f'{data_path}/output/{scen}/pv.parquet')
                 topo = json.load(open(f'{sanity_scen_data_path}/topo_egid.json', 'r'))
@@ -370,16 +370,48 @@ def plot(pvalloc_scen_list,
                 if plot_show and visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][1]:
                     fig_agg_abs.show()
                     fig_agg_stand.show()
-                fig_agg_abs.write_html(f'{data_path}/output/visualizations/plot_agg_hist_pvCapaProd_SanityCheck_instCapa_kW__{len(scen_dir_export_list)}scen_KDE{uniform_scencolor_and_KDE_TF}.html')   
-                fig_agg_stand.write_html(f'{data_path}/output/visualizations/plot_agg_hist_pvCapaProd_SanityCheck_annualPVprod_kWh__{len(scen_dir_export_list)}scen_KDE{uniform_scencolor_and_KDE_TF}.html')
+                fig_agg_abs.write_html(f'{data_path}/output/visualizations/plot_agg_hist_pvCapaProd_SanityCheck_abs_values__{len(scen_dir_export_list)}scen_KDE{uniform_scencolor_and_KDE_TF}.html')   
+                fig_agg_stand.write_html(f'{data_path}/output/visualizations/plot_agg_hist_pvCapaProd_SanityCheck_stand_values__{len(scen_dir_export_list)}scen_KDE{uniform_scencolor_and_KDE_TF}.html')
                 print_to_logfile(f'\texport: plot_agg_hist_SanityCheck_instCapa_kW.html ({len(scen_dir_export_list)} scens, KDE: {uniform_scencolor_and_KDE_TF})', log_name)
     
             # Export shapes with 0 kWh annual production --------------------
             if plot_ind_hist_pvcapaprod_sanitycheck_specs['export_spatial_data_for_prod0']:
                 # EGID_no_prod = aggdf_combo.loc[aggdf_combo['pvprod_kW'] == 0, 'EGID'].unique()
                 aggdf_combo_noprod = aggdf_combo.loc[aggdf_combo['pvprod_kW'] == 0]
-                aggdf_noprod_gdf = aggdf_combo_noprod.merge(gwr_gdf, on='EGID', how='left')
 
-                aggdf_noprod_gdf.to_file(f'{data_path}/output/{scen}/topo_spatial_data/aggdf_noprod_gdf.geojson', driver='GeoJSON')
+                # match GWR geom to gdf
+                aggdf_noprod_gwrgeom_gdf = aggdf_combo_noprod.merge(gwr_gdf, on='EGID', how='left')
+                aggdf_noprod_gwrgeom_gdf = gpd.GeoDataFrame(aggdf_noprod_gwrgeom_gdf, geometry='geometry')
+                aggdf_noprod_gwrgeom_gdf.to_file(f'{data_path}/output/{scen}/topo_spatial_data/aggdf_noprod_gwrgeom_gdf.geojson', driver='GeoJSON')
+                checkpoint_to_logfile(f'\texport: aggdf_noprod_gwrgeom_gdf.geojson (scen: {scen}) for sanity check', log_name)
+
+                # try to match solkat geom to gdf
+                solkat_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/solkat_gdf.geojson')
+                aggdf_noprod_solkatgeom_gdf = copy.deepcopy(aggdf_combo_noprod)
+                aggdf_noprod_solkatgeom_gdf['geometry'] = 'NA'
+                
+                # i, row = 0, aggdf_combo_noprod.iloc[0]
+                # i, row = 2, aggdf_combo_noprod.iloc[2]
+                for i, row in aggdf_combo_noprod.iterrows():
+                    dfuid_row_list = row['df_uid'].split('_')
+                    dfuid_row_solkatgeom = solkat_gdf.loc[solkat_gdf['DF_UID'].isin(dfuid_row_list)]
+                    if dfuid_row_solkatgeom.shape[0] == 1:
+                        aggdf_noprod_solkatgeom_gdf.loc[i, 'geometry'] = dfuid_row_solkatgeom.iloc[0]['geometry']
+                    elif dfuid_row_solkatgeom.shape[0] > 1:
+                        # aggdf_noprod_solkatgeom_gdf.loc[i, 'geometry'] = MultiPolygon([geom for geom in dfuid_row_solkatgeom['geometry']])
+                        aggdf_noprod_gwrgeom_gdf.loc[i, 'geometry'] = dfuid_row_solkatgeom.unary_union
+                    elif len(dfuid_row_solkatgeom) == 0:
+                        aggdf_noprod_solkatgeom_gdf.loc[i, 'geometry'] = 'NA_dfuid_aggdf_combo_notin_solkat_gdf'
+
+                aggdf_noprod_solkatgeom_gdf.loc[aggdf_noprod_solkatgeom_gdf['geometry'] == 'NA', 'geometry'] = None
+                aggdf_noprod_solkatgeom_gdf = gpd.GeoDataFrame(aggdf_noprod_solkatgeom_gdf, geometry='geometry')
+                aggdf_noprod_solkatgeom_gdf.to_file(f'{data_path}/output/{scen}/topo_spatial_data/aggdf_noprod_solkatgeom_gdf.geojson', driver='GeoJSON')
+                checkpoint_to_logfile(f'\texport: aggdf_noprod_solkatgeom_gdf.geojson (scen: {scen}) for sanity check', log_name)
+
+
+
+
+
+
 
          
