@@ -37,6 +37,7 @@ dataagg_default_settings = {
             'col_partition_union': 'SB_UUID',                   # column name used for the union of partitions
             'GWR_EGID_buffer_size': 10,                          # buffer size in meters for the GWR selection
             'match_missing_EGIDs_to_solkat_TF': False, 
+            'extend_dfuid_for_missing_EGIDs_to_be_unique': True, 
             'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE', 'STROMERTRAG', ],
             'test_loop_optim_buff_size_TF': False, 
             'test_loop_optim_buff_arang': [0, 10, 0.1]

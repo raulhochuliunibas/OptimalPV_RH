@@ -172,20 +172,31 @@ def local_data_AND_spatial_mappings(
         add_solkat_counter = 1
         n_egid, egid = 0, EGID_old_solkat_list[0]
         for n_egid, egid in enumerate(EGID_old_solkat_list):
+            if ( (egid == '11513663') | 
+                 (egid == '11513822') |
+                 (egid == '11513880') |
+                 (egid == '11514433') |
+                 (egid == '11514468')   
+                 ):
+                egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
+                print('break for debugging')
+                # solkat_subdf.loc[solkat_subdf['EGID']==egid, 'DF_UID_solkat']
             egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
             egid_join_union = egid_join_union.reset_index(drop = True)
 
             # Shapes of building that will not be included given GWR filter settings
-            if egid_join_union['EGID_gwradded'].isna().any():  
+            if any(egid_join_union['EGID_gwradded'].isna()):  
                 solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid])
+                solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+
 
             elif all(egid_join_union['EGID_gwradded'] != np.nan): 
 
                 # a gwrEGID can be picked up by the union shape, but still be present in the solkat df, drop theses rows
-                # currently disabled, because most likely the smaller issue. Added gwrEGIDs that still have a solkatEGID outside the current selection will just also be added
+                # => currently disabled, because most likely the smaller issue. Added gwrEGIDs that still have a solkatEGID outside the current selection will just also be added
                 # to the extended solkat df, with 1/n share of the original solkatEGID for gwrEGID extension and full share of the otherwise already present EGID in solkatEGID. 
                 # also not a problem because DF_UID will still be unique with the added suffixes
-                if True:
+                if False:
                     egid_to_add = egid_join_union['EGID_gwradded'].unique()[0]
                     for egid_to_add in egid_join_union['EGID_gwradded'].unique():
                         if egid_join_union.shape[0] > 1:
@@ -222,11 +233,12 @@ def local_data_AND_spatial_mappings(
                         solkat_addedEGID['EGID'] = egid_to_add
                         
                         #extend the DF_UID with some numbers to have truely unique DF_UIDs
-                        str_suffix = str(n+1).zfill(5)
-                        if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
-                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
-                        elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
-                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+                        if solkat_selection_specs_def['extend_dfuid_for_missing_EGIDs_to_be_unique']:
+                            str_suffix = str(n+1).zfill(5)
+                            if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                                solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                            elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                                solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
 
                         # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
                         for col in cols_adjust_for_missEGIDs_to_solkat:
@@ -261,11 +273,12 @@ def local_data_AND_spatial_mappings(
                         solkat_addedEGID['EGID'] = egid_to_add
                         
                         #extend the DF_UID with some numbers to have truely unique DF_UIDs
-                        str_suffix = str(n+1).zfill(3)
-                        if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
-                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
-                        elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
-                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+                        if solkat_selection_specs_def['extend_dfuid_for_missing_EGIDs_to_be_unique']:
+                            str_suffix = str(n+1).zfill(3)
+                            if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                                solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                            elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                                solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
 
                         # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
                         for col in cols_adjust_for_missEGIDs_to_solkat:

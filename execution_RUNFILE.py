@@ -12,10 +12,10 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 print_directory_stucture_to_txtfile(True) 
 run_on_server =     False
 
-run_dataagg =       False
+run_dataagg =       True
 run_alloc_init =    False
 run_alloc_MCalg =   False
-run_visual =        True
+run_visual =        False
 
 
 # data_aggregation 
@@ -27,16 +27,7 @@ dataagg_scenarios = {
     #     'split_data_geometry_AND_slow_api': True, 
     #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
     # },
-    'preprep_BLSO_22to23_1and2homes':{
-        'script_run_on_server': run_on_server, 
-        'kt_numbers': [13, 11], 
-        'year_range': [2022, 2023],   
-        'split_data_geometry_AND_slow_api': False, 
-        'gwr_selection_specs': 
-            {'GKLAS': ['1110','1121',],},
-        'solkat_selection_specs': {
-            'match_missing_EGIDs_to_solkat_TF': False, },
-    }, 
+
     'preprep_BL_22to23_1and2homes_incl_missingEGID':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13,], 
@@ -48,6 +39,29 @@ dataagg_scenarios = {
             'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
             'match_missing_EGIDs_to_solkat_TF': True, },
     },
+    'preprep_BL_22to23_1and2homes_incl_missingEGID_DF_UID_duplicates':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13,], 
+        'year_range': [2022, 2023],   
+        'split_data_geometry_AND_slow_api': False, 
+        'gwr_selection_specs': 
+            {'GKLAS': ['1110','1121',],},
+        'solkat_selection_specs': {
+            'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
+            'match_missing_EGIDs_to_solkat_TF': True, 
+            'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
+    },
+ 
+    'preprep_BLSO_22to23_1and2homes':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13, 11], 
+        'year_range': [2022, 2023],   
+        'split_data_geometry_AND_slow_api': False, 
+        'gwr_selection_specs': 
+            {'GKLAS': ['1110','1121',],},
+        'solkat_selection_specs': {
+            'match_missing_EGIDs_to_solkat_TF': False, },
+    }, 
     'preprep_BLSO_22to23_1and2homes_incl_missingEGID':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13,11], 
@@ -57,8 +71,10 @@ dataagg_scenarios = {
             {'GKLAS': ['1110','1121',],},
         'solkat_selection_specs': {
             'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
-            'match_missing_EGIDs_to_solkat_TF': True, },
+            'match_missing_EGIDs_to_solkat_TF': True, 
+            'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
     }, 
+
 }
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
