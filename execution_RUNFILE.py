@@ -27,7 +27,6 @@ dataagg_scenarios = {
     #     'split_data_geometry_AND_slow_api': True, 
     #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
     # },
-
     'preprep_BL_22to23_1and2homes_incl_missingEGID':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13,], 
@@ -37,7 +36,8 @@ dataagg_scenarios = {
             {'GKLAS': ['1110','1121',],},
         'solkat_selection_specs': {
             'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
-            'match_missing_EGIDs_to_solkat_TF': True, },
+            'match_missing_EGIDs_to_solkat_TF': True, 
+            'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
     },
     'preprep_BL_22to23_1and2homes_incl_missingEGID_DF_UID_duplicates':{
         'script_run_on_server': run_on_server, 
@@ -52,6 +52,7 @@ dataagg_scenarios = {
             'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
     },
  
+
     'preprep_BLSO_22to23_1and2homes':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13, 11], 
@@ -82,9 +83,9 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind', 
-    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind',
-    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind',
-    'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind',
+    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind', 
+    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind_DFUID_duplicates', 
+    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind_DFUID_duplicates',
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
