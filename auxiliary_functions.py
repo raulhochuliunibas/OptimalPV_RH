@@ -316,9 +316,49 @@ def get_bfsnr_name_tuple_list(bfs_number_list=None):
 
     return bfsnr_name_tuple_list
 
-# ----------------------------------------------------------------------
-# book mark ------------------------------------------------------------
-# 
+def print_directory_stucture_to_txtfile(if_True = False):
+    dir_exclusion_list = ['archiv_no_longer_used', '__pycache__', 'poetry.lock', 'pyproject.toml', 'README.md', 
+                          'selection_mechanism_theory.py', 'ToDos_NextSteps.py', 'TRY_OUT.py', 'OptimalPV_RH_directory_structure.txt',
+                          'visualization_MASTER_oldcopy.py', 'x_archiv']
+    if if_True:
+        import os as os
+        import pandas as pd
+        from pathlib import Path
+
+        # Prefix components
+        space = '    '
+        branch = '│   '
+        # Pointers
+        tee = '├── '
+        last = '└── '
+
+        def tree(dir_path: Path, prefix: str='', exclude_list=None):
+            """A recursive generator, given a directory Path object
+            will yield a visual tree structure line by line
+            with each line prefixed by the same characters
+            """
+            if exclude_list is None:
+                exclude_list = []
+
+            contents = [p for p in dir_path.iterdir() if p.name not in exclude_list and not p.name.startswith('.')]
+            # Contents each get pointers that are ├── with a final └── :
+            pointers = ['├── '] * (len(contents) - 1) + ['└── ']
+            for pointer, path in zip(pointers, contents):
+                yield prefix + pointer + path.name
+                if path.is_dir() and path.name not in exclude_list:  # Extend the prefix and recurse:
+                    extension = '│   ' if pointer == '├── ' else '    '
+                    # i.e. space because last, └── , above so no more |
+                    yield from tree(path, prefix=prefix+extension, exclude_list=exclude_list)
+
+        # Print the directory tree excluding specified directories and those starting with "."
+        txt_header = f'** Directory structure for OptimalPV_RH **\n date: {pd.Timestamp.now()}\n\n'
+
+        with open(f'{os.getcwd()}/OptimalPV_RH_directory_structure.txt', 'w', encoding='utf-8') as f:
+            f.write(txt_header)
+            for line in tree(Path('C:/Models/OptimalPV_RH'), exclude_list= dir_exclusion_list):
+                print(line)
+                f.write(line + '\n')
+
 # ----------------------------------------------------------------------
     
 def test_functions(text):

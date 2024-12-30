@@ -2,18 +2,19 @@
 import execution_scenarios, data_aggregation_MASTER, pvalloc_initialization_MASTER, pvalloc_MCalgorithm_MASTER, visualization_MASTER
 #mport pvalloc_postprocessing_MASTER
 
-from execution_scenarios import get_pvalloc_execuction_scenarios
+from auxiliary_functions import print_directory_stucture_to_txtfile
 from data_aggregation.default_settings import extend_dataag_scen_with_defaults
 from pv_allocation.default_settings import extend_pvalloc_scen_with_defaults
 from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-run_on_server =     True
+print_directory_stucture_to_txtfile(True) 
+run_on_server =     False
 
 run_dataagg =       False
-run_alloc_init =    True
-run_alloc_MCalg =   True
+run_alloc_init =    False
+run_alloc_MCalg =   False
 run_visual =        True
 
 
@@ -63,7 +64,7 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 
 # pv_allocation 
-pvalloc_scenarios = get_pvalloc_execuction_scenarios(run_on_server,[
+pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind', 
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind',
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind',
@@ -85,6 +86,11 @@ visual_settings = {
         # for pvalloc_inital + sanitycheck
         'plot_ind_var_summary_stats':            [True,     True,        False], 
         'plot_ind_hist_pvcapaprod_sanitycheck':  [True,      True,       False], 
+            'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
+                'uniform_scencolor_and_KDE_TF': True,
+                'export_spatial_data_for_prod0': True, 
+            },
+        'plot_ind_hist_pvprod_deviation':        [True,      True,       True],
         'plot_ind_charac_omitted_gwr':           [True,      True,        True],
         'plot_ind_line_meteo_radiation':         [False,     True,      False], 
         # for pvalloc_MC_algorithm 
