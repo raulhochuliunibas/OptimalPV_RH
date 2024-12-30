@@ -33,10 +33,162 @@ if True:
     from pv_allocation.default_settings import *
     from visualisations.defaults_settings import *
 
+# pv production deviation between method 2 + 3  --------------------------------------------------------------------
+# > plot the deviation between the pv production of method 2 and 3 for every single house to check if the difference is a 
+# > constant factor or if there are some houses with a higher deviation
+# if True:
+
+mth_pttrn = ['meth2', 'meth3']
+scenarios_to_plot_pattern= [
+    ['pvalloc_BLsml_1roof_extSolkatEGID_12m_',  '.2_rad_dfuid_ind'], 
+    ['pvalloc_BLsml_07roof_extSolkatEGID_12m_',  '2_rad_dfuid_ind'],
+]
+
+wd_path = 'C:/Models/OptimalPV_RH'
+data_path     = f'{wd_path}_data'
+data_path_def = f'{wd_path}_data'
+
+scen_pattern = scenarios_to_plot_pattern[0]
+for scen_pattern in scenarios_to_plot_pattern:
+    scenarios = [f'{scen_pattern[0]}{method_pattern}{scen_pattern[1]}' for method_pattern in mth_pttrn]
+    if not all([scen in os.listdir(f'{data_path}/output/') for scen in scenarios]):   
+        print('*** ERROR *** not all scenarios are available in the output folder')
+    elif all([scen in os.listdir(f'{data_path}/output/') for scen in scenarios]):
+        all([scen in os.listdir(f'{data_path}/output/') for scen in scenarios])
+
+        method_comparison_list = []
+        method = mth_pttrn[0]
+        for method in mth_pttrn:
+            scen = f'{scen_pattern[0]}{method}{scen_pattern[1]}'
+            
+            # import data
+            sanity_scen_data_path = f'{data_path}/output/{scen}/sanity_check_byEGID'
+            topo = json.load(open(f'{sanity_scen_data_path}/topo_egid.json', 'r'))
+            topo_subdf_paths = glob.glob(f'{sanity_scen_data_path}/topo_subdf_*.parquet')
+
+            # scen settings
+            pvalloc_scen = json.load(open(f'{data_path}/output/{scen}/pvalloc_settings.json', 'r'))
+            kWpeak_per_m2, share_roof_area_available = pvalloc_scen['tech_economic_specs']['kWpeak_per_m2'],pvalloc_scen['tech_economic_specs']['share_roof_area_available']
+            xbins = 0
+
+            # aggregation
+            aggdf_combo_list = []
+            path = topo_subdf_paths[0]
+            for i_path, path in enumerate(topo_subdf_paths):
+                subdf= pd.read_parquet(path)
+
+                agg_subdf = subdf.groupby(['EGID', 'df_uid', 'FLAECHE', 'STROMERTRAG']).agg({'pvprod_kW': 'sum',}).reset_index()
+                aggsub_npry = np.array(agg_subdf)
+
+                egid_list, dfuid_list, flaeche_list, pvprod_list, pvprod_ByTotalPower_list, stromertrag_list = [], [], [], [], [], []
+
+                for egid in subdf['EGID'].unique():
+                    mask_egid_subdf = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('EGID')], egid)
+                    df_uids  = list(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('df_uid')])
+
+                    for r in range(1,len(df_uids)+1):
+                        for combo in itertools.combinations(df_uids,r):
+                            combo_key_str = '_'.join([str(c) for c in combo])
+                            mask_dfuid_subdf = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('df_uid')], list(combo))
+
+                            egid_list.append(egid)
+                            dfuid_list.append(combo_key_str)
+                            flaeche_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('FLAECHE')].sum())
+                            pvprod_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pvprod_kW')].sum())
+                            # pvprod_ByTotalPower_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pvprod_TotalPower_kW')].sum())
+                            stromertrag_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('STROMERTRAG')].sum())
+                            
+                aggsubdf_combo = pd.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 
+                                                'FLAECHE': flaeche_list, 'pvprod_kW': pvprod_list, 
+                                                # 'pvprod_ByTotalPower_kW': pvprod_ByTotalPower_list,
+                                                'STROMERTRAG': stromertrag_list})
+                
+                aggdf_combo_list.append(aggsubdf_combo)
+                print(f'aggregated subdf: {i_path+1}/{len(topo_subdf_paths)}')
+            
+            aggdf_combo = pd.concat(aggdf_combo_list, axis=0)
+            aggdf_combo['inst_capa_kW'] = aggdf_combo['FLAECHE'] * kWpeak_per_m2 * share_roof_area_available
+
+            # aggdf_combo.rename(columns={'pvprod_kW': f'pvprod_{method}'}, inplace=True)
+            method_comparison_list.append(aggdf_combo)
+            print('finished aggregation for method:', method)
+
+
+        # merge two method dfs
+        mth_pttrn[mth_pttrn.index('meth2')]
+        methmrgd_df = pd.merge(
+            method_comparison_list[0],
+            method_comparison_list[1],
+            on=['EGID', 'df_uid', ], 
+            suffixes=(f'_{mth_pttrn[0]}', 
+                      f'_{mth_pttrn[1]}')
+        )
+
+
+        # add difference columns
+        methmrgd_df['diff_FLAECHE_abs'] =       methmrgd_df[f'FLAECHE_{mth_pttrn[0]}'] -     methmrgd_df[f'FLAECHE_{mth_pttrn[1]}']
+        methmrgd_df['diff_pvprod_kW_abs'] =     methmrgd_df[f'pvprod_kW_{mth_pttrn[0]}'] -   methmrgd_df[f'pvprod_kW_{mth_pttrn[1]}']
+        methmrgd_df['diff_STROMERTRAG_abs'] =   methmrgd_df[f'STROMERTRAG_{mth_pttrn[0]}'] - methmrgd_df[f'STROMERTRAG_{mth_pttrn[1]}']
+        methmrgd_df['diff_inst_capa_kW_abs'] =  methmrgd_df[f'inst_capa_kW_{mth_pttrn[0]}']- methmrgd_df[f'inst_capa_kW_{mth_pttrn[1]}']
+
+        methmrgd_df['diff_FLAECHE_rel'] =       methmrgd_df[f'FLAECHE_{mth_pttrn[0]}'] /     methmrgd_df[f'FLAECHE_{mth_pttrn[1]}']
+        methmrgd_df['diff_pvprod_kW_rel'] =     methmrgd_df[f'pvprod_kW_{mth_pttrn[0]}'] /   methmrgd_df[f'pvprod_kW_{mth_pttrn[1]}']
+        methmrgd_df['diff_STROMERTRAG_rel'] =   methmrgd_df[f'STROMERTRAG_{mth_pttrn[0]}'] / methmrgd_df[f'STROMERTRAG_{mth_pttrn[1]}']
+        methmrgd_df['diff_inst_capa_kW_rel'] =  methmrgd_df[f'inst_capa_kW_{mth_pttrn[0]}']/ methmrgd_df[f'inst_capa_kW_{mth_pttrn[1]}']
+
+
+        # plot
+        # fig = go.Figure()
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+        
+        fig.add_trace(
+            go.Histogram(
+                x=methmrgd_df.loc[methmrgd_df['diff_pvprod_kW_abs'] != 0, 'diff_pvprod_kW_abs'],
+                name=f'diff_pvprod_kW abs ({mth_pttrn[0]} - {mth_pttrn[1]})',
+                xbins=dict(start=-1, size=500),
+                opacity=0.75  # Adjust opacity here
+            ),
+            secondary_y=False  # Primary y-axis
+        )
+
+        # Add the second histogram to the secondary y-axis
+        fig.add_trace(
+            go.Histogram(
+                x=methmrgd_df.loc[methmrgd_df['diff_pvprod_kW_rel'] != 0, 'diff_pvprod_kW_rel'],
+                name=f'diff_pvprod_kW rel ({mth_pttrn[0]} / {mth_pttrn[1]})',
+                xbins=dict(start=-1, size=0.05),
+                opacity=0.75  # Adjust opacity here
+            ),
+            secondary_y=True  # Secondary y-axis
+        )
+        
+        fig.add_trace(go.Histogram(x = methmrgd_df[f'diff_FLAECHE_abs'], name = f'diff_FLAECHE abs ({mth_pttrn[0]} - {mth_pttrn[1]})', xbins=dict(start=-1, size=0.1)))
+        fig.add_trace(go.Histogram(x = methmrgd_df[f'diff_FLAECHE_rel'], name = f'diff_FLAECHE rel ({mth_pttrn[0]} / {mth_pttrn[1]})', xbins=dict(start=-1, size=0.1)))
+        fig.add_trace(go.Histogram(x = methmrgd_df[f'diff_STROMERTRAG_abs'], name = f'diff_STROMERTRAG abs ({mth_pttrn[0]} - {mth_pttrn[1]})', xbins=dict(start=-1, size=0.1)))
+        fig.add_trace(go.Histogram(x = methmrgd_df[f'diff_STROMERTRAG_rel'], name = f'diff_STROMERTRAG rel ({mth_pttrn[0]} / {mth_pttrn[1]})', xbins=dict(start=-1, size=0.1)))
+        fig.add_trace(go.Histogram(x = methmrgd_df[f'diff_inst_capa_kW_abs'], name = f'diff_inst_capa_kW abs ({mth_pttrn[0]} - {mth_pttrn[1]})', xbins=dict(start=-1, size=0.1)))
+        fig.add_trace(go.Histogram(x = methmrgd_df[f'diff_inst_capa_kW_rel'], name = f'diff_inst_capa_kW rel ({mth_pttrn[0]} / {mth_pttrn[1]})', xbins=dict(start=-1, size=0.1)))
+
+        fig.update_layout(title = f'Difference between Method {mth_pttrn[0]} and {mth_pttrn[1]}',
+                        xaxis_title = 'Difference [abs]',
+                        yaxis_title = 'Frequency',
+                        barmode='overlay',
+                        )
+        fig.update_yaxes(title_text="Frequency", secondary_y=False)
+        fig.update_yaxes(title_text="Relative Frequency", secondary_y=True)
+
+        fig.update_traces(opacity=0.75)
+        fig.show()
+        if not os.path.exists(f'{data_path}/output/visualizations/individual_visualizations'):
+            os.makedirs(f'{data_path}/output/visualizations/individual_visualizations')
+        file_name = f'hist_pvCapaProd_diff_method_{mth_pttrn[0]}_{mth_pttrn[1]}.html'
+        fig.write_html(f'{data_path}/output/visualizations/individual_visualizations/{file_name}.html')
+
+
 
 # all weather years  --------------------------------------------------------------------
 # > plot all possible weather years in a single plot for comparision
-if True:
+if False:
     # settings
     plot_by_time_interval = [
         # 'hour', 
