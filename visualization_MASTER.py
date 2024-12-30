@@ -163,6 +163,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # plot ind - hist: sanity check capacity & production --------------------
     plot_ind_hist_pvcapaprod_sanitycheck.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
+    # plot ind - hist: pv production deviation --------------------
+    # plot_ind_hist_pvprod_deviation.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+
     # plot ind - var: disc charac omitted gwr_egids --------------------
     plot_ind_charac_omitted_gwr.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
