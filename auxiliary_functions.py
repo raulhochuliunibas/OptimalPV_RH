@@ -356,7 +356,7 @@ def print_directory_stucture_to_txtfile(if_True = False):
         with open(f'{os.getcwd()}/OptimalPV_RH_directory_structure.txt', 'w', encoding='utf-8') as f:
             f.write(txt_header)
             for line in tree(Path('C:/Models/OptimalPV_RH'), exclude_list= dir_exclusion_list):
-                print(line)
+                # print(line)
                 f.write(line + '\n')
 
 # ----------------------------------------------------------------------

@@ -14,49 +14,8 @@ name_dir_import = 'preprep_BLSO_22to23_1and2homes'
 
 
 
-
 # ------------------------------------------------------------------------------------------------------
-# print directory scheme to txt file
-from pathlib import Path
-
-# prefix components:
-space =  '    '
-branch = '│   '
-# pointers:
-tee =    '├── '
-last =   '└── '
-
-
-def tree(dir_path: Path, prefix: str='', exclude_list = None):
-    """A recursive generator, given a directory Path object
-    will yield a visual tree structure line by line
-    with each line prefixed by the same characters
-    """
-    if exclude_list is None:
-        exclude_list = []
-
-    contents = [p for p in dir_path.iterdir() if p.name not in exclude_list and not p.name.startswith('.')]
-    # contents each get pointers that are ├── with a final └── :
-    pointers = ['├── '] * (len(contents) - 1) + ['└── ']
-    for pointer, path in zip(pointers, contents):
-        yield prefix + pointer + path.name
-        if path.is_dir():  # extend the prefix and recurse:
-            extension = '│   ' if pointer == '├── ' else '    '
-            # i.e. space because last, └── , above so no more |
-            yield from tree(path, prefix=prefix+extension, exclude_list=exclude_list)
-
-# Print the directory tree excluding specified directories and those starting with "."
-txt_header = f'** Directory structure for OptimalPV_RH **\n date: {pd.Timestamp.now()}\n\n'
-
-with open(f'{wd_path}/OptimalPV_RH_directory_structure.txt', 'w') as f:
-    f.write(txt_header)
-    for line in tree(Path('C:/Models/OptimalPV_RH'), exclude_list=['archiv_no_longer_used']):
-        print(line)
-        f.write(line + '\n')
-
-
-# ------------------------------------------------------------------------------------------------------
-if False:
+if True:
     egid = '410298'
 
     topo_subdf_pq_list = glob.glob(f'{data_path}/output/{scen}/topo_time_subdf/*.parquet')
@@ -76,7 +35,52 @@ if False:
 
     # solkat_month
     solkat_month = pd.read_parquet(f'{data_path}/output/{scen}/solkat_month.parquet')
-    solkat_month.loc[solkat_month['EGID'] == egid].to_csv(f'{data_path}/output/{scen}/solkat_month_{egid}.csv')
+    df.columns
+    dfuid_ls = df['df_uid'].unique()
+    solkat_month.loc[solkat_month['DF_UID'].isin(dfuid_ls)].to_csv(f'{data_path}/output/{scen}/topo_time_subdf/solkat_month_{egid}.csv') 
+
+
+# ------------------------------------------------------------------------------------------------------
+# print directory scheme to txt file
+if False:
+    from pathlib import Path
+
+    # prefix components:
+    space =  '    '
+    branch = '│   '
+    # pointers:
+    tee =    '├── '
+    last =   '└── '
+
+
+    def tree(dir_path: Path, prefix: str='', exclude_list = None):
+        """A recursive generator, given a directory Path object
+        will yield a visual tree structure line by line
+        with each line prefixed by the same characters
+        """
+        if exclude_list is None:
+            exclude_list = []
+
+        contents = [p for p in dir_path.iterdir() if p.name not in exclude_list and not p.name.startswith('.')]
+        # contents each get pointers that are ├── with a final └── :
+        pointers = ['├── '] * (len(contents) - 1) + ['└── ']
+        for pointer, path in zip(pointers, contents):
+            yield prefix + pointer + path.name
+            if path.is_dir():  # extend the prefix and recurse:
+                extension = '│   ' if pointer == '├── ' else '    '
+                # i.e. space because last, └── , above so no more |
+                yield from tree(path, prefix=prefix+extension, exclude_list=exclude_list)
+
+    # Print the directory tree excluding specified directories and those starting with "."
+    txt_header = f'** Directory structure for OptimalPV_RH **\n date: {pd.Timestamp.now()}\n\n'
+
+    with open(f'{wd_path}/OptimalPV_RH_directory_structure.txt', 'w') as f:
+        f.write(txt_header)
+        for line in tree(Path('C:/Models/OptimalPV_RH'), exclude_list=['archiv_no_longer_used']):
+            print(line)
+            f.write(line + '\n')
+
+
 
 
 
