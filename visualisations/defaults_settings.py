@@ -19,12 +19,13 @@ visual_default_settings = {
                 'xbins_hist_instcapa_stand': 0.1,
                 'xbins_hist_totalprodkwh_abs': 500, 
                 'xbins_hist_totalprodkwh_stand': 0.05,
-                'trace_color_palettes': ['Plotly3', 'Viridis', 'Turbo', 'Blackbody',],    #  ['Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar', 'Teal', 'Magenta', 'Plotly3', 'Viridis', 'Turbo', 'Blackbody']
+                'trace_color_palettes': ['Viridis', 'Turbo', 'Blackbody', 'Plotly3'],    #  ['Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar', 'Teal', 'Magenta', 'Plotly3', 'Viridis', 'Turbo', 'Blackbody']
                 'trace_colval_max': 100, 
                 'trace_colincr': 10, 
                 'uniform_scencolor_and_KDE_TF': True,
                 'export_spatial_data_for_prod0': True, 
                 },
+        'plot_ind_hist_pvprod_deviation':       [False,     True,       False],
         'plot_ind_charac_omitted_gwr':          [False,     True,       False],
             'plot_ind_charac_omitted_gwr_specs':{
                 'disc_cols': ['BFS_NUMMER','GSTAT','GKAT','GKLAS'], 
