@@ -12,10 +12,10 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 run_on_server =     False
 print_directory_stucture_to_txtfile(not(True))
 
-run_dataagg =       False
+run_dataagg =       True
 run_alloc_init =    False
 run_alloc_MCalg =   False
-run_visual =        True
+run_visual =        False
 
 
 # data_aggregation 
@@ -76,6 +76,17 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind', 
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind_DFUID_duplicates', 
     'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind_DFUID_duplicates',
+
+    'pvalloc_BLsml_48m_meth2.2_random',
+    'pvalloc_BLsml_48m_meth2.2_npvweight',
+    'pvalloc_BLsml_48m_meth3.2_random',
+    'pvalloc_BLsml_48m_meth3.2_npvweight',
+    
+    'pvalloc_BLSOmed_48m_meth2.2_random',
+    'pvalloc_BLSOmed_48m_meth2.2_npvweight',
+    'pvalloc_BLSOmed_48m_meth3.2_random',
+    'pvalloc_BLSOmed_48m_meth3.2_npvweight',
+
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 

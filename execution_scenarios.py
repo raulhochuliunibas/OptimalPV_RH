@@ -2,9 +2,19 @@
 def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
     scen_group_dir = {}
     
-    new_scenarios = {
+    new_scenarios = [
+        'pvalloc_BLsml_48m_meth2.2_random',
+        'pvalloc_BLsml_48m_meth2.2_npvweight',
+        'pvalloc_BLsml_48m_meth3.2_random',
+        'pvalloc_BLsml_48m_meth3.2_npvweight',
+        
+        'pvalloc_BLSOmed_48m_meth2.2_random',
+        'pvalloc_BLSOmed_48m_meth2.2_npvweight',
+        'pvalloc_BLSOmed_48m_meth3.2_random',
+        'pvalloc_BLSOmed_48m_meth3.2_npvweight',
 
-    }
+
+    ]
 
     all_scenarios = {
 
@@ -76,7 +86,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
 
     
     'pvalloc_BLSOmed_48m_meth2.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
             2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
@@ -95,7 +105,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             'montecarlo_iterations': 2,}
     },
     'pvalloc_BLSOmed_48m_meth2.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
             2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
@@ -115,7 +125,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
     },           
     
     'pvalloc_BLSOmed_48m_meth3.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
             2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
@@ -134,7 +144,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             'montecarlo_iterations': 2,}
     },
     'pvalloc_BLSOmed_48m_meth3.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
             2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
