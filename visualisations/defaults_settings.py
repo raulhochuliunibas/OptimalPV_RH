@@ -19,7 +19,7 @@ visual_default_settings = {
                 'xbins_hist_instcapa_stand': 0.1,
                 'xbins_hist_totalprodkwh_abs': 500, 
                 'xbins_hist_totalprodkwh_stand': 0.05,
-                'trace_color_palettes': ['Viridis', 'Turbo', 'Blackbody', 'Plotly3'],    #  ['Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar', 'Teal', 'Magenta', 'Plotly3', 'Viridis', 'Turbo', 'Blackbody']
+                'trace_color_palettes': ['Viridis', 'Turbo', 'Aggrnyl', 'Agsunset'],    #  ['Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar', 'Teal', 'Magenta', 'Plotly3', 'Viridis', 'Turbo', 'Blackbody']
                 'trace_colval_max': 100, 
                 'trace_colincr': 10, 
                 'uniform_scencolor_and_KDE_TF': True,
