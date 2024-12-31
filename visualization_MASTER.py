@@ -147,7 +147,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         if visual_settings['remove_old_plot_scen_directories']:
             old_plot_scen_dirs = glob.glob(f'{data_path}/output/visualizations/*(*)')
             for dir in old_plot_scen_dirs:
-                shutil.rmtree(dir)
+                try:    
+                    shutil.rmtree(dir)
+                except:
+                    print(f'Could not remove {dir}')
 
     chapter_to_logfile(f'start run_visualisations MASTER ', log_name, overwrite_file=True)
 
