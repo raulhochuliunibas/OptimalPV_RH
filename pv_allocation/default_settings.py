@@ -11,7 +11,8 @@ pvalloc_default_settings = {
     'bfs_numbers': [
         2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
         2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
-        # 2476, 2471, 2481, 2764, 2775, 2773, 2786,           # BLmed: Hofstetten-Flüh, Bättwil, Witterswil, Biel-Benken, Therwil, Reinach, Grellingen
+        2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+        2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
     ],
     'T0_prediction': '2023-01-01 00:00:00', 
     'months_lookback': 12*1,
@@ -79,7 +80,7 @@ pvalloc_default_settings = {
         'elecpri_category': 'H4', 
         'invst_maturity': 25,
         'kWpeak_per_m2': 0.2,                       # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
-        'share_roof_area_available': 0.7,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
+        'share_roof_area_available': 1,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
         'max_distance_m_for_EGID_node_matching': 0, # max distance in meters for matching GWR EGIDs that have no node assignment to the next grid node
         },
     'panel_efficiency_specs': {

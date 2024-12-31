@@ -40,7 +40,7 @@ dataagg_scenarios = {
     #         'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
     # },
     
-    'preprep_BL_22to23_1and2homes_incl_missingEGID_DF_UID_duplicates':{
+    'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13,], 
         'year_range': [2022, 2023],   
@@ -52,19 +52,8 @@ dataagg_scenarios = {
             'match_missing_EGIDs_to_solkat_TF': True, 
             'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
     },
- 
 
-    'preprep_BLSO_22to23_1and2homes':{
-        'script_run_on_server': run_on_server, 
-        'kt_numbers': [13, 11], 
-        'year_range': [2022, 2023],   
-        'split_data_geometry_AND_slow_api': False, 
-        'gwr_selection_specs': 
-            {'GKLAS': ['1110','1121',],},
-        'solkat_selection_specs': {
-            'match_missing_EGIDs_to_solkat_TF': False, },
-    }, 
-    'preprep_BLSO_22to23_1and2homes_incl_missingEGID':{
+    'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates':{
         'script_run_on_server': run_on_server, 
         'kt_numbers': [13,11], 
         'year_range': [2022, 2023],   
@@ -74,8 +63,8 @@ dataagg_scenarios = {
         'solkat_selection_specs': {
             'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
             'match_missing_EGIDs_to_solkat_TF': True, 
-            'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
-    }, 
+            'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
+    },
 
 }
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
