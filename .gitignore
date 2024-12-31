@@ -190,3 +190,6 @@ cython_debug/
 #.idea/
 
 
+
+.codegpt
+OptimalPV_RH_directory_structure.txt
