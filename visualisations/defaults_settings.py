@@ -19,9 +19,9 @@ visual_default_settings = {
                 'xbins_hist_instcapa_stand': 0.1,
                 'xbins_hist_totalprodkwh_abs': 500, 
                 'xbins_hist_totalprodkwh_stand': 0.05,
-                'trace_color_palettes': ['Viridis', 'Turbo', 'Aggrnyl', 'Agsunset'],    #  ['Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar', 'Teal', 'Magenta', 'Plotly3', 'Viridis', 'Turbo', 'Blackbody']
-                'trace_colval_max': 100, 
-                'trace_colincr': 10, 
+                'trace_color_palettes': ['Turbo', 'Viridis', 'Aggrnyl', 'Agsunset'],    #  ['Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar', 'Teal', 'Magenta', 'Plotly3', 'Viridis', 'Turbo', 'Blackbody']
+                'trace_colval_max': 60,                            # max value for color scale; the higher the max value and the lower the increments, the more colors will be picked within the same color range of the palette
+                'trace_colincr': 10,                                # increment for color scale
                 'uniform_scencolor_and_KDE_TF': True,
                 'export_spatial_data_for_prod0': True, 
                 },
@@ -46,6 +46,7 @@ visual_default_settings = {
 
         # for pvalloc_MC_algorithm 
         'plot_ind_line_installedCap':            [False,    True,       False],
+        'plot_ind_line_PVproduction':            [False,    True,       False],
         'plot_ind_line_productionHOY_per_node':  [False,    True,       False],
         'plot_ind_hist_NPV_freepartitions':      [False,    True,       False],
         'plot_ind_hist_pvcapaprod':              [False,    True,       False],
