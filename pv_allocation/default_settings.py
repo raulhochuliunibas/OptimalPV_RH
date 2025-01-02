@@ -9,7 +9,7 @@ pvalloc_default_settings = {
     # main settings for allocation
     'kt_numbers': [], #[11,13],                           # list of cantons to be considered [11, Solothurn, 12 Basel-Stadt, 13 Basel-Landschaft], 0 used for NON canton-selection, selecting only certain indiviual municipalities
     'bfs_numbers': [
-        2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+        2768, 2761, 2772, 2785, 2787,                        # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen; + Laufen for comparison with own PV installation
         2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
         2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
         2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
@@ -109,7 +109,7 @@ pvalloc_default_settings = {
             ['topo_egid.json', 'months_prediction.parquet', 'gridprem_ts.parquet', 
               'constrcapa.parquet', 'dsonodes_df.parquet'],  #'gridnode_df.parquet',
         'keep_files_month_iter_TF': True,
-        'keep_files_month_iter_max': 8,
+        'keep_files_month_iter_max': 9999999999,
         
         'keep_files_month_iter_list': ['topo_egid.json', 'npv_df.parquet', 'pred_inst_df.parquet', 'gridprem_ts.parquet',], 
         # 'keep_files_only_one': ['elecpri.parquet', 'pvtarif.parquet', 'pv.parquet', 'meteo_ts'],

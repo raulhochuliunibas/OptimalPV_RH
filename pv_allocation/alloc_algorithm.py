@@ -472,10 +472,6 @@ def update_gridprem(
             gridprem_node_by_M_path = f'{subdir_path_def}/pred_gridprem_node_by_M'
             if not os.path.exists(gridprem_node_by_M_path):
                 os.makedirs(gridprem_node_by_M_path)
-            # elif os.path.exists(gridprem_node_by_M_path):
-            #     old_files = glob.glob(f'{gridprem_node_by_M_path}/*')
-            #     for f in old_files:
-            #         os.remove(f)
 
             gridnode_df.to_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{m}.parquet')
             gridprem_ts.to_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.parquet')
@@ -683,10 +679,6 @@ def update_npv_df(pvalloc_settings,
             pred_npv_inst_by_M_path = f'{subdir_path_def}/pred_npv_inst_by_M'
             if not os.path.exists(pred_npv_inst_by_M_path):
                 os.makedirs(pred_npv_inst_by_M_path)
-            # elif os.path.exists(pred_npv_inst_by_M_path):
-            #     old_files = glob.glob(f'{pred_npv_inst_by_M_path}/*')
-            #     for f in old_files:
-            #         os.remove(f)
 
             npv_df.to_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
             if pvalloc_settings['export_csvs']:
