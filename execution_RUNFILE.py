@@ -10,12 +10,12 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 # SETTINGS DEFINITION ==================================================================================================================
 run_on_server =     False
-print_directory_stucture_to_txtfile(not(True))
+print_directory_stucture_to_txtfile(not(run_on_server))
 
-run_dataagg =       True
+run_dataagg =       False
 run_alloc_init =    False
 run_alloc_MCalg =   False
-run_visual =        False
+run_visual =        True
 
 
 # data_aggregation 
@@ -27,18 +27,18 @@ dataagg_scenarios = {
     #     'split_data_geometry_AND_slow_api': True, 
     #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
     # },
-    # 'preprep_BL_22to23_1and2homes_incl_missingEGID':{
-    #     'script_run_on_server': run_on_server, 
-    #     'kt_numbers': [13,], 
-    #     'year_range': [2022, 2023],   
-    #     'split_data_geometry_AND_slow_api': False, 
-    #     'gwr_selection_specs': 
-    #         {'GKLAS': ['1110','1121',],},
-    #     'solkat_selection_specs': {
-    #         'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
-    #         'match_missing_EGIDs_to_solkat_TF': True, 
-    #         'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
-    # },
+    'preprep_BL_22to23_1and2homes_incl_missingEGID':{
+        'script_run_on_server': run_on_server, 
+        'kt_numbers': [13,], 
+        'year_range': [2022, 2023],   
+        'split_data_geometry_AND_slow_api': False, 
+        'gwr_selection_specs': 
+            {'GKLAS': ['1110','1121',],},
+        'solkat_selection_specs': {
+            'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
+            'match_missing_EGIDs_to_solkat_TF': True, 
+            'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
+    },
     
     'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates':{
         'script_run_on_server': run_on_server, 
@@ -72,20 +72,31 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
-    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind', 
-    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind', 
-    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind_DFUID_duplicates', 
-    'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind_DFUID_duplicates',
+    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind', 
+    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind', 
+    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind_DFUID_duplicates', 
+    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind_DFUID_duplicates',
 
-    'pvalloc_BLsml_48m_meth2.2_random',
-    'pvalloc_BLsml_48m_meth2.2_npvweight',
-    'pvalloc_BLsml_48m_meth3.2_random',
-    'pvalloc_BLsml_48m_meth3.2_npvweight',
+    'pvalloc_BLsml_24m_meth2.2_random',
+    'pvalloc_BLsml_24m_meth2.2_npvweight',
+    'pvalloc_BLsml_24m_meth3.2_random',
+    'pvalloc_BLsml_24m_meth3.2_npvweight',
     
     'pvalloc_BLSOmed_48m_meth2.2_random',
     'pvalloc_BLSOmed_48m_meth2.2_npvweight',
     'pvalloc_BLSOmed_48m_meth3.2_random',
     'pvalloc_BLSOmed_48m_meth3.2_npvweight',
+
+    'pvalloc_BLsml_10y_meth2.2_random',
+    'pvalloc_BLsml_10y_meth2.2_npvweight',
+    'pvalloc_BLsml_10y_meth3.2_random',
+    'pvalloc_BLsml_10y_meth3.2_npvweight',
+
+    'pvalloc_BLSOmed_10y_meth2.2_random', 
+    'pvalloc_BLSOmed_10y_meth2.2_npvweight',
+    'pvalloc_BLSOmed_10y_meth3.2_random',
+    'pvalloc_BLSOmed_10y_meth3.2_npvweight',
+
 
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
@@ -102,23 +113,34 @@ visual_settings = {
 
         # PLOT CHUNCK -------------------------> [run plot,  show plot,  show all scen]
         # for pvalloc_inital + sanitycheck
-        'plot_ind_var_summary_stats':            [True,     True,        False], 
-        'plot_ind_hist_pvcapaprod_sanitycheck':  [True,      True,       False], 
+        'plot_ind_var_summary_stats':            [False,     False,        False], 
+        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,      True,       False], 
             'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
                 'uniform_scencolor_and_KDE_TF': True,
                 'export_spatial_data_for_prod0': True, 
             },
-        'plot_ind_hist_pvprod_deviation':        [True,      True,       True],
-        'plot_ind_charac_omitted_gwr':           [True,      True,        True],
+        'plot_ind_charac_omitted_gwr':           [False,      True,        True],
         'plot_ind_line_meteo_radiation':         [False,     True,      False], 
+        
         # for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':            [True,    True,      False],       
-        'plot_ind_line_productionHOY_per_node':  [False,    True,      False],
+        'plot_ind_line_installedCap':            [False,    True,      False],   
+        'plot_ind_line_PVproduction':            [True,    True,      False], 
+        # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, not?
+        'plot_ind_line_productionHOY_per_node':  [True,    True,      False],
         'plot_ind_hist_NPV_freepartitions':      [True,    False,     False],
-        'plot_ind_hist_pvcapaprod':              [False,     True],  # |> bookmark
 
         'plot_ind_map_topo_egid':                [True,     True,       False],
-        'plot_ind_map_node_connections':         [False,     True,       False],   
+        'plot_ind_map_node_connections':         [True,     True,       False],   
+
+        # a plot for omitted EGIDs in GWR
+        # plot_agg_line_productionHOY_per_node a plot for how much is feed in  / lost per node + total
+        # plot_agg_line_gridPremiumHOY_per_node a plot for how much gredpremium is applied per hour per node + total
+
+
+        # for aggregated MC_algorithms
+
+
+
         
         # still to be updated
         'plot_ind_map_omitted_gwr_egids':        False,
