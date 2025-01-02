@@ -48,6 +48,7 @@ if True:
     import visualisations.plot_ind_charac_omitted_gwr as plot_ind_charac_omitted_gwr
     import visualisations.plot_ind_line_meteo_radiation as plot_ind_line_meteo_radiation
     import visualisations.plot_ind_line_installedCap as plot_ind_line_installedCap
+    import visualisations.plot_ind_line_PVproduction as plot_ind_line_PVproduction
     import visualisations.plot_ind_line_productionHOY_per_node as plot_ind_line_productionHOY_per_node
     import visualisations.plot_ind_hist_NPV_freepartitions as plot_ind_hist_NPV_freepartitions
     
@@ -166,9 +167,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # plot ind - hist: sanity check capacity & production --------------------
     plot_ind_hist_pvcapaprod_sanitycheck.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
-    # plot ind - hist: pv production deviation --------------------
-    # plot_ind_hist_pvprod_deviation.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
-
     # plot ind - var: disc charac omitted gwr_egids --------------------
     plot_ind_charac_omitted_gwr.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
@@ -183,6 +181,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     
     # plot ind - line: Installed Capacity per Month & per BFS --------------------
     plot_ind_line_installedCap.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+
+    # plot ind - hist: pv production deviation --------------------
+    plot_ind_line_PVproduction.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+
 
     # plot ind - line: Production + Feedin HOY per Node --------------------
     plot_ind_line_productionHOY_per_node.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)   
