@@ -1,5 +1,5 @@
 ** Directory structure for OptimalPV_RH **
- date: 2024-12-30 19:48:56.671595
+ date: 2025-01-02 15:08:20.944051
 
 ├── auxiliary_functions.py
 ├── data_aggregation
@@ -11,8 +11,7 @@
 │   ├── get_elecpri_data.py
 │   ├── preprepare_data.py
 │   ├── split_data_geometry.py
-│   ├── sql_gwr.py
-│   └── __init__.py
+│   └── sql_gwr.py
 ├── data_aggregation_MASTER.py
 ├── execution_RUNFILE.py
 ├── execution_scenarios.py
@@ -31,8 +30,7 @@
 │   ├── initialization_large_functions.py
 │   ├── initialization_small_functions.py
 │   ├── inst_selection.py
-│   ├── pvprod_correction.py
-│   └── __init__.py
+│   └── pvprod_correction.py
 ├── solkat_month.csv
 ├── topo_subdf_0to399.csv
 ├── visualisations
@@ -42,15 +40,12 @@
 │   ├── plot_ind_charac_omitted_gwr.py
 │   ├── plot_ind_hist_NPV_freepartitions.py
 │   ├── plot_ind_hist_pvcapaprod_sanitycheck.py
-│   ├── plot_ind_hist_pvprod_deviation.py
 │   ├── plot_ind_line_installedCap.py
 │   ├── plot_ind_line_meteo_radiation.py
 │   ├── plot_ind_line_productionHOY_per_node.py
+│   ├── plot_ind_line_PVproduction.py
 │   ├── plot_ind_map_base.py
 │   ├── plot_ind_map_node_connections.py
 │   ├── plot_ind_map_topo_egid.py
 │   └── plot_ind_var_summary_stats.py
-├── visualization_MASTER.py
-├── __init__.py
-├── __poetry.lock
-└── __pyproject.toml
+└── visualization_MASTER.py
