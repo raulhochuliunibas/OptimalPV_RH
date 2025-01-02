@@ -317,8 +317,8 @@ def get_bfsnr_name_tuple_list(bfs_number_list=None):
     return bfsnr_name_tuple_list
 
 def print_directory_stucture_to_txtfile(if_True = False):
-    dir_exclusion_list = ['archiv_no_longer_used', '__pycache__', 'poetry.lock', 'pyproject.toml', 'README.md', 
-                          'selection_mechanism_theory.py', 'ToDos_NextSteps.py', 'TRY_OUT.py', 'OptimalPV_RH_directory_structure.txt',
+    dir_exclusion_list = ['archiv_no_longer_used', '__pycache__', '__init__.py', 'poetry.lock', '__poetry.lock', 'pyproject.toml', '__pyproject.toml', 
+                          'README.md', 'selection_mechanism_theory.py', 'ToDos_NextSteps.py', 'TRY_OUT.py', 'OptimalPV_RH_directory_structure.txt',
                           'visualization_MASTER_oldcopy.py', 'x_archiv']
     if if_True:
         import os as os
