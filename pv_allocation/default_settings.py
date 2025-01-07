@@ -144,7 +144,7 @@ pvalloc_default_settings = {
             2: [0.8, 3],
             4: [0.9, 7],
             5: [0.95, 15], 
-            6: [10, 100],
+            6: [1, 100],
             },},
 
     # PART III: post processing of MC algorithm --------------------
