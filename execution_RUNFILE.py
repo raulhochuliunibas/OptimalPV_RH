@@ -77,30 +77,38 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
     # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind_DFUID_duplicates', 
     # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind_DFUID_duplicates',
 
-    'pvalloc_BLsml_24m_meth2.2_random',
-    'pvalloc_BLsml_24m_meth2.2_npvweight',
-    'pvalloc_BLsml_24m_meth3.2_random',
-    'pvalloc_BLsml_24m_meth3.2_npvweight',
+    'pvalloc_BLsml_48m_meth2.2_random',
+    'pvalloc_BLsml_48m_meth2.2_npvweight',
+    'pvalloc_BLsml_48m_meth3.2_random',
+    'pvalloc_BLsml_48m_meth3.2_npvweight',
+
+    # 'pvalloc_BLsml_24m_meth2.2_random',
+    # 'pvalloc_BLsml_24m_meth2.2_npvweight',
+    # 'pvalloc_BLsml_24m_meth3.2_random',
+    # 'pvalloc_BLsml_24m_meth3.2_npvweight',
     
-    'pvalloc_BLSOmed_48m_meth2.2_random',
-    'pvalloc_BLSOmed_48m_meth2.2_npvweight',
-    'pvalloc_BLSOmed_48m_meth3.2_random',
-    'pvalloc_BLSOmed_48m_meth3.2_npvweight',
+    # 'pvalloc_BLSOmed_48m_meth2.2_random',
+    # 'pvalloc_BLSOmed_48m_meth2.2_npvweight',
+    # 'pvalloc_BLSOmed_48m_meth3.2_random',
+    # 'pvalloc_BLSOmed_48m_meth3.2_npvweight',
 
-    'pvalloc_BLsml_10y_meth2.2_random',
-    'pvalloc_BLsml_10y_meth2.2_npvweight',
-    'pvalloc_BLsml_10y_meth3.2_random',
-    'pvalloc_BLsml_10y_meth3.2_npvweight',
+    # 'pvalloc_BLsml_10y_meth2.2_random',
+    # 'pvalloc_BLsml_10y_meth2.2_npvweight',
+    # 'pvalloc_BLsml_10y_meth3.2_random',
+    # 'pvalloc_BLsml_10y_meth3.2_npvweight',
 
-    'pvalloc_BLSOmed_10y_meth2.2_random', 
-    'pvalloc_BLSOmed_10y_meth2.2_npvweight',
-    'pvalloc_BLSOmed_10y_meth3.2_random',
-    'pvalloc_BLSOmed_10y_meth3.2_npvweight',
+    # 'pvalloc_BLSOmed_10y_meth2.2_random', 
+    # 'pvalloc_BLSOmed_10y_meth2.2_npvweight',
+    # 'pvalloc_BLSOmed_10y_meth3.2_random',
+    # 'pvalloc_BLSOmed_10y_meth3.2_npvweight',
 
 
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
+comparison_scenarios = {
+    'pvalloc_BLsml_48m_meth2.2': ['pvalloc_BLsml_48m_meth2.2_random', 'pvalloc_BLsml_48m_meth2.2_npvweight'],	
+}
 
 # vsualiastion 
 visual_settings = {
@@ -124,26 +132,27 @@ visual_settings = {
         
         # for pvalloc_MC_algorithm 
         'plot_ind_line_installedCap':            [False,    True,      False],   
-        'plot_ind_line_PVproduction':            [True,    True,      False], 
-        # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, not?
-        'plot_ind_line_productionHOY_per_node':  [True,    True,      False],
-        'plot_ind_hist_NPV_freepartitions':      [True,    False,     False],
-
-        'plot_ind_map_topo_egid':                [True,     True,       False],
-        'plot_ind_map_node_connections':         [True,     True,       False],   
-
-        # a plot for omitted EGIDs in GWR
-        # plot_agg_line_productionHOY_per_node a plot for how much is feed in  / lost per node + total
-        # plot_agg_line_gridPremiumHOY_per_node a plot for how much gredpremium is applied per hour per node + total
-
+        'plot_ind_line_PVproduction':            [False,    True,      False], 
+        # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, no?
+        'plot_ind_line_productionHOY_per_node':  [False,    True,      False],
+        'plot_ind_hist_NPV_freepartitions':      [False,    False,     False],
+        'plot_ind_map_topo_egid':                [False,     True,       False],
+        'plot_ind_map_node_connections':         [False,     True,       False],   
+        'plot_ind_map_omitted_egids':            [False,     True,       False],
+        # plots still to be added
+        #   >> plot_agg_line_productionHOY_per_node a plot for how much is feed in  / lost per node + total
+        #   >> plot_agg_line_gridPremiumHOY_per_node a plot for how much gredpremium is applied per hour per node + total
+        #   >> plot_agg_line_cont_charact_new_inst a plot, showing the characteristics of the new installations over time
 
         # for aggregated MC_algorithms
+
+
+        # for scenario comparison
 
 
 
         
         # still to be updated
-        'plot_ind_map_omitted_gwr_egids':        False,
         'plot_agg_line_installedCap_per_month':  False,
         'plot_agg_line_productionHOY_per_node':  False,
         'plot_agg_line_gridPremiumHOY_per_node': False,

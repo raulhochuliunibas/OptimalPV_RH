@@ -55,6 +55,8 @@ if True:
     import visualisations.plot_ind_map_base as plot_ind_map_base
     import visualisations.plot_ind_map_topo_egid as plot_ind_map_topo_egid
     import visualisations.plot_ind_map_node_connections as plot_ind_map_node_connections
+    import visualisations.plot_ind_map_omitted_egids as plot_ind_map_omitted_egids
+
     # from pv_allocation.default_settings import *
     # from visualisations.defaults_settings import *
     # from visualisations.plot_auxiliary_functions import *
@@ -199,6 +201,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # map ind - node_connections --------------------
     plot_ind_map_node_connections.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name,)
 
+    # map ind - omitted gwr_egids --------------------
+    plot_ind_map_omitted_egids.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name, )
+
 
 
 
@@ -211,59 +216,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # ********************************************************************************************************************************************************
     # ********************************************************************************************************************************************************
     # ********************************************************************************************************************************************************
-
-
-
-
-
-
-    # map ind - omitted gwr_egids ============================
-    if visual_settings['plot_ind_map_omitted_gwr_egids']:
-        map_topo_omit_specs = visual_settings['plot_ind_map_topo_omitt_specs']
-        checkpoint_to_logfile(f'plot_ind_map_ommitted_gwr_egids', log_name)
-
-        for i_scen, scen in enumerate(scen_dir_export_list):
-            scen_sett = pvalloc_scenarios[f'{scen}']
-
-            # omitted egids from data prep -----            
-            omitt_gwregid_gdf_all = gpd.read_file(f'{data_path}/output/{scen_sett["name_dir_import"]}/omitt_gwregid_gdf.geojson')
-            omitt_gwregid_gdf_all.rename(columns={'GGDENR': 'BFS_NUMMER'}, inplace=True)
-            omitt_gwregid_gdf_all['BFS_NUMMER'] = omitt_gwregid_gdf_all['BFS_NUMMER'].astype(int)
-            omitt_gwregid_gdf = omitt_gwregid_gdf_all.loc[omitt_gwregid_gdf_all['BFS_NUMMER'].isin(scen_sett['bfs_numbers'])]
-
-            # topo omitt map ----------------
-            fig_topoomitt = copy.deepcopy(fig_topoegid)
-            
-            omitt_gwregid_gdf = omitt_gwregid_gdf.set_crs('EPSG:2056', allow_override=True)
-            omitt_gwregid_gdf = omitt_gwregid_gdf.to_crs('EPSG:4326')
-            omitt_gwregid_gdf['geometry'] = omitt_gwregid_gdf['geometry'].apply(flatten_geometry)
-
-            omitt_gwregid_gdf['hover_text'] = omitt_gwregid_gdf.apply(lambda row: f'EGID: {row["EGID"]}<br>BFS_NUMMER: {str(row["BFS_NUMMER"])}<br>GSTAT: {row["GSTAT"]}<br>GKAT: {row["GKAT"]}<br>GKLAS: {row["GKLAS"]}<br>GBAUJ: {row["GBAUJ"]}<br>GBAUM: {row["GBAUM"]}<br>GANZWHG: {row["GANZWHG"]}<br>GAREA: {row["GAREA"]}<br>WAZIM: {row["WAZIM"]} (no. rooms)<br>WAREA: {row["WAREA"]} (living area m2)', axis = 1)
-
-            fig_topoomitt.add_trace(go.Scattermapbox(lat=omitt_gwregid_gdf.geometry.y,lon=omitt_gwregid_gdf.geometry.x, mode='markers',
-                marker=dict(
-                    size=map_topo_omit_specs['point_size'],
-                    color=map_topo_omit_specs['point_color'],
-                    opacity = map_topo_omit_specs['point_opacity']
-                ),
-                name = 'omitted EGIDs (not in solkat)',
-                text=omitt_gwregid_gdf['hover_text'],
-                hoverinfo='text'
-                ))         
-
-            fig_topoomitt.update_layout(
-                        title=f"Map of PV Topology ({scen}) and *omitted* EGIDs",
-                        mapbox=dict(
-                            style="carto-positron",
-                            center={"lat": default_map_center[0], "lon": default_map_center[1]},  # Center the map on the region
-                            zoom=default_map_zoom
-                        )
-                    )                                           
-
-            if plot_show:
-                fig_topoomitt.show()
-            fig_topoomitt.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_omitted_gwr_egids.html')
-
 
 
 

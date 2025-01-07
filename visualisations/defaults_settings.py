@@ -79,7 +79,15 @@ visual_default_settings = {
                 'point_size_dsonode_loc': 15,
                 'point_opacity_dsonode_loc': 1
             },
-
+        'plot_ind_map_omitted_egids':            [False,    True,       False],
+            'plot_ind_map_omitted_egids_specs': {
+                'point_opacity': 0.7,
+                'point_size_select_but_omitted': 10,
+                'point_size_rest_not_selected': 1, # 4.5,
+                'point_color_select_but_omitted': '#ed4242', # red
+                'point_color_rest_not_selected': '#ff78ef',  # pink
+                'export_gdfs_to_shp': True, 
+            }, 
 
         # still to be updated ========================================
         'plot_ind_map_topo_omitt':              True,
