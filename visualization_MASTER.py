@@ -93,9 +93,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
         total_runtime_start = datetime.now()
 
 
-        # extract scenario information + import ------------------------
-
-        # scen settings ----------------
+        # extract scenario settings + information ------------------------
         scen_dir_export_list, pvalloc_scen_list = [], []
         # scen_dir_import_list, T0_prediction_list, months_prediction_list = [], [], [], [] T0_prediction_list, months_lookback_list, months_prediction_list = [], [], [] pvalloc_scen_list = []
         for key, val in pvalloc_scenarios.items():
@@ -115,13 +113,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 pvalloc_scen_list.append(val)
                 scen_dir_export_list.append(val['name_dir_export'])
     
-
-        # visual settings ----------------  
-        # plot_show = visual_settings['plot_show']
-        # default_zoom_year = visual_settings['default_zoom_year']
-        # default_zoom_hour = visual_settings['default_zoom_hour']
-        # mc_str = visual_settings['MC_subdir_for_plot']
-
 
         # create directory for plots by scen ----------------
         for key, val in pvalloc_scenarios.items():
