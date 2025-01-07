@@ -50,12 +50,14 @@ if True:
     import visualisations.plot_ind_line_installedCap as plot_ind_line_installedCap
     import visualisations.plot_ind_line_PVproduction as plot_ind_line_PVproduction
     import visualisations.plot_ind_line_productionHOY_per_node as plot_ind_line_productionHOY_per_node
+    import visualisations.plot_ind_line_gridPremiumHOY_per_node as plot_ind_line_gridPremiumHOY_per_node
     import visualisations.plot_ind_hist_NPV_freepartitions as plot_ind_hist_NPV_freepartitions
     
     import visualisations.plot_ind_map_base as plot_ind_map_base
     import visualisations.plot_ind_map_topo_egid as plot_ind_map_topo_egid
     import visualisations.plot_ind_map_node_connections as plot_ind_map_node_connections
     import visualisations.plot_ind_map_omitted_egids as plot_ind_map_omitted_egids
+
 
     # from pv_allocation.default_settings import *
     # from visualisations.defaults_settings import *
@@ -190,6 +192,11 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     # plot ind - line: Production + Feedin HOY per Node --------------------
     plot_ind_line_productionHOY_per_node.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)   
+    
+
+    # plot ind - line: Grid Premium per Hour of Year --------------------
+    plot_ind_line_gridPremiumHOY_per_node.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+
 
     # plot ind - hist: NPV possible PV inst before / after --------------------
     plot_ind_hist_NPV_freepartitions.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
@@ -203,6 +210,8 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     # map ind - omitted gwr_egids --------------------
     plot_ind_map_omitted_egids.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name, )
+
+
 
 
 

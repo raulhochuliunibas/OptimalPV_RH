@@ -29,7 +29,7 @@ from .plot_auxiliary_functions import *
 
 
 # ------------------------------------------------------------------------------------------------------
-# PLOT INDIVIDUAL VARIABLE SUMMARY STATISTICS
+# PLOT INDIVIDUAL LINE of PV PRODUCTION PER NODE
 # ------------------------------------------------------------------------------------------------------
 
 def plot(pvalloc_scen_list, 

@@ -135,13 +135,14 @@ visual_settings = {
         'plot_ind_line_PVproduction':            [False,    True,      False], 
         # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, no?
         'plot_ind_line_productionHOY_per_node':  [False,    True,      False],
-        'plot_ind_hist_NPV_freepartitions':      [False,    False,     False],
+        'plot_ind_line_gridPremiumHOY_per_node': [False,    True,      False],
+        'plot_ind_hist_NPV_freepartitions':      [False,     True,     False],
         'plot_ind_map_topo_egid':                [False,     True,       False],
         'plot_ind_map_node_connections':         [False,     True,       False],   
         'plot_ind_map_omitted_egids':            [False,     True,       False],
+
         # plots still to be added
         #   >> plot_agg_line_productionHOY_per_node a plot for how much is feed in  / lost per node + total
-        #   >> plot_agg_line_gridPremiumHOY_per_node a plot for how much gredpremium is applied per hour per node + total
         #   >> plot_agg_line_cont_charact_new_inst a plot, showing the characteristics of the new installations over time
 
         # for aggregated MC_algorithms
@@ -153,12 +154,11 @@ visual_settings = {
 
         
         # still to be updated
-        'plot_agg_line_installedCap_per_month':  False,
-        'plot_agg_line_productionHOY_per_node':  False,
-        'plot_agg_line_gridPremiumHOY_per_node': False,
-        'plot_agg_line_gridpremium_structure':   False,
-        'plot_agg_line_production_per_month':    False,
-        'plot_agg_line_cont_charact_new_inst':   False,
+    #     'plot_ind_line_productionHOY_per_node':  False,
+    #     'plot_agg_line_gridPremiumHOY_per_node': False,
+    #     'plot_agg_line_gridpremium_structure':   False,
+    #     'plot_agg_line_production_per_month':    False,
+    #     'plot_agg_line_cont_charact_new_inst':   False,
     }
 visual_settings = extend_visual_sett_with_defaults(visual_settings)
 
