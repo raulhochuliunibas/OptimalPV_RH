@@ -3,7 +3,40 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
     scen_group_dir = {}
     
     all_scenarios = {
+    'pvalloc_BLsml_24m_6mc_meth2.2_random':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 24,
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 2000,},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 6,}
+    },
+    'pvalloc_BLsml_24m_6mc_meth2.2_npvweight':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 24,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 2000,},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 6,}
+    },
 
+    
     'pvalloc_BLsml_24m_meth2.2_random':{
         'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
         'script_run_on_server': run_on_server,
@@ -360,6 +393,72 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
 
 
     # old - archived
+
+    'pvalloc_BLsml_48m_meth2.2_random':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 48,
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 2000,},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 2,}
+    },
+    'pvalloc_BLsml_48m_meth2.2_npvweight':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 48,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 2000,},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 2,}
+    },
+    'pvalloc_BLsml_48m_meth3.2_random':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 48,
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 2000,},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 2,}
+    },
+    'pvalloc_BLsml_48m_meth3.2_npvweight':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 48,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'gwr_selection_specs': {
+            'solkat_max_area_per_EGID': 2000,},
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 2,}
+    },
+    
 
     'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
         'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',

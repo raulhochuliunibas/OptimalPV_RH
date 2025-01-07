@@ -9,12 +9,12 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-run_on_server =     False
+run_on_server =     True
 print_directory_stucture_to_txtfile(not(run_on_server))
 
 run_dataagg =       False
-run_alloc_init =    False
-run_alloc_MCalg =   False
+run_alloc_init =    True
+run_alloc_MCalg =   True
 run_visual =        True
 
 
@@ -72,15 +72,13 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
-    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind', 
-    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind', 
-    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind_DFUID_duplicates', 
-    # 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind_DFUID_duplicates',
+    'pvalloc_BLsml_24m_6mc_meth2.2_random', 
+    'pvalloc_BLsml_24m_6mc_meth2.2_npvweight',
 
-    'pvalloc_BLsml_48m_meth2.2_random',
-    'pvalloc_BLsml_48m_meth2.2_npvweight',
-    'pvalloc_BLsml_48m_meth3.2_random',
-    'pvalloc_BLsml_48m_meth3.2_npvweight',
+    # 'pvalloc_BLsml_48m_meth2.2_random',
+    # 'pvalloc_BLsml_48m_meth2.2_npvweight',
+    # 'pvalloc_BLsml_48m_meth3.2_random',
+    # 'pvalloc_BLsml_48m_meth3.2_npvweight',
 
     # 'pvalloc_BLsml_24m_meth2.2_random',
     # 'pvalloc_BLsml_24m_meth2.2_npvweight',
@@ -117,6 +115,7 @@ visual_settings = {
         'remove_old_plot_scen_directories': True,
         'save_plot_by_scen_directory': True,
         'MC_subdir_for_plot': '*MC*1', 
+        'mc_plots_individual_traces': True,
         'node_selection_for_plots': ['8', '32', '10', '22'], # or None for all nodes
 
         # PLOT CHUNCK -------------------------> [run plot,  show plot,  show all scen]
@@ -132,8 +131,9 @@ visual_settings = {
         
         # for pvalloc_MC_algorithm 
         'plot_ind_line_installedCap':            [False,    True,        False],   
-        'plot_ind_line_PVproduction':            [False,    True,        False], 
+        'plot_ind_line_PVproduction':            [True,    True,        False], 
         # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, no?
+        # BOOKMARK
         'plot_ind_line_productionHOY_per_node':  [False,    True,        False],
         'plot_ind_line_gridPremiumHOY_per_node': [False,    True,        False],
         'plot_ind_line_gridPremium_structure':   [True,     True,        False],
@@ -141,11 +141,11 @@ visual_settings = {
         'plot_ind_map_topo_egid':                [False,     True,       False],
         'plot_ind_map_node_connections':         [False,     True,       False],   
         'plot_ind_map_omitted_egids':            [False,     True,       False],
-
         'plot_ind_lineband_contcharact_newinst': [True,    True,      False],
 
         # for aggregated MC_algorithms
-
+        'plot_mc_line_PVproduction':             [False,    True,       False],
+        'plot_mc_line_gridnode_congestionHOY':   [False,    True,       False],
         # for scenario comparison
 
     }

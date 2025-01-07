@@ -3,12 +3,14 @@ visual_default_settings = {
         'remove_previous_plots': False,
         'remove_old_plot_scen_directories': False,
         'MC_subdir_for_plot': '*MC*1',
+        'mc_plots_individual_traces': True,
 
         'default_zoom_year': [2012, 2030],
         'default_zoom_hour': [2400, 2400+(24*7)],
         'default_map_zoom': 11, 
         'default_map_center': [47.48, 7.57],
-        'node_selection_for_plots': ['node1', 'node3', 'node5'], # or None for all nodes
+        'node_selection_for_plots': ['1', '3', '5'],
+
 
         # PLOT CHUCK -------------------------> [run plot,  show plot,  show all scen]
       
@@ -106,6 +108,7 @@ visual_default_settings = {
                 },
 
         # for aggregated MC_algorithms
+        'plot_mc_line_PVproduction':            [False,    True,       False],
 
     }
 
