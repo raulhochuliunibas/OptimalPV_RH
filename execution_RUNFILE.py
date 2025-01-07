@@ -121,26 +121,28 @@ visual_settings = {
 
         # PLOT CHUNCK -------------------------> [run plot,  show plot,  show all scen]
         # for pvalloc_inital + sanitycheck
-        'plot_ind_var_summary_stats':            [False,     False,        False], 
-        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,      True,       False], 
+        'plot_ind_var_summary_stats':            [False,     False,      False], 
+        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,      True,      False], 
             'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
                 'uniform_scencolor_and_KDE_TF': True,
                 'export_spatial_data_for_prod0': True, 
             },
-        'plot_ind_charac_omitted_gwr':           [False,      True,        True],
-        'plot_ind_line_meteo_radiation':         [False,     True,      False], 
+        'plot_ind_charac_omitted_gwr':           [False,     True,       True],
+        'plot_ind_line_meteo_radiation':         [False,     True,       False], 
         
         # for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':            [False,    True,      False],   
-        'plot_ind_line_PVproduction':            [False,    True,      False], 
+        'plot_ind_line_installedCap':            [False,    True,        False],   
+        'plot_ind_line_PVproduction':            [False,    True,        False], 
         # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, no?
-        'plot_ind_line_productionHOY_per_node':  [False,    True,      False],
-        'plot_ind_line_gridPremiumHOY_per_node': [False,    True,      False],
-        'plot_ind_hist_NPV_freepartitions':      [False,     True,     False],
+        'plot_ind_line_productionHOY_per_node':  [False,    True,        False],
+        'plot_ind_line_gridPremiumHOY_per_node': [False,    True,        False],
+        'plot_ind_hist_NPV_freepartitions':      [False,     True,       False],
         'plot_ind_map_topo_egid':                [False,     True,       False],
         'plot_ind_map_node_connections':         [False,     True,       False],   
         'plot_ind_map_omitted_egids':            [False,     True,       False],
 
+
+        'plot_ind_lineband_contcharact_newinst': [True,    True,      False],
         # plots still to be added
         #   >> plot_agg_line_productionHOY_per_node a plot for how much is feed in  / lost per node + total
         #   >> plot_agg_line_cont_charact_new_inst a plot, showing the characteristics of the new installations over time

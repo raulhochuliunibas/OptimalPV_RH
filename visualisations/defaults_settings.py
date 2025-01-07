@@ -89,6 +89,22 @@ visual_default_settings = {
                 'export_gdfs_to_shp': True, 
             }, 
 
+
+        'plot_ind_lineband_contcharact_newinst': [False,    True,       False],
+            'plot_ind_line_contcharact_newinst_specs': {
+                'trace_color_palette': 'Turbo',
+                'upper_lower_bound_interval': [0.05, 0.95],
+                'colnames_cont_charact_installations_AND_numerator': 
+                [('pv_tarif_Rp_kWh',        1), 
+                 ('elecpri_Rp_kWh',         1),
+                 ('selfconsum_kW',          1),
+                 ('FLAECHE',                1), 
+                 ('netdemand_kW',           1000), 
+                 ('estim_pvinstcost_chf',   1000),
+                 ('TotalPower',             1),
+                ], 
+                },
+
         # still to be updated ========================================
         'plot_ind_map_topo_omitt':              True,
             'plot_ind_map_topo_omitt_specs':{
@@ -103,9 +119,6 @@ visual_default_settings = {
         'plot_agg_line_gridpremium_structure':   True,
         'plot_agg_line_production_per_month':    True,
 
-        'plot_agg_line_cont_charact_new_inst':   True,
-            'plot_agg_line_cont_charact_new_inst_specs': {
-                'colnames_cont_charact_installations': ['pv_tarif_Rp_kWh', 'elecpri_Rp_kWh','selfconsum_kW','FLAECHE', 'netdemand_kW', 'estim_pvinstcost_chf', 'TotalPower']},
 
         # single plots (just show once, not for all scenarios)
         'map_ind_production': False, # NOT WORKING YET

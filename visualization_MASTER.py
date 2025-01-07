@@ -53,10 +53,12 @@ if True:
     import visualisations.plot_ind_line_gridPremiumHOY_per_node as plot_ind_line_gridPremiumHOY_per_node
     import visualisations.plot_ind_hist_NPV_freepartitions as plot_ind_hist_NPV_freepartitions
     
-    import visualisations.plot_ind_map_base as plot_ind_map_base
     import visualisations.plot_ind_map_topo_egid as plot_ind_map_topo_egid
     import visualisations.plot_ind_map_node_connections as plot_ind_map_node_connections
     import visualisations.plot_ind_map_omitted_egids as plot_ind_map_omitted_egids
+
+    import visualisations.plot_ind_lineband_contcharact_newinst as plot_ind_lineband_contcharact_newinst
+
 
 
     # from pv_allocation.default_settings import *
@@ -202,6 +204,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     plot_ind_hist_NPV_freepartitions.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
     
 
+
     # map ind - topo_egid --------------------
     plot_ind_map_topo_egid.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name, )
 
@@ -212,6 +215,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     plot_ind_map_omitted_egids.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name, )
 
 
+    plot_ind_lineband_contcharact_newinst.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
 
 
@@ -234,119 +238,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
             T0_pred_agg = T0_prediction_list[0]
 
 
-    # plot agg - line: Installed Capacity per Month ============================
-    if visual_settings['plot_agg_line_installedCap_per_month']:
-        checkpoint_to_logfile(f'plot_agg_line_installedCap_per_month', log_name)
-        fig = go.Figure()
-        i_scen, scen = 0, scen_dir_export_list[0]
-        # i_scen, scen = 1, scen_dir_export_list[1]
-        for i_scen, scen in enumerate(scen_dir_export_list):
-            scen_data_path = f'{data_path}/output/{scen}'
-            T0_prediction = T0_prediction_list[0]
-            months_prediction = months_prediction_list[0]
-            pvalloc_scen = pvalloc_scen_list[i_scen]
-
-            topo = json.load(open(f'{scen_data_path}/topo_egid.json', 'r'))
-            egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list = [], [], [], [], []
-
-            for k,v, in topo.items():
-                egid_list.append(k)
-                inst_TF_list.append(v['pv_inst']['inst_TF'])
-                info_source_list.append(v['pv_inst']['info_source'])
-                BeginOp_list.append(v['pv_inst']['BeginOp'])
-                TotalPower_list.append(v['pv_inst']['TotalPower'])
-
-            pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list, 'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list})
-            pvinst_df = pvinst_df.loc[pvinst_df['inst_TF'] == True]
-
-            pvinst_df['BeginOp'] = pvinst_df['BeginOp'].apply(lambda x: x if len(x) == 10 else x + '-01')
-            pvinst_df['BeginOp'] = pd.to_datetime(pvinst_df['BeginOp'], format='%Y-%m-%d')
-            pvinst_df['TotalPower'] = pd.to_numeric(pvinst_df['TotalPower'], errors='coerce')
-
-            def agg_pvinst_df(df, freq, new_datecol, datecol, infocol, valcol):
-                df_agg = df.copy()
-                df_agg[new_datecol] = df_agg[datecol].dt.to_period(freq)
-                df_agg = df_agg.groupby([new_datecol, infocol])[valcol].sum().reset_index().copy()
-                df_agg[new_datecol] = df_agg[new_datecol].dt.to_timestamp()
-                return df_agg
-                    
-            pvinst_month_df = agg_pvinst_df(pvinst_df, 'M', 'BeginOp_month', 'BeginOp', 'info_source', 'TotalPower')
-            pvinst_month_built = pvinst_month_df.loc[pvinst_month_df['info_source'] == 'pv_df'].copy()
-            capa_month_predicted = pvinst_month_df.loc[pvinst_month_df['info_source'] == 'alloc_algorithm'].copy()
-
-            pvinst_year_df = agg_pvinst_df(pvinst_df, 'Y', 'BeginOp_year', 'BeginOp', 'info_source', 'TotalPower')
-            pvinst_year_built = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'pv_df'].copy()
-            pvinst_year_predicted = pvinst_year_df.loc[pvinst_year_df['info_source'] == 'alloc_algorithm'].copy()
-
-
-            # plot ----------------
-            fig.add_trace(go.Scatter(x=pvinst_month_df['BeginOp_month'], y=pvinst_month_df['TotalPower'], name=f'built + predicted ({scen})',  mode='lines+markers', legendgroup = 'by Month', legendgrouptitle_text= 'by Month'))
-            # fig.add_trace(go.Scatter(x=pvinst_month_built['BeginOp_month'], y=pvinst_month_built['TotalPower'], line = dict(color = 'deepskyblue'), name=f'built (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
-            # fig.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'], line = dict(color = 'navy'), name=f'predicted (month)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
-
-            fig.add_trace(go.Scatter(x=pvinst_year_df['BeginOp_year'], y=pvinst_year_df['TotalPower'], name=f'built + predicted ({scen})',  mode='lines+markers', legendgroup = 'by Year', legendgrouptitle_text= 'by Year'))
-            # fig.add_trace(go.Scatter(x=pvinst_year_built['BeginOp_year'], y=pvinst_year_built['TotalPower'], line = dict(color = 'lightgreen'), name=f'built (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
-            # fig.add_trace(go.Scatter(x=pvinst_year_predicted['BeginOp_year'], y=pvinst_year_predicted['TotalPower'], line = dict(color = 'forestgreen'), name=f'predicted (year)',  mode='lines+markers', legendgroup = scen, legendgrouptitle_text=scen))
-
-        fig.update_layout(
-            xaxis_title='Time',
-            yaxis_title='Installed Capacity (kW)',
-            legend_title='Scenarios',
-            title = f'Agg. Installed Capacity per Month (weather year: {pvalloc_scen["weather_specs"]["weather_year"]})'
-        )
-
-        fig = add_T0_tick_to_plot(fig, T0_pred_agg, pvinst_year_df, 'TotalPower')
-        fig = set_default_fig_zoom_year(fig, default_zoom_year, pvinst_year_df, 'BeginOp_year')
-        if plot_show:
-            fig.show()
-
-        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_installedCap_per_month.html')
-
-
-    # plot agg - line: Grid Premium per Hour of Year ============================
-    if visual_settings['plot_agg_line_gridPremiumHOY_per_node']:
-        node_in_plot_selection = []
-
-        checkpoint_to_logfile(f'plot_agg_line_gridPremiumHOY_per_node', log_name)
-        fig = go.Figure()
-        for i_scen, scen in enumerate(scen_dir_export_list):
-            # setup + import ----------
-            scen_data_path = f'{data_path}/output/{scen}'
-            pvalloc_scen = pvalloc_scen_list[i_scen]
-
-            gridprem_ts = pd.read_parquet(f'{scen_data_path}/gridprem_ts.parquet') 
-            gridprem_ts['t_int'] = gridprem_ts['t'].str.extract(r't_(\d+)').astype(int)
-            gridprem_ts.sort_values(by=['t_int', 'grid_node'], inplace=True)
-
-            node_selection = visual_settings['node_selection_for_plots']
-
-            # plot ----------------
-            if isinstance(node_selection, list): 
-                grid_node_loop_list = node_selection
-            elif node_selection == None:
-                grid_node_loop_list = gridprem_ts['grid_node'].unique()
-
-            for grid_node in grid_node_loop_list:
-                node_df = gridprem_ts[gridprem_ts['grid_node'] == grid_node]
-                fig.add_trace(go.Scatter(
-                    x=node_df['t_int'], 
-                    y=node_df['prem_Rp_kWh'], 
-                    mode='lines',
-                    name=f'{scen} - {grid_node}',  # Include both scen and grid_node in the legend
-                    showlegend=True
-            ))
-
-        fig.update_layout(
-            xaxis_title='Hour of Year',
-            yaxis_title='Grid Premium (CHF)',
-            legend_title='Node ID',
-            title = f'Agg Grid Premium per Hour of Year, by Scenario (CHF)'
-        )
-        fig = set_default_fig_zoom_hour(fig, default_zoom_hour)
-        
-        if plot_show:
-            fig.show()
-        fig.write_html(f'{data_path}/output/visualizations/plot_agg_line_gridPremiumHOY_per_node.html')
 
 
     # plot agg - line: Grid Structure ============================
