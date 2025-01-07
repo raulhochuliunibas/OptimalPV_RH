@@ -284,7 +284,7 @@ def calc_economics_in_topo_df(
         subdf.to_parquet(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.parquet')
         if pvalloc_settings['export_csvs']:
             subdf.to_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv', index=False)
-        if i == 0:
+        if (i == 0) & pvalloc_settings['export_csvs']:
             subdf.to_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv', index=False)
         checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', log_file_name, 1)
 
