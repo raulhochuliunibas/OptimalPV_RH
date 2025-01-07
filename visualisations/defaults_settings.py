@@ -11,6 +11,7 @@ visual_default_settings = {
         'node_selection_for_plots': ['node1', 'node3', 'node5'], # or None for all nodes
 
         # PLOT CHUCK -------------------------> [run plot,  show plot,  show all scen]
+      
         # for pvalloc_inital + sanitycheck
         'plot_ind_var_summary_stats':           [False,     True,       False],
         'plot_ind_hist_pvcapaprod_sanitycheck': [False,     True,       False],
@@ -48,9 +49,10 @@ visual_default_settings = {
         'plot_ind_line_installedCap':            [False,    True,       False],
         'plot_ind_line_PVproduction':            [False,    True,       False],
         'plot_ind_line_productionHOY_per_node':  [False,    True,       False],
+        'plot_ind_line_gridPremiumHOY_per_node': [False,    True,       False],
+        'plot_ind_line_gridPremium_structure':   [False,    True,       False],
         'plot_ind_hist_NPV_freepartitions':      [False,    True,       False],
         'plot_ind_hist_pvcapaprod':              [False,    True,       False],
-
         'plot_ind_map_topo_egid':                [False,    False,      False],
             'plot_ind_map_topo_egid_specs': {
                 'uniform_municip_color': '#fff2ae',
@@ -88,8 +90,6 @@ visual_default_settings = {
                 'point_color_rest_not_selected': '#ff78ef',  # pink
                 'export_gdfs_to_shp': True, 
             }, 
-
-
         'plot_ind_lineband_contcharact_newinst': [False,    True,       False],
             'plot_ind_line_contcharact_newinst_specs': {
                 'trace_color_palette': 'Turbo',
@@ -105,25 +105,8 @@ visual_default_settings = {
                 ], 
                 },
 
-        # still to be updated ========================================
-        'plot_ind_map_topo_omitt':              True,
-            'plot_ind_map_topo_omitt_specs':{
-                'point_opacity': 0.6, 
-                'point_size': 7.5, 
-                'point_color': '#f54242',           # red
-            },
+        # for aggregated MC_algorithms
 
-        'plot_agg_line_installedCap_per_month':  True,
-        'plot_agg_line_productionHOY_per_node':  True,
-        'plot_agg_line_gridPremiumHOY_per_node': True,
-        'plot_agg_line_gridpremium_structure':   True,
-        'plot_agg_line_production_per_month':    True,
-
-
-        # single plots (just show once, not for all scenarios)
-        'map_ind_production': False, # NOT WORKING YET
-
-        
     }
 
 def extend_visual_sett_with_defaults(sett_dict, defaults=visual_default_settings):

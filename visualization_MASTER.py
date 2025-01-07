@@ -51,6 +51,7 @@ if True:
     import visualisations.plot_ind_line_PVproduction as plot_ind_line_PVproduction
     import visualisations.plot_ind_line_productionHOY_per_node as plot_ind_line_productionHOY_per_node
     import visualisations.plot_ind_line_gridPremiumHOY_per_node as plot_ind_line_gridPremiumHOY_per_node
+    import visualisations.plot_ind_line_gridPremium_structure as plot_ind_line_gridPremium_structure
     import visualisations.plot_ind_hist_NPV_freepartitions as plot_ind_hist_NPV_freepartitions
     
     import visualisations.plot_ind_map_topo_egid as plot_ind_map_topo_egid
@@ -58,17 +59,6 @@ if True:
     import visualisations.plot_ind_map_omitted_egids as plot_ind_map_omitted_egids
 
     import visualisations.plot_ind_lineband_contcharact_newinst as plot_ind_lineband_contcharact_newinst
-
-
-
-    # from pv_allocation.default_settings import *
-    # from visualisations.defaults_settings import *
-    # from visualisations.plot_auxiliary_functions import *
-
-    # plot_show = visual_settings['plot_show']
-    # default_zoom_year = visual_settings['default_zoom_year']
-    # default_zoom_hour = visual_settings['default_zoom_hour']
-    # mc_str = visual_settings["MC_subdir_for_plot"]
 
 
 def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
@@ -198,6 +188,10 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     # plot ind - line: Grid Premium per Hour of Year --------------------
     plot_ind_line_gridPremiumHOY_per_node.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+
+
+    # 
+    plot_ind_line_gridPremium_structure.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
 
     # plot ind - hist: NPV possible PV inst before / after --------------------

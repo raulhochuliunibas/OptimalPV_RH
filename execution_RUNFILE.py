@@ -136,6 +136,7 @@ visual_settings = {
         # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, no?
         'plot_ind_line_productionHOY_per_node':  [False,    True,        False],
         'plot_ind_line_gridPremiumHOY_per_node': [False,    True,        False],
+        'plot_ind_line_gridPremium_structure':   [True,     True,        False],
         'plot_ind_hist_NPV_freepartitions':      [False,     True,       False],
         'plot_ind_map_topo_egid':                [False,     True,       False],
         'plot_ind_map_node_connections':         [False,     True,       False],   
