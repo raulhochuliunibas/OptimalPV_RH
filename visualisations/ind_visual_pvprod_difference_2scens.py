@@ -58,7 +58,7 @@ scenario_comparison_groups = {
 
 }
 
-plot_additional_histograms_list = ['FLAECHE', 'STROMERTRAG', 'inst_capa_kW']
+plot_additional_histograms_list = ['FLAECHE', ]# 'STROMERTRAG', 'inst_capa_kW']
 
 wd_path = 'C:/Models/OptimalPV_RH'
 data_path     = f'{wd_path}_data'
@@ -66,6 +66,7 @@ data_path_def = f'{wd_path}_data'
 
 
 # PLOT SCENARIO COMPARISON --------------------------------------------------------------------
+print('\n\nSTART: PLOT SCENARIO COMPARISON: \n> pv production deviation between methods')
 
 scen_group = list(scenario_comparison_groups.keys())[0]
 for scen_group in scenario_comparison_groups:
@@ -88,6 +89,7 @@ for scen_group in scenario_comparison_groups:
         for scen_tuple in scenarios_in_group:
             scen = scen_tuple[0]
             meth = scen_tuple[1]
+            print('start aggregation for method:', meth)
 
             # import data
             sanity_scen_data_path = f'{data_path}/output/{scen}/sanity_check_byEGID'
@@ -163,7 +165,7 @@ for scen_group in scenario_comparison_groups:
         
 
         # plot histograms ----------------------
-        if False: 
+        if True: 
             fig = make_subplots(specs=[[{"secondary_y": True}]])
 
             # Absolute prod difference, first yaxis 
@@ -220,8 +222,8 @@ for scen_group in scenario_comparison_groups:
         # plot JOINT histograms ----------------------
         fig_joint_list = []
         meth_suffix = meth_suffixes[0]
-        # fig = make_subplots(rows=3, cols=1, start_cell="bottom-left")
-
+        
+        additonal_hist_col = plot_additional_histograms_list[0]
         for additonal_hist_col in plot_additional_histograms_list:
             fig_abs = px.scatter(
                 merged_scen_df, 
@@ -229,7 +231,7 @@ for scen_group in scenario_comparison_groups:
                 y=f'{additonal_hist_col}_{meth_suffix}',
                 marginal_x="histogram",
                 marginal_y="histogram",
-                color='blue', 
+                color_discrete_sequence=['blue'],   
                 title=f'Diff ABSOLUTE in pvprod vs {additonal_hist_col}',
             )
             fig_rel = px.scatter(
@@ -238,7 +240,7 @@ for scen_group in scenario_comparison_groups:
                 y=f'{additonal_hist_col}_{meth_suffix}',
                 marginal_x="histogram",
                 marginal_y="histogram", 
-                color='red',
+                color_discrete_sequence=['red'],   
                 title=f'Diff RELATIVE ({meth_suffixes[0]}/{meth_suffixes[1]}) in pvprod vs {additonal_hist_col}',
             )
             
@@ -253,11 +255,23 @@ for scen_group in scenario_comparison_groups:
                 y=f'{additonal_hist_col}_{meth_suffix}_log', 
                 marginal_x="histogram",
                 marginal_y="histogram",
-                color='green',
-                title=f'LOG Diff Absolute in pvprod vs LOG {additonal_hist_col}',)
+                color_discrete_sequence=['green'],   
+                title=f'LOG Diff Absolute in pvprod vs LOG {additonal_hist_col}',
+                )
+            fig_loglog_rel = px.scatter(
+                merged_scen_df, 
+                x=f'diff_pvprod_kW_rel_log',
+                y=f'{additonal_hist_col}_{meth_suffix}_log', 
+                marginal_x="histogram",
+                marginal_y="histogram",
+                color_discrete_sequence=['purple'],   
+                title=f'LOG Diff Relative in pvprod vs LOG {additonal_hist_col}',
+            )
+            
             fig_abs.show()
             fig_rel.show()
             fig_loglog_abs.show()
+            fig_loglog_rel.show()
 
             # export
             if not os.path.exists(f'{data_path}/output/visualizations/individual_visualizations'):
@@ -267,3 +281,4 @@ for scen_group in scenario_comparison_groups:
             fig_abs.write_html(f'{ind_visual_path}/joint_hist_pvprod_abs_{additonal_hist_col}_{scen_group}.html')
             fig_rel.write_html(f'{ind_visual_path}/joint_hist_pvprod_rel_{additonal_hist_col}_{scen_group}.html')
             fig_loglog_abs.write_html(f'{ind_visual_path}/joint_hist_pvprod_loglog_{additonal_hist_col}_{scen_group}.html')
+            fig_loglog_rel.write_html(f'{ind_visual_path}/joint_hist_pvprod_loglog_rel_{additonal_hist_col}_{scen_group}.html')
