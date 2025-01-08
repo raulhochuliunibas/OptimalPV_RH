@@ -171,7 +171,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
         months_prediction = [str(m) for m in months_prediction_pq]
         # i_m, m = 1, months_prediction[0:2]
         for i_m, m in enumerate(months_prediction[0:pvalloc_settings['sanitycheck_summary_byEGID_specs']['n_iterations_before_sanitycheck']]):
-            print_to_logfile(f'\n-- month {m} -----', log_name)
+            print_to_logfile(f'\n-- month {m} -- sanity check -- {pvalloc_settings["name_dir_export"]} --', log_name)
             algo.update_gridprem(pvalloc_settings, sanitycheck_path, m, i_m)
             algo.update_npv_df(pvalloc_settings, sanitycheck_path, m, i_m)
             select.select_AND_adjust_topology(pvalloc_settings, sanitycheck_path,

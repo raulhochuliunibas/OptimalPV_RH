@@ -139,7 +139,7 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
         
         for i_m, m in enumerate(months_prediction):
             # print_to_logfile(f'\n-- MC{mc_iter:0{max_digits}} -- allocation month: {m} --', log_name)
-            print_to_logfile(f'\n-- month {m} -- iter MC{mc_iter:0{max_digits}} -- ', log_name)
+            print_to_logfile(f'\n-- month {m} -- iter MC{mc_iter:0{max_digits}} -- {pvalloc_settings["name_dir_export"]} -- ', log_name)
             start_allocation_month = datetime.now()
             i_m = i_m + 1        
 
