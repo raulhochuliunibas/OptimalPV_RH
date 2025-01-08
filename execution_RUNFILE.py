@@ -75,6 +75,9 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
     'pvalloc_BLsml_24m_6mc_meth2.2_random', 
     'pvalloc_BLsml_24m_6mc_meth2.2_npvweight',
 
+    'pvalloc_BLsml_60m_10mc_meth2.2_random',
+    'pvalloc_BLsml_60m_10mc_meth2.2_npvweight',
+
     # 'pvalloc_BLsml_48m_meth2.2_random',
     # 'pvalloc_BLsml_48m_meth2.2_npvweight',
     # 'pvalloc_BLsml_48m_meth3.2_random',
