@@ -36,31 +36,31 @@ if True:
 # pv production deviation between method 2 + 3  --------------------------------------------------------------------
 # > plot the deviation between the pv production of method 2 and 3 for every single house to check if the difference is a 
 # > constant factor or if there are some houses with a higher deviation
-
+run_on_server = True
 scenario_comparison_groups = {
-    'pvalloc_BLsml_24m_random_methods2vs3': (
-        ('pvalloc_BLsml_24m_meth2.2_random', 'meth2.2'), 
-        ('pvalloc_BLsml_24m_meth3.2_random', 'meth3.2'),
-    ), 
-    'pvalloc_BLsml_24m_npvweight_methods2vs3': (
-        ('pvalloc_BLsml_24m_meth2.2_npvweight', 'meth2.2'), 
-        ('pvalloc_BLsml_24m_meth3.2_npvweight', 'meth3.2'),
-    ), 
+    # 'pvalloc_BLsml_24m_random_methods2vs3': (
+    #     ('pvalloc_BLsml_24m_meth2.2_random', 'meth2.2'), 
+    #     ('pvalloc_BLsml_24m_meth3.2_random', 'meth3.2'),
+    # ), 
+    # 'pvalloc_BLsml_24m_npvweight_methods2vs3': (
+    #     ('pvalloc_BLsml_24m_meth2.2_npvweight', 'meth2.2'), 
+    #     ('pvalloc_BLsml_24m_meth3.2_npvweight', 'meth3.2'),
+    # ), 
 
-    'pvalloc_BLsml_48m_random_methods2vs3': (
-        ('pvalloc_BLsml_48m_meth2.2_random', 'meth2.2'), 
-        ('pvalloc_BLsml_48m_meth3.2_random', 'meth3.2'),
+    'pvalloc_BLSOmed_48m_random_methods2vs3': (
+        ('pvalloc_BLSOmed_48m_meth2.2_random', 'meth2.2'), 
+        ('pvalloc_BLSOmed_48m_meth3.2_random', 'meth3.2'),
     ), 
-    'pvalloc_BLsml_24m_npvweight_methods2vs3': (
-        ('pvalloc_BLsml_48m_meth2.2_npvweight', 'meth2.2'), 
-        ('pvalloc_BLsml_48m_meth3.2_npvweight', 'meth3.2'),
+    'pvalloc_BLSOmed_48m_npvweight_methods2vs3': (
+        ('pvalloc_BLSOmed_48m_meth2.2_npvweight', 'meth2.2'), 
+        ('pvalloc_BLSOmed_48m_meth3.2_npvweight', 'meth3.2'),
     ),  
 
 }
 
 plot_additional_histograms_list = ['FLAECHE', ]# 'STROMERTRAG', 'inst_capa_kW']
 
-wd_path = 'C:/Models/OptimalPV_RH'
+wd_path = os.getcwd()
 data_path     = f'{wd_path}_data'
 data_path_def = f'{wd_path}_data'
 
@@ -80,6 +80,7 @@ for scen_group in scenario_comparison_groups:
 
     if not all(check_all_scens_of_group_available):
         print('*** ERROR *** not all scenarios are available in the output folder')
+        print('scenarios missing:', [scen_tuple[0] for scen_tuple in scenarios_in_group if scen_tuple[0] not in os.listdir(f'{data_path}/output/')])
 
     elif all(check_all_scens_of_group_available):
         scen_comparison_list = []
