@@ -9,12 +9,12 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-run_on_server =     True
+run_on_server =     False
 print_directory_stucture_to_txtfile(not(run_on_server))
 
 run_dataagg =       False
 run_alloc_init =    True
-run_alloc_MCalg =   True
+run_alloc_MCalg =   False
 run_visual =        True
 
 
@@ -72,16 +72,13 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
+    'pvalloc_BFS2761_12m_meth2.2_random_DEBUG', 
+
     'pvalloc_BLsml_24m_6mc_meth2.2_random', 
-    'pvalloc_BLsml_24m_6mc_meth2.2_npvweight',
+    # 'pvalloc_BLsml_24m_6mc_meth2.2_npvweight',
 
-    'pvalloc_BLsml_60m_10mc_meth2.2_random',
-    'pvalloc_BLsml_60m_10mc_meth2.2_npvweight',
-
-    # 'pvalloc_BLsml_48m_meth2.2_random',
-    # 'pvalloc_BLsml_48m_meth2.2_npvweight',
-    # 'pvalloc_BLsml_48m_meth3.2_random',
-    # 'pvalloc_BLsml_48m_meth3.2_npvweight',
+    # 'pvalloc_BLsml_60m_10mc_meth2.2_random',
+    # 'pvalloc_BLsml_60m_10mc_meth2.2_npvweight',
 
     # 'pvalloc_BLsml_24m_meth2.2_random',
     # 'pvalloc_BLsml_24m_meth2.2_npvweight',
@@ -114,7 +111,7 @@ comparison_scenarios = {
 # vsualiastion 
 visual_settings = {
         'plot_show': True,
-        'remove_previous_plots': True,
+        'remove_previous_plots': False,
         'remove_old_plot_scen_directories': True,
         'save_plot_by_scen_directory': True,
         'MC_subdir_for_plot': '*MC*1', 
@@ -123,27 +120,27 @@ visual_settings = {
 
         # PLOT CHUNCK -------------------------> [run plot,  show plot,  show all scen]
         # for pvalloc_inital + sanitycheck
-        'plot_ind_var_summary_stats':            [False,     False,      False], 
-        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,      True,      False], 
+        'plot_ind_var_summary_stats':            [True,     False,      False], 
+        'plot_ind_hist_pvcapaprod_sanitycheck':  [True,      True,      False], 
             'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
                 'uniform_scencolor_and_KDE_TF': True,
                 'export_spatial_data_for_prod0': True, 
             },
-        'plot_ind_charac_omitted_gwr':           [False,     True,       True],
-        'plot_ind_line_meteo_radiation':         [False,     True,       False], 
+        'plot_ind_charac_omitted_gwr':           [True,     True,       True],
+        'plot_ind_line_meteo_radiation':         [True,     True,       False], 
         
         # for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':            [False,    True,        False],   
+        'plot_ind_line_installedCap':            [True,    True,        False],   
         'plot_ind_line_PVproduction':            [True,    True,        False], 
         # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, no?
         # BOOKMARK
-        'plot_ind_line_productionHOY_per_node':  [False,    True,        False],
-        'plot_ind_line_gridPremiumHOY_per_node': [False,    True,        False],
+        'plot_ind_line_productionHOY_per_node':  [True,    True,        False],
+        'plot_ind_line_gridPremiumHOY_per_node': [True,    True,        False],
         'plot_ind_line_gridPremium_structure':   [True,     True,        False],
-        'plot_ind_hist_NPV_freepartitions':      [False,     True,       False],
-        'plot_ind_map_topo_egid':                [False,     True,       False],
-        'plot_ind_map_node_connections':         [False,     True,       False],   
-        'plot_ind_map_omitted_egids':            [False,     True,       False],
+        'plot_ind_hist_NPV_freepartitions':      [True,     True,       False],
+        'plot_ind_map_topo_egid':                [True,     True,       False],
+        'plot_ind_map_node_connections':         [True,     True,       False],   
+        'plot_ind_map_omitted_egids':            [True,     True,       False],
         'plot_ind_lineband_contcharact_newinst': [True,    True,      False],
 
         # for aggregated MC_algorithms

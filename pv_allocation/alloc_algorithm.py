@@ -597,7 +597,8 @@ def update_npv_df(pvalloc_settings,
                 for r in range(1,len(df_uids)+1):
                     for combo in itertools.combinations(df_uids, r):
                         combo_key_str = '_'.join([str(c) for c in combo])
-                        mask_dfuid_subdf = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('df_uid')], list(combo))
+                        mask_dfuid_only = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('df_uid')], list(combo))
+                        mask_dfuid_subdf = mask_egid_subdf & mask_dfuid_only
 
                         egid_list.append(egid)
                         combo_df_uid_list.append(combo_key_str)

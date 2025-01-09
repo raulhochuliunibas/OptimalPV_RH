@@ -21,570 +21,20 @@ from plotly.subplots import make_subplots
 
 # FUNCTION INPUT ==========================
 pvalloc_scenarios = [    
-'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind', 
-'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind', 
-
-# 'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind', 
-# 'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind',
-
-# 'pvalloc_BLsml_1roof_12m_meth2.2_rad_dfuid_ind',
-# 'pvalloc_BLsml_1roof_12m_meth3.2_rad_dfuid_ind',
-
-# 'pvalloc_BLsml_07roof_12m_meth2.2_rad_dfuid_ind',
-# 'pvalloc_BLsml_07roof_12m_meth3.2_rad_dfuid_ind',
-
-# 'pvalloc_BLmed_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind',
-# 'pvalloc_BLmed_1roof_extSolkatEGID_12m_meth3.2_rad_dfuid_ind',
-# 'pvalloc_BLmed_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind',
+    'pvalloc_BLsml_24m_meth2.2_random',
+    # 'pvalloc_BLsml_24m_meth2.2_npvweight',
+    # 'pvalloc_BLsml_24m_meth3.2_random',
 
 ]
-copypast_scens_folders = {    
-'pvalloc_BLsml_07roof_12m_meth2.2_rad_dfuid_ind':{
-    'MC_loop_specs': {'fresh_initial_files': 'topo_egid.json, '
-                                          'months_prediction.parquet, '
-                                          'gridprem_ts.parquet, '
-                                          'constrcapa.parquet, '
-                                          'dsonodes_df.parquet',
-                   'keep_files_month_iter_TF': True,
-                   'keep_files_month_iter_list': 'topo_egid.json, '
-                                                 'npv_df.parquet, '
-                                                 'pred_inst_df.parquet, '
-                                                 'gridprem_ts.parquet',
-                   'keep_files_month_iter_max': 8,
-                   'montecarlo_iterations': 1},
- 'T0_prediction': '2023-01-01 00:00:00',
- 'algorithm_specs': {'constr_capa_overshoot_fact': 1,
-                     'inst_selection_method': 'random',
-                     'npv_update_agg_cols_topo_aggdf': {'demand_kW': 'sum',
-                                                        'econ_inc_chf': 'sum',
-                                                        'econ_spend_chf': 'sum',
-                                                        'netdemand_kW': 'sum',
-                                                        'netfeedin_kW': 'sum',
-                                                        'pvprod_kW': 'sum',
-                                                        'selfconsum_kW': 'sum'},
-                     'npv_update_grouby_cols_topo_aggdf': 'EGID, df_uid, '
-                                                          'grid_node, bfs, '
-                                                          'gklas, demandtype, '
-                                                          'inst_TF, '
-                                                          'info_source, pvid, '
-                                                          'pv_tarif_Rp_kWh, '
-                                                          'elecpri_Rp_kWh, '
-                                                          'FLAECHE, '
-                                                          'FLAECH_angletilt, '
-                                                          'AUSRICHTUNG, '
-                                                          'NEIGUNG, '
-                                                          'STROMERTRAG',
-                     'rand_seed': 42,
-                     'topo_subdf_partitioner': 400,
-                     'tweak_constr_capacity_fact': 1,
-                     'tweak_gridnode_df_prod_demand_fact': 1,
-                     'tweak_npv_calc': 1,
-                     'tweak_npv_excl_elec_demand': True,
-                     'while_inst_counter_max': 5000},
- 'bfs_numbers': '2768, 2761, 2772, 2473, 2475, 2785, 2480',
- 'constr_capacity_specs': {'ann_capacity_growth': 0.05,
-                           'constr_capa_overshoot_fact': 1,
-                           'share_to_summer': 0.6,
-                           'share_to_winter': 0.4,
-                           'summer_months': '4, 5, 6, 7, 8, 9',
-                           'winter_months': '10, 11, 12, 1, 2, 3'},
- 'create_gdf_export_of_topology': True,
- 'data_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data',
- 'export_csvs': False,
- 'fast_debug_run': False,
- 'gridprem_adjustment_specs': {'colnames': 'tier_level, used_node_capa_rate, '
-                                           'gridprem_Rp_kWh',
-                               'perf_factor_1kVA_to_XkW': 0.8,
-                               'power_factor': 1,
-                               'tier_description': 'tier_level: '
-                                                   '(voltage_threshold, '
-                                                   'gridprem_Rp_kWh)',
-                               'tiers': {1: '0.7, 1',
-                                         2: '0.8, 3',
-                                         4: '0.9, 7',
-                                         5: '0.95, 15',
-                                         6: '10, 100'}},
- 'gwr_selection_specs': {'DEMAND_proxy': 'GAREA',
-                         'GBAUJ_minmax': '1950, 2022',
-                         'GKLAS': '1110, 1121',
-                         'GSTAT': '1004',
-                         'building_cols': 'EGID, GDEKT, GGDENR, GKODE, GKODN, '
-                                          'GKSCE, GSTAT, GKAT, GKLAS, GBAUJ, '
-                                          'GBAUM, GBAUP, GABBJ, GANZWHG, '
-                                          'GWAERZH1, GENH1, GWAERSCEH1, '
-                                          'GWAERDATH1, GEBF, GAREA',
-                         'dwelling_cols': None,
-                         'solkat_max_area_per_EGID': 1500,
-                         'solkat_max_n_partitions': 10},
- 'interim_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_run',
- 'kt_numbers': '',
- 'log_file_name': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_init_log.txt',
- 'months_lookback': 12,
- 'months_prediction': 12,
- 'n_egid_in_topo': 200,
- 'name_dir_export': 'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind',
- 'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
- 'panel_efficiency_specs': {'hot_hours_discount': 0.1,
-                            'hotsummer_hours': '11, 12, 13, 14, 15, 16, 17',
-                            'summer_months': '6, 7, 8, 9',
-                            'variable_panel_efficiency_TF': True},
- 'pvalloc_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_run',
- 'recalc_economics_topo_df': True,
- 'recreate_topology': True,
- 'sanitycheck_byEGID': True,
- 'sanitycheck_summary_byEGID_specs': {'egid_list': '391292, 390601, 2347595, '
-                                                   '401781391263, 245057295, '
-                                                   '401753, 245054165, '
-                                                   '245054166, 245054175, '
-                                                   '245060521, 391253, 391255, '
-                                                   '391257, 391258, 391262, '
-                                                   '391263, 391289, 391290, '
-                                                   '391291, 391292, 245057295, '
-                                                   '245057294, 245011456, '
-                                                   '391379, 391377',
-                                      'n_EGIDs_of_alloc_algorithm': 20,
-                                      'n_iterations_before_sanitycheck': 12},
- 'script_run_on_server': True,
- 'show_debug_prints': True,
- 'summary_file_name': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/summary_data_selection_log.txt',
- 'tech_economic_specs': {'elecpri_category': 'H4',
-                         'elecpri_year': 2022,
-                         'interest_rate': 0.01,
-                         'inverter_efficiency': 0.8,
-                         'invst_maturity': 25,
-                         'kWpeak_per_m2': 0.2,
-                         'max_distance_m_for_EGID_node_matching': 0,
-                         'panel_efficiency': 0.15,
-                         'pvprod_calc_method': 'method2.2',
-                         'pvtarif_col': 'energy1, eco1',
-                         'pvtarif_year': 2022,
-                         'self_consumption_ifapplicable': 0,
-                         'share_roof_area_available': 0.7},
- 'wd_path': 'D:/RaulHochuli_inuse/OptimalPV_RH',
- 'wd_path_laptop': 'C:/Models/OptimalPV_RH',
- 'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',
- 'weather_specs': {'flat_diffuse_rad_factor': 1,
-                   'flat_direct_rad_factor': 1,
-                   'meteo_col_diff_radiation': 'Basel Diffuse Shortwave '
-                                               'Radiation',
-                   'meteo_col_dir_radiation': 'Basel Direct Shortwave '
-                                              'Radiation',
-                   'meteo_col_temperature': 'Basel Temperature [2 m elevation '
-                                            'corrected]',
-                   'rad_rel_loc_max_by': 'dfuid_specific',
-                   'radiation_to_pvprod_method': 'dfuid_ind',
-                   'weather_year': 2022}},
-
-'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-    'MC_loop_specs': {'fresh_initial_files': 'topo_egid.json, '
-                                          'months_prediction.parquet, '
-                                          'gridprem_ts.parquet, '
-                                          'constrcapa.parquet, '
-                                          'dsonodes_df.parquet',
-                   'keep_files_month_iter_TF': True,
-                   'keep_files_month_iter_list': 'topo_egid.json, '
-                                                 'npv_df.parquet, '
-                                                 'pred_inst_df.parquet, '
-                                                 'gridprem_ts.parquet',
-                   'keep_files_month_iter_max': 8,
-                   'montecarlo_iterations': 1},
- 'T0_prediction': '2023-01-01 00:00:00',
- 'algorithm_specs': {'constr_capa_overshoot_fact': 1,
-                     'inst_selection_method': 'random',
-                     'npv_update_agg_cols_topo_aggdf': {'demand_kW': 'sum',
-                                                        'econ_inc_chf': 'sum',
-                                                        'econ_spend_chf': 'sum',
-                                                        'netdemand_kW': 'sum',
-                                                        'netfeedin_kW': 'sum',
-                                                        'pvprod_kW': 'sum',
-                                                        'selfconsum_kW': 'sum'},
-                     'npv_update_grouby_cols_topo_aggdf': 'EGID, df_uid, '
-                                                          'grid_node, bfs, '
-                                                          'gklas, demandtype, '
-                                                          'inst_TF, '
-                                                          'info_source, pvid, '
-                                                          'pv_tarif_Rp_kWh, '
-                                                          'elecpri_Rp_kWh, '
-                                                          'FLAECHE, '
-                                                          'FLAECH_angletilt, '
-                                                          'AUSRICHTUNG, '
-                                                          'NEIGUNG, '
-                                                          'STROMERTRAG',
-                     'rand_seed': 42,
-                     'topo_subdf_partitioner': 400,
-                     'tweak_constr_capacity_fact': 1,
-                     'tweak_gridnode_df_prod_demand_fact': 1,
-                     'tweak_npv_calc': 1,
-                     'tweak_npv_excl_elec_demand': True,
-                     'while_inst_counter_max': 5000},
- 'bfs_numbers': '2768, 2761, 2772, 2473, 2475, 2785, 2480',
- 'constr_capacity_specs': {'ann_capacity_growth': 0.05,
-                           'constr_capa_overshoot_fact': 1,
-                           'share_to_summer': 0.6,
-                           'share_to_winter': 0.4,
-                           'summer_months': '4, 5, 6, 7, 8, 9',
-                           'winter_months': '10, 11, 12, 1, 2, 3'},
- 'create_gdf_export_of_topology': True,
- 'data_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data',
- 'export_csvs': False,
- 'fast_debug_run': False,
- 'gridprem_adjustment_specs': {'colnames': 'tier_level, used_node_capa_rate, '
-                                           'gridprem_Rp_kWh',
-                               'perf_factor_1kVA_to_XkW': 0.8,
-                               'power_factor': 1,
-                               'tier_description': 'tier_level: '
-                                                   '(voltage_threshold, '
-                                                   'gridprem_Rp_kWh)',
-                               'tiers': {1: '0.7, 1',
-                                         2: '0.8, 3',
-                                         4: '0.9, 7',
-                                         5: '0.95, 15',
-                                         6: '10, 100'}},
- 'gwr_selection_specs': {'DEMAND_proxy': 'GAREA',
-                         'GBAUJ_minmax': '1950, 2022',
-                         'GKLAS': '1110, 1121',
-                         'GSTAT': '1004',
-                         'building_cols': 'EGID, GDEKT, GGDENR, GKODE, GKODN, '
-                                          'GKSCE, GSTAT, GKAT, GKLAS, GBAUJ, '
-                                          'GBAUM, GBAUP, GABBJ, GANZWHG, '
-                                          'GWAERZH1, GENH1, GWAERSCEH1, '
-                                          'GWAERDATH1, GEBF, GAREA',
-                         'dwelling_cols': None,
-                         'solkat_max_area_per_EGID': 1500,
-                         'solkat_max_n_partitions': 10},
- 'interim_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_run',
- 'kt_numbers': '',
- 'log_file_name': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_init_log.txt',
- 'months_lookback': 12,
- 'months_prediction': 12,
- 'n_egid_in_topo': 200,
- 'name_dir_export': 'pvalloc_BLsml_07roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind',
- 'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
- 'panel_efficiency_specs': {'hot_hours_discount': 0.1,
-                            'hotsummer_hours': '11, 12, 13, 14, 15, 16, 17',
-                            'summer_months': '6, 7, 8, 9',
-                            'variable_panel_efficiency_TF': True},
- 'pvalloc_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_run',
- 'recalc_economics_topo_df': True,
- 'recreate_topology': True,
- 'sanitycheck_byEGID': True,
- 'sanitycheck_summary_byEGID_specs': {'egid_list': '391292, 390601, 2347595, '
-                                                   '401781391263, 245057295, '
-                                                   '401753, 245054165, '
-                                                   '245054166, 245054175, '
-                                                   '245060521, 391253, 391255, '
-                                                   '391257, 391258, 391262, '
-                                                   '391263, 391289, 391290, '
-                                                   '391291, 391292, 245057295, '
-                                                   '245057294, 245011456, '
-                                                   '391379, 391377',
-                                      'n_EGIDs_of_alloc_algorithm': 20,
-                                      'n_iterations_before_sanitycheck': 12},
- 'script_run_on_server': True,
- 'show_debug_prints': True,
- 'summary_file_name': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/summary_data_selection_log.txt',
- 'tech_economic_specs': {'elecpri_category': 'H4',
-                         'elecpri_year': 2022,
-                         'interest_rate': 0.01,
-                         'inverter_efficiency': 0.8,
-                         'invst_maturity': 25,
-                         'kWpeak_per_m2': 0.2,
-                         'max_distance_m_for_EGID_node_matching': 0,
-                         'panel_efficiency': 0.15,
-                         'pvprod_calc_method': 'method2.2',
-                         'pvtarif_col': 'energy1, eco1',
-                         'pvtarif_year': 2022,
-                         'self_consumption_ifapplicable': 0,
-                         'share_roof_area_available': 0.7},
- 'wd_path': 'D:/RaulHochuli_inuse/OptimalPV_RH',
- 'wd_path_laptop': 'C:/Models/OptimalPV_RH',
- 'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',
- 'weather_specs': {'flat_diffuse_rad_factor': 1,
-                   'flat_direct_rad_factor': 1,
-                   'meteo_col_diff_radiation': 'Basel Diffuse Shortwave '
-                                               'Radiation',
-                   'meteo_col_dir_radiation': 'Basel Direct Shortwave '
-                                              'Radiation',
-                   'meteo_col_temperature': 'Basel Temperature [2 m elevation '
-                                            'corrected]',
-                   'rad_rel_loc_max_by': 'dfuid_specific',
-                   'radiation_to_pvprod_method': 'dfuid_ind',
-                   'weather_year': 2022}}, 
-
-'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind':{
-    'MC_loop_specs': {'fresh_initial_files': 'topo_egid.json, '
-                                          'months_prediction.parquet, '
-                                          'gridprem_ts.parquet, '
-                                          'constrcapa.parquet, '
-                                          'dsonodes_df.parquet',
-                   'keep_files_month_iter_TF': True,
-                   'keep_files_month_iter_list': 'topo_egid.json, '
-                                                 'npv_df.parquet, '
-                                                 'pred_inst_df.parquet, '
-                                                 'gridprem_ts.parquet',
-                   'keep_files_month_iter_max': 8,
-                   'montecarlo_iterations': 1},
- 'T0_prediction': '2023-01-01 00:00:00',
- 'algorithm_specs': {'constr_capa_overshoot_fact': 1,
-                     'inst_selection_method': 'random',
-                     'npv_update_agg_cols_topo_aggdf': {'demand_kW': 'sum',
-                                                        'econ_inc_chf': 'sum',
-                                                        'econ_spend_chf': 'sum',
-                                                        'netdemand_kW': 'sum',
-                                                        'netfeedin_kW': 'sum',
-                                                        'pvprod_kW': 'sum',
-                                                        'selfconsum_kW': 'sum'},
-                     'npv_update_grouby_cols_topo_aggdf': 'EGID, df_uid, '
-                                                          'grid_node, bfs, '
-                                                          'gklas, demandtype, '
-                                                          'inst_TF, '
-                                                          'info_source, pvid, '
-                                                          'pv_tarif_Rp_kWh, '
-                                                          'elecpri_Rp_kWh, '
-                                                          'FLAECHE, '
-                                                          'FLAECH_angletilt, '
-                                                          'AUSRICHTUNG, '
-                                                          'NEIGUNG, '
-                                                          'STROMERTRAG',
-                     'rand_seed': 42,
-                     'topo_subdf_partitioner': 400,
-                     'tweak_constr_capacity_fact': 1,
-                     'tweak_gridnode_df_prod_demand_fact': 1,
-                     'tweak_npv_calc': 1,
-                     'tweak_npv_excl_elec_demand': True,
-                     'while_inst_counter_max': 5000},
- 'bfs_numbers': '2768, 2761, 2772, 2473, 2475, 2785, 2480',
- 'constr_capacity_specs': {'ann_capacity_growth': 0.05,
-                           'constr_capa_overshoot_fact': 1,
-                           'share_to_summer': 0.6,
-                           'share_to_winter': 0.4,
-                           'summer_months': '4, 5, 6, 7, 8, 9',
-                           'winter_months': '10, 11, 12, 1, 2, 3'},
- 'create_gdf_export_of_topology': True,
- 'data_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data',
- 'export_csvs': False,
- 'fast_debug_run': False,
- 'gridprem_adjustment_specs': {'colnames': 'tier_level, used_node_capa_rate, '
-                                           'gridprem_Rp_kWh',
-                               'perf_factor_1kVA_to_XkW': 0.8,
-                               'power_factor': 1,
-                               'tier_description': 'tier_level: '
-                                                   '(voltage_threshold, '
-                                                   'gridprem_Rp_kWh)',
-                               'tiers': {1: '0.7, 1',
-                                         2: '0.8, 3',
-                                         4: '0.9, 7',
-                                         5: '0.95, 15',
-                                         6: '10, 100'}},
- 'gwr_selection_specs': {'DEMAND_proxy': 'GAREA',
-                         'GBAUJ_minmax': '1950, 2022',
-                         'GKLAS': '1110, 1121',
-                         'GSTAT': '1004',
-                         'building_cols': 'EGID, GDEKT, GGDENR, GKODE, GKODN, '
-                                          'GKSCE, GSTAT, GKAT, GKLAS, GBAUJ, '
-                                          'GBAUM, GBAUP, GABBJ, GANZWHG, '
-                                          'GWAERZH1, GENH1, GWAERSCEH1, '
-                                          'GWAERDATH1, GEBF, GAREA',
-                         'dwelling_cols': None,
-                         'solkat_max_area_per_EGID': 1500,
-                         'solkat_max_n_partitions': 10},
- 'interim_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_run',
- 'kt_numbers': '',
- 'log_file_name': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_init_log.txt',
- 'months_lookback': 12,
- 'months_prediction': 12,
- 'n_egid_in_topo': 200,
- 'name_dir_export': 'pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind',
- 'name_dir_import': 'preprep_BL_22to23_1and2homes_incl_missingEGID',
- 'panel_efficiency_specs': {'hot_hours_discount': 0.1,
-                            'hotsummer_hours': '11, 12, 13, 14, 15, 16, 17',
-                            'summer_months': '6, 7, 8, 9',
-                            'variable_panel_efficiency_TF': True},
- 'pvalloc_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_run',
- 'recalc_economics_topo_df': True,
- 'recreate_topology': True,
- 'sanitycheck_byEGID': True,
- 'sanitycheck_summary_byEGID_specs': {'egid_list': '391292, 390601, 2347595, '
-                                                   '401781391263, 245057295, '
-                                                   '401753, 245054165, '
-                                                   '245054166, 245054175, '
-                                                   '245060521, 391253, 391255, '
-                                                   '391257, 391258, 391262, '
-                                                   '391263, 391289, 391290, '
-                                                   '391291, 391292, 245057295, '
-                                                   '245057294, 245011456, '
-                                                   '391379, 391377',
-                                      'n_EGIDs_of_alloc_algorithm': 20,
-                                      'n_iterations_before_sanitycheck': 12},
- 'script_run_on_server': True,
- 'show_debug_prints': True,
- 'summary_file_name': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/summary_data_selection_log.txt',
- 'tech_economic_specs': {'elecpri_category': 'H4',
-                         'elecpri_year': 2022,
-                         'interest_rate': 0.01,
-                         'inverter_efficiency': 0.8,
-                         'invst_maturity': 25,
-                         'kWpeak_per_m2': 0.2,
-                         'max_distance_m_for_EGID_node_matching': 0,
-                         'panel_efficiency': 0.15,
-                         'pvprod_calc_method': 'method2.2',
-                         'pvtarif_col': 'energy1, eco1',
-                         'pvtarif_year': 2022,
-                         'self_consumption_ifapplicable': 0,
-                         'share_roof_area_available': 1},
- 'wd_path': 'D:/RaulHochuli_inuse/OptimalPV_RH',
- 'wd_path_laptop': 'C:/Models/OptimalPV_RH',
- 'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',
- 'weather_specs': {'flat_diffuse_rad_factor': 1,
-                   'flat_direct_rad_factor': 1,
-                   'meteo_col_diff_radiation': 'Basel Diffuse Shortwave '
-                                               'Radiation',
-                   'meteo_col_dir_radiation': 'Basel Direct Shortwave '
-                                              'Radiation',
-                   'meteo_col_temperature': 'Basel Temperature [2 m elevation '
-                                            'corrected]',
-                   'rad_rel_loc_max_by': 'dfuid_specific',
-                   'radiation_to_pvprod_method': 'dfuid_ind',
-                   'weather_year': 2022}},
-
-'pvalloc_BLsml_1roof_12m_meth2.2_rad_dfuid_ind':{
-'MC_loop_specs': {'fresh_initial_files': 'topo_egid.json, '
-                                          'months_prediction.parquet, '
-                                          'gridprem_ts.parquet, '
-                                          'constrcapa.parquet, '
-                                          'dsonodes_df.parquet',
-                   'keep_files_month_iter_TF': True,
-                   'keep_files_month_iter_list': 'topo_egid.json, '
-                                                 'npv_df.parquet, '
-                                                 'pred_inst_df.parquet, '
-                                                 'gridprem_ts.parquet',
-                   'keep_files_month_iter_max': 8,
-                   'montecarlo_iterations': 1},
- 'T0_prediction': '2023-01-01 00:00:00',
- 'algorithm_specs': {'constr_capa_overshoot_fact': 1,
-                     'inst_selection_method': 'random',
-                     'npv_update_agg_cols_topo_aggdf': {'demand_kW': 'sum',
-                                                        'econ_inc_chf': 'sum',
-                                                        'econ_spend_chf': 'sum',
-                                                        'netdemand_kW': 'sum',
-                                                        'netfeedin_kW': 'sum',
-                                                        'pvprod_kW': 'sum',
-                                                        'selfconsum_kW': 'sum'},
-                     'npv_update_grouby_cols_topo_aggdf': 'EGID, df_uid, '
-                                                          'grid_node, bfs, '
-                                                          'gklas, demandtype, '
-                                                          'inst_TF, '
-                                                          'info_source, pvid, '
-                                                          'pv_tarif_Rp_kWh, '
-                                                          'elecpri_Rp_kWh, '
-                                                          'FLAECHE, '
-                                                          'FLAECH_angletilt, '
-                                                          'AUSRICHTUNG, '
-                                                          'NEIGUNG, '
-                                                          'STROMERTRAG',
-                     'rand_seed': 42,
-                     'topo_subdf_partitioner': 400,
-                     'tweak_constr_capacity_fact': 1,
-                     'tweak_gridnode_df_prod_demand_fact': 1,
-                     'tweak_npv_calc': 1,
-                     'tweak_npv_excl_elec_demand': True,
-                     'while_inst_counter_max': 5000},
- 'bfs_numbers': '2768, 2761, 2772, 2473, 2475, 2785, 2480',
- 'constr_capacity_specs': {'ann_capacity_growth': 0.05,
-                           'constr_capa_overshoot_fact': 1,
-                           'share_to_summer': 0.6,
-                           'share_to_winter': 0.4,
-                           'summer_months': '4, 5, 6, 7, 8, 9',
-                           'winter_months': '10, 11, 12, 1, 2, 3'},
- 'create_gdf_export_of_topology': True,
- 'data_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data',
- 'export_csvs': False,
- 'fast_debug_run': False,
- 'gridprem_adjustment_specs': {'colnames': 'tier_level, used_node_capa_rate, '
-                                           'gridprem_Rp_kWh',
-                               'perf_factor_1kVA_to_XkW': 0.8,
-                               'power_factor': 1,
-                               'tier_description': 'tier_level: '
-                                                   '(voltage_threshold, '
-                                                   'gridprem_Rp_kWh)',
-                               'tiers': {1: '0.7, 1',
-                                         2: '0.8, 3',
-                                         4: '0.9, 7',
-                                         5: '0.95, 15',
-                                         6: '10, 100'}},
- 'gwr_selection_specs': {'DEMAND_proxy': 'GAREA',
-                         'GBAUJ_minmax': '1950, 2022',
-                         'GKLAS': '1110, 1121',
-                         'GSTAT': '1004',
-                         'building_cols': 'EGID, GDEKT, GGDENR, GKODE, GKODN, '
-                                          'GKSCE, GSTAT, GKAT, GKLAS, GBAUJ, '
-                                          'GBAUM, GBAUP, GABBJ, GANZWHG, '
-                                          'GWAERZH1, GENH1, GWAERSCEH1, '
-                                          'GWAERDATH1, GEBF, GAREA',
-                         'dwelling_cols': None,
-                         'solkat_max_area_per_EGID': None,
-                         'solkat_max_n_partitions': 10},
- 'interim_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_run',
- 'kt_numbers': '',
- 'log_file_name': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_init_log.txt',
- 'months_lookback': 12,
- 'months_prediction': 12,
- 'n_egid_in_topo': 200,
- 'name_dir_export': 'pvalloc_BLsml_1roof_12m_meth2.2_rad_dfuid_ind',
- 'name_dir_import': 'preprep_BL_22to23_1and2homes',
- 'panel_efficiency_specs': {'hot_hours_discount': 0.1,
-                            'hotsummer_hours': '11, 12, 13, 14, 15, 16, 17',
-                            'summer_months': '6, 7, 8, 9',
-                            'variable_panel_efficiency_TF': True},
- 'pvalloc_path': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/pvalloc_run',
- 'recalc_economics_topo_df': True,
- 'recreate_topology': True,
- 'sanitycheck_byEGID': True,
- 'sanitycheck_summary_byEGID_specs': {'egid_list': '391292, 390601, 2347595, '
-                                                   '401781391263, 245057295, '
-                                                   '401753, 245054165, '
-                                                   '245054166, 245054175, '
-                                                   '245060521, 391253, 391255, '
-                                                   '391257, 391258, 391262, '
-                                                   '391263, 391289, 391290, '
-                                                   '391291, 391292, 245057295, '
-                                                   '245057294, 245011456, '
-                                                   '391379, 391377',
-                                      'n_EGIDs_of_alloc_algorithm': 20,
-                                      'n_iterations_before_sanitycheck': 12},
- 'script_run_on_server': True,
- 'show_debug_prints': True,
- 'summary_file_name': 'D:/RaulHochuli_inuse/OptimalPV_RH_data/output/summary_data_selection_log.txt',
- 'tech_economic_specs': {'elecpri_category': 'H4',
-                         'elecpri_year': 2022,
-                         'interest_rate': 0.01,
-                         'inverter_efficiency': 0.8,
-                         'invst_maturity': 25,
-                         'kWpeak_per_m2': 0.2,
-                         'max_distance_m_for_EGID_node_matching': 0,
-                         'panel_efficiency': 0.15,
-                         'pvprod_calc_method': 'method2.2',
-                         'pvtarif_col': 'energy1, eco1',
-                         'pvtarif_year': 2022,
-                         'self_consumption_ifapplicable': 0,
-                         'share_roof_area_available': 1},
- 'wd_path': 'D:/RaulHochuli_inuse/OptimalPV_RH',
- 'wd_path_laptop': 'C:/Models/OptimalPV_RH',
- 'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',
- 'weather_specs': {'flat_diffuse_rad_factor': 1,
-                   'flat_direct_rad_factor': 1,
-                   'meteo_col_diff_radiation': 'Basel Diffuse Shortwave '
-                                               'Radiation',
-                   'meteo_col_dir_radiation': 'Basel Direct Shortwave '
-                                              'Radiation',
-                   'meteo_col_temperature': 'Basel Temperature [2 m elevation '
-                                            'corrected]',
-                   'rad_rel_loc_max_by': 'dfuid_specific',
-                   'radiation_to_pvprod_method': 'dfuid_ind',
-                   'weather_year': 2022}}
-}
+excl_buildings_of_mean_calc = ['410320', '391290', '391291',  # Byfangweg,  Lerchenstrasse 31 + 33
+                               '291263', 
+]
+# estim_cost_chf_pkWp_correctionfactor = 1.243
+estim_cost_chf_pkWp_correctionfactor = 1
 
 
+
+# --------------------------------------------------------------------------------------------------------------------------------------------
 
 # pvalloc_settings = pvalloc_scenarios[list(pvalloc_scenarios.keys())[0]]
 fig_agg = go.Figure()
@@ -617,17 +67,19 @@ for scen in pvalloc_scenarios:
     #                                                                   'flaech_ewz',   'instcapa_kWp_ewz', 'pvprod_kWh_pyear_ewz', 'estim_demand_pyear_kWh_ewz', 'estimated_investcost_inclsubsidy_chf_ewz'],
     ['391292', 'Lerchenstrasse 35, Aesch', ['10213764',],               174,            18.66,              19824,                  18930,                         28354, 
                                                                         174,            31.5,               33537,                  18930,                         48010],
+    ['391291', 'Lerchenstrasse 33, Aesch',  ['10213735','10213736', 
+                                            '10213753', '10213754'],    112,            18.66,              18084,                  18930,                         28354,
+                                                                        112,            20.25,              21382,                  18930,                         33401],
+    ['391290', 'Lerchenstrasse 31, Aesch',  ['10213733','10213734'],    82,             14.56,              14147,                  18930,                         26141,
+                                                                        82,             14.85,              15696,                  18930,                         25879],
+    
+    
     ['410320', 'Byfangweg 3, Pfeffingen',   ['10208685',],              95,             16.84,              16429,                  18930,                         28042,
                                                                         95,             17.1,               16744,                  18930,                         29464],
     ['410187', 'Alemannenweg 8, Pfeffingen',['10206773',],              100,            17.29,              14662,                  18930,                         28399,
                                                                         100,            18,                 15274,                  18930,                         30465],
     ['410227', 'Moosackerweg 9, Pfeffingen',['10206727',],              113,            18.66,              16824,                  18930,                         28354,
                                                                         113,            20.25,              18268,                  18930,                         33401],
-    ['391291', 'Lerchenstrasse 33, Aesch',  ['10213735','10213736', 
-                                            '10213753', '10213754'],    112,            18.66,              18084,                  18930,                         28354,
-                                                                        112,            20.25,              21382,                  18930,                         33401],
-    ['391290', 'Lerchenstrasse 31, Aesch',  ['10213733','10213734'],    82,             14.56,              14147,                  18930,                         26141,
-                                                                        82,             14.85,              15696,                  18930,                         25879],
     ['245060521', 'Drosselweg 12, Aesch',   ['10213776','10213777'],    119,            18.66,              18020,                  18930,                         28354,
                                                                         119,            19.8,               19125,                  18930,                         32469],
     ['245054175', 'Drosselweg 10, Aesch',   ['10213805','10213806'],    148,            18.66,              15438,                  18930,                         28354 ,
@@ -640,8 +92,25 @@ for scen in pvalloc_scenarios:
                                                                         63,             10.35,              9996,                   18930,                         23357],
     ['391404', 'Trottmattweg 2, Aesch',     ['10212880'],               93,             15.47,              14917,                  18930,                         26847,
                                                                         93,             15.75,              15186,                  18930,                         27961],   
-
-    ] 
+    ['391289' , 'Lerchenstrasse 29, Aesch', ['10213770', '10213771',
+                                             '10213772', '10213773',
+                                             '10213774', '10213775',],  164,            18.66,              17757,                  18930,                         28354,        
+                                                                        164,            29.7,               32576,                  18930,                         42921],
+    ['391186', 'Amselweg 3a, Aesch',        ['10213751', '10213752'],   58,             10.01,              9885,                   18930,                         22311,
+                                                                        58,             10.35,              10180,                  18930,                         23357],
+    ['391187', 'Amselweg 3b, Aesch',        ['10213751', '10213752'],   58,             10.01,              9885,                   18930,                         22311,
+                                                                        58,             10.35,              10180,                  18930,                         23357],
+    ['391263', 'Drosselweg 24, Aesch',      ['10213721', '10213722', 
+                                             '10213814', '10213815',],  201,            18.66,              18094,                  18930,                         28354,
+                                                                        201,            36.45,              39392,                  18930,                         55793],
+    ['391262', 'Drosselweg 22, Aesch',      ['10213778', '10213779', 
+                                             '10213818', '10213819',],  175,            18.66,              17688,                  18930,                         28354,
+                                                                        175,            31.5,               31265,                  18930,                         48010],
+    ['391379', 'Drosselweg 72, Aesch',      ['10212718', '10212719'],   228,            18.66,              18780,                  18930,                         28354,
+                                                                        228,            41.4,               40392,                  18930,                         61412], 
+    ['391977', 'Klusstrasse 66, Aesch',     ['10212671', '10212672'],   167,            18.66,              16747,                  18930,                         28354, 
+                                                                        167,            30.15,              28775,                  18930,                         47201],
+    ]
     comparison_df = pd.DataFrame(rows, columns=col_names)
     comparison_df['DF_UID_solkat_selection'] = comparison_df['DF_UID_solkat_selection'].apply(lambda x: sorted(x))
 
@@ -650,56 +119,79 @@ for scen in pvalloc_scenarios:
     i, row = 0, comparison_df.loc[0]
     for i, row in comparison_df.iterrows():
         comparison_df.loc[i, 'n_roofs'] = len(row['DF_UID_solkat_selection'])
-        comparison_df.loc[i, 'FLAECHE'] = solkat.loc[solkat['DF_UID'].isin(row['DF_UID_solkat_selection']), 'FLAECHE'].sum()
+        comparison_df.loc[i, 'FLAECHE'] = solkat.loc[(solkat['EGID'] == row['EGID']) & 
+                                                     (solkat['DF_UID'].isin(row['DF_UID_solkat_selection'])), 'FLAECHE'].sum()
         comparison_df.loc[i, 'instcap_kWp'] = comparison_df.loc[i, 'FLAECHE'] * pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
-        comparison_df.loc[i, 'STROMERTRAG'] = solkat.loc[solkat['DF_UID'].isin(row['DF_UID_solkat_selection']), 'STROMERTRAG'].sum()
+        comparison_df.loc[i, 'STROMERTRAG'] = solkat.loc[(solkat['EGID'] == row['EGID']) & 
+                                                        (solkat['DF_UID'].isin(row['DF_UID_solkat_selection'])), 'STROMERTRAG'].sum()
+        
 
         # row_npv = npv_df.loc[npv_df['EGID'] == row['EGID']].iloc[2]
         npv_df['df_uid_combo_list']  = npv_df['df_uid_combo'].apply(lambda x: x.split('_') if '_' in x else [x])
-        npv_df['df_uid_combo_list'] = npv_df['df_uid_combo_list'].apply(lambda x: sorted(x)) 
+        # npv_df['df_uid_combo_list'] = npv_df['df_uid_combo_list'].apply(lambda x: sorted(x)) 
 
 
         # Find matching rows in npv_df
-        matching_rows = npv_df[npv_df['df_uid_combo_list'].apply(lambda x: x == row['DF_UID_solkat_selection'])]
+        matching_rows = npv_df.loc[(npv_df['EGID'] == row['EGID']) &
+                                   (npv_df['df_uid_combo_list'].apply(lambda x: set(x) == set(row['DF_UID_solkat_selection'])))]
+        
+        # matching_rows = npv_df[npv_df['df_uid_combo_list'].apply(lambda x: set(x) == set(row['DF_UID_solkat_selection']))]
         # Sum the values for the matching rows
         comparison_df.loc[i, 'pvprod_kW'] = matching_rows['pvprod_kW'].sum()
         comparison_df.loc[i, 'estim_pvinstcost_chf'] = matching_rows['estim_pvinstcost_chf'].sum()
 
-        # # topo.get(f'{row["EGID"]}',{}).get('solkat_partitions',{})
-        # # npv_df.loc[npv_df['EGID'] == row['EGID'], 'df_uid_combo' ]
+        # cost transformations to see deviations
+        comparison_df.loc[i, 'estim_pvinstcost_chf'] = comparison_df.loc[i, 'estim_pvinstcost_chf'] /estim_cost_chf_pkWp_correctionfactor
 
-        # df_uid_asc, df_uid_desc = sorted(row['DF_UID_solkat_selection']), sorted(row['DF_UID_solkat_selection'], reverse=True)
-        # df_uid_joined_asc, df_uid_joined_desc = '_'.join(df_uid_asc), '_'.join(df_uid_desc)
-        # # comparison_df.loc[i, 'pvprod_kW'] =   
+        # calc cost/kWp and cost/kWh
+        comparison_df.loc[i, 'estim_cost_chf_pkWp'] =     comparison_df.loc[i, 'estim_pvinstcost_chf'] / comparison_df.loc[i, 'instcap_kWp']
+        comparison_df.loc[i, 'estim_cost_chf_pkWp_bkw'] = comparison_df.loc[i, 'estim_investcost_inclsubsidy_chf_bkw'] / comparison_df.loc[i, 'instcapa_kWp_bkw']
+        comparison_df.loc[i, 'estim_cost_chf_pkWp_ewz'] = comparison_df.loc[i, 'estim_investcost_inclsubsidy_chf_ewz'] / comparison_df.loc[i, 'instcapa_kWp_ewz']
 
-        # df_uid_combo_insample_TF = (npv_df['df_uid_combo'] == df_uid_joined_asc) | (npv_df['df_uid_combo'] == df_uid_joined_desc)
-        # comparison_df.loc[i, 'pvprod_kW'] = npv_df.loc[df_uid_combo_insample_TF, 'pvprod_kW'].sum()
-        # npv_df.loc[npv_df['df_uid_combo'].isin(row['DF_UID_solkat_selection']), 'pvprod_kW'].sum()  
-        
-        # comparison_df.loc[i, 'AUSRICHTUNG'] = solkat.loc[solkat['DF_UID'].isin(row['DF_UID_solkat_selection']), 'AUSRICHTUNG'].values[0]
-        # comparison_df.loc[i, 'NEIGUNG'] = solkat.loc[solkat['DF_UID'].isin(row['DF_UID_solkat_selection']), 'NEIGUNG'].values[0]
+        comparison_df.loc[i, 'estim_cost_chf_pkWh'] =     comparison_df.loc[i, 'estim_pvinstcost_chf'] / comparison_df.loc[i, 'pvprod_kW']
+        comparison_df.loc[i, 'estim_cost_chf_pkWh_bkw'] = comparison_df.loc[i, 'estim_investcost_inclsubsidy_chf_bkw'] / comparison_df.loc[i, 'pvprod_kWh_pyear_bkw']
+        comparison_df.loc[i, 'estim_cost_chf_pkWh_ewz'] = comparison_df.loc[i, 'estim_investcost_inclsubsidy_chf_ewz'] / comparison_df.loc[i, 'pvprod_kWh_pyear_ewz']
+
+        comparison_df.loc[i, 'delta_cost_pkWp_mod_bkw'] = (comparison_df.loc[i, 'estim_cost_chf_pkWp' ] - comparison_df.loc[i, 'estim_cost_chf_pkWp_bkw']) / comparison_df.loc[i, 'estim_cost_chf_pkWp_bkw']
+        comparison_df.loc[i, 'delta_cost_pkWp_mod_ewz'] = (comparison_df.loc[i, 'estim_cost_chf_pkWp' ] - comparison_df.loc[i, 'estim_cost_chf_pkWp_ewz']) / comparison_df.loc[i, 'estim_cost_chf_pkWp_ewz']
+
+
 
     
     # plot --------------------
     fig = go.Figure()
-    plot_cols = ['FLAECHE',     'flaech_bkw',           'flaech_ewz',
-                'instcap_kWp',  'instcapa_kWp_bkw',     'instcapa_kWp_ewz',
-                'pvprod_kW',    'pvprod_kWh_pyear_bkw', 'pvprod_kWh_pyear_ewz',
-                'STROMERTRAG',
-                'estim_pvinstcost_chf', 'estim_investcost_inclsubsidy_chf_bkw', 'estim_investcost_inclsubsidy_chf_ewz',
+    plot_cols = [
+        'FLAECHE',     
+        # 'flaech_bkw',           'flaech_ewz',
+        'instcap_kWp',  'instcapa_kWp_bkw',     #'instcapa_kWp_ewz',
+        # 'pvprod_kW',    'pvprod_kWh_pyear_bkw', 'pvprod_kWh_pyear_ewz',
+        # 'STROMERTRAG',
+        'estim_pvinstcost_chf', 'estim_investcost_inclsubsidy_chf_bkw', 'estim_investcost_inclsubsidy_chf_ewz',
+        'estim_cost_chf_pkWp', 'estim_cost_chf_pkWp_bkw', 'estim_cost_chf_pkWp_ewz', 
+        # 'estim_cost_chf_pkWh', 'estim_cost_chf_pkWh_bkw', 'estim_cost_chf_pkWh_ewz',   
+        'delta_cost_pkWp_mod_bkw',     
+        'delta_cost_pkWp_mod_ewz',
                 ]
-    cols_in_second_axis = ['pvprod_kW', 'pvprod_kWh_pyear_bkw', 'pvprod_kWh_pyear_ewz',
-                           'STROMERTRAG',
-                           'estim_pvinstcost_chf', 'estim_investcost_inclsubsidy_chf_bkw', 'estim_investcost_inclsubsidy_chf_ewz',
-    ]
+    cols_in_second_axis_tuples = [
+        ('pvprod_kW', 1000), ('pvprod_kWh_pyear_bkw', 1000), ('pvprod_kWh_pyear_ewz', 1000),
+        ('STROMERTRAG', 1000),  #('FLAECHE', 10),
+        ('estim_pvinstcost_chf', 1000), ('estim_investcost_inclsubsidy_chf_bkw', 1000), ('estim_investcost_inclsubsidy_chf_ewz', 1000),
+        ('estim_cost_chf_pkWp', 100), ('estim_cost_chf_pkWp_bkw', 100), ('estim_cost_chf_pkWp_ewz', 100),
+        ('estim_cost_chf_pkWh', 0.1), ('estim_cost_chf_pkWh_bkw', 0.1), ('estim_cost_chf_pkWh_ewz', 0.1),
+        ]
     comparison_df['x_label'] = comparison_df['Adress'] + ' (' + comparison_df['EGID'] + ')'
 
 
     for col in plot_cols:
+        cols_in_second_axis = [col_tuple[0] for col_tuple in cols_in_second_axis_tuples]
         if col in cols_in_second_axis:
-            comparison_df[col] = comparison_df[col] / 1000
+            col_secondaxis_tuple = [col_tuple for col_tuple in cols_in_second_axis_tuples if col_tuple[0] == col][0]
+            col_secondaxis_name = col_secondaxis_tuple[0]
+            col_secondaxis_denom = col_secondaxis_tuple[1]
+
+            comparison_df[col] = comparison_df[col] / col_secondaxis_denom
         
-        name_col = col + ' (1/1000)' if col in cols_in_second_axis else col
+        name_col = col + f' (1/{col_secondaxis_denom})' if col in cols_in_second_axis else col
         fig.add_trace(go.Bar(
             x=comparison_df['x_label'],
             y = comparison_df[col],
@@ -742,5 +234,12 @@ fig_agg.update_layout(
 )
 fig_agg.show()
 fig_agg.write_html(f'{data_path}/output/visualizations_pvprod_correction/pvprod_correction_agg.html')
+
+print_mean_deviation_tobkw = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'delta_cost_pkWp_mod_bkw'].mean()
+print_mean_deviation_toewz = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'delta_cost_pkWp_mod_ewz'].mean()
+print(f'Mean deviation of cost/kWp between OptPV-Model and BKW-Solarrechner: {print_mean_deviation_tobkw:.5%}')
+print(f'Mean deviation of cost/kWp between OptPV-Model and EWZ-Solarrechner: {print_mean_deviation_toewz:.5%}')
+
+comparison_df.to_excel(f'{data_path}/output/visualizations_pvprod_correction/pvprod_correction_comparison.xlsx')
 print('..just for breakpoint..')
 
