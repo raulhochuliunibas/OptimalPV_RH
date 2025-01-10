@@ -46,7 +46,6 @@ for scen in pvalloc_scenarios:
 
 
     # setup --------------------
-    wd_path = pvalloc_settings['wd_path_laptop']
     data_path = f'{wd_path}_data'
     # mc_path = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/zMC_1'
 
