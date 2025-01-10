@@ -162,7 +162,7 @@ def calc_economics_in_topo_df(
         if pvalloc_settings['weather_specs']['radiation_to_pvprod_method'] == 'flat':
             subdf['radiation'] = subdf['rad_direct'] * flat_direct_rad_factor + subdf['rad_diffuse'] * flat_diffuse_rad_factor
             meteo_ts['radiation'] = meteo_ts['rad_direct'] * flat_direct_rad_factor + meteo_ts['rad_diffuse'] * flat_diffuse_rad_factor
-            mean_top_radiation = meteo_ts['radiation'].nlargest(20).mean()
+            mean_top_radiation = meteo_ts['radiation'].nlargest(10).mean()
 
             subdf['radiation_rel_locmax'] = subdf['radiation'] / mean_top_radiation
 
@@ -182,14 +182,14 @@ def calc_economics_in_topo_df(
             meteo_ts['radiation_abc_param_1dfuid'] = meteo_ts['rad_direct'] * subdf['A_PARAM'].mean() + meteo_ts['rad_diffuse'] * subdf['B_PARAM'].mean() + subdf['C_PARAM'].mean()
 
             if pvalloc_settings['weather_specs']['rad_rel_loc_max_by'] == 'dfuid_specific':
-                subdf_dfuid_topradation = subdf.groupby('df_uid')['radiation'].apply(lambda x: x.nlargest(20).mean()).reset_index()
+                subdf_dfuid_topradation = subdf.groupby('df_uid')['radiation'].apply(lambda x: x.nlargest(10).mean()).reset_index()
                 subdf_dfuid_topradation.rename(columns={'radiation': 'mean_top_radiation'}, inplace=True)
                 subdf = subdf.merge(subdf_dfuid_topradation, how='left', on='df_uid')
 
                 subdf['radiation_rel_locmax'] = subdf['radiation'] / subdf['mean_top_radiation']
 
             elif pvalloc_settings['weather_specs']['rad_rel_loc_max_by'] == 'all_HOY':
-                mean_nlargest_rad_all_HOY = meteo_ts['radiation'].nlargest(20).mean()
+                mean_nlargest_rad_all_HOY = meteo_ts['radiation'].nlargest(10).mean()
                 subdf['radiation_rel_locmax'] = subdf['radiation'] / mean_nlargest_rad_all_HOY
 
         # add panel_efficiency by time ----------
