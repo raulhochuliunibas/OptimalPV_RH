@@ -22,12 +22,12 @@ from plotly.subplots import make_subplots
 # FUNCTION INPUT ==========================
 pvalloc_scenarios = [    
     'pvalloc_BLsml_24m_meth2.2_random',
-    # 'pvalloc_BLsml_24m_meth2.2_npvweight',
+    'pvalloc_BLsml_24m_meth2.2_npvweight',
     # 'pvalloc_BLsml_24m_meth3.2_random',
 
 ]
-excl_buildings_of_mean_calc = ['410320', '391290', '391291',  # Byfangweg,  Lerchenstrasse 31 + 33
-                               '291263', 
+excl_buildings_of_mean_calc = ['410320',  # Byfangweg 3 + Drosselweg 24, both with already existing PV
+                               '391263', 
 ]
 # estim_cost_chf_pkWp_correctionfactor = 1.243
 estim_cost_chf_pkWp_correctionfactor = 1
@@ -66,15 +66,14 @@ for scen in pvalloc_scenarios:
     #                                                                   'flaech_ewz',   'instcapa_kWp_ewz', 'pvprod_kWh_pyear_ewz', 'estim_demand_pyear_kWh_ewz', 'estimated_investcost_inclsubsidy_chf_ewz'],
     ['391292', 'Lerchenstrasse 35, Aesch', ['10213764',],               174,            18.66,              19824,                  18930,                         28354, 
                                                                         174,            31.5,               33537,                  18930,                         48010],
-    ['391291', 'Lerchenstrasse 33, Aesch',  ['10213735','10213736', 
-                                            '10213753', '10213754'],    112,            18.66,              18084,                  18930,                         28354,
-                                                                        112,            20.25,              21382,                  18930,                         33401],
-    ['391290', 'Lerchenstrasse 31, Aesch',  ['10213733','10213734'],    82,             14.56,              14147,                  18930,                         26141,
+
+    ['391290', 'Lerchenstrasse 31, Aesch',  ['10213733','10213734', 
+                                             '10213735', '10213736'],   82,             14.56,              14147,                  18930,                         26141,
                                                                         82,             14.85,              15696,                  18930,                         25879],
-    
-    
-    ['410320', 'Byfangweg 3, Pfeffingen',   ['10208685',],              95,             16.84,              16429,                  18930,                         28042,
-                                                                        95,             17.1,               16744,                  18930,                         29464],
+    ['391291', 'Lerchenstrasse 33, Aesch',  ['10213733','10213734', 
+                                             '10213735','10213736', 
+                                             '10213753', '10213754'],   112,            18.66,              18084,                  18930,                         28354,
+                                                                        112,            20.25,              21382,                  18930,                         33401],
     ['410187', 'Alemannenweg 8, Pfeffingen',['10206773',],              100,            17.29,              14662,                  18930,                         28399,
                                                                         100,            18,                 15274,                  18930,                         30465],
     ['410227', 'Moosackerweg 9, Pfeffingen',['10206727',],              113,            18.66,              16824,                  18930,                         28354,
@@ -99,16 +98,24 @@ for scen in pvalloc_scenarios:
                                                                         58,             10.35,              10180,                  18930,                         23357],
     ['391187', 'Amselweg 3b, Aesch',        ['10213751', '10213752'],   58,             10.01,              9885,                   18930,                         22311,
                                                                         58,             10.35,              10180,                  18930,                         23357],
-    ['391263', 'Drosselweg 24, Aesch',      ['10213721', '10213722', 
-                                             '10213814', '10213815',],  201,            18.66,              18094,                  18930,                         28354,
-                                                                        201,            36.45,              39392,                  18930,                         55793],
     ['391262', 'Drosselweg 22, Aesch',      ['10213778', '10213779', 
                                              '10213818', '10213819',],  175,            18.66,              17688,                  18930,                         28354,
                                                                         175,            31.5,               31265,                  18930,                         48010],
     ['391379', 'Drosselweg 72, Aesch',      ['10212718', '10212719'],   228,            18.66,              18780,                  18930,                         28354,
                                                                         228,            41.4,               40392,                  18930,                         61412], 
-    ['391977', 'Klusstrasse 66, Aesch',     ['10212671', '10212672'],   167,            18.66,              16747,                  18930,                         28354, 
+
+
+    ['391377', 'Klusstrasse 66, Aesch',     ['10212671', '10212672'],   167,            18.66,              16747,                  18930,                         28354, 
                                                                         167,            30.15,              28775,                  18930,                         47201],
+
+    ['410320', 'Byfangweg 3, Pfeffingen, EXISTING PV',  ['10208685',],  95,             16.84,              16429,                  18930,                         28042,
+                                                                        95,             17.1,               16744,                  18930,                         29464],
+    ['391263', 'Drosselweg 24, Aesch, EXISTING PV',     ['10213721', 
+                                                         '10213722', 
+                                                         '10213814', 
+                                                         '10213815',],  201,            18.66,              18094,                  18930,                         28354,
+                                                                        201,            36.45,              39392,                  18930,                         55793],
+
     ]
     comparison_df = pd.DataFrame(rows, columns=col_names)
     comparison_df['DF_UID_solkat_selection'] = comparison_df['DF_UID_solkat_selection'].apply(lambda x: sorted(x))
