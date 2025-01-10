@@ -514,7 +514,8 @@ def update_npv_df(pvalloc_settings,
     groupby_cols = pvalloc_settings['algorithm_specs']['npv_update_grouby_cols_topo_aggdf']
     agg_cols = pvalloc_settings['algorithm_specs']['npv_update_agg_cols_topo_aggdf']
 
-    estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
+    # estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
+
 
     subdir_path_def = subdir_path
     m = month_func
@@ -651,6 +652,15 @@ def update_npv_df(pvalloc_settings,
         
 
         # NPV calculation -----------------------------------------------------
+        # estim_instcost_chfpkW, estim_instcost_chftotal = initial.estimate_iterpolate_instcost_function(pvalloc_settings)
+        if not os.path.exists(f'{data_path}/output/{name_dir_import}/pvinstcost_coefficients.json') == True:
+            estim_instcost_chfpkW, estim_instcost_chftotal = initial.estimate_iterpolate_instcost_function(pvalloc_settings)
+            estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
+
+        elif os.path.exists(f'{data_path}/output/{name_dir_import}/pvinstcost_coefficients.json') == True:    
+            estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
+            estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
+
         aggsubdf_combo['estim_pvinstcost_chf'] = estim_instcost_chftotal(aggsubdf_combo['FLAECHE'] * kWpeak_per_m2 * share_roof_area_available)
 
         def compute_npv(row):

@@ -5,11 +5,16 @@ import pandas as pd
 import json
 import itertools
 import math
+import matplotlib.pyplot as plt
 import glob
 import plotly.graph_objs as go
 import plotly.offline as pyo
 import geopandas as gpd
 import copy
+
+
+from numpy.polynomial.polynomial import Polynomial
+from scipy.optimize import curve_fit
 
 from pyarrow.parquet import ParquetFile
 from shapely.ops import nearest_points
@@ -198,13 +203,6 @@ def import_prepre_AND_create_topology(
         Map_egid_demandtypes = json.load(file)
 
 
-    # Func pv installation cost -------
-    with open(f'{data_path}/output/{name_dir_import}/pvinstcost_coefficients.json', 'r') as file:
-        pvinstcost_coefficients = json.load(file)
-    params_pkW = pvinstcost_coefficients['params_pkW']
-    coefs_total = pvinstcost_coefficients['coefs_total']
-
-
     # Map egid > node -------
     Map_egid_dsonode = pd.read_parquet(f'{data_path}/output/{name_dir_import}/Map_egid_dsonode.parquet')
     Map_egid_dsonode['EGID'] = Map_egid_dsonode['EGID'].astype(str)
@@ -222,16 +220,18 @@ def import_prepre_AND_create_topology(
 
 
     # PV Cost functions --------
-    # Define the interpolation functions using the imported coefficients
-    def func_chf_pkW(x, a, b):
-        return a + b / x
+    """
+        # Define the interpolation functions using the imported coefficients
+        def func_chf_pkW(x, a, b):
+            return a + b / x
 
-    estim_instcost_chfpkW = lambda x: func_chf_pkW(x, *params_pkW)
+        estim_instcost_chfpkW = lambda x: func_chf_pkW(x, *params_pkW)
 
-    def func_chf_total_poly(x, coefs_total):
-        return sum(c * x**i for i, c in enumerate(coefs_total))
+        def func_chf_total_poly(x, coefs_total):
+            return sum(c * x**i for i, c in enumerate(coefs_total))
 
-    estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs_total)
+        estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs_total)
+    """
 
 
     # EGID SELECTION / EXCLUSION ------------------------------------------------
@@ -655,7 +655,11 @@ def import_ts_data(
 
 
 # ------------------------------------------------------------------------------------------------------
-# import inst cost estimation func
+# import inst cost estimation func - 
+# note: This funnction is used to reextract the function for estimating the installation cost of PV
+#       systems based on the kWP amount. It is easier and less strenuous for debugging and error 
+#       detection to calculate the cost function in the pvalloc section of the code, just with the 
+#       function bellow, and only extract the coefficients again if ncessary.
 # ------------------------------------------------------------------------------------------------------
 def get_estim_instcost_function(pvalloc_settings):
     wd_path = pvalloc_settings['wd_path']
@@ -666,21 +670,166 @@ def get_estim_instcost_function(pvalloc_settings):
     with open(f'{data_path}/output/{name_dir_import}/pvinstcost_coefficients.json', 'r') as file:
         pvinstcost_coefficients = json.load(file)
     params_pkW = pvinstcost_coefficients['params_pkW']
-    coefs_total = pvinstcost_coefficients['coefs_total']
+    # coefs_total = pvinstcost_coefficients['coefs_total']
+    params_total = pvinstcost_coefficients['params_total']
 
     # PV Cost functions --------
     # Define the interpolation functions using the imported coefficients
-    def func_chf_pkW(x, a, b):
-        return a + b / x
-
+    def func_chf_pkW(x, a, b, c, d):
+        return a +  d*((x ** b) /  (x ** c))
     estim_instcost_chfpkW = lambda x: func_chf_pkW(x, *params_pkW)
 
-    def func_chf_total_poly(x, coefs_total):
-        return sum(c * x**i for i, c in enumerate(coefs_total))
 
-    estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs_total)
+    # def func_chf_total_poly(x, coefs_total):
+    #     return sum(c * x**i for i, c in enumerate(coefs_total))
+    # estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs_total)
+    def func_chf_total(x, a, b, c):
+        return a +  b*(x**c) 
+    estim_instcost_chftotal = lambda x: func_chf_total(x, *params_total)
+    return estim_instcost_chfpkW, estim_instcost_chftotal
+
+
+# ------------------------------------------------------------------------------------------------------
+# estimate PV inst cost function by kWP
+# ------------------------------------------------------------------------------------------------------
+def estimate_iterpolate_instcost_function(pvalloc_settings):
+    wd_path = pvalloc_settings['wd_path']
+    data_path = f'{wd_path}_data'
+    data_path_def = f'{wd_path}_data'
+    name_dir_import = pvalloc_settings['name_dir_import']
+    log_file_name_def = pvalloc_settings['log_file_name']
+
+    # data import ----- (copied from energie rechner schweiz doucmentation)
+    installation_cost_dict = {
+    "on_roof_installation_cost_pkW": {
+        2:   4636,
+        3:   3984,
+        5:   3373,
+        10:  2735,
+        15:  2420,
+        20:  2219,
+        30:  1967,
+        50:  1710,
+        75:  1552,
+        100: 1463,
+        125: 1406,
+        150: 1365
+    },
+    "on_roof_installation_cost_total": {
+        2:   9272,
+        3:   11952,
+        5:   16863,
+        10:  27353,
+        15:  36304,
+        20:  44370,
+        30:  59009,
+        50:  85478,
+        75:  116420,
+        100: 146349,
+        125: 175748,
+        150: 204816
+    },}
+
+    installation_cost_df = pd.DataFrame({
+        'kw': list(installation_cost_dict['on_roof_installation_cost_pkW'].keys()),
+        'chf_pkW': list(installation_cost_dict['on_roof_installation_cost_pkW'].values()),
+        'chf_total': list(installation_cost_dict['on_roof_installation_cost_total'].values())
+    })
+    installation_cost_df.reset_index(inplace=True)
+
+
+    # select kWp range
+    kW_range_for_estim = pvalloc_settings['tech_economic_specs']['kW_range_for_pvinst_cost_estim']
+    installation_cost_df['kw_in_estim_range'] = installation_cost_df['kw'].apply(
+                                                        lambda x: True if (x >= kW_range_for_estim[0]) & 
+                                                                          (x <= kW_range_for_estim[1]) else False)
+    
+    # define intrapolation functions for cost structure -----
+    # chf_pkW
+    def func_chf_pkW(x, a, b, c, d):
+        return a +  d*((x ** b) /  (x ** c))
+    params_pkW, covar = curve_fit(func_chf_pkW, 
+                                  installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'kw'],
+                                  installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'chf_pkW'])
+    estim_instcost_chfpkW = lambda x: func_chf_pkW(x, *params_pkW)
+    checkpoint_to_logfile(f'created intrapolation function for chf_pkW using "cureve_fit" to receive curve parameters', log_file_name_def)
+    print_to_logfile(f'params_pkW: {params_pkW}', log_file_name_def)
+    
+
+    # chf_total
+    # degree = 2  # Change this to try different degrees
+    # coefs_total = Polynomial.fit(installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'kw'],
+    #                              installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'chf_total'], 
+    #                              deg=degree).convert().coef
+    # def func_chf_total_poly(x, coefs_total):
+    #     return sum(c * x**i for i, c in enumerate(coefs_total))
+    # estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs_total)
+    def func_chf_total(x, a, b, c):
+        return a +  b*(x**c) 
+    params_total, covar = curve_fit(func_chf_total,
+                                    installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'kw'],
+                                    installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'chf_total'])
+    estim_instcost_chftotal = lambda x: func_chf_total(x, *params_total) 
+    checkpoint_to_logfile(f'created intrapolation function for chf_total using "Polynomial.fit" to receive curve coefficients', log_file_name_def)
+    # print_to_logfile(f'coefs_total: {coefs_total}', log_file_name_def)
+
+    pvinstcost_coefficients = {
+        'params_pkW': list(params_pkW),
+        # 'coefs_total': list(coefs_total)
+        'params_total': list(params_total)
+    }
+
+    # export 
+    with open(f'{data_path_def}/output/{name_dir_import}/pvinstcost_coefficients.json', 'w') as f:
+        json.dump(pvinstcost_coefficients, f)
+
+    np.save(f'{data_path_def}/output/{name_dir_import}/pvinstcost_coefficients.npy', pvinstcost_coefficients)
+
+
+    # plot installation cost df + intrapolation functions -------------------
+    if True: 
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6)) 
+        kw_range = np.linspace(installation_cost_df['kw'].min(), installation_cost_df['kw'].max(), 100)
+        chf_pkW_fitted = estim_instcost_chfpkW(kw_range)
+        chf_total_fitted = estim_instcost_chftotal(kw_range)
+
+        # Scatter plots + interpolation -----
+        # Interpolated line kWp Cost per kW
+        axs[0].plot(kw_range, chf_pkW_fitted, label='Interpolated chf_pkW', color='red', alpha = 0.5)  
+        axs[0].scatter(installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'kw'],
+                       installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'chf_pkW'], 
+                       label='point range used for function estimation', color='purple', s=160, alpha=0.5)
+        axs[0].scatter(installation_cost_df['kw'], installation_cost_df['chf_pkW'], label='chf_pkW', color='blue', )
+
+                       
+        axs[0].set(xlabel='kW', ylabel='CHF', title='Cost per kW')
+        axs[0].legend()
+        
+
+        # Interpolated line kWp Total Cost
+        axs[1].plot(kw_range, chf_total_fitted, label='Interpolated chf_total', color='green', alpha = 0.5)
+        axs[1].scatter(installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'kw'],
+                       installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'chf_total'], 
+                       label='point range used for function estimation', color='purple', s=160, alpha=0.5)
+        axs[1].scatter(installation_cost_df['kw'], installation_cost_df['chf_total'], label='chf_total', color='orange')
+
+        axs[1].set(xlabel='kW', ylabel='CHF', title='Total Cost')
+        axs[1].legend()
+
+        # Export the plots
+        plt.tight_layout()
+        # plt.show()
+        plt.savefig(f'{data_path_def}/output/{name_dir_import}/pvinstcost_table.png')
+
+    # export cost df -------------------
+    installation_cost_df.to_parquet(f'{data_path_def}/output/{name_dir_import}/pvinstcost_table.parquet')
+    installation_cost_df.to_csv(f'{data_path_def}/output/{name_dir_import}/pvinstcost_table.csv')
+    checkpoint_to_logfile(f'exported pvinstcost_table', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 
     return estim_instcost_chfpkW, estim_instcost_chftotal
+
+
+
 
 
 

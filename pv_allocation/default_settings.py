@@ -82,6 +82,7 @@ pvalloc_default_settings = {
         'kWpeak_per_m2': 0.2,                       # A 1m2 area can fit 0.2 kWp of PV Panels, 10kWp per 50m2; ASSUMPTION HECTOR: 300 Wpeak / 1.6 m2
         'share_roof_area_available': 1,           # x% of the roof area is effectively available for PV installation  ASSUMPTION HECTOR: 70%¨
         'max_distance_m_for_EGID_node_matching': 0, # max distance in meters for matching GWR EGIDs that have no node assignment to the next grid node
+        'kW_range_for_pvinst_cost_estim':[0 , 61], # max range 2 kW to 150
         },
     'panel_efficiency_specs': {
         'variable_panel_efficiency_TF': True,

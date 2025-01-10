@@ -146,8 +146,8 @@ def data_aggregation_MASTER(dataagg_settings_func):
     reextend_fixed_data = dataagg_settings['reextend_fixed_data']
 
     if reextend_fixed_data: # or not cost_df_exists_TF:
-        subchapter_to_logfile('extend data: ESTIM PV INSTALLTION COST FUNCTION,  ', log_name)
-        extend_data.estimate_pv_cost(dataagg_settings_def = dataagg_settings)
+        # subchapter_to_logfile('extend data: ESTIM PV INSTALLTION COST FUNCTION,  ', log_name)
+        # extend_data.estimate_pv_cost(dataagg_settings_def = dataagg_settings)
 
         subchapter_to_logfile('extend data: GET ANGLE+TILT FACTOR + NODE MAPPING', log_name)
         extend_data.get_angle_tilt_table(dataagg_settings_def = dataagg_settings)
