@@ -41,7 +41,7 @@ fig_agg = go.Figure()
 for scen in pvalloc_scenarios:
     # =========================================
     # glob.glob(f'{os.getcwd()}_data/output/{scen}/pvalloc_settings.json')
-    wd_path = 'C:/Models/OptimalPV_RH'
+    wd_path = os.getcwd()
     pvalloc_settings = json.load(open(f'{wd_path}_data/output/{scen}/pvalloc_settings.json', 'r'))
 
 
