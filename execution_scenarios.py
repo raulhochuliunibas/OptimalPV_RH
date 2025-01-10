@@ -13,8 +13,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 12,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -30,8 +28,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 60,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -46,8 +42,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 60,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -63,8 +57,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 24,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -79,8 +71,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 24,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -97,8 +87,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 24,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -113,8 +101,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 24,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -129,8 +115,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 24,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -145,8 +129,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 24,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -166,8 +148,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 48,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -185,8 +165,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 48,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -204,8 +182,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 48,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -223,8 +199,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 48,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -241,8 +215,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 120,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -257,8 +229,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 120,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -273,8 +243,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 120,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -289,8 +257,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 120,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -310,8 +276,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 120,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -329,8 +293,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 120,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -348,8 +310,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 120,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -367,8 +327,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 120,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -385,7 +343,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2768, 2761, 2772, 2785, 
         ],        
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 1, 
             'pvprod_calc_method': 'method2.2',},
@@ -400,7 +358,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2768, 2761, 2772, 2785, 
         ],
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 1, 
             'pvprod_calc_method': 'method3.2',},
@@ -415,7 +373,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2768, 2761, 2772, 2785, 
         ],        
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 1, 
             'pvprod_calc_method': 'method2.2',},
@@ -430,7 +388,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2768, 2761, 2772, 2785, 
         ],
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 1, 
             'pvprod_calc_method': 'method3.2',},
@@ -454,8 +412,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 48,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -470,8 +426,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 48,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
@@ -486,8 +440,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 48,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -502,8 +454,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'months_prediction': 48,
         'algorithm_specs': {
             'inst_selection_method': 'prob_weighted_npv', },
-        'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 2000,},
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
         'MC_loop_specs': {
@@ -518,7 +468,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2768, 2761, 2772, 2785, 
         ],
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 0.7,
             'pvprod_calc_method': 'method2.2',},
@@ -533,7 +483,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2768, 2761, 2772, 2785, 
         ],
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 0.7,
             'pvprod_calc_method': 'method3.2',},
@@ -601,7 +551,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2473, 2475, 2480,   
         ],
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 1, 
             'pvprod_calc_method': 'method2.2',},
@@ -617,7 +567,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2473, 2475, 2480,   
         ],
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 1, 
             'pvprod_calc_method': 'method3.2',},
@@ -634,7 +584,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2473, 2475, 2480,   
         ],
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 0.7,
             'pvprod_calc_method': 'method2.2',},
@@ -650,7 +600,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2473, 2475, 2480,   
         ],
         'gwr_selection_specs': {
-            'solkat_max_area_per_EGID': 1000,},
+            'solkat_area_per_EGID_range': 1000,},
         'tech_economic_specs': {
             'share_roof_area_available': 0.7,
             'pvprod_calc_method': 'method3.2',},
