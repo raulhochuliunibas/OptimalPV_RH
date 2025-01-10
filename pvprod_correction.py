@@ -22,7 +22,9 @@ from plotly.subplots import make_subplots
 # FUNCTION INPUT ==========================
 pvalloc_scenarios = [    
     'pvalloc_BLsml_24m_meth2.2_random',
-    'pvalloc_BLsml_24m_meth2.2_npvweight',
+
+    # results in plots are identical for npv and random scenarios
+    # 'pvalloc_BLsml_24m_meth2.2_npvweight', 
     # 'pvalloc_BLsml_24m_meth3.2_random',
 
 ]
@@ -86,18 +88,12 @@ for scen in pvalloc_scenarios:
                                                                         108,            19.35,              21712,                  18930,                         31968],
     ['391393',  'Klusstrasse 27b, Aesch',   ['10212854', '10212855'],   109,            18.66,              15746,                  18930,                         28354,
                                                                         109,            19.8,               22181,                  18930,                         32469],
-    ['3032639', 'Klusstrasse 29, Aesch',    ['10212957'],               63,             10.01,              9667,                   18930,                         22311,
-                                                                        63,             10.35,              9996,                   18930,                         23357],
     ['391404', 'Trottmattweg 2, Aesch',     ['10212880'],               93,             15.47,              14917,                  18930,                         26847,
                                                                         93,             15.75,              15186,                  18930,                         27961],   
     ['391289' , 'Lerchenstrasse 29, Aesch', ['10213770', '10213771',
                                              '10213772', '10213773',
                                              '10213774', '10213775',],  164,            18.66,              17757,                  18930,                         28354,        
                                                                         164,            29.7,               32576,                  18930,                         42921],
-    ['391186', 'Amselweg 3a, Aesch',        ['10213751', '10213752'],   58,             10.01,              9885,                   18930,                         22311,
-                                                                        58,             10.35,              10180,                  18930,                         23357],
-    ['391187', 'Amselweg 3b, Aesch',        ['10213751', '10213752'],   58,             10.01,              9885,                   18930,                         22311,
-                                                                        58,             10.35,              10180,                  18930,                         23357],
     ['391262', 'Drosselweg 22, Aesch',      ['10213778', '10213779', 
                                              '10213818', '10213819',],  175,            18.66,              17688,                  18930,                         28354,
                                                                         175,            31.5,               31265,                  18930,                         48010],
@@ -107,7 +103,16 @@ for scen in pvalloc_scenarios:
 
     ['391377', 'Klusstrasse 66, Aesch',     ['10212671', '10212672'],   167,            18.66,              16747,                  18930,                         28354, 
                                                                         167,            30.15,              28775,                  18930,                         47201],
-
+    
+    # -- lower devation than rest ----- 
+    ['3032639', 'Klusstrasse 29, Aesch',    ['10212957'],               63,             10.01,              9667,                   18930,                         22311,
+                                                                        63,             10.35,              9996,                   18930,                         23357],
+    ['391186', 'Amselweg 3a, Aesch',        ['10213751', '10213752'],   58,             10.01,              9885,                   18930,                         22311,
+                                                                        58,             10.35,              10180,                  18930,                         23357],
+    ['391187', 'Amselweg 3b, Aesch',        ['10213751', '10213752'],   58,             10.01,              9885,                   18930,                         22311,
+                                                                        58,             10.35,              10180,                  18930,                         23357],
+    
+    # -- negative deviation of -100%, no estim_investcost calculated because pv exists already! -----
     ['410320', 'Byfangweg 3, Pfeffingen, EXISTING PV',  ['10208685',],  95,             16.84,              16429,                  18930,                         28042,
                                                                         95,             17.1,               16744,                  18930,                         29464],
     ['391263', 'Drosselweg 24, Aesch, EXISTING PV',     ['10213721', 
@@ -130,6 +135,10 @@ for scen in pvalloc_scenarios:
         comparison_df.loc[i, 'instcap_kWp'] = comparison_df.loc[i, 'FLAECHE'] * pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
         comparison_df.loc[i, 'STROMERTRAG'] = solkat.loc[(solkat['EGID'] == row['EGID']) & 
                                                         (solkat['DF_UID'].isin(row['DF_UID_solkat_selection'])), 'STROMERTRAG'].sum()
+        comparison_df.loc[i, 'NEIGUNG'] = solkat.loc[(solkat['EGID'] == row['EGID']) &
+                                                     (solkat['DF_UID'].isin(row['DF_UID_solkat_selection'])), 'NEIGUNG'].mean()
+        comparison_df.loc[i, 'AUSRICHTUNG'] = solkat.loc[(solkat['EGID'] == row['EGID']) &
+                                                         (solkat['DF_UID'].isin(row['DF_UID_solkat_selection'])), 'AUSRICHTUNG'].mean()
         
 
         # row_npv = npv_df.loc[npv_df['EGID'] == row['EGID']].iloc[2]
@@ -167,12 +176,12 @@ for scen in pvalloc_scenarios:
     # plot --------------------
     fig = go.Figure()
     plot_cols = [
-        'FLAECHE',     
+        # 'FLAECHE',     
         # 'flaech_bkw',           'flaech_ewz',
         'instcap_kWp',  'instcapa_kWp_bkw',     #'instcapa_kWp_ewz',
         # 'pvprod_kW',    'pvprod_kWh_pyear_bkw', 'pvprod_kWh_pyear_ewz',
-        # 'STROMERTRAG',
-        'estim_pvinstcost_chf', 'estim_investcost_inclsubsidy_chf_bkw', 'estim_investcost_inclsubsidy_chf_ewz',
+        'STROMERTRAG', 'NEIGUNG', 'AUSRICHTUNG',
+        # 'estim_pvinstcost_chf', 'estim_investcost_inclsubsidy_chf_bkw', 'estim_investcost_inclsubsidy_chf_ewz',
         'estim_cost_chf_pkWp', 'estim_cost_chf_pkWp_bkw', 'estim_cost_chf_pkWp_ewz', 
         # 'estim_cost_chf_pkWh', 'estim_cost_chf_pkWh_bkw', 'estim_cost_chf_pkWh_ewz',   
         'delta_cost_pkWp_mod_bkw',     
@@ -181,6 +190,7 @@ for scen in pvalloc_scenarios:
     cols_in_second_axis_tuples = [
         ('pvprod_kW', 1000), ('pvprod_kWh_pyear_bkw', 1000), ('pvprod_kWh_pyear_ewz', 1000),
         ('STROMERTRAG', 1000),  #('FLAECHE', 10),
+        ('NEIGUNG', 100), ('AUSRICHTUNG', 100), 
         ('estim_pvinstcost_chf', 1000), ('estim_investcost_inclsubsidy_chf_bkw', 1000), ('estim_investcost_inclsubsidy_chf_ewz', 1000),
         ('estim_cost_chf_pkWp', 100), ('estim_cost_chf_pkWp_bkw', 100), ('estim_cost_chf_pkWp_ewz', 100),
         ('estim_cost_chf_pkWh', 0.1), ('estim_cost_chf_pkWh_bkw', 0.1), ('estim_cost_chf_pkWh_ewz', 0.1),
