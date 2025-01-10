@@ -661,7 +661,10 @@ def update_npv_df(pvalloc_settings,
             estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
             estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 
-        aggsubdf_combo['estim_pvinstcost_chf'] = estim_instcost_chftotal(aggsubdf_combo['FLAECHE'] * kWpeak_per_m2 * share_roof_area_available)
+        # correct cost estimation by a factor based on insights from pvprod_correction.py
+        estim_pvinst_cost_correctionfactor = pvalloc_settings['tech_economic_specs']['estim_pvinst_cost_correctionfactor']
+        aggsubdf_combo['estim_pvinstcost_chf'] = estim_instcost_chftotal(aggsubdf_combo['FLAECHE'] * kWpeak_per_m2 * share_roof_area_available) / estim_pvinst_cost_correctionfactor
+
 
         def compute_npv(row):
             pv_cashflow = (row['econ_inc_chf'] - row['econ_spend_chf']) / (1+interest_rate)**np.arange(1, invst_maturity+1)
