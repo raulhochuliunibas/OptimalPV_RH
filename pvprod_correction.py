@@ -176,20 +176,20 @@ for scen in pvalloc_scenarios:
     # plot --------------------
     fig = go.Figure()
     plot_cols = [
-        # 'FLAECHE',     
-        # 'flaech_bkw',           'flaech_ewz',
-        'instcap_kWp',  'instcapa_kWp_bkw',     #'instcapa_kWp_ewz',
-        # 'pvprod_kW',    'pvprod_kWh_pyear_bkw', 'pvprod_kWh_pyear_ewz',
+        'FLAECHE',     
+        'flaech_bkw',           'flaech_ewz',
+        'instcap_kWp',  'instcapa_kWp_bkw',     'instcapa_kWp_ewz',
+        'pvprod_kW',    'pvprod_kWh_pyear_bkw', 'pvprod_kWh_pyear_ewz',
         'STROMERTRAG', 'NEIGUNG', 'AUSRICHTUNG',
-        # 'estim_pvinstcost_chf', 'estim_investcost_inclsubsidy_chf_bkw', 'estim_investcost_inclsubsidy_chf_ewz',
+        'estim_pvinstcost_chf', 'estim_investcost_inclsubsidy_chf_bkw', 'estim_investcost_inclsubsidy_chf_ewz',
         'estim_cost_chf_pkWp', 'estim_cost_chf_pkWp_bkw', 'estim_cost_chf_pkWp_ewz', 
-        # 'estim_cost_chf_pkWh', 'estim_cost_chf_pkWh_bkw', 'estim_cost_chf_pkWh_ewz',   
+        'estim_cost_chf_pkWh', 'estim_cost_chf_pkWh_bkw', 'estim_cost_chf_pkWh_ewz',   
         'delta_cost_pkWp_mod_bkw',     
         'delta_cost_pkWp_mod_ewz',
                 ]
     cols_in_second_axis_tuples = [
         ('pvprod_kW', 1000), ('pvprod_kWh_pyear_bkw', 1000), ('pvprod_kWh_pyear_ewz', 1000),
-        ('STROMERTRAG', 1000),  #('FLAECHE', 10),
+        ('STROMERTRAG', 1000),  ('FLAECHE', 10), ('flaech_bkw', 10), ('flaech_ewz', 10),
         ('NEIGUNG', 100), ('AUSRICHTUNG', 100), 
         ('estim_pvinstcost_chf', 1000), ('estim_investcost_inclsubsidy_chf_bkw', 1000), ('estim_investcost_inclsubsidy_chf_ewz', 1000),
         ('estim_cost_chf_pkWp', 100), ('estim_cost_chf_pkWp_bkw', 100), ('estim_cost_chf_pkWp_ewz', 100),
@@ -249,7 +249,7 @@ fig_agg.update_layout(
     yaxis2=dict(title='Secondary Axis', overlaying='y', side='right'),  # Configure secondary y-axis
 )
 fig_agg.show()
-fig_agg.write_html(f'{data_path}/output/visualizations_pvprod_correction/pvprod_correction_agg.html')
+fig_agg.write_html(f'{data_path}/output/visualizations_pvprod_correction/pvprod_correction_agg_{len(pvalloc_scenarios)}scen.html')
 
 print_mean_deviation_tobkw = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'delta_cost_pkWp_mod_bkw'].mean()
 print_mean_deviation_toewz = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'delta_cost_pkWp_mod_ewz'].mean()
