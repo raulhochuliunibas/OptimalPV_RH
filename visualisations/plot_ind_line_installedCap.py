@@ -43,8 +43,24 @@ def plot(pvalloc_scen_list,
 
 
     if visual_settings['plot_ind_line_installedCap'][0]:#  or visual_settings['plot_ind_line_installedCap_per_BFS']:
+
+        checkpoint_to_logfile(f'plot_ind_line_installedCap', log_name)
+        # available color palettes
+        trace_color_dict = {
+            'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
+            'Viridis': pc.sequential.Viridis, 'Plotly3': pc.sequential.Plotly3, 
+            'Bluered': pc.sequential.Bluered, 'Turbo': pc.sequential.Turbo, 
+
+            'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
+            'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
+            'Teal': pc.sequential.Teal, 'Magenta': pc.sequential.Magenta, 'Blackbody': pc.sequential.Blackbody, 
+
+        }        
+
+
         i_scen, scen = 0, scen_dir_export_list[0]
 
+        fig_agg_pmonth = go.Figure()
         for i_scen, scen in enumerate(scen_dir_export_list):
             mc_data_path = glob.glob(f'{data_path}/output/{scen}/{visual_settings['MC_subdir_for_plot']}')[0] # take first path if multiple apply, so code can still run properly
             pvalloc_scen = pvalloc_scen_list[i_scen]
@@ -87,6 +103,15 @@ def plot(pvalloc_scen_list,
                 capa_year_built = capa_year_df.loc[capa_year_df['info_source'] == 'pv_df'].copy()
                 capa_year_predicted = capa_year_df.loc[capa_year_df['info_source'] == 'alloc_algorithm'].copy()
 
+                capa_cumm_year_df =  pvinst_df.copy()
+                capa_cumm_year_df['BeginOp_year'] = capa_cumm_year_df['BeginOp'].dt.to_period('Y')
+                # capa_cumm_year_df.sort_values(by='BeginOp_year', inplace=True)
+                capa_cumm_year_df = capa_cumm_year_df.groupby(['BeginOp_year',])['TotalPower'].sum().reset_index().copy()
+                capa_cumm_year_df['Cumm_TotalPower'] = capa_cumm_year_df['TotalPower'].cumsum()
+                capa_cumm_year_df['BeginOp_year'] = capa_cumm_year_df['BeginOp_year'].dt.to_timestamp()
+
+
+
                 # plot ----------------
                 fig1 = go.Figure()
                 fig1.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'], line = dict(color = 'navy'),name='built + predicted (month)', mode='lines+markers'))
@@ -96,6 +121,8 @@ def plot(pvalloc_scen_list,
                 fig1.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'], line = dict(color = 'forestgreen'), name='built + predicted (year)', mode='lines+markers',))
                 fig1.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'], y=capa_year_built['TotalPower'], line = dict(color = 'lightgreen'), name='built (year)', mode='lines+markers'))
                 fig1.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'], y=capa_year_predicted['TotalPower'], line = dict(color = 'limegreen'), name='predicted (year)', mode='lines+markers'))
+
+                fig1.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'], line = dict(color ='purple'), name='cumulative built + pred (year)', mode='lines+markers'))
 
                 fig1.update_layout(
                     xaxis_title='Time',
@@ -210,3 +237,62 @@ def plot(pvalloc_scen_list,
                     fig2.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_BFS.html')
                 print_to_logfile(f'\texport: plot_ind_line_installedCap_per_BFS.html (for: {scen})', log_name)
            
+
+            # plot add aggregated - line: Installed Capacity per Year ===========================
+            if visual_settings['plot_ind_line_installedCap'][0]:  #['plot_ind_line_installedCap_per_month']: 
+            
+                color_allscen_list = [list(trace_color_dict.keys())[i_scen] for i_scen in range(len(scen_dir_export_list))]
+                color_palette = trace_color_dict[list(trace_color_dict.keys())[i_scen]]
+
+                # fig_agg_pmonth.add_trace(go.Scatter(x=[0,], y=[0,],  name=f'',opacity=1, ))
+                fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],  name=f'',opacity=0, ))
+                fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'], line = dict(color = 'black'), name=f'{scen}',opacity=0, mode='lines+markers'))
+
+                fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],                opacity = 0.75, line = dict(color = color_palette[0]),                 name='-- built + predicted (month)', mode='lines+markers'))
+                fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_built['BeginOp_month'], y=capa_month_built['TotalPower'],          opacity = 0.75, line = dict(color = color_palette[0+1]),               name='-- built (month)', mode='lines+markers'))
+                fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'],  opacity = 0.75, line = dict(color = color_palette[0+2]),               name='-- predicted (month)', mode='lines+markers'))
+                fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'],                   opacity = 0.75, line = dict(color = color_palette[0+3]),               name='-- built + predicted (year)', mode='lines+markers',))
+                fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'], y=capa_year_built['TotalPower'],             opacity = 0.75, line = dict(color = color_palette[0+4]),               name='-- built (year)', mode='lines+markers'))
+                fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'], y=capa_year_predicted['TotalPower'],     opacity = 0.75, line = dict(color = color_palette[0+5]),               name='-- predicted (year)', mode='lines+markers'))
+                fig_agg_pmonth.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'],    opacity = 0.75, line = dict(color = color_palette[-1]),                name='-- cumulative built + pred (year)', mode='lines+markers'))
+
+
+
+                # export plot add aggregated - line: Installed Capacity per Year 
+                if i_scen == len(scen_dir_export_list)-1:
+                    fig_agg_pmonth.update_layout(
+                    xaxis_title='Time',
+                    yaxis_title='Installed Capacity (kW)',
+                    legend_title='Time steps',
+                    title = f'Installed Capacity per Month/Year, {len(scen_dir_export_list)}scen (weather year: {pvalloc_scen["weather_specs"]["weather_year"]})'
+                    )
+
+                    # add T0 prediction
+                    T0_prediction = pvalloc_scen['T0_prediction']
+                    date = '2008-01-01 00:00:00'
+                    fig_agg_pmonth.add_shape(
+                        # Line Vertical
+                        dict(
+                            type="line",
+                            x0=T0_prediction,
+                            y0=0,
+                            x1=T0_prediction,
+                            y1=max(capa_year_df['TotalPower'].max(), capa_year_df['TotalPower'].max()),  # Dynamic height
+                            line=dict(color="black", width=1, dash="dot"),
+                        )
+            )
+                    fig_agg_pmonth.add_annotation(
+                        x=  T0_prediction,
+                        y=max(capa_year_df['TotalPower'].max(), capa_year_df['TotalPower'].max()),
+                        text="T0 Prediction",
+                        showarrow=False,
+                        yshift=10
+                    )
+
+                    fig_agg_pmonth = set_default_fig_zoom_year(fig_agg_pmonth, default_zoom_year, capa_year_df, 'BeginOp_year')
+
+                    if plot_show and visual_settings['plot_ind_line_installedCap'][1]:
+                        fig_agg_pmonth.show()
+
+                    fig_agg_pmonth.write_html(f'{data_path}/output/visualizations/plot_agg_line_installedCap__{len(scen_dir_export_list)}scen.html')
+                    print_to_logfile(f'\texport: plot_agg_line_installedCap__{len(scen_dir_export_list)}scen.html', log_name)
