@@ -214,10 +214,10 @@ for scen_group in scenario_comparison_groups:
 
             fig.update_traces(opacity=0.75)
             fig.show()
-            if not os.path.exists(f'{data_path}/output/visualizations/individual_visualizations'):
-                os.makedirs(f'{data_path}/output/visualizations/individual_visualizations')
+            if not os.path.exists(f'{data_path}/output/visualizations_individual_plots'):
+                os.makedirs(f'{data_path}/output/visualizations_individual_plots')
             file_name = f'hist_pvprod_diff_hist_{scen_group}.html'
-            fig.write_html(f'{data_path}/output/visualizations/individual_visualizations/{file_name}.html')
+            fig.write_html(f'{data_path}/output/visualizations_individual_plots/{file_name}.html')
 
 
         # plot JOINT histograms ----------------------
@@ -275,10 +275,10 @@ for scen_group in scenario_comparison_groups:
             fig_loglog_rel.show()
 
             # export
-            if not os.path.exists(f'{data_path}/output/visualizations/individual_visualizations'):
-                os.makedirs(f'{data_path}/output/visualizations/individual_visualizations')
+            if not os.path.exists(f'{data_path}/output/visualizations_individual_plots'):
+                os.makedirs(f'{data_path}/output/visualizations_individual_plots')
             
-            ind_visual_path = f'{data_path}/output/visualizations/individual_visualizations'
+            ind_visual_path = f'{data_path}/output/visualizations_individual_plots'
             fig_abs.write_html(f'{ind_visual_path}/joint_hist_pvprod_abs_{additonal_hist_col}_{scen_group}.html')
             fig_rel.write_html(f'{ind_visual_path}/joint_hist_pvprod_rel_{additonal_hist_col}_{scen_group}.html')
             fig_loglog_abs.write_html(f'{ind_visual_path}/joint_hist_pvprod_loglog_{additonal_hist_col}_{scen_group}.html')

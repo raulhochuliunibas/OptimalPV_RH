@@ -191,10 +191,10 @@ for scen_group in scenario_comparison_groups:
 
         fig.update_traces(opacity=0.75)
         fig.show()
-        if not os.path.exists(f'{data_path}/output/visualizations/individual_visualizations'):
-            os.makedirs(f'{data_path}/output/visualizations/individual_visualizations')
+        if not os.path.exists(f'{data_path}/output/visualizations_individual_plots'):
+            os.makedirs(f'{data_path}/output/visualizations_individual_plots')
         file_name = f'hist_pvCapaProd_comparison_{scen_group}.html'
-        fig.write_html(f'{data_path}/output/visualizations/individual_visualizations/{file_name}.html')
+        fig.write_html(f'{data_path}/output/visualizations_individual_plots/{file_name}.html')
 
                   
 # all weather years  --------------------------------------------------------------------
@@ -368,9 +368,9 @@ if False:
                     yaxis_title = 'Radiation [W/m²]',
                     )
     fig.show()
-    if not os.path.exists(f'{data_path}/output/visualizations/individual_visualizations'):
-        os.makedirs(f'{data_path}/output/visualizations/individual_visualizations')
+    if not os.path.exists(f'{data_path}/output/visualizations_individual_plots'):
+        os.makedirs(f'{data_path}/output/visualizations_individual_plots')
     plot_by_time_interval_str = '_'.join(plot_by_time_interval)
     file_name = f'all_wheather_years_diff_by_{plot_by_time_interval_str}.html'
-    fig.write_html(f'{data_path}/output/visualizations/individual_visualizations/{file_name}.html')
+    fig.write_html(f'{data_path}/output/visualizations_individual_plots/{file_name}.html')
     print(" END: all weather years  --------------------------------------------------------------------\n\n\n")
