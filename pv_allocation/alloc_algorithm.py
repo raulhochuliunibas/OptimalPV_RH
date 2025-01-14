@@ -176,10 +176,14 @@ def calc_economics_in_topo_df(
             checkpoint_to_logfile(f'  start merge solkat_month to subdf {i} to {i+stepsize-1}', log_file_name, 1) if i < 2 else None
             subdf = subdf.merge(solkat_month[['df_uid', 'month', 'A_PARAM', 'B_PARAM', 'C_PARAM']], how='left', on=['df_uid', 'month'])
             checkpoint_to_logfile(f'  end merge solkat_month to subdf {i} to {i+stepsize-1}', log_file_name, 1) if i < 2 else None
-            subdf['radiation'] = subdf['A_PARAM'] * subdf['rad_direct'] + subdf['B_PARAM'] * subdf['rad_diffuse'] + subdf['C_PARAM']
+            # subdf['radiation'] = subdf['A_PARAM'] * subdf['rad_direct'] + subdf['B_PARAM'] * subdf['rad_diffuse'] + subdf['C_PARAM']
+            subdf['radiation'] = np.where(
+                                    (subdf['rad_direct'] != 0) | (subdf['rad_diffuse'] != 0),
+                                    subdf['A_PARAM'] * subdf['rad_direct'] + subdf['B_PARAM'] * subdf['rad_diffuse'] + subdf['C_PARAM'],
+                                    0)
 
             meteo_ts['radiation'] = meteo_ts['rad_direct'] * flat_direct_rad_factor + meteo_ts['rad_diffuse'] * flat_diffuse_rad_factor
-            meteo_ts['radiation_abc_param_1dfuid'] = meteo_ts['rad_direct'] * subdf['A_PARAM'].mean() + meteo_ts['rad_diffuse'] * subdf['B_PARAM'].mean() + subdf['C_PARAM'].mean()
+            # meteo_ts['radiation_abc_param_1dfuid'] = meteo_ts['rad_direct'] * subdf['A_PARAM'].mean() + meteo_ts['rad_diffuse'] * subdf['B_PARAM'].mean() + subdf['C_PARAM'].mean()
 
             if pvalloc_settings['weather_specs']['rad_rel_loc_max_by'] == 'dfuid_specific':
                 subdf_dfuid_topradation = subdf.groupby('df_uid')['radiation'].apply(lambda x: x.nlargest(10).mean()).reset_index()
