@@ -45,6 +45,7 @@ if True:
     
     import visualisations.plot_ind_var_summary_stats as plot_ind_var_summary_stats
     import visualisations.plot_ind_hist_pvcapaprod_sanitycheck as plot_ind_hist_pvcapaprod_sanitycheck
+    import visualisations.plot_ind_hist_radiation_rng_sanitycheck as plot_ind_hist_radiation_rng_sanitycheck
     import visualisations.plot_ind_charac_omitted_gwr as plot_ind_charac_omitted_gwr
     import visualisations.plot_ind_line_meteo_radiation as plot_ind_line_meteo_radiation
     import visualisations.plot_ind_line_installedCap as plot_ind_line_installedCap
@@ -53,12 +54,15 @@ if True:
     import visualisations.plot_ind_line_gridPremiumHOY_per_node as plot_ind_line_gridPremiumHOY_per_node
     import visualisations.plot_ind_line_gridPremium_structure as plot_ind_line_gridPremium_structure
     import visualisations.plot_ind_hist_NPV_freepartitions as plot_ind_hist_NPV_freepartitions
+    import visualisations.plot_ind_lineband_contcharact_newinst as plot_ind_lineband_contcharact_newinst
     
     import visualisations.plot_ind_map_topo_egid as plot_ind_map_topo_egid
     import visualisations.plot_ind_map_node_connections as plot_ind_map_node_connections
     import visualisations.plot_ind_map_omitted_egids as plot_ind_map_omitted_egids
 
-    import visualisations.plot_ind_lineband_contcharact_newinst as plot_ind_lineband_contcharact_newinst
+
+    import visualisations.plot_mc_line_PVproduction as plot_mc_line_PVproduction
+
 
 
 def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
@@ -154,6 +158,9 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # plot ind - hist: sanity check capacity & production --------------------
     plot_ind_hist_pvcapaprod_sanitycheck.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
+    # plot ind - hist: radiation range --------------------
+    plot_ind_hist_radiation_rng_sanitycheck.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+
     # plot ind - var: disc charac omitted gwr_egids --------------------
     plot_ind_charac_omitted_gwr.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
@@ -202,6 +209,16 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
     # plot ind - lineband: continuous characteristics for new installations --------------------
     plot_ind_lineband_contcharact_newinst.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+
+
+
+
+    # PLOT IND SCEN: aggregated pvalloc_MC_algorithm ------------------------------------------------------------------------------------------------------
+
+    # plot mc - line: PV production ----------------
+    plot_mc_line_PVproduction.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+
+
 
 
 

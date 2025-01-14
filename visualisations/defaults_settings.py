@@ -28,6 +28,7 @@ visual_default_settings = {
                 'uniform_scencolor_and_KDE_TF': True,
                 'export_spatial_data_for_prod0': True, 
                 },
+        'plot_ind_hist_radiation_rng_sanitycheck': [False,     True,       False],
         'plot_ind_hist_pvprod_deviation':       [False,     True,       False],
         'plot_ind_charac_omitted_gwr':          [False,     True,       False],
             'plot_ind_charac_omitted_gwr_specs':{
