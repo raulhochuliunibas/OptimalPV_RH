@@ -73,6 +73,7 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
     'pvalloc_BFS2761_12m_meth2.2_random_DEBUG', 
+    'pvalloc_BFS2761_12m_meth3.2_random_DEBUG', 
 
     # 'pvalloc_BLsml_24m_6mc_meth2.2_random', 
     # 'pvalloc_BLsml_24m_6mc_meth2.2_npvweight',
@@ -80,26 +81,11 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
     # 'pvalloc_BLsml_60m_10mc_meth2.2_random',
     # 'pvalloc_BLsml_60m_10mc_meth2.2_npvweight',
 
-    # 'pvalloc_BLsml_24m_meth2.2_random',
+    'pvalloc_BLsml_24m_meth2.2_random',
     # 'pvalloc_BLsml_24m_meth2.2_npvweight',
-    # 'pvalloc_BLsml_24m_meth3.2_random',
+    'pvalloc_BLsml_24m_meth3.2_random',
     # 'pvalloc_BLsml_24m_meth3.2_npvweight',
     
-    # 'pvalloc_BLSOmed_48m_meth2.2_random',
-    # 'pvalloc_BLSOmed_48m_meth2.2_npvweight',
-    # 'pvalloc_BLSOmed_48m_meth3.2_random',
-    # 'pvalloc_BLSOmed_48m_meth3.2_npvweight',
-
-    # 'pvalloc_BLsml_10y_meth2.2_random',
-    # 'pvalloc_BLsml_10y_meth2.2_npvweight',
-    # 'pvalloc_BLsml_10y_meth3.2_random',
-    # 'pvalloc_BLsml_10y_meth3.2_npvweight',
-
-    # 'pvalloc_BLSOmed_10y_meth2.2_random', 
-    # 'pvalloc_BLSOmed_10y_meth2.2_npvweight',
-    # 'pvalloc_BLSOmed_10y_meth3.2_random',
-    # 'pvalloc_BLSOmed_10y_meth3.2_npvweight',
-
 
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)

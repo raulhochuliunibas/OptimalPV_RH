@@ -18,6 +18,21 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'MC_loop_specs': {
             'montecarlo_iterations': 1,}
     },
+    'pvalloc_BFS2761_12m_meth3.2_random_DEBUG':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2761, 
+        ],
+        'months_prediction': 12,
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,}
+    },
+    
 
     'pvalloc_BLsml_60m_10mc_meth2.2_random':{
         'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
