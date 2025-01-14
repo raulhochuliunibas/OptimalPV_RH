@@ -73,19 +73,19 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
     'pvalloc_BFS2761_12m_meth2.2_random_DEBUG', 
-    'pvalloc_BFS2761_12m_meth3.2_random_DEBUG', 
+    'pvalloc_BFS2761_12m_meth3.2_random_DEBUG',
+
+    'pvalloc_BLsml_24m_meth2.2_random',
+    # 'pvalloc_BLsml_24m_meth2.2_npvweight', 
+    'pvalloc_BLsml_24m_meth3.2_random',
+    # 'pvalloc_BLsml_24m_meth3.2_npvweight',
+    
 
     # 'pvalloc_BLsml_24m_6mc_meth2.2_random', 
     # 'pvalloc_BLsml_24m_6mc_meth2.2_npvweight',
 
     # 'pvalloc_BLsml_60m_10mc_meth2.2_random',
     # 'pvalloc_BLsml_60m_10mc_meth2.2_npvweight',
-
-    'pvalloc_BLsml_24m_meth2.2_random',
-    # 'pvalloc_BLsml_24m_meth2.2_npvweight',
-    'pvalloc_BLsml_24m_meth3.2_random',
-    # 'pvalloc_BLsml_24m_meth3.2_npvweight',
-    
 
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
@@ -106,12 +106,13 @@ visual_settings = {
 
         # PLOT CHUNCK -------------------------> [run plot,  show plot,  show all scen]
         # for pvalloc_inital + sanitycheck
-        'plot_ind_var_summary_stats':            [True,     False,      False], 
-        'plot_ind_hist_pvcapaprod_sanitycheck':  [True,      True,      False], 
+        'plot_ind_var_summary_stats':            [False,     False,      False], 
+        'plot_ind_hist_pvcapaprod_sanitycheck':  [False,      True,      False], 
             'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
                 'uniform_scencolor_and_KDE_TF': True,
                 'export_spatial_data_for_prod0': True, 
             },
+        'plot_ind_hist_radiation_rng_sanitycheck': [True,     True,       False],
         'plot_ind_charac_omitted_gwr':           [True,     True,       True],
         'plot_ind_line_meteo_radiation':         [True,     True,       False], 
         
