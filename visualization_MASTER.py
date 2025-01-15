@@ -45,7 +45,7 @@ if True:
     
     import visualisations.plot_ind_var_summary_stats as plot_ind_var_summary_stats
     import visualisations.plot_ind_hist_pvcapaprod_sanitycheck as plot_ind_hist_pvcapaprod_sanitycheck
-    import visualisations.plot_ind_hist_radiation_rng_sanitycheck as plot_ind_hist_radiation_rng_sanitycheck
+    import visualisations.plot_ind_boxp_radiation_rng_sanitycheck as plot_ind_boxp_radiation_rng_sanitycheck
     import visualisations.plot_ind_charac_omitted_gwr as plot_ind_charac_omitted_gwr
     import visualisations.plot_ind_line_meteo_radiation as plot_ind_line_meteo_radiation
     import visualisations.plot_ind_line_installedCap as plot_ind_line_installedCap
@@ -159,7 +159,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     plot_ind_hist_pvcapaprod_sanitycheck.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
     # plot ind - hist: radiation range --------------------
-    plot_ind_hist_radiation_rng_sanitycheck.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+    plot_ind_boxp_radiation_rng_sanitycheck.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
     # plot ind - var: disc charac omitted gwr_egids --------------------
     plot_ind_charac_omitted_gwr.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
