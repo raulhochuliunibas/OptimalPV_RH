@@ -77,16 +77,13 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
 
     'pvalloc_BLsml_24m_meth2.2_random',
     'pvalloc_BLsml_24m_meth3.2_random',
-    # 'pvalloc_BLsml_24m_meth3.2_random_OLD_radiation', 
-    # 'pvalloc_BLsml_24m_meth2.2_npvweight', 
-    # 'pvalloc_BLsml_24m_meth3.2_npvweight',
+    'pvalloc_BLsml_24m_meth2.2_npvweight', 
+    'pvalloc_BLsml_24m_meth3.2_npvweight',
     
-
-    # 'pvalloc_BLsml_24m_6mc_meth2.2_random', 
-    # 'pvalloc_BLsml_24m_6mc_meth2.2_npvweight',
-
-    # 'pvalloc_BLsml_60m_10mc_meth2.2_random',
-    # 'pvalloc_BLsml_60m_10mc_meth2.2_npvweight',
+    'pvalloc_BLsml_5y_meth2.2_random',
+    'pvalloc_BLsml_5y_meth3.2_random',
+    'pvalloc_BLsml_5y_meth2.2_npvweight',
+    'pvalloc_BLsml_5y_meth3.2_npvweight',
 
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
@@ -102,10 +99,10 @@ visual_settings = {
         'remove_old_plot_scen_directories': True,
         'save_plot_by_scen_directory': True,
         'MC_subdir_for_plot': '*MC*1', 
-        'mc_plots_individual_traces': True,
+        'mc_plots_individual_traces': True,     
         'node_selection_for_plots': ['8', '32', '10', '22'], # or None for all nodes
 
-        # PLOT CHUNCK -------------------------> [run plot,  show plot,  show all scen]
+        # PLOT CHUNCK -------------------------->   [run plot,  show plot,  show all scen]
         # for pvalloc_inital + sanitycheck
         'plot_ind_var_summary_stats':               [False,     False,      False], 
         'plot_ind_hist_pvcapaprod_sanitycheck':     [True,      True,      False], 
@@ -113,24 +110,24 @@ visual_settings = {
         'plot_ind_charac_omitted_gwr':              [True,     True,       True],
         'plot_ind_line_meteo_radiation':            [True,     True,       False], 
         
-        # for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':               [True,    True,        False],   
-        'plot_ind_line_PVproduction':               [True,    True,        False], 
-        # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, no?
-        # BOOKMARK
-        'plot_ind_line_productionHOY_per_node':     [True,    True,        False],
-        'plot_ind_line_gridPremiumHOY_per_node':    [True,    True,        False],
-        'plot_ind_line_gridPremium_structure':      [True,     True,        False],
-        'plot_ind_hist_NPV_freepartitions':         [True,     True,       False],
-        'plot_ind_map_topo_egid':                   [True,     True,       False],
-        'plot_ind_map_node_connections':            [True,     True,       False],   
-        'plot_ind_map_omitted_egids':               [True,     True,       False],
-        'plot_ind_lineband_contcharact_newinst':    [True,    True,      False],
+        # # for pvalloc_MC_algorithm 
+        # 'plot_ind_line_installedCap':               [True,    True,        False],   
+        # 'plot_ind_line_PVproduction':               [True,    True,        False], 
+        # # bookmark => plot_ind_line_PVproduction problem? -> pvprod and feedin should be the same, no?
+        # # BOOKMARK
+        # 'plot_ind_line_productionHOY_per_node':     [True,    True,        False],
+        # 'plot_ind_line_gridPremiumHOY_per_node':    [True,    True,        False],
+        # 'plot_ind_line_gridPremium_structure':      [True,     True,        False],
+        # 'plot_ind_hist_NPV_freepartitions':         [True,     True,       False],
+        # 'plot_ind_map_topo_egid':                   [True,     True,       False],
+        # 'plot_ind_map_node_connections':            [True,     True,       False],   
+        # 'plot_ind_map_omitted_egids':               [True,     True,       False],
+        # 'plot_ind_lineband_contcharact_newinst':    [True,    True,      False],
 
-        # for aggregated MC_algorithms
-        'plot_mc_line_PVproduction':                [False,    True,       False],
-        'plot_mc_line_gridnode_congestionHOY':      [False,    True,       False],
-        # for scenario comparison
+        # # for aggregated MC_algorithms
+        # 'plot_mc_line_PVproduction':                [False,    True,       False],
+        # 'plot_mc_line_gridnode_congestionHOY':      [False,    True,       False],
+        # # for scenario comparison
 
     }
 visual_settings = extend_visual_sett_with_defaults(visual_settings)
