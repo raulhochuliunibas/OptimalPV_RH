@@ -71,7 +71,7 @@ def plot(pvalloc_scen_list,
         elif not uniform_scencolor_and_KDE_TF:
             uniform_scencolor_and_KDE_TF_list = [False,]
 
-
+        export_subdf_egid_counter = 0
         # plot --------------------
         for uniform_scencolor_and_KDE_TF in uniform_scencolor_and_KDE_TF_list:
             fig_agg_abs, fig_agg_stand = go.Figure(), go.Figure()
@@ -100,21 +100,45 @@ def plot(pvalloc_scen_list,
                 for i_path, path in enumerate(topo_subdf_paths):
                     subdf= pd.read_parquet(path)
                     # subdf = subdf.loc[subdf['EGID'].isin(egid_with_pvdf)]
-                    # compute pvprod by using TotalPower of pv_df, check if it overlaps with computation of STROMERTRAG
-                    # subdf['pvprod_TotalPower_kW'] = subdf['radiation_rel_locmax'] * subdf['TotalPower'] *  inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] 
-                    subdf.loc[:, 'pvprod_TotalPower_kW'] = subdf['radiation_rel_locmax'] * subdf['TotalPower'] * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency']
-                    
+                    # > compute pvprod by using TotalPower of pv_df, check if it overlaps with computation of STROMERTRAG
+                    # > problem with multiple df_uids per EGID, pvprod_TotalPower will be multiply counted. Only assign  pvprod_TotalPower 
+                    # > to first df_uid of EGID. 
 
-                    agg_subdf = subdf.groupby(['EGID', 'df_uid', 'FLAECHE', 'STROMERTRAG']).agg({'pvprod_kW': 'sum', 
+                    # subdf['pvprod_TotalPower_kW'] = subdf['radiation_rel_locmax'] * subdf['TotalPower'] *  inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] 
+                    # subdf.loc[:, 'pvprod_TotalPower_kW'] = subdf['radiation_rel_locmax'] * subdf['TotalPower'] * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency']
+                    # subdf.loc[subdf['info_source'] != 'pv_df', 'pvprod_TotalPower_kW'] = np.nan
+                    subdf['first_dfuid'] = subdf.groupby('EGID')['df_uid'].transform(lambda x: x == x.iloc[0])
+                    subdf['pvprod_TotalPower_kW'] = np.where(
+                        subdf['first_dfuid'],
+                        subdf['radiation_rel_locmax'] * subdf['TotalPower'] * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'],
+                        np.nan
+                    )
+
+                    agg_subdf = subdf.groupby(['EGID', 'df_uid', 'first_dfuid', 'FLAECHE', 'STROMERTRAG']).agg({'pvprod_kW': 'sum', 
                                                                                                 'pvprod_TotalPower_kW': 'sum'}).reset_index()
                     aggsub_npry = np.array(agg_subdf)
                     
-                    egid_list, dfuid_list, flaeche_list, pvprod_list, pvprod_ByTotalPower_list, stromertrag_list = [], [], [], [], [], []
+                    egid_list, dfuid_list, flaeche_list, pvprod_list, pvprod_ByTotalPower_list, stromertrag_list, first_dfuid_list = [], [], [], [], [], [], []
                     egid = subdf['EGID'].unique()[0]
 
                     for egid in subdf['EGID'].unique():
                         mask_egid_subdf = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('EGID')], egid)
                         df_uids  = list(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('df_uid')])
+                        
+                        # debuging chunk
+                        # subdf_pv_egid = subdf.loc[(subdf['EGID'] == egid) & (subdf['info_source'] == 'pv_df') & (subdf['pvprod_TotalPower_kW'] == 0)]
+                        if False:
+                            if export_subdf_egid_counter < 1:
+                                subdf_pv_egid = subdf.loc[(subdf['info_source'] == 'pv_df') & (subdf['pvprod_TotalPower_kW'] == 0)]
+                                if egid in subdf_pv_egid['EGID'].unique():
+                                    while export_subdf_egid_counter < 1:
+                                        # if subdf_pv_egid.shape[0] > 0:
+                                        export_subdf_egid_counter += 1
+                                        subdf_egid = subdf.loc[subdf['EGID'] == egid]
+                                        # subdf_egid.to_excel(f'{data_path}/output/{scen}/sanity_check_byEGID/subdf_egid_{egid}_pvpower0.xlsx')
+                                        # subdf_egid.to_csv(f'{data_path}/output/{scen}/sanity_check_byEGID/subdf_egid_{egid}_pvpower0.csv')
+                                        print(f'\t\texport: subdf_egid_{egid}_pvpower0.xlsx (for: {scen})')
+                        # ---
 
                         for r in range(1,len(df_uids)+1):
                             for combo in itertools.combinations(df_uids,r):
@@ -127,16 +151,23 @@ def plot(pvalloc_scen_list,
                                 pvprod_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pvprod_kW')].sum())
                                 pvprod_ByTotalPower_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pvprod_TotalPower_kW')].sum())
                                 stromertrag_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('STROMERTRAG')].sum())
+
+                                # first_dfuid_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('first_dfuid')][0])
+                                # combinations can by definition not be the first df_uid
+                                if r == 1:
+                                    first_dfuid_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('first_dfuid')][0])
+                                else:
+                                    first_dfuid_list.append(False)
                                 
                     aggsubdf_combo = pd.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 
                                                    'FLAECHE': flaeche_list, 'pvprod_kW': pvprod_list, 
                                                    'pvprod_ByTotalPower_kW': pvprod_ByTotalPower_list,
-                                                   'STROMERTRAG': stromertrag_list})
+                                                   'STROMERTRAG': stromertrag_list, 
+                                                   'first_dfuid': first_dfuid_list})
                     
                     aggdf_combo_list.append(aggsubdf_combo)
                 
                 aggdf_combo = pd.concat(aggdf_combo_list, axis=0)
-
 
                 # installed Capapcity kW --------------------------------
                 if True:            
@@ -191,9 +222,9 @@ def plot(pvalloc_scen_list,
                 # annual PV production kWh --------------------------------
                 if True:
                     # standardization for plot
-                    aggdf_combo['pvprod_kW_stand'] = (aggdf_combo['pvprod_kW'] - aggdf_combo['pvprod_kW'].mean()) / aggdf_combo['pvprod_kW'].std() 
-                    aggdf_combo['pvprod_ByTotalPower_kW_stand'] = (aggdf_combo['pvprod_ByTotalPower_kW'] - aggdf_combo['pvprod_ByTotalPower_kW'].mean()) / aggdf_combo['pvprod_ByTotalPower_kW'].std()
-                    aggdf_combo['STROMERTRAG_stand'] = (aggdf_combo['STROMERTRAG'] - aggdf_combo['STROMERTRAG'].mean()) / aggdf_combo['STROMERTRAG'].std()
+                    aggdf_combo['pvprod_kW_stand'] =                (aggdf_combo['pvprod_kW'] - aggdf_combo['pvprod_kW'].mean())                            / aggdf_combo['pvprod_kW'].std() 
+                    aggdf_combo['pvprod_ByTotalPower_kW_stand'] =   (aggdf_combo['pvprod_ByTotalPower_kW'] - aggdf_combo['pvprod_ByTotalPower_kW'].mean())  / aggdf_combo['pvprod_ByTotalPower_kW'].std()
+                    aggdf_combo['STROMERTRAG_stand'] =              (aggdf_combo['STROMERTRAG'] - aggdf_combo['STROMERTRAG'].mean())                        / aggdf_combo['STROMERTRAG'].std()
 
                     fig = make_subplots(specs=[[{"secondary_y": True}]])
                     fig.add_trace(go.Histogram(x=aggdf_combo['pvprod_kW'], 
@@ -204,7 +235,7 @@ def plot(pvalloc_scen_list,
                                             name='STROMERTRAG (solkat estimated production)',
                                             opacity=0.5, marker_color = color_solkat, 
                                             xbins = dict(size=xbins_hist_totalprodkwh_abs)), secondary_y=False)
-                    fig.add_trace(go.Histogram(x=aggdf_combo['pvprod_ByTotalPower_kW'],
+                    fig.add_trace(go.Histogram(x=aggdf_combo.loc[aggdf_combo['first_dfuid'] == True, 'pvprod_ByTotalPower_kW'],
                                                 name='Yearly Prod. TotalPower (pvdf estimated production)', 
                                                 opacity=0.5, marker_color = color_pv_df,
                                                 xbins=dict(size=xbins_hist_totalprodkwh_abs)), secondary_y=False)
@@ -217,7 +248,7 @@ def plot(pvalloc_scen_list,
                                                 name='STROMERTRAG (solkat estimated production), standardized',
                                                 opacity=0.5, marker_color = color_solkat,
                                                 xbins=dict(size=xbins_hist_totalprodkwh_stand)), secondary_y=True)
-                    fig.add_trace(go.Histogram(x=aggdf_combo['pvprod_ByTotalPower_kW_stand'],
+                    fig.add_trace(go.Histogram(x=aggdf_combo.loc[aggdf_combo['first_dfuid'] == True, 'pvprod_ByTotalPower_kW_stand'],
                                                 name='Yearly Prod. TotalPower (pvdf estimated production), standardized',
                                                 opacity=0.5, marker_color = color_pv_df,
                                                 xbins=dict(size=xbins_hist_totalprodkwh_stand)), secondary_y=True)
@@ -305,10 +336,11 @@ def plot(pvalloc_scen_list,
                     add_kde_gaussian_trace(fig_agg_abs, aggdf_combo['STROMERTRAG'],f'  KDE STROMERTRAG (solkat estimated production)',col_from_palette(trace_colpal,trace_colval), )
                     trace_colval = update_trace_color(trace_colval, trace_colincr)
 
-                    add_histogram_trace(fig_agg_abs, aggdf_combo['pvprod_ByTotalPower_kW'],
+                    add_histogram_trace(fig_agg_abs, aggdf_combo.loc[aggdf_combo['first_dfuid'] == True, 'pvprod_ByTotalPower_kW'],
                                         f' - Yearly Prod. TotalPower (pvdf estimated production)', 
                                         col_from_palette(trace_colpal, trace_colval), xbins_hist_totalprodkwh_abs)
-                    add_kde_gaussian_trace(fig_agg_abs, aggdf_combo['pvprod_ByTotalPower_kW'],f'  KDE Yearly Prod. TotalPower (pvdf estimated production)',col_from_palette(trace_colpal,trace_colval), )
+                    add_kde_gaussian_trace(fig_agg_abs, aggdf_combo.loc[aggdf_combo['first_dfuid'] == True, 'pvprod_ByTotalPower_kW'],
+                                           f'  KDE Yearly Prod. TotalPower (pvdf estimated production)',col_from_palette(trace_colpal,trace_colval), )
                     trace_colval = update_trace_color(trace_colval, trace_colincr) 
 
 
@@ -343,10 +375,10 @@ def plot(pvalloc_scen_list,
                     add_kde_gaussian_trace(fig_agg_stand, aggdf_combo['STROMERTRAG_stand'],f'  KDE STROMERTRAG (solkat estimated production), standardized',col_from_palette(trace_colpal,trace_colval), )
                     trace_colval = update_trace_color(trace_colval, trace_colincr)
 
-                    add_histogram_trace(fig_agg_stand, aggdf_combo['pvprod_ByTotalPower_kW_stand'],
+                    add_histogram_trace(fig_agg_stand, aggdf_combo.loc[aggdf_combo['first_dfuid'] == True, 'pvprod_ByTotalPower_kW_stand'],
                                         f' - Yearly Prod. TotalPower (pvdf estimated production), standardized', 
                                         col_from_palette(trace_colpal, trace_colval), xbins_hist_totalprodkwh_stand)
-                    add_kde_gaussian_trace(fig_agg_stand, aggdf_combo['pvprod_ByTotalPower_kW_stand'],f'  KDE Yearly Prod. TotalPower (pvdf estimated production), standardized',col_from_palette(trace_colpal,trace_colval), )
+                    add_kde_gaussian_trace(fig_agg_stand, aggdf_combo.loc[aggdf_combo['first_dfuid'] == True, 'pvprod_ByTotalPower_kW_stand'],f'  KDE Yearly Prod. TotalPower (pvdf estimated production), standardized',col_from_palette(trace_colpal,trace_colval), )
                     trace_colval = update_trace_color(trace_colval, trace_colincr)
 
 
@@ -383,8 +415,9 @@ def plot(pvalloc_scen_list,
                 # match GWR geom to gdf
                 aggdf_noprod_gwrgeom_gdf = aggdf_combo_noprod.merge(gwr_gdf, on='EGID', how='left')
                 aggdf_noprod_gwrgeom_gdf = gpd.GeoDataFrame(aggdf_noprod_gwrgeom_gdf, geometry='geometry')
+                aggdf_noprod_gwrgeom_gdf.set_crs(epsg=2056, inplace=True)
                 aggdf_noprod_gwrgeom_gdf.to_file(f'{data_path}/output/{scen}/topo_spatial_data/aggdf_noprod_gwrgeom_gdf.geojson', driver='GeoJSON')
-                checkpoint_to_logfile(f'\texport: aggdf_noprod_gwrgeom_gdf.geojson (scen: {scen}) for sanity check', log_name)
+                print_to_logfile(f'\texport: aggdf_noprod_gwrgeom_gdf.geojson (scen: {scen}) for sanity check', log_name)
 
                 # try to match solkat geom to gdf
                 solkat_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/solkat_gdf.geojson')
@@ -406,6 +439,7 @@ def plot(pvalloc_scen_list,
 
                 aggdf_noprod_solkatgeom_gdf.loc[aggdf_noprod_solkatgeom_gdf['geometry'] == 'NA', 'geometry'] = None
                 aggdf_noprod_solkatgeom_gdf = gpd.GeoDataFrame(aggdf_noprod_solkatgeom_gdf, geometry='geometry')
+                aggdf_noprod_solkatgeom_gdf.set_crs(epsg=2056, inplace=True)
                 aggdf_noprod_solkatgeom_gdf.to_file(f'{data_path}/output/{scen}/topo_spatial_data/aggdf_noprod_solkatgeom_gdf.geojson', driver='GeoJSON')
                 checkpoint_to_logfile(f'\texport: aggdf_noprod_solkatgeom_gdf.geojson (scen: {scen}) for sanity check', log_name)
 
