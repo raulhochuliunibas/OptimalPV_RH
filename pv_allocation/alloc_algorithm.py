@@ -180,6 +180,7 @@ def calc_economics_in_topo_df(
             # some radiation values are negative, because of the linear transformation with abc parameters. 
             # force all negative values to 0
             subdf.loc[subdf['radiation'] < 0, 'radiation'] = 0
+            subdf.loc[(subdf['rad_direct'] == 0) & (subdf['rad_diffuse'] == 0), 'radiation'] = 0
             # subdf['radiation'] = np.where(
             #                         (subdf['rad_direct'] != 0) | (subdf['rad_diffuse'] != 0),
             #                         subdf['A_PARAM'] * subdf['rad_direct'] + subdf['B_PARAM'] * subdf['rad_diffuse'] + subdf['C_PARAM'],
