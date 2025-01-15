@@ -43,7 +43,7 @@ def plot(pvalloc_scen_list,
     if visual_settings['plot_ind_line_meteo_radiation'][0]:
         checkpoint_to_logfile(f'plot_ind_line_meteo_radiation', log_name)
 
-        i_scen, scen = 0, scen_dir_export_list[1]
+        i_scen, scen = 0, scen_dir_export_list[0]
         for i_scen, scen in enumerate(scen_dir_export_list):
             scen_sett = pvalloc_scen_list[i_scen]
             scen_data_path = f'{data_path}/output/{scen}'

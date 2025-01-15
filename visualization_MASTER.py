@@ -216,7 +216,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
     # PLOT IND SCEN: aggregated pvalloc_MC_algorithm ------------------------------------------------------------------------------------------------------
 
     # plot mc - line: PV production ----------------
-    plot_mc_line_PVproduction.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
+    # plot_mc_line_PVproduction.plot(pvalloc_scen_list, visual_settings, wd_path, data_path, log_name)
 
 
 
