@@ -44,6 +44,8 @@ def plot(pvalloc_scen_list,
 
     if visual_settings['plot_ind_hist_NPV_freepartitions'][0]:
         checkpoint_to_logfile(f'plot_ind_hist_NPV_freepartitions', log_name)
+        fig_agg = go.Figure()
+
         i_scen, scen = 0, scen_dir_export_list[0]
         for i_scen, scen in enumerate(scen_dir_export_list):
             # setup + import ----------
@@ -81,3 +83,23 @@ def plot(pvalloc_scen_list,
             else:
                 fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_NPV_freepartitions.html')
            
+
+            # aggregate plot ----------------
+            fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
+            fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,)) 
+
+            fig_agg.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name=f'Before Allocation', opacity=0.5))
+            fig_agg.add_trace(go.Histogram(x=npv_df_after['NPV_uid'],  name=f'After Allocation', opacity=0.5))
+
+        fig_agg.update_layout(
+            xaxis_title=f'Net Present Value (NPV, interest rate: {pvalloc_scen["tech_economic_specs"]["interest_rate"]}, maturity: {pvalloc_scen["tech_economic_specs"]["invst_maturity"]} yr)',
+            yaxis_title='Frequency',
+            title = f'NPV Distribution of possible PV installations, first / last year ({len(scen_dir_export_list)} scen, weather year: {pvalloc_scen["weather_specs"]["weather_year"]})',
+            barmode = 'overlay')
+        # fig_agg.update_traces(bingroup=1, opacity=0.75)
+
+        if plot_show and visual_settings['plot_ind_hist_NPV_freepartitions'][1]:
+            fig_agg.show()
+            fig_agg.write_html(f'{data_path}/output/visualizations/plot_agg_hist_NPV_freepartitions__{len(scen_dir_export_list)}scen.html')
+            
+
