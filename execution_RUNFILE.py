@@ -13,8 +13,8 @@ run_on_server =     True
 print_directory_stucture_to_txtfile(not(run_on_server))
 
 run_dataagg =       False
-run_alloc_init =    False
-run_alloc_MCalg =   False
+run_alloc_init =    True
+run_alloc_MCalg =   True
 run_visual =        True
 
 
@@ -75,15 +75,26 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
     # 'pvalloc_BFS2761_12m_meth2.2_random_DEBUG', 
     # 'pvalloc_BFS2761_12m_meth3.2_random_DEBUG',
 
-    'pvalloc_BLsml_24m_meth2.2_random',
-    'pvalloc_BLsml_24m_meth3.2_random',
-    'pvalloc_BLsml_24m_meth2.2_npvweight', 
-    'pvalloc_BLsml_24m_meth3.2_npvweight',
-    
-    'pvalloc_BLsml_5y_meth2.2_random',
+    # 'pvalloc_BLsml_24m_meth2.2_random',
+    # 'pvalloc_BLsml_24m_meth3.2_random',
+    # 'pvalloc_BLsml_24m_meth2.2_npvweight', 
+    # 'pvalloc_BLsml_24m_meth3.2_npvweight',
+
+    'pvalloc_BLsml_24m_meth2.2_random_SelfConsum',
+    'pvalloc_BLsml_24m_meth3.2_random_SelfConsum',
+    'pvalloc_BLsml_24m_meth2.2_npvweight_SelfConsum', 
+    'pvalloc_BLsml_24m_meth3.2_npvweight_SelfConsum',
+
+
+    # 'pvalloc_BLsml_5y_meth2.2_random',
     'pvalloc_BLsml_5y_meth3.2_random',
     'pvalloc_BLsml_5y_meth2.2_npvweight',
     'pvalloc_BLsml_5y_meth3.2_npvweight',
+
+    'pvalloc_BLsml_5y_meth2.2_random_SelfConsum',
+    'pvalloc_BLsml_5y_meth3.2_random_SelfConsum',
+    'pvalloc_BLsml_5y_meth2.2_npvweight_SelfConsum',
+    'pvalloc_BLsml_5y_meth3.2_npvweight_SelfConsum',
 
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)

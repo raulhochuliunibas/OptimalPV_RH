@@ -142,6 +142,59 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
     },
+    
+    'pvalloc_BLsml_24m_meth2.2_random_SelfConsum':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 24,
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',
+            'self_consumption_ifapplicable': 1, },
+    },
+    'pvalloc_BLsml_24m_meth2.2_npvweight_SelfConsum':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 24,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',
+            'self_consumption_ifapplicable': 1, },
+    },
+    'pvalloc_BLsml_24m_meth3.2_random_SelfConsum':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 24,
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',
+            'self_consumption_ifapplicable': 1, },
+    },
+    'pvalloc_BLsml_24m_meth3.2_npvweight_SelfConsum':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 24,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',
+            'self_consumption_ifapplicable': 1, },
+    },
 
     
     'pvalloc_BLsml_5y_meth2.2_random':{
@@ -191,6 +244,59 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             'inst_selection_method': 'prob_weighted_npv', },
         'tech_economic_specs': {
             'pvprod_calc_method': 'method3.2',},
+    },
+
+    'pvalloc_BLsml_5y_meth2.2_random_SelfConsum':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 60,
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',
+            'self_consumption_ifapplicable': 1, },
+    },
+    'pvalloc_BLsml_5y_meth2.2_npvweight_SelfConsum':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 60,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',
+            'self_consumption_ifapplicable': 1, },
+    },
+    'pvalloc_BLsml_5y_meth3.2_random_SelfConsum':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 60,
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',
+            'self_consumption_ifapplicable': 1, },
+    },
+    'pvalloc_BLsml_5y_meth3.2_npvweight_SelfConsum':{
+        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'months_prediction': 60,
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method3.2',
+            'self_consumption_ifapplicable': 1, },
     },
 
     
