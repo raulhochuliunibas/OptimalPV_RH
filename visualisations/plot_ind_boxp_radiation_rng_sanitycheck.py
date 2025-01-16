@@ -301,16 +301,17 @@ def plot(pvalloc_scen_list,
             fig_onebox.update_layout(
                 title="Boxplots for rad_direct, rad_diff, radiation, and radiation_rel_locmax",
                 xaxis_title="Categories",
-                yaxis_title="Values",
+                yaxis_title="Radiation [W/m2]",
                 boxmode="group",  # Group boxplots
                 template="plotly_white",
                 showlegend=True   # Enable legend
             )
 
             if plot_show and visual_settings['plot_ind_hist_radiation_rng_sanitycheck'][1]:
-                fig_onebox.show()
-            elif not visual_settings['plot_ind_hist_radiation_rng_sanitycheck'][2]:
-                fig_onebox.show() if i_scen == 0 else None
+                if visual_settings['plot_ind_hist_radiation_rng_sanitycheck'][2]:
+                    fig_onebox.show()
+                elif not visual_settings['plot_ind_hist_radiation_rng_sanitycheck'][2]:
+                    fig_onebox.show() if i_scen == 0 else None
             if visual_settings['save_plot_by_scen_directory']:
                 fig_onebox.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__ind_hist_radiation_rng_sanitycheck.html')
             else:
