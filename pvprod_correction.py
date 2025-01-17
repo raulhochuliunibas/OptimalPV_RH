@@ -113,13 +113,13 @@ for scen in pvalloc_scenarios:
                                                                         58,             10.35,              10180,                  18930,                         23357],
     
     # -- negative deviation of -100%, no estim_investcost calculated because pv exists already! -----
-    ['410320', 'Byfangweg 3, Pfeffingen, EXISTING PV',  ['10208685',],  95,             16.84,              16429,                  18930,                         28042,
-                                                                        95,             17.1,               16744,                  18930,                         29464],
-    ['391263', 'Drosselweg 24, Aesch, EXISTING PV',     ['10213721', 
-                                                         '10213722', 
-                                                         '10213814', 
-                                                         '10213815',],  201,            18.66,              18094,                  18930,                         28354,
-                                                                        201,            36.45,              39392,                  18930,                         55793],
+    # ['410320', 'Byfangweg 3, Pfeffingen, EXISTING PV',  ['10208685',],  95,             16.84,              16429,                  18930,                         28042,
+    #                                                                     95,             17.1,               16744,                  18930,                         29464],
+    # ['391263', 'Drosselweg 24, Aesch, EXISTING PV',     ['10213721', 
+    #                                                      '10213722', 
+    #                                                      '10213814', 
+    #                                                      '10213815',],  201,            18.66,              18094,                  18930,                         28354,
+    #                                                                     201,            36.45,              39392,                  18930,                         55793],
 
     ]
     comparison_df = pd.DataFrame(rows, columns=col_names)
@@ -167,8 +167,8 @@ for scen in pvalloc_scenarios:
         comparison_df.loc[i, 'estim_cost_chf_pkWh_bkw'] = comparison_df.loc[i, 'estim_investcost_inclsubsidy_chf_bkw'] / comparison_df.loc[i, 'pvprod_kWh_pyear_bkw']
         comparison_df.loc[i, 'estim_cost_chf_pkWh_ewz'] = comparison_df.loc[i, 'estim_investcost_inclsubsidy_chf_ewz'] / comparison_df.loc[i, 'pvprod_kWh_pyear_ewz']
 
-        comparison_df.loc[i, 'delta_cost_pkWp_mod_bkw'] = (comparison_df.loc[i, 'estim_cost_chf_pkWp' ] - comparison_df.loc[i, 'estim_cost_chf_pkWp_bkw']) / comparison_df.loc[i, 'estim_cost_chf_pkWp_bkw']
-        comparison_df.loc[i, 'delta_cost_pkWp_mod_ewz'] = (comparison_df.loc[i, 'estim_cost_chf_pkWp' ] - comparison_df.loc[i, 'estim_cost_chf_pkWp_ewz']) / comparison_df.loc[i, 'estim_cost_chf_pkWp_ewz']
+        comparison_df.loc[i, 'reldelta_cost_pkWp_mod_bkw'] = (comparison_df.loc[i, 'estim_cost_chf_pkWp' ] - comparison_df.loc[i, 'estim_cost_chf_pkWp_bkw']) / comparison_df.loc[i, 'estim_cost_chf_pkWp_bkw']
+        comparison_df.loc[i, 'reldelta_cost_pkWp_mod_ewz'] = (comparison_df.loc[i, 'estim_cost_chf_pkWp' ] - comparison_df.loc[i, 'estim_cost_chf_pkWp_ewz']) / comparison_df.loc[i, 'estim_cost_chf_pkWp_ewz']
 
 
 
@@ -184,8 +184,8 @@ for scen in pvalloc_scenarios:
         'estim_pvinstcost_chf', 'estim_investcost_inclsubsidy_chf_bkw', 'estim_investcost_inclsubsidy_chf_ewz',
         'estim_cost_chf_pkWp', 'estim_cost_chf_pkWp_bkw', 'estim_cost_chf_pkWp_ewz', 
         'estim_cost_chf_pkWh', 'estim_cost_chf_pkWh_bkw', 'estim_cost_chf_pkWh_ewz',   
-        'delta_cost_pkWp_mod_bkw',     
-        'delta_cost_pkWp_mod_ewz',
+        'reldelta_cost_pkWp_mod_bkw',     
+        'reldelta_cost_pkWp_mod_ewz',
                 ]
     cols_in_second_axis_tuples = [
         ('pvprod_kW', 1000), ('pvprod_kWh_pyear_bkw', 1000), ('pvprod_kWh_pyear_ewz', 1000),
@@ -194,6 +194,7 @@ for scen in pvalloc_scenarios:
         ('estim_pvinstcost_chf', 1000), ('estim_investcost_inclsubsidy_chf_bkw', 1000), ('estim_investcost_inclsubsidy_chf_ewz', 1000),
         ('estim_cost_chf_pkWp', 100), ('estim_cost_chf_pkWp_bkw', 100), ('estim_cost_chf_pkWp_ewz', 100),
         ('estim_cost_chf_pkWh', 0.1), ('estim_cost_chf_pkWh_bkw', 0.1), ('estim_cost_chf_pkWh_ewz', 0.1),
+        # ('reldelta_cost_pkWp_mod_bkw', 0.01), ('reldelta_cost_pkWp_mod_ewz', 0.01),
         ]
     comparison_df['x_label'] = comparison_df['Adress'] + ' (' + comparison_df['EGID'] + ')'
 
@@ -251,8 +252,8 @@ fig_agg.update_layout(
 fig_agg.show()
 fig_agg.write_html(f'{data_path}/output/visualizations_pvprod_correction/pvprod_correction_agg_{len(pvalloc_scenarios)}scen.html')
 
-print_mean_deviation_tobkw = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'delta_cost_pkWp_mod_bkw'].mean()
-print_mean_deviation_toewz = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'delta_cost_pkWp_mod_ewz'].mean()
+print_mean_deviation_tobkw = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'reldelta_cost_pkWp_mod_bkw'].mean()
+print_mean_deviation_toewz = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'reldelta_cost_pkWp_mod_ewz'].mean()
 print(f'Mean deviation of cost/kWp between OptPV-Model and BKW-Solarrechner: {print_mean_deviation_tobkw:.5%}')
 print(f'Mean deviation of cost/kWp between OptPV-Model and EWZ-Solarrechner: {print_mean_deviation_toewz:.5%}')
 
