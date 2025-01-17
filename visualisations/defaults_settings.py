@@ -15,8 +15,8 @@ visual_default_settings = {
         # PLOT CHUCK -------------------------> [run plot,  show plot,  show all scen]
       
         # for pvalloc_inital + sanitycheck
-        'plot_ind_var_summary_stats':           [False,     True,       False],
-        'plot_ind_hist_pvcapaprod_sanitycheck': [False,     True,       False],
+        'plot_ind_var_summary_stats':               [False,     True,       False],
+        'plot_ind_hist_pvcapaprod_sanitycheck':     [False,     True,       False],
             'plot_ind_hist_pvcapaprod_sanitycheck_specs': {
                 'xbins_hist_instcapa_abs': 0.5,
                 'xbins_hist_instcapa_stand': 0.1,
@@ -28,9 +28,9 @@ visual_default_settings = {
                 'uniform_scencolor_and_KDE_TF': True,
                 'export_spatial_data_for_prod0': True, 
                 },
-        'plot_ind_hist_radiation_rng_sanitycheck': [False,     True,       False],
-        'plot_ind_hist_pvprod_deviation':       [False,     True,       False],
-        'plot_ind_charac_omitted_gwr':          [False,     True,       False],
+        'plot_ind_hist_radiation_rng_sanitycheck':  [False,     True,       False],
+        'plot_ind_hist_pvprod_deviation':           [False,     True,       False],
+        'plot_ind_charac_omitted_gwr':              [False,     True,       False],
             'plot_ind_charac_omitted_gwr_specs':{
                 'disc_cols': ['BFS_NUMMER','GSTAT','GKAT','GKLAS'], 
                 'disc_ncols': 2, 
@@ -46,17 +46,17 @@ visual_default_settings = {
                 'gwr_code_name_tuples_GSTAT': [
                     ('1004', 'Existing bldg.'),]
             },
-        'plot_ind_line_meteo_radiation':        [False,     True,       False],
+        'plot_ind_line_meteo_radiation':            [False,     True,       False],
 
         # for pvalloc_MC_algorithm 
-        'plot_ind_line_installedCap':            [False,    True,       False],
-        'plot_ind_line_PVproduction':            [False,    True,       False],
-        'plot_ind_line_productionHOY_per_node':  [False,    True,       False],
-        'plot_ind_line_gridPremiumHOY_per_node': [False,    True,       False],
-        'plot_ind_line_gridPremium_structure':   [False,    True,       False],
-        'plot_ind_hist_NPV_freepartitions':      [False,    True,       False],
-        'plot_ind_hist_pvcapaprod':              [False,    True,       False],
-        'plot_ind_map_topo_egid':                [False,    False,      False],
+        'plot_ind_line_installedCap':               [False,    True,       False],
+        'plot_ind_line_PVproduction':               [False,    True,       False],
+        'plot_ind_line_productionHOY_per_node':     [False,    True,       False],
+        'plot_ind_line_gridPremiumHOY_per_node':    [False,    True,       False],
+        'plot_ind_line_gridPremium_structure':      [False,    True,       False],
+        'plot_ind_hist_NPV_freepartitions':         [False,    True,       False],
+        'plot_ind_hist_pvcapaprod':                 [False,    True,       False],
+        'plot_ind_map_topo_egid':                   [False,    False,      False],
             'plot_ind_map_topo_egid_specs': {
                 'uniform_municip_color': '#fff2ae',
                 'shape_opacity': 0.2,
@@ -71,7 +71,7 @@ visual_default_settings = {
                 'point_color_rest': '#383838',       # dark grey
                 'point_color_sanity_check': '#0041c2', # blue
             }, 
-        'plot_ind_map_node_connections':         [False,    False,      False],
+        'plot_ind_map_node_connections':            [False,    False,      False],
             'plot_ind_map_node_connections_specs': {
                 'uniform_municip_color': '#fff2ae',
                 'shape_opacity': 0.2,   
@@ -84,7 +84,7 @@ visual_default_settings = {
                 'point_size_dsonode_loc': 15,
                 'point_opacity_dsonode_loc': 1
             },
-        'plot_ind_map_omitted_egids':            [False,    True,       False],
+        'plot_ind_map_omitted_egids':               [False,    True,       False],
             'plot_ind_map_omitted_egids_specs': {
                 'point_opacity': 0.7,
                 'point_size_select_but_omitted': 10,
@@ -93,7 +93,7 @@ visual_default_settings = {
                 'point_color_rest_not_selected': '#ff78ef',  # pink
                 'export_gdfs_to_shp': True, 
             }, 
-        'plot_ind_lineband_contcharact_newinst': [False,    True,       False],
+        'plot_ind_lineband_contcharact_newinst':    [False,    True,       False],
             'plot_ind_line_contcharact_newinst_specs': {
                 'trace_color_palette': 'Turbo',
                 'upper_lower_bound_interval': [0.05, 0.95],
@@ -109,7 +109,7 @@ visual_default_settings = {
                 },
 
         # for aggregated MC_algorithms
-        'plot_mc_line_PVproduction':            [False,    True,       False],
+        'plot_mc_line_PVproduction':                [False,    True,       False],
 
     }
 
