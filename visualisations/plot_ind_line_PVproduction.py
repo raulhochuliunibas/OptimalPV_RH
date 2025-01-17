@@ -88,7 +88,7 @@ def plot(pvalloc_scen_list,
             pvinst_df['BeginOp'] = pd.to_datetime(pvinst_df['BeginOp'], format='%Y-%m-%d')
             
             # attach annual production to each installation
-            pvinst_df['pvprod_kW'] = 0
+            pvinst_df['pvprod_kW'] = float(0)
             aggdf_combo_list = []
             path = topo_subdf_paths[2]
                 
