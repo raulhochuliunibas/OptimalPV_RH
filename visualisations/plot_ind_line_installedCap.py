@@ -49,12 +49,14 @@ def plot(pvalloc_scen_list,
         trace_color_dict = {
             'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
             'Viridis': pc.sequential.Viridis, 'Plotly3': pc.sequential.Plotly3, 
-            'Bluered': pc.sequential.Bluered, 'Turbo': pc.sequential.Turbo, 
+            'Turbo': pc.sequential.Turbo, 'solar': pc.sequential.solar, 
+            'RdBu': pc.diverging.RdBu, 'Rainbow': pc.sequential.Rainbow, 
 
             'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
             'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
             'Teal': pc.sequential.Teal, 'Magenta': pc.sequential.Magenta, 'Blackbody': pc.sequential.Blackbody, 
-
+            
+            # 'Bluered': pc.sequential.Bluered, 
         }        
 
 
