@@ -61,15 +61,15 @@ def plot(pvalloc_scen_list,
 
             # plot ----------------
             fig = go.Figure()
-            fig.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation Algorithm', opacity=0.75))
-            fig.add_trace(go.Histogram(x=npv_df_after['NPV_uid'], name='After Allocation Algorithm', opacity=0.75))
+            fig.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation Algorithm', opacity=0.5))
+            fig.add_trace(go.Histogram(x=npv_df_after['NPV_uid'], name='After Allocation Algorithm', opacity=0.5))
 
             fig.update_layout(
                 xaxis_title=f'Net Present Value (NPV, interest rate: {pvalloc_scen["tech_economic_specs"]["interest_rate"]}, maturity: {pvalloc_scen["tech_economic_specs"]["invst_maturity"]} yr)',
                 yaxis_title='Frequency',
                 title = f'NPV Distribution of possible PV installations, first / last year (weather year: {pvalloc_scen["weather_specs"]["weather_year"]})',
                 barmode = 'overlay')
-            fig.update_traces(bingroup=1, opacity=0.75)
+            fig.update_traces(bingroup=1, opacity=0.5)
 
             fig = add_scen_name_to_plot(fig, scen, pvalloc_scen_list[i_scen])
             
