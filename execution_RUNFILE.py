@@ -15,7 +15,7 @@ print_directory_stucture_to_txtfile(not(run_on_server))
 run_dataagg =       False
 run_alloc_init =    True
 run_alloc_MCalg =   True
-run_visual =        True
+run_visual =        False
 
 
 # data_aggregation 
@@ -79,22 +79,34 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
     # 'pvalloc_BLsml_24m_meth3.2_random',
     # 'pvalloc_BLsml_24m_meth2.2_npvweight', 
     # 'pvalloc_BLsml_24m_meth3.2_npvweight',
+    # 'pvalloc_BLsml_24m_meth2.2_random',
 
-    'pvalloc_BLsml_24m_meth2.2_random_SelfConsum',
-    'pvalloc_BLsml_24m_meth3.2_random_SelfConsum',
-    'pvalloc_BLsml_24m_meth2.2_npvweight_SelfConsum', 
-    'pvalloc_BLsml_24m_meth3.2_npvweight_SelfConsum',
+
+    # 'pvalloc_BLsml_24m_meth2.2_random_SelfConsum',
+    # 'pvalloc_BLsml_24m_meth3.2_random_SelfConsum',
+    # 'pvalloc_BLsml_24m_meth2.2_npvweight_SelfConsum', 
+    # 'pvalloc_BLsml_24m_meth3.2_npvweight_SelfConsum',
+    # 'pvalloc_BLsml_24m_meth2.2_random_SelfConsum',
+    # 'pvalloc_BLsml_24m_meth3.2_random_SelfConsum',
+
+    'pvalloc_BLsml_24m_meth2.2_random_275pr_costdcr', 
+    'pvalloc_BLsml_24m_meth3.2_random_275pr_costdcr',
+    'pvalloc_BLsml_24m_meth2.2_npvweight_275pr_costdcr',
+    'pvalloc_BLsml_24m_meth3.2_npvweight_275pr_costdcr',
 
 
     # 'pvalloc_BLsml_5y_meth2.2_random',
-    'pvalloc_BLsml_5y_meth3.2_random',
-    'pvalloc_BLsml_5y_meth2.2_npvweight',
-    'pvalloc_BLsml_5y_meth3.2_npvweight',
+    # 'pvalloc_BLsml_5y_meth3.2_random',
+    # 'pvalloc_BLsml_5y_meth2.2_npvweight',
+    # 'pvalloc_BLsml_5y_meth3.2_npvweight',
+    # 'pvalloc_BLsml_5y_meth2.2_random',
+
 
     'pvalloc_BLsml_5y_meth2.2_random_SelfConsum',
     'pvalloc_BLsml_5y_meth3.2_random_SelfConsum',
     'pvalloc_BLsml_5y_meth2.2_npvweight_SelfConsum',
     'pvalloc_BLsml_5y_meth3.2_npvweight_SelfConsum',
+    'pvalloc_BLsml_5y_meth2.2_random_SelfConsum',
 
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
@@ -106,7 +118,7 @@ comparison_scenarios = {
 # vsualiastion 
 visual_settings = {
         'plot_show': True,
-        'remove_previous_plots': False,
+        'remove_previous_plots': True,
         'remove_old_plot_scen_directories': True,
         'save_plot_by_scen_directory': True,
         'MC_subdir_for_plot': '*MC*1', 
@@ -114,12 +126,12 @@ visual_settings = {
         'node_selection_for_plots': ['8', '32', '10', '22'], # or None for all nodes
 
         # PLOT CHUNCK -------------------------->   [run plot,  show plot,  show all scen]
-        # for pvalloc_inital + sanitycheck
-        'plot_ind_var_summary_stats':               [False,     False,      False], 
-        'plot_ind_hist_pvcapaprod_sanitycheck':     [True,      True,      False], 
-        'plot_ind_hist_radiation_rng_sanitycheck':  [True,     True,       False],
-        'plot_ind_charac_omitted_gwr':              [True,     True,       True],
-        'plot_ind_line_meteo_radiation':            [True,     True,       False], 
+        # # for pvalloc_inital + sanitycheck
+        # 'plot_ind_var_summary_stats':               [True,     False,      False], 
+        # 'plot_ind_hist_pvcapaprod_sanitycheck':     [True,      True,      False], 
+        # 'plot_ind_hist_radiation_rng_sanitycheck':  [True,     True,       False],
+        # 'plot_ind_charac_omitted_gwr':              [True,     True,       True],
+        # 'plot_ind_line_meteo_radiation':            [True,     True,       False], 
         
         # # for pvalloc_MC_algorithm 
         # 'plot_ind_line_installedCap':               [True,    True,        False],   
@@ -129,7 +141,7 @@ visual_settings = {
         # 'plot_ind_line_productionHOY_per_node':     [True,    True,        False],
         # 'plot_ind_line_gridPremiumHOY_per_node':    [True,    True,        False],
         # 'plot_ind_line_gridPremium_structure':      [True,     True,        False],
-        # 'plot_ind_hist_NPV_freepartitions':         [True,     True,       False],
+        'plot_ind_hist_NPV_freepartitions':         [True,     True,       False],
         # 'plot_ind_map_topo_egid':                   [True,     True,       False],
         # 'plot_ind_map_node_connections':            [True,     True,       False],   
         # 'plot_ind_map_omitted_egids':               [True,     True,       False],
