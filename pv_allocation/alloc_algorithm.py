@@ -236,26 +236,23 @@ def calc_economics_in_topo_df(
         # pvprod method 2.1
         elif pvprod_calc_method == 'method2.1':   
             subdf['pvprod_kW'] = (subdf['radiation'] / 1000 ) *                     inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] * subdf['angletilt_factor']
-            # subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
-            formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']"
+            formla_for_log_print = f"subdf['pvprod_kW'] = subdf['radiation'] / 1000 * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] * subdf['angletilt_factor']"
 
         # pvprod method 2.2
         elif pvprod_calc_method == 'method2.2':   
             subdf['pvprod_kW'] = (subdf['radiation'] / 1000 ) *                     inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] 
-            # subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
-            formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor']"
+            formla_for_log_print = f"subdf['pvprod_kW'] = subdf['radiation'] / 1000 * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE']"
 
         # pvprod method 3.1
         elif pvprod_calc_method == 'method3.1':
             subdf['pvprod_kW'] =  subdf['radiation_rel_locmax'] * kWpeak_per_m2 *   inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] * subdf['angletilt_factor']
-            # subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
-            formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * kWpeak_per_m2 * subdf['radiation_rel_locmax'] * subdf['FLAECHE'] * subdf['angletilt_factor']"
+            formla_for_log_print = f"subdf['pvprod_kW'] = subdf['radiation_rel_locmax'] * kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] * subdf['angletilt_factor']"
 
         # pvprod method 3.2
         elif pvprod_calc_method == 'method3.2':
             subdf['pvprod_kW'] =  subdf['radiation_rel_locmax'] * kWpeak_per_m2 *   inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] 
-            # subdf.drop(columns=['meteo_loc', 'radiation', 'radiation_rel_locmax'], inplace=True)
-            formla_for_log_print = f"subdf['pvprod_kW'] = inverter_efficiency * share_roof_area_available * kWpeak_per_m2 * subdf['radiation_rel_locmax'] * subdf['FLAECHE'] "
+            formla_for_log_print = f"subdf['pvprod_kW'] = subdf['radiation_rel_locmax'] * kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE']"
+
 
 
         # pvprod method 3
