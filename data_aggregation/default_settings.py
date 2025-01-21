@@ -27,7 +27,7 @@ dataagg_default_settings = {
             'DEMAND_proxy': 'GAREA',
             'GSTAT': ['1004',],                                 # GSTAT - 1004: only existing, fully constructed buildings
             'GKLAS': ['1110','1121'], # ,'1276'],                # GKLAS - 1110: only 1 living space per building; 1121: Double-, row houses with each appartment (living unit) having it's own roof; 1276: structure for animal keeping (most likely still one owner)
-            'GBAUJ_minmax': [1950, 2022],                       # GBAUJ_minmax: range of years of construction
+            'GBAUJ_minmax': [1920, 2022],                       # GBAUJ_minmax: range of years of construction
             'GWAERZH': ['7410', '7411',],                       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
             # 'GENH': ['7580', '7581', '7582'],                 # GENHZU - 7580 to 7582: any type of Fernwärme/district heating        
                                                                 # GANZWHG - total number of apartments in building

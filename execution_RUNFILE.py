@@ -73,40 +73,14 @@ dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
     # 'pvalloc_BFS2761_12m_meth2.2_random_DEBUG', 
-    # 'pvalloc_BFS2761_12m_meth3.2_random_DEBUG',
-
-    # 'pvalloc_BLsml_24m_meth2.2_random',
-    # 'pvalloc_BLsml_24m_meth3.2_random',
-    # 'pvalloc_BLsml_24m_meth2.2_npvweight', 
-    # 'pvalloc_BLsml_24m_meth3.2_npvweight',
-    # 'pvalloc_BLsml_24m_meth2.2_random',
-
-
-    # 'pvalloc_BLsml_24m_meth2.2_random_SelfConsum',
-    # 'pvalloc_BLsml_24m_meth3.2_random_SelfConsum',
-    # 'pvalloc_BLsml_24m_meth2.2_npvweight_SelfConsum', 
-    # 'pvalloc_BLsml_24m_meth3.2_npvweight_SelfConsum',
-    # 'pvalloc_BLsml_24m_meth2.2_random_SelfConsum',
-    # 'pvalloc_BLsml_24m_meth3.2_random_SelfConsum',
-
-    'pvalloc_BLsml_24m_meth2.2_random_275pr_costdcr', 
-    'pvalloc_BLsml_24m_meth3.2_random_275pr_costdcr',
-    'pvalloc_BLsml_24m_meth2.2_npvweight_275pr_costdcr',
-    'pvalloc_BLsml_24m_meth3.2_npvweight_275pr_costdcr',
-
-
-    # 'pvalloc_BLsml_5y_meth2.2_random',
-    # 'pvalloc_BLsml_5y_meth3.2_random',
-    # 'pvalloc_BLsml_5y_meth2.2_npvweight',
-    # 'pvalloc_BLsml_5y_meth3.2_npvweight',
-    # 'pvalloc_BLsml_5y_meth2.2_random',
-
-
-    'pvalloc_BLsml_5y_meth2.2_random_SelfConsum',
-    'pvalloc_BLsml_5y_meth3.2_random_SelfConsum',
-    'pvalloc_BLsml_5y_meth2.2_npvweight_SelfConsum',
-    'pvalloc_BLsml_5y_meth3.2_npvweight_SelfConsum',
-    'pvalloc_BLsml_5y_meth2.2_random_SelfConsum',
+    'pvalloc_BFS2761_1y_f2021_1mc_meth2.2_rnd_DEBUG', 
+    
+    'pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd', 
+    'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv', 
+    'pvalloc_BLsml_10y_f2013_1mc_meth2.2_max', 
+    
+    'pvalloc_BLsml_20y_f2003_1mc_meth2.2_npv', 
+    'pvalloc_BLsml_40y_f2003_1mc_meth2.2_npv', 
 
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)

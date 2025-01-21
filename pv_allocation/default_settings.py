@@ -1,10 +1,10 @@
 import copy
 
 pvalloc_default_settings = {
-    'name_dir_export': 'pvalloc_BL_smallsample',              # name of the directory where all proccessed data is stored at the end of the code file 
-    'name_dir_import': 'preprep_BLSO_22to23_1and2homes', # name of the directory where preprepared data is stored and accessed by the code
-    'wd_path_laptop': 'C:/Models/OptimalPV_RH',              # path to the working directory on Raul's laptop
-    'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',   # path to the working directory on the server
+    'name_dir_export': 'pvalloc_BL_smallsample',                            # name of the directory where all proccessed data is stored at the end of the code file 
+    'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates', # name of the directory where preprepared data is stored and accessed by the code
+    'wd_path_laptop': 'C:/Models/OptimalPV_RH',                             # path to the working directory on Raul's laptop
+    'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',                  # path to the working directory on the server
 
     # main settings for allocation
     'kt_numbers': [], #[11,13],                           # list of cantons to be considered [11, Solothurn, 12 Basel-Stadt, 13 Basel-Landschaft], 0 used for NON canton-selection, selecting only certain indiviual municipalities
@@ -119,7 +119,7 @@ pvalloc_default_settings = {
     },
     'algorithm_specs': {
         'inst_selection_method': 'random',   # random, prob_weighted_npv, max_npv 
-        'rand_seed': 42,                                # random seed set to int or None
+        'rand_seed': None,                                # random seed set to int or None
         'while_inst_counter_max': 5000,
         'topo_subdf_partitioner': 400,
         'npv_update_grouby_cols_topo_aggdf': 
