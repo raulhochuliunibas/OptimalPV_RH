@@ -69,13 +69,13 @@ pvalloc_default_settings = {
         'share_to_winter': 0.4,
     },
     'tech_economic_specs': {
-        'self_consumption_ifapplicable': 0,
+        'self_consumption_ifapplicable': 1,
         'interest_rate': 0.01,
         'pvtarif_year': 2022, 
         'pvtarif_col': ['energy1', 'eco1'],
         'pvprod_calc_method': 'method2.2',
-        'panel_efficiency': 0.15,         # XY% Wirkungsgrad PV Modul
-        'inverter_efficiency': 0.8,        # XY% Wirkungsgrad Wechselrichter
+        'panel_efficiency': 0.21,         # XY% Wirkungsgrad PV Modul
+        'inverter_efficiency': 0.95,        # XY% Wirkungsgrad Wechselrichter
         'elecpri_year': 2022,
         'elecpri_category': 'H4', 
         'invst_maturity': 25,
