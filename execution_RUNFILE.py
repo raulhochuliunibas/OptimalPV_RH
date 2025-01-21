@@ -19,56 +19,8 @@ run_visual =        False
 
 
 # data_aggregation 
-dataagg_scenarios = {
-    # 'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
-    #     'script_run_on_server': run_on_server, 
-    #     'kt_numbers': [13,12,11],
-    #     'year_range': [2018, 2023], 
-    #     'split_data_geometry_AND_slow_api': True, 
-    #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
-    # },
-    'preprep_BL_22to23_1and2homes_incl_missingEGID':{
-        'script_run_on_server': run_on_server, 
-        'kt_numbers': [13,], 
-        'year_range': [2022, 2023],   
-        'split_data_geometry_AND_slow_api': False, 
-        'gwr_selection_specs': 
-            {'GKLAS': ['1110','1121',],},
-        'solkat_selection_specs': {
-            'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
-            'match_missing_EGIDs_to_solkat_TF': True, 
-            'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
-    },
-    
-    'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates':{
-        'script_run_on_server': run_on_server, 
-        'kt_numbers': [13,], 
-        'year_range': [2022, 2023],   
-        'split_data_geometry_AND_slow_api': False, 
-        'gwr_selection_specs': 
-            {'GKLAS': ['1110','1121',],},
-        'solkat_selection_specs': {
-            'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
-            'match_missing_EGIDs_to_solkat_TF': True, 
-            'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
-    },
-
-    'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates':{
-        'script_run_on_server': run_on_server, 
-        'kt_numbers': [13,11], 
-        'year_range': [2022, 2023],   
-        'split_data_geometry_AND_slow_api': False, 
-        'gwr_selection_specs': 
-            {'GKLAS': ['1110','1121',],},
-        'solkat_selection_specs': {
-            'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
-            'match_missing_EGIDs_to_solkat_TF': True, 
-            'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
-    },
-
-}
-dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
-
+dataagg_scenarios = {} # an empty dictionary, most relevant data aggregation scenario settings are stored in 
+                       # in data_aggregation_MASTER.py, to keep execRunfile clean
 
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
@@ -136,10 +88,10 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 
 
 # DATA AGGREGATION RUNs  ------------------------------------------------------------------------
-# if not not dataagg_scenarios:/
-for k_sett, scen_sett in dataagg_scenarios.items():
-    dataagg_settings = scen_sett
-    data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings) if run_dataagg else print('')
+if False:
+    for k_sett, scen_sett in dataagg_scenarios.items():
+        dataagg_settings = scen_sett
+        data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings) if run_dataagg else print('')
 
 
 # ALLOCATION RUNs  ------------------------------------------------------------------------

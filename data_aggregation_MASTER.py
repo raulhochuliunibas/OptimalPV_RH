@@ -43,11 +43,66 @@ def data_aggregation_MASTER(dataagg_settings_func):
 
 
     # SETTIGNS --------------------------------------------------------------------
+    
     if not isinstance(dataagg_settings_func, dict):
-        print('  USE LOCAL SETTINGS - DICT')
-        dataagg_settings = dataagg_default_sett.get_default_dataag_settings()
-    else:
+        run_on_server = False
+        # dataagg_settings no longer in executionRUNFILE, because they rarley change. That's why stored here
+        dataagg_settings_inMASTER = {
+            # 'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
+            #     'script_run_on_server': run_on_server, 
+            #     'kt_numbers': [13,12,11],
+            #     'year_range': [2018, 2023], 
+            #     'split_data_geometry_AND_slow_api': True, 
+            #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
+            # },
+            'preprep_BL_22to23_1and2homes_incl_missingEGID':{
+                'script_run_on_server': run_on_server, 
+                'kt_numbers': [13,], 
+                'year_range': [2022, 2023],   
+                'split_data_geometry_AND_slow_api': False, 
+                'gwr_selection_specs': 
+                    {'GKLAS': ['1110','1121',],},
+                'solkat_selection_specs': {
+                    'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
+                    'match_missing_EGIDs_to_solkat_TF': True, 
+                    'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
+            },
+            
+            'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates':{
+                'script_run_on_server': run_on_server, 
+                'kt_numbers': [13,], 
+                'year_range': [2022, 2023],   
+                'split_data_geometry_AND_slow_api': False, 
+                'gwr_selection_specs': 
+                    {'GKLAS': ['1110','1121',],},
+                'solkat_selection_specs': {
+                    'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
+                    'match_missing_EGIDs_to_solkat_TF': True, 
+                    'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
+            },
+
+            'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates':{
+                'script_run_on_server': run_on_server, 
+                'kt_numbers': [13,11], 
+                'year_range': [2022, 2023],   
+                'split_data_geometry_AND_slow_api': False, 
+                'gwr_selection_specs': 
+                    {'GKLAS': ['1110','1121',],},
+                'solkat_selection_specs': {
+                    'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
+                    'match_missing_EGIDs_to_solkat_TF': True, 
+                    'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
+            },
+
+}
+        dataagg_settings = dataagg_default_sett.extend_dataag_scen_with_defaults(dataagg_settings_inMASTER)
+
+    elif isinstance(dataagg_settings_func, dict):
         dataagg_settings = dataagg_settings_func
+
+    else:
+        print('  USE LOCAL DATA AGGREGATION SETTINGS - DICT')
+        dataagg_settings = dataagg_default_sett.get_default_dataag_settings()
 
 
     # SETUP -----------------------------------------------------------------------
