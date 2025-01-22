@@ -38,7 +38,6 @@ def plot(pvalloc_scen_list,
          data_path, 
          log_name):
     scen_dir_export_list = [pvalloc_scen['name_dir_export'] for pvalloc_scen in pvalloc_scen_list]
-    scen_dir_export_list = [pvalloc_scen['name_dir_export'] for pvalloc_scen in pvalloc_scen_list]
     plot_show = visual_settings['plot_show']
 
 

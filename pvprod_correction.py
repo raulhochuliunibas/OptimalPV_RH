@@ -31,8 +31,8 @@ pvalloc_scenarios = [
 excl_buildings_of_mean_calc = ['410320',  # Byfangweg 3 + Drosselweg 24, both with already existing PV
                                '391263', 
 ]
-# estim_cost_chf_pkWp_correctionfactor = 1.243
-estim_cost_chf_pkWp_correctionfactor = 1
+estim_cost_chf_pkWp_correctionfactor = 1.275
+# estim_cost_chf_pkWp_correctionfactor = 1.
 
 
 
