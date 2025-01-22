@@ -51,22 +51,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'MC_loop_specs': {
             'montecarlo_iterations': 1,}, 
     },
-    'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv':{
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'T0_prediction': '2013-01-01 00:00:00',
-        'months_prediction': 120,
-        'gwr_selection_specs':{
-            'GBAUJ_minmax': [1920, 2012],},
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 1,}, 
-    },
+
     'pvalloc_BLsml_10y_f2013_1mc_meth2.2_max':{
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
@@ -83,7 +68,23 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'MC_loop_specs': {
             'montecarlo_iterations': 1,}, 
     },
- 
+
+    'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'T0_prediction': '2013-01-01 00:00:00',
+        'months_prediction': 120,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2012],},
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,}, 
+    }, 
     'pvalloc_BLsml_20y_f2003_1mc_meth2.2_npv':{
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
@@ -100,7 +101,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'MC_loop_specs': {
             'montecarlo_iterations': 1,}, 
     },
-    'pvalloc_BLsml_40y_f2003_1mc_meth2.2_npv':{
+    'pvalloc_BLsml_40y_f1983_1mc_meth2.2_npv':{
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
             2768, 2761, 2772, 2785, 
@@ -116,6 +117,65 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'MC_loop_specs': {
             'montecarlo_iterations': 1,}, 
     },
+
+    'pvalloc_BLSOmed_10y_f2013_1mc_meth2.2_npv':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+        ],
+        'T0_prediction': '2013-01-01 00:00:00',
+        'months_prediction': 120,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2012],},
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,}, 
+    },
+    'pvalloc_BLSOmed_20y_f2003_1mc_meth2.2_npv':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+        ],
+        'T0_prediction': '2003-01-01 00:00:00',
+        'months_prediction': 240,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2002],},
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,}, 
+    },
+    'pvalloc_BLSOmed_40y_f1983_1mc_meth2.2_npv':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+        ],
+        'T0_prediction': '1983-01-01 00:00:00',
+        'months_prediction': 480,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 1982],},
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,}, 
+    },
+
 
 
 

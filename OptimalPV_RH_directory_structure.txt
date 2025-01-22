@@ -1,5 +1,5 @@
 ** Directory structure for OptimalPV_RH **
- date: 2025-01-17 15:16:23.957501
+ date: 2025-01-22 17:35:46.049822
 
 ├── auxiliary_functions.py
 ├── data_aggregation
@@ -20,6 +20,10 @@
 │   ├── map_municipality_to_DSO.py
 │   ├── pv_coutns_power_timeseries.py
 │   └── pv_houseclass_mapping.py
+├── postprocess_analysis
+│   ├── default_settings.py
+│   └── pvalloc_to_today_sanitcheck.py
+├── postprocess_analysis_MASTER.py
 ├── pvalloc_initialization_MASTER.py
 ├── pvalloc_MCalgorithm_MASTER.py
 ├── pvprod_correction.py
