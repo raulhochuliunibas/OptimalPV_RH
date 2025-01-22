@@ -1,10 +1,17 @@
 import copy
 
 pvalloc_default_settings = {
-    'name_dir_export': 'pvalloc_BL_smallsample',                            # name of the directory where all proccessed data is stored at the end of the code file 
-    'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates', # name of the directory where preprepared data is stored and accessed by the code
+    # NO LONGER RELEVANT - TO BE DELETED EVENTUALLY
+    'show_debug_prints':        True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
+    'fast_debug_run':           False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
+    'n_egid_in_topo': 200, 
     'wd_path_laptop': 'C:/Models/OptimalPV_RH',                             # path to the working directory on Raul's laptop
     'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',                  # path to the working directory on the server
+
+
+
+    'name_dir_export': 'pvalloc_BL_smallsample',                            # name of the directory where all proccessed data is stored at the end of the code file 
+    'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates', # name of the directory where preprepared data is stored and accessed by the code
 
     # main settings for allocation
     'kt_numbers': [], #[11,13],                           # list of cantons to be considered [11, Solothurn, 12 Basel-Stadt, 13 Basel-Landschaft], 0 used for NON canton-selection, selecting only certain indiviual municipalities
@@ -19,11 +26,6 @@ pvalloc_default_settings = {
     'months_prediction': 12,
     'script_run_on_server':     False,                           # F: run on private computer, T: run on server
     'export_csvs':              False, 
-    # no longer relevant
-    'show_debug_prints':        True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
-    'fast_debug_run':           False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
-    'n_egid_in_topo': 200, 
-
 
 
     # switch on/off parts of aggregation 

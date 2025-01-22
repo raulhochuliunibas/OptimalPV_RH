@@ -48,7 +48,8 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
     # SETUP ================================================================
     if True: 
         # set working directory
-        wd_path = pvalloc_settings['wd_path_laptop'] if not pvalloc_settings['script_run_on_server'] else pvalloc_settings['wd_path_server']
+        # wd_path = pvalloc_settings['wd_path_laptop'] if not pvalloc_settings['script_run_on_server'] else pvalloc_settings['wd_path_server']
+        wd_path = os.getcwd()
         data_path = f'{wd_path}_data'
 
         # create directory + log file

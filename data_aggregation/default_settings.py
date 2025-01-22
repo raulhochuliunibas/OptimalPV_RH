@@ -1,13 +1,16 @@
 import copy
 
 dataagg_default_settings = {
+        # NO LONGER RELEVANT - TO BE DELETED EVENTUALLY
+        'wd_path_laptop': 'C:/Models/OptimalPV_RH',             # path to the working directory on Raul's laptop
+        'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',  # path to the working directory on the server
+
+
         'name_dir_export': 'preprep_BSBLSO_18to22',             # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
         'script_run_on_server':     False,                      # F: run on private computer, T: run on server
         'smaller_import':           False,                      # F: import all data, T: import only a small subset of data (smaller range of years) for debugging
         'show_debug_prints':        True,                       # F: certain print statements are omitted, T: includes print statements that help with debugging
         'turnoff_comp_after_run':   False,                      # F: keep computer running after script is finished, T: turn off computer after script is finished
-        'wd_path_laptop': 'C:/Models/OptimalPV_RH',             # path to the working directory on Raul's laptop
-        'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',  # path to the working directory on the server
 
         'kt_numbers': [],                               # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
         'bfs_numbers': [],                                      # list of municipalites to select for allocation (only used if kt_numbers == 0)

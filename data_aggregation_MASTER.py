@@ -108,7 +108,8 @@ def data_aggregation_MASTER(dataagg_settings_func):
     # SETUP -----------------------------------------------------------------------
     # set working directory
     if True:
-        wd_path = dataagg_settings['wd_path_laptop'] if not dataagg_settings['script_run_on_server'] else dataagg_settings['wd_path_server']
+        # wd_path = dataagg_settings['wd_path_laptop'] if not dataagg_settings['script_run_on_server'] else dataagg_settings['wd_path_server']
+        wd_path = os.getcwd()
         data_path = f'{wd_path}_data'
             
         # create directory + log file

@@ -54,8 +54,9 @@ def postprocess_analysis_MASTER(pvalloc_scenarios_func, postprocess_analysis_set
     # SETUP -----------------------------------------------------------------------
     if True: 
         # general setup for paths etc.
-        first_alloc_sett = pvalloc_scenarios[list(pvalloc_scenarios.keys())[0]]
-        wd_path = first_alloc_sett['wd_path_laptop'] if not first_alloc_sett['script_run_on_server'] else first_alloc_sett['wd_path_server']
+        # first_alloc_sett = pvalloc_scenarios[list(pvalloc_scenarios.keys())[0]]
+        # wd_path = first_alloc_sett['wd_path_laptop'] if not first_alloc_sett['script_run_on_server'] else first_alloc_sett['wd_path_server']
+        wd_path = os.getcwd()
         data_path = f'{wd_path}_data'
 
         # create directory + log file
