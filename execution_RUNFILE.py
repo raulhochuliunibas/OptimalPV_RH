@@ -1,6 +1,5 @@
 
-import execution_scenarios, data_aggregation_MASTER, pvalloc_initialization_MASTER, pvalloc_MCalgorithm_MASTER, visualization_MASTER
-#mport pvalloc_postprocessing_MASTER
+import execution_scenarios, data_aggregation_MASTER, pvalloc_initialization_MASTER, pvalloc_MCalgorithm_MASTER, postprocess_analysis_MASTER, visualization_MASTER
 
 from auxiliary_functions import print_directory_stucture_to_txtfile
 from data_aggregation.default_settings import extend_dataag_scen_with_defaults
@@ -9,13 +8,15 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-run_on_server =     True
+run_on_server =             True
 print_directory_stucture_to_txtfile(not(run_on_server))
 
-run_dataagg =       False
-run_alloc_init =    True
-run_alloc_MCalg =   True
-run_visual =        False
+run_dataagg =               False
+run_alloc_init =            False
+run_alloc_MCalg =           False
+
+run_postprocess_analysis =  True
+run_visual =                False
 
 
 # data_aggregation 
@@ -39,6 +40,11 @@ pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
 comparison_scenarios = {
     'pvalloc_BLsml_48m_meth2.2': ['pvalloc_BLsml_48m_meth2.2_random', 'pvalloc_BLsml_48m_meth2.2_npvweight'],	
+}
+
+# postprocess_analysis
+postprocessing_analysis_settings = {
+    'pvalloc_to_today_sanitcheck': {}, 
 }
 
 # vsualiastion 
@@ -99,6 +105,11 @@ for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
     pvalloc_initialization_MASTER.pvalloc_initialization_MASTER(pvalloc_settings) if run_alloc_init else print('')
     pvalloc_MCalgorithm_MASTER.pvalloc_MC_algorithm_MASTER(pvalloc_settings) if run_alloc_MCalg else print('')
+
+
+# POSTPROCESSIGN ANALYSIS RUNs ---------------------------------------------------------------
+postprocess_analysis_MASTER.postprocess_analysis_MASTER(pvalloc_scenarios, postprocessing_analysis_settings) if run_postprocess_analysis else print('')
+
 
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
