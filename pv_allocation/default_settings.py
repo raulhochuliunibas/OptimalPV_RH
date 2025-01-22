@@ -104,7 +104,7 @@ pvalloc_default_settings = {
                     '245057295', '245057294', '245011456', '391379', '391377'
             ],
         'n_EGIDs_of_alloc_algorithm': 20,
-        'n_iterations_before_sanitycheck': 12,
+        'n_iterations_before_sanitycheck': 1,
     },
     # PART II: settings for MC algorithm --------------------
     'MC_loop_specs': {
