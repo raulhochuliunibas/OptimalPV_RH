@@ -15,7 +15,6 @@ if True:
 
     # external packages
     import pandas as pd
-    import geopandas as gpd
     import numpy as np
     from datetime import datetime
     from pprint import pformat
@@ -24,6 +23,7 @@ if True:
     import glob
     import shutil
     import winsound
+    import numba
 
     # own packages and functions
     import auxiliary_functions
