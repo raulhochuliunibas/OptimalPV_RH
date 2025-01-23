@@ -31,13 +31,13 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
     # 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd', 
     # 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_max', 
     'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv', 
-    'pvalloc_BLSOmed_10y_f2013_1mc_meth2.2_npv', 
+    # 'pvalloc_BLSOmed_10y_f2013_1mc_meth2.2_npv', 
     
-    'pvalloc_BLsml_20y_f2003_1mc_meth2.2_npv', 
-    'pvalloc_BLSOmed_20y_f2003_1mc_meth2.2_npv', 
+    # 'pvalloc_BLsml_20y_f2003_1mc_meth2.2_npv', 
+    # 'pvalloc_BLSOmed_20y_f2003_1mc_meth2.2_npv', 
     
-    'pvalloc_BLsml_40y_f1983_1mc_meth2.2_npv', 
-    'pvalloc_BLSOmed_40y_f1983_1mc_meth2.2_npv', 
+    # 'pvalloc_BLsml_40y_f1983_1mc_meth2.2_npv', 
+    # 'pvalloc_BLSOmed_40y_f1983_1mc_meth2.2_npv', 
 ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
@@ -48,6 +48,12 @@ comparison_scenarios = {
 # postprocess_analysis
 postprocessing_analysis_settings = {
     'MC_subdir_for_analysis': '*MC*1', 
+
+    'prediction_accuracy_specs': {
+        'show_plot': True,
+        'show_all_scen': False,
+        }
+
 }
 
 # vsualiastion 
@@ -111,7 +117,7 @@ for k_sett, scen_sett in pvalloc_scenarios.items():
 
 
 # POSTPROCESSIGN ANALYSIS RUNs ---------------------------------------------------------------
-postprocess_analysis_MASTER.postprocess_analysis_MASTER(pvalloc_scenarios, postprocessing_analysis_settings) if run_postprocess_analysis else print('')
+MASTER_postprocess_analysis.postprocess_analysis_MASTER(pvalloc_scenarios, postprocessing_analysis_settings) if run_postprocess_analysis else print('')
 
 
 

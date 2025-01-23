@@ -1,5 +1,5 @@
 ** Directory structure for OptimalPV_RH **
- date: 2025-01-22 17:35:46.049822
+ date: 2025-01-23 12:08:20.399928
 
 ├── auxiliary_functions.py
 ├── data_aggregation
@@ -12,9 +12,13 @@
 │   ├── preprepare_data.py
 │   ├── split_data_geometry.py
 │   └── sql_gwr.py
-├── data_aggregation_MASTER.py
 ├── execution_RUNFILE.py
 ├── execution_scenarios.py
+├── MASTER_data_aggregation.py
+├── MASTER_postprocess_analysis.py
+├── MASTER_pvalloc_initialization.py
+├── MASTER_pvalloc_MCalgorithm.py
+├── MASTER_visualization.py
 ├── numpy-2.1.1-cp312-cp312-win_amd64.whl
 ├── plots
 │   ├── map_municipality_to_DSO.py
@@ -23,9 +27,6 @@
 ├── postprocess_analysis
 │   ├── default_settings.py
 │   └── pvalloc_to_today_sanitcheck.py
-├── postprocess_analysis_MASTER.py
-├── pvalloc_initialization_MASTER.py
-├── pvalloc_MCalgorithm_MASTER.py
 ├── pvprod_correction.py
 ├── pv_allocation
 │   ├── alloc_algorithm.py
@@ -34,26 +35,25 @@
 │   ├── initialization_large_functions.py
 │   ├── initialization_small_functions.py
 │   └── inst_selection.py
-├── visualisations
-│   ├── defaults_settings.py
-│   ├── individual_visualisations.py
-│   ├── ind_visual_pvprod_difference_2scens.py
-│   ├── plot_auxiliary_functions.py
-│   ├── plot_ind_boxp_radiation_rng_sanitycheck.py
-│   ├── plot_ind_charac_omitted_gwr.py
-│   ├── plot_ind_hist_NPV_freepartitions.py
-│   ├── plot_ind_hist_pvcapaprod_sanitycheck.py
-│   ├── plot_ind_lineband_contcharact_newinst.py
-│   ├── plot_ind_line_gridPremiumHOY_per_node.py
-│   ├── plot_ind_line_gridPremium_structure.py
-│   ├── plot_ind_line_installedCap.py
-│   ├── plot_ind_line_meteo_radiation.py
-│   ├── plot_ind_line_productionHOY_per_node.py
-│   ├── plot_ind_line_PVproduction.py
-│   ├── plot_ind_map_base.py
-│   ├── plot_ind_map_node_connections.py
-│   ├── plot_ind_map_omitted_egids.py
-│   ├── plot_ind_map_topo_egid.py
-│   ├── plot_ind_var_summary_stats.py
-│   └── plot_mc_line_PVproduction.py
-└── visualization_MASTER.py
+└── visualisations
+    ├── defaults_settings.py
+    ├── individual_visualisations.py
+    ├── ind_visual_pvprod_difference_2scens.py
+    ├── plot_auxiliary_functions.py
+    ├── plot_ind_boxp_radiation_rng_sanitycheck.py
+    ├── plot_ind_charac_omitted_gwr.py
+    ├── plot_ind_hist_NPV_freepartitions.py
+    ├── plot_ind_hist_pvcapaprod_sanitycheck.py
+    ├── plot_ind_lineband_contcharact_newinst.py
+    ├── plot_ind_line_gridPremiumHOY_per_node.py
+    ├── plot_ind_line_gridPremium_structure.py
+    ├── plot_ind_line_installedCap.py
+    ├── plot_ind_line_meteo_radiation.py
+    ├── plot_ind_line_productionHOY_per_node.py
+    ├── plot_ind_line_PVproduction.py
+    ├── plot_ind_map_base.py
+    ├── plot_ind_map_node_connections.py
+    ├── plot_ind_map_omitted_egids.py
+    ├── plot_ind_map_topo_egid.py
+    ├── plot_ind_var_summary_stats.py
+    └── plot_mc_line_PVproduction.py
