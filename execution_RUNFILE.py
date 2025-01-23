@@ -1,5 +1,5 @@
 
-import execution_scenarios, data_aggregation_MASTER, pvalloc_initialization_MASTER, pvalloc_MCalgorithm_MASTER, postprocess_analysis_MASTER, visualization_MASTER
+import execution_scenarios, MASTER_data_aggregation, MASTER_pvalloc_initialization, MASTER_pvalloc_MCalgorithm, MASTER_postprocess_analysis, MASTER_visualization
 
 from auxiliary_functions import print_directory_stucture_to_txtfile
 from data_aggregation.default_settings import extend_dataag_scen_with_defaults
@@ -100,14 +100,14 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 if False:
     for k_sett, scen_sett in dataagg_scenarios.items():
         dataagg_settings = scen_sett
-        data_aggregation_MASTER.data_aggregation_MASTER(dataagg_settings) if run_dataagg else print('')
+        MASTER_data_aggregation.data_aggregation_MASTER(dataagg_settings) if run_dataagg else print('')
 
 
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    pvalloc_initialization_MASTER.pvalloc_initialization_MASTER(pvalloc_settings) if run_alloc_init else print('')
-    pvalloc_MCalgorithm_MASTER.pvalloc_MC_algorithm_MASTER(pvalloc_settings) if run_alloc_MCalg else print('')
+    MASTER_pvalloc_initialization.pvalloc_initialization_MASTER(pvalloc_settings) if run_alloc_init else print('')
+    MASTER_pvalloc_MCalgorithm.pvalloc_MC_algorithm_MASTER(pvalloc_settings) if run_alloc_MCalg else print('')
 
 
 # POSTPROCESSIGN ANALYSIS RUNs ---------------------------------------------------------------
@@ -116,7 +116,7 @@ postprocess_analysis_MASTER.postprocess_analysis_MASTER(pvalloc_scenarios, postp
 
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
-visualization_MASTER.visualization_MASTER(pvalloc_scenarios, visual_settings) if run_visual else print('')
+MASTER_visualization.visualization_MASTER(pvalloc_scenarios, visual_settings) if run_visual else print('')
 
 
 
