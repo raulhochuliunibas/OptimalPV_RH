@@ -79,10 +79,15 @@ def prediction_accuracy(pvalloc_scen_list, postprocess_analysis_settings, wd_pat
         
         gwr_preprep_insample = gwr_preprep_all.loc[gwr_preprep_all['EGID'].isin(pvinst_df['EGID'])]
         df_comparison = gwr_preprep_insample.merge(pv_preprep_all, on='EGID', how='left')
-        # BOOKMARK! => this df has duplicates because some installations are built on the same house => assigned the same EGID, as pv_egid mapping is
+        # initially, this df had duplicates because some installations are built on the same house => assigned the same EGID, as pv_egid mapping is
         #              done through spatial join function. Workaround to remove some duplicates for now.
-        df_comparison = df_comparison.loc[~df_comparison.duplicated(subset='EGID', keep = 'last')]        
+        # df_comparison = df_comparison.loc[~df_comparison.duplicated(subset='EGID', keep = 'last')]        
+        
+        # update: using only gwr and pv for df_comparison, there appear to be no longer any duplicates.
+        duplicate_egid = df_comparison.loc[df_comparison.duplicated(subset='EGID',), 'EGID'].unique()
+        df_comparison.loc[df_comparison['EGID'].isin(duplicate_egid)]
 
+        
         
         # rename columns for better understanding and merge
         cols_to_add_suffix = ['']
