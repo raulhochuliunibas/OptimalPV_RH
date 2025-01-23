@@ -7,6 +7,11 @@ pvalloc_default_settings = {
     'n_egid_in_topo': 200, 
     'wd_path_laptop': 'C:/Models/OptimalPV_RH',                             # path to the working directory on Raul's laptop
     'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',                  # path to the working directory on the server
+    'constr_capacity_specs_OLD_to_delete': {
+        'summer_months': [4,5,6,7,8,9,],
+        'winter_months': [10,11,12,1,2,3,],
+        'share_to_summer': 0.6, 
+        'share_to_winter': 0.4,}, 
 
 
 
@@ -65,10 +70,20 @@ pvalloc_default_settings = {
     'constr_capacity_specs': {
         'ann_capacity_growth': 0.05,         # annual growth of installed capacity# each year, X% more PV capacity can be built, 100% in year T0
         'constr_capa_overshoot_fact': 1, 
-        'summer_months': [4,5,6,7,8,9,],
-        'winter_months': [10,11,12,1,2,3,],
-        'share_to_summer': 0.6, 
-        'share_to_winter': 0.4,
+        'month_constr_capa_tuples': [
+            (1,  0.06), 
+            (2,  0.06), 
+            (3,  0.06),
+            (4,  0.06), 
+            (5,  0.08), 
+            (6,  0.08),
+            (7,  0.08),
+            (8,  0.08), 
+            (9,  0.10), 
+            (10, 0.10), 
+            (11, 0.12), 
+            (12, 0.12),
+        ], 
     },
     'tech_economic_specs': {
         'self_consumption_ifapplicable': 1,

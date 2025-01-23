@@ -943,25 +943,30 @@ def define_construction_capacity(
 
     # CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
     capacity_growth = pvalloc_settings['constr_capacity_specs']['ann_capacity_growth']
-    summer_months = pvalloc_settings['constr_capacity_specs']['summer_months']
-    winter_months = pvalloc_settings['constr_capacity_specs']['winter_months']
-    share_to_summer = pvalloc_settings['constr_capacity_specs']['share_to_summer']
-    share_to_winter = pvalloc_settings['constr_capacity_specs']['share_to_winter']
+    # summer_months = pvalloc_settings['constr_capacity_specs']['summer_months']
+    # winter_months = pvalloc_settings['constr_capacity_specs']['winter_months']
+    # share_to_summer = pvalloc_settings['constr_capacity_specs']['share_to_summer']
+    # share_to_winter = pvalloc_settings['constr_capacity_specs']['share_to_winter']
+    month_constr_capa_tuples = pvalloc_settings['constr_capacity_specs']['month_constr_capa_tuples']
 
     sum_TP_kW_lookback = pv_sub['TotalPower'].sum()
 
     constrcapa = pd.DataFrame({'date': months_prediction, 'year': months_prediction.year, 'month': months_prediction.month})
     years_prediction = months_prediction.year.unique()
+    i, y = 0, years_prediction[0]
     for i,y in enumerate(years_prediction):
 
         TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
-        TP_y_summer_month = TP_y * share_to_summer / len(summer_months)
-        TP_y_winter_month = TP_y * share_to_winter / len(winter_months)
+        # TP_y_summer_month = TP_y * share_to_summer / len(summer_months)
+        # TP_y_winter_month = TP_y * share_to_winter / len(winter_months)
 
-        constrcapa.loc[(constrcapa['year'] == y) & 
-                       (constrcapa['month'].isin(summer_months)), 'constr_capacity_kw'] = TP_y_summer_month
-        constrcapa.loc[(constrcapa['year'] == y) &
-                       (constrcapa['month'].isin(winter_months)), 'constr_capacity_kw'] = TP_y_winter_month
+        # constrcapa.loc[(constrcapa['year'] == y) & 
+        #                (constrcapa['month'].isin(summer_months)), 'constr_capacity_kw'] = TP_y_summer_month
+        # constrcapa.loc[(constrcapa['year'] == y) &
+        #                (constrcapa['month'].isin(winter_months)), 'constr_capacity_kw'] = TP_y_winter_month
+        for m, TP_m in month_constr_capa_tuples:
+            constrcapa.loc[(constrcapa['year'] == y) & 
+                           (constrcapa['month'] == m), 'constr_capacity_kw'] = TP_y * TP_m
         
     months_prediction_df = pd.DataFrame({'date': months_prediction, 'year': months_prediction.year, 'month': months_prediction.month})
 
