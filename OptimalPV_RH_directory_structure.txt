@@ -1,5 +1,5 @@
 ** Directory structure for OptimalPV_RH **
- date: 2025-01-23 14:12:49.771106
+ date: 2025-01-23 15:27:28.529014
 
 ├── auxiliary_functions.py
 ├── data_aggregation
@@ -24,6 +24,7 @@
 │   ├── map_municipality_to_DSO.py
 │   ├── pv_coutns_power_timeseries.py
 │   └── pv_houseclass_mapping.py
+├── poetry - Copy.lock
 ├── postprocess_analysis
 │   ├── default_settings.py
 │   └── pvalloc_to_today_sanitcheck.py
@@ -35,25 +36,28 @@
 │   ├── initialization_large_functions.py
 │   ├── initialization_small_functions.py
 │   └── inst_selection.py
-└── visualisations
-    ├── defaults_settings.py
-    ├── individual_visualisations.py
-    ├── ind_visual_pvprod_difference_2scens.py
-    ├── plot_auxiliary_functions.py
-    ├── plot_ind_boxp_radiation_rng_sanitycheck.py
-    ├── plot_ind_charac_omitted_gwr.py
-    ├── plot_ind_hist_NPV_freepartitions.py
-    ├── plot_ind_hist_pvcapaprod_sanitycheck.py
-    ├── plot_ind_lineband_contcharact_newinst.py
-    ├── plot_ind_line_gridPremiumHOY_per_node.py
-    ├── plot_ind_line_gridPremium_structure.py
-    ├── plot_ind_line_installedCap.py
-    ├── plot_ind_line_meteo_radiation.py
-    ├── plot_ind_line_productionHOY_per_node.py
-    ├── plot_ind_line_PVproduction.py
-    ├── plot_ind_map_base.py
-    ├── plot_ind_map_node_connections.py
-    ├── plot_ind_map_omitted_egids.py
-    ├── plot_ind_map_topo_egid.py
-    ├── plot_ind_var_summary_stats.py
-    └── plot_mc_line_PVproduction.py
+├── pyproject - Copy.toml
+├── visualisations
+│   ├── defaults_settings.py
+│   ├── individual_visualisations.py
+│   ├── ind_visual_pvprod_difference_2scens.py
+│   ├── plot_auxiliary_functions.py
+│   ├── plot_ind_boxp_radiation_rng_sanitycheck.py
+│   ├── plot_ind_charac_omitted_gwr.py
+│   ├── plot_ind_hist_NPV_freepartitions.py
+│   ├── plot_ind_hist_pvcapaprod_sanitycheck.py
+│   ├── plot_ind_lineband_contcharact_newinst.py
+│   ├── plot_ind_line_gridPremiumHOY_per_node.py
+│   ├── plot_ind_line_gridPremium_structure.py
+│   ├── plot_ind_line_installedCap.py
+│   ├── plot_ind_line_meteo_radiation.py
+│   ├── plot_ind_line_productionHOY_per_node.py
+│   ├── plot_ind_line_PVproduction.py
+│   ├── plot_ind_map_base.py
+│   ├── plot_ind_map_node_connections.py
+│   ├── plot_ind_map_omitted_egids.py
+│   ├── plot_ind_map_topo_egid.py
+│   ├── plot_ind_var_summary_stats.py
+│   └── plot_mc_line_PVproduction.py
+├── __poetry - Copy.lock
+└── __pyproject - Copy.toml

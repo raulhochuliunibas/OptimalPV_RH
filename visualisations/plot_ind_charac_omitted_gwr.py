@@ -109,7 +109,7 @@ def plot(pvalloc_scen_list,
             # add overview for all buildings covered by topo from gwr
             fig.add_trace(go.Bar(x=['share EGID in topo',], y=[len(list(topo.keys()))/gwr_mrg_all_building_in_bfs['EGID'].nunique(),], 
                                  name=f'gwrEGID_in_topo ({len(list(topo.keys()))} nr in sample)',
-                                 text=f'{len(list(topo.keys()))/len(gwr_mrg_all_building_in_bfs['EGID'].unique()):.2f} ({len(list(topo.keys()))} nEGIDs)',  # Add text to display the count
+                                 text=f'{len(list(topo.keys()))/len(gwr_mrg_all_building_in_bfs["EGID"].unique()):.2f} ({len(list(topo.keys()))} nEGIDs)',  # Add text to display the count
                                  textposition='outside'))
             fig.add_trace(go.Bar(x=['share EGID in topo',], y=[gwr_select_but_not_in_topo['EGID'].nunique()/gwr_mrg_all_building_in_bfs['EGID'].nunique(),],
                                     name=f'gwrEGID_in_sample ({gwr_select_but_not_in_topo["EGID"].nunique()} nr in sample by gwr selection criteria)',
@@ -117,7 +117,7 @@ def plot(pvalloc_scen_list,
                                     textposition='outside'))
             fig.add_trace(go.Bar(x=['share EGID in topo',], y=[gwr_rest['EGID'].nunique()/gwr_mrg_all_building_in_bfs['EGID'].nunique(),],
                                  name=f'gwrEGID_not_in_sample ({gwr_mrg_all_building_in_bfs["EGID"].nunique()} nr bldngs in bfs region)',
-                                 text=f'{gwr_rest['EGID'].nunique()/gwr_mrg_all_building_in_bfs["EGID"].nunique():.2f} ({gwr_rest["EGID"].nunique()}, total {gwr_mrg_all_building_in_bfs['EGID'].nunique()} nEGIDs)',  # Add text to display the count
+                                 text=f'{gwr_rest["EGID"].nunique()/gwr_mrg_all_building_in_bfs["EGID"].nunique():.2f} ({gwr_rest["EGID"].nunique()}, total {gwr_mrg_all_building_in_bfs["EGID"].nunique()} nEGIDs)',  # Add text to display the count
                                  textposition='outside'))
             fig.add_trace(go.Scatter(x=[col], y=[0], name='share EGID in topo', opacity=0,))  
             

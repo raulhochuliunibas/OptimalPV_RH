@@ -64,7 +64,7 @@ def plot(pvalloc_scen_list,
 
         fig_agg_pmonth = go.Figure()
         for i_scen, scen in enumerate(scen_dir_export_list):
-            mc_data_path = glob.glob(f'{data_path}/output/{scen}/{visual_settings['MC_subdir_for_plot']}')[0] # take first path if multiple apply, so code can still run properly
+            mc_data_path = glob.glob(f'{data_path}/output/{scen}/{visual_settings["MC_subdir_for_plot"]}')[0] # take first path if multiple apply, so code can still run properly
             pvalloc_scen = pvalloc_scen_list[i_scen]
 
             topo = json.load(open(f'{mc_data_path}/topo_egid.json', 'r'))

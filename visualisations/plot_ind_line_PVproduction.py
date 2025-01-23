@@ -54,7 +54,7 @@ def plot(pvalloc_scen_list,
         for i_scen, scen in enumerate(scen_dir_export_list):
 
             # setup + import ----------
-            mc_data_path = glob.glob(f'{data_path}/output/{scen}/{visual_settings['MC_subdir_for_plot']}')[0]
+            mc_data_path = glob.glob(f'{data_path}/output/{scen}/{visual_settings["MC_subdir_for_plot"]}')[0]
             pvalloc_scen = pvalloc_scen_list[i_scen]
 
             kWpeak_per_m2, share_roof_area_available = pvalloc_scen['tech_economic_specs']['kWpeak_per_m2'],pvalloc_scen['tech_economic_specs']['share_roof_area_available']

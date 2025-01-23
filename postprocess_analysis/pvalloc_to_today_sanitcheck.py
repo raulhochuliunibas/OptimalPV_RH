@@ -32,7 +32,7 @@ def prediction_accuracy(pvalloc_scen_list, postprocess_analysis_settings, wd_pat
 
     for i_scen, scen in enumerate(scen_dir_export_list):
         # scen_data_path = f'{data_path}/output/{scen}'
-        mc_data_path = glob.glob(f'{data_path}/output/{scen}/{postprocess_analysis_settings['MC_subdir_for_analysis']}')[0] # take first path if multiple apply, so code can still run properly
+        mc_data_path = glob.glob(f'{data_path}/output/{scen}/{postprocess_analysis_settings["MC_subdir_for_analysis"]}')[0] # take first path if multiple apply, so code can still run properly
         pvalloc_scen = pvalloc_scen_list[i_scen]
 
 
@@ -104,9 +104,9 @@ def prediction_accuracy(pvalloc_scen_list, postprocess_analysis_settings, wd_pat
         # 2x2 Matrix transformation ------------------------------
         # remove houses with EXISTING installations in the model, to really only look at the houses containing a predicted installation. 
         df_comp2x2 = copy.deepcopy(df_comparison)
-        date_range_gwr_select = pd.date_range(start=f'{pvalloc_scen.get('gwr_selection_specs').get('GBAUJ_minmax')[0]}-01-01', 
-                                       end  =f'{pvalloc_scen.get('gwr_selection_specs').get('GBAUJ_minmax')[1]}-12-31', freq='D')
-        date_T0 = pd.to_datetime(f'{pvalloc_scen.get('gwr_selection_specs').get('GBAUJ_minmax')[1]+1}-01-01')
+        date_range_gwr_select = pd.date_range(start=f'{pvalloc_scen.get("gwr_selection_specs").get("GBAUJ_minmax")[0]}-01-01', 
+                                              end  =f'{pvalloc_scen.get("gwr_selection_specs").get("GBAUJ_minmax")[1]}-12-31', freq='D')
+        date_T0 = pd.to_datetime(f'{pvalloc_scen.get("gwr_selection_specs").get("GBAUJ_minmax")[1]+1}-01-01')
 
         # remove houses with existing installations that where already built before the inst allocation started
         # df_comp2x2 = df_comp2x2.loc[~df_comp2x2['BeginOp_RWD'].isin(date_range_gwr_select)]
@@ -262,7 +262,7 @@ def prediction_accuracy(pvalloc_scen_list, postprocess_analysis_settings, wd_pat
         fig.update_layout(
             xaxis_title='Time',
             yaxis_title='Installed Capacity [kWp]',
-            title=f'Installed Capacity over Time (T0 to Today, scen: {scen}, T0: {pvalloc_scen.get('T0_prediction')})',
+            title=f'Installed Capacity over Time (T0 to Today, scen: {scen}, T0: {pvalloc_scen.get("T0_prediction")})',
         )
         
         if postprocess_analysis_settings['prediction_accuracy_specs']['show_plot']:
