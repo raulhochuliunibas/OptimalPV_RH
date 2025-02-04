@@ -5,18 +5,13 @@
 __pycache__/
 data_aggregation/__pycache__/*.pyc
 pv_allocation/__pycache__/*.pyc
+__init__.py
+__poetry*
+__pyproject*
 
-# data_aggregation/__pycache__/api_electricity_prices.cpython-311.pyc
-# data_aggregation/__pycache__/api_entsoe.cpython-311.pyc
-# data_aggregation/__pycache__/api_pvtarif.cpython-311.pyc
-# data_aggregation/__pycache__/default_settings.cpython-311.pyc
-# data_aggregation/__pycache__/extend_data.cpython-311.pyc
-# data_aggregation/__pycache__/preprepare_data.cpython-311.pyc
-# data_aggregation/__pycache__/split_data_geometry.cpython-311.pyc
-# pv_allocation/__pycache__/alloc_algorithm.cpython-311.pyc
-# pv_allocation/__pycache__/default_settings.cpython-311.pyc
-# pv_allocation/__pycache__/initialization.cpython-311.pyc
-# pv_allocation/__pycache__/inst_selection.cpython-311.pyc
+# ignore venv files
+.venv*
+.vscode* 
 
 
 # --------------------------------------------------------------------------------------------
