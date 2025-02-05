@@ -1,4 +1,68 @@
 
+def get_dataagg_execution_scenarios(run_on_server, scen_group_names,  ):
+    scen_group_dir = {}
+
+    all_scenarios = {
+        # the large data_aggregation scenario, to preprepare split geometry data and inport slow API data
+        'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
+            'script_run_on_server': run_on_server, 
+            'kt_numbers': [13,12,11],
+            'year_range': [2018, 2023], 
+            'split_data_geometry_AND_slow_api': True, 
+            'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
+        },
+
+
+        'preprep_BL_22to23_1and2homes_incl_missingEGID':{
+            'script_run_on_server': run_on_server, 
+            'kt_numbers': [13,], 
+            'year_range': [2022, 2023],   
+            'split_data_geometry_AND_slow_api': False, 
+            'gwr_selection_specs': 
+                {'GKLAS': ['1110','1121',],},
+            'solkat_selection_specs': {
+                'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
+                'match_missing_EGIDs_to_solkat_TF': True, 
+                'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
+        },
+        
+        'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates':{
+            'script_run_on_server': run_on_server, 
+            'kt_numbers': [13,], 
+            'year_range': [2022, 2023],   
+            'split_data_geometry_AND_slow_api': False, 
+            'gwr_selection_specs': 
+                {'GKLAS': ['1110','1121',],},
+            'solkat_selection_specs': {
+                'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
+                'match_missing_EGIDs_to_solkat_TF': True, 
+                'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
+        },
+
+        'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates':{
+            'script_run_on_server': run_on_server, 
+            'kt_numbers': [13,11], 
+            'year_range': [2022, 2023],   
+            'split_data_geometry_AND_slow_api': False, 
+            'gwr_selection_specs': 
+                {'GKLAS': ['1110','1121',],},
+            'solkat_selection_specs': {
+                'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
+                'match_missing_EGIDs_to_solkat_TF': True, 
+                'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
+        },
+    }
+
+    for scen_name in scen_group_names:
+        all_scen_names = all_scenarios.keys()
+        if scen_name in all_scen_names:
+            scen_group_dir[scen_name] = all_scenarios[scen_name]
+        else:
+            print(f'Scenario <{scen_name}> not found in data aggregation scenarios') 
+    
+    return scen_group_dir
+
+
 def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
     scen_group_dir = {}
     
@@ -10,7 +74,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2761, 
         ],
         'T0_prediction': '2021-01-01 00:00:00', 
-        'months_prediction': 12,
+        'months_prediction': 2,
         'gwr_selection_specs':{
             'GBAUJ_minmax': [1920, 2020],},
         'algorithm_specs': {
@@ -26,7 +90,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'bfs_numbers': [
             2761, 
         ],
-        'months_prediction': 12,
+        'months_prediction': 2,
         'algorithm_specs': {
             'inst_selection_method': 'random', },
         'tech_economic_specs': {
@@ -704,5 +768,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         all_scen_names = all_scenarios.keys()
         if scen_name in all_scen_names:
             scen_group_dir[scen_name] = all_scenarios[scen_name]
+        else:
+            print(f'Scenario <{scen_name}> not found in pv_allocation scenarios')
 
     return scen_group_dir

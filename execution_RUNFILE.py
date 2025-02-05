@@ -11,17 +11,25 @@ from visualisations.defaults_settings import extend_visual_sett_with_defaults
 run_on_server =             False
 print_directory_stucture_to_txtfile(not(run_on_server))
 
-run_dataagg =               False
+run_dataagg =               True
 run_alloc_init =            False
-run_alloc_MCalg =           True
+run_alloc_MCalg =           False
 
 run_postprocess_analysis =  False
 run_visual =                False
 
 
 # data_aggregation 
-dataagg_scenarios = {} # an empty dictionary, most relevant data aggregation scenario settings are stored in 
-                       # in MASTER_data_aggregation.py, to keep execRunfile clean
+dataagg_scenarios = execution_scenarios.get_dataagg_execution_scenarios(run_on_server,[
+    # 'preprep_BLBSSO_18to23_1and2homes_API_reimport',          # the large data_aggregation scenario, to preprepare split geometry data and inport slow API data
+    # 'preprep_BL_22to23_1and2homes_incl_missingEGID', 
+    'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',        
+    # 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',      # for larger BLSO sample
+    ])
+dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
+
+# dataagg_scenarios = {"dataagg_scen_in_MASTER_func" : None,} # an empty dictionary, most relevant data aggregation scenario settings are stored in 
+#                        # in MASTER_data_aggregation.py, to keep execRunfile clean
 
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
@@ -38,7 +46,7 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
     
     # 'pvalloc_BLsml_40y_f1983_1mc_meth2.2_npv', 
     # 'pvalloc_BLSOmed_40y_f1983_1mc_meth2.2_npv', 
-])
+    ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
 comparison_scenarios = {
@@ -59,7 +67,7 @@ postprocessing_analysis_settings = {
 # vsualiastion 
 visual_settings = {
     'plot_show': True,
-    'remove_previous_plots': True,
+    # 'remove_previous_plots': True,
     'remove_old_plot_scen_directories': True,
     'save_plot_by_scen_directory': True,
     'MC_subdir_for_plot': '*MC*1', 
@@ -103,10 +111,9 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 
 
 # DATA AGGREGATION RUNs  ------------------------------------------------------------------------
-if True:
-    for k_sett, scen_sett in dataagg_scenarios.items():
-        dataagg_settings = scen_sett
-        MASTER_data_aggregation.MASTER_data_aggregation(dataagg_settings) if run_dataagg else print('')
+for k_sett, scen_sett in dataagg_scenarios.items():
+    dataagg_settings = scen_sett
+    MASTER_data_aggregation.MASTER_data_aggregation(dataagg_settings) if run_dataagg else print('')
 
 
 # ALLOCATION RUNs  ------------------------------------------------------------------------

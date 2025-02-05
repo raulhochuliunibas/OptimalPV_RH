@@ -45,64 +45,10 @@ def MASTER_data_aggregation(dataagg_settings_func):
     # SETTIGNS --------------------------------------------------------------------
     
     if not isinstance(dataagg_settings_func, dict):
-        run_on_server = False
-        # dataagg_settings no longer in executionRUNFILE, because they rarley change. That's why stored here
-        dataagg_settings_inMASTER = {
-            # 'preprep_BLBSSO_18to23_1and2homes_API_reimport':{
-            #     'script_run_on_server': run_on_server, 
-            #     'kt_numbers': [13,12,11],
-            #     'year_range': [2018, 2023], 
-            #     'split_data_geometry_AND_slow_api': True, 
-            #     'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
-            # },
-            'preprep_BL_22to23_1and2homes_incl_missingEGID':{
-                'script_run_on_server': run_on_server, 
-                'kt_numbers': [13,], 
-                'year_range': [2022, 2023],   
-                'split_data_geometry_AND_slow_api': False, 
-                'gwr_selection_specs': 
-                    {'GKLAS': ['1110','1121',],},
-                'solkat_selection_specs': {
-                    'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
-                    'match_missing_EGIDs_to_solkat_TF': True, 
-                    'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
-            },
-            
-            'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates':{
-                'script_run_on_server': run_on_server, 
-                'kt_numbers': [13,], 
-                'year_range': [2022, 2023],   
-                'split_data_geometry_AND_slow_api': False, 
-                'gwr_selection_specs': 
-                    {'GKLAS': ['1110','1121',],},
-                'solkat_selection_specs': {
-                    'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
-                    'match_missing_EGIDs_to_solkat_TF': True, 
-                    'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
-            },
-
-            'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates':{
-                'script_run_on_server': run_on_server, 
-                'kt_numbers': [13,11], 
-                'year_range': [2022, 2023],   
-                'split_data_geometry_AND_slow_api': False, 
-                'gwr_selection_specs': 
-                    {'GKLAS': ['1110','1121',],},
-                'solkat_selection_specs': {
-                    'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
-                    'match_missing_EGIDs_to_solkat_TF': True, 
-                    'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
-            },
-
-}
-        dataagg_settings = dataagg_default_sett.extend_dataag_scen_with_defaults(dataagg_settings_inMASTER)
-
-    elif isinstance(dataagg_settings_func, dict):
-        dataagg_settings = dataagg_settings_func
-
-    else:
         print('  USE LOCAL DATA AGGREGATION SETTINGS - DICT')
         dataagg_settings = dataagg_default_sett.get_default_dataag_settings()
+    else:
+        dataagg_settings = dataagg_settings_func
 
 
     # SETUP -----------------------------------------------------------------------
@@ -113,13 +59,15 @@ def MASTER_data_aggregation(dataagg_settings_func):
         data_path = f'{wd_path}_data'
             
         # create directory + log file
-        preprepd_path = f'{data_path}/output/preprep_data' 
+        preprepd_path = f'{data_path}/preprep_data' 
         if not os.path.exists(preprepd_path):
             os.makedirs(preprepd_path)
-        log_name = f'{data_path}/output/preprep_data_log.txt'
+        log_name = f'{preprepd_path}/preprep_data_log.txt'
         total_runtime_start = datetime.now()
 
-        summary_name = f'{data_path}/output/summary_data_selection_log.txt'
+        # summary_name = f'{data_path}/output/summary_data_selection_log.txt'
+        summary_name = f'{preprepd_path}/summary_data_selection_log.txt'
+
         chapter_to_logfile(f'OptimalPV - Sample Summary of Building Topology', summary_name, overwrite_file=True)
         subchapter_to_logfile(f'MASTER_data_aggregation', summary_name)
 
@@ -173,7 +121,7 @@ def MASTER_data_aggregation(dataagg_settings_func):
 
     # IMPORT LOCAL DATA + SPATIAL MAPPINGS ------------------------------------------
     # transform spatial data to parquet files for faster import and transformation
-    pq_dir_exists_TF = os.path.exists(f'{data_path}/output/preprep_data')
+    pq_dir_exists_TF = os.path.exists(f'{preprep_data}')
     pq_files_rerun = dataagg_settings['rerun_localimport_and_mappings']
 
     if not pq_dir_exists_TF or pq_files_rerun:
@@ -198,7 +146,6 @@ def MASTER_data_aggregation(dataagg_settings_func):
 
 
     # EXTEND WITH TIME FIXED DATA ---------------------------------------------------------------
-    # cost_df_exists_TF = os.path.exists(f'{data_path}/output/preprep_data/pvinstcost.parquet')
     reextend_fixed_data = dataagg_settings['reextend_fixed_data']
 
     if reextend_fixed_data: # or not cost_df_exists_TF:
@@ -221,21 +168,21 @@ def MASTER_data_aggregation(dataagg_settings_func):
     
     # COPY & RENAME AGGREGATED DATA FOLDER ---------------------------------------------------------------
     # > not to overwrite completed preprep folder while debugging 
-    dir_dataagg_moveto = f'{data_path}/output/{dataagg_settings["name_dir_export"]}'
+    dir_dataagg_moveto = f'{preprepd_path}/{dataagg_settings["name_dir_export"]}'
     if os.path.exists(dir_dataagg_moveto):
         n_same_names = len(glob.glob(f'{dir_dataagg_moveto}*'))
         old_dir_rename = f'{dir_dataagg_moveto} ({n_same_names})'
         os.rename(dir_dataagg_moveto, old_dir_rename)
 
     os.makedirs(dir_dataagg_moveto)
-    file_to_move = glob.glob(f'{data_path}/output/preprep_data/*')
+    file_to_move = glob.glob(f'{preprepd_path}/*')
     for f in file_to_move:
         if os.path.isfile(f):
             shutil.copy(f, dir_dataagg_moveto)
         elif os.path.isdir(f):
             shutil.copytree(f, os.path.join(dir_dataagg_moveto, os.path.basename(f)))
-    shutil.copy(glob.glob(f'{data_path}/output/preprep_data_log.txt')[0], f'{dir_dataagg_moveto}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
-    shutil.copy(glob.glob(f'{data_path}/output/*summary*log.txt')[0],     f'{dir_dataagg_moveto}/summary_data_selection_log_{dataagg_settings["name_dir_export"]}.txt')
+    shutil.copy(glob.glob(f'{preprepd_path}/preprep_data_log.txt')[0], f'{dir_dataagg_moveto}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
+    shutil.copy(glob.glob(f'{preprepd_path}/*summary*data*log.txt')[0],     f'{dir_dataagg_moveto}/summary_data_selection_log_{dataagg_settings["name_dir_export"]}.txt')
    
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
