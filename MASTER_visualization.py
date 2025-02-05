@@ -90,11 +90,11 @@ def MASTER_visualization(pvalloc_scenarios_func, visual_settings_func):
         data_path = f'{wd_path}_data'
 
         # create directory + log file
-        visual_path = f'{data_path}/output/visualizations'
+        visual_path = f'{data_path}/visualizations'
         if not os.path.exists(visual_path):
             os.makedirs(visual_path)
 
-        log_name = f'{data_path}/output/visual_log.txt'
+        log_name = f'{visual_path}/visual_log.txt'
         total_runtime_start = datetime.now()
 
 
@@ -103,6 +103,7 @@ def MASTER_visualization(pvalloc_scenarios_func, visual_settings_func):
         # scen_dir_import_list, T0_prediction_list, months_prediction_list = [], [], [], [] T0_prediction_list, months_lookback_list, months_prediction_list = [], [], [] pvalloc_scen_list = []
         for key, val in pvalloc_scenarios.items():
             pvalloc_settings_path = glob.glob(f'{data_path}/output/{key}/pvalloc_settings.json')
+            # pvalloc_settings_path = glob.glob(f'{data_path}/pvalloc_runs/{key}/pvalloc_settings.json')
             
             if len(pvalloc_settings_path) == 1:
                 try:
@@ -123,7 +124,7 @@ def MASTER_visualization(pvalloc_scenarios_func, visual_settings_func):
         for key, val in pvalloc_scenarios.items():
             scen = val['name_dir_export']
             # scen = key
-            scen_path = f'{data_path}/output/visualizations/{scen}'
+            scen_path = f'{data_path}/visualizations/{scen}'
             
             if os.path.exists(scen_path):
                 n_same_names = len(glob.glob(f'{scen_path}*/'))
@@ -132,13 +133,13 @@ def MASTER_visualization(pvalloc_scenarios_func, visual_settings_func):
 
             os.makedirs(scen_path)
 
-        if visual_settings['remove_previous_plots']:
-            all_html = glob.glob(f'{data_path}/output/visualizations/*.html')
-            for f in all_html:
-                os.remove(f)
+        # if visual_settings['remove_previous_plots']:
+        #     all_html = glob.glob(f'{data_path}/output/visualizations/*.html')
+        #     for f in all_html:
+        #         os.remove(f)
 
         if visual_settings['remove_old_plot_scen_directories']:
-            old_plot_scen_dirs = glob.glob(f'{data_path}/output/visualizations/*(*)')
+            old_plot_scen_dirs = glob.glob(f'{data_path}/visualizations/*(*)')
             for dir in old_plot_scen_dirs:
                 try:    
                     shutil.rmtree(dir)

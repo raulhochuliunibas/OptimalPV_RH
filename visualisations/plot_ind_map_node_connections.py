@@ -226,5 +226,5 @@ def plot(pvalloc_scen_list,
                     fig_dsonodes.show()
                 elif not visual_settings['plot_ind_map_node_connections'][2]:
                     fig_dsonodes.show() if i_scen == 0 else None
-            fig_dsonodes.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_node_connections.html')
+            fig_dsonodes.write_html(f'{data_path}/visualizations/{scen}__plot_ind_map_node_connections.html')
 

@@ -127,7 +127,7 @@ def plot(pvalloc_scen_list,
                 elif not visual_settings['plot_ind_line_productionHOY_per_node'][2]:
                     fig.show() if i_scen == 0 else None
             if visual_settings['save_plot_by_scen_directory']:
-                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_productionHOY_per_node.html')
+                fig.write_html(f'{data_path}/visualizations/{scen}/{scen}__plot_ind_line_productionHOY_per_node.html')
             else:
-                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_productionHOY_per_node.html')
+                fig.write_html(f'{data_path}/visualizations/{scen}__plot_ind_line_productionHOY_per_node.html')
 

@@ -71,9 +71,9 @@ def plot(pvalloc_scen_list,
                 elif not visual_settings['plot_ind_var_summary_stats'][2]:
                     fig.show() if i_scen == 0 else None
             if visual_settings['save_plot_by_scen_directory']:
-                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_bar_totaldemand_by_type.html')
+                fig.write_html(f'{data_path}/visualizations/{scen}/{scen}__plot_ind_bar_totaldemand_by_type.html')
             else:
-                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_bar_totaldemand_by_type.html')
+                fig.write_html(f'{data_path}/visualizations/{scen}__plot_ind_bar_totaldemand_by_type.html')
             print_to_logfile(f'\texport: plot_ind_bar_totaldemand_by_type.html (for: {scen})', log_name)
             
 
@@ -96,8 +96,8 @@ def plot(pvalloc_scen_list,
                 elif not visual_settings['plot_ind_var_summary_stats'][2]:
                     fig.show() if i_scen == 0 else None
             if visual_settings['save_plot_by_scen_directory']:
-                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_demandTS.html')
+                fig.write_html(f'{data_path}/visualizations/{scen}/{scen}__plot_ind_line_demandTS.html')
             else:
-                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_demandTS.html')
+                fig.write_html(f'{data_path}/visualizations/{scen}__plot_ind_line_demandTS.html')
             print_to_logfile(f'\texport: plot_ind_line_demandTS.html (for: {scen})', log_name)
             

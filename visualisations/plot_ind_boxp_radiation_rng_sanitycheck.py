@@ -313,7 +313,7 @@ def plot(pvalloc_scen_list,
                 elif not visual_settings['plot_ind_hist_radiation_rng_sanitycheck'][2]:
                     fig_onebox.show() if i_scen == 0 else None
             if visual_settings['save_plot_by_scen_directory']:
-                fig_onebox.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__ind_hist_radiation_rng_sanitycheck.html')
+                fig_onebox.write_html(f'{data_path}/visualizations/{scen}/{scen}__ind_hist_radiation_rng_sanitycheck.html')
             else:
-                fig_onebox.write_html(f'{data_path}/output/visualizations/{scen}__ind_hist_radiation_rng_sanitycheck.html')
+                fig_onebox.write_html(f'{data_path}/visualizations/{scen}__ind_hist_radiation_rng_sanitycheck.html')
 

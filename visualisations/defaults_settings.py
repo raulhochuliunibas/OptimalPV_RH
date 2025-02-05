@@ -1,6 +1,6 @@
 visual_default_settings = {
         'plot_show': True,
-        'remove_previous_plots': False,
+        # 'remove_previous_plots': False,
         'remove_old_plot_scen_directories': False,
         'MC_subdir_for_plot': '*MC*1',
         'mc_plots_individual_traces': True,

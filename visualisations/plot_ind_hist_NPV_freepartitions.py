@@ -79,9 +79,9 @@ def plot(pvalloc_scen_list,
                 elif not visual_settings['plot_ind_hist_NPV_freepartitions'][2]:
                     fig.show() if i_scen == 0 else None
             if visual_settings['save_plot_by_scen_directory']:
-                fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_hist_NPV_freepartitions.html')
+                fig.write_html(f'{data_path}/visualizations/{scen}/{scen}__plot_ind_hist_NPV_freepartitions.html')
             else:
-                fig.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_hist_NPV_freepartitions.html')
+                fig.write_html(f'{data_path}/visualizations/{scen}__plot_ind_hist_NPV_freepartitions.html')
            
 
             # aggregate plot ----------------
@@ -100,6 +100,6 @@ def plot(pvalloc_scen_list,
 
         if plot_show and visual_settings['plot_ind_hist_NPV_freepartitions'][1]:
             fig_agg.show()
-            fig_agg.write_html(f'{data_path}/output/visualizations/plot_agg_hist_NPV_freepartitions__{len(scen_dir_export_list)}scen.html')
+            fig_agg.write_html(f'{data_path}/visualizations/plot_agg_hist_NPV_freepartitions__{len(scen_dir_export_list)}scen.html')
             
 

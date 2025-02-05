@@ -214,9 +214,9 @@ def plot(pvalloc_scen_list,
                         elif not visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][2]:
                             fig.show() if i_scen == 0 else None
                     if visual_settings['save_plot_by_scen_directory']:
-                        fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__ind_hist_instCapa_kW.html')
+                        fig.write_html(f'{data_path}/visualizations/{scen}/{scen}__ind_hist_instCapa_kW.html')
                     else:
-                        fig.write_html(f'{data_path}/output/visualizations/{scen}__ind_hist_instCapa_kW.html')    
+                        fig.write_html(f'{data_path}/visualizations/{scen}__ind_hist_instCapa_kW.html')    
                     print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_instCapa_kW.html (for: {scen})', log_name)
 
                 # annual PV production kWh --------------------------------
@@ -267,9 +267,9 @@ def plot(pvalloc_scen_list,
                         elif not visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][2]:
                             fig.show() if i_scen == 0 else None
                     if visual_settings['save_plot_by_scen_directory']:
-                        fig.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__ind_hist_annualPVprod_kWh.html')
+                        fig.write_html(f'{data_path}/visualizations/{scen}/{scen}__ind_hist_annualPVprod_kWh.html')
                     else:
-                        fig.write_html(f'{data_path}/output/visualizations/{scen}__ind_hist_annualPVprod_kWh.html')
+                        fig.write_html(f'{data_path}/visualizations/{scen}__ind_hist_annualPVprod_kWh.html')
                     print_to_logfile(f'\texport: plot_ind_hist_SanityCheck_annualPVprod_kWh.html (for: {scen})', log_name)
 
 
@@ -403,8 +403,8 @@ def plot(pvalloc_scen_list,
                 if plot_show and visual_settings['plot_ind_hist_pvcapaprod_sanitycheck'][1]:
                     fig_agg_abs.show()
                     fig_agg_stand.show()
-                fig_agg_abs.write_html(f'{data_path}/output/visualizations/plot_agg_hist_pvCapaProd_abs_values__{len(scen_dir_export_list)}scen_KDE{uniform_scencolor_and_KDE_TF}.html')   
-                fig_agg_stand.write_html(f'{data_path}/output/visualizations/plot_agg_hist_pvCapaProd_stand_values__{len(scen_dir_export_list)}scen_KDE{uniform_scencolor_and_KDE_TF}.html')
+                fig_agg_abs.write_html(f'{data_path}/visualizations/plot_agg_hist_pvCapaProd_abs_values__{len(scen_dir_export_list)}scen_KDE{uniform_scencolor_and_KDE_TF}.html')   
+                fig_agg_stand.write_html(f'{data_path}/visualizations/plot_agg_hist_pvCapaProd_stand_values__{len(scen_dir_export_list)}scen_KDE{uniform_scencolor_and_KDE_TF}.html')
                 print_to_logfile(f'\texport: plot_agg_hist_SanityCheck_instCapa_kW.html ({len(scen_dir_export_list)} scens, KDE: {uniform_scencolor_and_KDE_TF})', log_name)
     
             # Export shapes with 0 kWh annual production --------------------

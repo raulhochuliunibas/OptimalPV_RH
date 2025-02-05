@@ -288,6 +288,6 @@ def plot(pvalloc_scen_list,
                 elif not visual_settings['plot_ind_map_omitted_egids'][2]:
                     fig_omitted.show() if i_scen == 0 else None
             if visual_settings['save_plot_by_scen_directory']:
-                fig_omitted.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_map_omitted_egids.html')
+                fig_omitted.write_html(f'{data_path}/visualizations/{scen}/{scen}__plot_ind_map_omitted_egids.html')
             else:
-                fig_omitted.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_omitted_egids.html')
+                fig_omitted.write_html(f'{data_path}/visualizations/{scen}__plot_ind_map_omitted_egids.html')

@@ -224,5 +224,5 @@ def plot(pvalloc_scen_list,
                     fig_topoegid.show()
                 elif not visual_settings['plot_ind_map_topo_egid'][2]:
                     fig_topoegid.show() if i_scen == 0 else None
-            fig_topoegid.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_map_topo_egid.html')
+            fig_topoegid.write_html(f'{data_path}/visualizations/{scen}__plot_ind_map_topo_egid.html')
 

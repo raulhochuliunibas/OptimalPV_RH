@@ -164,9 +164,9 @@ def plot(pvalloc_scen_list,
                     elif not visual_settings['plot_ind_line_installedCap'][2]:
                         fig1.show() if i_scen == 0 else None
                 if visual_settings['save_plot_by_scen_directory']:
-                    fig1.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_month.html')
+                    fig1.write_html(f'{data_path}/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_month.html')
                 else:
-                    fig1.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_month.html')
+                    fig1.write_html(f'{data_path}/visualizations/{scen}__plot_ind_line_installedCap_per_month.html')
                 print_to_logfile(f'\texport: plot_ind_line_installedCap_per_month.html (for: {scen})', log_name)
 
 
@@ -234,9 +234,9 @@ def plot(pvalloc_scen_list,
                 # if plot_show:
                 #     fig2.show()
                 if visual_settings['save_plot_by_scen_directory']:
-                    fig2.write_html(f'{data_path}/output/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_BFS.html')
+                    fig2.write_html(f'{data_path}/visualizations/{scen}/{scen}__plot_ind_line_installedCap_per_BFS.html')
                 else:
-                    fig2.write_html(f'{data_path}/output/visualizations/{scen}__plot_ind_line_installedCap_per_BFS.html')
+                    fig2.write_html(f'{data_path}/visualizations/{scen}__plot_ind_line_installedCap_per_BFS.html')
                 print_to_logfile(f'\texport: plot_ind_line_installedCap_per_BFS.html (for: {scen})', log_name)
            
 
@@ -296,5 +296,5 @@ def plot(pvalloc_scen_list,
                     if plot_show and visual_settings['plot_ind_line_installedCap'][1]:
                         fig_agg_pmonth.show()
 
-                    fig_agg_pmonth.write_html(f'{data_path}/output/visualizations/plot_agg_line_installedCap__{len(scen_dir_export_list)}scen.html')
+                    fig_agg_pmonth.write_html(f'{data_path}/visualizations/plot_agg_line_installedCap__{len(scen_dir_export_list)}scen.html')
                     print_to_logfile(f'\texport: plot_agg_line_installedCap__{len(scen_dir_export_list)}scen.html', log_name)
