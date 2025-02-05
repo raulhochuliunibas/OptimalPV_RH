@@ -1,35 +1,36 @@
 
-import execution_scenarios, MASTER_data_aggregation, MASTER_pvalloc_initialization, MASTER_pvalloc_MCalgorithm, MASTER_postprocess_analysis, MASTER_visualization
+import execution_scenarios
+import data_aggregation.MASTER_data_aggregation as MASTER_data_aggregation
+import pv_allocation.MASTER_pvalloc_initialization as MASTER_pvalloc_initialization
+import pv_allocation.MASTER_pvalloc_MCalgorithm as MASTER_pvalloc_MCalgorithm
+import postprocess_analysis.MASTER_postprocess_analysis as MASTER_postprocess_analysis
+import visualizations.MASTER_visualization as MASTER_visualization
 
 from auxiliary_functions import print_directory_stucture_to_txtfile
 from data_aggregation.default_settings import extend_dataag_scen_with_defaults
 from pv_allocation.default_settings import extend_pvalloc_scen_with_defaults
-from visualisations.defaults_settings import extend_visual_sett_with_defaults
+from visualizations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
 run_on_server =             False
 print_directory_stucture_to_txtfile(not(run_on_server))
 
-run_dataagg =               True
+run_dataagg =               False
 run_alloc_init =            False
 run_alloc_MCalg =           False
 
 run_postprocess_analysis =  False
-run_visual =                False
+run_visual =                True
 
 
 # data_aggregation 
 dataagg_scenarios = execution_scenarios.get_dataagg_execution_scenarios(run_on_server,[
     # 'preprep_BLBSSO_18to23_1and2homes_API_reimport',          # the large data_aggregation scenario, to preprepare split geometry data and inport slow API data
-    # 'preprep_BL_22to23_1and2homes_incl_missingEGID', 
     'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',        
     # 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',      # for larger BLSO sample
     ])
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
-
-# dataagg_scenarios = {"dataagg_scen_in_MASTER_func" : None,} # an empty dictionary, most relevant data aggregation scenario settings are stored in 
-#                        # in MASTER_data_aggregation.py, to keep execRunfile clean
 
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
