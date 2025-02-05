@@ -39,29 +39,29 @@ if True:
 
     # own packages and functions
     import pv_allocation.default_settings as pvalloc_default_sett
-    import visualisations.defaults_settings as visual_default_sett
+    import visualizations.defaults_settings as visual_default_sett
     
     from auxiliary_functions import *
     
-    import visualisations.plot_ind_var_summary_stats as plot_ind_var_summary_stats
-    import visualisations.plot_ind_hist_pvcapaprod_sanitycheck as plot_ind_hist_pvcapaprod_sanitycheck
-    import visualisations.plot_ind_boxp_radiation_rng_sanitycheck as plot_ind_boxp_radiation_rng_sanitycheck
-    import visualisations.plot_ind_charac_omitted_gwr as plot_ind_charac_omitted_gwr
-    import visualisations.plot_ind_line_meteo_radiation as plot_ind_line_meteo_radiation
-    import visualisations.plot_ind_line_installedCap as plot_ind_line_installedCap
-    import visualisations.plot_ind_line_PVproduction as plot_ind_line_PVproduction
-    import visualisations.plot_ind_line_productionHOY_per_node as plot_ind_line_productionHOY_per_node
-    import visualisations.plot_ind_line_gridPremiumHOY_per_node as plot_ind_line_gridPremiumHOY_per_node
-    import visualisations.plot_ind_line_gridPremium_structure as plot_ind_line_gridPremium_structure
-    import visualisations.plot_ind_hist_NPV_freepartitions as plot_ind_hist_NPV_freepartitions
-    import visualisations.plot_ind_lineband_contcharact_newinst as plot_ind_lineband_contcharact_newinst
+    import visualizations.plot_ind_var_summary_stats as plot_ind_var_summary_stats
+    import visualizations.plot_ind_hist_pvcapaprod_sanitycheck as plot_ind_hist_pvcapaprod_sanitycheck
+    import visualizations.plot_ind_boxp_radiation_rng_sanitycheck as plot_ind_boxp_radiation_rng_sanitycheck
+    import visualizations.plot_ind_charac_omitted_gwr as plot_ind_charac_omitted_gwr
+    import visualizations.plot_ind_line_meteo_radiation as plot_ind_line_meteo_radiation
+    import visualizations.plot_ind_line_installedCap as plot_ind_line_installedCap
+    import visualizations.plot_ind_line_PVproduction as plot_ind_line_PVproduction
+    import visualizations.plot_ind_line_productionHOY_per_node as plot_ind_line_productionHOY_per_node
+    import visualizations.plot_ind_line_gridPremiumHOY_per_node as plot_ind_line_gridPremiumHOY_per_node
+    import visualizations.plot_ind_line_gridPremium_structure as plot_ind_line_gridPremium_structure
+    import visualizations.plot_ind_hist_NPV_freepartitions as plot_ind_hist_NPV_freepartitions
+    import visualizations.plot_ind_lineband_contcharact_newinst as plot_ind_lineband_contcharact_newinst
     
-    import visualisations.plot_ind_map_topo_egid as plot_ind_map_topo_egid
-    import visualisations.plot_ind_map_node_connections as plot_ind_map_node_connections
-    import visualisations.plot_ind_map_omitted_egids as plot_ind_map_omitted_egids
+    import visualizations.plot_ind_map_topo_egid as plot_ind_map_topo_egid
+    import visualizations.plot_ind_map_node_connections as plot_ind_map_node_connections
+    import visualizations.plot_ind_map_omitted_egids as plot_ind_map_omitted_egids
 
 
-    # import visualisations.plot_mc_line_PVproduction as plot_mc_line_PVproduction
+    # import visualizations.plot_mc_line_PVproduction as plot_mc_line_PVproduction
 
 
 
