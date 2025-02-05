@@ -59,14 +59,13 @@ def MASTER_data_aggregation(dataagg_settings_func):
         data_path = f'{wd_path}_data'
             
         # create directory + log file
-        preprepd_path = f'{data_path}/preprep_data' 
+        preprepd_path = f'{data_path}/output/preprep_data/' 
         if not os.path.exists(preprepd_path):
             os.makedirs(preprepd_path)
-        log_name = f'{preprepd_path}/preprep_data_log.txt'
+        log_name = f'{data_path}/output/preprep_data_log.txt'
         total_runtime_start = datetime.now()
 
-        # summary_name = f'{data_path}/output/summary_data_selection_log.txt'
-        summary_name = f'{preprepd_path}/summary_data_selection_log.txt'
+        summary_name = f'{data_path}/output/summary_data_selection_log.txt'
 
         chapter_to_logfile(f'OptimalPV - Sample Summary of Building Topology', summary_name, overwrite_file=True)
         subchapter_to_logfile(f'MASTER_data_aggregation', summary_name)
@@ -121,7 +120,7 @@ def MASTER_data_aggregation(dataagg_settings_func):
 
     # IMPORT LOCAL DATA + SPATIAL MAPPINGS ------------------------------------------
     # transform spatial data to parquet files for faster import and transformation
-    pq_dir_exists_TF = os.path.exists(f'{preprep_data}')
+    pq_dir_exists_TF = os.path.exists(f'{data_path}/output/preprep_data')
     pq_files_rerun = dataagg_settings['rerun_localimport_and_mappings']
 
     if not pq_dir_exists_TF or pq_files_rerun:
@@ -168,21 +167,21 @@ def MASTER_data_aggregation(dataagg_settings_func):
     
     # COPY & RENAME AGGREGATED DATA FOLDER ---------------------------------------------------------------
     # > not to overwrite completed preprep folder while debugging 
-    dir_dataagg_moveto = f'{preprepd_path}/{dataagg_settings["name_dir_export"]}'
+    dir_dataagg_moveto = f'{data_path}/output/{dataagg_settings["name_dir_export"]}'
     if os.path.exists(dir_dataagg_moveto):
         n_same_names = len(glob.glob(f'{dir_dataagg_moveto}*'))
         old_dir_rename = f'{dir_dataagg_moveto} ({n_same_names})'
         os.rename(dir_dataagg_moveto, old_dir_rename)
 
     os.makedirs(dir_dataagg_moveto)
-    file_to_move = glob.glob(f'{preprepd_path}/*')
+    file_to_move = glob.glob(f'{data_path}/output/preprep_data/*')
     for f in file_to_move:
         if os.path.isfile(f):
             shutil.copy(f, dir_dataagg_moveto)
         elif os.path.isdir(f):
             shutil.copytree(f, os.path.join(dir_dataagg_moveto, os.path.basename(f)))
-    shutil.copy(glob.glob(f'{preprepd_path}/preprep_data_log.txt')[0], f'{dir_dataagg_moveto}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
-    shutil.copy(glob.glob(f'{preprepd_path}/*summary*data*log.txt')[0],     f'{dir_dataagg_moveto}/summary_data_selection_log_{dataagg_settings["name_dir_export"]}.txt')
+    shutil.copy(glob.glob(f'{data_path}/output/preprep_data_log.txt')[0], f'{dir_dataagg_moveto}/preprep_data_log_{dataagg_settings["name_dir_export"]}.txt')
+    shutil.copy(glob.glob(f'{data_path}/output/*summary*log.txt')[0],     f'{dir_dataagg_moveto}/summary_data_selection_log_{dataagg_settings["name_dir_export"]}.txt')
    
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
