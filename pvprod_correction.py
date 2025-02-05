@@ -238,10 +238,10 @@ for scen in pvalloc_scenarios:
     )
     # fig.show()
     
-    if not os.path.exists(f'{data_path}/output/visualizations_pvprod_correction'):
-        os.makedirs(f'{data_path}/output/visualizations_pvprod_correction')
+    if not os.path.exists(f'{data_path}/visualizations_pvprod_correction'):
+        os.makedirs(f'{data_path}/visualizations_pvprod_correction')
 
-    fig.write_html(f'{data_path}/output/visualizations_pvprod_correction/pvprod_correction_{scen}.html')
+    fig.write_html(f'{data_path}/visualizations_pvprod_correction/pvprod_correction_{scen}.html')
 
 fig_agg.update_layout(
     barmode='group',  # Automatically groups bars without overlap
@@ -250,13 +250,13 @@ fig_agg.update_layout(
     yaxis2=dict(title='Secondary Axis', overlaying='y', side='right'),  # Configure secondary y-axis
 )
 fig_agg.show()
-fig_agg.write_html(f'{data_path}/output/visualizations_pvprod_correction/pvprod_correction_agg_{len(pvalloc_scenarios)}scen.html')
+fig_agg.write_html(f'{data_path}/visualizations_pvprod_correction/pvprod_correction_agg_{len(pvalloc_scenarios)}scen.html')
 
 print_mean_deviation_tobkw = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'reldelta_cost_pkWp_mod_bkw'].mean()
 print_mean_deviation_toewz = comparison_df.loc[~comparison_df['EGID'].isin(excl_buildings_of_mean_calc), 'reldelta_cost_pkWp_mod_ewz'].mean()
 print(f'Mean deviation of cost/kWp between OptPV-Model and BKW-Solarrechner: {print_mean_deviation_tobkw:.5%}')
 print(f'Mean deviation of cost/kWp between OptPV-Model and EWZ-Solarrechner: {print_mean_deviation_toewz:.5%}')
 
-comparison_df.to_excel(f'{data_path}/output/visualizations_pvprod_correction/pvprod_correction_comparison.xlsx')
+comparison_df.to_excel(f'{data_path}/visualizations_pvprod_correction/pvprod_correction_comparison.xlsx')
 print('..just for breakpoint..')
 
