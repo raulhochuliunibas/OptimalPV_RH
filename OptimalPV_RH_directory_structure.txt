@@ -1,5 +1,5 @@
 ** Directory structure for OptimalPV_RH **
- date: 2025-02-05 10:42:18.465641
+ date: 2025-02-05 14:50:28.785610
 
 ├── auxiliary_functions.py
 ├── data_aggregation
@@ -9,23 +9,19 @@
 │   ├── default_settings.py
 │   ├── extend_data.py
 │   ├── get_elecpri_data.py
+│   ├── MASTER_data_aggregation.py
 │   ├── preprepare_data.py
 │   ├── split_data_geometry.py
 │   └── sql_gwr.py
 ├── execution_RUNFILE.py
 ├── execution_scenarios.py
-├── MASTER_data_aggregation.py
-├── MASTER_postprocess_analysis.py
-├── MASTER_pvalloc_initialization.py
-├── MASTER_pvalloc_MCalgorithm.py
-├── MASTER_visualization.py
-├── plots
+├── exploratory_files
 │   ├── map_municipality_to_DSO.py
 │   ├── pv_coutns_power_timeseries.py
 │   └── pv_houseclass_mapping.py
-├── poetry - Copy.lock
 ├── postprocess_analysis
 │   ├── default_settings.py
+│   ├── MASTER_postprocess_analysis.py
 │   └── pvalloc_to_today_sanitcheck.py
 ├── pvprod_correction.py
 ├── pv_allocation
@@ -34,12 +30,15 @@
 │   ├── default_settings.py
 │   ├── initialization_large_functions.py
 │   ├── initialization_small_functions.py
-│   └── inst_selection.py
-├── pyproject - Copy.toml
+│   ├── inst_selection.py
+│   ├── MASTER_pvalloc_initialization.py
+│   └── MASTER_pvalloc_MCalgorithm.py
+├── readme_OptimalPV_graph.png
 └── visualizations
     ├── defaults_settings.py
     ├── individual_visualisations.py
     ├── ind_visual_pvprod_difference_2scens.py
+    ├── MASTER_visualization.py
     ├── plot_auxiliary_functions.py
     ├── plot_ind_boxp_radiation_rng_sanitycheck.py
     ├── plot_ind_charac_omitted_gwr.py

@@ -1,78 +1,24 @@
 # OptimalPV 
 Preamble:
-> Author: raul.hochuli@unibas.ch
-> Version/Date: July 2024
-> Abstract: ...
+> **Author**: raul.hochuli@unibas.ch \n
+> **Lasted** update of README: Feb 2025 \n 
+> **Abstract**: Due to the global push for distributed photovoltaic (PV) systems, grid capacity will be a limiting factor for further expansion in the near future. Additional installations can cause a negative externality by hindering other production in the same grid circuit. 
+This calls for a detailed modeling approach that captures the negative impact of a PV installation on neighbor's production capability. 
+Using spatial data at the individual house level for ca. 40 thousand single-family houses, I propose a stochastic Monte Carlo method to model theoretical PV expansion pathways until 2050 from a social planer's perspective considering optimal grid ussage and a economic rational individual's perspective. 
+I use a local grid operators data on low distribution house-grid connections and transformer capacities. This is the cornerstone for further research on a dynamic feed-in permit that is designed to mitigate grid congestion without requiring intense regulator monitoring.  
+Find the entire research proposal in ([Proposal_OptimalPV_RH](docs/Proposal_OptimalPV_RH.pdf)) here for more elaboration on the sceintific contribution. Note that since the proposal acceptance in December 2023, notable changes have been made to the propose model structure and data usage. 
 
-# Code Structure
-The code in a partitioned way. Each step of the aggregation / modelling process has a *MASTER* file, which runs a number of functions, all stored in subfiles that are called sequentially. 
-
-## data_aggregation_MASTER.py
-objective: 
-
-### api_electricity_prices.py
-### api_pvtarif.py
-### installation_cost.py
-### preprepare_data.py
-### sql_gwr.py
-
-## pv_allocation_MASTER.py
+The following description file gives a short description over the entire code used in my personal PhD research proposal. 
 
 
-# Further Steps
-
-1. Achieve cumulative building cost per partition. 
-    - create an extrapolation function for installations in installtion_cost.py which is applicable to houses by EGID
-    - then use groupby and .cumsum to cumulative sum over all houses (ATTENTION: ensure that cumsum sums up the areas in a decreasing order for suitability => best suitable partitions first, then add later less suitable partitions. )
-    - attach total and pkW cost to the data frame
-    
-## Functionality
->stil before pv_allocation
- - create a py file that creates all assumptions, cost etc. 
-
-> prepare all data computations
-
-> cost computation
-- compute cost per roof partition - CHECK
-    - "downwoard" computation -> compute NPV for best partition, second best and best partition, etc.
-    - include ratio of self consumption
-
-- (compute elec demand by heating squrare)
- 
-
-> subset selection
-
-
-> initiate topology
-- create dict with gwr id and year
-    - subsetable by bfs number and building type
-
-- define thresholds for installations per year
-
-- assign all partitions to dict
-- assign production of installed pv to dict
-- (assign grid connection to dict)
-
-> calculate NPV
-- select free gwrs 
-- calculate NPV by partition (possible with switch to only consider KLASSE 3+)
-- select best NPV
-
-## Data Extension
-- Include facades
-- Remove MSTRAHLUNG from Cummulative summation => unnecessary and not true anyway (summed up an average)
-
-
-## Nice to have for more utility later
-- make data import to prepreped data only for the selected number of municipalites, no just all of Switzerland
-- a single dict, py file for all model assumptions (numeric and boolean)
-
-- create a GWR>GM and SOLKAT>GM mapping for the spatial data
--  Add many more variables for GWR extraction (heating, living area etc.), WAREA not found in SQL data base
-- change code such that prepred_data is on the same directory level than output
--  ADJUST ALL MAPPINGS so that the data type is a string, not an int
-- Map_egroof_sbroof carries an unnecessary index in the export file. remove that in the preppred_data function
+## Code Structure and Process
+For a better understanding, review the visualization of the model structure in the [readme_OptimalPV_graph.png](docs/readme_OptimalPV_graph.png). The two files:
+- [execution_scenarios.py](execution_scenarios.py) (defining all scenario settings (just deviations from default settings) for data aggregation and pv allocation model runs)
+- [execution_RUNFILE.py](execution_RUNFILE.py) (the main file, running (parts of the model) with selected scenarios and visualization settings)
+are the two main files required to run the model.  
+OptimalPV_RH_ModelDescription.pdf further describes all the major steps conducted by the various functions in the subfiles furt
 
 
 
-## 
+## Documentation
+The MASTER functions use docstrings to explain in 
