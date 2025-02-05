@@ -13,24 +13,24 @@ print_directory_stucture_to_txtfile(not(run_on_server))
 
 run_dataagg =               False
 run_alloc_init =            False
-run_alloc_MCalg =           False
+run_alloc_MCalg =           True
 
-run_postprocess_analysis =  True
+run_postprocess_analysis =  False
 run_visual =                False
 
 
 # data_aggregation 
 dataagg_scenarios = {} # an empty dictionary, most relevant data aggregation scenario settings are stored in 
-                       # in data_aggregation_MASTER.py, to keep execRunfile clean
+                       # in MASTER_data_aggregation.py, to keep execRunfile clean
 
 # pv_allocation 
 pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_server,[
-    # 'pvalloc_BFS2761_12m_meth2.2_random_DEBUG', 
+    'pvalloc_BFS2761_12m_meth2.2_random_DEBUG', 
     # 'pvalloc_BFS2761_1y_f2021_1mc_meth2.2_rnd_DEBUG', 
     
     # 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd', 
     # 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_max', 
-    'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv', 
+    # 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv', 
     # 'pvalloc_BLSOmed_10y_f2013_1mc_meth2.2_npv', 
     
     # 'pvalloc_BLsml_20y_f2003_1mc_meth2.2_npv', 
@@ -103,26 +103,26 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 
 
 # DATA AGGREGATION RUNs  ------------------------------------------------------------------------
-if False:
+if True:
     for k_sett, scen_sett in dataagg_scenarios.items():
         dataagg_settings = scen_sett
-        MASTER_data_aggregation.data_aggregation_MASTER(dataagg_settings) if run_dataagg else print('')
+        MASTER_data_aggregation.MASTER_data_aggregation(dataagg_settings) if run_dataagg else print('')
 
 
 # ALLOCATION RUNs  ------------------------------------------------------------------------
 for k_sett, scen_sett in pvalloc_scenarios.items():
     pvalloc_settings = scen_sett
-    MASTER_pvalloc_initialization.pvalloc_initialization_MASTER(pvalloc_settings) if run_alloc_init else print('')
-    MASTER_pvalloc_MCalgorithm.pvalloc_MC_algorithm_MASTER(pvalloc_settings) if run_alloc_MCalg else print('')
+    MASTER_pvalloc_initialization.MASTER_pvalloc_initialization(pvalloc_settings) if run_alloc_init else print('')
+    MASTER_pvalloc_MCalgorithm.MASTER_pvalloc_MC_algorithm(pvalloc_settings) if run_alloc_MCalg else print('')
 
 
 # POSTPROCESSIGN ANALYSIS RUNs ---------------------------------------------------------------
-MASTER_postprocess_analysis.postprocess_analysis_MASTER(pvalloc_scenarios, postprocessing_analysis_settings) if run_postprocess_analysis else print('')
+MASTER_postprocess_analysis.MASTER_postprocess_analysis(pvalloc_scenarios, postprocessing_analysis_settings) if run_postprocess_analysis else print('')
 
 
 
 # VISUALISATION RUNs  ------------------------------------------------------------------------
-MASTER_visualization.visualization_MASTER(pvalloc_scenarios, visual_settings) if run_visual else print('')
+MASTER_visualization.MASTER_visualization(pvalloc_scenarios, visual_settings) if run_visual else print('')
 
 
 

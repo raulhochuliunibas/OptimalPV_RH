@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# data_aggreation_MASTER.py 
+# MASTER_data_aggregation.py
 # -----------------------------------------------------------------------------
 # Preamble: 
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
@@ -39,7 +39,7 @@ if True:
     import data_aggregation.preprepare_data as preprep_data
 
 
-def data_aggregation_MASTER(dataagg_settings_func):
+def MASTER_data_aggregation(dataagg_settings_func):
 
 
     # SETTIGNS --------------------------------------------------------------------
@@ -121,7 +121,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
 
         summary_name = f'{data_path}/output/summary_data_selection_log.txt'
         chapter_to_logfile(f'OptimalPV - Sample Summary of Building Topology', summary_name, overwrite_file=True)
-        subchapter_to_logfile(f'data_aggregation_MASTER', summary_name)
+        subchapter_to_logfile(f'MASTER_data_aggregation', summary_name)
 
 
 
@@ -137,7 +137,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
         dataagg_settings['wd_path'] = wd_path
         dataagg_settings['data_path'] = data_path
 
-    chapter_to_logfile(f'start data_aggregation_MASTER', log_name, overwrite_file=True)
+    chapter_to_logfile(f'start MASTER_data_aggregation', log_name, overwrite_file=True)
     formated_dataagg_settings = format_MASTER_settings(dataagg_settings)
     print_to_logfile(f' > settings: \n{pformat(formated_dataagg_settings)}', log_name)
 
@@ -211,7 +211,7 @@ def data_aggregation_MASTER(dataagg_settings_func):
     
     # -----------------------------------------------------------------------------
     # END 
-    chapter_to_logfile(f'END data_aggregation_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
+    chapter_to_logfile(f'END MASTER_data_aggregation\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
 
     if not dataagg_settings['script_run_on_server']:
         winsound.Beep(1000, 300)

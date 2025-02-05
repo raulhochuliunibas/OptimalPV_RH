@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# pv_allocation_MASTER.py 
+# MASTER_pvalloc_initialization
 # -----------------------------------------------------------------------------
 # Preamble: sw
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
@@ -43,7 +43,7 @@ if True:
     from pv_allocation.default_settings import *
 
 
-def pvalloc_initialization_MASTER(pvalloc_settings_func):
+def MASTER_pvalloc_initialization(pvalloc_settings_func):
 
     # SETTIGNS --------------------------------------------------------------------
     if not isinstance(pvalloc_settings_func, dict):
@@ -94,14 +94,14 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
         
     # INITIALIZATION ================================================================
-    chapter_to_logfile(f'start pvalloc_initialization_MASTER for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
+    chapter_to_logfile(f'start MASTER_pvalloc_initialization for: {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
     formated_pvalloc_settings = format_MASTER_settings(pvalloc_settings)
     print_to_logfile(f' > no. of kt  numbers in selection: {len(pvalloc_settings["kt_numbers"])}', log_name)
     print_to_logfile(f' > no. of bfs numbers in selection: {len(pvalloc_settings["bfs_numbers"])}', log_name) 
     print_to_logfile(f'pvalloc_settings: \n{pformat(formated_pvalloc_settings)}', log_name)
     
     # intitial print to summary file
-    subchapter_to_logfile(f'pvalloc_initialization_MASTER', summary_name)
+    subchapter_to_logfile(f'MASTER_pvalloc_initialization', summary_name)
 
     # store settings to output folder
     with open(f'{data_path}/output/pvalloc_run/pvalloc_settings.json', 'w') as f:
@@ -194,7 +194,7 @@ def pvalloc_initialization_MASTER(pvalloc_settings_func):
 
 
     # END  ================================================================
-    chapter_to_logfile(f'END pvalloc_initialization_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
+    chapter_to_logfile(f'END MASTER_pvalloc_initialization\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
     if not pvalloc_settings['script_run_on_server']:
         winsound.Beep(1000, 300)
         winsound.Beep(1000, 300)

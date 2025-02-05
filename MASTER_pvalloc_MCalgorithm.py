@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# pvalloc_MCalgorithm_MASTER.py 
+# MASTER_pvalloc_MCalgorithm.py 
 # -----------------------------------------------------------------------------
 # Preamble: 
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
@@ -24,6 +24,7 @@ if True:
     import shutil
     import winsound
     import numba
+    from numba import njit
 
     # own packages and functions
     import auxiliary_functions
@@ -35,7 +36,7 @@ if True:
 
 
 
-def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
+def MASTER_pvalloc_MC_algorithm(pvalloc_settings_func):
 
     # SETTIGNS --------------------------------------------------------------------
     if not isinstance(pvalloc_settings_func, dict):
@@ -85,7 +86,7 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
 
     
     # MONTE CARLO ITERATION LOOP ================================================================================
-    chapter_to_logfile(f'start pvalloc_MCalgorithm_MASTER for : {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
+    chapter_to_logfile(f'start MASTER_pvalloc_MCalgorithm for : {pvalloc_settings["name_dir_export"]}', log_name, overwrite_file=True)
     print_to_logfile(f'*model allocation specifications*:', log_name)
     print_to_logfile(f'> n_bfs_municipalities: {len(pvalloc_settings["bfs_numbers"])} \n> n_months_prediction: {pvalloc_settings["months_prediction"]} \n> n_montecarlo_iterations: {pvalloc_settings["MC_loop_specs"]["montecarlo_iterations"]}', log_name)
 
@@ -147,6 +148,8 @@ def pvalloc_MC_algorithm_MASTER(pvalloc_settings_func):
 
             # GRID PREM UPDATE ==========
             algo.update_gridprem(pvalloc_settings, mc_data_path, m, i_m)
+            # njit_update_gridprem = numba.jit(algo.update_gridprem)
+            # njit_update_gridprem(pvalloc_settings, mc_data_path, m, i_m)
 
             # NPV UPDATE ==========
             npv_df = algo.update_npv_df(pvalloc_settings, mc_data_path, m, i_m)

@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# visualizations_MASTER.py 
+# MASTER_visualization.py
 # -----------------------------------------------------------------------------
 # Preamble: 
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
@@ -65,7 +65,7 @@ if True:
 
 
 
-def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
+def MASTER_visualization(pvalloc_scenarios_func, visual_settings_func):
     # SETTINGS ------------------------------------------------------------------------------------------------------
     if True:
         if not isinstance(pvalloc_scenarios_func, dict):
@@ -145,7 +145,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 except:
                     print(f'Could not remove {dir}')
 
-    chapter_to_logfile(f'start run_visualisations MASTER ', log_name, overwrite_file=True)
+    chapter_to_logfile(f'start MASTER_visualization\n', log_name, overwrite_file=True)
 
 
 
@@ -224,7 +224,7 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
 
 
     # END  ================================================================
-    chapter_to_logfile(f'END visualization_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
+    chapter_to_logfile(f'END MASTER_visualization\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
     if not pvalloc_sett_run_on_server:
         winsound.Beep(1000, 30)
         winsound.Beep(1000, 30)

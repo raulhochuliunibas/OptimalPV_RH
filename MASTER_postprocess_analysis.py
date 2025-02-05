@@ -1,6 +1,6 @@
 
 # -----------------------------------------------------------------------------
-# postprocess_analysis_MASTER.py
+# MASTER_postprocess_analysis.py
 # -----------------------------------------------------------------------------
 # Preamble: 
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
@@ -33,7 +33,7 @@ if True :
 
 
 
-def postprocess_analysis_MASTER(pvalloc_scenarios_func, postprocess_analysis_settings_func):
+def MASTER_postprocess_analysis(pvalloc_scenarios_func, postprocess_analysis_settings_func):
 
     # SETTINGS --------------------------------------------------------------------
     if True: 
@@ -89,7 +89,7 @@ def postprocess_analysis_MASTER(pvalloc_scenarios_func, postprocess_analysis_set
                 scen_dir_export_list.append(val['name_dir_export'])
     
 
-    chapter_to_logfile(f'start postprocess_analysis_MASTER', log_name, overwrite_file=True)
+    chapter_to_logfile(f'start MASTER_postprocess_analysis', log_name, overwrite_file=True)
 
 
 
@@ -106,7 +106,7 @@ def postprocess_analysis_MASTER(pvalloc_scenarios_func, postprocess_analysis_set
 
 
     # END  ================================================================
-    chapter_to_logfile(f'END postprocess_analysis_MASTER\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
+    chapter_to_logfile(f'END MASTER_postprocess_analysis\n Runtime (hh:mm:ss):{datetime.now() - total_runtime_start}', log_name, overwrite_file=False)
     if not pvalloc_sett_run_on_server:
         winsound.Beep(1000, 30)
         winsound.Beep(1000, 30)
