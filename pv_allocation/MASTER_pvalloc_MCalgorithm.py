@@ -37,6 +37,28 @@ if True:
 
 
 def MASTER_pvalloc_MC_algorithm(pvalloc_settings_func):
+    """
+    Input: 
+        (preprep data directory defined in the pv allocation scenario settings)
+        (pvalloc data directory defined in the pv allocation scenario settings)
+        dict: pvalloc_settings_func
+            > settings for pv allocation scenarios, for initalization and Monte Carlo iterations
+    
+    Output:
+        > within the scenario name defined in pvalloc_settings, the MASTER_pvalloc_MCalgorithm function 
+          creates a new directory "MCx" folder directory containing each individual Monte Carlo iteration.
+
+    Description:
+        > The MASTER_pvalloc_MCalgorithm function calls the exact same functions as previously used in santiy check of
+          pv allocation initializations' sanity check for direct comparison of debugging and testing. 
+        > First the script updates the grid premium values for the current month, based on existing installtions and annual radiation. 
+        > Then the script updates the NPV values for all houses not yet having a PV installation. 
+        > Based on scenario settings, installations are selected from the NPV dataframe until the construction capacity for the given month 
+          is reached (or the total capacity for the year; while loop exit criteria).
+        
+        > This process is repeated for as many Monte Carlo iterations as defined in the scenario settings.
+        
+    """
 
     # SETTIGNS --------------------------------------------------------------------
     if not isinstance(pvalloc_settings_func, dict):

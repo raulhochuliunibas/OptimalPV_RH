@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# MASTER_pvalloc_initialization
+# MASTER_pvalloc_initialization.py
 # -----------------------------------------------------------------------------
 # Preamble: sw
 # > author: Raul Hochuli (raul.hochuli@unibas.ch), University of Basel, spring 2024
@@ -44,6 +44,34 @@ if True:
 
 
 def MASTER_pvalloc_initialization(pvalloc_settings_func):
+    """
+    Input:
+        (preprep data directory defined in the pv allocation scenario settings)
+        dict: pvalloc_settings_func
+            > settings for pv allocation scenarios, for initalization and Monte Carlo iterations
+
+    Output (no function return but export to dir):
+        > directory renamed after scenario name (pvalloc_scenario), containing all data files form the INITIALIZATION of the pv allocation run.
+
+    Description: 
+        > Depending on the settings, certain steps of the model initalization can be run. (Debug function to only run certain steps, based on interim 
+          file exports to save time).
+        > First the prepared data (geo and time series) from the preprep_[scenario] directory is imported (based on sencario selection criteria) 
+          and a topology is created (dict with EGID as keys, containing all relevant information for each individual house).
+        > Then the a the future construction capacity for each month is defined (based on the scenario settings and past construction volume (kWP 
+          in the smaple area and time window)).
+        > Next, the topology dictionary is transformed to a dataframe, to then be merged with the radiation time series. This step is necessary, as 
+          I consider individual roof parts for each hour of the year). The total radiation potential per roof partition is calculated. This huge data
+          frame is then partitioned into smaller subfiles to be "operatable" by my python IDE  economic components. This iterative subfile strucutre can
+          be "switched off" (set n houses per subfile large enough) for larger computers or high performance computing clusters.
+        > The next scetion of the MASTER file runs a number of sanity checks on the initalization of the pv allocation run. 
+          - The first check runs the allocation algorithm (identical to later Monte Carlo iterations), to extract plots and visualiations, accessible already
+            after only a few monthly iterations. 
+          - Another check exports all the relevant data from the topo dict and the economic components for each house to an xlsx file for comparison. 
+          - Another check runs a simple check for multiple installations per EGID (which should not happen in the current model).
+        > The final step is to copy all relevant files to the output directory, which is then renamed after the scenario name.
+
+    """
 
     # SETTIGNS --------------------------------------------------------------------
     if not isinstance(pvalloc_settings_func, dict):

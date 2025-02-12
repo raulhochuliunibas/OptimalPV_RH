@@ -40,6 +40,26 @@ if True:
 
 
 def MASTER_data_aggregation(dataagg_settings_func):
+    """
+    Input: 
+        (raw input data locally stored)
+        dict: dataagg_settings_func
+            > settings for data aggregation scenarios
+
+    Output (no function return but export to dir):
+        > directory renamed after scenario name (dataag_scneario), containing all preprepared data from raw local input files and APIs exports. 
+    
+    Description:
+        > Depending on settings, the all geo data sources are split into geometries and remaining data content to allow for much faster and efficent file types. 
+        > Next, the script accesses all data sources (covering all of Switzerland in the recent 2015 to 2023s, with a few exceptions) and extracts all observations within 
+          the specified sample range (BFS municipalities) e.g. PV feedin tariffs by DSO, electricity prices, all buildings (GebaeudeWohnungregister) and roof partitions 
+          (Sonnendach, surface, angle, tilt, yearly production, monthly radiation transformation ).
+          All data sources are filtered depending on the selection criteria defined in the scenario settings. 
+        > Next, the script extracts all relevant time series data (NETFLEX, synthetic load profiles for a given year) and radiation data for Basel BS (Meteoblue, hourly 
+          for a given weather year 2018 - 2023). Four load archetypes are matched to all residential buildings within the selected sample (dependent on electricity 
+          demand proxy of GWR)
+        > All data files are exported in a seperate directory for furhter usage. 
+    """    
 
 
     # SETTIGNS --------------------------------------------------------------------
