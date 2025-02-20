@@ -10,6 +10,7 @@ import plotly.graph_objs as go
 import plotly.offline as pyo
 import geopandas as gpd
 import copy
+import concurrent.futures
 from datetime import datetime
 
 from pyarrow.parquet import ParquetFile
@@ -368,6 +369,7 @@ def update_gridprem(
     data = [(k, v[0], v[1]) for k, v in gridtiers.items()]
     gridtiers_df = pd.DataFrame(data, columns=gridtiers_colnames)
 
+    checkpoint_to_logfile(f'**DEBUGGIG** > start loop through topo_egid', log_file_name, 1)
     egid_list, info_source_list, inst_TF_list = [], [], []
     for k,v in topo.items():
         egid_list.append(k)
@@ -379,9 +381,12 @@ def update_gridprem(
             inst_TF_list.append(False)
     Map_infosource_egid = pd.DataFrame({'EGID': egid_list, 'info_source': info_source_list, 'inst_TF': inst_TF_list}, index=egid_list)
 
+    checkpoint_to_logfile(f'**DEBUGGIG** > end loop through topo_egid', log_file_name, 1)
 
     # import topo_time_subdfs -----------------------------------------------------
     # topo_subdf_paths = glob.glob(f'{data_path}/output/pvalloc_run/topo_time_subdf/*.parquet')
+    checkpoint_to_logfile(f'**DEBUGGIG** > start loop through subdfs', log_file_name, 1)
+
     topo_subdf_paths = glob.glob(f'{subdir_path_def}/topo_subdf_*.parquet')
     agg_subinst_df_list = []
     no_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == False]
@@ -389,23 +394,30 @@ def update_gridprem(
 
     i, path = 0, topo_subdf_paths[0]
     for i, path in enumerate(topo_subdf_paths):
+        # checkpoint_to_logfile(f'**DEBUGGIG** > start read subdfs', log_file_name, 1) if i < 2 else None
         subdf = pd.read_parquet(path)
+        # checkpoint_to_logfile(f'**DEBUGGIG** > end read subdfs', log_file_name, 1) if i < 2 else None
 
         subdf_updated = copy.deepcopy(subdf)
         subdf_updated.drop(columns=['info_source', 'inst_TF'], inplace=True)
+
+        checkpoint_to_logfile(f'**DEBUGGIG** > start Map_infosource_egid', log_file_name, 1) if i < 2 else None
         subdf_updated = subdf_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
+        checkpoint_to_logfile(f'**DEBUGGIG** > end Map_infosource_egid', log_file_name, 1) if i < 2 else None
         # updated_instTF_srs, update_infosource_srs = subdf_updated['inst_TF'].fillna(subdf['inst_TF']), subdf_updated['info_source'].fillna(subdf['info_source'])
         # subdf['inst_TF'], subdf['info_source'] = updated_instTF_srs.infer_objects(copy=False), update_infosource_srs.infer_objects(copy=False)
 
         # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
         subinst = copy.deepcopy(subdf_updated.loc[subdf_updated['inst_TF']==True])
+        checkpoint_to_logfile(f'**DEBUGGIG** > pvprod_kw_to_numpy', log_file_name, 1) if i < 2 else None
         pvprod_kW, demand_kW = subinst['pvprod_kW'].to_numpy(), subinst['demand_kW'].to_numpy()
         selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * pvalloc_settings['tech_economic_specs']['self_consumption_ifapplicable']
         netdemand_kW = demand_kW - selfconsum_kW
         netfeedin_kW = pvprod_kW - selfconsum_kW
 
         subinst['feedin_kW'] = netfeedin_kW
-
+        
+        checkpoint_to_logfile(f'**DEBUGGIG** > end pvprod_kw_to_numpy', log_file_name, 1) if i < 2 else None
         # NOTE: attempt for a more elaborate way to handle already installed installations
         if False:
             pv = pd.read_parquet(f'{subdir_path_def}/pv.parquet')
@@ -431,6 +443,7 @@ def update_gridprem(
         del subinst
         agg_subinst_df_list.append(agg_subinst)
     
+    checkpoint_to_logfile(f'**DEBUGGIG** > end loop through subdfs', log_file_name, 1)
 
     # build gridnode_df -----------------------------------------------------
     gridnode_df = pd.concat(agg_subinst_df_list)
@@ -444,7 +457,8 @@ def update_gridprem(
     gridnode_df['feedin_kW_taken'] = np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['kW_threshold'], gridnode_df['feedin_kW'])
     gridnode_df['feedin_kW_loss'] =  np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['feedin_kW'] - gridnode_df['kW_threshold'], 0)
 
-    
+    checkpoint_to_logfile(f'**DEBUGGIG** > end merge + npwhere subdfs', log_file_name, 1)
+
     # update gridprem_ts -----------------------------------------------------
     gridnode_df.sort_values(by=['feedin_kW_taken'], ascending=False)
     gridnode_df_for_prem = gridnode_df.groupby(['grid_node','kW_threshold', 't']).agg({'feedin_kW_taken': 'sum'}).reset_index().copy()
@@ -460,6 +474,8 @@ def update_gridprem(
         choices.append(gridtiers_df.loc[i_adj, 'gridprem_Rp_kWh'])
     gridprem_ts['prem_Rp_kWh'] = np.select(conditions, choices, default=gridprem_ts['prem_Rp_kWh'])
     gridprem_ts.drop(columns=['feedin_kW_taken', 'kW_threshold'], inplace=True)
+
+    checkpoint_to_logfile(f'**DEBUGGIG** > end update gridprem_ts', log_file_name, 1)
 
 
     # EXPORT -----------------------------------------------------

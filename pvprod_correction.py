@@ -257,6 +257,6 @@ print_mean_deviation_toewz = comparison_df.loc[~comparison_df['EGID'].isin(excl_
 print(f'Mean deviation of cost/kWp between OptPV-Model and BKW-Solarrechner: {print_mean_deviation_tobkw:.5%}')
 print(f'Mean deviation of cost/kWp between OptPV-Model and EWZ-Solarrechner: {print_mean_deviation_toewz:.5%}')
 
-comparison_df.to_excel(f'{data_path}/visualizations_pvprod_correction/pvprod_correction_comparison.xlsx')
+comparison_df.to_excel(f'{data_path}    /visualizations_pvprod_correction/pvprod_correction_comparison.xlsx')
 print('..just for breakpoint..')
 
