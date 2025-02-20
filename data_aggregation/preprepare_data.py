@@ -29,21 +29,23 @@ def get_earlier_api_import_data(dataagg_settings_def):
     data_path_def = dataagg_settings_def['data_path']
     year_range_def = dataagg_settings_def['year_range']
     bfs_number_def = dataagg_settings_def['bfs_numbers']
+    preprep_path_def = dataagg_settings_def['preprep_path']
     input_api_path = f'{data_path_def}/input_api'
+
 
     # import and store data in preprep data -------------------
     # Map_gm_ewr
     Map_gm_ewr = pd.read_parquet(f'{input_api_path}/Map_gm_ewr.parquet')
-    Map_gm_ewr.to_parquet(f'{data_path_def}/output/preprep_data/Map_gm_ewr.parquet')
-    Map_gm_ewr.to_csv(f'{data_path_def}/output/preprep_data/Map_gm_ewr.csv', sep=';', index=False)
+    Map_gm_ewr.to_parquet(f'{preprep_path_def}/Map_gm_ewr.parquet')
+    Map_gm_ewr.to_csv(f'{preprep_path_def}/Map_gm_ewr.csv', sep=';', index=False)
     checkpoint_to_logfile(f'Map_gm_ewr stored in prepreped data', dataagg_settings_def['log_file_name'],2, show_debug_prints_def)
 
     # pvtarif
     pvtarif_all = pd.read_parquet(f'{input_api_path}/pvtarif.parquet')
     year_range_2int = [str(year % 100).zfill(2) for year in range(year_range_def[0], year_range_def[1]+1)]
     pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_2int), :])
-    pvtarif.to_parquet(f'{data_path_def}/output/preprep_data/pvtarif.parquet')
-    pvtarif.to_csv(f'{data_path_def}/output/preprep_data/pvtarif.csv', sep=';', index=False)
+    pvtarif.to_parquet(f'{preprep_path_def}/pvtarif.parquet')
+    pvtarif.to_csv(f'{preprep_path_def}/pvtarif.csv', sep=';', index=False)
     checkpoint_to_logfile(f'pvtarif stored in prepreped data', dataagg_settings_def['log_file_name'], 2, show_debug_prints_def)
 
         
@@ -69,6 +71,7 @@ def local_data_AND_spatial_mappings(
     log_file_name_def = dataagg_settings_def['log_file_name']
     wd_path_def = dataagg_settings_def['wd_path']
     data_path_def = dataagg_settings_def['data_path']
+    preprep_path_def = dataagg_settings_def['preprep_path']
     summary_file_name = dataagg_settings_def['summary_file_name']
 
     gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
@@ -98,9 +101,9 @@ def local_data_AND_spatial_mappings(
 
 
     # GWR ====================
-    gwr = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
-    gwr_gdf = gpd.read_file(f'{data_path_def}/output/preprep_data/gwr_gdf.geojson')
-    gwr_all_building_gdf = gpd.read_file(f'{data_path_def}/output/preprep_data/gwr_all_building_gdf.geojson')
+    gwr = pd.read_parquet(f'{preprep_path_def}/gwr.parquet')
+    gwr_gdf = gpd.read_file(f'{preprep_path_def}/gwr_gdf.geojson')
+    gwr_all_building_gdf = gpd.read_file(f'{preprep_path_def}/gwr_all_building_gdf.geojson')
     checkpoint_to_logfile(f'import gwr, {gwr.shape[0]} rows', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
 
 
@@ -170,17 +173,9 @@ def local_data_AND_spatial_mappings(
         EGID_old_solkat_list = join_gwr_solkat_union['EGID_old_solkat'].unique()
         new_solkat_append_list = []
         add_solkat_counter = 1
-        n_egid, egid = 0, EGID_old_solkat_list[0]
+        # n_egid, egid = 0, EGID_old_solkat_list[0]
         for n_egid, egid in enumerate(EGID_old_solkat_list):
-            if ( (egid == '11513663') | 
-                 (egid == '11513822') |
-                 (egid == '11513880') |
-                 (egid == '11514433') |
-                 (egid == '11514468')   
-                 ):
-                egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
-                print('break for debugging')
-                # solkat_subdf.loc[solkat_subdf['EGID']==egid, 'DF_UID_solkat']
+
             egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
             egid_join_union = egid_join_union.reset_index(drop = True)
 
@@ -442,8 +437,8 @@ def local_data_AND_spatial_mappings(
     df_to_export_names = ['pv', 'solkat', 'solkat_month', 'Map_egid_dsonode', 'Map_solkatdfuid_egid', 'Map_egid_pv']
     df_to_export_list = [pv, solkat, solkat_month,  Map_egid_dsonode, Map_solkatdfuid_egid, Map_egid_pv] 
     for i, df in enumerate(df_to_export_list):
-        df.to_parquet(f'{data_path_def}/output/preprep_data/{df_to_export_names[i]}.parquet')
-        df.to_csv(f'{data_path_def}/output/preprep_data/{df_to_export_names[i]}.csv', sep=';', index=False)
+        df.to_parquet(f'{preprep_path_def}/{df_to_export_names[i]}.parquet')
+        df.to_csv(f'{preprep_path_def}/{df_to_export_names[i]}.csv', sep=';', index=False)
         checkpoint_to_logfile(f'{df_to_export_names[i]} exported to prepreped data', log_file_name_def, 2, show_debug_prints_def)
     
 
@@ -494,7 +489,7 @@ def local_data_AND_spatial_mappings(
         print_to_logfile(f'CRS for {gdf_to_export_names[i]}: {g.crs}', log_file_name_def,)
         checkpoint_to_logfile(f'exported {gdf_to_export_names[i]}', log_file_name_def , 4, show_debug_prints_def)
 
-        with open(f'{data_path_def}/output/preprep_data/{gdf_to_export_names[i]}.geojson', 'w') as f:
+        with open(f'{preprep_path_def}/{gdf_to_export_names[i]}.geojson', 'w') as f:
             f.write(g.to_json())
 
 
@@ -520,6 +515,7 @@ def import_demand_TS_AND_match_households(
     log_file_name_def = dataagg_settings_def['log_file_name']
     wd_path_def = dataagg_settings_def['wd_path']
     data_path_def = dataagg_settings_def['data_path']
+    preprep_path_def = dataagg_settings_def['preprep_path']
 
     gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
     demand_specs_def = dataagg_settings_def['demand_specs']
@@ -589,7 +585,7 @@ def import_demand_TS_AND_match_households(
         # fig.show()
 
         # export aggregated demand for all NETFLEX consumer assets
-        agg_demand_df.to_parquet(f'{data_path_def}/output/preprep_data/demand_ts.parquet')
+        agg_demand_df.to_parquet(f'{preprep_path_def}/demand_ts.parquet')
         checkpoint_to_logfile(f'exported demand TS for all consumers', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
         
 
@@ -641,14 +637,14 @@ def import_demand_TS_AND_match_households(
         demandtypes = demandtypes.sort_values(by = 't')
         demandtypes = demandtypes.reset_index(drop=True)
 
-        demandtypes.to_parquet(f'{data_path_def}/output/preprep_data/demandtypes.parquet')
-        demandtypes.to_csv(f'{data_path_def}/output/preprep_data/demandtypes.csv', sep=';', index=False)
+        demandtypes.to_parquet(f'{preprep_path_def}/demandtypes.parquet')
+        demandtypes.to_csv(f'{preprep_path_def}/demandtypes.csv', sep=';', index=False)
         checkpoint_to_logfile(f'exported demand types', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
 
         # plot demand types with plotly
         fig = px.line(demandtypes, x='t', y=['high_DEMANDprox_wiHP', 'low_DEMANDprox_wiHP', 'high_DEMANDprox_noHP', 'low_DEMANDprox_noHP'], title='Demand types')
         # fig.show()
-        fig.write_html(f'{data_path_def}/output/preprep_data/demandtypes.html')
+        fig.write_html(f'{preprep_path_def}/demandtypes.html')
         demandtypes['high_DEMANDprox_wiHP'].sum(), demandtypes['low_DEMANDprox_wiHP'].sum(), demandtypes['high_DEMANDprox_noHP'].sum(), demandtypes['low_DEMANDprox_noHP'].sum()
 
 
@@ -656,7 +652,7 @@ def import_demand_TS_AND_match_households(
         print_to_logfile(f'\nMATCH DEMAND TYPES TO HOUSEHOLDS {10*"*"}', log_file_name_def = log_file_name_def)
 
         # import GWR and PV --------
-        gwr_all = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
+        gwr_all = pd.read_parquet(f'{preprep_path_def}/gwr.parquet')
         checkpoint_to_logfile(f'imported gwr data', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
         
         # transformations
@@ -723,7 +719,7 @@ def import_demand_TS_AND_match_households(
             'high_DEMANDprox_noHP': high_DEMANDprox_noHP_list,
             'low_DEMANDprox_noHP': low_DEMANDprox_noHP_list,
         }
-        with open(f'{data_path_def}/output/preprep_data/Map_demandtype_EGID.json', 'w') as f:
+        with open(f'{preprep_path_def}/Map_demandtype_EGID.json', 'w') as f:
             json.dump(Map_demandtype_EGID, f)
         checkpoint_to_logfile(f'exported Map_demandtype_EGID.json', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
 
@@ -731,7 +727,7 @@ def import_demand_TS_AND_match_households(
         for type, egid_list in Map_demandtype_EGID.items():
             for egid in egid_list:
                 Map_EGID_demandtypes[egid] = type
-        with open(f'{data_path_def}/output/preprep_data/Map_EGID_demandtypes.json', 'w') as f:
+        with open(f'{preprep_path_def}/Map_EGID_demandtypes.json', 'w') as f:
             json.dump(Map_EGID_demandtypes, f)
         checkpoint_to_logfile(f'exported Map_EGID_demandtypes.json', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
 
@@ -769,6 +765,7 @@ def import_meteo_data(
     log_file_name_def = dataagg_settings_def['log_file_name']
     wd_path_def = dataagg_settings_def['wd_path']
     data_path_def = dataagg_settings_def['data_path']
+    preprep_path_def = dataagg_settings_def['preprep_path']
 
     gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
     print_to_logfile(f'run function: import_demand_TS_AND_match_households.py', log_file_name_def = log_file_name_def)
@@ -790,7 +787,7 @@ def import_meteo_data(
     meteo = meteo[(meteo['timestamp'] >= start_stamp) & (meteo['timestamp'] <= end_stamp)]
     
     # export --------
-    meteo.to_parquet(f'{data_path_def}/output/preprep_data/meteo.parquet')
+    meteo.to_parquet(f'{preprep_path_def}/meteo.parquet')
     checkpoint_to_logfile(f'exported meteo data', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
 
     # MATCH WEATHER STATIONS TO HOUSEHOLDS ============================================================================

@@ -12,6 +12,7 @@ def get_elecpri_data_earlier_api_import(dataagg_settings_def):
 
     # import settings + setup -------------------
     data_path_def = dataagg_settings_def['data_path']
+    preprep_path_def = dataagg_settings_def['preprep_path']
     log_name = dataagg_settings_def['log_file_name']
     print_to_logfile(f'run function: get_elecpri_data_earlier_api_import', log_name)
 
@@ -21,7 +22,7 @@ def get_elecpri_data_earlier_api_import(dataagg_settings_def):
     
     # export -------------------
     checkpoint_to_logfile(f'export elecpri of local data from former api import', log_name)
-    elecpri.to_parquet(f'{data_path_def}/output/preprep_data/elecpri.parquet')
-    elecpri.to_csv(f'{data_path_def}/output/preprep_data/elecpri.csv', index=False)
+    elecpri.to_parquet(f'{preprep_path_def}/elecpri.parquet')
+    elecpri.to_csv(f'{preprep_path_def}/elecpri.csv', index=False)
     
 

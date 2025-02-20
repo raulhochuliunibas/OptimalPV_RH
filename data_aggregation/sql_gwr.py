@@ -32,6 +32,7 @@ def sql_gwr_data(
     log_file_name_def = dataagg_settings_def['log_file_name']
     wd_path_def = dataagg_settings_def['wd_path']
     data_path_def = dataagg_settings_def['data_path']
+    preprep_path_def = dataagg_settings_def['preprep_path']
     summary_file_name = dataagg_settings_def['summary_file_name']
 
     gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
@@ -94,7 +95,7 @@ def sql_gwr_data(
     checkpoint_to_logfile('sql query BUILDING done', log_file_name_def, 10, show_debug_prints_def)
 
     gwr_building_df = pd.DataFrame(sqlrows, columns=query_columns)
-    gwr_building_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_building_df.csv', sep=';', index=False)
+    gwr_building_df.to_csv(f'{preprep_path_def}/gwr_building_df.csv', sep=';', index=False)
     selected_EGID = list(gwr_building_df['EGID'])
 
 
@@ -116,7 +117,7 @@ def sql_gwr_data(
 
     gwr_dwelling_df = pd.DataFrame(sqlrows, columns=query_columns)
     gwr_dwelling_df[['WAZIM', 'WAREA']] = gwr_dwelling_df[['WAZIM', 'WAREA']].replace('', 0).astype(float)
-    gwr_dwelling_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_dwelling_df.csv', sep=';', index=False)
+    gwr_dwelling_df.to_csv(f'{preprep_path_def}/gwr_dwelling_df.csv', sep=';', index=False)
 
 
     # get ALL BUILDING data
@@ -133,7 +134,7 @@ def sql_gwr_data(
     checkpoint_to_logfile('sql query ALL BUILDING done', log_file_name_def, 10, show_debug_prints_def)
 
     gwr_all_building_df = pd.DataFrame(sqlrows, columns=query_columns)
-    gwr_all_building_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_building_df.csv', sep=';', index=False)
+    gwr_all_building_df.to_csv(f'{preprep_path_def}/gwr_building_df.csv', sep=';', index=False)
 
 
     # merger -------------------
@@ -215,10 +216,10 @@ def sql_gwr_data(
 
     # merge dfs and export -------------------
     # gwr = gwr_building_df
-    gwr.to_csv(f'{data_path_def}/output/preprep_data/gwr.csv', sep=';', index=False)
-    gwr_mrg_all_building_in_bfs.to_csv(f'{data_path_def}/output/preprep_data/gwr_mrg_all_building_in_bfs.csv', sep=';', index=False)
-    gwr.to_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
-    gwr_mrg_all_building_in_bfs.to_parquet(f'{data_path_def}/output/preprep_data/gwr_mrg_all_building_in_bfs.parquet')
+    gwr.to_csv(f'{preprep_path_def}/gwr.csv', sep=';', index=False)
+    gwr_mrg_all_building_in_bfs.to_csv(f'{preprep_path_def}/gwr_mrg_all_building_in_bfs.csv', sep=';', index=False)
+    gwr.to_parquet(f'{preprep_path_def}/gwr.parquet')
+    gwr_mrg_all_building_in_bfs.to_parquet(f'{preprep_path_def}/gwr_mrg_all_building_in_bfs.parquet')
     checkpoint_to_logfile(f'exported gwr data', log_file_name_def=log_file_name_def, n_tabs_def = 4)
 
 
@@ -234,11 +235,11 @@ def sql_gwr_data(
     # gwr_gdf (will later be reimported and reexported again just because in preprep_data, all major geo spatial dfs are imported and exported)    
     gwr_gdf = gwr_to_gdf(gwr)
     gwr_gdf = gwr_gdf.loc[:, ['EGID', 'geometry']]
-    gwr_gdf.to_file(f'{data_path_def}/output/preprep_data/gwr_gdf.geojson', driver='GeoJSON')
+    gwr_gdf.to_file(f'{preprep_path_def}/gwr_gdf.geojson', driver='GeoJSON')
 
     # gwr_all_building_gdf exported for DSO nodes location determination later
     gwr_all_building_gdf = gwr_to_gdf(gwr_all_building_df)
-    gwr_all_building_gdf.to_file(f'{data_path_def}/output/preprep_data/gwr_all_building_gdf.geojson', driver='GeoJSON')
+    gwr_all_building_gdf.to_file(f'{preprep_path_def}/gwr_all_building_gdf.geojson', driver='GeoJSON')
 
     if dataagg_settings_def['split_data_geometry_AND_slow_api']:
         gwr_gdf.to_file(f'{data_path_def}/input_split_data_geometry/gwr_gdf.geojson', driver='GeoJSON')

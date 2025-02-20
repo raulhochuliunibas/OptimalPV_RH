@@ -34,6 +34,7 @@ def estimate_pv_cost(
     log_file_name_def = dataagg_settings_def['log_file_name']
     wd_path_def = dataagg_settings_def['wd_path']
     data_path_def = dataagg_settings_def['data_path']
+    preprep_path_def = dataagg_settings_def['preprep_path']
 
 
     print_to_logfile(f'run function: attach_pv_cost.py', log_file_name_def= log_file_name_def)
@@ -105,10 +106,10 @@ def estimate_pv_cost(
         }
 
         # export 
-        with open(f'{data_path_def}/output/preprep_data/pvinstcost_coefficients.json', 'w') as f:
+        with open(f'{preprep_path_def}/pvinstcost_coefficients.json', 'w') as f:
             json.dump(pvinstcost_coefficients, f)
 
-        np.save(f'{data_path_def}/output/preprep_data/pvinstcost_coefficients.npy', pvinstcost_coefficients)
+        np.save(f'{preprep_path_def}/pvinstcost_coefficients.npy', pvinstcost_coefficients)
 
 
         # plot installation cost df + intrapolation functions -------------------
@@ -132,11 +133,11 @@ def estimate_pv_cost(
             # Export the plots
             plt.tight_layout()
             # plt.show()
-            plt.savefig(f'{data_path_def}/output/preprep_data/pvinstcost_table.png')
+            plt.savefig(f'{preprep_path_def}/pvinstcost_table.png')
 
         # export cost df -------------------
-        installation_cost_df.to_parquet(f'{data_path_def}/output/preprep_data/pvinstcost_table.parquet')
-        installation_cost_df.to_csv(f'{data_path_def}/output/preprep_data/pvinstcost_table.csv')
+        installation_cost_df.to_parquet(f'{preprep_path_def}/pvinstcost_table.parquet')
+        installation_cost_df.to_csv(f'{preprep_path_def}/pvinstcost_table.csv')
         checkpoint_to_logfile(f'exported pvinstcost_table', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 
 
@@ -147,7 +148,7 @@ def estimate_pv_cost(
 
     if False: 
         # import and prepare solkat data -------------------
-        solkat = pd.read_parquet(f'{data_path_def}/output/preprep_data/solkat.parquet')
+        solkat = pd.read_parquet(f'{preprep_path_def}/solkat.parquet')
 
         # transform IDs cols to str 
         def convert_srs_to_str(df, colname):
@@ -170,7 +171,7 @@ def estimate_pv_cost(
         solkat_egid_total['cost_chf_pkW_times_kw'] = estim_instcost_chfpkW(solkat_egid_total['pvpot_bysurface_kw']) * solkat_egid_total['pvpot_bysurface_kw']
         solkat_egid_total['cost_chf_total'] = estim_instcost_chftotal(solkat_egid_total['pvpot_bysurface_kw'])
 
-        solkat_egid_total.to_parquet(f'{data_path_def}/output/preprep_data/solkat_egid_total.parquet')
+        solkat_egid_total.to_parquet(f'{preprep_path_def}/solkat_egid_total.parquet')
         checkpoint_to_logfile(f'exported solkat_egid_total', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
 
 
@@ -190,7 +191,7 @@ def estimate_pv_cost(
             checkpoint_to_logfile(f'start cumulative sum for: {col}', log_file_name_def=log_file_name_def, n_tabs_def=2, show_debug_prints_def=show_debug_prints_def)
             solkat_egid_cumsum[col] = solkat_egid_cumsum.groupby('EGID')[col].transform(pd.Series.cumsum)
 
-        solkat_egid_cumsum.to_parquet(f'{data_path_def}/output/preprep_data/solkat_egid_cumsum.parquet')
+        solkat_egid_cumsum.to_parquet(f'{preprep_path_def}/solkat_egid_cumsum.parquet')
         checkpoint_to_logfile(f'exported solkat_egid_cumsum', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
 
 
@@ -202,6 +203,7 @@ def get_angle_tilt_table(dataagg_settings_def):
 
     # import settings + setup -------------------
     data_path_def = dataagg_settings_def['data_path']
+    preprep_path_def = dataagg_settings_def['preprep_path']
     log_file_name_def = dataagg_settings_def['log_file_name']
     # name_dir_import_def = pvalloc_settings['name_dir_import']
     print_to_logfile('run function: get_angle_tilt_table', log_file_name_def)
@@ -297,8 +299,8 @@ def get_angle_tilt_table(dataagg_settings_def):
     angle_tilt_df['efficiency_factor'] = angle_tilt_df['efficiency_factor'] / 100
 
     # export df ----------
-    angle_tilt_df.to_parquet(f'{data_path_def}/output/preprep_data/angle_tilt_df.parquet')
-    angle_tilt_df.to_csv(f'{data_path_def}/output/preprep_data/angle_tilt_df.csv')
+    angle_tilt_df.to_parquet(f'{preprep_path_def}/angle_tilt_df.parquet')
+    angle_tilt_df.to_csv(f'{preprep_path_def}/angle_tilt_df.csv')
     # angle_tilt_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.parquet')
     # return angle_tilt_df
 
@@ -312,13 +314,14 @@ def get_fake_gridnodes(dataagg_settings_def):
     
     # import settings + setup -------------------
     data_path_def = dataagg_settings_def['data_path']
+    preprep_path_def = dataagg_settings_def['preprep_path']
     log_file_name_def = dataagg_settings_def['log_file_name']
     # name_dir_import_def = pvalloc_settings['name_dir_import']
     print_to_logfile('run function: get_fake_gridnodes', log_file_name_def)
 
     # create fake gridnodes ----------------------
     # gwr = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/gwr.parquet')
-    gwr = pd.read_parquet(f'{data_path_def}/output/preprep_data/gwr.parquet')
+    gwr = pd.read_parquet(f'{preprep_path_def}/gwr.parquet')
 
     gwr_nodes = gwr[['EGID', 'GDEKT']].copy()
     gwr_nodes['EGID_int'] = gwr_nodes['EGID'].astype(int)
@@ -331,8 +334,8 @@ def get_fake_gridnodes(dataagg_settings_def):
 
     # export df ----------
     Map_egid_nodes = gwr_nodes.copy()
-    Map_egid_nodes.to_parquet(f'{data_path_def}/output/preprep_data/Map_egid_nodes.parquet')
-    Map_egid_nodes.to_csv(f'{data_path_def}/output/preprep_data/Map_egid_nodes.csv')
+    Map_egid_nodes.to_parquet(f'{preprep_path_def}/Map_egid_nodes.parquet')
+    Map_egid_nodes.to_csv(f'{preprep_path_def}/Map_egid_nodes.csv')
     # Map_egid_nodes.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.parquet')
     # return gwr_nodes
 
