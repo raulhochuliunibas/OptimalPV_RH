@@ -353,11 +353,11 @@ def print_directory_stucture_to_txtfile(if_True = False):
         # Print the directory tree excluding specified directories and those starting with "."
         txt_header = f'** Directory structure for OptimalPV_RH **\n date: {pd.Timestamp.now()}\n\n'
 
-        with open(f'{os.getcwd()}/OptimalPV_RH_directory_structure.txt', 'w', encoding='utf-8') as f:
-            f.write(txt_header)
-            for line in tree(Path('C:/Models/OptimalPV_RH'), exclude_list= dir_exclusion_list):
-                # print(line)
-                f.write(line + '\n')
+        # with open(f'{os.getcwd()}/OptimalPV_RH_directory_structure.txt', 'w', encoding='utf-8') as f:
+        #     f.write(txt_header)
+        #     for line in tree(Path('C:/Models/OptimalPV_RH'), exclude_list= dir_exclusion_list):
+        #         # print(line)
+        #         f.write(line + '\n')
 
 # ----------------------------------------------------------------------
     
