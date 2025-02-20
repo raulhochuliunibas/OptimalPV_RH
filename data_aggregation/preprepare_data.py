@@ -83,9 +83,9 @@ def local_data_AND_spatial_mappings(
     
 
     # PV ====================
-    pv_all_pq = pd.read_parquet(f'{data_path_def}/split_data_geometry/pv_pq.parquet')
+    pv_all_pq = pd.read_parquet(f'{data_path_def}/input_split_data_geometry/pv_pq.parquet')
     checkpoint_to_logfile(f'import pv_pq, {pv_all_pq.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  2, show_debug_prints_def)
-    pv_all_geo = gpd.read_file(f'{data_path_def}/split_data_geometry/pv_geo.geojson')
+    pv_all_geo = gpd.read_file(f'{data_path_def}/input_split_data_geometry/pv_geo.geojson')
     checkpoint_to_logfile(f'import pv_geo, {pv_all_geo.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  2, show_debug_prints_def)
 
     # transformations
@@ -105,14 +105,14 @@ def local_data_AND_spatial_mappings(
 
 
     # SOLKAT ====================
-    solkat_all_pq = pd.read_parquet(f'{data_path_def}/split_data_geometry/solkat_pq.parquet')
+    solkat_all_pq = pd.read_parquet(f'{data_path_def}/input_split_data_geometry/solkat_pq.parquet')
     checkpoint_to_logfile(f'import solkat_pq, {solkat_all_pq.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
     
     bsblso_kt_numbers_TF = any([kt in [11,12,13] for kt in dataagg_settings_def['kt_numbers']])
-    if (bsblso_kt_numbers_TF) & (os.path.exists(f'{data_path_def}/split_data_geometry/solkat_bsblso_geo.geojson')):
-        solkat_all_geo = gpd.read_file(f'{data_path_def}/split_data_geometry/solkat_bsblso_geo.geojson')
+    if (bsblso_kt_numbers_TF) & (os.path.exists(f'{data_path_def}/input_split_data_geometry/solkat_bsblso_geo.geojson')):
+        solkat_all_geo = gpd.read_file(f'{data_path_def}/input_split_data_geometry/solkat_bsblso_geo.geojson')
     else:
-        solkat_all_geo = gpd.read_file(f'{data_path_def}/split_data_geometry/solkat_geo.geojson')
+        solkat_all_geo = gpd.read_file(f'{data_path_def}/input_split_data_geometry/solkat_geo.geojson')
     checkpoint_to_logfile(f'import solkat_geo, {solkat_all_geo.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
 
     # minor transformations
@@ -308,7 +308,7 @@ def local_data_AND_spatial_mappings(
     
 
     # SOLKAT_MONTH ====================
-    solkat_month_all_pq = pd.read_parquet(f'{data_path_def}/split_data_geometry/solkat_month_pq.parquet')
+    solkat_month_all_pq = pd.read_parquet(f'{data_path_def}/input_split_data_geometry/solkat_month_pq.parquet')
     checkpoint_to_logfile(f'import solkat_month_pq, {solkat_month_all_pq.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
 
     # transformations

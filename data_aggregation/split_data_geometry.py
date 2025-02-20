@@ -42,8 +42,8 @@ def split_data_and_geometry(
     print_to_logfile('run function: split_data_and_geometry.py', log_file_name_def)
 
     # create folder if not exists
-    if not os.path.exists(f'{data_path_def}/split_data_geometry'):
-        os.makedirs(f'{data_path_def}/split_data_geometry')
+    if not os.path.exists(f'{data_path_def}/input_split_data_geometry'):
+        os.makedirs(f'{data_path_def}/input_split_data_geometry')
 
 
     # IMPORT DATA --------------------------------------
@@ -82,10 +82,10 @@ def split_data_and_geometry(
     pv_pq = pv_all_gdf.loc[:,pv_all_gdf.columns !='geometry'].copy()
     pv_geo = pv_all_gdf.loc[:,['xtf_id', 'BFS_NUMMER', 'geometry']].copy()
 
-    pv_pq.to_parquet(f'{data_path_def}/split_data_geometry/pv_pq.parquet')
+    pv_pq.to_parquet(f'{data_path_def}/input_split_data_geometry/pv_pq.parquet')
     checkpoint_to_logfile(f'exported pv_pq.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-    with open(f'{data_path_def}/split_data_geometry/pv_geo.geojson', 'w') as f:
+    with open(f'{data_path_def}/input_split_data_geometry/pv_geo.geojson', 'w') as f:
         f.write(pv_geo.to_json())
     checkpoint_to_logfile(f'exported pv_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
@@ -106,17 +106,17 @@ def split_data_and_geometry(
     solkat_pq = solkat_all_gdf.loc[:,solkat_all_gdf.columns !='geometry'].copy()
     solkat_geo = solkat_all_gdf.loc[:,['DF_UID', 'BFS_NUMMER', 'geometry']].copy()
 
-    solkat_pq.to_parquet(f'{data_path_def}/split_data_geometry/solkat_pq.parquet')
+    solkat_pq.to_parquet(f'{data_path_def}/input_split_data_geometry/solkat_pq.parquet')
     checkpoint_to_logfile(f'exported solkat_pq.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
-    with open(f'{data_path_def}/split_data_geometry/solkat_geo.geojson', 'w') as f:
+    with open(f'{data_path_def}/input_split_data_geometry/solkat_geo.geojson', 'w') as f:
         f.write(solkat_geo.to_json())
     checkpoint_to_logfile(f'exported solkat_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
     
     # SOLKAT MONTH -------------------
     solkat_month_pq = gpd.read_file(f'{data_path_def}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
-    solkat_month_pq.to_parquet(f'{data_path_def}/split_data_geometry/solkat_month_pq.parquet')
+    solkat_month_pq.to_parquet(f'{data_path_def}/input_split_data_geometry/solkat_month_pq.parquet')
 
 
 
@@ -125,21 +125,21 @@ def split_data_and_geometry(
 
     pv_bsblso_geo = pv_geo.loc[pv_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
     if pv_bsblso_geo.shape[0] > 0:
-        with open (f'{data_path_def}/split_data_geometry/pv_bsblso_geo.geojson', 'w') as f:
+        with open (f'{data_path_def}/input_split_data_geometry/pv_bsblso_geo.geojson', 'w') as f:
             f.write(pv_bsblso_geo.to_json())
         checkpoint_to_logfile(f'exported pv_bsblso_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
                     
 
     solkat_bsblso_geo = solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
     if solkat_bsblso_geo.shape[0] > 0:
-        with open (f'{data_path_def}/split_data_geometry/solkat_bsblso_geo.geojson', 'w') as f:
+        with open (f'{data_path_def}/input_split_data_geometry/solkat_bsblso_geo.geojson', 'w') as f:
             f.write(solkat_bsblso_geo.to_json())
         checkpoint_to_logfile(f'exported solkat_bsblso_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
 
 
-    # Copy Log File to split_data_geometry folder
+    # Copy Log File to input_split_data_geometry folder
     if os.path.exists(log_file_name_def):
-        shutil.copy(log_file_name_def, f'{data_path_def}/split_data_geometry/split_data_geometry_logfile.txt')
+        shutil.copy(log_file_name_def, f'{data_path_def}/input_split_data_geometry/split_data_geometry_logfile.txt')
 
 
 
@@ -185,5 +185,5 @@ def get_kt_bsblso_sql_gwr(dataagg_settings_def):
     gwr_bsblso_gdf = gwr_to_gdf(gwr_bsblso_pq)
 
     # export
-    gwr_bsblso_pq.to_parquet(f'{data_path_def}/split_data_geometry/gwr_bsblso_pq.parquet')
-    gwr_bsblso_gdf.to_file(f'{data_path_def}/split_data_geometry/gwr_bsblso_gdf.geojson', driver='GeoJSON')
+    gwr_bsblso_pq.to_parquet(f'{data_path_def}/input_split_data_geometry/gwr_bsblso_pq.parquet')
+    gwr_bsblso_gdf.to_file(f'{data_path_def}/input_split_data_geometry/gwr_bsblso_gdf.geojson', driver='GeoJSON')

@@ -69,7 +69,7 @@ def create_gdf_export_of_topology(
         pv_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/pv_gdf.geojson')
 
     Map_egid_dsonode = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_dsonode.parquet')
-    gwr_bsblso_gdf = gpd.read_file(f'{data_path_def}/split_data_geometry/gwr_bsblso_gdf.geojson')
+    gwr_bsblso_gdf = gpd.read_file(f'{data_path_def}/input_split_data_geometry/gwr_bsblso_gdf.geojson')
     gm_shp_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gm_shp_gdf.geojson')
 
 

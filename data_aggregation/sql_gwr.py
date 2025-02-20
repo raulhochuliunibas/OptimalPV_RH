@@ -241,7 +241,7 @@ def sql_gwr_data(
     gwr_all_building_gdf.to_file(f'{data_path_def}/output/preprep_data/gwr_all_building_gdf.geojson', driver='GeoJSON')
 
     if dataagg_settings_def['split_data_geometry_AND_slow_api']:
-        gwr_gdf.to_file(f'{data_path_def}/split_data_geometry/gwr_gdf.geojson', driver='GeoJSON')
+        gwr_gdf.to_file(f'{data_path_def}/input_split_data_geometry/gwr_gdf.geojson', driver='GeoJSON')
 
 
 
