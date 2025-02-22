@@ -107,7 +107,7 @@ def create_gdf_export_of_topology(
 
     # EXPORT to shp -----------------------------------------------------
     if not os.path.exists(f'{pvalloc_path}/topo_spatial_data'):
-        os.makedirs(f'{data_path_def}/topo_spatial_data')
+        os.makedirs(f'{data_path_def}/topo_spatial_data', exist_ok=True)
 
     shp_to_export=[(solkat_gdf_in_topo, 'solkat_gdf_in_topo.shp'),
                    (gwr_gdf_in_topo, 'gwr_gdf_in_topo.shp'),

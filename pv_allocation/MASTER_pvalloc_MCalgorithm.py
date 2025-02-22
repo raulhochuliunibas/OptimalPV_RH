@@ -23,8 +23,8 @@ if True:
     import glob
     import shutil
     import winsound
-    import numba
-    from numba import njit
+    # import numba
+    # from numba import njit
 
     # own packages and functions
     import auxiliary_functions
@@ -71,14 +71,15 @@ def MASTER_pvalloc_MC_algorithm(pvalloc_settings_func):
     # SETUP ================================================================
     if True: 
         # set working directory
-        # wd_path = pvalloc_settings['wd_path_laptop'] if not pvalloc_settings['script_run_on_server'] else pvalloc_settings['wd_path_server']
         wd_path = os.getcwd()
         data_path = f'{wd_path}_data'
 
         # create directory + log file
-        pvalloc_path = f'{data_path}/output/pvalloc_run'
-        if not os.path.exists(pvalloc_path):
-            os.makedirs(pvalloc_path)
+        pvalloc_path = f'{data_path}/pvalloc_run/pvalloc_run__temp_to_be_renamed'
+        pvalloc_name_dir_export_path = f'{data_path}/pvalloc_run/{pvalloc_settings["name_dir_export"]}'
+        preprep_name_dir_preffix = 'preprep'
+        # if not os.path.exists(pvalloc_path):
+        #     os.makedirs(pvalloc_path)
         log_name = f'{data_path}/output/pvalloc_MCalgo_log.txt'
         total_runtime_start = datetime.now()
 
@@ -101,7 +102,9 @@ def MASTER_pvalloc_MC_algorithm(pvalloc_settings_func):
         pvalloc_settings['summary_file_name'] = summary_name
         pvalloc_settings['wd_path'] = wd_path
         pvalloc_settings['data_path'] = data_path
-        # pvalloc_settings['pvalloc_path'] = pvalloc_path
+        pvalloc_settings['pvalloc_path'] = pvalloc_path
+        pvalloc_settings['pvalloc_name_dir_export_path'] = pvalloc_name_dir_export_path
+        pvalloc_settings['preprep_name_dir_preffix'] = preprep_name_dir_preffix
         # pvalloc_settings['interim_path'] = initial_sml.get_interim_path(pvalloc_settings)
         show_debug_prints = pvalloc_settings['show_debug_prints']
 
@@ -113,9 +116,9 @@ def MASTER_pvalloc_MC_algorithm(pvalloc_settings_func):
     print_to_logfile(f'> n_bfs_municipalities: {len(pvalloc_settings["bfs_numbers"])} \n> n_months_prediction: {pvalloc_settings["months_prediction"]} \n> n_montecarlo_iterations: {pvalloc_settings["MC_loop_specs"]["montecarlo_iterations"]}', log_name)
 
     # store settings in log file
-    with open(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/pvalloc_settings.json', 'w') as f:
+    with open(f'{pvalloc_name_dir_export_path}/pvalloc_settings.json', 'w') as f:
         json.dump(pvalloc_settings, f, indent=4)
-    with open(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/pvalloc_settings__MCallocMASTERpy__{pvalloc_settings["name_dir_export"]}.json', 'w') as f:
+    with open(f'{pvalloc_name_dir_export_path}/pvalloc_settings__MCallocMASTERpy__{pvalloc_settings["name_dir_export"]}.json', 'w') as f:
         json.dump(pvalloc_settings, f, indent=4)
 
         
@@ -129,8 +132,8 @@ def MASTER_pvalloc_MC_algorithm(pvalloc_settings_func):
     safety_counter_max = pvalloc_settings['algorithm_specs']['while_inst_counter_max']
     
     # get all initial files to start a fresh MC iteration
-    fresh_initial_paths = [f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/{file}' for file in fresh_initial_files]
-    topo_time_paths = glob.glob(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/topo_time_subdf/*.parquet')
+    fresh_initial_paths = [f'{pvalloc_name_dir_export_path}/{file}' for file in fresh_initial_files]
+    topo_time_paths = glob.glob(f'{pvalloc_name_dir_export_path}/topo_time_subdf/*.parquet')
     all_initial_paths = fresh_initial_paths + topo_time_paths
 
     max_digits = len(str(max(montecarlo_iterations)))
@@ -142,14 +145,14 @@ def MASTER_pvalloc_MC_algorithm(pvalloc_settings_func):
         # print_to_logfile(f'\n-- START MC{mc_iter:0{max_digits}} iteration  {25*"-"}', log_name)
 
         # copy all initial files to MC directory
-        mc_data_path = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/zMC_{mc_iter:0{max_digits}}'
+        mc_data_path = f'{pvalloc_name_dir_export_path}/zMC_{mc_iter:0{max_digits}}'
         os.makedirs(mc_data_path, exist_ok=True)
         for file in all_initial_paths:
             shutil.copy(file, mc_data_path)
             
         # remove old files to avoid concatenating old files to iteration-by-iteration interim saves
             # for df_type in ['npv_df', 'pred_inst_df']:
-            #     df_paths = glob.glob(f'{data_path}/output/{pvalloc_settings["name_dir_export"]}/{df_type}.*')
+            #     df_paths = glob.glob(f'{pvalloc_name_dir_export_path}/{df_type}.*')
             #     for f in df_paths:
             #         os.remove(f)
 
@@ -247,7 +250,7 @@ def MASTER_pvalloc_MC_algorithm(pvalloc_settings_func):
 
     # COPY & RENAME PVALLOC DATA FOLDER ---------------------------------------------------------------
     # > not to overwrite completed folder while debugging 
-    dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'
+    dir_alloc_moveto = f'{pvalloc_name_dir_export_path}'
 
     shutil.move(glob.glob(f'{data_path}/output/pvalloc_MCalgo_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_MCalgo_log_{pvalloc_settings["name_dir_export"]}.txt')
 

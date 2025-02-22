@@ -352,8 +352,8 @@ def update_gridprem(
     data_path = f'{wd_path}_data'
     show_debug_prints = pvalloc_settings['show_debug_prints']
     log_file_name = pvalloc_settings['log_file_name']
-    pvalloc_path = pvalloc_settings['pvalloc_path']
-    preprep_name_dir_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
+    # pvalloc_path = pvalloc_settings['pvalloc_path']
+    # preprep_name_dir_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
 
 
     gridtiers = pvalloc_settings['gridprem_adjustment_specs']['tiers']

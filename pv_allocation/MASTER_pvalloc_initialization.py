@@ -98,10 +98,11 @@ def MASTER_pvalloc_initialization(pvalloc_settings_func):
         # transfer summary file from data_aggregation
         summary_find_path = glob.glob(f'{data_path}/preprep_data/{pvalloc_settings["name_dir_import"]}/summary_data_selection_log*.txt')
         summary_name = f'{pvalloc_path}/summary_data_selection_log.txt'
-        if len(summary_find_path) == 1:
-            shutil.copy(summary_find_path[0], summary_name)
-        else:
-            print_to_logfile(f' **ERROR** : summary file not found or multiple files found', log_name)
+        # ... transfer summary file from data_aggregation NOT done because not needed yet
+        # if len(summary_find_path) == 1:
+        #     shutil.copy(summary_find_path[0], summary_name)
+        # else:
+        #     print_to_logfile(f' **ERROR** : summary file not found or multiple files found', log_name)
 
 
         # extend settings dict with relevant informations for later functions

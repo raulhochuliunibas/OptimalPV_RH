@@ -12,6 +12,10 @@ __pyproject*
 # ignore venv files
 .venv*
 .vscode* 
+venv*
+
+# ignore all files in data_directory, except empty textfiles
+# tbd
 
 
 # --------------------------------------------------------------------------------------------
