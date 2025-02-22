@@ -2,16 +2,15 @@ import copy
 
 pvalloc_default_settings = {
     # NO LONGER RELEVANT - TO BE DELETED EVENTUALLY
-    'show_debug_prints':        True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
-    'fast_debug_run':           False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
-    'n_egid_in_topo': 200, 
-    'wd_path_laptop': 'C:/Models/OptimalPV_RH',                             # path to the working directory on Raul's laptop
-    'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',                  # path to the working directory on the server
-    'constr_capacity_specs_OLD_to_delete': {
-        'summer_months': [4,5,6,7,8,9,],
-        'winter_months': [10,11,12,1,2,3,],
-        'share_to_summer': 0.6, 
-        'share_to_winter': 0.4,}, 
+    # 'fast_debug_run':           False,                                 # T: run the code with a small subset of data, F: run the code with the full dataset
+    # 'n_egid_in_topo': 200, 
+    # 'wd_path_laptop': 'C:/Models/OptimalPV_RH',                             # path to the working directory on Raul's laptop
+    # 'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',                  # path to the working directory on the server
+    # 'constr_capacity_specs_OLD_to_delete': {
+    #     'summer_months': [4,5,6,7,8,9,],
+    #     'winter_months': [10,11,12,1,2,3,],
+    #     'share_to_summer': 0.6, 
+    #     'share_to_winter': 0.4,}, 
 
 
 
@@ -19,6 +18,7 @@ pvalloc_default_settings = {
     'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates', # name of the directory where preprepared data is stored and accessed by the code
 
     # main settings for allocation
+    'show_debug_prints':        True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging
     'kt_numbers': [], #[11,13],                           # list of cantons to be considered [11, Solothurn, 12 Basel-Stadt, 13 Basel-Landschaft], 0 used for NON canton-selection, selecting only certain indiviual municipalities
     'bfs_numbers': [
         2768, 2761, 2772, 2785, 2787,                        # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen; + Laufen for comparison with own PV installation

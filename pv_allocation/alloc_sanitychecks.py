@@ -29,9 +29,12 @@ def create_gdf_export_of_topology(
     data_path_def = pvalloc_settings['data_path']
     log_file_name_def = pvalloc_settings['log_file_name']
     bfs_numbers_def = pvalloc_settings['bfs_numbers']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
+    preprep_name_dir_path = f'{data_path_def}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import_def}'
+
 
     # create topo_df -----------------------------------------------------
-    topo = json.load(open(f'{data_path_def}/output/pvalloc_run/topo_egid.json', 'r'))
+    topo = json.load(open(f'{pvalloc_path}/topo_egid.json', 'r'))
     egid_list, gklas_list, inst_tf_list, inst_info_list, inst_id_list, beginop_list, power_list = [], [], [], [], [], [], []
     topo_df_uid_list = []    
     for k,v in topo.items():
@@ -57,20 +60,13 @@ def create_gdf_export_of_topology(
 
 
     # import geo data -----------------------------------------------------
-    # topo_df = pd.read_parquet(f'{data_path_def}/output/pvalloc_run/topo_egid_df.parquet')
+    solkat_gdf = gpd.read_file(f'{preprep_name_dir_path}/solkat_gdf.geojson')
+    gwr_gdf = gpd.read_file(f'{preprep_name_dir_path}/gwr_gdf.geojson')
+    pv_gdf = gpd.read_file(f'{preprep_name_dir_path}/pv_gdf.geojson')
 
-    if pvalloc_settings['fast_debug_run']:
-        solkat_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/solkat_gdf.geojson', rows=50)
-        gwr_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson', rows = 50)
-        pv_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/pv_gdf.geojson', rows = 50)
-    else:
-        solkat_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/solkat_gdf.geojson')
-        gwr_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson')
-        pv_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/pv_gdf.geojson')
-
-    Map_egid_dsonode = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_dsonode.parquet')
+    Map_egid_dsonode = pd.read_parquet(f'{preprep_name_dir_path}/Map_egid_dsonode.parquet')
     gwr_bsblso_gdf = gpd.read_file(f'{data_path_def}/input_split_data_geometry/gwr_bsblso_gdf.geojson')
-    gm_shp_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gm_shp_gdf.geojson')
+    gm_shp_gdf = gpd.read_file(f'{preprep_name_dir_path}/gm_shp_gdf.geojson')
 
 
     # transformations
@@ -110,29 +106,30 @@ def create_gdf_export_of_topology(
 
 
     # EXPORT to shp -----------------------------------------------------
-    if not os.path.exists(f'{data_path_def}/output/pvalloc_run/topo_spatial_data'):
-        os.makedirs(f'{data_path_def}/output/pvalloc_run/topo_spatial_data')
+    if not os.path.exists(f'{pvalloc_path}/topo_spatial_data'):
+        os.makedirs(f'{data_path_def}/topo_spatial_data')
 
-    shp_to_export=[(solkat_gdf_in_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_in_topo.shp'),
-                   (gwr_gdf_in_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_in_topo.shp'),
-                   (pv_gdf_in_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_in_topo.shp'),
+    shp_to_export=[(solkat_gdf_in_topo, 'solkat_gdf_in_topo.shp'),
+                   (gwr_gdf_in_topo, 'gwr_gdf_in_topo.shp'),
+                   (pv_gdf_in_topo, 'pv_gdf_in_topo.shp'),
+           
+                   (solkat_gdf_notin_topo, 'solkat_gdf_notin_topo.shp'),
+                   (gwr_gdf_notin_topo, 'gwr_gdf_notin_topo.shp'),
+                   (pv_gdf_notin_topo, 'pv_gdf_notin_topo.shp'),
                    
-                   (solkat_gdf_notin_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_gdf_notin_topo.shp'),
-                   (gwr_gdf_notin_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_notin_topo.shp'),
-                   (pv_gdf_notin_topo, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_notin_topo.shp'), 
-
-                   (topo_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_gdf.shp'), 
-                   (single_part_houses_w_tilt, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/single_part_houses_w_tilt.shp'), 
-
-                   (dsonodes_withegids_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/dsonodes_withegids_gdf.shp'),
-                   (gm_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gm_gdf.shp')
+                   (topo_gdf, 'topo_gdf.shp'),
+                   (single_part_houses_w_tilt, 'single_part_houses_w_tilt.shp'),
+           
+                   (dsonodes_withegids_gdf, 'dsonodes_withegids_gdf.shp'),
+                   (gm_gdf, 'gm_gdf.shp')
     ]
 
-    for gdf, path in shp_to_export:
+    for gdf, file_name in shp_to_export:
+        path_file = f'{pvalloc_path}/topo_spatial_data/{file_name}'
         try:
-            gdf.to_file(path)
+            gdf.to_file(path_file)
         except Exception as e:
-            print(f"Failed to export {path}. Error: {e}")        
+            print(f"Failed to export {path_file}. Error: {e}")        
 
 
     # subset to > max n partitions -----------------------------------------------------
@@ -146,8 +143,8 @@ def create_gdf_export_of_topology(
     solkat_gdf_in_topo[solkat_gdf_in_topo['df_uid'].isin(topo_df_uid_list)].copy()
 
     # export to shp -----------------------------------------------------
-    shp_to_export2 = [(topo_above_npart_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp'),
-                      (solkat_above_npart_gdf, f'{data_path_def}/output/pvalloc_run/topo_spatial_data/solkat_above_{max_partitions}_npart_gdf.shp')]
+    shp_to_export2 = [(topo_above_npart_gdf, f'{pvalloc_path}/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp'),
+                      (solkat_above_npart_gdf, f'{pvalloc_path}/topo_spatial_data/solkat_above_{max_partitions}_npart_gdf.shp')]
     for gdf, path in shp_to_export2:
         try:
             gdf.to_file(path)
@@ -167,13 +164,17 @@ def check_multiple_xtf_ids_per_EGID(
     name_dir_import_def = pvalloc_settings['name_dir_import']
     data_path_def = pvalloc_settings['data_path']
     log_file_name_def = pvalloc_settings['log_file_name']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
+    preprep_name_dir_path = f'{data_path_def}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import_def}'
+
+
 
     # import -----------------------------------------------------
-    gwr_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/gwr_gdf.geojson')
-    pv_gdf = gpd.read_file(f'{data_path_def}/output/{name_dir_import_def}/pv_gdf.geojson')
-    Map_egid_pv = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_pv.parquet')
+    gwr_gdf = gpd.read_file(f'{preprep_name_dir_path}/gwr_gdf.geojson')
+    pv_gdf = gpd.read_file(f'{preprep_name_dir_path}/pv_gdf.geojson')
+    Map_egid_pv = pd.read_parquet(f'{preprep_name_dir_path}/Map_egid_pv.parquet')
 
-    check_egid = json.load(open(f'{data_path_def}/output/pvalloc_run/CHECK_egid_with_problems.json', 'r'))
+    check_egid = json.load(open(f'{pvalloc_path}/CHECK_egid_with_problems.json', 'r'))
     egid_list, issue_list= [], []
     for k,v in check_egid.items():
         egid_list.append(k)
@@ -195,11 +196,11 @@ def check_multiple_xtf_ids_per_EGID(
     pv_gdf_multiple_xtf_id = pv_gdf[pv_gdf['xtf_id'].isin(multip_xtf_list_unique)].copy()
 
     # export to shp -----------------------------------------------------
-    if not os.path.exists(f'{data_path_def}/output/pvalloc_run/topo_spatial_data'):
-        os.makedirs(f'{data_path_def}/output/pvalloc_run/topo_spatial_data')
+    if not os.path.exists(f'{pvalloc_path}/topo_spatial_data'):
+        os.makedirs(f'{pvalloc_path}/topo_spatial_data')
     
-    gwr_gdf_multiple_xtf_id.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/gwr_gdf_multiple_xtf_id.shp')
-    pv_gdf_multiple_xtf_id.to_file(f'{data_path_def}/output/pvalloc_run/topo_spatial_data/pv_gdf_multiple_xtf_id.shp')
+    gwr_gdf_multiple_xtf_id.to_file(f'{pvalloc_path}/topo_spatial_data/gwr_gdf_multiple_xtf_id.shp')
+    pv_gdf_multiple_xtf_id.to_file(f'{pvalloc_path}/topo_spatial_data/pv_gdf_multiple_xtf_id.shp')
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -403,11 +404,11 @@ def sanity_check_summary_byEGID(
                     summary_rows.append(row)
 
         egid_summary_df = pd.DataFrame(summary_rows)
-        egid_summary_df.to_csv(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID/summary_{egid}.csv')
+        egid_summary_df.to_csv(f'{subdir_path}/summary_{egid}.csv')
         summary_toExcel_list.append(egid_summary_df)
    
     
-    with pd.ExcelWriter(f'{data_path_def}/output/pvalloc_run/sanity_check_byEGID/summary_all{name_dir_export_def}.xlsx') as writer:
+    with pd.ExcelWriter(f'{subdir_path}/summary_all{name_dir_export_def}.xlsx') as writer:
         for i, df in enumerate(summary_toExcel_list):
             sheet_egid = df.loc[df['key']=='EGID', 'val'].values[0]
             df.to_excel(writer, sheet_name=sheet_egid, index=False)

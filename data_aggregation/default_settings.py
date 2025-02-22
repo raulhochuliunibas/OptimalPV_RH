@@ -2,8 +2,8 @@ import copy
 
 dataagg_default_settings = {
         # NO LONGER RELEVANT - TO BE DELETED EVENTUALLY
-        'wd_path_laptop': 'C:/Models/OptimalPV_RH',             # path to the working directory on Raul's laptop
-        'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',  # path to the working directory on the server
+        # 'wd_path_laptop': 'C:/Models/OptimalPV_RH',             # path to the working directory on Raul's laptop
+        # 'wd_path_server': 'D:/RaulHochuli_inuse/OptimalPV_RH',  # path to the working directory on the server
 
 
         'name_dir_export': 'preprep_BSBLSO_18to22',             # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)

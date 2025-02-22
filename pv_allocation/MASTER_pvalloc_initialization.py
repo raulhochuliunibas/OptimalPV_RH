@@ -84,20 +84,20 @@ def MASTER_pvalloc_initialization(pvalloc_settings_func):
     # SETUP ================================================================
     if True: 
         # set working directory
-        # wd_path = pvalloc_settings['wd_path_laptop'] if not pvalloc_settings['script_run_on_server'] else pvalloc_settings['wd_path_server']
         wd_path = os.getcwd()
         data_path = f'{wd_path}_data'
 
         # create directory + log file
-        pvalloc_path = f'{data_path}/output/pvalloc_run'
+        preprep_name_dir_preffix = 'preprep'
+        pvalloc_path = f'{data_path}/pvalloc_run/pvalloc_run__temp_to_be_renamed'
         if not os.path.exists(pvalloc_path):
             os.makedirs(pvalloc_path)
-        log_name = f'{data_path}/output/pvalloc_init_log.txt'
+        log_name = f'{pvalloc_path}/pvalloc_init_log.txt'
         total_runtime_start = datetime.now()
 
         # transfer summary file from data_aggregation
-        summary_find_path = glob.glob(f'{data_path}/output/{pvalloc_settings["name_dir_import"]}/summary_data_selection_log*.txt')
-        summary_name = f'{data_path}/output/summary_data_selection_log.txt'
+        summary_find_path = glob.glob(f'{data_path}/preprep_data/{pvalloc_settings["name_dir_import"]}/summary_data_selection_log*.txt')
+        summary_name = f'{pvalloc_path}/summary_data_selection_log.txt'
         if len(summary_find_path) == 1:
             shutil.copy(summary_find_path[0], summary_name)
         else:
@@ -116,6 +116,7 @@ def MASTER_pvalloc_initialization(pvalloc_settings_func):
         pvalloc_settings['wd_path'] = wd_path
         pvalloc_settings['data_path'] = data_path
         pvalloc_settings['pvalloc_path'] = pvalloc_path
+        pvalloc_settings['preprep_name_dir_preffix'] = preprep_name_dir_preffix
         pvalloc_settings['interim_path'] = initial_sml.get_interim_path(pvalloc_settings)
         show_debug_prints = pvalloc_settings['show_debug_prints']
 
@@ -132,9 +133,9 @@ def MASTER_pvalloc_initialization(pvalloc_settings_func):
     subchapter_to_logfile(f'MASTER_pvalloc_initialization', summary_name)
 
     # store settings to output folder
-    with open(f'{data_path}/output/pvalloc_run/pvalloc_settings.json', 'w') as f:
+    with open(f'{pvalloc_path}/pvalloc_settings.json', 'w') as f:
         json.dump(pvalloc_settings, f, indent=4)
-    with open(f'{data_path}/output/pvalloc_run/pvalloc_settings__initMASTERpy__{pvalloc_settings["name_dir_export"]}.json', 'w') as f:
+    with open(f'{pvalloc_path}/pvalloc_settings__initMASTERpy__{pvalloc_settings["name_dir_export"]}.json', 'w') as f:
         json.dump(pvalloc_settings, f, indent=4)
 
 
@@ -169,14 +170,14 @@ def MASTER_pvalloc_initialization(pvalloc_settings_func):
         algo.calc_economics_in_topo_df(pvalloc_settings, topo, 
                                         df_list, df_names, ts_list, ts_names)
     
-        shutil.copy(f'{data_path}/output/pvalloc_run/topo_egid.json', f'{data_path}/output/pvalloc_run/topo_egid_before_alloc.json')
+        shutil.copy(f'{pvalloc_path}/topo_egid.json', f'{pvalloc_path}/topo_egid_before_alloc.json')
 
 
 
     # TOPOLOGY SANITY CHECKS ================================================================
     if pvalloc_settings['sanitycheck_byEGID']:
         subchapter_to_logfile('sanity_check: RUN FEW ITERATION for byCHECK', log_name)
-        sanitycheck_path = f'{data_path}/output/pvalloc_run/sanity_check_byEGID'
+        sanitycheck_path = f'{pvalloc_path}/sanity_check_byEGID'
         # make sanitycheck folder and move relevant initial files there (delete all old files, not distort results)
         if not os.path.exists(sanitycheck_path):
             os.makedirs(sanitycheck_path)
@@ -187,8 +188,8 @@ def MASTER_pvalloc_initialization(pvalloc_settings_func):
                 elif os.path.isdir(f):
                     shutil.rmtree(f)
 
-        fresh_initial_files = [f'{data_path}/output/pvalloc_run/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
-        topo_time_paths = glob.glob(f'{data_path}/output/pvalloc_run/topo_time_subdf/*.parquet')
+        fresh_initial_files = [f'{pvalloc_path}/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
+        topo_time_paths = glob.glob(f'{pvalloc_path}/topo_time_subdf/*.parquet')
         all_initial_paths = fresh_initial_files + topo_time_paths
         for f in all_initial_paths:
             shutil.copy(f, f'{sanitycheck_path}/')
@@ -196,7 +197,7 @@ def MASTER_pvalloc_initialization(pvalloc_settings_func):
         # sanity check: CALC FEW ITERATION OF NPV AND FEEDIN for check ---------------------------------------------------------------
         dfuid_installed_list = []
         pred_inst_df = pd.DataFrame()
-        months_prediction_pq = pd.read_parquet(f'{data_path}/output/pvalloc_run/months_prediction.parquet')['date']
+        months_prediction_pq = pd.read_parquet(f'{pvalloc_path}/months_prediction.parquet')['date']
         months_prediction = [str(m) for m in months_prediction_pq]
         # i_m, m = 1, months_prediction[0:2]
         for i_m, m in enumerate(months_prediction[0:pvalloc_settings['sanitycheck_summary_byEGID_specs']['n_iterations_before_sanitycheck']]):
@@ -230,26 +231,19 @@ def MASTER_pvalloc_initialization(pvalloc_settings_func):
 
     # COPY & RENAME PVALLOC DATA FOLDER ---------------------------------------------------------------
     # > not to overwrite completed folder while debugging 
-    dir_alloc_moveto = f'{data_path}/output/{pvalloc_settings["name_dir_export"]}'
+    dir_alloc_moveto = f'{data_path}/pvalloc_run/{pvalloc_settings["name_dir_export"]}'
     if os.path.exists(dir_alloc_moveto):
         n_same_names = len(glob.glob(f'{dir_alloc_moveto}*'))
         old_dir_rename = f'{dir_alloc_moveto} ({n_same_names+1})'
         os.rename(f'{dir_alloc_moveto}', old_dir_rename)
 
-    # os.makedirs(dir_alloc_moveto)
-    # file_to_move = glob.glob(f'{data_path}/output/pvalloc_run/*')
-    # for f in file_to_move:
-    #     if os.path.isfile(f):
-    #         shutil.copy(f, dir_alloc_moveto)
-    #     elif os.path.isdir(f):
-    #         shutil.copytree(f, os.path.join(dir_alloc_moveto, os.path.basename(f)))
-    os.rename(f'{data_path}/output/pvalloc_run', dir_alloc_moveto)
-    # shutil.copy(glob.glob(f'{data_path}/output/pvalloc_init_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_init_log_{pvalloc_settings["name_dir_export"]}.txt')
-    shutil.move(glob.glob(f'{data_path}/output/pvalloc_init_log.txt')[0], f'{dir_alloc_moveto}/pvalloc_init_log_{pvalloc_settings["name_dir_export"]}.txt')
+    # rename log files
+    name_dir_export = pvalloc_settings['name_dir_export']
+    os.rename(log_name, f'{pvalloc_path}/pvalloc_init_log_{name_dir_export}.txt')
+    os.rename(summary_name, f'{pvalloc_path}/summary_data_selection_log_{name_dir_export}.txt')
 
-
-
-
+    # rename preprep folder
+    os.rename(pvalloc_path, dir_alloc_moveto)
 
 
 

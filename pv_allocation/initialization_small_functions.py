@@ -57,6 +57,7 @@ def get_angle_tilt_table(pvalloc_settings):
     data_path = pvalloc_settings['data_path']
     log_file_name = pvalloc_settings['log_file_name']
     name_dir_import = pvalloc_settings['name_dir_import']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
     print_to_logfile('run function: get_angle_tilt_table', log_file_name)
 
     # SOURCE: table was retreived from this site: https://echtsolar.de/photovoltaik-neigungswinkel/
@@ -150,8 +151,8 @@ def get_angle_tilt_table(pvalloc_settings):
     angle_tilt_df['efficiency_factor'] = angle_tilt_df['efficiency_factor'] / 100
 
     # export df ----------
-    angle_tilt_df.to_parquet(f'{data_path}/output/{name_dir_import}/angle_tilt_df.parquet')
-    angle_tilt_df.to_csv(f'{data_path}/output/{name_dir_import}/angle_tilt_df.csv')
+    angle_tilt_df.to_parquet(f'{pvalloc_path}/{name_dir_import}/angle_tilt_df.parquet')
+    angle_tilt_df.to_csv(f'{pvalloc_path}/{name_dir_import}/angle_tilt_df.csv')
     return angle_tilt_df
 
 
@@ -167,6 +168,7 @@ def HOY_weatheryear_df(pvalloc_settings):
     name_dir_import = pvalloc_settings['name_dir_import']
     bfs_numbers_def = pvalloc_settings['bfs_numbers']
     gwr_selection_specs_def = pvalloc_settings['gwr_selection_specs']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
     print_to_logfile('run function: get_fake_gridnodes_v2', log_file_name)
 
 
@@ -179,7 +181,7 @@ def HOY_weatheryear_df(pvalloc_settings):
     HOY_weatheryear_df['hour'] = HOY_weatheryear_df['timestamp'].dt.hour
 
     # export df ----------
-    HOY_weatheryear_df.to_parquet(f'{data_path}/output/pvalloc_run/HOY_weatheryear_df.parquet')
+    HOY_weatheryear_df.to_parquet(f'{pvalloc_path}/HOY_weatheryear_df.parquet')
 
 
 
@@ -266,13 +268,14 @@ def get_gridnodes_DSO(pvalloc_settings):
     name_dir_import = pvalloc_settings['name_dir_import']
     bfs_numbers_def = pvalloc_settings['bfs_numbers']
     summary_file_name = pvalloc_settings['summary_file_name']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
+    preprep_name_dir_import_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
     print_to_logfile('run function: get_gridnodes_DSO', log_file_name)
 
-
     # import ----------------------
-    Map_egid_dsonode = pd.read_parquet(f'{data_path}/output/{name_dir_import}/Map_egid_dsonode.parquet')
-    gwr_gdf = gpd.read_file(f'{data_path}/output/{name_dir_import}/gwr_gdf.geojson')
-    gwr_all_building_gdf = gpd.read_file(f'{data_path}/output/{name_dir_import}/gwr_all_building_gdf.geojson')
+    Map_egid_dsonode = pd.read_parquet(f'{preprep_name_dir_import_path}/Map_egid_dsonode.parquet')
+    gwr_gdf = gpd.read_file(f'{preprep_name_dir_import_path}/gwr_gdf.geojson')
+    gwr_all_building_gdf = gpd.read_file(f'{preprep_name_dir_import_path}/gwr_all_building_gdf.geojson')
 
 
     # transformations ----------------------
@@ -302,9 +305,9 @@ def get_gridnodes_DSO(pvalloc_settings):
     
 
     # export ----------------------
-    dsonodes_df.to_parquet(f'{data_path}/output/{name_dir_import}/dsonodes_df.parquet')
-    dsonodes_df.to_csv(f'{data_path}/output/{name_dir_import}/dsonodes_df.csv')
-    with open(f'{data_path}/output/{name_dir_import}/dsonodes_gdf.geojson', 'w') as f:
+    dsonodes_df.to_parquet(f'{preprep_name_dir_import_path}/dsonodes_df.parquet')
+    dsonodes_df.to_csv(f'{preprep_name_dir_import_path}/dsonodes_df.csv')
+    with open(f'{preprep_name_dir_import_path}/dsonodes_gdf.geojson', 'w') as f:
         f.write(dsonodes_gdf.to_json())
 
 

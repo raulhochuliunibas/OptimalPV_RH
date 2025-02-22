@@ -10,7 +10,7 @@ import plotly.graph_objs as go
 import plotly.offline as pyo
 import geopandas as gpd
 import copy
-import concurrent.futures
+# import concurrent.futures
 from datetime import datetime
 
 from pyarrow.parquet import ParquetFile
@@ -37,6 +37,8 @@ def calc_economics_in_topo_df(
     data_path = f'{wd_path}_data'
     show_debug_prints = pvalloc_settings['show_debug_prints']
     log_file_name = pvalloc_settings['log_file_name']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
+
     print_to_logfile(f'run function: calc_economics_in_topo_df', log_file_name)
 
 
@@ -102,7 +104,7 @@ def calc_economics_in_topo_df(
     
 
     # make or clear dir for subdfs ----------------------------------------------
-    subdf_path = f'{data_path}/output/pvalloc_run/topo_time_subdf'
+    subdf_path = f'{pvalloc_path}/topo_time_subdf'
 
     if not os.path.exists(subdf_path):
         os.makedirs(subdf_path)
@@ -207,7 +209,7 @@ def calc_economics_in_topo_df(
             hotsummer_hours = pvalloc_settings['panel_efficiency_specs']['hotsummer_hours']
             hot_hours_discount = pvalloc_settings['panel_efficiency_specs']['hot_hours_discount']
 
-            HOY_weatheryear_df = pd.read_parquet(f'{data_path}/output/pvalloc_run/HOY_weatheryear_df.parquet')
+            HOY_weatheryear_df = pd.read_parquet(f'{pvalloc_path}/HOY_weatheryear_df.parquet')
             hot_hours_in_year = HOY_weatheryear_df.loc[(HOY_weatheryear_df['month'].isin(summer_months)) & (HOY_weatheryear_df['hour'].isin(hotsummer_hours))]
             subdf['panel_efficiency'] = np.where(
                 subdf['t'].isin(hot_hours_in_year['t']),
@@ -308,14 +310,17 @@ def initiate_gridprem(
     wd_path = pvalloc_settings['wd_path']
     data_path = f'{wd_path}_data'
     name_dir_import = pvalloc_settings['name_dir_import']
+    pvalloc_path = pvalloc_settings['pvalloc_path'] 
+    preprep_name_dir_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
+
     print_to_logfile(f'run function: initiate_gridprem', pvalloc_settings['log_file_name'])
 
     # setup -----------------------------------------------------
-    if os.path.exists(f'{data_path}/output/pvalloc_run/gridprem_ts.parquet'):
-        os.remove(f'{data_path}/output/pvalloc_run/gridprem_ts.parquet')    
+    if os.path.exists(f'{pvalloc_path}/gridprem_ts.parquet'):
+        os.remove(f'{pvalloc_path}/gridprem_ts.parquet')    
 
     # import -----------------------------------------------------
-    dsonodes_df = pd.read_parquet(f'{data_path}/output/{name_dir_import}/dsonodes_df.parquet')
+    dsonodes_df = pd.read_parquet(f'{preprep_name_dir_path}/dsonodes_df.parquet')
     t_range = [f't_{t}' for t in range(1,8760 + 1)]
 
     dsonodes_df.drop(columns=['EGID'], inplace=True)
@@ -327,7 +332,7 @@ def initiate_gridprem(
     gridprem_ts.drop(columns='kVA_threshold', inplace=True)
 
     # export -----------------------------------------------------
-    gridprem_ts.to_parquet(f'{data_path}/output/pvalloc_run/gridprem_ts.parquet')
+    gridprem_ts.to_parquet(f'{pvalloc_path}/gridprem_ts.parquet')
 
 
 
@@ -347,6 +352,9 @@ def update_gridprem(
     data_path = f'{wd_path}_data'
     show_debug_prints = pvalloc_settings['show_debug_prints']
     log_file_name = pvalloc_settings['log_file_name']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
+    preprep_name_dir_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
+
 
     gridtiers = pvalloc_settings['gridprem_adjustment_specs']['tiers']
     gridtiers_colnames = pvalloc_settings['gridprem_adjustment_specs']['colnames']
@@ -358,9 +366,9 @@ def update_gridprem(
     i_m = i_month_func
 
     # import  -----------------------------------------------------
-    # topo = json.load(open(f'{data_path}/output/pvalloc_run/topo_egid.json', 'r'))
+    # topo = json.load(open(f'{pvalloc_path}/topo_egid.json', 'r'))
     # dsonodes_df = pd.read_parquet(f'{data_path}/output/{name_dir_import}/dsonodes_df.parquet')
-    # gridprem_ts = pd.read_parquet(f'{data_path}/output/pvalloc_run/gridprem_ts.parquet')
+    # gridprem_ts = pd.read_parquet(f'{pvalloc_path}/gridprem_ts.parquet')
     # pv = df_list[df_names.index('pv')]
     topo = json.load(open(f'{subdir_path_def}/topo_egid.json', 'r'))
     dsonodes_df = pd.read_parquet(f'{subdir_path_def}/dsonodes_df.parquet')
@@ -384,7 +392,7 @@ def update_gridprem(
     checkpoint_to_logfile(f'**DEBUGGIG** > end loop through topo_egid', log_file_name, 1)
 
     # import topo_time_subdfs -----------------------------------------------------
-    # topo_subdf_paths = glob.glob(f'{data_path}/output/pvalloc_run/topo_time_subdf/*.parquet')
+    # topo_subdf_paths = glob.glob(f'{pvalloc_path}/topo_time_subdf/*.parquet')
     checkpoint_to_logfile(f'**DEBUGGIG** > start loop through subdfs', log_file_name, 1)
 
     topo_subdf_paths = glob.glob(f'{subdir_path_def}/topo_subdf_*.parquet')
@@ -489,7 +497,7 @@ def update_gridprem(
     # export by Month -----------------------------------------------------
     if pvalloc_settings['MC_loop_specs']['keep_files_month_iter_TF']:
         if i_m < pvalloc_settings['MC_loop_specs']['keep_files_month_iter_max']:
-            # gridprem_node_by_M_path = f'{data_path}/output/pvalloc_run/pred_gridprem_node_by_M'
+            # gridprem_node_by_M_path = f'{pvalloc_path}/pred_gridprem_node_by_M'
             gridprem_node_by_M_path = f'{subdir_path_def}/pred_gridprem_node_by_M'
             if not os.path.exists(gridprem_node_by_M_path):
                 os.makedirs(gridprem_node_by_M_path)
@@ -523,6 +531,8 @@ def update_npv_df(pvalloc_settings,
     data_path = f'{wd_path}_data'
     show_debug_prints = pvalloc_settings['show_debug_prints']
     log_file_name = pvalloc_settings['log_file_name']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
+    preprep_name_dir_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
 
     topo_subdf_partitioner = pvalloc_settings['algorithm_specs']['topo_subdf_partitioner']
     selfconsum_rate = pvalloc_settings['tech_economic_specs']['self_consumption_ifapplicable']
@@ -545,8 +555,8 @@ def update_npv_df(pvalloc_settings,
 
 
     # import -----------------------------------------------------
-    # gridprem_ts = pd.read_parquet(f'{data_path}/output/pvalloc_run/gridprem_ts.parquet')
-    # topo = json.load(open(f'{data_path}/output/pvalloc_run/topo_egid.json', 'r'))
+    # gridprem_ts = pd.read_parquet(f'{pvalloc_path}/gridprem_ts.parquet')
+    # topo = json.load(open(f'{pvalloc_path}/topo_egid.json', 'r'))
     gridprem_ts = pd.read_parquet(f'{subdir_path_def}/gridprem_ts.parquet')
     topo = json.load(open(f'{subdir_path_def}/topo_egid.json', 'r'))
 
@@ -674,11 +684,11 @@ def update_npv_df(pvalloc_settings,
 
         # NPV calculation -----------------------------------------------------
         # estim_instcost_chfpkW, estim_instcost_chftotal = initial.estimate_iterpolate_instcost_function(pvalloc_settings)
-        if not os.path.exists(f'{data_path}/output/{name_dir_import}/pvinstcost_coefficients.json') == True:
+        if not os.path.exists(f'{preprep_name_dir_path }/pvinstcost_coefficients.json') == True:
             estim_instcost_chfpkW, estim_instcost_chftotal = initial.estimate_iterpolate_instcost_function(pvalloc_settings)
             estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 
-        elif os.path.exists(f'{data_path}/output/{name_dir_import}/pvinstcost_coefficients.json') == True:    
+        elif os.path.exists(f'{preprep_name_dir_path }/pvinstcost_coefficients.json') == True:    
             estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
             estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 

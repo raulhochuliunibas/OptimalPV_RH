@@ -42,9 +42,7 @@ def import_prepre_AND_create_topology(
     """
 
     # import settings + setup -------------------
-    script_run_on_server = pvalloc_settings['script_run_on_server']
     name_dir_import = pvalloc_settings['name_dir_import']
-    fast_debug = pvalloc_settings['fast_debug_run']
     show_debug_prints = pvalloc_settings['show_debug_prints']
     wd_path = pvalloc_settings['wd_path']
     data_path = pvalloc_settings['data_path']
@@ -52,6 +50,9 @@ def import_prepre_AND_create_topology(
     summary_file_name = pvalloc_settings['summary_file_name']
     bfs_number = pvalloc_settings['bfs_numbers']
     gwr_selection_specs = pvalloc_settings['gwr_selection_specs']
+    preprep_path = f'{pvalloc_settings["data_path"]}/{pvalloc_settings["preprep_name_dir_preffix"]}'
+    pvalloc_path = pvalloc_settings['pvalloc_path']
+    preprep_name_dir_import_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
     print_to_logfile('run function: import_prepreped_data', log_file_name)
 
 
@@ -76,8 +77,8 @@ def import_prepre_AND_create_topology(
     # gm_shp = gpd.read_file(f'{data_path}\input\swissboundaries3d_2023-01_2056_5728.shp\swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
 
     # GWR -------
-    gwr_gdf = gpd.read_file(f'{data_path}/output/{name_dir_import}/gwr_gdf.geojson')
-    gwr = pd.read_parquet(f'{data_path}/output/{name_dir_import}/gwr.parquet')
+    gwr_gdf = gpd.read_file(f'{preprep_name_dir_import_path}/gwr_gdf.geojson')
+    gwr = pd.read_parquet(f'{preprep_name_dir_import_path}/gwr.parquet')
     gwr['EGID'] = gwr['EGID'].astype(str)
     
     # gwr['GBAUJ'] = gwr['GBAUJ'].replace('', 0).astype(int)
@@ -95,7 +96,7 @@ def import_prepre_AND_create_topology(
     gwr = copy.deepcopy(gwr)
 
     # SOLKAT -------
-    solkat = pd.read_parquet(f'{data_path}/output/{name_dir_import}/solkat.parquet')
+    solkat = pd.read_parquet(f'{preprep_name_dir_import_path}/solkat.parquet')
     solkat['EGID'] = solkat['EGID'].fillna('').astype(str)
     solkat['DF_UID'] = solkat['DF_UID'].fillna('').astype(str)
     solkat['DF_NUMMER'] = solkat['DF_NUMMER'].fillna('').astype(str)
@@ -128,12 +129,12 @@ def import_prepre_AND_create_topology(
 
 
     # SOLKAT MONTH -------
-    solkat_month = pd.read_parquet(f'{data_path}/output/{name_dir_import}/solkat_month.parquet')
+    solkat_month = pd.read_parquet(f'{preprep_name_dir_import_path}/solkat_month.parquet')
     solkat_month['DF_UID'] = solkat_month['DF_UID'].fillna('').astype(str)
 
 
     # PV -------
-    pv = pd.read_parquet(f'{data_path}/output/{name_dir_import}/pv.parquet')
+    pv = pd.read_parquet(f'{preprep_name_dir_import_path}/pv.parquet')
     pv['xtf_id'] = pv['xtf_id'].fillna(0).astype(int).replace(0, '').astype(str)    
     pv['TotalPower'] = pv['TotalPower'].fillna(0).astype(float)
 
@@ -150,8 +151,8 @@ def import_prepre_AND_create_topology(
     pvtarif_year = pvalloc_settings['tech_economic_specs']['pvtarif_year']
     pvtarif_col = pvalloc_settings['tech_economic_specs']['pvtarif_col']
     
-    Map_gm_ewr = pd.read_parquet(f'{data_path}/output/{name_dir_import}/Map_gm_ewr.parquet')
-    pvtarif = pd.read_parquet(f'{data_path}/output/{name_dir_import}/pvtarif.parquet')
+    Map_gm_ewr = pd.read_parquet(f'{preprep_name_dir_import_path}/Map_gm_ewr.parquet')
+    pvtarif = pd.read_parquet(f'{preprep_name_dir_import_path}/pvtarif.parquet')
     pvtarif = pvtarif.merge(Map_gm_ewr, how='left', on='nrElcom')
 
     pvtarif['bfs'] = pvtarif['bfs'].astype(str)
@@ -170,19 +171,19 @@ def import_prepre_AND_create_topology(
 
 
     # ELECTRICITY PRICE -------
-    elecpri = pd.read_parquet(f'{data_path}/output/{name_dir_import}/elecpri.parquet')
+    elecpri = pd.read_parquet(f'{preprep_name_dir_import_path}/elecpri.parquet')
     elecpri['bfs_number'] = elecpri['bfs_number'].astype(str)
 
 
     # Map solkat_dfuid > egid -------
-    Map_solkatdfuid_egid = pd.read_parquet(f'{data_path}/output/{name_dir_import}/Map_solkatdfuid_egid.parquet')
+    Map_solkatdfuid_egid = pd.read_parquet(f'{preprep_name_dir_import_path}/Map_solkatdfuid_egid.parquet')
     # Map_solkatdfuid_egid['EGID'] = Map_solkatdfuid_egid['EGID'].fillna(0).astype(int).astype(str)
     # Map_solkatdfuid_egid.replace({'EGID': '0'}, '', inplace=True)
     # Map_solkatdfuid_egid['DF_UID'] = Map_solkatdfuid_egid['DF_UID'].astype(int).astype(str)
     
 
     # Map solkat_egid > pv -------
-    Map_egid_pv = pd.read_parquet(f'{data_path}/output/{name_dir_import}/Map_egid_pv.parquet')
+    Map_egid_pv = pd.read_parquet(f'{preprep_name_dir_import_path}/Map_egid_pv.parquet')
     Map_egid_pv = Map_egid_pv.dropna()
     Map_egid_pv['EGID'] = Map_egid_pv['EGID'].astype(int).astype(str)
     Map_egid_pv['xtf_id'] = Map_egid_pv['xtf_id'].fillna('').astype(int).astype(str)
@@ -190,34 +191,34 @@ def import_prepre_AND_create_topology(
 
     # Map demandtypes > egid -------
     # NOTE: CLEAN UP when aggregation is adjusted, should be no longer used!
-    if os.path.exists(f'{data_path}/output/{name_dir_import}/Map_demandtype_EGID.json'):
-        with open(f'{data_path}/output/{name_dir_import}/Map_demandtype_EGID.json', 'r') as file:
+    if os.path.exists(f'{preprep_name_dir_import_path}/Map_demandtype_EGID.json'):
+        with open(f'{preprep_name_dir_import_path}/Map_demandtype_EGID.json', 'r') as file:
             Map_demandtypes_egid = json.load(file)
 
-    elif os.path.exists(f'{data_path}/output/{name_dir_import}/Map_demand_type_gwrEGID.json'):
-        with open(f'{data_path}/output/{name_dir_import}/Map_demand_type_gwrEGID.json', 'r') as file:
+    elif os.path.exists(f'{preprep_name_dir_import_path}/Map_demand_type_gwrEGID.json'):
+        with open(f'{preprep_name_dir_import_path}/Map_demand_type_gwrEGID.json', 'r') as file:
             Map_demandtypes_egid = json.load(file)
 
 
     # Map egid > demandtypes -------
-    with open(f'{data_path}/output/{name_dir_import}/Map_EGID_demandtypes.json', 'r') as file:
+    with open(f'{preprep_name_dir_import_path}/Map_EGID_demandtypes.json', 'r') as file:
         Map_egid_demandtypes = json.load(file)
 
 
     # Map egid > node -------
-    Map_egid_dsonode = pd.read_parquet(f'{data_path}/output/{name_dir_import}/Map_egid_dsonode.parquet')
+    Map_egid_dsonode = pd.read_parquet(f'{preprep_name_dir_import_path}/Map_egid_dsonode.parquet')
     Map_egid_dsonode['EGID'] = Map_egid_dsonode['EGID'].astype(str)
     Map_egid_dsonode['grid_node'] = Map_egid_dsonode['grid_node'].astype(str)
     Map_egid_dsonode.index = Map_egid_dsonode['EGID']
 
 
     # dsonodes data -------
-    dsonodes_df  = pd.read_parquet(f'{data_path}/output/{name_dir_import}/dsonodes_df.parquet')
-    dsonodes_gdf = gpd.read_file(f'{data_path}/output/{name_dir_import}/dsonodes_gdf.geojson')
+    dsonodes_df  = pd.read_parquet(f'{preprep_name_dir_import_path}/dsonodes_df.parquet')
+    dsonodes_gdf = gpd.read_file(f'{preprep_name_dir_import_path}/dsonodes_gdf.geojson')
 
 
     # angle_tilt_df -------
-    angle_tilt_df = pd.read_parquet(f'{data_path}/output/{name_dir_import}/angle_tilt_df.parquet')
+    angle_tilt_df = pd.read_parquet(f'{preprep_name_dir_import_path}/angle_tilt_df.parquet')
 
 
     # PV Cost functions --------
@@ -476,19 +477,19 @@ def import_prepre_AND_create_topology(
     # EXPORT TOPO + Mappings ============================================================================
     topo_egid
 
-    with open(f'{data_path}/output/pvalloc_run/topo_egid.txt', 'w') as f:
+    with open(f'{pvalloc_path}/topo_egid.txt', 'w') as f:
         f.write(str(topo_egid))
     
-    with open(f'{data_path}/output/pvalloc_run/topo_egid.json', 'w') as f:
+    with open(f'{pvalloc_path}/topo_egid.json', 'w') as f:
         json.dump(topo_egid, f)
 
     # Export CHECK_egid_with_problems to txt file for trouble shooting
-    with open(f'{data_path}/output/pvalloc_run/CHECK_egid_with_problems.txt', 'w') as f:
+    with open(f'{pvalloc_path}/CHECK_egid_with_problems.txt', 'w') as f:
         f.write(f'\n ** EGID with problems: {len(CHECK_egid_with_problems)} **\n\n')
         f.write(str(CHECK_egid_with_problems))
 
     CHECK_egid_with_problems_dict = {egid: problem for egid, problem in CHECK_egid_with_problems}
-    with open(f'{data_path}/output/pvalloc_run/CHECK_egid_with_problems.json', 'w') as f:
+    with open(f'{pvalloc_path}/CHECK_egid_with_problems.json', 'w') as f:
         json.dump(CHECK_egid_with_problems_dict, f)
 
 
@@ -502,12 +503,12 @@ def import_prepre_AND_create_topology(
     df_list =  [ Map_egid_pv,   solkat_month,   pv,   pvtarif,   elecpri,   Map_egid_dsonode,   dsonodes_df,   dsonodes_gdf,   angle_tilt_df, ]
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):
-            m.to_parquet(f'{data_path}/output/pvalloc_run/{df_names[i]}.parquet')
+            m.to_parquet(f'{pvalloc_path}/{df_names[i]}.parquet')
         elif isinstance(m, dict):
-            with open(f'{data_path}/output/pvalloc_run/{df_names[i]}.json', 'w') as f:
+            with open(f'{pvalloc_path}/{df_names[i]}.json', 'w') as f:
                 json.dump(m, f)        
         elif isinstance(m, gpd.GeoDataFrame):
-            m.to_file(f'{data_path}/output/pvalloc_run/{df_names[i]}.geojson', driver='GeoJSON')
+            m.to_file(f'{pvalloc_path}/{df_names[i]}.geojson', driver='GeoJSON')
 
     # RETURN OBJECTS ============================================================================
     return topo_egid, df_list, df_names
@@ -558,11 +559,13 @@ def import_ts_data(
     # import settings + setup -------------------
     script_run_on_server = pvalloc_settings['script_run_on_server']
     name_dir_import = pvalloc_settings['name_dir_import']
-    fast_debug = pvalloc_settings['fast_debug_run']
     show_debug_prints = pvalloc_settings['show_debug_prints']
     wd_path = pvalloc_settings['wd_path']
     data_path = pvalloc_settings['data_path']
     log_file_name = pvalloc_settings['log_file_name']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
+    preprep_name_dir_import_path = f'{pvalloc_settings["data_path"]}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
+
     print_to_logfile('run function: import_ts_data', log_file_name)
 
 
@@ -584,7 +587,7 @@ def import_ts_data(
     # IMPORT ----------------------------------------------------------------------------
 
     # demand types --------
-    demandtypes_tformat = pd.read_parquet(f'{data_path}/output/{name_dir_import}/demandtypes.parquet')
+    demandtypes_tformat = pd.read_parquet(f'{preprep_name_dir_import_path}/demandtypes.parquet')
     demandtypes_ts = demandtypes_tformat.copy()
 
     nas =   sum([demandtypes_ts[col].isna().sum() for col in demandtypes_ts.columns])
@@ -598,7 +601,7 @@ def import_ts_data(
     meteo_col_temperature = pvalloc_settings['weather_specs']['meteo_col_temperature']
     weater_year = pvalloc_settings['weather_specs']['weather_year']
 
-    meteo = pd.read_parquet(f'{data_path}/output/{name_dir_import}/meteo.parquet')
+    meteo = pd.read_parquet(f'{preprep_name_dir_import_path}/meteo.parquet')
     meteo_cols = ['timestamp', meteo_col_dir_radiation, meteo_col_diff_radiation, meteo_col_temperature]
     meteo = meteo.loc[:,meteo_cols]
 
@@ -621,11 +624,11 @@ def import_ts_data(
 
     # # grid premium --------
     # setup 
-    if os.path.exists(f'{data_path}/output/pvalloc_run/gridprem_ts.parquet'):
-        os.remove(f'{data_path}/output/pvalloc_run/gridprem_ts.parquet')    
+    if os.path.exists(f'{pvalloc_path}/gridprem_ts.parquet'):
+        os.remove(f'{pvalloc_path}/gridprem_ts.parquet')    
 
     # import 
-    dsonodes_df = pd.read_parquet(f'{data_path}/output/{name_dir_import}/dsonodes_df.parquet')
+    dsonodes_df = pd.read_parquet(f'{preprep_name_dir_import_path}/dsonodes_df.parquet')
     t_range = [f't_{t}' for t in range(1,8760 + 1)]
 
     gridprem_ts = pd.DataFrame(np.repeat(dsonodes_df.values, len(t_range), axis=0), columns=dsonodes_df.columns)  
@@ -636,7 +639,7 @@ def import_ts_data(
     gridprem_ts.drop(columns='kVA_threshold', inplace=True)
 
     # export 
-    gridprem_ts.to_parquet(f'{data_path}/output/pvalloc_run/gridprem_ts.parquet')
+    gridprem_ts.to_parquet(f'{pvalloc_path}/gridprem_ts.parquet')
 
     
 
@@ -647,7 +650,7 @@ def import_ts_data(
     ts_names = ['Map_daterange', 'demandtypes_ts', 'meteo_ts', 'gridprem_ts' ]
     ts_list =  [ Map_daterange,   demandtypes_ts,   meteo_ts,   gridprem_ts]
     for i, ts in enumerate(ts_list):
-        ts.to_parquet(f'{data_path}/output/pvalloc_run/{ts_names[i]}.parquet')
+        ts.to_parquet(f'{pvalloc_path}/{ts_names[i]}.parquet')
 
 
     # RETURN ----------------------------------------------------------------------------
@@ -667,8 +670,9 @@ def get_estim_instcost_function(pvalloc_settings):
     data_path = f'{wd_path}_data'
     name_dir_import = pvalloc_settings['name_dir_import']
     log_file_name = pvalloc_settings['log_file_name']
+    preprep_name_dir_import_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{pvalloc_settings["name_dir_import"]}'
 
-    with open(f'{data_path}/output/{name_dir_import}/pvinstcost_coefficients.json', 'r') as file:
+    with open(f'{preprep_name_dir_import_path}/pvinstcost_coefficients.json', 'r') as file:
         pvinstcost_coefficients = json.load(file)
     params_pkW = pvinstcost_coefficients['params_pkW']
     # coefs_total = pvinstcost_coefficients['coefs_total']
@@ -699,6 +703,10 @@ def estimate_iterpolate_instcost_function(pvalloc_settings):
     data_path_def = f'{wd_path}_data'
     name_dir_import = pvalloc_settings['name_dir_import']
     log_file_name_def = pvalloc_settings['log_file_name']
+    # preprep_path = f'{pvalloc_settings["data_path"]}/{pvalloc_settings["preprep_name_dir_preffix"]}'
+    preprep_name_dir_import_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{pvalloc_settings["name_dir_import"]}'
+
+
 
     # data import ----- (copied from energie rechner schweiz doucmentation)
     installation_cost_dict = {
@@ -781,10 +789,10 @@ def estimate_iterpolate_instcost_function(pvalloc_settings):
     }
 
     # export 
-    with open(f'{data_path_def}/output/{name_dir_import}/pvinstcost_coefficients.json', 'w') as f:
+    with open(f'{preprep_name_dir_import_path}/pvinstcost_coefficients.json', 'w') as f:
         json.dump(pvinstcost_coefficients, f)
 
-    np.save(f'{data_path_def}/output/{name_dir_import}/pvinstcost_coefficients.npy', pvinstcost_coefficients)
+    np.save(f'{preprep_name_dir_import_path}/pvinstcost_coefficients.npy', pvinstcost_coefficients)
 
 
     # plot installation cost df + intrapolation functions -------------------
@@ -820,11 +828,12 @@ def estimate_iterpolate_instcost_function(pvalloc_settings):
         # Export the plots
         plt.tight_layout()
         # plt.show()
-        plt.savefig(f'{data_path_def}/output/{name_dir_import}/pvinstcost_table.png')
+        plt.savefig(f'{preprep_name_dir_import_path}/pvinstcost_table.png')
+    preprep_name_dir_import_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{pvalloc_settings["name_dir_import"]}'
 
     # export cost df -------------------
-    installation_cost_df.to_parquet(f'{data_path_def}/output/{name_dir_import}/pvinstcost_table.parquet')
-    installation_cost_df.to_csv(f'{data_path_def}/output/{name_dir_import}/pvinstcost_table.csv')
+    installation_cost_df.to_parquet(f'{preprep_name_dir_import_path}/pvinstcost_table.parquet')
+    installation_cost_df.to_csv(f'{preprep_name_dir_import_path}/pvinstcost_table.csv')
     checkpoint_to_logfile(f'exported pvinstcost_table', log_file_name_def=log_file_name_def, n_tabs_def = 5)
 
     return estim_instcost_chfpkW, estim_instcost_chftotal
@@ -851,10 +860,10 @@ def define_construction_capacity(
 
     # import settings + setup -------------------
     script_run_on_server = pvalloc_settings['script_run_on_server']
-    fast_debug = pvalloc_settings['fast_debug_run']   
     show_debug_prints = pvalloc_settings['show_debug_prints']
     name_dir_import = pvalloc_settings['name_dir_import']
     data_path = pvalloc_settings['data_path']
+    pvalloc_path = pvalloc_settings['pvalloc_path']
     log_file_name = pvalloc_settings['log_file_name']
 
     topo = topo_func
@@ -875,10 +884,6 @@ def define_construction_capacity(
 
 
     # IMPORT ----------------------------------------------------------------------------
-    # Map_daterange = ts_list[0]
-    # pv = pd.read_parquet(f'{data_path}/output/{name_dir_import}/pv.parquet')
-    # Map_egid_pv = pd.read_parquet(f'{data_path}/output/{name_dir_import}/Map_egid_pv.parquet')
-
     Map_daterange = ts_list[ts_names.index('Map_daterange')]
     pv = df_list[df_names.index('pv')]
     Map_egid_pv = df_list[df_names.index('Map_egid_pv')]
@@ -938,7 +943,7 @@ def define_construction_capacity(
         )
         fig = go.Figure(data=[trace_weekly, trace_monthly, trace_yearly], layout=layout)
         # fig.show()
-        fig.write_html(f'{data_path}/output/pvalloc_run/pv_total_power_over_time.html')
+        fig.write_html(f'{pvalloc_path}/pv_total_power_over_time.html')
 
 
     # CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
@@ -981,11 +986,11 @@ def define_construction_capacity(
 
 
     # EXPORT ----------------------------------------------------------------------------
-    constrcapa.to_parquet(f'{data_path}/output/pvalloc_run/constrcapa.parquet')
-    constrcapa.to_csv(f'{data_path}/output/pvalloc_run/constrcapa.csv', index=False)
+    constrcapa.to_parquet(f'{pvalloc_path}/constrcapa.parquet')
+    constrcapa.to_csv(f'{pvalloc_path}/constrcapa.csv', index=False)
 
-    months_prediction_df.to_parquet(f'{data_path}/output/pvalloc_run/months_prediction.parquet')
-    months_prediction_df.to_csv(f'{data_path}/output/pvalloc_run/months_prediction.csv', index=False)
+    months_prediction_df.to_parquet(f'{pvalloc_path}/months_prediction.parquet')
+    months_prediction_df.to_csv(f'{pvalloc_path}/months_prediction.csv', index=False)
 
     return constrcapa, months_prediction, months_lookback
 
