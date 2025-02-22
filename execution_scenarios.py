@@ -68,7 +68,6 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
     scen_group_dir = {}
     
     all_scenarios = {
-
     'pvalloc_BFS2761_1y_f2021_1mc_meth2.2_rnd_DEBUG':{
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
@@ -99,24 +98,85 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'MC_loop_specs': {
             'montecarlo_iterations': 1,}
     },
+
     
-    'pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd':{
+    'pvalloc_BLsml_20y_5mc_meth2.2_SelfCons0_npv':{
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
             2768, 2761, 2772, 2785, 
         ],
-        'T0_prediction': '2013-01-01 00:00:00',
-        'months_prediction': 120,
+        'T0_prediction': '2023-01-01 00:00:00',
+        'months_prediction': 240,
         'gwr_selection_specs':{
             'GBAUJ_minmax': [1920, 2012],},
         'algorithm_specs': {
-            'inst_selection_method': 'random', },
+            'inst_selection_method': 'prob_weighted_npv', },
         'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
+            'pvprod_calc_method': 'method2.2',
+            'self_consumption_ifapplicable': 0, },
         'MC_loop_specs': {
-            'montecarlo_iterations': 1,}, 
+            'montecarlo_iterations': 5,}, 
     },
+    'pvalloc_BLsml_40y_5mc_meth2.2_SelfCons0_npv':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'T0_prediction': '2023-01-01 00:00:00',
+        'months_prediction': 480,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2012],},
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',
+            'self_consumption_ifapplicable': 0, },
+        'MC_loop_specs': {
+            'montecarlo_iterations': 5,}, 
+    },
+    
+    'pvalloc_BLSOmed_20y_5mc_meth2.2_SelfCons0_npv':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+        ],
+        'T0_prediction': '2023-01-01 00:00:00',
+        'months_prediction': 240,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2012],},
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',
+            'self_consumption_ifapplicable': 0, },
+        'MC_loop_specs': {
+            'montecarlo_iterations': 5,}, 
+    },    
+    'pvalloc_BLSOmed_40y_5mc_meth2.2_SelfCons0_npv':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+        ],
+        'T0_prediction': '2023-01-01 00:00:00',
+        'months_prediction': 480,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2012],},
+        'algorithm_specs': {
+            'inst_selection_method': 'prob_weighted_npv', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',
+            'self_consumption_ifapplicable': 0, },
+        'MC_loop_specs': {
+            'montecarlo_iterations': 5,}, 
+    },    
 
+    
     'pvalloc_BLsml_10y_f2013_1mc_meth2.2_max':{
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
@@ -133,6 +193,7 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'MC_loop_specs': {
             'montecarlo_iterations': 1,}, 
     },
+
 
     'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv':{
         'script_run_on_server': run_on_server,
@@ -182,6 +243,56 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'MC_loop_specs': {
             'montecarlo_iterations': 1,}, 
     },
+
+    'pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'T0_prediction': '2013-01-01 00:00:00',
+        'months_prediction': 120,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2012],},
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,}, 
+    },
+    'pvalloc_BLsml_20y_f2003_1mc_meth2.2_rnd':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'T0_prediction': '2003-01-01 00:00:00',
+        'months_prediction': 240,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2002],},
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,}, 
+    },
+    'pvalloc_BLsml_40y_f1983_1mc_meth2.2_rnd':{
+        'script_run_on_server': run_on_server,
+        'bfs_numbers': [
+            2768, 2761, 2772, 2785, 
+        ],
+        'T0_prediction': '1983-01-01 00:00:00',
+        'months_prediction': 480,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 1982],},
+        'algorithm_specs': {
+            'inst_selection_method': 'random', },
+        'tech_economic_specs': {
+            'pvprod_calc_method': 'method2.2',},
+        'MC_loop_specs': {
+            'montecarlo_iterations': 1,}, 
+    },
+
 
     'pvalloc_BLSOmed_10y_f2013_1mc_meth2.2_npv':{
         'script_run_on_server': run_on_server,
@@ -240,332 +351,8 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
         'MC_loop_specs': {
             'montecarlo_iterations': 1,}, 
     },
-
-
-
-
-    'pvalloc_BLsml_60m_10mc_meth2.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 10,}
-    },
-    'pvalloc_BLsml_60m_10mc_meth2.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 10,}
-    },
-
-
-    'pvalloc_BLsml_24m_6mc_meth2.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 6,}
-    },
-    'pvalloc_BLsml_24m_6mc_meth2.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 6,}
-    },
-
     
-    'pvalloc_BLsml_24m_meth2.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-    },
-    'pvalloc_BLsml_24m_meth2.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-    },
-    'pvalloc_BLsml_24m_meth3.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-    },
-    'pvalloc_BLsml_24m_meth3.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-    },
-    
-    'pvalloc_BLsml_24m_meth2.2_random_SelfConsum':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',
-            'self_consumption_ifapplicable': 1, },
-    },
-    'pvalloc_BLsml_24m_meth2.2_npvweight_SelfConsum':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',
-            'self_consumption_ifapplicable': 1, },
-    },
-    'pvalloc_BLsml_24m_meth3.2_random_SelfConsum':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',
-            'self_consumption_ifapplicable': 1, },
-    },
-    'pvalloc_BLsml_24m_meth3.2_npvweight_SelfConsum':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',
-            'self_consumption_ifapplicable': 1, },
-    },
-
-    'pvalloc_BLsml_24m_meth2.2_random_275pr_costdcr':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',
-            'estim_pvinst_cost_correctionfactor': 1.275},
-    },
-    'pvalloc_BLsml_24m_meth2.2_npvweight_275pr_costdcr':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',
-            'estim_pvinst_cost_correctionfactor': 1.275},
-    },
-    'pvalloc_BLsml_24m_meth3.2_random_275pr_costdcr':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',
-            'estim_pvinst_cost_correctionfactor': 1.275},
-    },
-    'pvalloc_BLsml_24m_meth3.2_npvweight_275pr_costdcr':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 24,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',
-            'estim_pvinst_cost_correctionfactor': 1.275},
-    },
-    
-    
-    'pvalloc_BLsml_5y_meth2.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-    },
-    'pvalloc_BLsml_5y_meth2.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-    },
-    'pvalloc_BLsml_5y_meth3.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-    },
-    'pvalloc_BLsml_5y_meth3.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-    },
-
-    'pvalloc_BLsml_5y_meth2.2_random_SelfConsum':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',
-            'self_consumption_ifapplicable': 1, },
-    },
-    'pvalloc_BLsml_5y_meth2.2_npvweight_SelfConsum':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',
-            'self_consumption_ifapplicable': 1, },
-    },
-    'pvalloc_BLsml_5y_meth3.2_random_SelfConsum':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',
-            'self_consumption_ifapplicable': 1, },
-    },
-    'pvalloc_BLsml_5y_meth3.2_npvweight_SelfConsum':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 60,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',
-            'self_consumption_ifapplicable': 1, },
-    },
-
-    
-
-    'pvalloc_BLSOmed_48m_meth2.2_random':{
-        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+    'pvalloc_BLSOmed_10y_f2013_1mc_meth2.2_rnd':{
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
             2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
@@ -573,16 +360,18 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
             2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
         ],
-        'months_prediction': 48,
+        'T0_prediction': '2013-01-01 00:00:00',
+        'months_prediction': 120,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2012],},
         'algorithm_specs': {
             'inst_selection_method': 'random', },
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
+            'montecarlo_iterations': 1,}, 
     },
-    'pvalloc_BLSOmed_48m_meth2.2_npvweight':{
-        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+    'pvalloc_BLSOmed_20y_f2003_1mc_meth2.2_rnd':{
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
             2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
@@ -590,110 +379,18 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
             2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
         ],
-        'months_prediction': 48,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
-    },              
-    'pvalloc_BLSOmed_48m_meth3.2_random':{
-        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
-            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
-            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
-            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
-        ],
-        'months_prediction': 48,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
-    },
-    'pvalloc_BLSOmed_48m_meth3.2_npvweight':{
-        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
-            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
-            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
-            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
-        ],
-        'months_prediction': 48,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
-    },
-
-
-    'pvalloc_BLsml_10y_meth2.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 120,
+        'T0_prediction': '2003-01-01 00:00:00',
+        'months_prediction': 240,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 2002],},
         'algorithm_specs': {
             'inst_selection_method': 'random', },
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
+            'montecarlo_iterations': 1,}, 
     },
-    'pvalloc_BLsml_10y_meth2.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 120,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
-    },
-    'pvalloc_BLsml_10y_meth3.2_random':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 120,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
-    },
-    'pvalloc_BLsml_10y_meth3.2_npvweight':{
-        'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785, 
-        ],
-        'months_prediction': 120,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
-    },
-
-
-    'pvalloc_BLSOmed_10y_meth2.2_random':{
-        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+    'pvalloc_BLSOmed_40y_f1983_1mc_meth2.2_rnd':{
         'script_run_on_server': run_on_server,
         'bfs_numbers': [
             2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
@@ -701,69 +398,542 @@ def get_pvalloc_execuction_scenarios(run_on_server, scen_group_names,  ):
             2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
             2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
         ],
-        'months_prediction': 120,
+        'T0_prediction': '1983-01-01 00:00:00',
+        'months_prediction': 480,
+        'gwr_selection_specs':{
+            'GBAUJ_minmax': [1920, 1982],},
         'algorithm_specs': {
             'inst_selection_method': 'random', },
         'tech_economic_specs': {
             'pvprod_calc_method': 'method2.2',},
         'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
+            'montecarlo_iterations': 1,}, 
     },
-    'pvalloc_BLSOmed_10y_meth2.2_npvweight':{
-        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
-            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
-            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
-            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
-        ],
-        'months_prediction': 120,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method2.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
-    },              
-    'pvalloc_BLSOmed_10y_meth3.2_random':{
-        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
-            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
-            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
-            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
-        ],
-        'months_prediction': 120,
-        'algorithm_specs': {
-            'inst_selection_method': 'random', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
-    },
-    'pvalloc_BLSOmed_10y_meth3.2_npvweight':{
-        'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
-        'script_run_on_server': run_on_server,
-        'bfs_numbers': [
-            2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
-            2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
-            2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
-            2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
-        ],
-        'months_prediction': 120,
-        'algorithm_specs': {
-            'inst_selection_method': 'prob_weighted_npv', },
-        'tech_economic_specs': {
-            'pvprod_calc_method': 'method3.2',},
-        'MC_loop_specs': {
-            'montecarlo_iterations': 2,}
-    },
-
 
 
     }
+    # old runs to be deleted ---------------------------
+    old_runs_to_be_deleted_as_scenarios = {
+        'pvalloc_BLsml_60m_10mc_meth2.2_random':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 10,}
+        },
+        'pvalloc_BLsml_60m_10mc_meth2.2_npvweight':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 10,}
+        },
+
+
+        'pvalloc_BLsml_24m_6mc_meth2.2_random':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 6,}
+        },
+        'pvalloc_BLsml_24m_6mc_meth2.2_npvweight':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 6,}
+        },
+
+        
+        'pvalloc_BLsml_24m_meth2.2_random':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+        },
+        'pvalloc_BLsml_24m_meth2.2_npvweight':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+        },
+        'pvalloc_BLsml_24m_meth3.2_random':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+        },
+        'pvalloc_BLsml_24m_meth3.2_npvweight':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+        },
+        
+        'pvalloc_BLsml_24m_meth2.2_random_SelfConsum':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',
+                'self_consumption_ifapplicable': 1, },
+        },
+        'pvalloc_BLsml_24m_meth2.2_npvweight_SelfConsum':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',
+                'self_consumption_ifapplicable': 1, },
+        },
+        'pvalloc_BLsml_24m_meth3.2_random_SelfConsum':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',
+                'self_consumption_ifapplicable': 1, },
+        },
+        'pvalloc_BLsml_24m_meth3.2_npvweight_SelfConsum':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',
+                'self_consumption_ifapplicable': 1, },
+        },
+
+        'pvalloc_BLsml_24m_meth2.2_random_275pr_costdcr':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',
+                'estim_pvinst_cost_correctionfactor': 1.275},
+        },
+        'pvalloc_BLsml_24m_meth2.2_npvweight_275pr_costdcr':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',
+                'estim_pvinst_cost_correctionfactor': 1.275},
+        },
+        'pvalloc_BLsml_24m_meth3.2_random_275pr_costdcr':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',
+                'estim_pvinst_cost_correctionfactor': 1.275},
+        },
+        'pvalloc_BLsml_24m_meth3.2_npvweight_275pr_costdcr':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 24,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',
+                'estim_pvinst_cost_correctionfactor': 1.275},
+        },
+        
+        
+        'pvalloc_BLsml_5y_meth2.2_random':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+        },
+        'pvalloc_BLsml_5y_meth2.2_npvweight':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+        },
+        'pvalloc_BLsml_5y_meth3.2_random':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+        },
+        'pvalloc_BLsml_5y_meth3.2_npvweight':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+        },
+
+        'pvalloc_BLsml_5y_meth2.2_random_SelfConsum':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',
+                'self_consumption_ifapplicable': 1, },
+        },
+        'pvalloc_BLsml_5y_meth2.2_npvweight_SelfConsum':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',
+                'self_consumption_ifapplicable': 1, },
+        },
+        'pvalloc_BLsml_5y_meth3.2_random_SelfConsum':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',
+                'self_consumption_ifapplicable': 1, },
+        },
+        'pvalloc_BLsml_5y_meth3.2_npvweight_SelfConsum':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 60,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',
+                'self_consumption_ifapplicable': 1, },
+        },
+
+        
+
+        'pvalloc_BLSOmed_48m_meth2.2_random':{
+            'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+                2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+                2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+                2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+            ],
+            'months_prediction': 48,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+        'pvalloc_BLSOmed_48m_meth2.2_npvweight':{
+            'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+                2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+                2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+                2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+            ],
+            'months_prediction': 48,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },              
+        'pvalloc_BLSOmed_48m_meth3.2_random':{
+            'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+                2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+                2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+                2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+            ],
+            'months_prediction': 48,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+        'pvalloc_BLSOmed_48m_meth3.2_npvweight':{
+            'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+                2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+                2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+                2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+            ],
+            'months_prediction': 48,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+
+
+        'pvalloc_BLsml_10y_meth2.2_random':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 120,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+        'pvalloc_BLsml_10y_meth2.2_npvweight':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 120,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+        'pvalloc_BLsml_10y_meth3.2_random':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 120,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+        'pvalloc_BLsml_10y_meth3.2_npvweight':{
+            'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785, 
+            ],
+            'months_prediction': 120,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+
+
+        'pvalloc_BLSOmed_10y_meth2.2_random':{
+            'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+                2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+                2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+                2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+            ],
+            'months_prediction': 120,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+        'pvalloc_BLSOmed_10y_meth2.2_npvweight':{
+            'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+                2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+                2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+                2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+            ],
+            'months_prediction': 120,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method2.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },              
+        'pvalloc_BLSOmed_10y_meth3.2_random':{
+            'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+                2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+                2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+                2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+            ],
+            'months_prediction': 120,
+            'algorithm_specs': {
+                'inst_selection_method': 'random', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+        'pvalloc_BLSOmed_10y_meth3.2_npvweight':{
+            'name_dir_import': 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
+            'script_run_on_server': run_on_server,
+            'bfs_numbers': [
+                2768, 2761, 2772, 2785,                             # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen
+                2473, 2475, 2480,                                   # SOsml: Dornach, Hochwald, Seewen
+                2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,     # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
+                2618, 2621, 2883, 2622, 2616,                       # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+            ],
+            'months_prediction': 120,
+            'algorithm_specs': {
+                'inst_selection_method': 'prob_weighted_npv', },
+            'tech_economic_specs': {
+                'pvprod_calc_method': 'method3.2',},
+            'MC_loop_specs': {
+                'montecarlo_iterations': 2,}
+        },
+
+
+
+        }
 
     for scen_name in scen_group_names:
         all_scen_names = all_scenarios.keys()

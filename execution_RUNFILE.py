@@ -13,22 +13,23 @@ from visualizations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-run_on_server =             False
+run_on_server =             True
 print_directory_stucture_to_txtfile(not(run_on_server))
 
-run_dataagg =               False
-run_alloc_init =            False
-run_alloc_MCalg =           False
+run_dataagg =               True
+run_alloc_init =            True
+run_alloc_MCalg =           True
 
 run_postprocess_analysis =  False
-run_visual =                True
+run_visual =                False
 
 
 # data_aggregation 
 dataagg_scenarios = execution_scenarios.get_dataagg_execution_scenarios(run_on_server,[
-    # 'preprep_BLBSSO_18to23_1and2homes_API_reimport',          # the large data_aggregation scenario, to preprepare split geometry data and inport slow API data
+    'preprep_BLBSSO_18to23_1and2homes_API_reimport',          # the large data_aggregation scenario, to preprepare split geometry data and inport slow API data
     'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',        
-    # 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',      # for larger BLSO sample
+    'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',      # for larger BLSO sample
+    # 'preprep_BLBSSO_22to23_extSolkatEGID_DFUIDduplicates',    
     ])
 dataagg_scenarios = extend_dataag_scen_with_defaults(dataagg_scenarios)
 
@@ -37,16 +38,30 @@ pvalloc_scenarios = execution_scenarios.get_pvalloc_execuction_scenarios(run_on_
     'pvalloc_BFS2761_12m_meth2.2_random_DEBUG', 
     # 'pvalloc_BFS2761_1y_f2021_1mc_meth2.2_rnd_DEBUG', 
     
-    # 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd', 
+    'pvalloc_BLsml_20y_5mc_meth2.2_SelfCons0_npv',
+    'pvalloc_BLsml_40y_5mc_meth2.2_SelfCons0_npv',
+
+    'pvalloc_BLSOmed_20y_5mc_meth2.2_SelfCons0_npv',
+    'pvalloc_BLSOmed_40y_5mc_meth2.2_SelfCons0_npv',
+    
     # 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_max', 
+    
     # 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv', 
-    # 'pvalloc_BLSOmed_10y_f2013_1mc_meth2.2_npv', 
-    
     # 'pvalloc_BLsml_20y_f2003_1mc_meth2.2_npv', 
-    # 'pvalloc_BLSOmed_20y_f2003_1mc_meth2.2_npv', 
-    
     # 'pvalloc_BLsml_40y_f1983_1mc_meth2.2_npv', 
+    
+    # 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd', 
+    'pvalloc_BLsml_20y_f2003_1mc_meth2.2_rnd',
+    'pvalloc_BLsml_40y_f1983_1mc_meth2.2_rnd',
+
+    # 'pvalloc_BLSOmed_10y_f2013_1mc_meth2.2_npv', 
+    # 'pvalloc_BLSOmed_20y_f2003_1mc_meth2.2_npv', 
     # 'pvalloc_BLSOmed_40y_f1983_1mc_meth2.2_npv', 
+
+    'pvalloc_BLSOmed_10y_f2013_1mc_meth2.2_rnd',
+    'pvalloc_BLSOmed_20y_f2003_1mc_meth2.2_rnd',
+    'pvalloc_BLSOmed_40y_f1983_1mc_meth2.2_rnd',
+
     ])
 pvalloc_scenarios = extend_pvalloc_scen_with_defaults(pvalloc_scenarios)
 
