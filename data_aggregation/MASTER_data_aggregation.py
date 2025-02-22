@@ -79,7 +79,7 @@ def MASTER_data_aggregation(dataagg_settings_func):
         data_path = f'{wd_path}_data'
             
         # create directory + log file
-        preprep_path = f'{data_path}/preprep_data/preprep_data__temp_to_be_renamed' 
+        preprep_path = f'{data_path}/preprep/preprep_data__temp_to_be_renamed' 
         if not os.path.exists(preprep_path):
             os.makedirs(preprep_path)
         log_name = f'{preprep_path}/preprep_data_log.txt'
@@ -146,7 +146,7 @@ def MASTER_data_aggregation(dataagg_settings_func):
 
     if not pq_dir_exists_TF or pq_files_rerun:
         subchapter_to_logfile('pre-prep data: SQL GWR DATA', log_name)
-        # sql_gwr.sql_gwr_data(dataagg_settings_def=dataagg_settings)
+        sql_gwr.sql_gwr_data(dataagg_settings_def=dataagg_settings)
 
         subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', log_name)
         # local_data_to_parquet_AND_create_spatial_mappings_bySBUUID(dataagg_settings_def = dataagg_settings)
@@ -188,7 +188,7 @@ def MASTER_data_aggregation(dataagg_settings_func):
     
     # COPY & RENAME AGGREGATED DATA FOLDER ---------------------------------------------------------------
     # > not to overwrite completed preprep folder while debugging 
-    dir_dataagg_moveto = f'{data_path}/preprep_data/{dataagg_settings["name_dir_export"]}'
+    dir_dataagg_moveto = f'{data_path}/preprep/{dataagg_settings["name_dir_export"]}'
     if os.path.exists(dir_dataagg_moveto):
         n_same_names = len(glob.glob(f'{dir_dataagg_moveto}*'))
         old_dir_rename = f'{dir_dataagg_moveto} ({n_same_names})'

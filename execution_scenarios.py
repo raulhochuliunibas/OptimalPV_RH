@@ -9,23 +9,13 @@ def get_dataagg_execution_scenarios(run_on_server, scen_group_names,  ):
             'kt_numbers': [13,12,11],
             'year_range': [2018, 2023], 
             'split_data_geometry_AND_slow_api': True, 
-            'gwr_selection_specs': {'GKLAS': ['1110','1121','1276'],}, 
-        },
-
-
-        'preprep_BL_22to23_1and2homes_incl_missingEGID':{
-            'script_run_on_server': run_on_server, 
-            'kt_numbers': [13,], 
-            'year_range': [2022, 2023],   
-            'split_data_geometry_AND_slow_api': False, 
             'gwr_selection_specs': 
-                {'GKLAS': ['1110','1121',],},
+                {'GKLAS': ['1110','1121','1276'],}, 
             'solkat_selection_specs': {
                 'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
                 'match_missing_EGIDs_to_solkat_TF': True, 
-                'extend_dfuid_for_missing_EGIDs_to_be_unique': True,},
+                'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
         },
-        
         'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates':{
             'script_run_on_server': run_on_server, 
             'kt_numbers': [13,], 
@@ -38,10 +28,21 @@ def get_dataagg_execution_scenarios(run_on_server, scen_group_names,  ):
                 'match_missing_EGIDs_to_solkat_TF': True, 
                 'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
         },
-
         'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates':{
             'script_run_on_server': run_on_server, 
             'kt_numbers': [13,11], 
+            'year_range': [2022, 2023],   
+            'split_data_geometry_AND_slow_api': False, 
+            'gwr_selection_specs': 
+                {'GKLAS': ['1110','1121',],},
+            'solkat_selection_specs': {
+                'cols_adjust_for_missEGIDs_to_solkat': ['FLAECHE','STROMERTRAG'],
+                'match_missing_EGIDs_to_solkat_TF': True, 
+                'extend_dfuid_for_missing_EGIDs_to_be_unique': False,},
+        },
+        'preprep_BLBSSO_22to23_extSolkatEGID_DFUIDduplicates':{
+            'script_run_on_server': run_on_server, 
+            'kt_numbers': [13,12,11], 
             'year_range': [2022, 2023],   
             'split_data_geometry_AND_slow_api': False, 
             'gwr_selection_specs': 
