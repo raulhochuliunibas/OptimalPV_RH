@@ -1,176 +1,145 @@
 import sys
 import os as os
-import numpy as np
 import pandas as pd
 import geopandas as gpd
-import winsound
-import json
-import plotly.express as px
-import glob
 import  sqlite3
 import shutil
 
-from datetime import datetime
 from shapely.geometry import Point
 
-sys.path.append('..')
-from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr
+
+
+# own modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from auxiliary.auxiliary_functions import checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr
 
 
 
 # ------------------------------------------------------------------------------------------------------
 # SPLIT DATA AND GEOMETRY
 # ------------------------------------------------------------------------------------------------------
-def split_data_and_geometry(
-        dataagg_settings_def,):
+def split_data_geometry(scen,):
     """
     Split data and geometry for all geo data frames for faster importing later on
     """
     
-    # import settings + setup -------------------
-    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
-    bfs_number_def = dataagg_settings_def['bfs_numbers']
-    year_range_def = dataagg_settings_def['year_range']
-    smaller_import_def = dataagg_settings_def['smaller_import']
-    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
-    log_file_name_def = dataagg_settings_def['log_file_name']
-    wd_path_def = dataagg_settings_def['wd_path']
-    data_path_def = dataagg_settings_def['data_path']
-
-    gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
-    solkat_selection_specs_def = dataagg_settings_def['solkat_selection_specs']
-    print_to_logfile('run function: split_data_and_geometry.py', log_file_name_def)
-
-    # create folder if not exists
-    if not os.path.exists(f'{data_path_def}/input_split_data_geometry'):
-        os.makedirs(f'{data_path_def}/input_split_data_geometry')
+    # SETUP --------------------------------------
+    print_to_logfile('run function: split_data_and_geometry.py', scen.log_name)
+    os.makedirs(f'{scen.data_path}/input_split_data_geometry', exist_ok=True)
 
 
-    # IMPORT DATA --------------------------------------
-    gm_shp_gdf = gpd.read_file(f'{data_path_def}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-    
+    # IMPORT DATA --------------------------------------   
+    gm_shp_df = gpd.read_file(f'{scen.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+
     # Function: Merge GM BFS numbers to spatial data sources
-    def attach_bfs_to_spatial_data(gdf, gm_shp_gdf, keep_cols = ['BFS_NUMMER', 'geometry' ]):
+    def attach_bfs_to_spatial_data(gdf, gm_shp_df, keep_cols = ['BFS_NUMMER', 'geometry' ]):
         """
         Function to attach BFS numbers to spatial data sources
         """
-        gdf.set_crs(gm_shp_gdf.crs, allow_override=True, inplace=True)
-        gdf = gpd.sjoin(gdf, gm_shp_gdf, how="left", predicate="within")
-        checkpoint_to_logfile('sjoin complete', log_file_name_def = log_file_name_def, n_tabs_def = 6, show_debug_prints_def = show_debug_prints_def)
-        dele_cols = ['index_right'] + [col for col in gm_shp_gdf.columns if col not in keep_cols]
+        gdf.set_crs(gm_shp_df.crs, allow_override=True, inplace=True)
+        gdf = gpd.sjoin(gdf, gm_shp_df, how="left", predicate="within")
+        checkpoint_to_logfile('sjoin complete', log_file_name_def = scen.log_name, n_tabs_def = 6, show_debug_prints_def = scen.show_debug_prints)
+        dele_cols = ['index_right'] + [col for col in gm_shp_df.columns if col not in keep_cols]
         gdf.drop(columns = dele_cols, inplace = True)
         if 'BFS_NUMMER' in gdf.columns:
             # transform BFS_NUMMER to str, np.nan to ''
             gdf['BFS_NUMMER'] = gdf['BFS_NUMMER'].apply(lambda x: '' if pd.isna(x) else str(int(x)))
 
-        return gdf 
-    
-    # PV -------------------
-    if not smaller_import_def:
-        elec_prod_gdf = gpd.read_file(f'{data_path_def}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', layer ='ElectricityProductionPlant')
-        pv_all_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
-    elif smaller_import_def:
-        elec_prod_gdf = gpd.read_file(f'{data_path_def}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', layer ='ElectricityProductionPlant', rows = 7000)
-        pv_all_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
-    checkpoint_to_logfile(f'import pv, {pv_all_gdf.shape[0]} rows (smaller_import: {smaller_import_def})', log_file_name_def = log_file_name_def, n_tabs_def = 1, show_debug_prints_def = show_debug_prints_def)
+        return gdf
 
-    pv_all_gdf = attach_bfs_to_spatial_data(pv_all_gdf, gm_shp_gdf)
+
+    # PV -------------------
+    elec_prod_gdf = gpd.read_file(f'{scen.data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', layer ='ElectricityProductionPlant')
+    pv_all_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
+    checkpoint_to_logfile(f'import pv, {pv_all_gdf.shape[0]} rows', scen.log_name, 1, scen.show_debug_prints)
+
+    pv_all_gdf = attach_bfs_to_spatial_data(pv_all_gdf, gm_shp_df)
     pv_all_gdf.set_crs("EPSG:2056", allow_override=True, inplace=True)
 
     # split + export
-    checkpoint_to_logfile(f'check unique identifier pv: {pv_all_gdf["xtf_id"].nunique()} xtf unique, {pv_all_gdf.shape[0]} rows', log_file_name_def = log_file_name_def, n_tabs_def = 0, show_debug_prints_def = show_debug_prints_def)
+    checkpoint_to_logfile('check unique identifier pv: {pv_all_gdf["xtf_id"].nunique()} xtf unique, {pv_all_gdf.shape[0]} rows', log_file_name_def = scen.log_name, n_tabs_def = 0, show_debug_prints_def = scen.show_debug_prints)
     pv_pq = pv_all_gdf.loc[:,pv_all_gdf.columns !='geometry'].copy()
     pv_geo = pv_all_gdf.loc[:,['xtf_id', 'BFS_NUMMER', 'geometry']].copy()
 
-    pv_pq.to_parquet(f'{data_path_def}/input_split_data_geometry/pv_pq.parquet')
-    checkpoint_to_logfile(f'exported pv_pq.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    pv_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/pv_pq.parquet')
+    checkpoint_to_logfile('exported pv_pq.parquet', scen.log_name, 5, scen.show_debug_prints)
 
-    with open(f'{data_path_def}/input_split_data_geometry/pv_geo.geojson', 'w') as f:
+    with open(f'{scen.data_path}/input_split_data_geometry/pv_geo.geojson', 'w') as f:
         f.write(pv_geo.to_json())
-    checkpoint_to_logfile(f'exported pv_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-
+    checkpoint_to_logfile('exported pv_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
 
 
     # SOLKAT -------------------
-    if not smaller_import_def:  
-        solkat_all_gdf = gpd.read_file(f'{data_path_def}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH')
-    elif smaller_import_def:
-        solkat_all_gdf = gpd.read_file(f'{data_path_def}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH', rows = 1000)
-    checkpoint_to_logfile(f'import solkat, {solkat_all_gdf.shape[0]} rows (smaller_import: {smaller_import_def})', log_file_name_def, 2, show_debug_prints_def)
+    solkat_all_gdf = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH')
+    checkpoint_to_logfile(f'import solkat, {solkat_all_gdf.shape[0]} rows', scen.log_name, 2, scen.show_debug_prints)
 
-    solkat_all_gdf = attach_bfs_to_spatial_data(solkat_all_gdf, gm_shp_gdf)
+    solkat_all_gdf = attach_bfs_to_spatial_data(solkat_all_gdf, gm_shp_df)
     solkat_all_gdf.set_crs("EPSG:2056", allow_override=True, inplace=True)
 
     # split + export
-    checkpoint_to_logfile(f'check unique identifier solkat: {solkat_all_gdf["DF_UID"].nunique()} DF_UID unique, {solkat_all_gdf.shape[0]} rows', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    checkpoint_to_logfile(f'check unique identifier solkat: {solkat_all_gdf["DF_UID"].nunique()} DF_UID unique, {solkat_all_gdf.shape[0]} rows', log_file_name_def = scen.log_name, n_tabs_def = 5, show_debug_prints_def = scen.show_debug_prints)
     solkat_pq = solkat_all_gdf.loc[:,solkat_all_gdf.columns !='geometry'].copy()
     solkat_geo = solkat_all_gdf.loc[:,['DF_UID', 'BFS_NUMMER', 'geometry']].copy()
 
-    solkat_pq.to_parquet(f'{data_path_def}/input_split_data_geometry/solkat_pq.parquet')
-    checkpoint_to_logfile(f'exported solkat_pq.parquet', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    solkat_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/solkat_pq.parquet')
+    checkpoint_to_logfile('exported solkat_pq.parquet', scen.log_name, 5, scen.show_debug_prints)
 
-    with open(f'{data_path_def}/input_split_data_geometry/solkat_geo.geojson', 'w') as f:
+    with open(f'{scen.data_path}/input_split_data_geometry/solkat_geo.geojson', 'w') as f:
         f.write(solkat_geo.to_json())
-    checkpoint_to_logfile(f'exported solkat_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+    checkpoint_to_logfile('exported solkat_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
 
-    
+
     # SOLKAT MONTH -------------------
-    solkat_month_pq = gpd.read_file(f'{data_path_def}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
-    solkat_month_pq.to_parquet(f'{data_path_def}/input_split_data_geometry/solkat_month_pq.parquet')
-
-
+    solkat_month_pq = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
+    solkat_month_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
+    
 
     # subset for BSBLSO case -------------------
-    bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13], data_path_def, log_file_name_def)
+    bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13], scen.data_path, scen.log_name)
 
     pv_bsblso_geo = pv_geo.loc[pv_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
     if pv_bsblso_geo.shape[0] > 0:
-        with open (f'{data_path_def}/input_split_data_geometry/pv_bsblso_geo.geojson', 'w') as f:
+        with open (f'{scen.data_path}/input_split_data_geometry/pv_bsblso_geo.geojson', 'w') as f:
             f.write(pv_bsblso_geo.to_json())
-        checkpoint_to_logfile(f'exported pv_bsblso_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
-                    
+        checkpoint_to_logfile('exported pv_bsblso_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
+
 
     solkat_bsblso_geo = solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
     if solkat_bsblso_geo.shape[0] > 0:
-        with open (f'{data_path_def}/input_split_data_geometry/solkat_bsblso_geo.geojson', 'w') as f:
+        with open (f'{scen.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson', 'w') as f:
             f.write(solkat_bsblso_geo.to_json())
-        checkpoint_to_logfile(f'exported solkat_bsblso_geo.geojson', log_file_name_def = log_file_name_def, n_tabs_def = 5, show_debug_prints_def = show_debug_prints_def)
+        checkpoint_to_logfile('exported solkat_bsblso_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
 
-
+    
     # Copy Log File to input_split_data_geometry folder
-    if os.path.exists(log_file_name_def):
-        shutil.copy(log_file_name_def, f'{data_path_def}/input_split_data_geometry/split_data_geometry_logfile.txt')
+    if os.path.exists(scen.log_name):
+        shutil.copy(scen.log_name, f'{scen.data_path}/input_split_data_geometry/split_data_geometry_logfile.txt')
 
 
 
 
-def get_kt_bsblso_sql_gwr(dataagg_settings_def):
+
+def get_kt_bsblso_sql_gwr(scen,):
     """
     Get the BFS numbers for the cantons Basel-Stadt, Basel-Landschaft, and Solothurn
     """
-    # import settings + setup -------------------
-    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
-    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
-    log_file_name_def = dataagg_settings_def['log_file_name']
-    wd_path_def = dataagg_settings_def['wd_path']
-    data_path_def = dataagg_settings_def['data_path']
-    gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
 
     # get bfs numbers from canton selection if applicable
-    bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13], data_path_def, log_file_name_def)
-    # get ALL BUILDING data
+    bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13], scen.data_path, scen.log_name)
+
+    # get ALL BUILDING data -------------------
 
     # select cols
-    query_columns = gwr_selection_specs_def['building_cols']
+    query_columns = scen.GWR_building_cols
     query_columns_str = ', '.join(query_columns)
     query_bfs_numbers = ', '.join([str(i) for i in bsblso_bfs_numbers])
 
-    conn = sqlite3.connect(f'{data_path_def}/input/GebWohnRegister.CH/data.sqlite')
+    conn = sqlite3.connect(f'{scen.data_path}/input/GebWohnRegister.CH/data.sqlite')
     cur = conn.cursor()
     cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers})')
     sqlrows = cur.fetchall()
     conn.close()
-    checkpoint_to_logfile('sql query ALL BUILDING done', log_file_name_def, 10, show_debug_prints_def)
+    checkpoint_to_logfile('sql query ALL BUILDING done', scen.log_name, 5, scen.show_debug_prints)
 
     gwr_bsblso_pq = pd.DataFrame(sqlrows, columns=query_columns)
 
@@ -185,5 +154,5 @@ def get_kt_bsblso_sql_gwr(dataagg_settings_def):
     gwr_bsblso_gdf = gwr_to_gdf(gwr_bsblso_pq)
 
     # export
-    gwr_bsblso_pq.to_parquet(f'{data_path_def}/input_split_data_geometry/gwr_bsblso_pq.parquet')
-    gwr_bsblso_gdf.to_file(f'{data_path_def}/input_split_data_geometry/gwr_bsblso_gdf.geojson', driver='GeoJSON')
+    gwr_bsblso_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/gwr_bsblso_pq.parquet')
+    gwr_bsblso_gdf.to_file(f'{scen.data_path}/input_split_data_geometry/gwr_bsblso_gdf.geojson', driver='GeoJSON')
