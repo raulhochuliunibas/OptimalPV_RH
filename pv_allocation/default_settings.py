@@ -15,7 +15,7 @@ pvalloc_default_settings = {
 
 
     'name_dir_export': 'pvalloc_BL_smallsample',                            # name of the directory where all proccessed data is stored at the end of the code file 
-    'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates', # name of the directory where preprepared data is stored and accessed by the code
+    'name_dir_import': 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',   # name of the directory where preprepared data is stored and accessed by the code
 
     # main settings for allocation
     'show_debug_prints':        True,                              # F: certain print statements are omitted, T: includes print statements that help with debugging

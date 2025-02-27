@@ -36,7 +36,7 @@ if True:
     import data_aggregation.sql_gwr as sql_gwr
     import data_aggregation.extend_data as extend_data
 
-    import data_aggregation.preprepare_data as preprep_data
+    import code.data_aggregation.preprep_data as preprep_data
 
 
 def MASTER_data_aggregation(dataagg_settings_func):

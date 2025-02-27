@@ -3,64 +3,57 @@ import os as os
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-import winsound
 import json
 import plotly.express as px
 import copy
 
-from datetime import datetime
-from shapely.geometry import Point
+
 from shapely.ops import unary_union
 
 sys.path.append('..')
-from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+from auxiliary_functions import checkpoint_to_logfile, print_to_logfile
 
 # ------------------------------------------------------------------------------------------------------
 # BY SB_UUID - FALSE - IMPORT LOCAL DATA + create SPATIAL MAPPINGS
 # ------------------------------------------------------------------------------------------------------
-def get_earlier_api_import_data(dataagg_settings_def):
+def get_earlier_api_import_data(scen,):
     """
     Function to import all api input data, previously downloaded and stored through various API calls
     """
+    # SETUP --------------------------------------
+    print_to_logfile('run function: get_earlier_api_import_data.py', scen.log_name)
 
-    # import settings + setup -------------------
-    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
-    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
-    data_path_def = dataagg_settings_def['data_path']
-    year_range_def = dataagg_settings_def['year_range']
-    bfs_number_def = dataagg_settings_def['bfs_numbers']
-    preprep_path_def = dataagg_settings_def['preprep_path']
-    input_api_path = f'{data_path_def}/input_api'
-
-
-    # import and store data in preprep data -------------------
+    # IMPORT + STORE DATA in preprep folder --------------------------------------
     # Map_gm_ewr
-    Map_gm_ewr = pd.read_parquet(f'{input_api_path}/Map_gm_ewr.parquet')
-    Map_gm_ewr.to_parquet(f'{preprep_path_def}/Map_gm_ewr.parquet')
-    Map_gm_ewr.to_csv(f'{preprep_path_def}/Map_gm_ewr.csv', sep=';', index=False)
-    checkpoint_to_logfile(f'Map_gm_ewr stored in prepreped data', dataagg_settings_def['log_file_name'],2, show_debug_prints_def)
-
+    Map_gm_ewr = pd.read_parquet(f'{scen.data_path}/input_api/Map_gm_ewr.parquet')
+    Map_gm_ewr.to_parquet(f'{scen.preprep_path}/Map_gm_ewr.parquet')
+    Map_gm_ewr.to_csv(f'{scen.preprep_path}/Map_gm_ewr.csv', sep=';', index=False)
+    checkpoint_to_logfile('Map_gm_ewr stored in prepreped data', scen.log_name, 2, scen.show_debug_prints)
+    
     # pvtarif
-    pvtarif_all = pd.read_parquet(f'{input_api_path}/pvtarif.parquet')
-    year_range_2int = [str(year % 100).zfill(2) for year in range(year_range_def[0], year_range_def[1]+1)]
+    pvtarif_all = pd.read_parquet(f'{scen.data_path}/input_api/pvtarif.parquet')
+    year_range_2int = [str(year % 100).zfill(2) for year in range(scen.year_range[0], scen.year_range[1]+1)]
     pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_2int), :])
-    pvtarif.to_parquet(f'{preprep_path_def}/pvtarif.parquet')
-    pvtarif.to_csv(f'{preprep_path_def}/pvtarif.csv', sep=';', index=False)
-    checkpoint_to_logfile(f'pvtarif stored in prepreped data', dataagg_settings_def['log_file_name'], 2, show_debug_prints_def)
-
+    pvtarif.to_parquet(f'{scen.preprep_path}/pvtarif.parquet')
+    pvtarif.to_csv(f'{scen.preprep_path}/pvtarif.csv', sep=';', index=False)
+    checkpoint_to_logfile('pvtarif stored in prepreped data', scen.log_name, 2, scen.show_debug_prints)
         
 
 # ------------------------------------------------------------------------------------------------------
 # BY SB_UUID - FALSE - IMPORT LOCAL DATA + create SPATIAL MAPPINGS
 # ------------------------------------------------------------------------------------------------------
-def local_data_AND_spatial_mappings(
-        dataagg_settings_def, ):
+def local_data_AND_spatial_mappings(scen, ):
     """
     Function to import all the local data sources, remove and transform data where necessary and store only
     the required data that is in range with the BFS municipality selection. When applicable, create mapping
     files, so that so that different data sets can be matched and spatial data can be reidentified to their 
     geometry if necessary. 
     """
+
+    # SETUP --------------------------------------
+    # BOOKMARK
+
+
 
     # import settings + setup ---------------------------------------------------------------------------------
     script_run_on_server_def = dataagg_settings_def['script_run_on_server']
