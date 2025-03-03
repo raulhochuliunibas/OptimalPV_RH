@@ -53,82 +53,68 @@ def local_data_AND_spatial_mappings(scen, ):
     """
 
     # SETUP --------------------------------------
-    # BOOKMARK
-
-
-
-    # import settings + setup ---------------------------------------------------------------------------------
-    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
-    bfs_number_def = dataagg_settings_def['bfs_numbers']
-    year_range_def = dataagg_settings_def['year_range']
-    smaller_import_def = dataagg_settings_def['smaller_import']
-    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
-    log_file_name_def = dataagg_settings_def['log_file_name']
-    wd_path_def = dataagg_settings_def['wd_path']
-    data_path_def = dataagg_settings_def['data_path']
-    preprep_path_def = dataagg_settings_def['preprep_path']
-    summary_file_name = dataagg_settings_def['summary_file_name']
-
-    gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
-    solkat_selection_specs_def = dataagg_settings_def['solkat_selection_specs']
-
-    primeo_path = 'Q:/_shared/Projekt - Optimal PV Expantionspaths'
-    print_to_logfile(f'run function: local_data_AND_spatial_mappings.py', log_file_name_def = log_file_name_def)
-
+    print_to_logfile('run function: local_data_AND_spatial_mappings.py', scen.log_name)
 
     # IMPORT DATA ---------------------------------------------------------------------------------
-    gm_shp_gdf = gpd.read_file(f'{data_path_def}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    gm_shp_gdf = gpd.read_file(f'{scen.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
     
 
     # PV ====================
-    pv_all_pq = pd.read_parquet(f'{data_path_def}/input_split_data_geometry/pv_pq.parquet')
-    checkpoint_to_logfile(f'import pv_pq, {pv_all_pq.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  2, show_debug_prints_def)
-    pv_all_geo = gpd.read_file(f'{data_path_def}/input_split_data_geometry/pv_geo.geojson')
-    checkpoint_to_logfile(f'import pv_geo, {pv_all_geo.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  2, show_debug_prints_def)
+    pv_all_pq = pd.read_parquet(f'{scen.data_path}/input_split_data_geometry/pv_pq.parquet')
+    checkpoint_to_logfile(f'import pv_pq, {pv_all_pq.shape[0]} rows', scen.log_name, 2, scen.show_debug_prints)
+    pv_all_geo = gpd.read_file(f'{scen.data_path}/input_split_data_geometry/pv_geo.geojson')
+    checkpoint_to_logfile(f'import pv_geo, {pv_all_geo.shape[0]} rows', scen.log_name, 2, scen.show_debug_prints)
 
     # transformations
     pv_all_pq['xtf_id'] = pv_all_pq['xtf_id'].astype(str)
     pv_all_geo['xtf_id'] = pv_all_geo['xtf_id'].astype(str)
 
-    pv = pv_all_pq[pv_all_pq['BFS_NUMMER'].isin(bfs_number_def)]  # select and export pq for BFS numbers
+    pv = pv_all_pq[pv_all_pq['BFS_NUMMER'].isin(scen.bfs_numbers)]  # select and export pq for BFS numbers
     pv_wgeo = pv.merge(pv_all_geo[['xtf_id', 'geometry']], how = 'left', on = 'xtf_id') # merge geometry for later use
     pv_gdf = gpd.GeoDataFrame(pv_wgeo, geometry='geometry')
 
 
     # GWR ====================
-    gwr = pd.read_parquet(f'{preprep_path_def}/gwr.parquet')
-    gwr_gdf = gpd.read_file(f'{preprep_path_def}/gwr_gdf.geojson')
-    gwr_all_building_gdf = gpd.read_file(f'{preprep_path_def}/gwr_all_building_gdf.geojson')
-    checkpoint_to_logfile(f'import gwr, {gwr.shape[0]} rows', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
+    gwr = pd.read_parquet(f'{scen.preprep_path}/gwr.parquet')
+    gwr_gdf = gpd.read_file(f'{scen.preprep_path}/gwr_gdf.geojson')
+    gwr_all_building_gdf = gpd.read_file(f'{scen.preprep_path}/gwr_all_building_gdf.geojson')
+    checkpoint_to_logfile(f'import gwr, {gwr.shape[0]} rows', scen.log_name, 5, scen.show_debug_prints)
 
 
     # SOLKAT ====================
-    solkat_all_pq = pd.read_parquet(f'{data_path_def}/input_split_data_geometry/solkat_pq.parquet')
-    checkpoint_to_logfile(f'import solkat_pq, {solkat_all_pq.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
+    solkat_all_pq = pd.read_parquet(f'{scen.data_path}/input_split_data_geometry/solkat_pq.parquet')
+    checkpoint_to_logfile(f'import solkat_pq, {solkat_all_pq.shape[0]} rows', scen.log_name,  1, scen.show_debug_prints)
+
+
+    # bsblso_kt_numbers_TF = any([kt in [11,12,13] for kt in scen.kt_numbers])
+    bsblso_bfs_numbers = get_bfs_from_ktnr([11,12,13], scen.data_path, scen.log_name)
+    bsblso_bfs_numbers_TF = all([bfs in bsblso_bfs_numbers for bfs in scen.bfs_numbers])
+    if (bsblso_bfs_numbers_TF) & (os.path.exists(f'{scen.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson')):
+        solkat_all_geo = gpd.read_file(f'{scen.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson')
+    else:  
+        solkat_all_geo = gpd.read_file(f'{scen.data_path}/input_split_data_geometry/solkat_geo.geojson')
+    checkpoint_to_logfile(f'import solkat_geo, {solkat_all_geo.shape[0]} rows', scen.log_name,  1, scen.show_debug_prints)    
     
-    bsblso_kt_numbers_TF = any([kt in [11,12,13] for kt in dataagg_settings_def['kt_numbers']])
-    if (bsblso_kt_numbers_TF) & (os.path.exists(f'{data_path_def}/input_split_data_geometry/solkat_bsblso_geo.geojson')):
-        solkat_all_geo = gpd.read_file(f'{data_path_def}/input_split_data_geometry/solkat_bsblso_geo.geojson')
-    else:
-        solkat_all_geo = gpd.read_file(f'{data_path_def}/input_split_data_geometry/solkat_geo.geojson')
-    checkpoint_to_logfile(f'import solkat_geo, {solkat_all_geo.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
 
-    # minor transformations
-    solkat_all_geo['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
-
+    # minor transformations to str (with removing nan values)
+    solkat_all_geo.loc['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
+    print('transform solkat_geo')
+    
+    solkat_all_pq['DF_UID'] = solkat_all_pq['DF_UID'].astype(str)    
     solkat_all_pq['SB_UUID'] = solkat_all_pq['SB_UUID'].astype(str)
-    solkat_all_pq['DF_UID'] = solkat_all_pq['DF_UID'].astype(str)
-    solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].replace(np.nan, 0).astype(int).astype(str)
-    solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].replace('0', 'NAN')
-    solkat_all_pq.rename(columns = {'GWR_EGID': 'EGID'}, inplace = True)
+
+    solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].fillna('NAN').astype(str)
+    solkat_all_pq.rename(columns={'GWR_EGID': 'EGID'}, inplace=True)
+    solkat_all_pq = solkat_all_pq.dropna(subset=['DF_UID'])
+    
     solkat_all_pq['EGID_count'] = solkat_all_pq.groupby('EGID')['EGID'].transform('count')
-    solkat_all_pq.dtypes
-
-
+    
+    
+    
     # add omitted EGIDs to SOLKAT ====================
     # old version, no EGIDs matched to solkat
-    if not solkat_selection_specs_def['match_missing_EGIDs_to_solkat_TF']:
-        solkat_v1 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(bfs_number_def)])  # select and export pq for BFS numbers
+    if not scen.SOLKAT_match_missing_EGIDs_to_solkat_TF:
+        solkat_v1 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(scen.bfs_numbers)])
         solkat_v1_wgeo = solkat_v1.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID') # merge geometry for later use
         solkat_v1_gdf = gpd.GeoDataFrame(solkat_v1_wgeo, geometry='geometry')
         solkat, solkat_gdf = copy.deepcopy(solkat_v1), copy.deepcopy(solkat_v1_gdf)
@@ -136,11 +122,11 @@ def local_data_AND_spatial_mappings(scen, ):
     # the solkat df has missing EGIDs, for example row houses where the entire roof is attributed to one EGID. Attempt to 
     # 1 - add roof (perfectly overlapping roofpartitions) to solkat for all the EGIDs within the unions shape
     # 2- reduce the FLAECHE for all theses partitions by dividing it through the number of EGIDs in the union shape
-    elif solkat_selection_specs_def['match_missing_EGIDs_to_solkat_TF']:
-        print_to_logfile(f'\nMatch missing EGIDs to solkat (where gwrEGIDs overlapp solkat shape but are not present as a single solkat_row)', summary_file_name)
-        cols_adjust_for_missEGIDs_to_solkat = solkat_selection_specs_def['cols_adjust_for_missEGIDs_to_solkat']
+    elif scen.SOLKAT_match_missing_EGIDs_to_solkat_TF:
+        print_to_logfile('\nMatch missing EGIDs to solkat (where gwrEGIDs overlapp solkat shape but are not present as a single solkat_row)', scen.summary_name)
+        cols_adjust_for_missEGIDs_to_solkat = scen.SOLKAT_cols_adjust_for_missEGIDs_to_solkat
 
-        solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(bfs_number_def)])
+        solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(scen.bfs_numbers)])
         solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
         solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
         solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
@@ -160,8 +146,8 @@ def local_data_AND_spatial_mappings(scen, ):
         solkat_union_v2EGID.set_crs(gwr_gdf.crs, allow_override=True, inplace=True)
         join_gwr_solkat_union = gpd.sjoin(solkat_union_v2EGID, gwr_gdf, how='left')
         join_gwr_solkat_union.rename(columns = {'EGID': 'EGID_gwradded'}, inplace = True)
-        checkpoint_to_logfile(f'nrows \n\tsolkat_all_pq: {solkat_all_pq.shape[0]}\t\tsolkat_v2_gdf: {solkat_v2_gdf.shape[0]} (remove EGID.NANs)\n\tsolkat_union_v2EGID: {solkat_union_v2EGID.shape[0]}\tjoin_gwr_solkat_union: {join_gwr_solkat_union.shape[0]}', log_file_name_def, 3, show_debug_prints_def = show_debug_prints_def)
-        checkpoint_to_logfile(f'nEGID \n\tsolkat_all_pq: {solkat_all_pq["EGID"].nunique()}\t\tsolkat_v2_gdf: {solkat_v2_gdf["EGID"].nunique()} (remove EGID.NANs)\n\tsolkat_union_v2EGID_EGID_old: {solkat_union_v2EGID["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_old: {join_gwr_solkat_union["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_gwradded: {join_gwr_solkat_union["EGID_gwradded"].nunique()}', log_file_name_def, 3, show_debug_prints_def = show_debug_prints_def)
+        checkpoint_to_logfile(f'nrows \n\tsolkat_all_pq: {solkat_all_pq.shape[0]}\t\tsolkat_v2_gdf: {solkat_v2_gdf.shape[0]} (remove EGID.NANs)\n\tsolkat_union_v2EGID: {solkat_union_v2EGID.shape[0]}\tjoin_gwr_solkat_union: {join_gwr_solkat_union.shape[0]}', scen.log_name, 3, scen.show_debug_prints)
+        checkpoint_to_logfile(f'nEGID \n\tsolkat_all_pq: {solkat_all_pq["EGID"].nunique()}\t\tsolkat_v2_gdf: {solkat_v2_gdf["EGID"].nunique()} (remove EGID.NANs)\n\tsolkat_union_v2EGID_EGID_old: {solkat_union_v2EGID["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_old: {join_gwr_solkat_union["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_gwradded: {join_gwr_solkat_union["EGID_gwradded"].nunique()}', scen.log_name, 3, scen.show_debug_prints)
     
 
         # check EGID mapping case by case, add missing gwrEGIDs to solkat -------------------
@@ -207,8 +193,8 @@ def local_data_AND_spatial_mappings(scen, ):
                     solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
                     solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
 
-                elif (egid_join_union.shape[0] > 1) & (egid_join_union['EGID_gwradded'].isna().any() == True):
-                    checkpoint_to_logfile(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
+                elif (egid_join_union.shape[0] > 1) & (egid_join_union['EGID_gwradded'].isna().any()):
+                    checkpoint_to_logfile(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column', scen.log_name, 3, scen.show_debug_prints)
 
                 # Intended case: Shapes of building that has multiple GWR EGIDs within the shape boundaries
                 elif (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list()):
@@ -223,7 +209,7 @@ def local_data_AND_spatial_mappings(scen, ):
                         solkat_addedEGID['EGID'] = egid_to_add
                         
                         #extend the DF_UID with some numbers to have truely unique DF_UIDs
-                        if solkat_selection_specs_def['extend_dfuid_for_missing_EGIDs_to_be_unique']:
+                        if scen.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
                             str_suffix = str(n+1).zfill(5)
                             if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
                                 solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
@@ -263,7 +249,7 @@ def local_data_AND_spatial_mappings(scen, ):
                         solkat_addedEGID['EGID'] = egid_to_add
                         
                         #extend the DF_UID with some numbers to have truely unique DF_UIDs
-                        if solkat_selection_specs_def['extend_dfuid_for_missing_EGIDs_to_be_unique']:
+                        if scen.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
                             str_suffix = str(n+1).zfill(3)
                             if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
                                 solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
@@ -282,34 +268,34 @@ def local_data_AND_spatial_mappings(scen, ):
                     # concat all EGIDs within the same shape that were previously missing
                     solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
 
-                    checkpoint_to_logfile(f'ERROR: EGID {egid}: multiple gwrEGIDs, without solkatEGID amongst them', log_file_name_def, 5, show_debug_prints_def = show_debug_prints_def)
+                    checkpoint_to_logfile(f'ERROR: EGID {egid}: multiple gwrEGIDs, without solkatEGID amongst them', scen.log_name, 1, scen.show_debug_prints)
 
             if n_egid == int(len(EGID_old_solkat_list)/4):
 
-                checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/4 partition', log_file_name_def, 3, show_debug_prints_def = show_debug_prints_def)
+                checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/4 partition', scen.log_name, 3, scen.show_debug_prints)
             # merge all solkat partitions to new solkat df
             new_solkat_append_list.append(solkat_subdf) 
 
         new_solkat_gdf = gpd.GeoDataFrame(pd.concat(new_solkat_append_list, ignore_index=True), geometry='geometry')
         new_solkat = new_solkat_gdf.drop(columns = ['geometry'])
-        checkpoint_to_logfile(f'Extended solkat_df by {new_solkat.shape[0] - solkat_v2_gdf.shape[0]} rows (before matching: {solkat_v2_gdf.shape[0]}, after: {new_solkat.shape[0]} rows)', summary_file_name, 1, show_debug_prints_def = show_debug_prints_def)
+        checkpoint_to_logfile(f'Extended solkat_df by {new_solkat.shape[0] - solkat_v2_gdf.shape[0]} rows (before matching: {solkat_v2_gdf.shape[0]}, after: {new_solkat.shape[0]} rows)', scen.summary_name, 3, scen.show_debug_prints)
 
         solkat, solkat_gdf = copy.deepcopy(new_solkat), copy.deepcopy(new_solkat_gdf)      
     
 
     # SOLKAT_MONTH ====================
-    solkat_month_all_pq = pd.read_parquet(f'{data_path_def}/input_split_data_geometry/solkat_month_pq.parquet')
-    checkpoint_to_logfile(f'import solkat_month_pq, {solkat_month_all_pq.shape[0]} rows, (smaller_import: {smaller_import_def})', log_file_name_def ,  1, show_debug_prints_def)
+    solkat_month_all_pq = pd.read_parquet(f'{scen.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
+    checkpoint_to_logfile(f'import solkat_month_pq, {solkat_month_all_pq.shape[0]} rows,', scen.log_name, 1, scen.show_debug_prints)
 
     # transformations
     solkat_month_all_pq['SB_UUID'] = solkat_month_all_pq['SB_UUID'].astype(str)
     solkat_month_all_pq['DF_UID'] = solkat_month_all_pq['DF_UID'].astype(str)
     solkat_month_all_pq = solkat_month_all_pq.merge(solkat_all_pq[['DF_UID', 'BFS_NUMMER']], how = 'left', on = 'DF_UID')
-    solkat_month = solkat_month_all_pq[solkat_month_all_pq['BFS_NUMMER'].isin(bfs_number_def)]  
+    solkat_month = solkat_month_all_pq[solkat_month_all_pq['BFS_NUMMER'].isin(scen.bfs_numbers)]
 
 
     # GRID_NODE ====================
-    Map_egid_dsonode = pd.read_excel(f'{primeo_path}/Daten_Primeo_x_UniBasel_V2.0.xlsx')
+    Map_egid_dsonode = pd.read_excel(f'{get_primeo_path()}/Daten_Primeo_x_UniBasel_V2.0.xlsx')
     # transformations
     Map_egid_dsonode.rename(columns={'ID_Trafostation': 'grid_node', 'Trafoleistung_kVA': 'kVA_threshold'}, inplace=True)
     Map_egid_dsonode['EGID'] = Map_egid_dsonode['EGID'].astype(str)
@@ -353,13 +339,13 @@ def local_data_AND_spatial_mappings(scen, ):
         
 
     # find optimal buffer size ====================
-    if solkat_selection_specs_def['test_loop_optim_buff_size_TF']: #
-        print_to_logfile(f'\n\n Check different buffersizes!', log_file_name_def)
-        arange_start, arange_end, arange_step = solkat_selection_specs_def['test_loop_optim_buff_arang'][0], solkat_selection_specs_def['test_loop_optim_buff_arang'][1], solkat_selection_specs_def['test_loop_optim_buff_arang'][2]
+    if scen.SOLKAT_test_loop_optim_buff_size_TF:
+        print_to_logfile('\n\n Check different buffersizes!', scen.log_name)
+        arange_start, arange_end, arange_step = scen.SOLKAT_test_loop_optim_buff_arang[0], scen.SOLKAT_test_loop_optim_buff_arang[1], scen.SOLKAT_test_loop_optim_buff_arang[2]
         buff_range = np.arange(arange_start, arange_end, arange_step)
         shares_xtf_duplicates = []
         for i in buff_range:# [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 2]:
-            print_to_logfile(f'buffer size: {i}', log_file_name_def)
+            print_to_logfile(f'buffer size: {i}', scen.log_name)
 
             gwr_loop = copy.deepcopy(gwr_gdf)
             gwr_loop.set_crs("EPSG:32632", allow_override=True, inplace=True)
@@ -376,26 +362,26 @@ def local_data_AND_spatial_mappings(scen, ):
                     round(sum(gwregid_pvid_loop['xtf_id'].value_counts()>2) /gwregid_pvid_loop['xtf_id'].nunique(),2) ]
             shares_xtf_duplicates.append(shares)
             
-            print_to_logfile(f'Mapping egid_pvid: {round(gwregid_pvid_loop["EGID"].isna().sum() / gwregid_pvid_loop.shape[0] *100,2)} % of pv rows ({gwregid_pvid_loop.shape[0]}) are missing EGID', log_file_name_def)
-            print_to_logfile(f'Duplicate shares: \tNANs\tunique\t2x\t>2x \n \t\t\t{shares[0]}\t{shares[1]}\t{shares[2]}\t{shares[3]}\t{sum(shares)}\n', log_file_name_def)
+            print_to_logfile(f'Mapping egid_pvid: {round(gwregid_pvid_loop["EGID"].isna().sum() / gwregid_pvid_loop.shape[0] *100,2)} % of pv rows ({gwregid_pvid_loop.shape[0]}) are missing EGID', scen.log_name)
+            print_to_logfile(f'Duplicate shares: \tNANs\tunique\t2x\t>2x \n \t\t\t{shares[0]}\t{shares[1]}\t{shares[2]}\t{shares[3]}\t{sum(shares)}\n', scen.log_name)
         
         # plot shares of successful mappings
-        shares_xtf_duplicates_df = pd.DataFrame(shares_xtf_duplicates, columns = ['buffer_size', 'NANs', 'unique', '2x', '>2x'])
+        # shares_xtf_duplicates_df = pd.DataFrame(shares_xtf_duplicates, columns = ['buffer_size', 'NANs', 'unique', '2x', '>2x'])
         # not plotted because over-exaggerated buffer is later corrected with closest neighbour matching
         # fig = px.line(shares_xtf_duplicates_df, 
         #               x='buffer_size', y=['NANs', 'unique', '2x', '>2x'],
         #               title = 'Shares of xtf_id duplicates', labels = {'buffer_size': 'Buffer Size', 'value': 'Share'}, width = 800, height = 400)
         # fig.show()
         # fig.write_html(f'{data_path_def}/output/preprep_data/by_buffersize_share_xtf_id_duplicates.html')
-        checkpoint_to_logfile(f'buffer size optimisation finished', log_file_name_def, 2, show_debug_prints_def)
+        checkpoint_to_logfile('buffer size optimisation finished', scen.log_name, 2, scen.show_debug_prints)
 
 
     # (continued MAP: egid > pv) ----------
     gwr_buff_gdf = copy.deepcopy(gwr_gdf)
     gwr_buff_gdf.set_crs("EPSG:32632", allow_override=True, inplace=True)
-    gwr_buff_gdf['geometry'] = gwr_buff_gdf['geometry'].buffer(solkat_selection_specs_def['GWR_EGID_buffer_size'])
+    gwr_buff_gdf['geometry'] = gwr_buff_gdf['geometry'].buffer(scen.SOLKAT_GWR_EGID_buffer_size)
     gwr_buff_gdf, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, gwr_buff_gdf, pv_gdf)
-    checkpoint_to_logfile(f'gwr_gdf.crs == pv_gdf.crs: {gwr_buff_gdf.crs == pv_gdf.crs}', log_file_name_def, 6, show_debug_prints_def)
+    checkpoint_to_logfile(f'gwr_gdf.crs == pv_gdf.crs: {gwr_buff_gdf.crs == pv_gdf.crs}', scen.log_name, 6, scen.show_debug_prints)
 
     gwregid_pvid_all = gpd.sjoin(pv_gdf,gwr_buff_gdf, how="left", predicate="within")
     gwregid_pvid_all.drop(columns = ['index_right'] + [col for col in gwr_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
@@ -403,7 +389,7 @@ def local_data_AND_spatial_mappings(scen, ):
     # keep only unique xtf_ids 
     gwregid_pvid_unique = copy.deepcopy(gwregid_pvid_all.loc[~gwregid_pvid_all.duplicated(subset='xtf_id', keep=False)])
     xtf_duplicates =      copy.deepcopy(gwregid_pvid_all.loc[ gwregid_pvid_all.duplicated(subset='xtf_id', keep=False)])
-    checkpoint_to_logfile(f'sum n_unique xtf_ids: {gwregid_pvid_unique["xtf_id"].nunique()} (unique df) +{xtf_duplicates["xtf_id"].nunique()} (duplicates df) = {gwregid_pvid_unique["xtf_id"].nunique()+xtf_duplicates["xtf_id"].nunique() }; n_unique in pv_gdf: {pv_gdf["xtf_id"].nunique()}', log_file_name_def, 6, show_debug_prints_def)
+    checkpoint_to_logfile(f'sum n_unique xtf_ids: {gwregid_pvid_unique["xtf_id"].nunique()} (unique df) +{xtf_duplicates["xtf_id"].nunique()} (duplicates df) = {gwregid_pvid_unique["xtf_id"].nunique()+xtf_duplicates["xtf_id"].nunique() }; n_unique in pv_gdf: {pv_gdf["xtf_id"].nunique()}', scen.log_name, 6, scen.show_debug_prints)
    
    # match duplicates with nearest neighbour
     xtf_nearestmatch_list = []
@@ -420,9 +406,9 @@ def local_data_AND_spatial_mappings(scen, ):
     
     xtf_nearestmatches_df = pd.concat(xtf_nearestmatch_list, ignore_index=True)
     gwregid_pvid = pd.concat([gwregid_pvid_unique, xtf_nearestmatches_df], ignore_index=True).drop_duplicates()
-    checkpoint_to_logfile(f'total unique xtf: {pv_gdf["xtf_id"].nunique()} (pv_gdf); {gwregid_pvid_unique["xtf_id"].nunique()+xtf_nearestmatches_df["xtf_id"].nunique()} (unique + nearest match)', log_file_name_def, 6, show_debug_prints_def)
+    checkpoint_to_logfile(f'total unique xtf: {pv_gdf["xtf_id"].nunique()} (pv_gdf); {gwregid_pvid_unique["xtf_id"].nunique()+xtf_nearestmatches_df["xtf_id"].nunique()} (unique + nearest match)', scen.log_name, 6, scen.show_debug_prints)
 
-    checkpoint_to_logfile(f'Mapping egid_pvid: {round(gwregid_pvid["EGID"].isna().sum() / gwregid_pvid.shape[0] *100,2)} % of pv rows ({gwregid_pvid.shape[0]}) are missing EGID', log_file_name_def, 2, show_debug_prints_def)
+    checkpoint_to_logfile(f'Mapping egid_pvid: {round(gwregid_pvid["EGID"].isna().sum() / gwregid_pvid.shape[0] *100,2)} % of pv rows ({gwregid_pvid.shape[0]}) are missing EGID', scen.log_name, 6, scen.show_debug_prints)
     # Map_egid_pv = gwregid_pvid.loc[gwregid_pvid['EGID'].notna(), ['EGID', 'xtf_id']].copy()
     Map_egid_pv = gwregid_pvid[['EGID', 'xtf_id']].copy()
 
@@ -432,41 +418,41 @@ def local_data_AND_spatial_mappings(scen, ):
     df_to_export_names = ['pv', 'solkat', 'solkat_month', 'Map_egid_dsonode', 'Map_solkatdfuid_egid', 'Map_egid_pv']
     df_to_export_list = [pv, solkat, solkat_month,  Map_egid_dsonode, Map_solkatdfuid_egid, Map_egid_pv] 
     for i, df in enumerate(df_to_export_list):
-        df.to_parquet(f'{preprep_path_def}/{df_to_export_names[i]}.parquet')
-        df.to_csv(f'{preprep_path_def}/{df_to_export_names[i]}.csv', sep=';', index=False)
-        checkpoint_to_logfile(f'{df_to_export_names[i]} exported to prepreped data', log_file_name_def, 2, show_debug_prints_def)
+        df.to_parquet(f'{scen.preprep_path}/{df_to_export_names[i]}.parquet')
+        df.to_csv(f'{scen.preprep_path}/{df_to_export_names[i]}.csv', sep=';', index=False)
+        checkpoint_to_logfile(f'{df_to_export_names[i]} exported to prepreped data', scen.log_name, 1, scen.show_debug_prints)
     
 
 
     # OMITTED SPATIAL POINTS / POLYS ---------------------------------------------------------------------------------
-    print_to_logfile(f'\nnumber of omitted buildings because EGID is (not) / present in all of GWR / Solkat / PV / Grid_Node', summary_file_name)
-    print_to_logfile(f'>gwr settings: \n n bfs_numbers: {len(bfs_number_def)}, \n year_range: {year_range_def}, \n building class GKLAS: {gwr_selection_specs_def["GKLAS"]}, \n building status GSTAT: {gwr_selection_specs_def["GSTAT"]}, \n year of construction GBAUJ: {gwr_selection_specs_def["GBAUJ_minmax"]}', summary_file_name)
+    print_to_logfile('\nnumber of omitted buildings because EGID is (not) / present in all of GWR / Solkat / PV / Grid_Node', scen.summary_name)
+    print_to_logfile(f'>gwr settings: \n n bfs_numbers: {len(scen.bfs_numbers)}, \n year_range: {scen.year_range}, \n building class GKLAS: {scen.GKLAS}, \n building status GSTAT: {scen.GSTAT}, \n year of construction GBAUJ: {scen.GBAUJ_minmax}', scen.summary_name)
     omitt_gwregid_gdf = copy.deepcopy(gwr_gdf.loc[~gwr_gdf['EGID'].isin(solkat_gdf['EGID'])])
-    checkpoint_to_logfile(f'omitt_gwregid_gdf (gwr not in solkat): {omitt_gwregid_gdf.shape[0]} rows ({round((omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique: {gwr_gdf["EGID"].nunique()})', summary_file_name, 2, True) 
+    checkpoint_to_logfile(f'omitt_gwregid_gdf (gwr not in solkat): {omitt_gwregid_gdf.shape[0]} rows ({round((omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique: {gwr_gdf["EGID"].nunique()})', scen.summary_name, 2, True)
 
     omitt_solkat_all_gwr_gdf = copy.deepcopy(solkat_gdf.loc[~solkat_gdf['EGID'].isin(gwr_all_building_gdf['EGID'])])
     omitt_solkat_gdf = copy.deepcopy(solkat_gdf.loc[~solkat_gdf['EGID'].isin(gwr_gdf['EGID'])])
-    checkpoint_to_logfile(f'omitt_solkat_gdf (solkat not in gwr): {omitt_solkat_gdf.shape[0]} rows ({round((omitt_solkat_gdf.shape[0]/solkat_gdf.shape[0])*100, 2)}%), solkat[EGID].unique: {solkat_gdf["EGID"].nunique()})', summary_file_name, 2, True)
+    checkpoint_to_logfile(f'omitt_solkat_gdf (solkat not in gwr): {omitt_solkat_gdf.shape[0]} rows ({round((omitt_solkat_gdf.shape[0]/solkat_gdf.shape[0])*100, 2)}%), solkat[EGID].unique: {solkat_gdf["EGID"].nunique()})', scen.summary_name, 2, True)
 
     omitt_pv_gdf = copy.deepcopy(pv_gdf.loc[~pv_gdf['xtf_id'].isin(gwregid_pvid['xtf_id'])])
-    checkpoint_to_logfile(f'omitt_pv_gdf (pv not in gwr): {omitt_pv_gdf.shape[0]} rows ({round((omitt_pv_gdf.shape[0]/pv_gdf.shape[0])*100, 2)}%, pv[xtf_id].unique: {pv_gdf["xtf_id"].nunique()})', summary_file_name, 2, True)
+    checkpoint_to_logfile(f'omitt_pv_gdf (pv not in gwr): {omitt_pv_gdf.shape[0]} rows ({round((omitt_pv_gdf.shape[0]/pv_gdf.shape[0])*100, 2)}%, pv[xtf_id].unique: {pv_gdf["xtf_id"].nunique()})', scen.summary_name, 2, True)
 
     omitt_gwregid_gridnode_gdf = copy.deepcopy(gwr_gdf.loc[~gwr_gdf['EGID'].isin(Map_egid_dsonode['EGID'])])
-    checkpoint_to_logfile(f'omitt_gwregid_gridnode_gdf (gwr not in gridnode): {omitt_gwregid_gridnode_gdf.shape[0]} rows ({round((omitt_gwregid_gridnode_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique: {gwr_gdf["EGID"].nunique()})', summary_file_name, 2, True)
+    checkpoint_to_logfile(f'omitt_gwregid_gridnode_gdf (gwr not in gridnode): {omitt_gwregid_gridnode_gdf.shape[0]} rows ({round((omitt_gwregid_gridnode_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique: {gwr_gdf["EGID"].nunique()})', scen.summary_name, 2, True)
 
     omitt_gridnodeegid_gwr_df = copy.deepcopy(Map_egid_dsonode.loc[~Map_egid_dsonode['EGID'].isin(gwr_gdf['EGID'])])
-    checkpoint_to_logfile(f'omitt_gridnodeegid_gwr_df (gridnode not in gwr): {omitt_gridnodeegid_gwr_df.shape[0]} rows ({round((omitt_gridnodeegid_gwr_df.shape[0]/Map_egid_dsonode.shape[0])*100, 2)}%), gridnode[EGID].unique: {Map_egid_dsonode["EGID"].nunique()})', summary_file_name, 2, True)
+    checkpoint_to_logfile(f'omitt_gridnodeegid_gwr_df (gridnode not in gwr): {omitt_gridnodeegid_gwr_df.shape[0]} rows ({round((omitt_gridnodeegid_gwr_df.shape[0]/Map_egid_dsonode.shape[0])*100, 2)}%), gridnode[EGID].unique: {Map_egid_dsonode["EGID"].nunique()})', scen.summary_name, 2, True)
 
     
 
     # PRINTS TO SUMMARY LOG FILE ---------------------------------------------------------------------------------
-    print_to_logfile(f'\n\nHow well does GWR cover other data sources', summary_file_name)
-    checkpoint_to_logfile(f'gwr_EGID omitted in solkat: {round(omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
-    checkpoint_to_logfile(f'solkat_EGID omitted in gwr_all_bldng: {round(omitt_solkat_all_gwr_gdf.shape[0]/solkat_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
-    checkpoint_to_logfile(f'solkat_EGID omitted in gwr: {round(omitt_solkat_gdf.shape[0]/solkat_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
-    checkpoint_to_logfile(f'pv_xtf_id omitted in gwr: {round(omitt_pv_gdf.shape[0]/pv_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
-    checkpoint_to_logfile(f'gwr_EGID omitted in gridnode: {round(omitt_gwregid_gridnode_gdf.shape[0]/gwr_gdf.shape[0]*100, 2)} %', summary_file_name, 2, True)
-    checkpoint_to_logfile(f'gridnode_EGID omitted in gwr: {round(omitt_gridnodeegid_gwr_df.shape[0]/Map_egid_dsonode.shape[0]*100, 2)} %', summary_file_name, 2, True)
+    print_to_logfile('\n\nHow well does GWR cover other data sources', scen.summary_name)
+    checkpoint_to_logfile(f'gwr_EGID omitted in solkat: {round(omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0]*100, 2)} %', scen.summary_name, 2, True)
+    checkpoint_to_logfile(f'solkat_EGID omitted in gwr_all_bldng: {round(omitt_solkat_all_gwr_gdf.shape[0]/solkat_gdf.shape[0]*100, 2)} %', scen.summary_name, 2, True)
+    checkpoint_to_logfile(f'solkat_EGID omitted in gwr: {round(omitt_solkat_gdf.shape[0]/solkat_gdf.shape[0]*100, 2)} %', scen.summary_name, 2, True)
+    checkpoint_to_logfile(f'pv_xtf_id omitted in gwr: {round(omitt_pv_gdf.shape[0]/pv_gdf.shape[0]*100, 2)} %', scen.summary_name, 2, True)
+    checkpoint_to_logfile(f'gwr_EGID omitted in gridnode: {round(omitt_gwregid_gridnode_gdf.shape[0]/gwr_gdf.shape[0]*100, 2)} %', scen.summary_name, 2, True)
+    checkpoint_to_logfile(f'gridnode_EGID omitted in gwr: {round(omitt_gridnodeegid_gwr_df.shape[0]/Map_egid_dsonode.shape[0]*100, 2)} %', scen.summary_name, 2, True)
 
 
     # EXPORT SPATIAL DATA ---------------------------------------------------------------------------------
@@ -481,10 +467,10 @@ def local_data_AND_spatial_mappings(scen, ):
         # for each gdf export needs to be adjusted so it is carried over into the geojson file.
         g.set_crs("EPSG:2056", allow_override = True, inplace = True)   
 
-        print_to_logfile(f'CRS for {gdf_to_export_names[i]}: {g.crs}', log_file_name_def,)
-        checkpoint_to_logfile(f'exported {gdf_to_export_names[i]}', log_file_name_def , 4, show_debug_prints_def)
+        print_to_logfile(f'CRS for {gdf_to_export_names[i]}: {g.crs}', scen.log_name)
+        checkpoint_to_logfile(f'exported {gdf_to_export_names[i]}', scen.log_name , 4, scen.show_debug_prints)
 
-        with open(f'{preprep_path_def}/{gdf_to_export_names[i]}.geojson', 'w') as f:
+        with open(f'{scen.preprep_path}/{gdf_to_export_names[i]}.geojson', 'w') as f:
             f.write(g.to_json())
 
 
@@ -494,61 +480,47 @@ def local_data_AND_spatial_mappings(scen, ):
 # ------------------------------------------------------------------------------------------------------
 
 def import_demand_TS_AND_match_households(
-        dataagg_settings_def, ):
+        scen, ):
     """
     1) Import demand time series data and aggregate it to 4 demand archetypes.
     2) Match the time series to the households IDs dependent on building characteristics (e.g. flat/house size, electric heating, etc.)
        Export all the mappings and time series data.
     """
-
-    # import settings + setup -------------------
-    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
-    bfs_number_def = dataagg_settings_def['bfs_numbers']
-    year_range_def = dataagg_settings_def['year_range']
-    smaller_import_def = dataagg_settings_def['smaller_import']
-    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
-    log_file_name_def = dataagg_settings_def['log_file_name']
-    wd_path_def = dataagg_settings_def['wd_path']
-    data_path_def = dataagg_settings_def['data_path']
-    preprep_path_def = dataagg_settings_def['preprep_path']
-
-    gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
-    demand_specs_def = dataagg_settings_def['demand_specs']
-
-    print_to_logfile(f'run function: import_demand_TS_AND_match_households.py', log_file_name_def = log_file_name_def)
+    # SETUP --------------------------------------
+    print_to_logfile('run function: import_demand_TS_AND_match_households.py', scen.log_name)
 
 
     # IMPORT CONSUMER DATA -----------------------------------------------------------------
-    print_to_logfile(f'\nIMPORT CONSUMER DATA {10*"*"}', log_file_name_def = log_file_name_def) 
+    print_to_logfile(f'\nIMPORT CONSUMER DATA {10*"*"}', scen.log_name) 
        
 
     # DEMAND DATA SOURCE: NETFLEX ============================================================
-    if demand_specs_def['input_data_source'] == "NETFLEX" :
+    if scen.DEMAND_input_data_source == "NETFLEX" :
         # import demand TS --------
-        netflex_consumers_list = os.listdir(f'{data_path_def}/input/NETFLEX_consumers')
+        netflex_consumers_list = os.listdir(f'{scen.data_path}/input/NETFLEX_consumers')
         
         all_assets_list = []
         # c = netflex_consumers_list[1]
         for c in netflex_consumers_list:
-            f = open(f'{data_path_def}/input/NETFLEX_consumers/{c}')
+            f = open(f'{scen.data_path}/input/NETFLEX_consumers/{c}')
             data = json.load(f)
             assets = data['assets']['list'] 
             all_assets_list.extend(assets)
         
         without_id = [a.split('_ID')[0] for a in all_assets_list]
         all_assets_unique = list(set(without_id))
-        checkpoint_to_logfile(f'consumer demand TS contains assets: {all_assets_unique}', log_file_name_def, 2, show_debug_prints_def)
+        checkpoint_to_logfile(f'consumer demand TS contains assets: {all_assets_unique}', scen.log_name, 2, scen.show_debug_prints)
 
         # aggregate demand for each consumer
         agg_demand_df = pd.DataFrame()
-        netflex_consumers_list = netflex_consumers_list if not smaller_import_def else netflex_consumers_list[0:40]
+        # netflex_consumers_list = netflex_consumers_list if not smaller_import_def else netflex_consumers_list[0:40]
 
         c = netflex_consumers_list[2]
         # for c, c_n in enumerate() netflex_consumers_list:
         for c_number, c in enumerate(netflex_consumers_list):
             c_demand_id, c_demand_tech, c_demand_asset, c_demand_t, c_demand_values = [], [], [], [], []
 
-            f = open(f'{data_path_def}/input/NETFLEX_consumers/{c}')
+            f = open(f'{scen.data_path}/input/NETFLEX_consumers/{c}')
             data = json.load(f)
             assets = data['assets']['list'] 
 
@@ -566,7 +538,7 @@ def import_demand_TS_AND_match_households(
             agg_demand_df = pd.concat([agg_demand_df, c_demand_df])
             
             if (c_number + 1) % (len(netflex_consumers_list) // 4) == 0:
-                checkpoint_to_logfile(f'exported demand TS for consumer {c}, {c_number+1} of {len(netflex_consumers_list)}', log_file_name_def, 2, show_debug_prints_def)
+                checkpoint_to_logfile(f'exported demand TS for consumer {c}, {c_number+1} of {len(netflex_consumers_list)}', scen.log_name, 2, scen.show_debug_prints)
         
         # remove pv assets because they also have negative values
         agg_demand_df = agg_demand_df[agg_demand_df['tech'] != 'pv']
@@ -580,15 +552,15 @@ def import_demand_TS_AND_match_households(
         # fig.show()
 
         # export aggregated demand for all NETFLEX consumer assets
-        agg_demand_df.to_parquet(f'{preprep_path_def}/demand_ts.parquet')
-        checkpoint_to_logfile(f'exported demand TS for all consumers', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        agg_demand_df.to_parquet(f'{scen.preprep_path}/demand_ts.parquet')
+        checkpoint_to_logfile('exported demand TS for all consumers', scen.log_name, scen.show_debug_prints)
         
 
         # AGGREGATE DEMAND TYPES -----------------------------------------------------------------
         # aggregate demand TS for defined consumer types 
         # demand upper/lower 50 percentile, with/without heat pump
         # get IDs for each subcatergory
-        print_to_logfile(f'\nAGGREGATE DEMAND TYPES {10*"*"}', log_file_name_def = log_file_name_def)
+        print_to_logfile(f'\nAGGREGATE DEMAND TYPES {10*"*"}', scen.log_name)
         def get_IDs_upper_lower_totalconsumpttion_by_hp(df, hp_TF = True,  up_low50percent = "upper"):
             id_with_hp = df[df['tech'] == 'hp']['id'].unique()
             if hp_TF: 
@@ -632,40 +604,40 @@ def import_demand_TS_AND_match_households(
         demandtypes = demandtypes.sort_values(by = 't')
         demandtypes = demandtypes.reset_index(drop=True)
 
-        demandtypes.to_parquet(f'{preprep_path_def}/demandtypes.parquet')
-        demandtypes.to_csv(f'{preprep_path_def}/demandtypes.csv', sep=';', index=False)
-        checkpoint_to_logfile(f'exported demand types', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        demandtypes.to_parquet(f'{scen.preprep_path}/demandtypes.parquet')
+        demandtypes.to_csv(f'{scen.preprep_path}/demandtypes.csv', sep=';', index=False)
+        checkpoint_to_logfile('exported demand types', scen.log_name, scen.show_debug_prints)
 
         # plot demand types with plotly
         fig = px.line(demandtypes, x='t', y=['high_DEMANDprox_wiHP', 'low_DEMANDprox_wiHP', 'high_DEMANDprox_noHP', 'low_DEMANDprox_noHP'], title='Demand types')
         # fig.show()
-        fig.write_html(f'{preprep_path_def}/demandtypes.html')
+        fig.write_html(f'{scen.preprep_path}/demandtypes.html')
         demandtypes['high_DEMANDprox_wiHP'].sum(), demandtypes['low_DEMANDprox_wiHP'].sum(), demandtypes['high_DEMANDprox_noHP'].sum(), demandtypes['low_DEMANDprox_noHP'].sum()
 
 
         # MATCH DEMAND TYPES TO HOUSEHOLDS -----------------------------------------------------------------
-        print_to_logfile(f'\nMATCH DEMAND TYPES TO HOUSEHOLDS {10*"*"}', log_file_name_def = log_file_name_def)
+        print_to_logfile(f'\nMATCH DEMAND TYPES TO HOUSEHOLDS {10*"*"}', scen.log_name)
 
         # import GWR and PV --------
-        gwr_all = pd.read_parquet(f'{preprep_path_def}/gwr.parquet')
-        checkpoint_to_logfile(f'imported gwr data', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        gwr_all = pd.read_parquet(f'{scen.preprep_path}/gwr.parquet')
+        checkpoint_to_logfile('imported gwr data', scen.log_name, scen.show_debug_prints)
         
         # transformations
-        gwr_all[gwr_selection_specs_def['DEMAND_proxy']] = pd.to_numeric(gwr_all[gwr_selection_specs_def['DEMAND_proxy']], errors='coerce')
+        gwr_all[scen.GWR_DEMAND_proxy] = pd.to_numeric(gwr_all[scen.GWR_DEMAND_proxy], errors='coerce')
         gwr_all['GBAUJ'] = pd.to_numeric(gwr_all['GBAUJ'], errors='coerce')
         gwr_all.dropna(subset = ['GBAUJ'], inplace = True)
         gwr_all['GBAUJ'] = gwr_all['GBAUJ'].astype(int)
 
         # selection based on GWR specifications -------- 
         # select columns GSTAT that are within list ['1110','1112'] and GKLAS in ['1234','2345']
-        gwr = gwr_all[(gwr_all['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
-                    (gwr_all['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) & 
-                    (gwr_all['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
-                    (gwr_all['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
-        checkpoint_to_logfile(f'filtered vs unfiltered gwr: shape ({gwr.shape[0]} vs {gwr_all.shape[0]}), EGID.nunique ({gwr["EGID"].nunique()} vs {gwr_all ["EGID"].nunique()})', log_file_name_def, 2, show_debug_prints_def)
+        gwr = gwr_all[(gwr_all['GSTAT'].isin(scen.GWR_GSTAT)) & 
+                    (gwr_all['GKLAS'].isin(scen.GWR_GKLAS)) & 
+                    (gwr_all['GBAUJ'] >= scen.GWR_GBAUJ_minmax[0]) &
+                    (gwr_all['GBAUJ'] <= scen.GWR_GBAUJ_minmax[1])]
+        checkpoint_to_logfile(f'filtered vs unfiltered gwr: shape ({gwr.shape[0]} vs {gwr_all.shape[0]}), EGID.nunique ({gwr["EGID"].nunique()} vs {gwr_all ["EGID"].nunique()})', scen.log_name, 2, scen.show_debug_prints)
         
-        def get_IDs_upper_lower_DEMAND_by_hp(df, DEMAND_col = gwr_selection_specs_def['DEMAND_proxy'],  hp_TF = True,  up_low50percent = "upper"):
-            id_with_hp = df[df['GWAERZH1'].isin(gwr_selection_specs_def['GWAERZH'])]['EGID'].unique()
+        def get_IDs_upper_lower_DEMAND_by_hp(df, DEMAND_col = scen.GWR_DEMAND_proxy,  hp_TF = True,  up_low50percent = "upper"):
+            id_with_hp = df[df['GWAERZH1'].isin(scen.GWR_GWAERZH)]['EGID'].unique()
             if hp_TF: 
                 filtered_df = df[df['EGID'].isin(id_with_hp)]
             elif not hp_TF:
@@ -686,8 +658,7 @@ def import_demand_TS_AND_match_households(
 
 
         # sanity check --------
-        print_to_logfile(f'sanity check gwr classifications', log_file_name_def = log_file_name_def)
-        gwr_egid_list = gwr['EGID'].tolist()
+        print_to_logfile('sanity check gwr classifications', scen.log_name)
         gwr_classified_list = [high_DEMANDprox_wiHP_list, low_DEMANDprox_wiHP_list, high_DEMANDprox_noHP_list, low_DEMANDprox_noHP_list]
         gwr_classified_names= ['high_DEMANDprox_wiHP_list', 'low_DEMANDprox_wiHP_list', 'high_DEMANDprox_noHP_list', 'low_DEMANDprox_noHP_list']
 
@@ -698,13 +669,13 @@ def import_demand_TS_AND_match_households(
                 if i != chosen_lst_idx:
                     other_set = set(lst)
                     common_ids = chosen_set.intersection(other_set)
-                    print_to_logfile(f"No. of common IDs between {gwr_classified_names[chosen_lst_idx]} and {gwr_classified_names[i]}: {len(common_ids)}", log_file_name_def = log_file_name_def)
-            print_to_logfile(f'\n', log_file_name_def = log_file_name_def)
+                    print_to_logfile(f"No. of common IDs between {gwr_classified_names[chosen_lst_idx]} and {gwr_classified_names[i]}: {len(common_ids)}", scen.log_name)
+            print_to_logfile('\n', scen.log_name)
 
         # precent of classified buildings
         n_classified = sum([len(lst) for lst in gwr_classified_list])
         n_all = len(gwr['EGID'])
-        print_to_logfile(f'{n_classified} of {n_all} ({round(n_classified/n_all*100, 2)}%) gwr rows are classfied', log_file_name_def = log_file_name_def)
+        print_to_logfile(f'{n_classified} of {n_all} ({round(n_classified/n_all*100, 2)}%) gwr rows are classfied', scen.log_name)
         
 
         # export to JSON --------
@@ -714,31 +685,31 @@ def import_demand_TS_AND_match_households(
             'high_DEMANDprox_noHP': high_DEMANDprox_noHP_list,
             'low_DEMANDprox_noHP': low_DEMANDprox_noHP_list,
         }
-        with open(f'{preprep_path_def}/Map_demandtype_EGID.json', 'w') as f:
+        with open(f'{scen.preprep_path}/Map_demandtype_EGID.json', 'w') as f:
             json.dump(Map_demandtype_EGID, f)
-        checkpoint_to_logfile(f'exported Map_demandtype_EGID.json', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        checkpoint_to_logfile('exported Map_demandtype_EGID.json', scen.log_name, scen.show_debug_prints)
 
         Map_EGID_demandtypes = {}
         for type, egid_list in Map_demandtype_EGID.items():
             for egid in egid_list:
                 Map_EGID_demandtypes[egid] = type
-        with open(f'{preprep_path_def}/Map_EGID_demandtypes.json', 'w') as f:
+        with open(f'{scen.preprep_path}/Map_EGID_demandtypes.json', 'w') as f:
             json.dump(Map_EGID_demandtypes, f)
-        checkpoint_to_logfile(f'exported Map_EGID_demandtypes.json', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+        checkpoint_to_logfile('exported Map_EGID_demandtypes.json', scen.log_name, scen.show_debug_prints)
 
 
     # DEMAND DATA SOURCE: SwissStore ============================================================
-    elif demand_specs_def['input_data_source'] == "SwissStore" :
+    elif scen.DEMAND_input_data_source == "SwissStore" :
         print("STUCK")     # follow up call with Hector. => for match all houses to archetypes of Swisstore and then later extract demand profile
         
-        swstore_demand_inclnan = pd.read_excel(f'{data_path_def}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx')
+        swstore_demand_inclnan = pd.read_excel(f'{scen.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx')
         swstore_demand = swstore_demand_inclnan.loc[~swstore_demand_inclnan['time'].isna()]
         swstore_demand['SFH'].sum(), swstore_demand['MFH'].sum()
         swstore_demand.head()
         swstore_demand.shape
 
 
-        os.listdir(f'{data_path_def}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx')
+        os.listdir(f'{scen.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx')
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -746,44 +717,32 @@ def import_demand_TS_AND_match_households(
 # ------------------------------------------------------------------------------------------------------
 
 def import_meteo_data(
-        dataagg_settings_def, ):
+        scen, ):
     """
     Import meteo data from a source, select only the relevant time frame store data to prepreped data folder.
     """
     
-    # import settings + setup --------
-    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
-    bfs_number_def = dataagg_settings_def['bfs_numbers']
-    year_range_def = dataagg_settings_def['year_range']
-    smaller_import_def = dataagg_settings_def['smaller_import']
-    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
-    log_file_name_def = dataagg_settings_def['log_file_name']
-    wd_path_def = dataagg_settings_def['wd_path']
-    data_path_def = dataagg_settings_def['data_path']
-    preprep_path_def = dataagg_settings_def['preprep_path']
-
-    gwr_selection_specs_def = dataagg_settings_def['gwr_selection_specs']
-    print_to_logfile(f'run function: import_demand_TS_AND_match_households.py', log_file_name_def = log_file_name_def)
-
+    # SETUP --------------------------------------
+    print_to_logfile('run function: import_demand_TS_AND_match_households.py', scen.log_name)
 
 
     # IMPORT METEO DATA ============================================================================
-    print_to_logfile(f'\nIMPORT METEO DATA {10*"*"}', log_file_name_def = log_file_name_def)
+    print_to_logfile(f'\nIMPORT METEO DATA {10*"*"}', scen.log_name)
 
     # import meteo data --------
-    meteo = pd.read_csv(f'{data_path_def}/input/Meteoblue_BSBL/Meteodaten_Basel_2018_2024_reduziert_bereinigt.csv')
+    meteo = pd.read_csv(f'{scen.data_path}/input/Meteoblue_BSBL/Meteodaten_Basel_2018_2024_reduziert_bereinigt.csv')
 
     # transformations
     meteo['timestamp'] = pd.to_datetime(meteo['timestamp'], format = '%d.%m.%Y %H:%M:%S')
 
     # select relevant time frame
-    start_stamp = pd.to_datetime(f'01.01.{year_range_def[0]}', format = '%d.%m.%Y')
-    end_stamp = pd.to_datetime(f'31.12.{year_range_def[1]}', format = '%d.%m.%Y')
+    start_stamp = pd.to_datetime(f'01.01.{scen.year_range[0]}', format = '%d.%m.%Y')
+    end_stamp = pd.to_datetime(f'31.12.{scen.year_range[1]}', format = '%d.%m.%Y')
     meteo = meteo[(meteo['timestamp'] >= start_stamp) & (meteo['timestamp'] <= end_stamp)]
     
     # export --------
-    meteo.to_parquet(f'{preprep_path_def}/meteo.parquet')
-    checkpoint_to_logfile(f'exported meteo data', log_file_name_def = log_file_name_def, show_debug_prints_def = show_debug_prints_def)
+    meteo.to_parquet(f'{scen.preprep_path}/meteo.parquet')
+    checkpoint_to_logfile('exported meteo data', scen.log_name, scen.show_debug_prints)
 
     # MATCH WEATHER STATIONS TO HOUSEHOLDS ============================================================================
 

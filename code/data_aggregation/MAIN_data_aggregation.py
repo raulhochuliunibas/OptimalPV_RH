@@ -50,7 +50,7 @@ class DataAggScenario:
 
                  SOLKAT_col_partition_union                 = 'SB_UUID',                   # column name used for the union of partitions
                  SOLKAT_GWR_EGID_buffer_size                = 10,                          # buffer size in meters for the GWR selection
-                 SOLAKT_match_missing_EGIDs_to_solkat_TF    = False,
+                 SOLKAT_match_missing_EGIDs_to_solkat_TF    = False,
                  SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique = True,
                  SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG', ],
                  SOLKAT_test_loop_optim_buff_size_TF        = False,
@@ -64,7 +64,8 @@ class DataAggScenario:
         self.show_debug_prints: bool = show_debug_prints
         
         self.kt_numbers: List[int] = kt_numbers
-        self.bfs_numbers: List[int] = get_bfs_from_ktnr(kt_numbers) if kt_numbers != [] else bfs_numbers
+        # not in init because data_path and log_name needed to be defined
+        self.bfs_numbers = bfs_numbers# self.bfs_numbers: List[int] = get_bfs_from_ktnr(kt_numbers, data_path, log_name) if kt_numbers != [] else bfs_numbers
         self.year_range: List[int] = year_range
 
         self.split_data_geometry_AND_slow_api: bool = split_data_geometry_AND_slow_api
@@ -81,7 +82,7 @@ class DataAggScenario:
 
         self.SOLKAT_col_partition_union: str = SOLKAT_col_partition_union
         self.SOLKAT_GWR_EGID_buffer_size: int = SOLKAT_GWR_EGID_buffer_size
-        self.SOLAKT_match_missing_EGIDs_to_solkat_TF: bool = SOLAKT_match_missing_EGIDs_to_solkat_TF
+        self.SOLKAT_match_missing_EGIDs_to_solkat_TF: bool = SOLKAT_match_missing_EGIDs_to_solkat_TF
         self.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique: bool = SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique
         self.SOLKAT_cols_adjust_for_missEGIDs_to_solkat: List[str] = SOLKAT_cols_adjust_for_missEGIDs_to_solkat
         self.SOLKAT_test_loop_optim_buff_size_TF: bool = SOLKAT_test_loop_optim_buff_size_TF
@@ -99,6 +100,8 @@ class DataAggScenario:
 
         self.log_name = os.path.join(self.preprep_path, 'preprep_log.txt')
         self.summary_name = os.path.join(self.preprep_path, 'summary_data_selection_log.txt')
+
+        self.bfs_numbers: List[int] = get_bfs_from_ktnr(self.kt_numbers, self.data_path, self.log_name) if self.kt_numbers != [] else self.bfs_numbers
         self.total_runtime_start = datetime.datetime.now()
 
         # create dir for export
@@ -136,37 +139,36 @@ class DataAggScenario:
         preprep_data.get_earlier_api_import_data(self)
 
 
-    #     if self.rerun_localimport_and_mappings:
-    #         subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', self.log_name)
-    #         sql_gwr.sql_gwr_data(self)
+        if self.rerun_localimport_and_mappings:
+            subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', self.log_name)
+            sql_gwr.sql_gwr_data(self)
 
-    #         subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', self.log_name)
-    #         preprep_data.local_data_AND_spatial_mappings(self)
+            subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', self.log_name)
+            preprep_data.local_data_AND_spatial_mappings(self)
 
-    #         subchapter_to_logfile('pre-prep data: IMPORT DEMAND TS + match series HOUSES', self.log_name)
-    #         preprep_data.import_demand_TS_AND_match_households(self)
+            subchapter_to_logfile('pre-prep data: IMPORT DEMAND TS + match series HOUSES', self.log_name)
+            preprep_data.import_demand_TS_AND_match_households(self)
 
-    #         subchapter_to_logfile('pre-prep data: IMPORT METEO SUNSHINE TS', self.log_name)
-    #         preprep_data.import_meteo_data(self)
+            subchapter_to_logfile('pre-prep data: IMPORT METEO SUNSHINE TS', self.log_name)
+            preprep_data.import_meteo_data(self)
 
-    #     if self.reextend_fixed_data:
-    #         subchapter_to_logfile('extend data: GET ANGLE+TILT FACTOR + NODE MAPPING', self.log_name)
-    #         extend_data.get_angle_tilt_table(self)
+        if self.reextend_fixed_data:
+            subchapter_to_logfile('extend data: GET ANGLE+TILT FACTOR + NODE MAPPING', self.log_name)
+            extend_data.get_angle_tilt_table(self)
 
         
-    #     # END + FOLDER RENAME ---------------------------------------------------
-    #     chapter_to_logfile(f'END MASTER_data_aggregation\n Runtime (hh:mm:ss):{datetime.now() - self.total_runtime_start}', self.log_name)
+        # END + FOLDER RENAME ---------------------------------------------------
+        chapter_to_logfile(f'END MASTER_data_aggregation\n Runtime (hh:mm:ss):{datetime.now() - self.total_runtime_start}', self.log_name)
 
-    #     if os.path.exists(self.dir_move_to):
-    #         n_same_names = len(glob.glob(f'{self.name_dir_export}*'))
-    #         os.rename(self.dir_move_to, f'{self.dir_move_to}_{n_same_names}')
+        if os.path.exists(self.dir_move_to):
+            n_same_names = len(glob.glob(f'{self.name_dir_export}*'))
+            os.rename(self.dir_move_to, f'{self.dir_move_to}_{n_same_names}')
 
-
-    #     os.rename(self.log_name, f'{self.log_name.split(".txt")[0]}_{self.name_dir_export}.txt')
-    #     os.rename(self.summary_name, f'{self.summary_name.split(".txt")[0]}_{self.name_dir_export}.txt')
+        os.rename(self.log_name, f'{self.log_name.split(".txt")[0]}_{self.name_dir_export}.txt')
+        os.rename(self.summary_name, f'{self.summary_name.split(".txt")[0]}_{self.name_dir_export}.txt')
         
-    #     # rename preprep folder
-    #     os.rename(self.preprep_path, self.dir_move_to)
+        # rename preprep folder
+        os.rename(self.preprep_path, self.dir_move_to)
 
     def run_debug(self):
         split_data_geometry.split_data_geometry(self)
@@ -188,7 +190,8 @@ if __name__ == '__main__':
         ),
         DataAggScenario(
             name_dir_export = 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-            kt_numbers = [13],
+            # kt_numbers = [13],
+            bfs_numbers = [2761, 2768,],
             year_range = [2022, 2023],
             split_data_geometry_AND_slow_api = False,
 
@@ -227,8 +230,8 @@ if __name__ == '__main__':
     ]
 
     for preprep_scen in preprep_scen_list:
-        # preprep_scen.run_data_agg()
-        preprep_scen.run_debug()
+        preprep_scen.run_data_agg()
+        # preprep_scen.run_debug()
 
 
 print('done')

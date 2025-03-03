@@ -4,6 +4,7 @@ import pandas as pd
 import geopandas as gpd
 import  sqlite3
 import shutil
+import copy
 
 from shapely.geometry import Point
 
@@ -38,7 +39,6 @@ def split_data_geometry(scen,):
         """
         gdf.set_crs(gm_shp_df.crs, allow_override=True, inplace=True)
         gdf = gpd.sjoin(gdf, gm_shp_df, how="left", predicate="within")
-        checkpoint_to_logfile('sjoin complete', log_file_name_def = scen.log_name, n_tabs_def = 6, show_debug_prints_def = scen.show_debug_prints)
         dele_cols = ['index_right'] + [col for col in gm_shp_df.columns if col not in keep_cols]
         gdf.drop(columns = dele_cols, inplace = True)
         if 'BFS_NUMMER' in gdf.columns:
@@ -50,65 +50,67 @@ def split_data_geometry(scen,):
 
     # PV -------------------
     elec_prod_gdf = gpd.read_file(f'{scen.data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', layer ='ElectricityProductionPlant')
-    pv_all_gdf = elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'].copy()
+    pv_all_gdf = copy.deepcopy(elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'])
     checkpoint_to_logfile(f'import pv, {pv_all_gdf.shape[0]} rows', scen.log_name, 1, scen.show_debug_prints)
 
     pv_all_gdf = attach_bfs_to_spatial_data(pv_all_gdf, gm_shp_df)
     pv_all_gdf.set_crs("EPSG:2056", allow_override=True, inplace=True)
 
     # split + export
-    checkpoint_to_logfile('check unique identifier pv: {pv_all_gdf["xtf_id"].nunique()} xtf unique, {pv_all_gdf.shape[0]} rows', log_file_name_def = scen.log_name, n_tabs_def = 0, show_debug_prints_def = scen.show_debug_prints)
-    pv_pq = pv_all_gdf.loc[:,pv_all_gdf.columns !='geometry'].copy()
-    pv_geo = pv_all_gdf.loc[:,['xtf_id', 'BFS_NUMMER', 'geometry']].copy()
+    checkpoint_to_logfile('-- check unique identifier pv: {pv_all_gdf["xtf_id"].nunique()} xtf unique, {pv_all_gdf.shape[0]} rows', log_file_name_def = scen.log_name, n_tabs_def = 0, show_debug_prints_def = scen.show_debug_prints)
+    pv_pq = copy.deepcopy(pv_all_gdf.loc[:,pv_all_gdf.columns !='geometry'])
+    pv_geo = copy.deepcopy(pv_all_gdf.loc[:,['xtf_id', 'BFS_NUMMER', 'geometry']])
 
     pv_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/pv_pq.parquet')
-    checkpoint_to_logfile('exported pv_pq.parquet', scen.log_name, 5, scen.show_debug_prints)
+    checkpoint_to_logfile('-- exported pv_pq.parquet', scen.log_name, 5, scen.show_debug_prints)
 
     with open(f'{scen.data_path}/input_split_data_geometry/pv_geo.geojson', 'w') as f:
         f.write(pv_geo.to_json())
-    checkpoint_to_logfile('exported pv_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
+    checkpoint_to_logfile('-- exported pv_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
 
 
     # SOLKAT -------------------
-    solkat_all_gdf = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH')
+    solkat_all_gdf = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH', rows=10000)
     checkpoint_to_logfile(f'import solkat, {solkat_all_gdf.shape[0]} rows', scen.log_name, 2, scen.show_debug_prints)
 
     solkat_all_gdf = attach_bfs_to_spatial_data(solkat_all_gdf, gm_shp_df)
     solkat_all_gdf.set_crs("EPSG:2056", allow_override=True, inplace=True)
 
     # split + export
-    checkpoint_to_logfile(f'check unique identifier solkat: {solkat_all_gdf["DF_UID"].nunique()} DF_UID unique, {solkat_all_gdf.shape[0]} rows', log_file_name_def = scen.log_name, n_tabs_def = 5, show_debug_prints_def = scen.show_debug_prints)
-    solkat_pq = solkat_all_gdf.loc[:,solkat_all_gdf.columns !='geometry'].copy()
-    solkat_geo = solkat_all_gdf.loc[:,['DF_UID', 'BFS_NUMMER', 'geometry']].copy()
+    checkpoint_to_logfile(f'-- check unique identifier solkat: {solkat_all_gdf["DF_UID"].nunique()} DF_UID unique, {solkat_all_gdf.shape[0]} rows', log_file_name_def = scen.log_name, n_tabs_def = 5, show_debug_prints_def = scen.show_debug_prints)
+    solkat_pq = copy.deepcopy(solkat_all_gdf.loc[:,solkat_all_gdf.columns !='geometry'])
+    solkat_geo = copy.deepcopy(solkat_all_gdf.loc[:,['DF_UID', 'BFS_NUMMER', 'geometry']])
 
     solkat_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/solkat_pq.parquet')
-    checkpoint_to_logfile('exported solkat_pq.parquet', scen.log_name, 5, scen.show_debug_prints)
+    checkpoint_to_logfile('-- exported solkat_pq.parquet', scen.log_name, 5, scen.show_debug_prints)
 
     with open(f'{scen.data_path}/input_split_data_geometry/solkat_geo.geojson', 'w') as f:
         f.write(solkat_geo.to_json())
-    checkpoint_to_logfile('exported solkat_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
+    checkpoint_to_logfile('-- exported solkat_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
 
 
     # SOLKAT MONTH -------------------
-    solkat_month_pq = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
-    solkat_month_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
+    # solkat_month_pq = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
+    # solkat_month_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
     
 
     # subset for BSBLSO case -------------------
-    bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13], scen.data_path, scen.log_name)
+    bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13,], scen.data_path, scen.log_name)
 
-    pv_bsblso_geo = pv_geo.loc[pv_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
+    checkpoint_to_logfile('subset pv for bsblso case', scen.log_name, 5, scen.show_debug_prints)
+    pv_bsblso_geo = copy.deepcopy(pv_geo.loc[pv_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)])
     if pv_bsblso_geo.shape[0] > 0:
         with open (f'{scen.data_path}/input_split_data_geometry/pv_bsblso_geo.geojson', 'w') as f:
             f.write(pv_bsblso_geo.to_json())
-        checkpoint_to_logfile('exported pv_bsblso_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
+        checkpoint_to_logfile('-- exported pv_bsblso_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
 
 
-    solkat_bsblso_geo = solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)].copy()
+    checkpoint_to_logfile('subset solkat for bsblso case', scen.log_name, 5, scen.show_debug_prints)
+    solkat_bsblso_geo = copy.deepcopy(solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)])
     if solkat_bsblso_geo.shape[0] > 0:
         with open (f'{scen.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson', 'w') as f:
             f.write(solkat_bsblso_geo.to_json())
-        checkpoint_to_logfile('exported solkat_bsblso_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
+        checkpoint_to_logfile('-- exported solkat_bsblso_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
 
     
     # Copy Log File to input_split_data_geometry folder

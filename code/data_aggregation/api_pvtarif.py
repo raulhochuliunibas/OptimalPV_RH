@@ -31,7 +31,10 @@ def api_pvtarif_gm_ewr_Mapping(scen, ):
     os.makedirs(f'{scen.data_path}/input_api', exist_ok=True)
 
     # QUERY --------------------------------------
-    gm_shp_df = gpd.read_file(f'{scen.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITGEBIET')
+    # gm_shp_df = gpd.read_file(f'{scen.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGRENZE.shp')
+    gm_shp_df = gpd.read_file(f'{scen.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+    
+
     bfs_list = gm_shp_df['BFS_NUMMER'].unique()
     bfs_counter = len(bfs_list) // 4
 

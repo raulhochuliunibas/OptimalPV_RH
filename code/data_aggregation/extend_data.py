@@ -7,7 +7,6 @@ import json
 import itertools
 
 from scipy.optimize import curve_fit
-from collections import OrderedDict
 from numpy.polynomial.polynomial import Polynomial
 
 
@@ -22,24 +21,13 @@ from auxiliary.auxiliary_functions import checkpoint_to_logfile, print_to_logfil
 # ------------------------------------------------------------------------------------------------------
 
 def estimate_pv_cost(
-        dataagg_settings_def, ):        
+        scen, ):        
     """
     Function to create assumed cost df for PV installation (by total and relative size in kW)
     Source: https://www.energieschweiz.ch/tools/solarrechner/
     """ 
     # setup -------------------
-    script_run_on_server_def = dataagg_settings_def['script_run_on_server']
-    bfs_number_def = dataagg_settings_def['bfs_numbers']
-    year_range_def = dataagg_settings_def['year_range']
-    smaller_import_def = dataagg_settings_def['smaller_import']
-    show_debug_prints_def = dataagg_settings_def['show_debug_prints']
-    log_file_name_def = dataagg_settings_def['log_file_name']
-    wd_path_def = dataagg_settings_def['wd_path']
-    data_path_def = dataagg_settings_def['data_path']
-    preprep_path_def = dataagg_settings_def['preprep_path']
-
-
-    print_to_logfile(f'run function: attach_pv_cost.py', log_file_name_def= log_file_name_def)
+    print_to_logfile(f'run function: attach_pv_cost.py', scen.log_name)
 
 
     # CREATE COST DF AND FUNCTIONS ================================================================
@@ -90,8 +78,8 @@ def estimate_pv_cost(
         params_pkW, covar = curve_fit(func_chf_pkW, installation_cost_df['kw'], installation_cost_df['chf_pkW'])
         # createa a function that takes a kw value and returns the cost per kW
         estim_instcost_chfpkW = lambda x: func_chf_pkW(x, *params_pkW)
-        checkpoint_to_logfile(f'created intrapolation function for chf_pkW using "cureve_fit" to receive curve parameters', log_file_name_def)
-        print_to_logfile(f'params_pkW: {params_pkW}', log_file_name_def)
+        checkpoint_to_logfile(f'created intrapolation function for chf_pkW using "cureve_fit" to receive curve parameters', scen.log_name)
+        print_to_logfile(f'params_pkW: {params_pkW}', scen.log_name)
         
         # chf_total
         degree = 2  # Change this to try different degrees
@@ -99,8 +87,8 @@ def estimate_pv_cost(
         def func_chf_total_poly(x, coefs_total):
             return sum(c * x**i for i, c in enumerate(coefs_total))
         estim_instcost_chftotal = lambda x: func_chf_total_poly(x, coefs_total)
-        checkpoint_to_logfile(f'created intrapolation function for chf_total using "Polynomial.fit" to receive curve coefficients', log_file_name_def)
-        print_to_logfile(f'coefs_total: {coefs_total}', log_file_name_def)
+        checkpoint_to_logfile(f'created intrapolation function for chf_total using "Polynomial.fit" to receive curve coefficients', scen.log_name)
+        print_to_logfile(f'coefs_total: {coefs_total}', scen.log_name)
 
         pvinstcost_coefficients = {
             'params_pkW': list(params_pkW),
@@ -108,10 +96,10 @@ def estimate_pv_cost(
         }
 
         # export 
-        with open(f'{preprep_path_def}/pvinstcost_coefficients.json', 'w') as f:
+        with open(f'{scen.preprep_path}/pvinstcost_coefficients.json', 'w') as f:
             json.dump(pvinstcost_coefficients, f)
 
-        np.save(f'{preprep_path_def}/pvinstcost_coefficients.npy', pvinstcost_coefficients)
+        np.save(f'{scen.preprep_path}/pvinstcost_coefficients.npy', pvinstcost_coefficients)
 
 
         # plot installation cost df + intrapolation functions -------------------
@@ -135,12 +123,12 @@ def estimate_pv_cost(
             # Export the plots
             plt.tight_layout()
             # plt.show()
-            plt.savefig(f'{preprep_path_def}/pvinstcost_table.png')
+            plt.savefig(f'{scen.preprep_path}/pvinstcost_table.png')
 
         # export cost df -------------------
-        installation_cost_df.to_parquet(f'{preprep_path_def}/pvinstcost_table.parquet')
-        installation_cost_df.to_csv(f'{preprep_path_def}/pvinstcost_table.csv')
-        checkpoint_to_logfile(f'exported pvinstcost_table', log_file_name_def=log_file_name_def, n_tabs_def = 5)
+        installation_cost_df.to_parquet(f'{scen.preprep_path}/pvinstcost_table.parquet')
+        installation_cost_df.to_csv(f'{scen.preprep_path}/pvinstcost_table.csv')
+        checkpoint_to_logfile(f'exported pvinstcost_table', scen.log_name, n_tabs_def = 5)
 
 
     # ATTACH CUMULATIVE COST TO ROOF PARTITIONS ================================================================
@@ -150,7 +138,7 @@ def estimate_pv_cost(
 
     if False: 
         # import and prepare solkat data -------------------
-        solkat = pd.read_parquet(f'{preprep_path_def}/solkat.parquet')
+        solkat = pd.read_parquet(f'{scen.preprep_path}/solkat.parquet')
 
         # transform IDs cols to str 
         def convert_srs_to_str(df, colname):
@@ -160,21 +148,18 @@ def estimate_pv_cost(
         solkat = convert_srs_to_str(solkat, 'EGID')
         solkat = convert_srs_to_str(solkat, 'BFS_NUMMER')
         solkat['n_partition'] = 1  # set to 1 for each individual partition, used to count partitions in groupby later
-        checkpoint_to_logfile(f'imported + transformed solkat for cost extension', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
-        
-        if smaller_import_def:
-            solkat = solkat[0:200]
+        checkpoint_to_logfile('imported + transformed solkat for cost extension', scen.log_name, 5, scen.show_debug_prints)
 
 
         # extend COST for ALL partition BY EGID -------------------
         solkat_egid_total = solkat.groupby(['EGID', ]).agg(
             {'FLAECHE': 'sum', 'MSTRAHLUNG': 'mean', 'GSTRAHLUNG': 'sum', 'STROMERTRAG': 'sum', 'n_partition':'sum'}).reset_index()
-        solkat_egid_total['pvpot_bysurface_kw'] = solkat_egid_total['FLAECHE'] * conversion_m2_to_kw
+        solkat_egid_total['pvpot_bysurface_kw'] = solkat_egid_total['FLAECHE'] #* conversion_m2_to_kw
         solkat_egid_total['cost_chf_pkW_times_kw'] = estim_instcost_chfpkW(solkat_egid_total['pvpot_bysurface_kw']) * solkat_egid_total['pvpot_bysurface_kw']
         solkat_egid_total['cost_chf_total'] = estim_instcost_chftotal(solkat_egid_total['pvpot_bysurface_kw'])
 
-        solkat_egid_total.to_parquet(f'{preprep_path_def}/solkat_egid_total.parquet')
-        checkpoint_to_logfile(f'exported solkat_egid_total', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def= show_debug_prints_def)
+        solkat_egid_total.to_parquet(f'{scen.preprep_path}/solkat_egid_total.parquet')
+        checkpoint_to_logfile('exported solkat_egid_total', scen.log_name, 5, scen.show_debug_prints)
 
 
     # extend COST per ADDITIONAL partition -------------------
@@ -190,30 +175,26 @@ def estimate_pv_cost(
         cumulative_cols = ['FLAECH_cumm', 'GSTRAH_cumm', 'STROME_cumm']
         solkat_egid_cumsum[cumulative_cols] = solkat_egid_cumsum[['FLAECHE', 'GSTRAHLUNG', 'STROMERTRAG']]
         for col in cumulative_cols:
-            checkpoint_to_logfile(f'start cumulative sum for: {col}', log_file_name_def=log_file_name_def, n_tabs_def=2, show_debug_prints_def=show_debug_prints_def)
+            checkpoint_to_logfile(f'start cumulative sum for: {col}', scen.log_name, 2, scen.show_debug_prints)
             solkat_egid_cumsum[col] = solkat_egid_cumsum.groupby('EGID')[col].transform(pd.Series.cumsum)
 
-        solkat_egid_cumsum.to_parquet(f'{preprep_path_def}/solkat_egid_cumsum.parquet')
-        checkpoint_to_logfile(f'exported solkat_egid_cumsum', log_file_name_def=log_file_name_def, n_tabs_def = 5, show_debug_prints_def=show_debug_prints_def)
+        solkat_egid_cumsum.to_parquet(f'{scen.preprep_path}/solkat_egid_cumsum.parquet')
+        checkpoint_to_logfile('exported solkat_egid_cumsum', scen.log_name, 5, scen.show_debug_prints)
 
 
 
 # ------------------------------------------------------------------------------------------------------
 # ANGLE TILT & AZIMUTH Table
 # ------------------------------------------------------------------------------------------------------
-def get_angle_tilt_table(dataagg_settings_def):
+def get_angle_tilt_table(scen):
 
-    # import settings + setup -------------------
-    data_path_def = dataagg_settings_def['data_path']
-    preprep_path_def = dataagg_settings_def['preprep_path']
-    log_file_name_def = dataagg_settings_def['log_file_name']
-    # name_dir_import_def = pvalloc_settings['name_dir_import']
-    print_to_logfile('run function: get_angle_tilt_table', log_file_name_def)
+    # SETUP -------------------
+    print_to_logfile('run function: get_angle_tilt_table', scen.log_name)
 
     # SOURCE: table was retreived from this site: https://echtsolar.de/photovoltaik-neigungswinkel/
     # date 29.08.24
     
-    # import df ---------
+    # IMPORT DF -------------------
     index_angle = [-180, -170, -160, -150, -140, -130, -120, -110, -100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
     index_tilt = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
     tuples_iter = list(itertools.product(index_angle, index_tilt))
@@ -301,8 +282,8 @@ def get_angle_tilt_table(dataagg_settings_def):
     angle_tilt_df['efficiency_factor'] = angle_tilt_df['efficiency_factor'] / 100
 
     # export df ----------
-    angle_tilt_df.to_parquet(f'{preprep_path_def}/angle_tilt_df.parquet')
-    angle_tilt_df.to_csv(f'{preprep_path_def}/angle_tilt_df.csv')
+    angle_tilt_df.to_parquet(f'{scen.preprep_path}/angle_tilt_df.parquet')
+    angle_tilt_df.to_csv(f'{scen.preprep_path}/angle_tilt_df.csv')
     # angle_tilt_df.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/angle_tilt_df.parquet')
     # return angle_tilt_df
 
@@ -312,18 +293,14 @@ def get_angle_tilt_table(dataagg_settings_def):
 # ------------------------------------------------------------------------------------------------------
 # FAKE TRAFO EGID MAPPING
 # ------------------------------------------------------------------------------------------------------
-def get_fake_gridnodes(dataagg_settings_def):
+def get_fake_gridnodes(scen,):
     
-    # import settings + setup -------------------
-    data_path_def = dataagg_settings_def['data_path']
-    preprep_path_def = dataagg_settings_def['preprep_path']
-    log_file_name_def = dataagg_settings_def['log_file_name']
-    # name_dir_import_def = pvalloc_settings['name_dir_import']
-    print_to_logfile('run function: get_fake_gridnodes', log_file_name_def)
+    # setup ----------------------
+    print_to_logfile('run function: get_fake_gridnodes', scen.log_name)
 
     # create fake gridnodes ----------------------
     # gwr = pd.read_parquet(f'{data_path_def}/output/{name_dir_import_def}/gwr.parquet')
-    gwr = pd.read_parquet(f'{preprep_path_def}/gwr.parquet')
+    gwr = pd.read_parquet(f'{scen.preprep_path}/gwr.parquet')
 
     gwr_nodes = gwr[['EGID', 'GDEKT']].copy()
     gwr_nodes['EGID_int'] = gwr_nodes['EGID'].astype(int)
@@ -336,8 +313,8 @@ def get_fake_gridnodes(dataagg_settings_def):
 
     # export df ----------
     Map_egid_nodes = gwr_nodes.copy()
-    Map_egid_nodes.to_parquet(f'{preprep_path_def}/Map_egid_nodes.parquet')
-    Map_egid_nodes.to_csv(f'{preprep_path_def}/Map_egid_nodes.csv')
+    Map_egid_nodes.to_parquet(f'{scen.preprep_path}/Map_egid_nodes.parquet')
+    Map_egid_nodes.to_csv(f'{scen.preprep_path}/Map_egid_nodes.csv')
     # Map_egid_nodes.to_parquet(f'{data_path_def}/output/{name_dir_import_def}/Map_egid_nodes.parquet')
     # return gwr_nodes
 
