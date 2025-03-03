@@ -9,8 +9,11 @@ import copy
 
 from shapely.ops import unary_union
 
-sys.path.append('..')
-from auxiliary_functions import checkpoint_to_logfile, print_to_logfile
+# own modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from auxiliary.auxiliary_functions import checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr
+from api_keys.api_keys import get_primeo_path
+
 
 # ------------------------------------------------------------------------------------------------------
 # BY SB_UUID - FALSE - IMPORT LOCAL DATA + create SPATIAL MAPPINGS
