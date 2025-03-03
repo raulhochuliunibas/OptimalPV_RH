@@ -1,5 +1,6 @@
 import os as os
 import geopandas as gpd
+from typing_extensions import List
 
 from datetime import datetime
 
@@ -80,18 +81,25 @@ def checkpoint_to_logfile(str_def, log_file_name_def, n_tabs_def = 0, show_debug
         time_last_call = time_now
 
 
-def get_bfs_from_ktnr(ktnr_list, data_path, log_name):
+def get_bfs_from_ktnr(
+        ktnr_list: List[int] , 
+        data_path: str,
+        log_name: str
+    ) -> List[str]:
     """
     Function to get a list of the BFS numbers for all municipalites within a list of canton numbers
     """
     gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 
     if (isinstance(ktnr_list, list)) and (not not ktnr_list):
+        gm_shp['BFS_NUMMER'] = gm_shp['BFS_NUMMER'].astype(str)
         gm_shp_sub = gm_shp[gm_shp['KANTONSNUM'].isin(ktnr_list)]
-        gm_shp_sub['BFS_NUMMER'] = gm_shp_sub['BFS_NUMMER'].astype(int).astype(str)
+        # gm_shp_sub['BFS_NUMMER'] = gm_shp_sub['BFS_NUMMER'].astype(int).astype(str)
+        # gm_shp_sub.loc[:, 'BFS_NUMMER'] = gm_shp_sub['BFS_NUMMER'].astype(int).astype(str)
+
         bfs_list = gm_shp_sub['BFS_NUMMER'].unique().tolist()
     else: 
-        print_to_logfile(f' > ERROR: no canton or bfs selection applicables; NOT used any municipality selection', log_name)
+        print_to_logfile(' > ERROR: no canton or bfs selection applicables; NOT used any municipality selection', log_name)
 
     return bfs_list
 

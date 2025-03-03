@@ -6,14 +6,16 @@ import matplotlib.pyplot as plt
 import json
 import itertools
 
-from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from collections import OrderedDict
 from numpy.polynomial.polynomial import Polynomial
 
 
-sys.path.append('..')
-from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+# own modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from auxiliary.auxiliary_functions import checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr
+
+
 
 # ------------------------------------------------------------------------------------------------------
 # INVESTMENT COSTS

@@ -7,8 +7,9 @@ import copy
 
 from shapely.geometry import Point
 
-sys.path.append('..')
-from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from auxiliary.auxiliary_functions import checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr
+
 
 # ------------------------------------------------------------------------------------------------------
 # SQL DATA IMPORT
