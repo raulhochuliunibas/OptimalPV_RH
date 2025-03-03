@@ -5,12 +5,10 @@ import geopandas as gpd
 import requests
 import copy
 
-sys.path.append('..')
-from auxiliary_functions import checkpoint_to_logfile, print_to_logfile
-
-# sys.path.append(r'C:/Models/OptimalPV_RH_apikeys')
-sys.path.append(f'{os.getcwd()}_apikeys')
-from apikeys import get_pvtarif_key
+# own modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from auxiliary.auxiliary_functions import checkpoint_to_logfile, print_to_logfile
+from api_keys.api_keys import get_pvtarif_key
 
 print(get_pvtarif_key())
 

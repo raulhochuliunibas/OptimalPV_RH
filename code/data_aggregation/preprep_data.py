@@ -7,7 +7,6 @@ import json
 import plotly.express as px
 import copy
 
-
 from shapely.ops import unary_union
 
 sys.path.append('..')

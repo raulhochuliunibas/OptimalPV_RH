@@ -15,7 +15,13 @@ __pyproject*
 venv*
 
 # ignore all files in data_directory, except empty textfiles
-# tbd
+data/*
+!data/**/empty_txt_file_for_folder_structure_in_github.txt
+
+# ignore all files api_keys_directory, except empty textfiles
+api_keys/*
+!api_keys/**/empty_txt_file_for_folder_structure_in_github.txt
+
 
 
 # --------------------------------------------------------------------------------------------

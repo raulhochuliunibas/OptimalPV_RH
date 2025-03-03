@@ -8,10 +8,8 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 
 sys.path.append('..')
-from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
-
-sys.path.append(r'C:/Models/OptimalPV_RH_apikeys')
-from apikeys import get_entsoe_key
+from auxiliary_functions import checkpoint_to_logfile, print_to_logfile
+from api_keys.api_keys import get_entsoe_key
 
 print(get_entsoe_key)
 
