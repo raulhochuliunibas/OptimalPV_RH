@@ -50,8 +50,7 @@ class DataAggScenario:
 
                  SOLKAT_col_partition_union                 = 'SB_UUID',                   # column name used for the union of partitions
                  SOLKAT_GWR_EGID_buffer_size                = 10,                          # buffer size in meters for the GWR selection
-                 SOLKAT_match_missing_EGIDs_to_solkat_TF    = False,
-                 SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique = True,
+                 SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique = False,
                  SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG', ],
                  SOLKAT_test_loop_optim_buff_size_TF        = False,
                  SOLKAT_test_loop_optim_buff_arang          = [0, 10, 0.1],
@@ -82,7 +81,6 @@ class DataAggScenario:
 
         self.SOLKAT_col_partition_union: str = SOLKAT_col_partition_union
         self.SOLKAT_GWR_EGID_buffer_size: int = SOLKAT_GWR_EGID_buffer_size
-        self.SOLKAT_match_missing_EGIDs_to_solkat_TF: bool = SOLKAT_match_missing_EGIDs_to_solkat_TF
         self.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique: bool = SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique
         self.SOLKAT_cols_adjust_for_missEGIDs_to_solkat: List[str] = SOLKAT_cols_adjust_for_missEGIDs_to_solkat
         self.SOLKAT_test_loop_optim_buff_size_TF: bool = SOLKAT_test_loop_optim_buff_size_TF
@@ -91,6 +89,34 @@ class DataAggScenario:
         self.DEMAND_input_data_source: str = DEMAND_input_data_source
 
     def run_data_agg(self):
+        """
+            Input:
+                (preprep data directory defined in the pv allocation scenario settings)
+                dict: pvalloc_settings_func
+                    > settings for pv allocation scenarios, for initalization and Monte Carlo iterations
+
+            Output (no function return but export to dir):
+                > directory renamed after scenario name (pvalloc_scenario), containing all data files form the INITIALIZATION of the pv allocation run.
+
+            Description: 
+                > Depending on the settings, certain steps of the model initalization can be run. (Debug function to only run certain steps, based on interim 
+                    file exports to save time).
+                > First the prepared data (geo and time series) from the preprep_[scenario] directory is imported (based on sencario selection criteria) 
+                    and a topology is created (dict with EGID as keys, containing all relevant information for each individual house).
+                > Then the a the future construction capacity for each month is defined (based on the scenario settings and past construction volume (kWP 
+                    in the smaple area and time window)).
+                > Next, the topology dictionary is transformed to a dataframe, to then be merged with the radiation time series. This step is necessary, as 
+                    I consider individual roof parts for each hour of the year). The total radiation potential per roof partition is calculated. This huge data
+                    frame is then partitioned into smaller subfiles to be "operatable" by my python IDE  economic components. This iterative subfile strucutre can
+                    be "switched off" (set n houses per subfile large enough) for larger computers or high performance computing clusters.
+                > The next scetion of the MASTER file runs a number of sanity checks on the initalization of the pv allocation run. 
+                    - The first check runs the allocation algorithm (identical to later Monte Carlo iterations), to extract plots and visualiations, accessible already
+                    after only a few monthly iterations. 
+                    - Another check exports all the relevant data from the topo dict and the economic components for each house to an xlsx file for comparison. 
+                    - Another check runs a simple check for multiple installations per EGID (which should not happen in the current model).
+                > The final step is to copy all relevant files to the output directory, which is then renamed after the scenario name.
+
+            """
 
         # SETUP ---------------------------------------------------
         self.wd_path = os.getcwd()
@@ -108,7 +134,7 @@ class DataAggScenario:
         os.makedirs(self.preprep_path, exist_ok=True)
 
         # create log file
-        chapter_to_logfile('start MAIN_data_aggregation', self.log_name, overwrite_file=True)
+        chapter_to_logfile(f'start MAIN_data_aggregation for:{self.name_dir_export}', self.log_name, overwrite_file=True)
         subchapter_to_logfile('dataagg_settings', self.log_name)
         for k, v in vars(self).items():
             print_to_logfile(f'{k}: {v}', self.log_name)
@@ -123,7 +149,6 @@ class DataAggScenario:
             # split geom from data and import slow APIs
             subchapter_to_logfile('pre-prep data: SPLIT DATA GEOMETRY + IMPORT SLOW APIs', self.log_name)
             split_data_geometry.split_data_geometry(self)
-            split_data_geometry.get_kt_bsblso_sql_gwr(self) 
 
             subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', self.log_name)
             api_pvtarif.api_pvtarif_gm_ewr_Mapping(self)
@@ -158,7 +183,7 @@ class DataAggScenario:
 
         
         # END + FOLDER RENAME ---------------------------------------------------
-        chapter_to_logfile(f'END MASTER_data_aggregation\n Runtime (hh:mm:ss):{datetime.now() - self.total_runtime_start}', self.log_name)
+        chapter_to_logfile(f'END MASTER_data_aggregation\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.total_runtime_start}', self.log_name)
 
         if os.path.exists(self.dir_move_to):
             n_same_names = len(glob.glob(f'{self.name_dir_export}*'))
@@ -170,68 +195,54 @@ class DataAggScenario:
         # rename preprep folder
         os.rename(self.preprep_path, self.dir_move_to)
 
-    def run_debug(self):
-        split_data_geometry.split_data_geometry(self)
         
 
 # ==================================================================================================================
 if __name__ == '__main__':
     preprep_scen_list = [
-        DataAggScenario(
-            name_dir_export = 'preprep_BLBSSO_18to23_1and2homes_API_reimport',
-            kt_numbers = [11, 12, 13],
-            year_range = [2018, 2023],
-            split_data_geometry_AND_slow_api = True,
-            GWR_GKLAS = ['1110', '1121', '1276'],
+        # DataAggScenario(
+        #     name_dir_export = 'preprep_BLBSSO_18to23_1and2homes_API_reimport',
+        #     kt_numbers = [11, 12, 13],
+        #     year_range = [2018, 2023],
+        #     split_data_geometry_AND_slow_api = True,
+        #     GWR_GKLAS = ['1110', '1121', '1276'],
             
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-            SOLKAT_match_missing_EGIDs_to_solkat_TF = True,
-            SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique = False,
-        ),
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        # ),
         DataAggScenario(
             name_dir_export = 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
             # kt_numbers = [13],
             bfs_numbers = [2761, 2768,],
             year_range = [2022, 2023],
-            split_data_geometry_AND_slow_api = False,
 
             GWR_GKLAS = ['1110', '1121'],
 
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-            SOLKAT_match_missing_EGIDs_to_solkat_TF = True,
-            SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique = False,
         ),
 
         # DataAggScenario(
         #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
         #     kt_numbers = [11],
         #     year_range = [2022, 2023],
-        #     split_data_geometry_AND_slow_api = False,
 
         #     GWR_GKLAS = ['1110', '1121'],
 
         #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        #     SOLKAT_match_missing_EGIDs_to_solkat_TF = True,
-        #     SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique = False,
         # ),
 
         # DataAggScenario(
         #     name_dir_export = 'preprep_BLBSSO_22to23_extSolkatEGID_DFUIDduplicates',
         #     kt_numbers = [13, 12, 11],
         #     year_range = [2022, 2023],
-        #     split_data_geometry_AND_slow_api = False,
 
         #     GWR_GKLAS = ['1110', '1121'],
 
         #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        #     SOLKAT_match_missing_EGIDs_to_solkat_TF = True,
-        #     SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique = False,
         # ),
     ]
 
     for preprep_scen in preprep_scen_list:
         preprep_scen.run_data_agg()
-        # preprep_scen.run_debug()
 
 
 print('done')

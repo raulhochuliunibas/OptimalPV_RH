@@ -57,7 +57,7 @@ def split_data_geometry(scen,):
     pv_all_gdf.set_crs("EPSG:2056", allow_override=True, inplace=True)
 
     # split + export
-    checkpoint_to_logfile('-- check unique identifier pv: {pv_all_gdf["xtf_id"].nunique()} xtf unique, {pv_all_gdf.shape[0]} rows', log_file_name_def = scen.log_name, n_tabs_def = 0, show_debug_prints_def = scen.show_debug_prints)
+    checkpoint_to_logfile(f'-- check unique identifier pv: {pv_all_gdf["xtf_id"].nunique()} xtf unique, {pv_all_gdf.shape[0]} rows', scen.log_name, 0, scen.show_debug_prints)
     pv_pq = copy.deepcopy(pv_all_gdf.loc[:,pv_all_gdf.columns !='geometry'])
     pv_geo = copy.deepcopy(pv_all_gdf.loc[:,['xtf_id', 'BFS_NUMMER', 'geometry']])
 
@@ -70,14 +70,14 @@ def split_data_geometry(scen,):
 
 
     # SOLKAT -------------------
-    solkat_all_gdf = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH', rows=10000)
+    solkat_all_gdf = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH')
     checkpoint_to_logfile(f'import solkat, {solkat_all_gdf.shape[0]} rows', scen.log_name, 2, scen.show_debug_prints)
 
     solkat_all_gdf = attach_bfs_to_spatial_data(solkat_all_gdf, gm_shp_df)
     solkat_all_gdf.set_crs("EPSG:2056", allow_override=True, inplace=True)
 
     # split + export
-    checkpoint_to_logfile(f'-- check unique identifier solkat: {solkat_all_gdf["DF_UID"].nunique()} DF_UID unique, {solkat_all_gdf.shape[0]} rows', log_file_name_def = scen.log_name, n_tabs_def = 5, show_debug_prints_def = scen.show_debug_prints)
+    checkpoint_to_logfile(f'-- check unique identifier solkat: {solkat_all_gdf["DF_UID"].nunique()} DF_UID unique, {solkat_all_gdf.shape[0]} rows', scen.log_name, 5, scen.show_debug_prints)
     solkat_pq = copy.deepcopy(solkat_all_gdf.loc[:,solkat_all_gdf.columns !='geometry'])
     solkat_geo = copy.deepcopy(solkat_all_gdf.loc[:,['DF_UID', 'BFS_NUMMER', 'geometry']])
 
@@ -90,13 +90,15 @@ def split_data_geometry(scen,):
 
 
     # SOLKAT MONTH -------------------
-    # solkat_month_pq = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
-    # solkat_month_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
+    solkat_month_pq = gpd.read_file(f'{scen.data_path}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
+    solkat_month_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
     
 
-    # subset for BSBLSO case -------------------
+
+    # SUBSET for BSBLSO case ========================================================
     bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13,], scen.data_path, scen.log_name)
 
+    # PV -------------------
     checkpoint_to_logfile('subset pv for bsblso case', scen.log_name, 5, scen.show_debug_prints)
     pv_bsblso_geo = copy.deepcopy(pv_geo.loc[pv_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)])
     if pv_bsblso_geo.shape[0] > 0:
@@ -104,7 +106,7 @@ def split_data_geometry(scen,):
             f.write(pv_bsblso_geo.to_json())
         checkpoint_to_logfile('-- exported pv_bsblso_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
 
-
+    # SOLKAT -------------------
     checkpoint_to_logfile('subset solkat for bsblso case', scen.log_name, 5, scen.show_debug_prints)
     solkat_bsblso_geo = copy.deepcopy(solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(bsblso_bfs_numbers)])
     if solkat_bsblso_geo.shape[0] > 0:
@@ -112,25 +114,8 @@ def split_data_geometry(scen,):
             f.write(solkat_bsblso_geo.to_json())
         checkpoint_to_logfile('-- exported solkat_bsblso_geo.geojson', scen.log_name, 5, scen.show_debug_prints)
 
-    
-    # Copy Log File to input_split_data_geometry folder
-    if os.path.exists(scen.log_name):
-        shutil.copy(scen.log_name, f'{scen.data_path}/input_split_data_geometry/split_data_geometry_logfile.txt')
-
-
-
-
-
-def get_kt_bsblso_sql_gwr(scen,):
-    """
-    Get the BFS numbers for the cantons Basel-Stadt, Basel-Landschaft, and Solothurn
-    """
-
-    # get bfs numbers from canton selection if applicable
-    bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13], scen.data_path, scen.log_name)
-
-    # get ALL BUILDING data -------------------
-
+    # GWR -------------------
+    # get all BUILDING data 
     # select cols
     query_columns = scen.GWR_building_cols
     query_columns_str = ', '.join(query_columns)
@@ -158,3 +143,12 @@ def get_kt_bsblso_sql_gwr(scen,):
     # export
     gwr_bsblso_pq.to_parquet(f'{scen.data_path}/input_split_data_geometry/gwr_bsblso_pq.parquet')
     gwr_bsblso_gdf.to_file(f'{scen.data_path}/input_split_data_geometry/gwr_bsblso_gdf.geojson', driver='GeoJSON')
+
+
+    # Copy Log File to input_split_data_geometry folder
+    if os.path.exists(scen.log_name):
+        shutil.copy(scen.log_name, f'{scen.data_path}/input_split_data_geometry/split_data_geometry_logfile.txt')
+
+
+
+

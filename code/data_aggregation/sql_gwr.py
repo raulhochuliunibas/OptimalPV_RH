@@ -28,73 +28,12 @@ def sql_gwr_data(
 
 
     # QUERYs --------------------------------------
-    # Get all column names from GWR 2.0
-    if False: 
-        print_to_logfile('check all GWR cols for empty cells', log_file_name_def=log_file_name_def)
-        col_nan_table, col_nan_name, col_nan_count = [], [], []
-
-        conn = sqlite3.connect(f'{data_path_def}/input/GebWohnRegister.CH/data.sqlite')
-        cur = conn.cursor()
-
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = cur.fetchall()
-        for table in tables:
-            table_name = table[0]
-            
-            # Get the column names and count ""
-            cur.execute(f"PRAGMA table_info({table_name});")
-            columns = cur.fetchall()
-            checkpoint_to_logfile(f'check table: {table_name}, no. of cols: {len(columns)}', log_file_name_def = log_file_name_def, n_tabs_def = 5)
-
-
-            column_names = [column[1] for column in columns]
-            for column_name in column_names:
-                cur.execute(f"SELECT COUNT(*) FROM {table_name} WHERE {column_name} = '';")
-                empty_count = cur.fetchone()[0]
-                
-                col_nan_table.append(table_name)
-                col_nan_name.append(column_name)
-                col_nan_count.append(empty_count)
-        
-        conn.close()
-        gwr_nan_df = pd.DataFrame({'table': col_nan_table, 'col': col_nan_name, 'empty_cells': col_nan_count})
-        gwr_nan_df.to_csv(f'{wd_path_def}/gwr_nan.csv', sep=';', index=False) 
-        gwr_nan_df.to_csv(f'{data_path_def}/output/preprep_data/gwr_nan.csv', sep=';', index=False)
-        checkpoint_to_logfile('exported gwr_nan data', log_file_name_def=log_file_name_def, n_tabs_def = 5)
-
-
-    # get BUILDING data
-    # select cols
-    query_columns = scen.GWR_building_cols
-    query_columns_str = ', '.join(query_columns)
-    query_bfs_numbers = ', '.join([str(i) for i in scen.bfs_numbers])
-    # select rows
-    gklas_values = scen.GWR_GKLAS
-    if isinstance(gklas_values, list):
-        gklas_values_str = ', '.join([f"'{str(value)}'" for value in gklas_values])
-    else:
-        gklas_values_str = f"'{str(gklas_values)}'"
-
-    conn = sqlite3.connect(f'{scen.data_path}/input/GebWohnRegister.CH/data.sqlite')
-    cur = conn.cursor()
-    cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers}) AND GKLAS IN ({gklas_values_str})')
-    sqlrows = cur.fetchall()
-    conn.close()
-    checkpoint_to_logfile('sql query BUILDING done', scen.log_name, 10, scen.show_debug_prints)
-
-    gwr_building_df = pd.DataFrame(sqlrows, columns=query_columns)
-    gwr_building_df.to_csv(f'{scen.preprep_path}/gwr_building_df.csv', sep=';', index=False)
-    selected_EGID = list(gwr_building_df['EGID'])
-
 
     # get DWELLING data
     # select cols
     query_columns = scen.GWR_dwelling_cols
     query_columns_str = ', '.join(query_columns)
     query_bfs_numbers = ', '.join([str(i) for i in scen.bfs_numbers])
-    # select rows
-    egid_values = selected_EGID
-    # egid_values_str = ', '.join([f"'{str(value)}'" for value in egid_values])
 
     conn = sqlite3.connect(f'{scen.data_path}/input/GebWohnRegister.CH/data.sqlite')
     cur = conn.cursor()
@@ -122,7 +61,8 @@ def sql_gwr_data(
     checkpoint_to_logfile('sql query ALL BUILDING done', scen.log_name, 10, scen.show_debug_prints)
 
     gwr_all_building_df = pd.DataFrame(sqlrows, columns=query_columns)
-    gwr_all_building_df.to_csv(f'{scen.data_path}/gwr_building_df.csv', sep=';', index=False)
+    gwr_all_building_df.to_csv(f'{scen.preprep_path}/gwr_all_building_df.csv', sep=';', index=False)
+    gwr_all_building_df.to_parquet(f'{scen.preprep_path}/gwr_all_building_df.parquet')
 
 
     # merger -------------------
@@ -159,12 +99,7 @@ def sql_gwr_data(
 
     # filter for specs -------------------
     checkpoint_to_logfile(f'check gwr_mrg BEFORE filtering: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique() )/gwr_mrg.shape[0],2)*100} %', scen.log_name, 3, True)
-    # gwr_mrg['GBAUJ'] = gwr_mrg['GBAUJ'].replace('', 0).astype(int)
-    # gwr_mrg = gwr_mrg[(gwr_mrg['GSTAT'].isin(gwr_selection_specs_def['GSTAT'])) & 
-    #           (gwr_mrg['GKLAS'].isin(gwr_selection_specs_def['GKLAS'])) & 
-    #           (gwr_mrg['GBAUJ'] >= gwr_selection_specs_def['GBAUJ_minmax'][0]) &
-    #           (gwr_mrg['GBAUJ'] <= gwr_selection_specs_def['GBAUJ_minmax'][1])]
-    # gwr_mrg['GBAUJ'] = gwr_mrg['GBAUJ'].replace(0, '').astype(str)
+
     gwr_mrg0 = copy.deepcopy(gwr_mrg)
     gwr_mrg0['GBAUJ'] = gwr_mrg0['GBAUJ'].replace('', 0).astype(int)
     gwr_mrg1 = gwr_mrg0[(gwr_mrg0['GSTAT'].isin(scen.GWR_GSTAT))]
@@ -178,8 +113,7 @@ def sql_gwr_data(
     # summary log -------------------
     print_to_logfile('Building and Dwelling data import:', scen.summary_name)
     checkpoint_to_logfile(f'gwr_mrg0.shape: {gwr_mrg0.shape}, EGID: {gwr_mrg0["EGID"].nunique()}', scen.summary_name, 2, True)
-    # checkpoint_to_logfile(f'gwr_all_building_df.shape: {gwr_all_building_df.shape}, EGID: {gwr_all_building_df["EGID"].nunique()}', summary_name, 2, True)
-    checkpoint_to_logfile(f'\t> selection range BFS municipalities: {scen.bfs_numbers}', scen.summary_name, 2, True)
+    checkpoint_to_logfile(f'\t> selection range n BFS municipalities: {len(scen.bfs_numbers)}', scen.summary_name, 2, True)
     # print_to_logfile(f'\n', log_file_name_def=summary_name)
     checkpoint_to_logfile(f'after GSTAT selection, gwr.shape: {gwr_mrg1.shape} EGID.nunique: {gwr_mrg1["EGID"].nunique()} ({round((gwr_mrg1.shape[0] ) / gwr_mrg0.shape[0] * 100, 2)} % of gwr_mrg0)', scen.summary_name, 2, True) 
     checkpoint_to_logfile(f'\t> selection GSTAT: {scen.GWR_GSTAT} "only existing bulidings"', scen.summary_name, 2, True)
@@ -196,7 +130,7 @@ def sql_gwr_data(
 
 
     # check proxy possiblity -------------------
-    checkpoint_to_logfile(f'gwr_guilding_df.shape: {gwr_building_df.shape}, EGID: {gwr_building_df["EGID"].nunique()};\n  gwr_dwelling_df.shape: {gwr_dwelling_df.shape}, EGID: {gwr_dwelling_df["EGID"].nunique()};\n  gwr.shape: {gwr.shape}, EGID: {gwr["EGID"].nunique()}', scen.log_name, 2, True)
+    # checkpoint_to_logfile(f'gwr_guilding_df.shape: {gwr_building_df.shape}, EGID: {gwr_building_df["EGID"].nunique()};\n  gwr_dwelling_df.shape: {gwr_dwelling_df.shape}, EGID: {gwr_dwelling_df["EGID"].nunique()};\n  gwr.shape: {gwr.shape}, EGID: {gwr["EGID"].nunique()}', scen.log_name, 2, True)
     
     checkpoint_to_logfile(f'* check for WAZIM: {gwr.loc[gwr["WAZIM"] != "", "EGID"].nunique()} unique EGIDs of non-empty WAZIM", {round((gwr.loc[gwr["WAZIM"] != "", "EGID"].nunique() ) / gwr["EGID"].nunique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].nunique()})', scen.log_name, 1, True)
     checkpoint_to_logfile(f'* check for WAREA: {gwr.loc[gwr["WAREA"] != "", "EGID"].nunique()} unique EGIDs of non-empty WAREA", {round((gwr.loc[gwr["WAREA"] != "", "EGID"].nunique() ) / gwr["EGID"].nunique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].nunique()})', scen.log_name, 1, True)
@@ -207,7 +141,7 @@ def sql_gwr_data(
 
     # merge dfs and export -------------------
     # gwr = gwr_building_df
-    gwr.to_csv(f'{scen.data_path}/gwr.csv', sep=';', index=False)
+    gwr.to_csv(f'{scen.preprep_path}/gwr.csv', sep=';', index=False)
     gwr_mrg_all_building_in_bfs.to_csv(f'{scen.preprep_path}/gwr_mrg_all_building_in_bfs.csv', sep=';', index=False)
     gwr.to_parquet(f'{scen.preprep_path}/gwr.parquet')
     gwr_mrg_all_building_in_bfs.to_parquet(f'{scen.preprep_path}/gwr_mrg_all_building_in_bfs.parquet')
