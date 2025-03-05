@@ -14,9 +14,62 @@ __pyproject*
 .vscode* 
 venv*
 
+# ignore all model output files
+data/input_split_data_geometry/**
+data/preprep/**
+data/pvalloc/**
+
+
 # ignore all files in data_directory, except empty textfiles
-data/*
-!data/**/empty_txt_file_for_folder_structure_in_github.txt
+data/input_documentation/*
+
+data/input_api/*
+!data/input_api/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/other/*
+!data/input/other/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/*
+!data/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/ElCom_consum_price_api_data/*
+!data/input/ElCom_consum_price_api_data/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/GebWohnRegister.CH/*
+!data/input/GebWohnRegister.CH/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/Meteoblue_BSBL/*
+!data/input/Meteoblue_BSBL/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/NETFLEX_consumers/*
+!data/input/NETFLEX_consumers/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/solarenergie-eignung-daecher_2056.gdb/*
+!data/input/solarenergie-eignung-daecher_2056.gdb/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/solarenergie-eignung-daecher_2056.gpkg/*
+!data/input/solarenergie-eignung-daecher_2056.gpkg/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/solarenergie-eignung-daecher_2056_generalized.gdb/*
+!data/input/solarenergie-eignung-daecher_2056_generalized.gdb/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/solarenergie-eignung-daecher_2056_monthlydata.gpkg/*
+!data/input/solarenergie-eignung-daecher_2056_monthlydata.gpkg/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/solarenergie-eignung-fassaden_2056.gdb/*
+!data/input/solarenergie-eignung-fassaden_2056.gdb/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/solarenergie-eignung-fassaden_2056.gpkg/*
+!data/input/solarenergie-eignung-fassaden_2056.gpkg/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/swissboundaries3d_2023-01_2056_5728.shp/*
+!data/input/swissboundaries3d_2023-01_2056_5728.shp/empty_txt_file_for_folder_structure_in_github.txt
+
+data/input/SwissStore_DemandData/*
+!data/input/SwissStore_DemandData/empty_txt_file_for_folder_structure_in_github.txt
+
+
+
 
 # ignore all files api_keys_directory, except empty textfiles
 code/api_keys/*

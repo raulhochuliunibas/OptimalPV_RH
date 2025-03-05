@@ -64,7 +64,7 @@ class DataAggScenario:
         
         self.kt_numbers: List[int] = kt_numbers
         # not in init because data_path and log_name needed to be defined
-        self.bfs_numbers = bfs_numbers# self.bfs_numbers: List[int] = get_bfs_from_ktnr(kt_numbers, data_path, log_name) if kt_numbers != [] else bfs_numbers
+        self.bfs_numbers: List[int] = bfs_numbers# self.bfs_numbers: List[int] = get_bfs_from_ktnr(kt_numbers, data_path, log_name) if kt_numbers != [] else bfs_numbers
         self.year_range: List[int] = year_range
 
         self.split_data_geometry_AND_slow_api: bool = split_data_geometry_AND_slow_api
@@ -127,14 +127,14 @@ class DataAggScenario:
         self.log_name = os.path.join(self.preprep_path, 'preprep_log.txt')
         self.summary_name = os.path.join(self.preprep_path, 'summary_data_selection_log.txt')
 
-        self.bfs_numbers: List[int] = get_bfs_from_ktnr(self.kt_numbers, self.data_path, self.log_name) if self.kt_numbers != [] else self.bfs_numbers
+        self.bfs_numbers: List[str] = get_bfs_from_ktnr(self.kt_numbers, self.data_path, self.log_name) if self.kt_numbers != [] else [str(bfs) for bfs in self.bfs_numbers]
         self.total_runtime_start = datetime.datetime.now()
 
         # create dir for export
         os.makedirs(self.preprep_path, exist_ok=True)
 
         # create log file
-        chapter_to_logfile(f'start MAIN_data_aggregation for:{self.name_dir_export}', self.log_name, overwrite_file=True)
+        chapter_to_logfile(f'start MAIN_data_aggregation for: {self.name_dir_export}', self.log_name, overwrite_file=True)
         subchapter_to_logfile('dataagg_settings', self.log_name)
         for k, v in vars(self).items():
             print_to_logfile(f'{k}: {v}', self.log_name)
@@ -183,10 +183,10 @@ class DataAggScenario:
 
         
         # END + FOLDER RENAME ---------------------------------------------------
-        chapter_to_logfile(f'END MASTER_data_aggregation\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.total_runtime_start}', self.log_name)
+        chapter_to_logfile(f'end MAIN_data_aggregation\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.total_runtime_start}', self.log_name)
 
         if os.path.exists(self.dir_move_to):
-            n_same_names = len(glob.glob(f'{self.name_dir_export}*'))
+            n_same_names = len(glob.glob(f'{self.dir_move_to}*'))
             os.rename(self.dir_move_to, f'{self.dir_move_to}_{n_same_names}')
 
         os.rename(self.log_name, f'{self.log_name.split(".txt")[0]}_{self.name_dir_export}.txt')
@@ -206,39 +206,31 @@ if __name__ == '__main__':
         #     year_range = [2018, 2023],
         #     split_data_geometry_AND_slow_api = True,
         #     GWR_GKLAS = ['1110', '1121', '1276'],
-            
         #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         # ),
-        DataAggScenario(
-            name_dir_export = 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-            # kt_numbers = [13],
+          DataAggScenario(
+            name_dir_export = 'preprep_debug',
+            # kt_numbers = [13, 12, 11], # BL, BS, SO
             bfs_numbers = [2761, 2768,],
             year_range = [2022, 2023],
-
             GWR_GKLAS = ['1110', '1121'],
-
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),
+        DataAggScenario(
+            name_dir_export = 'preprep_BL_22to23_extSolkatEGID',
+            kt_numbers = [13,],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
 
-        # DataAggScenario(
-        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
-        #     kt_numbers = [11],
-        #     year_range = [2022, 2023],
-
-        #     GWR_GKLAS = ['1110', '1121'],
-
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
-
-        # DataAggScenario(
-        #     name_dir_export = 'preprep_BLBSSO_22to23_extSolkatEGID_DFUIDduplicates',
-        #     kt_numbers = [13, 12, 11],
-        #     year_range = [2022, 2023],
-
-        #     GWR_GKLAS = ['1110', '1121'],
-
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
+        DataAggScenario(
+            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID',
+            kt_numbers = [13, 11],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', '1121'],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),
     ]
 
     for preprep_scen in preprep_scen_list:
