@@ -1187,7 +1187,6 @@ def visualization_MASTER(pvalloc_scenarios_func, visual_settings_func):
                 for egid in subdf['EGID'].unique():
                     egid_list.append(egid)
 
-                    # BOOKMARK!!!
                     # > extract pvprod for all egids that have built in the MC iteration and sum them up
                     # > later plot histogram similar to sanity check of installed capacity. 
                     # problem !

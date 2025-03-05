@@ -225,7 +225,6 @@ print(f'\n\n ***** END SCRIPT ***** \t time: {datetime.now()}')
 
 
 
-# BOOKMARK: 
 # first run spatial to parquet by gm - done
 # aggregate again data by kt, df3 and df5 will be exported - done
 # run lupien aggregation with df3 
