@@ -5,25 +5,27 @@ import pandas as pd
 import json
 import copy
 
+# own functions 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from auxiliary.auxiliary_functions import  print_to_logfile
 
 def select_AND_adjust_topology(
-        pvalloc_settings,
+        scen,
         subdir_path, 
         dfuid_installed_list_func, 
         pred_inst_df_func,
         m, i_m):
     
     # select a random building out of npv_df_func to attribute a PV system to
-    wd_path = pvalloc_settings['wd_path']
-    data_path = f'{wd_path}_data'
-    rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
-    kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
-    share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
-    inst_selection_method = pvalloc_settings['algorithm_specs']['inst_selection_method']
+    # wd_path = pvalloc_settings['wd_path']
+    # data_path = f'{wd_path}_data'
+    # rand_seed = pvalloc_settings['algorithm_specs']['rand_seed']
+    # kWpeak_per_m2 = pvalloc_settings['tech_economic_specs']['kWpeak_per_m2']
+    # share_roof_area_available = pvalloc_settings['tech_economic_specs']['share_roof_area_available']
+    # inst_selection_method = pvalloc_settings['algorithm_specs']['inst_selection_method']
     
-    subdir_path = subdir_path
-    # dfuid_installed_list = dfuid_installed_list_func
-    # pred_inst_df = pred_inst_df_func
+    
+    print_to_logfile('run function: select_AND_adjust_topology', scen.log_name)
     i_alloc_loop = i_m
 
 
@@ -37,17 +39,17 @@ def select_AND_adjust_topology(
     #   -> otherwise multiple selection possible
     #   -> easier to drop inst before each selection than to create a list / df and carry it through the entire code)
     npv_df_start_inst_selection = copy.deepcopy(npv_df)
-    egid_wo_inst = [egid for egid in topo if topo.get(egid, {}).get('pv_inst', {}).get('inst_TF') == False ]
+    egid_wo_inst = [egid for egid in topo if topo.get(egid, {}).get('pv_inst', {}).get('inst_TF') == False]
     npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'].isin(egid_wo_inst)])
 
 
     # SELECTION BY METHOD ---------------
     # set random seed
-    if rand_seed is not None:
-        np.random.seed(rand_seed)
+    if scen.ALGOspec_rand_seed is not None:
+        np.random.seed(scen.ALGOspec_rand_seed)
 
     # have a list of egids to install on for sanity check. If all build, start building on the rest of EGIDs
-    install_EGIDs_summary_sanitycheck = pvalloc_settings['sanitycheck_summary_byEGID_specs']['egid_list']
+    install_EGIDs_summary_sanitycheck = scen.CHECKspec_egid_list
 
     if isinstance(install_EGIDs_summary_sanitycheck, list):
         # remove duplicates from install_EGIDs_summary_sanitycheck
@@ -60,7 +62,7 @@ def select_AND_adjust_topology(
         # > not even necessary if installed EGIDs get dropped from npv_df?
         remaining_egids = [
             egid for egid in install_EGIDs_summary_sanitycheck 
-            if topo.get(egid, {}).get('pv_inst', {}).get('inst_TF', False) == False ]
+            if not topo.get(egid, {}).get('pv_inst', {}).get('inst_TF', False) == False ]
         
         if any([True if egid in npv_df['EGID'] else False for egid in remaining_egids]):
             npv_df = npv_df.loc[npv_df['EGID'].isin(remaining_egids)].copy()
@@ -68,13 +70,13 @@ def select_AND_adjust_topology(
             npv_df = npv_df.copy()
             
 
-    if inst_selection_method == 'random':
+    if scen.ALGOspec_inst_selection_method == 'random':
         npv_pick = npv_df.sample(n=1).copy()
     
-    elif inst_selection_method == 'max_npv':
+    elif scen.ALGOspec_inst_selection_method == 'max_npv':
         npv_pick = npv_df[npv_df['NPV_uid'] == max(npv_df['NPV_uid'])].copy()
 
-    elif inst_selection_method == 'prob_weighted_npv':
+    elif scen.ALGOspec_inst_selection_method == 'prob_weighted_npv':
         rand_num = np.random.uniform(0, 1)
         
         npv_df['NPV_stand'] = npv_df['NPV_uid'] / max(npv_df['NPV_uid'])
@@ -110,7 +112,7 @@ def select_AND_adjust_topology(
             if col in npv_pick.index:
                 npv_pick.drop(index=['NPV_stand', 'diff_NPV_rand'], inplace=True)
                 
-    inst_power = picked_flaech * kWpeak_per_m2 * share_roof_area_available 
+    inst_power = picked_flaech * scen.TECHspec_kWpeak_per_m2 * scen.TECHspec_share_roof_area_available
     npv_pick['inst_TF'], npv_pick['info_source'], npv_pick['xtf_id'], npv_pick['BeginOp'], npv_pick['TotalPower'], npv_pick['iter_round'] = [True, 'alloc_algorithm', picked_uid, f'{m}', inst_power, i_alloc_loop]
     
 
@@ -132,19 +134,15 @@ def select_AND_adjust_topology(
 
     # export main dfs ------------------------------------------
     # do not overwrite the original npv_df, this way can reimport it every month and filter for sanitycheck
-    # npv_df.to_parquet(f'{subdir_path}/npv_df.parquet')
-    # npv_df.to_csv(f'{subdir_path}/npv_df.csv')
     pred_inst_df.to_parquet(f'{subdir_path}/pred_inst_df.parquet')
-    pred_inst_df.to_csv(f'{subdir_path}/pred_inst_df.csv')
+    pred_inst_df.to_csv(f'{subdir_path}/pred_inst_df.csv') if scen.export_csvs else None
     with open (f'{subdir_path}/topo_egid.json', 'w') as f:
         json.dump(topo, f)
 
 
     # export by Month ------------------------------------------
-    # npv_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.parquet')
-    # npv_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/npv_df_{m}.csv')
     pred_inst_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
-    pred_inst_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.csv')
+    pred_inst_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.csv') if scen.export_csvs else None
     with open(f'{subdir_path}/pred_npv_inst_by_M/topo_{m}.json', 'w') as f:
         json.dump(topo, f)
                 

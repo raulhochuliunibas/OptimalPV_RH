@@ -2,7 +2,6 @@ import sys
 import os as os
 import numpy as np
 import pandas as pd
-import glob
 import json
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -25,7 +24,7 @@ from auxiliary.auxiliary_functions import  checkpoint_to_logfile, print_to_logfi
 def HOY_weatheryear_df(scen):
     
     # import settings + setup -------------------
-    print_to_logfile('run function: get_fake_gridnodes_v2', scen.log_name)
+    print_to_logfile('run function: HOY_weatheryear_df', scen.log_name)
 
 
     # get every HOY of weather year ----------
@@ -81,7 +80,7 @@ def get_gridnodes_DSO(scen):
 
     # export ----------------------
     dsonodes_df.to_parquet(f'{scen.name_dir_export_path}/dsonodes_df.parquet')
-    dsonodes_df.to_csv(f'{scen.name_dir_export_path}/dsonodes_df.csv') if scen.export_csv else None
+    dsonodes_df.to_csv(f'{scen.name_dir_export_path}/dsonodes_df.csv') if scen.export_csvs else None
     with open(f'{scen.name_dir_export_path}/dsonodes_gdf.geojson', 'w') as f:
         f.write(dsonodes_gdf.to_json())
 
@@ -91,7 +90,7 @@ def get_gridnodes_DSO(scen):
 # ------------------------------------------------------------------------------------------------------
 def estimate_iterpolate_instcost_function(scen):
     # setup --------
-    print_to_logfile('run function: estimate_iterpolate_instcost_function', scen.log_name_def)
+    print_to_logfile('run function: estimate_iterpolate_instcost_function', scen.log_name)
 
     # data import ----- (copied from energie rechner schweiz doucmentation)
     installation_cost_dict = {
@@ -163,7 +162,7 @@ def estimate_iterpolate_instcost_function(scen):
     def estim_instcost_chftotal(x):
         return func_chf_total(x, *params_total)
     
-    checkpoint_to_logfile('created intrapolation function for chf_total using "Polynomial.fit" to receive curve coefficients', scen.log_name_def)
+    checkpoint_to_logfile('created intrapolation function for chf_total using "Polynomial.fit" to receive curve coefficients', scen.log_name)
     print_to_logfile(f'coefs_total: {params_total}', scen.log_name)
 
     pvinstcost_coefficients = {
@@ -260,14 +259,13 @@ def get_estim_instcost_function(scen,):
 
 
 # NOT IN USE ANYMORE ********************************************************************************************************************
-
+"""
 # ------------------------------------------------------------------------------------------------------
 # GET INTERIM DATA PATH
 # ------------------------------------------------------------------------------------------------------
 def get_interim_path(scen):
-    """
-    Return the path to the latest interim folder that ran pvalloc file to the end (and renamed pvalloc_run accordingly)
-    """
+    # Return the path to the latest interim folder that ran pvalloc file to the end (and renamed pvalloc_run accordingly)
+
 
     interim_pvalloc_folder = glob.glob(f'{scen.scen.pvalloc_path}/{scen.name_dir_export}*')
     if len(interim_pvalloc_folder) == 0:
@@ -380,8 +378,8 @@ def get_angle_tilt_table(scen):
     angle_tilt_df['efficiency_factor'] = angle_tilt_df['efficiency_factor'] / 100
 
     # export df ----------
-    angle_tilt_df.to_parquet(f'{scen.name_dir_import_path}/angle_tilt_df.parquet')
-    angle_tilt_df.to_csv(f'{scen.name_dir_import_path}/angle_tilt_df.csv')
+    angle_tilt_df.to_parquet(f'{scen.name_dir_export_path}/angle_tilt_df.parquet')
+    angle_tilt_df.to_csv(f'{scen.name_dir_export_path}/angle_tilt_df.csv') if scen.export_csvs else None
     return angle_tilt_df
 
 
@@ -453,4 +451,4 @@ def get_fake_gridnodes_v2(scen):
     with open(f'{scen.name_dir_import_path}/dsonodes_gdf.geojson', 'w') as f:
         f.write(dsonodes_gdf.to_json())
 
-
+"""

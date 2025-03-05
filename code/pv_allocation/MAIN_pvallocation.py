@@ -13,8 +13,8 @@ from auxiliary.auxiliary_functions import chapter_to_logfile, subchapter_to_logf
 import initialization_small_functions as initial_sml
 import initialization_large_functions as  initial_lrg
 import alloc_algorithm as algo
-# import alloc_sanitychecks as sanity
-# import inst_selection as select
+import alloc_sanitychecks as sanity
+import inst_selection as select
 
 
 # -----------------------------------
@@ -128,7 +128,7 @@ class PVAllocScenario:
                 ALGOspec_rand_seed                          = None,      # random seed set to int or None
                 ALGOspec_while_inst_counter_max             = 5000,
                 ALGOspec_topo_subdf_partitioner             = 400,
-                ALGOspec_npv_update_grouby_cols_topo_aggdf  =  ['EGID', 'df_uid', 'grid_node', 'bfs', 
+                ALGOspec_npv_update_groupby_cols_topo_aggdf  =  ['EGID', 'df_uid', 'grid_node', 'bfs', 
                                                                 'gklas', 'demandtype','inst_TF', 'info_source', 
                                                                 'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 
                                                                 'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 
@@ -230,7 +230,7 @@ class PVAllocScenario:
         self.ALGOspec_rand_seed: int = ALGOspec_rand_seed
         self.ALGOspec_while_inst_counter_max: int = ALGOspec_while_inst_counter_max
         self.ALGOspec_topo_subdf_partitioner: int = ALGOspec_topo_subdf_partitioner
-        self.ALGOspec_npv_update_grouby_cols_topo_aggdf: List[str] = ALGOspec_npv_update_grouby_cols_topo_aggdf
+        self.ALGOspec_npv_update_groupby_cols_topo_aggdf: List[str] = ALGOspec_npv_update_groupby_cols_topo_aggdf
         self.ALGOspec_npv_update_agg_cols_topo_aggdf: Dict[str, str] = ALGOspec_npv_update_agg_cols_topo_aggdf
         self.ALGOspec_tweak_constr_capacity_fact: float = ALGOspec_tweak_constr_capacity_fact
         self.ALGOspec_tweak_npv_calc: float = ALGOspec_tweak_npv_calc
@@ -245,7 +245,7 @@ class PVAllocScenario:
         self.GRIDspec_tiers: Dict[int, List[float]] = GRIDspec_tiers
 
         
-    def run_pvallc_INIT(self):
+    def run_pvalloc_initalization(self):
         """
         Input:
             (preprep data directory defined in the pv allocation scenario settings)
@@ -280,6 +280,8 @@ class PVAllocScenario:
         self.pvalloc_path = os.path.join(self.data_path, 'pvalloc', 'pvalloc_scen__temp_to_be_renamed')
         self.name_dir_export_path = os.path.join(self.data_path, 'pvalloc', self.name_dir_export)
         self.name_dir_import_path = os.path.join(self.data_path, 'preprep', self.name_dir_import)
+        self.sanity_check_path = f'{self.name_dir_export_path}/sanity_check_byEGID'
+
         # self.dir_move_to = os.path.join(self.data_path, 'pvalloc', self.name_dir_export)
 
         self.log_name = os.path.join(self.name_dir_export_path, 'pvalloc_log.txt')
@@ -325,69 +327,42 @@ class PVAllocScenario:
 
         
 
-        # PREPARE TOPO_TIME SPECIFIC DFs ---------------------------------------------------------------------------------------------
+        # CALC ECONOMICS + TOPO_TIME SPECIFIC DFs ---------------------------------------------------------------------------------------------
         subchapter_to_logfile('prep: CALC ECONOMICS for TOPO_DF', self.log_name)
         algo.calc_economics_in_topo_df(self, topo, df_list, df_names, ts_list, ts_names)
         shutil.copy(f'{self.pvalloc_path}/topo_egid.json', f'{self.pvalloc_path}/topo_egid_before_alloc.json')
 
 
 
-        # END ---------------------------------------------------
-        chapter_to_logfile(f'end start MASTER_pvalloc_INITIALIZATION\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.total_runtime_start}', self.log_name)
+        # SANITY CHECK: CALC FEW ITERATION OF NPV AND FEEDIN for check ---------------------------------------------------------------
+        subchapter_to_logfile('sanity_check: RUN FEW ITERATION for byCHECK', self.log_name)
+        # make sanitycheck folder and move relevant initial files there (delete all old files, not distort results)
+        os.makedirs(self.sanity_check_path, exist_ok=False) 
 
-        # if os.path.exists(self.dir_move_to):
-        #     n_same_names = len(glob.glob(f'{self.dir_move_to}*'))
-        #     os.rename(self.dir_move_to, f'{self.dir_move_to}_{n_same_names}')
+        fresh_initial_files = [f'{self.name_dir_export_path}/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
+        topo_time_paths = glob.glob(f'{self.name_dir_export_path}/topo_time_subdf/*.parquet')
+        for f in fresh_initial_files + topo_time_paths:
+            shutil.copy(f, f'{self.sanity_check_path}/')
 
-        # os.rename(self.log_name, f'{self.log_name.split(".txt")[0]}_{self.name_dir_export}.txt')
-        # # os.rename(self.summary_name, f'{self.summary_name.split(".txt")[0]}_{self.name_dir_export}.txt')
+        # ALLOCATION RUN ====================
+        dfuid_installed_list = []
+        pred_inst_df = pd.DataFrame()
+        months_prediction_pq = pd.read_parquet(f'{self.name_dir_export_path}/months_prediction.parquet')['date']
+        months_prediction = [str(m) for m in months_prediction_pq]
+        # i_m, m = 1, months_prediction[0:2]
+        for i_m, m in enumerate(months_prediction[0:self.CHECKspec_n_iterations_before_sanitycheck]):
+            print_to_logfile(f'\n-- month {m} -- sanity check -- {self.name_dir_export} --', self.log_name)
+            algo.update_gridprem(self, self.sanity_check_path, m, i_m)
+            algo.update_npv_df(self, self.sanity_check_path, m, i_m)
+            select.select_AND_adjust_topology(self, self.sanity_check_path,
+                                            dfuid_installed_list,pred_inst_df,
+                                            m, i_m)
         
-        # # rename preprep folder
-        # os.rename(self.pvalloc_path, self.dir_move_to)
-
-
-    def STILL_TO_BE_REFACTORED(self):
-
-        # SANITY CHECK: TOPOLOGY  ---------------------------------------------------------------------------------------------
-
-        # TOPOLOGY ALLOCATION ====================
-        if self.sanitycheck_byEGID:
-            subchapter_to_logfile('sanity_check: RUN FEW ITERATION for byCHECK', self.log_name)
-            # make sanitycheck folder and move relevant initial files there (delete all old files, not distort results)
-            self.sanity_check_path = f'{self.pvalloc_path}/sanity_check_byEGID'
-            os.makedirs(self.sanity_check_path, exist_ok=True) 
-            # if not os.path.exists(sanitycheck_path):
-            #     os.makedirs(sanitycheck_path)
-            # elif os.path.exists(sanitycheck_path):
-            #     for f in glob.glob(f'{sanitycheck_path}/*'):
-            #         if os.path.isfile(f):
-            #             os.remove(f)
-            #         elif os.path.isdir(f):
-            #             shutil.rmtree(f)
-            sanitycheck_path = f'{self.pvalloc_path}/sanity_check_byEGID'
-
-            fresh_initial_files = [f'{self.pvalloc_path}/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
-            topo_time_paths = glob.glob(f'{self.pvalloc_path}/topo_time_subdf/*.parquet')
-            all_initial_paths = fresh_initial_files + topo_time_paths
-            for f in all_initial_paths:
-                shutil.copy(f, f'{sanitycheck_path}/')
-
-            # sanity check: CALC FEW ITERATION OF NPV AND FEEDIN for check ---------------------------------------------------------------
-            dfuid_installed_list = []
-            pred_inst_df = pd.DataFrame()
-            months_prediction_pq = pd.read_parquet(f'{self.pvalloc_path}/months_prediction.parquet')['date']
-            months_prediction = [str(m) for m in months_prediction_pq]
-            # i_m, m = 1, months_prediction[0:2]
-            for i_m, m in enumerate(months_prediction[0:self.CHECKspec_n_iterations_before_sanitycheck]):
-                print_to_logfile(f'\n-- month {m} -- sanity check -- {self.name_dir_export} --', self.log_name)
-            #     algo.update_gridprem(self, sanitycheck_path, m, i_m)
-            #     algo.update_npv_df(self, sanitycheck_path, m, i_m)
-            #     select.select_AND_adjust_topology(self, sanitycheck_path,
-            #                                     dfuid_installed_list,pred_inst_df,
-            #                                     m, i_m)
-            
-            # sanity.sanity_check_summary_byEGID(self, sanitycheck_path)
-
+        # sanity.sanity_check_summary_byEGID(self, self.sanity_check_path)
+        
+        # ***********************************
+        # BOOKMARK
+        # ***********************************
         
         # EXPORT SPATIAL DATA ====================
         if self.create_gdf_export_of_topology:
@@ -398,18 +373,83 @@ class PVAllocScenario:
             # sanity.check_multiple_xtf_ids_per_EGID(self)
 
 
-        # # END + FOLDER RENAME ---------------------------------------------------
-        # chapter_to_logfile(f'end start MASTER_pvalloc_INITIALIZATION\n Runtime (hh:mm:ss):{datetime.now() - self.total_runtime_start}', self.log_name)
+        # END ---------------------------------------------------
+        chapter_to_logfile(f'end start MASTER_pvalloc_INITIALIZATION\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.total_runtime_start}', self.log_name)
 
-        # if os.path.exists(self.dir_move_to):
-        #     n_same_names = len(glob.glob(f'{self.dir_move_to}*'))
-        #     os.rename(self.dir_move_to, f'{self.dir_move_to}_{n_same_names}')
 
-        # os.rename(self.log_name, f'{self.log_name.split(".txt")[0]}_{self.name_dir_export}.txt')
-        # # os.rename(self.summary_name, f'{self.summary_name.split(".txt")[0]}_{self.name_dir_export}.txt')
+    def run_pvalloc_mcalgorithm(self):
+        """
+        Input: 
+            (preprep data directory defined in the pv allocation scenario settings)
+            (pvalloc data directory defined in the pv allocation scenario settings)
+            dict: pvalloc_settings_func
+                > settings for pv allocation scenarios, for initalization and Monte Carlo iterations
+       
+        Output:
+            > within the scenario name defined in pvalloc_settings, the MASTER_pvalloc_MCalgorithm function 
+            creates a new directory "MCx" folder directory containing each individual Monte Carlo iteration.
+
+        Description:
+            > The MASTER_pvalloc_MCalgorithm function calls the exact same functions as previously used in santiy check of
+            pv allocation initializations' sanity check for direct comparison of debugging and testing. 
+            > First the script updates the grid premium values for the current month, based on existing installtions and annual radiation. 
+            > Then the script updates the NPV values for all houses not yet having a PV installation. 
+            > Based on scenario settings, installations are selected from the NPV dataframe until the construction capacity for the given month 
+            is reached (or the total capacity for the year; while loop exit criteria).
+            
+            > This process is repeated for as many Monte Carlo iterations as defined in the scenario settings.
+            
+        """
+        # SETUP -----------------------------------------------------------------------------
+        self.wd_path = os.getcwd()
+        self.data_path = os.path.join(self.wd_path, 'data')
+        self.pvalloc_path = os.path.join(self.data_path, 'pvalloc', 'pvalloc_scen__temp_to_be_renamed')
+        self.name_dir_export_path = os.path.join(self.data_path, 'pvalloc', self.name_dir_export)
+        self.name_dir_import_path = os.path.join(self.data_path, 'preprep', self.name_dir_import)
+
+        self.mclog_name = os.path.join(self.name_dir_export_path, 'pvalloc_log_MC.txt')
+        total_runtime_start = datetime.datetime.now()
+
+        # create log file
+        chapter_to_logfile(f'start MASTER_pvalloc_MCalgorithm for : {self.name_dir_export}', self.mclog_name, overwrite_file=True)
+        print_to_logfile('*model allocation specifications*:', self.mclog_name)
+        print_to_logfile(f'> n_bfs_municipalities: {len(self.bfs_numbers)} \n> n_months_prediction: {self.months_prediction} \n> n_montecarlo_iterations: {self.MCspec_montecarlo_iterations}', self.mclog_name)
+
+
+
+        # CREATE MC DIR + TRANSFER INITIAL DATA FILES ----------------------------------------------
+        montecarlo_iterations = [*range(1, self.MCspec_montecarlo_iterations+1, 1)]
+        safety_counter_max = self.ALGOspec_while_inst_counter_max
         
-        # # rename preprep folder
-        # os.rename(self.pvalloc_path, self.dir_move_to)
+        # get all initial files to start a fresh MC iteration
+        fresh_initial_paths = [f'{self.name_dir_export_path}/{file}' for file in self.MCspec_fresh_initial_files]
+        topo_time_paths = glob.glob(f'{self.name_dir_export_path}/topo_time_subdf/*.parquet')
+
+        max_digits = len(str(max(montecarlo_iterations)))
+        # mc_iter = montecarlo_iterations[0]
+        # if True:    
+        for mc_iter in montecarlo_iterations:
+            mc_iter_start = datetime.datetime.now()
+            subchapter_to_logfile(f'START MC{mc_iter:0{max_digits}} iteration', self.mclog_name)
+
+            self.mc_iter_path = os.join(self.name_dir_export_path, f'zMC{mc_iter:0{max_digits}}')
+            os.makedirs(self.mc_iter_path, exist_ok=False)
+            for f in fresh_initial_paths + topo_time_paths:
+                shutil.copy(f, self.mc_iter_path)
+
+
+
+            # ALLOCATION ALGORITHM -----------------------------------------------------------------------------    
+            dfuid_installed_list = []
+            pred_inst_df = pd.DataFrame()  
+            months_prediction_df = pd.read_parquet(f'{self.mc_iter_path}/months_prediction.parquet')
+            months_prediction = months_prediction_df['date']
+            constrcapa = pd.read_parquet(f'{self.mc_iter_path}/constrcapa.parquet')
+
+            for i_m, m in enumerate(months_prediction):
+                print_to_logfile(f'\n-- month {m} -- iter MC{mc_iter:0{max_digits}} -- {self.name_dir_export} --', self.mclog_name)
+                start_allocation_month = datetime.now()
+                i_m = i_m + 1        
 
 
 
@@ -427,12 +467,91 @@ if __name__ == '__main__':
             TECspec_pvprod_calc_method = 'method2.2',
             ),
 
+        # pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv        
+        PVAllocScenario(
+            name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            bfs_numbers        = [2768, 2761, 2772, 2785, ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+            T0_prediction      = '2013-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 120,
+            GWRspec_GBAUJ_minmax = [1920, 2012],
+            ALGOspec_inst_selection_method = 'prob_weighted_npv',
+            TECspec_pvprod_calc_method = 'method2.2',
+            MCspec_montecarlo_iterations = 1,
+            ),
+        # pvalloc_BLsml_20y_f2003_1mc_meth2.2_npv
+        PVAllocScenario(
+            name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            bfs_numbers        = [2768, 2761, 2772, 2785, ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+            T0_prediction      = '2003-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 240,
+            GWRspec_GBAUJ_minmax = [1920, 2012],
+            ALGOspec_inst_selection_method = 'prob_weighted_npv',
+            TECspec_pvprod_calc_method = 'method2.2',
+            MCspec_montecarlo_iterations = 1,
+            ),
+        # pvalloc_BLsml_40y_f1983_1mc_meth2.2_npv
+        PVAllocScenario(
+            name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            bfs_numbers        = [2768, 2761, 2772, 2785, ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+            T0_prediction      = '1983-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 480,
+            GWRspec_GBAUJ_minmax = [1920, 2012],
+            ALGOspec_inst_selection_method = 'prob_weighted_npv',
+            TECspec_pvprod_calc_method = 'method2.2',
+            MCspec_montecarlo_iterations = 1,
+            ),
+
+
+        # pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd
+        PVAllocScenario(
+            name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            bfs_numbers        = [2768, 2761, 2772, 2785, ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+            T0_prediction      = '2013-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 120,
+            GWRspec_GBAUJ_minmax = [1920, 2012],
+            ALGOspec_inst_selection_method = 'random',
+            TECspec_pvprod_calc_method = 'method2.2',
+            MCspec_montecarlo_iterations = 1,
+            ),
+        # pvalloc_BLsml_20y_f2003_1mc_meth2.2_rnd
+        PVAllocScenario(
+            name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            bfs_numbers        = [2768, 2761, 2772, 2785, ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+            T0_prediction      = '2003-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 240,
+            GWRspec_GBAUJ_minmax = [1920, 2012],
+            ALGOspec_inst_selection_method = 'random',
+            TECspec_pvprod_calc_method = 'method2.2',
+            MCspec_montecarlo_iterations = 1,
+            ),
+        # pvalloc_BLsml_40y_f1983_1mc_meth2.2_rnd
+        PVAllocScenario(
+            name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            bfs_numbers        = [2768, 2761, 2772, 2785, ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+            T0_prediction      = '1983-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 480,
+            GWRspec_GBAUJ_minmax = [1920, 2012],
+            ALGOspec_inst_selection_method = 'random',
+            TECspec_pvprod_calc_method = 'method2.2',
+            MCspec_montecarlo_iterations = 1,
+            ),
+
+
+# pvalloc_BLsml_10y_f2013_1mc_meth2.2_max
+# pvalloc_BLsml_20y_f2003_1mc_meth2.2_max
+# pvalloc_BLsml_40y_f1983_1mc_meth2.2_max
+
     ]
 
     for pvalloc_scen in pvalloc_scen_list:
-        pvalloc_scen.run_pvallc_INIT()
-
-        # preprep_scen.run_debug()
+        pvalloc_scen.run_pvalloc_initalization()
+        pvalloc_scen.run_pvalloc_mcalgorithm()
 
 
 print('done')

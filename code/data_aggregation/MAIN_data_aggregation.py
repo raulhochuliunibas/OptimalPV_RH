@@ -201,7 +201,7 @@ class DataAggScenario:
 if __name__ == '__main__':
     preprep_scen_list = [
         # DataAggScenario(
-        #     name_dir_export = 'preprep_BLBSSO_18to23_1and2homes_API_reimport',
+        #     name_dir_export = 'preprep_BLSOBS_18to23_1and2homes_API_reimport',
         #     kt_numbers = [11, 12, 13],
         #     year_range = [2018, 2023],
         #     split_data_geometry_AND_slow_api = True,

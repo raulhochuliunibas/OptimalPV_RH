@@ -33,7 +33,6 @@ def import_prepre_AND_create_topology(
     print_to_logfile('run function: import_prepreped_data', scen.log_name)
 
 
-
     # IMPORT & TRANSFORM ============================================================================
     # Import all necessary data objects from prepreped folder and transform them for later calculations
     print_to_logfile('import & transform data', scen.log_name)
@@ -444,8 +443,8 @@ def import_prepre_AND_create_topology(
 
     # EXPORT ============================================================================
     # pvalloc_run folder gets crowded, > only keep the most important files
-    df_names = ['Map_egid_pv', 'solkat_month', 'pv', 'pvtarif', 'elecpri', 'Map_egid_dsonode', 'dsonodes_df', 'dsonodes_gdf', 'angle_tilt_df', ]
-    df_list =  [ Map_egid_pv,   solkat_month,   pv,   pvtarif,   elecpri,   Map_egid_dsonode,   dsonodes_df,   dsonodes_gdf,   angle_tilt_df, ]
+    df_names = ['Map_egid_pv', 'solkat_month', 'pv', 'pvtarif', 'elecpri', 'Map_egid_dsonode', 'angle_tilt_df',]      # 'dsonodes_df', 'dsonodes_gdf', 
+    df_list =  [ Map_egid_pv,   solkat_month,   pv,   pvtarif,   elecpri,   Map_egid_dsonode,   angle_tilt_df,]      #  dsonodes_df,   dsonodes_gdf,  
     for i, m in enumerate(df_list): 
         if isinstance(m, pd.DataFrame):
             m.to_parquet(f'{scen.name_dir_export_path}/{df_names[i]}.parquet')
@@ -576,10 +575,10 @@ def define_construction_capacity(
     """
 
     # import settings + setup -------------------
+    print_to_logfile('run function: define_construction_capacity.py', scen.log_name)
     topo = topo_func
     ts_list, ts_names = ts_list_func, ts_names_func
     df_list, df_names = df_list_func, df_names_func
-    print_to_logfile('run function: define_construction_capacity.py', scen.log_name)
 
 
     # create monthly time structure
