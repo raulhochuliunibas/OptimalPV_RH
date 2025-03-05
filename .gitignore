@@ -15,7 +15,8 @@ __pyproject*
 venv*
 
 # ignore all files in data_directory, except empty textfiles
-# tbd
+data/**
+**api_keys.py
 
 
 # --------------------------------------------------------------------------------------------
