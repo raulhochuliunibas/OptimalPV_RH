@@ -2,22 +2,17 @@ import sys
 import os as os
 import numpy as np
 import pandas as pd
-import json
-import itertools
-import math
 import glob
-import plotly.graph_objs as go
-import plotly.offline as pyo
+import json
 import geopandas as gpd
-import copy
+import matplotlib.pyplot as plt
 
-from pyarrow.parquet import ParquetFile
-from shapely.ops import nearest_points
+from scipy.optimize import curve_fit
 
 
 # own functions 
-sys.path.append('..')
-from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from auxiliary.auxiliary_functions import  checkpoint_to_logfile, print_to_logfile
 
 """
     This file contains functions that are used as "aid functions" in the initialization of the pv allocation algorithm.
@@ -25,21 +20,259 @@ from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, check
 """
 
 # ------------------------------------------------------------------------------------------------------
+# CREATE HOY TIMESTAMP DF for WEATHER YEAR
+# ------------------------------------------------------------------------------------------------------
+def HOY_weatheryear_df(scen):
+    
+    # import settings + setup -------------------
+    print_to_logfile('run function: get_fake_gridnodes_v2', scen.log_name)
+
+
+    # get every HOY of weather year ----------
+    HOY_weatheryear_df = pd.DataFrame({'timestamp': pd.date_range(start=f'{scen.WEAspec_weater_year}-01-01 00:00:00',end=f'{scen.WEAspec_weater_year}-12-31 23:00:00', freq='h')})
+    HOY_weatheryear_df['t'] = HOY_weatheryear_df.index.to_series().apply(lambda idx: f't_{idx + 1}')        
+    HOY_weatheryear_df['month'] = HOY_weatheryear_df['timestamp'].dt.month
+    HOY_weatheryear_df['day'] = HOY_weatheryear_df['timestamp'].dt.day
+    HOY_weatheryear_df['hour'] = HOY_weatheryear_df['timestamp'].dt.hour
+
+    # export df ----------
+    HOY_weatheryear_df.to_parquet(f'{scen.name_dir_export_path}/HOY_weatheryear_df.parquet')
+
+
+# ------------------------------------------------------------------------------------------------------
+# REAL TRAFO EGID MAPPING
+# ------------------------------------------------------------------------------------------------------
+def get_gridnodes_DSO(scen):
+    
+    # import settings + setup -------------------
+    print_to_logfile('run function: get_gridnodes_DSO', scen.log_name)
+
+    # import ----------------------
+    Map_egid_dsonode = pd.read_parquet(f'{scen.name_dir_import_path}/Map_egid_dsonode.parquet')
+    gwr_gdf = gpd.read_file(f'{scen.name_dir_import_path}/gwr_gdf.geojson')
+    gwr_all_building_gdf = gpd.read_file(f'{scen.name_dir_import_path}/gwr_all_building_gdf.geojson')
+
+
+    # transformations ----------------------
+    Map_egid_dsonode['EGID'], Map_egid_dsonode['grid_node'] = Map_egid_dsonode['EGID'].astype(str), Map_egid_dsonode['grid_node'].astype(str)
+    
+    gwr_all_building_gdf = gwr_all_building_gdf.merge(Map_egid_dsonode, how='left', on='EGID')
+    gwr_all_building_gdf.set_crs('EPSG:2056', inplace=True)
+    node_centroid_list = []
+    node = Map_egid_dsonode['grid_node'].unique()[0]
+    for node in gwr_all_building_gdf['grid_node'].unique():
+        if pd.notna(node):
+            sub_gwr_node = gwr_all_building_gdf.loc[gwr_all_building_gdf['grid_node'] == node]
+            node_centroid = sub_gwr_node.unary_union.centroid
+            kVA_treshold = sub_gwr_node['kVA_threshold'].unique()[0]
+
+            node_centroid_list.append([node, kVA_treshold, node_centroid])
+
+    dsonodes_gdf = gpd.GeoDataFrame(node_centroid_list, columns=['grid_node', 'kVA_threshold', 'geometry'], crs='EPSG:2056')
+    dsonodes_df = dsonodes_gdf.loc[:,dsonodes_gdf.columns != 'geometry']
+
+    dsonodes_in_gwr_df = gwr_gdf.merge(Map_egid_dsonode, how='left', on='EGID')
+
+    # summary prints ----------------------
+    print_to_logfile('DSO grid nodes information:', scen.summary_name)
+    checkpoint_to_logfile(f'Total: {Map_egid_dsonode["grid_node"].nunique()} DSO grid nodes for {Map_egid_dsonode["EGID"].nunique()} unique EGIDs (Map_egid_dsonode.shape {Map_egid_dsonode.shape[0]}, node/egid ratio: {round(Map_egid_dsonode["grid_node"].nunique() / Map_egid_dsonode["EGID"].nunique(),4)*100}%', scen.summary_name)
+    checkpoint_to_logfile(f'In sample: {dsonodes_in_gwr_df["grid_node"].nunique()} DSO grid nodes for {dsonodes_in_gwr_df["EGID"].nunique()} EGIDs in {len(scen.bfs_numbers)} BFSs , (node/egid ratio: {round(dsonodes_in_gwr_df["grid_node"].nunique()/dsonodes_in_gwr_df["EGID"].nunique(),4)*100}%)', scen.summary_name)
+    
+
+    # export ----------------------
+    dsonodes_df.to_parquet(f'{scen.name_dir_export_path}/dsonodes_df.parquet')
+    dsonodes_df.to_csv(f'{scen.name_dir_export_path}/dsonodes_df.csv') if scen.export_csv else None
+    with open(f'{scen.name_dir_export_path}/dsonodes_gdf.geojson', 'w') as f:
+        f.write(dsonodes_gdf.to_json())
+
+
+# ------------------------------------------------------------------------------------------------------
+# INTERPOLATE ESTIMATES - PV INVESTMENT COST  
+# ------------------------------------------------------------------------------------------------------
+def estimate_iterpolate_instcost_function(scen):
+    # setup --------
+    print_to_logfile('run function: estimate_iterpolate_instcost_function', scen.log_name_def)
+
+    # data import ----- (copied from energie rechner schweiz doucmentation)
+    installation_cost_dict = {
+    "on_roof_installation_cost_pkW": {
+        2:   4636,
+        3:   3984,
+        5:   3373,
+        10:  2735,
+        15:  2420,
+        20:  2219,
+        30:  1967,
+        50:  1710,
+        75:  1552,
+        100: 1463,
+        125: 1406,
+        150: 1365
+    },
+    "on_roof_installation_cost_total": {
+        2:   9272,
+        3:   11952,
+        5:   16863,
+        10:  27353,
+        15:  36304,
+        20:  44370,
+        30:  59009,
+        50:  85478,
+        75:  116420,
+        100: 146349,
+        125: 175748,
+        150: 204816
+    },}
+
+    installation_cost_df = pd.DataFrame({
+        'kw': list(installation_cost_dict['on_roof_installation_cost_pkW'].keys()),
+        'chf_pkW': list(installation_cost_dict['on_roof_installation_cost_pkW'].values()),
+        'chf_total': list(installation_cost_dict['on_roof_installation_cost_total'].values())
+    })
+    installation_cost_df.reset_index(inplace=True)
+
+
+    # select kWp range --------
+    kW_range_for_estim = scen.TECspec_kW_range_for_pvinst_cost_estim
+    installation_cost_df['kw_in_estim_range'] = installation_cost_df['kw'].apply(
+                                                        lambda x: True if (x >= kW_range_for_estim[0]) & 
+                                                                          (x <= kW_range_for_estim[1]) else False)
+    
+
+    # define intrapolation functions for cost structure -----
+    
+    # chf_pkW
+    def func_chf_pkW(x, a, b, c, d):
+        return a +  d*((x ** b) /  (x ** c))
+    params_pkW, covar = curve_fit(func_chf_pkW, 
+                                  installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'kw'],
+                                  installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'chf_pkW'])
+    def estim_instcost_chfpkW(x):
+        return func_chf_pkW(x, *params_pkW)
+    
+    checkpoint_to_logfile('created intrapolation function for chf_pkW using "cureve_fit" to receive curve parameters', scen.log_name)
+    print_to_logfile(f'params_pkW: {params_pkW}', scen.log_name)
+    
+
+    # chf_total
+    def func_chf_total(x, a, b, c):
+        return a +  b*(x**c) 
+    params_total, covar = curve_fit(func_chf_total,
+                                    installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'kw'],
+                                    installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'chf_total'])
+    def estim_instcost_chftotal(x):
+        return func_chf_total(x, *params_total)
+    
+    checkpoint_to_logfile('created intrapolation function for chf_total using "Polynomial.fit" to receive curve coefficients', scen.log_name_def)
+    print_to_logfile(f'coefs_total: {params_total}', scen.log_name)
+
+    pvinstcost_coefficients = {
+        'params_pkW': list(params_pkW),
+        'params_total': list(params_total)
+    }
+
+    # export ---------
+    with open(f'{scen.name_dir_export_path}/pvinstcost_coefficients.json', 'w') as f:
+        json.dump(pvinstcost_coefficients, f)
+
+    np.save(f'{scen.name_dir_export_path}/pvinstcost_coefficients.npy', pvinstcost_coefficients)
+
+
+    # plot installation cost df + intrapolation functions -------------------
+    if True: 
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6)) 
+        kw_range = np.linspace(installation_cost_df['kw'].min(), installation_cost_df['kw'].max(), 100)
+        chf_pkW_fitted = estim_instcost_chfpkW(kw_range)
+        chf_total_fitted = estim_instcost_chftotal(kw_range)
+
+        # Scatter plots + interpolation -----
+        # Interpolated line kWp Cost per kW
+        axs[0].plot(kw_range, chf_pkW_fitted, label='Interpolated chf_pkW', color='red', alpha = 0.5)  
+        axs[0].scatter(installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'kw'],
+                       installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'chf_pkW'], 
+                       label='point range used for function estimation', color='purple', s=160, alpha=0.5)
+        axs[0].scatter(installation_cost_df['kw'], installation_cost_df['chf_pkW'], label='chf_pkW', color='blue', )
+
+                       
+        axs[0].set(xlabel='kW', ylabel='CHF', title='Cost per kW')
+        axs[0].legend()
+        
+
+        # Interpolated line kWp Total Cost
+        axs[1].plot(kw_range, chf_total_fitted, label='Interpolated chf_total', color='green', alpha = 0.5)
+        axs[1].scatter(installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'kw'],
+                       installation_cost_df.loc[installation_cost_df['kw_in_estim_range'], 'chf_total'], 
+                       label='point range used for function estimation', color='purple', s=160, alpha=0.5)
+        axs[1].scatter(installation_cost_df['kw'], installation_cost_df['chf_total'], label='chf_total', color='orange')
+
+        axs[1].set(xlabel='kW', ylabel='CHF', title='Total Cost')
+        axs[1].legend()
+
+        # Export the plots
+        plt.tight_layout()
+        plt.savefig(f'{scen.name_dir_export_path}/pvinstcost_table.png')
+
+
+    # export cost df -------------------
+    # installation_cost_df.to_parquet(f'{scen.name_dir_import_path}/pvinstcost_table.parquet')
+    installation_cost_df.to_parquet(f'{scen.name_dir_export_path}/pvinstcost_table.parquet')
+    installation_cost_df.to_csv(f'{scen.name_dir_export_path}/pvinstcost_table.csv')
+    checkpoint_to_logfile('exported pvinstcost_table', scen.log_name, 5)
+
+    return estim_instcost_chfpkW, estim_instcost_chftotal
+
+
+# ------------------------------------------------------------------------------------------------------
+# IMPORT PARAMETERS ESTIMATES - PV INVESTMENT COST  
+# ------------------------------------------------------------------------------------------------------
+def get_estim_instcost_function(scen,):
+    """
+       This function is used to reextract the function for estimating the installation cost of PV
+       systems based on the kWP amount. It is easier and less strenuous for debugging and error 
+       detection to calculate the cost function in the pvalloc section of the code, just with the 
+       function bellow, and only extract the coefficients again if ncessary.
+    """
+    # setup --------
+    print_to_logfile('run function: get_estim_instcost_function', scen.log_name)
+
+    with open(f'{scen.name_dir_import_path}/pvinstcost_coefficients.json', 'r') as file:
+        pvinstcost_coefficients = json.load(file)
+    params_pkW = pvinstcost_coefficients['params_pkW']
+    # coefs_total = pvinstcost_coefficients['coefs_total']
+    params_total = pvinstcost_coefficients['params_total']
+
+    # PV Cost functions --------
+    # Define the interpolation functions using the imported coefficients
+    def func_chf_pkW(x, a, b, c, d):
+        return a +  d*((x ** b) /  (x ** c))
+    def estim_instcost_chfpkW(x):
+        return func_chf_pkW(x, *params_pkW)
+
+    def func_chf_total(x, a, b, c):
+        return a +  b*(x**c) 
+    def estim_instcost_chftotal(x):
+        return func_chf_total(x, *params_total)
+    
+    return estim_instcost_chfpkW, estim_instcost_chftotal
+
+
+
+
+
+# NOT IN USE ANYMORE ********************************************************************************************************************
+
+# ------------------------------------------------------------------------------------------------------
 # GET INTERIM DATA PATH
 # ------------------------------------------------------------------------------------------------------
-def get_interim_path(pvalloc_settings):
+def get_interim_path(scen):
     """
     Return the path to the latest interim folder that ran pvalloc file to the end (and renamed pvalloc_run accordingly)
     """
-    wd_path = pvalloc_settings['wd_path']
-    data_path = f'{wd_path}_data'
-    name_dir_export = pvalloc_settings['name_dir_export']
-    log_file_name = pvalloc_settings['log_file_name']
 
-    interim_pvalloc_folder = glob.glob(f'{data_path}/output/{name_dir_export}*')
+    interim_pvalloc_folder = glob.glob(f'{scen.scen.pvalloc_path}/{scen.name_dir_export}*')
     if len(interim_pvalloc_folder) == 0:
-        checkpoint_to_logfile(f'ATTENTION! No existing interim pvalloc folder found, use "pvalloc_run" instead', log_file_name)
-        iterim_path = f'{data_path}/output/pvalloc_run'
+        checkpoint_to_logfile('ATTENTION! No existing interim pvalloc folder found, use "pvalloc_run" instead', scen.log_name)
+        iterim_path = f'{scen.data_path}/output/pvalloc_run'
 
     if len(interim_pvalloc_folder) > 0:
         iterim_path = interim_pvalloc_folder[-1]
@@ -51,22 +284,18 @@ def get_interim_path(pvalloc_settings):
 # ------------------------------------------------------------------------------------------------------
 # ANGLE TILT & AZIMUTH Table
 # ------------------------------------------------------------------------------------------------------
-def get_angle_tilt_table(pvalloc_settings):
+def get_angle_tilt_table(scen):
 
     # import settings + setup -------------------
-    data_path = pvalloc_settings['data_path']
-    log_file_name = pvalloc_settings['log_file_name']
-    name_dir_import = pvalloc_settings['name_dir_import']
-    pvalloc_path = pvalloc_settings['pvalloc_path']
-    print_to_logfile('run function: get_angle_tilt_table', log_file_name)
+    print_to_logfile('run function: get_angle_tilt_table', scen.log_name)
 
     # SOURCE: table was retreived from this site: https://echtsolar.de/photovoltaik-neigungswinkel/
     # date 29.08.24
     
     # import df ---------
-    index_angle = [-180, -170, -160, -150, -140, -130, -120, -110, -100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
-    index_tilt = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
-    tuples_iter = list(itertools.product(index_angle, index_tilt))
+    # index_angle = [-180, -170, -160, -150, -140, -130, -120, -110, -100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
+    # index_tilt = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
+    # tuples_iter = list(itertools.product(index_angle, index_tilt))
 
     tuples = [(-180, 0), (-180, 5), (-180, 10), (-180, 15), (-180, 20), (-180, 25), (-180, 30), (-180, 35), (-180, 40), (-180, 45), (-180, 50), (-180, 55), (-180, 60), (-180, 65), (-180, 70), (-180, 75), (-180, 80), (-180, 85), (-180, 90), 
               (-170, 0), (-170, 5), (-170, 10), (-170, 15), (-170, 20), (-170, 25), (-170, 30), (-170, 35), (-170, 40), (-170, 45), (-170, 50), (-170, 55), (-170, 60), (-170, 65), (-170, 70), (-170, 75), (-170, 80), (-170, 85), (-170, 90), 
@@ -151,59 +380,28 @@ def get_angle_tilt_table(pvalloc_settings):
     angle_tilt_df['efficiency_factor'] = angle_tilt_df['efficiency_factor'] / 100
 
     # export df ----------
-    angle_tilt_df.to_parquet(f'{pvalloc_path}/{name_dir_import}/angle_tilt_df.parquet')
-    angle_tilt_df.to_csv(f'{pvalloc_path}/{name_dir_import}/angle_tilt_df.csv')
+    angle_tilt_df.to_parquet(f'{scen.name_dir_import_path}/angle_tilt_df.parquet')
+    angle_tilt_df.to_csv(f'{scen.name_dir_import_path}/angle_tilt_df.csv')
     return angle_tilt_df
 
 
-
-# ------------------------------------------------------------------------------------------------------
-# CREATE HOY TIMESTAMP DF for WEATHER YEAR
-# ------------------------------------------------------------------------------------------------------
-def HOY_weatheryear_df(pvalloc_settings):
-    
-    # import settings + setup -------------------
-    data_path = pvalloc_settings['data_path']
-    log_file_name = pvalloc_settings['log_file_name']
-    name_dir_import = pvalloc_settings['name_dir_import']
-    bfs_numbers_def = pvalloc_settings['bfs_numbers']
-    gwr_selection_specs_def = pvalloc_settings['gwr_selection_specs']
-    pvalloc_path = pvalloc_settings['pvalloc_path']
-    print_to_logfile('run function: get_fake_gridnodes_v2', log_file_name)
-
-
-    # get every HOY of weather year ----------
-    weather_year = pvalloc_settings['weather_specs']['weather_year']
-    HOY_weatheryear_df = pd.DataFrame({'timestamp': pd.date_range(start=f'{weather_year}-01-01 00:00:00',end=f'{weather_year}-12-31 23:00:00', freq='h')})
-    HOY_weatheryear_df['t'] = HOY_weatheryear_df.index.to_series().apply(lambda idx: f't_{idx + 1}')        
-    HOY_weatheryear_df['month'] = HOY_weatheryear_df['timestamp'].dt.month
-    HOY_weatheryear_df['day'] = HOY_weatheryear_df['timestamp'].dt.day
-    HOY_weatheryear_df['hour'] = HOY_weatheryear_df['timestamp'].dt.hour
-
-    # export df ----------
-    HOY_weatheryear_df.to_parquet(f'{pvalloc_path}/HOY_weatheryear_df.parquet')
 
 
 
 # ------------------------------------------------------------------------------------------------------
 # FAKE TRAFO EGID MAPPING
 # ------------------------------------------------------------------------------------------------------
-def get_fake_gridnodes_v2(pvalloc_settings):
+def get_fake_gridnodes_v2(scen):
     
     # import settings + setup -------------------
-    data_path = pvalloc_settings['data_path']
-    log_file_name = pvalloc_settings['log_file_name']
-    name_dir_import = pvalloc_settings['name_dir_import']
-    bfs_numbers_def = pvalloc_settings['bfs_numbers']
-    gwr_selection_specs_def = pvalloc_settings['gwr_selection_specs']
-    print_to_logfile('run function: get_fake_gridnodes_v2', log_file_name)
+    print_to_logfile('run function: get_fake_gridnodes_v2', scen.log_name)
 
 
     # create fake gridnodes ----------------------
-    gwr_geo = gpd.read_file(f'{data_path}/output/{name_dir_import}/gwr_gdf.geojson')
+    gwr_geo = gpd.read_file(f'{scen.name_dir_import_path}/gwr_gdf.geojson')
     
-    gwr = pd.read_parquet(f'{data_path}/output/{name_dir_import}/gwr.parquet')
-    gwr = gwr.loc[gwr['GGDENR'].isin(bfs_numbers_def)]
+    gwr = pd.read_parquet(f'{scen.name_dir_import_path}/gwr.parquet')
+    gwr = gwr.loc[gwr['GGDENR'].isin(scen.bfs_numbers)]
     gwr = gwr.drop_duplicates(subset=['EGID'])
 
     gwr_nodes = gwr.merge(gwr_geo[['EGID', 'geometry']], how='left', on='EGID')
@@ -247,67 +445,12 @@ def get_fake_gridnodes_v2(pvalloc_settings):
 
     # export df ----------
     Map_egid_nodes = gwr_nodes[['EGID', 'grid_node']].copy()
-    Map_egid_nodes.to_parquet(f'{data_path}/output/{name_dir_import}/Map_egid_nodes.parquet')
-    Map_egid_nodes.to_csv(f'{data_path}/output/{name_dir_import}/Map_egid_nodes.csv')
+    Map_egid_nodes.to_parquet(f'{scen.name_dir_import_path}/Map_egid_nodes.parquet')
+    Map_egid_nodes.to_csv(f'{scen.name_dir_import_path}/Map_egid_nodes.csv')
 
     dsonodes_df = dsonodes_df.loc[:,dsonodes_df.columns != 'geometry']
-    dsonodes_df.to_parquet(f'{data_path}/output/{name_dir_import}/dsonodes_df.parquet')
-    with open(f'{data_path}/output/{name_dir_import}/dsonodes_gdf.geojson', 'w') as f:
-        f.write(dsonodes_gdf.to_json())
-
-
-
-# ------------------------------------------------------------------------------------------------------
-# REAL TRAFO EGID MAPPING
-# ------------------------------------------------------------------------------------------------------
-def get_gridnodes_DSO(pvalloc_settings):
-    
-    # import settings + setup -------------------
-    data_path = pvalloc_settings['data_path']
-    log_file_name = pvalloc_settings['log_file_name']
-    name_dir_import = pvalloc_settings['name_dir_import']
-    bfs_numbers_def = pvalloc_settings['bfs_numbers']
-    summary_file_name = pvalloc_settings['summary_file_name']
-    pvalloc_path = pvalloc_settings['pvalloc_path']
-    preprep_name_dir_import_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
-    print_to_logfile('run function: get_gridnodes_DSO', log_file_name)
-
-    # import ----------------------
-    Map_egid_dsonode = pd.read_parquet(f'{preprep_name_dir_import_path}/Map_egid_dsonode.parquet')
-    gwr_gdf = gpd.read_file(f'{preprep_name_dir_import_path}/gwr_gdf.geojson')
-    gwr_all_building_gdf = gpd.read_file(f'{preprep_name_dir_import_path}/gwr_all_building_gdf.geojson')
-
-
-    # transformations ----------------------
-    Map_egid_dsonode['EGID'], Map_egid_dsonode['grid_node'] = Map_egid_dsonode['EGID'].astype(str), Map_egid_dsonode['grid_node'].astype(str)
-    
-    gwr_all_building_gdf = gwr_all_building_gdf.merge(Map_egid_dsonode, how='left', on='EGID')
-    gwr_all_building_gdf.set_crs('EPSG:2056', inplace=True)
-    node_centroid_list = []
-    node = Map_egid_dsonode['grid_node'].unique()[0]
-    for node in gwr_all_building_gdf['grid_node'].unique():
-        if pd.notna(node):
-            sub_gwr_node = gwr_all_building_gdf.loc[gwr_all_building_gdf['grid_node'] == node]
-            node_centroid = sub_gwr_node.unary_union.centroid
-            kVA_treshold = sub_gwr_node['kVA_threshold'].unique()[0]
-
-            node_centroid_list.append([node, kVA_treshold, node_centroid])
-
-    dsonodes_gdf = gpd.GeoDataFrame(node_centroid_list, columns=['grid_node', 'kVA_threshold', 'geometry'], crs='EPSG:2056')
-    dsonodes_df = dsonodes_gdf.loc[:,dsonodes_gdf.columns != 'geometry']
-
-    dsonodes_in_gwr_df = gwr_gdf.merge(Map_egid_dsonode, how='left', on='EGID')
-
-    # summary prints ----------------------
-    print_to_logfile(f'DSO grid nodes information:', summary_file_name)
-    checkpoint_to_logfile(f'Total: {Map_egid_dsonode["grid_node"].nunique()} DSO grid nodes for {Map_egid_dsonode["EGID"].nunique()} unique EGIDs (Map_egid_dsonode.shape {Map_egid_dsonode.shape[0]}, node/egid ratio: {round(Map_egid_dsonode["grid_node"].nunique() / Map_egid_dsonode["EGID"].nunique(),4)*100}%', summary_file_name)
-    checkpoint_to_logfile(f'In sample: {dsonodes_in_gwr_df["grid_node"].nunique()} DSO grid nodes for {dsonodes_in_gwr_df["EGID"].nunique()} EGIDs in {len(bfs_numbers_def)} BFSs , (node/egid ratio: {round(dsonodes_in_gwr_df["grid_node"].nunique()/dsonodes_in_gwr_df["EGID"].nunique(),4)*100}%)', summary_file_name)
-    
-
-    # export ----------------------
-    dsonodes_df.to_parquet(f'{preprep_name_dir_import_path}/dsonodes_df.parquet')
-    dsonodes_df.to_csv(f'{preprep_name_dir_import_path}/dsonodes_df.csv')
-    with open(f'{preprep_name_dir_import_path}/dsonodes_gdf.geojson', 'w') as f:
+    dsonodes_df.to_parquet(f'{scen.name_dir_import_path}/dsonodes_df.parquet')
+    with open(f'{scen.name_dir_import_path}/dsonodes_gdf.geojson', 'w') as f:
         f.write(dsonodes_gdf.to_json())
 
 

@@ -11,10 +11,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from auxiliary.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, get_bfs_from_ktnr
 
 import initialization_small_functions as initial_sml
-import initialization_large_functions as  initial
+import initialization_large_functions as  initial_lrg
 import alloc_algorithm as algo
-import alloc_sanitychecks as sanity
-import inst_selection as select
+# import alloc_sanitychecks as sanity
+# import inst_selection as select
 
 
 # -----------------------------------
@@ -26,8 +26,9 @@ class PVAllocScenario:
     # DEFAULT SETTINGS ---------------------------------------------------
     def __init__(self, 
                  name_dir_export    = 'pvalloc_BL_smallsample',             # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
-                 name_dir_import    = 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
+                 name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
                  show_debug_prints  = True,                       # F: certain print statements are omitted, T: includes print statements that help with debugging
+                 export_csvs        = True, 
 
                  kt_numbers         = [],                               # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
                  bfs_numbers        = [2761,],                                      # list of municipalites to select for allocation (only used if kt_numbers == 0)
@@ -47,7 +48,7 @@ class PVAllocScenario:
                  GWRspec_building_cols              =  ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
                                                         'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
                                                         'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1', 'GEBF', 'GAREA'],
-                 GWRspec_dwelling_cols              = None,             # ['EGID', 'WAZIM', 'WAREA', ],
+                 GWRspec_dwelling_cols              = [],             # ['EGID', 'WAZIM', 'WAREA', ],
                  GWRspec_DEMAND_proxy               = 'GAREA',          # because WAZIM and WAREA are not available for all buildings (because not all building EGIDs have entries with WEIDs)
                  GWRspec_GSTAT                      = ['1004',],        # GSTAT - 1004: only existing, fully constructed buildings 
                  GWRspec_GKLAS                      = ['1110','1121'], #,'1276',],      # GKLAS - 1110: only 1 living space per building 
@@ -159,6 +160,7 @@ class PVAllocScenario:
         self.name_dir_export: str = name_dir_export
         self.name_dir_import: str = name_dir_import
         self.show_debug_prints: bool = show_debug_prints
+        self.export_csvs: bool = export_csvs
 
         self.kt_numbers: List[int] = kt_numbers
         self.bfs_numbers: List[int] = bfs_numbers
@@ -174,7 +176,7 @@ class PVAllocScenario:
         self.GWRspec_solkat_max_n_partitions: int = GWRspec_solkat_max_n_partitions
         self.GWRspec_solkat_area_per_EGID_range: List[int] = GWRspec_solkat_area_per_EGID_range
         self.GWRspec_building_cols: List[str] = GWRspec_building_cols
-        self.GWRspec_dwelling_cols: List[str] = GWRspec_dwelling_cols if GWRspec_dwelling_cols is not None else []
+        self.GWRspec_dwelling_cols: List[str] = GWRspec_dwelling_cols 
         self.GWRspec_DEMAND_proxy: str = GWRspec_DEMAND_proxy
         self.GWRspec_GSTAT: List[str] = GWRspec_GSTAT
         self.GWRspec_GKLAS: List[str] = GWRspec_GKLAS
@@ -276,17 +278,22 @@ class PVAllocScenario:
         self.wd_path = os.getcwd()
         self.data_path = os.path.join(self.wd_path, 'data')
         self.pvalloc_path = os.path.join(self.data_path, 'pvalloc', 'pvalloc_scen__temp_to_be_renamed')
+        self.name_dir_export_path = os.path.join(self.data_path, 'pvalloc', self.name_dir_export)
         self.name_dir_import_path = os.path.join(self.data_path, 'preprep', self.name_dir_import)
-        self.dir_move_to = os.path.join(self.data_path, 'pvalloc', self.name_dir_export)
+        # self.dir_move_to = os.path.join(self.data_path, 'pvalloc', self.name_dir_export)
 
-        self.log_name = os.path.join(self.pvalloc_path, 'pvalloc_log.txt')
-        # self.summary_name = os.path.join(self.pvalloc_path, 'summary_data_selection_log.txt')
+        self.log_name = os.path.join(self.name_dir_export_path, 'pvalloc_log.txt')
+        self.summary_name = os.path.join(self.name_dir_export_path, 'summary_data_selection_log.txt')
         
-        self.bfs_numbers: List[int] = get_bfs_from_ktnr(self.kt_numbers, self.data_path, self.log_name) if self.kt_numbers != [] else self.bfs_numbers
+        self.bfs_numbers: List[str] = get_bfs_from_ktnr(self.kt_numbers, self.data_path, self.log_name) if self.kt_numbers != [] else [str(bfs) for bfs in self.bfs_numbers]
         self.total_runtime_start = datetime.datetime.now()
 
-        # create dir for export
-        os.makedirs(self.pvalloc_path, exist_ok=True)
+        # create dir for export, rename old export dir not to overwrite
+        if os.path.exists(self.name_dir_export_path):
+            n_same_names = len(glob.glob(f'{self.name_dir_export_path}*'))
+            os.rename(self.name_dir_export_path, f'{self.name_dir_export_path}_{n_same_names}')
+        os.makedirs(self.name_dir_export_path, exist_ok=True)
+
 
         # create log file
         chapter_to_logfile(f'start MASTER_pvalloc_INITIALIZATION for: {self.name_dir_export}', self.log_name, overwrite_file=True)
@@ -304,25 +311,42 @@ class PVAllocScenario:
         subchapter_to_logfile('initialization: CREATE SMALLER AID DFs', self.log_name)
         initial_sml.HOY_weatheryear_df(self)
         initial_sml.get_gridnodes_DSO(self)
+        initial_sml.estimate_iterpolate_instcost_function(self)
 
         if self.recreate_topology:
             subchapter_to_logfile('initialization: IMPORT PREPREP DATA & CREATE (building) TOPOLOGY', self.log_name)
-            topo, df_list, df_names = initial.import_prepre_AND_create_topology(self)
+            topo, df_list, df_names = initial_lrg.import_prepre_AND_create_topology(self)
 
             subchapter_to_logfile('initialization: IMPORT TS DATA', self.log_name)
-            ts_list, ts_names = initial.import_ts_data(self)
+            ts_list, ts_names = initial_lrg.import_ts_data(self)
 
             subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', self.log_name)
-            constrcapa, months_prediction, months_lookback = initial.define_construction_capacity(self, topo, df_list, df_names, ts_list, ts_names)
+            constrcapa, months_prediction, months_lookback = initial_lrg.define_construction_capacity(self, topo, df_list, df_names, ts_list, ts_names)
 
         
 
         # PREPARE TOPO_TIME SPECIFIC DFs ---------------------------------------------------------------------------------------------
         subchapter_to_logfile('prep: CALC ECONOMICS for TOPO_DF', self.log_name)
         algo.calc_economics_in_topo_df(self, topo, df_list, df_names, ts_list, ts_names)
-        # shutil.copy(f'{self.pvalloc_path}/topo_egid.json', f'{self.pvalloc_path}/topo_egid_before_alloc.json')
+        shutil.copy(f'{self.pvalloc_path}/topo_egid.json', f'{self.pvalloc_path}/topo_egid_before_alloc.json')
 
 
+
+        # END ---------------------------------------------------
+        chapter_to_logfile(f'end start MASTER_pvalloc_INITIALIZATION\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.total_runtime_start}', self.log_name)
+
+        # if os.path.exists(self.dir_move_to):
+        #     n_same_names = len(glob.glob(f'{self.dir_move_to}*'))
+        #     os.rename(self.dir_move_to, f'{self.dir_move_to}_{n_same_names}')
+
+        # os.rename(self.log_name, f'{self.log_name.split(".txt")[0]}_{self.name_dir_export}.txt')
+        # # os.rename(self.summary_name, f'{self.summary_name.split(".txt")[0]}_{self.name_dir_export}.txt')
+        
+        # # rename preprep folder
+        # os.rename(self.pvalloc_path, self.dir_move_to)
+
+
+    def STILL_TO_BE_REFACTORED(self):
 
         # SANITY CHECK: TOPOLOGY  ---------------------------------------------------------------------------------------------
 
@@ -356,88 +380,59 @@ class PVAllocScenario:
             # i_m, m = 1, months_prediction[0:2]
             for i_m, m in enumerate(months_prediction[0:self.CHECKspec_n_iterations_before_sanitycheck]):
                 print_to_logfile(f'\n-- month {m} -- sanity check -- {self.name_dir_export} --', self.log_name)
-                algo.update_gridprem(self, sanitycheck_path, m, i_m)
-                algo.update_npv_df(self, sanitycheck_path, m, i_m)
-                select.select_AND_adjust_topology(self, sanitycheck_path,
-                                                dfuid_installed_list,pred_inst_df,
-                                                m, i_m)
+            #     algo.update_gridprem(self, sanitycheck_path, m, i_m)
+            #     algo.update_npv_df(self, sanitycheck_path, m, i_m)
+            #     select.select_AND_adjust_topology(self, sanitycheck_path,
+            #                                     dfuid_installed_list,pred_inst_df,
+            #                                     m, i_m)
             
-            sanity.sanity_check_summary_byEGID(self, sanitycheck_path)
+            # sanity.sanity_check_summary_byEGID(self, sanitycheck_path)
 
         
         # EXPORT SPATIAL DATA ====================
         if self.create_gdf_export_of_topology:
             subchapter_to_logfile('sanity_check: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', self.log_name)
-            sanity.create_gdf_export_of_topology(self)  
+            # sanity.create_gdf_export_of_topology(self)  
 
             subchapter_to_logfile('sanity_check: MULTIPLE INSTALLATIONS PER EGID', self.log_name)
-            sanity.check_multiple_xtf_ids_per_EGID(self)
+            # sanity.check_multiple_xtf_ids_per_EGID(self)
 
 
-        # END + FOLDER RENAME ---------------------------------------------------
-        chapter_to_logfile(f'end start MASTER_pvalloc_INITIALIZATION\n Runtime (hh:mm:ss):{datetime.now() - self.total_runtime_start}', self.log_name)
+        # # END + FOLDER RENAME ---------------------------------------------------
+        # chapter_to_logfile(f'end start MASTER_pvalloc_INITIALIZATION\n Runtime (hh:mm:ss):{datetime.now() - self.total_runtime_start}', self.log_name)
 
-        if os.path.exists(self.dir_move_to):
-            n_same_names = len(glob.glob(f'{self.name_dir_export}*'))
-            os.rename(self.dir_move_to, f'{self.dir_move_to}_{n_same_names}')
+        # if os.path.exists(self.dir_move_to):
+        #     n_same_names = len(glob.glob(f'{self.dir_move_to}*'))
+        #     os.rename(self.dir_move_to, f'{self.dir_move_to}_{n_same_names}')
 
-        os.rename(self.log_name, f'{self.log_name.split(".txt")[0]}_{self.name_dir_export}.txt')
-        # os.rename(self.summary_name, f'{self.summary_name.split(".txt")[0]}_{self.name_dir_export}.txt')
+        # os.rename(self.log_name, f'{self.log_name.split(".txt")[0]}_{self.name_dir_export}.txt')
+        # # os.rename(self.summary_name, f'{self.summary_name.split(".txt")[0]}_{self.name_dir_export}.txt')
         
-        # rename preprep folder
-        os.rename(self.pvalloc_path, self.dir_move_to)
+        # # rename preprep folder
+        # os.rename(self.pvalloc_path, self.dir_move_to)
 
 
 
 # ==================================================================================================================
 if __name__ == '__main__':
-    preprep_scen_list = [
-        PVAllocScenario(),
-        # # DataAggScenario(
-        #     name_dir_export = 'preprep_BLBSSO_18to23_1and2homes_API_reimport',
-        #     kt_numbers = [11, 12, 13],
-        #     year_range = [2018, 2023],
-        #     split_data_geometry_AND_slow_api = True,
-        #     GWR_GKLAS = ['1110', '1121', '1276'],
-            
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
-        # DataAggScenario(
-        #     name_dir_export = 'preprep_BL_22to23_extSolkatEGID_DFUIDduplicates',
-        #     # kt_numbers = [13],
-        #     bfs_numbers = [2761, 2768,],
-        #     year_range = [2022, 2023],
+    pvalloc_scen_list = [
+        PVAllocScenario(
+            name_dir_export    = 'pvalloc_BFS2761_2m_f2021_1mc_meth2.2_rnd_DEBUG',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            bfs_numbers        = [2761, 2768,],                                      # list of municipalites to select for allocation (only used if kt_numbers == 0)
+            T0_prediction      = '2021-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 2,
+            GWRspec_GBAUJ_minmax = [1920, 2020],
+            ALGOspec_inst_selection_method = 'random',
+            TECspec_pvprod_calc_method = 'method2.2',
+            ),
 
-        #     GWR_GKLAS = ['1110', '1121'],
-
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
-
-        # DataAggScenario(
-        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_DFUIDduplicates',
-        #     kt_numbers = [11],
-        #     year_range = [2022, 2023],
-
-        #     GWR_GKLAS = ['1110', '1121'],
-
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
-
-        # DataAggScenario(
-        #     name_dir_export = 'preprep_BLBSSO_22to23_extSolkatEGID_DFUIDduplicates',
-        #     kt_numbers = [13, 12, 11],
-        #     year_range = [2022, 2023],
-
-        #     GWR_GKLAS = ['1110', '1121'],
-
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
     ]
 
-    for preprep_scen in preprep_scen_list:
-        preprep_scen.run_data_agg()
+    for pvalloc_scen in pvalloc_scen_list:
+        pvalloc_scen.run_pvallc_INIT()
+
         # preprep_scen.run_debug()
 
 
 print('done')
-
