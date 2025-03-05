@@ -13,7 +13,7 @@ from visualizations.defaults_settings import extend_visual_sett_with_defaults
 
 
 # SETTINGS DEFINITION ==================================================================================================================
-run_on_server =             True
+run_on_server =             False
 print_directory_stucture_to_txtfile(not(run_on_server))
 
 run_dataagg =               True
@@ -125,32 +125,31 @@ visual_settings = extend_visual_sett_with_defaults(visual_settings)
 
 # EXECUTION ==================================================================================================================
 
+def main():
 
-# DATA AGGREGATION RUNs  ------------------------------------------------------------------------
-for k_sett, scen_sett in dataagg_scenarios.items():
-    dataagg_settings = scen_sett
-    MASTER_data_aggregation.MASTER_data_aggregation(dataagg_settings) if run_dataagg else print('')
+    # DATA AGGREGATION RUNs  ------------------------------------------------------------------------
+    for k_sett, scen_sett in dataagg_scenarios.items():
+        dataagg_settings = scen_sett
+        MASTER_data_aggregation.MASTER_data_aggregation(dataagg_settings) if run_dataagg else print('')
+
+    # ALLOCATION RUNs  ------------------------------------------------------------------------
+    for k_sett, scen_sett in pvalloc_scenarios.items():
+        pvalloc_settings = scen_sett
+        MASTER_pvalloc_initialization.MASTER_pvalloc_initialization(pvalloc_settings) if run_alloc_init else print('')
+        MASTER_pvalloc_MCalgorithm.MASTER_pvalloc_MC_algorithm(pvalloc_settings) if run_alloc_MCalg else print('')
+
+    # POSTPROCESSIGN ANALYSIS RUNs ---------------------------------------------------------------
+    MASTER_postprocess_analysis.MASTER_postprocess_analysis(pvalloc_scenarios, postprocessing_analysis_settings) if run_postprocess_analysis else print('')
+
+    # VISUALISATION RUNs  ------------------------------------------------------------------------
+    MASTER_visualization.MASTER_visualization(pvalloc_scenarios, visual_settings) if run_visual else print('')
+
+    # END ==========================================================================
+    print(f'\n\n{54*"="}\n{5*" "}{10*"*"}{5*" "}END of RUNFILE{5*" "}{10*"*"}{5*" "}\n{54*"="}\n')
 
 
-# ALLOCATION RUNs  ------------------------------------------------------------------------
-for k_sett, scen_sett in pvalloc_scenarios.items():
-    pvalloc_settings = scen_sett
-    MASTER_pvalloc_initialization.MASTER_pvalloc_initialization(pvalloc_settings) if run_alloc_init else print('')
-    MASTER_pvalloc_MCalgorithm.MASTER_pvalloc_MC_algorithm(pvalloc_settings) if run_alloc_MCalg else print('')
-
-
-# POSTPROCESSIGN ANALYSIS RUNs ---------------------------------------------------------------
-MASTER_postprocess_analysis.MASTER_postprocess_analysis(pvalloc_scenarios, postprocessing_analysis_settings) if run_postprocess_analysis else print('')
-
-
-
-# VISUALISATION RUNs  ------------------------------------------------------------------------
-MASTER_visualization.MASTER_visualization(pvalloc_scenarios, visual_settings) if run_visual else print('')
-
-
-
-# END ==========================================================================
-print(f'\n\n{54*"="}\n{5*" "}{10*"*"}{5*" "}END of RUNFILE{5*" "}{10*"*"}{5*" "}\n{54*"="}\n')
+if __name__ == '__main__':
+    main()
 
 
 
