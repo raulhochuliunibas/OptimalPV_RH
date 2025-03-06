@@ -225,10 +225,10 @@ def sanity_check_summary_byEGID(
     pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet')
 
     # add a EGID of model algorithm to the list
-    if pred_inst_df.shape[0]< scen.GWRspec_n_EGIDs_of_alloc_algorithm:
+    if pred_inst_df.shape[0]< scen.CHECKspec_n_EGIDs_of_alloc_algorithm:
         n_EGIDs_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], pred_inst_df.shape[0], replace=False))
     else:
-        n_EGIDs_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], scen.GWRspec_n_EGIDs_of_alloc_algorithm, replace=False))
+        n_EGIDs_of_alloc_algorithm = list(np.random.choice(pred_inst_df['EGID'], scen.CHECKspec_n_EGIDs_of_alloc_algorithm, replace=False))
     pred_inst_df.loc[pred_inst_df['EGID'].isin(n_EGIDs_of_alloc_algorithm), ['EGID','info_source']]
     
     # remove any duplicates + add to pvalloc_settings
