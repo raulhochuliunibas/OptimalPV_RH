@@ -337,7 +337,7 @@ def update_gridprem(
     data = [(k, v[0], v[1]) for k, v in scen.GRIDspec_tiers.items()]
     gridtiers_df = pd.DataFrame(data, columns=scen.GRIDspec_colnames)
 
-    checkpoint_to_logfile('**DEBUGGIG** > start loop through topo_egid', scen.log_name, 1)
+    checkpoint_to_logfile('**DEBUGGIG** > START LOOP through topo_egid', scen.log_name, 1, scen.show_debug_prints)
     egid_list, info_source_list, inst_TF_list = [], [], []
     for k,v in topo.items():
         egid_list.append(k)
@@ -349,12 +349,12 @@ def update_gridprem(
             inst_TF_list.append(False)
     Map_infosource_egid = pd.DataFrame({'EGID': egid_list, 'info_source': info_source_list, 'inst_TF': inst_TF_list}, index=egid_list)
 
-    checkpoint_to_logfile('**DEBUGGIG** > end loop through topo_egid', scen.log_name, 1)
+    checkpoint_to_logfile('**DEBUGGIG** > end loop through topo_egid', scen.log_name, 1, scen.show_debug_prints) if i_m < 3 else None
 
 
     # import topo_time_subdfs -----------------------------------------------------
     # topo_subdf_paths = glob.glob(f'{scen.pvalloc_path}/topo_time_subdf/*.parquet')
-    checkpoint_to_logfile('**DEBUGGIG** > start loop through subdfs', scen.log_name, 1)
+    checkpoint_to_logfile('**DEBUGGIG** > start loop through subdfs', scen.log_name, 1, scen.show_debug_prints) if i_m < 3 else None
 
     topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
     agg_subinst_df_list = []
@@ -363,22 +363,22 @@ def update_gridprem(
 
     i, path = 0, topo_subdf_paths[0]
     for i, path in enumerate(topo_subdf_paths):
-        # checkpoint_to_logfile(f'**DEBUGGIG** > start read subdfs', scen.log_name, 1) if i < 2 else None
+        checkpoint_to_logfile('**DEBUGGIG** \t> start read subdfs', scen.log_name, 2) if i < 2 else None
         subdf = pd.read_parquet(path)
-        # checkpoint_to_logfile(f'**DEBUGGIG** > end read subdfs', scen.log_name, 1) if i < 2 else None
+        checkpoint_to_logfile('**DEBUGGIG** \t> end read subdfs', scen.log_name, 2) if i < 2 else None
 
         subdf_updated = copy.deepcopy(subdf)
         subdf_updated.drop(columns=['info_source', 'inst_TF'], inplace=True)
 
-        checkpoint_to_logfile('**DEBUGGIG** > start Map_infosource_egid', scen.log_name, 1) if i < 2 else None
+        checkpoint_to_logfile('**DEBUGGIG** \t> start Map_infosource_egid', scen.log_name, 1, scen.show_debug_prints) if i < 2 else None
         subdf_updated = subdf_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
-        checkpoint_to_logfile('**DEBUGGIG** > end Map_infosource_egid', scen.log_name, 1) if i < 2 else None
+        checkpoint_to_logfile('**DEBUGGIG** \t> end Map_infosource_egid', scen.log_name, 1, scen.show_debug_prints) if i < 2 else None
         # updated_instTF_srs, update_infosource_srs = subdf_updated['inst_TF'].fillna(subdf['inst_TF']), subdf_updated['info_source'].fillna(subdf['info_source'])
         # subdf['inst_TF'], subdf['info_source'] = updated_instTF_srs.infer_objects(copy=False), update_infosource_srs.infer_objects(copy=False)
 
         # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
         subinst = copy.deepcopy(subdf_updated.loc[subdf_updated['inst_TF']==True])
-        checkpoint_to_logfile('**DEBUGGIG** > pvprod_kw_to_numpy', scen.log_name, 1) if i < 2 else None
+        checkpoint_to_logfile('**DEBUGGIG** \t> pvprod_kw_to_numpy', scen.log_name, 2) if i < 2 else None
         pvprod_kW, demand_kW = subinst['pvprod_kW'].to_numpy(), subinst['demand_kW'].to_numpy()
         selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * scen.TECspec_self_consumption_ifapplicable
         netdemand_kW = demand_kW - selfconsum_kW
@@ -386,7 +386,7 @@ def update_gridprem(
 
         subinst['feedin_kW'] = netfeedin_kW
         
-        checkpoint_to_logfile('**DEBUGGIG** > end pvprod_kw_to_numpy', scen.log_name, 1) if i < 2 else None
+        checkpoint_to_logfile('**DEBUGGIG** > end pvprod_kw_to_numpy', scen.log_name, 2, scen.show_debug_prints) if i < 2 else None
         # NOTE: attempt for a more elaborate way to handle already installed installations
         if False:
             pv = pd.read_parquet(f'{subdir_path}/pv.parquet')
@@ -413,7 +413,7 @@ def update_gridprem(
         del subinst
         agg_subinst_df_list.append(agg_subinst)
     
-    checkpoint_to_logfile('**DEBUGGIG** > end loop through subdfs', scen.log_name, 1)
+    checkpoint_to_logfile('**DEBUGGIG** > end loop through subdfs', scen.log_name, 1, scen.show_debug_prints) if i_m < 3 else None
 
 
     # build gridnode_df -----------------------------------------------------
@@ -428,7 +428,7 @@ def update_gridprem(
     gridnode_df['feedin_kW_taken'] = np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['kW_threshold'], gridnode_df['feedin_kW'])
     gridnode_df['feedin_kW_loss'] =  np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['feedin_kW'] - gridnode_df['kW_threshold'], 0)
 
-    checkpoint_to_logfile('**DEBUGGIG** > end merge + npwhere subdfs', scen.log_name, 1)
+    checkpoint_to_logfile('**DEBUGGIG** > end merge + npwhere subdfs', scen.log_name, 1, scen.show_debug_prints) if i_m < 3 else None
 
 
     # update gridprem_ts -----------------------------------------------------
@@ -447,7 +447,7 @@ def update_gridprem(
     gridprem_ts['prem_Rp_kWh'] = np.select(conditions, choices, default=gridprem_ts['prem_Rp_kWh'])
     gridprem_ts.drop(columns=['feedin_kW_taken', 'kW_threshold'], inplace=True)
 
-    checkpoint_to_logfile('**DEBUGGIG** > end update gridprem_ts', scen.log_name, 1)
+    checkpoint_to_logfile('**DEBUGGIG** > end update gridprem_ts', scen.log_name, 1, scen.show_debug_prints) if i_m < 3 else None
 
 
     # EXPORT -----------------------------------------------------
@@ -476,7 +476,7 @@ def update_gridprem(
                 gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
                 gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
 
-    checkpoint_to_logfile('exported gridprem_ts and gridnode_df', scen.log_name, 1)
+    checkpoint_to_logfile('exported gridprem_ts and gridnode_df', scen.log_name, 1) if i_m < 3 else None
 
 
 
@@ -489,27 +489,6 @@ def update_npv_df(scen,
                 ):
     
     # setup -----------------------------------------------------
-    # name_dir_import = pvalloc_settings['name_dir_import']
-    # wd_path = pvalloc_settings['wd_path']
-    # data_path = f'{wd_path}_data'
-    # show_debug_prints = pvalloc_settings['show_debug_prints']
-    # scen.log_name = scen.log_name
-    # pvalloc_path = pvalloc_settings['pvalloc_path']
-    # preprep_name_dir_path = f'{data_path}/{pvalloc_settings["preprep_name_dir_preffix"]}/{name_dir_import}'
-
-    # topo_subdf_partitioner = scen.ALGOspec_topo_subdf_partitioner
-    # selfconsum_rate = pvalloc_settings['tech_economic_specs']['self_consumption_ifapplicable']
-    # interest_rate = pvalloc_settings['tech_economic_specs']['interest_rate']
-    # invst_maturity = pvalloc_settings['tech_economic_specs']['invst_maturity']
-    # kWpeak_per_m2 = scen.TECspec_kWpeak_per_m2
-    # share_roof_area_available = scen.TECspec_share_roof_area_available
-    # tweak_npv_excl_elec_demand = pvalloc_settings['algorithm_specs']['tweak_npv_excl_elec_demand']
-
-    # groupby_cols = pvalloc_settings['algorithm_specs']['npv_update_grouby_cols_topo_aggdf']
-    # agg_cols = pvalloc_settings['algorithm_specs']['npv_update_agg_cols_topo_aggdf']
-
-    # # estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
-
     print_to_logfile('run function: update_npv_df', scen.log_name)
     m = month_func
     i_m = i_month_func

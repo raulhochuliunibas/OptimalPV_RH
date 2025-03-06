@@ -1,18 +1,13 @@
 import sys
 import os
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import json
 import itertools
 
-from scipy.optimize import curve_fit
-from numpy.polynomial.polynomial import Polynomial
 
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from auxiliary.auxiliary_functions import checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr
+from auxiliary.auxiliary_functions import print_to_logfile
 
 
 

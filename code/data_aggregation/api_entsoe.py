@@ -1,7 +1,6 @@
 import sys
 import os
 import pandas as pd
-import geopandas as gpd
 import requests
 import xml.etree.ElementTree as ET
 
