@@ -232,8 +232,8 @@ def sanity_check_summary_byEGID(
     pred_inst_df.loc[pred_inst_df['EGID'].isin(n_EGIDs_of_alloc_algorithm), ['EGID','info_source']]
     
     # remove any duplicates + add to pvalloc_settings
-    scen.GWRspec_egid_list = list(set(scen.GWRspec_egid_list))
-    # pvalloc_settings['sanitycheck_summary_byEGID_specs']['egid_list'] = list(set(scen.GWRspec_egid_list + n_EGIDs_of_alloc_algorithm ))
+    scen.CHECKspec_egid_list = list(set(scen.CHECKspec_egid_list))
+    # pvalloc_settings['sanitycheck_summary_byEGID_specs']['egid_list'] = list(set(scen.CHECKspec_egid_list + n_EGIDs_of_alloc_algorithm ))
     
 
     # information extraction -----------------------------------------------------
@@ -243,7 +243,7 @@ def sanity_check_summary_byEGID(
     
     summary_toExcel_list = []
     # egid = sanitycheck_summary_byEGID_specs['egid_list'][3]
-    for n_egid, egid in enumerate(scen.GWRspec_egid_list):
+    for n_egid, egid in enumerate(scen.CHECKspec_egid_list):
         if egid not in topo.keys():
             single_val_list = [row_egid_not_in_topo, ] = [get_new_row(), ]
             row_egid_not_in_topo['key'], row_egid_not_in_topo['descr'], row_egid_not_in_topo['val'] = 'EGID', 'EGID NOT in topo', egid
