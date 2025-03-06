@@ -14,6 +14,9 @@ __pyproject*
 .vscode* 
 venv*
 
+.env_optimalpv_rh**
+
+
 # ignore all model output files
 data/input_split_data_geometry/**
 !data/input_split_data_geometry/empty_txt_file_for_folder_structure_in_github.txt
