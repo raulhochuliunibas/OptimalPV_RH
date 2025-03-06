@@ -234,7 +234,7 @@ def get_estim_instcost_function(scen,):
     # setup --------
     print_to_logfile('run function: get_estim_instcost_function', scen.log_name)
 
-    with open(f'{scen.name_dir_import_path}/pvinstcost_coefficients.json', 'r') as file:
+    with open(f'{scen.name_dir_export_path}/pvinstcost_coefficients.json', 'r') as file:
         pvinstcost_coefficients = json.load(file)
     params_pkW = pvinstcost_coefficients['params_pkW']
     # coefs_total = pvinstcost_coefficients['coefs_total']

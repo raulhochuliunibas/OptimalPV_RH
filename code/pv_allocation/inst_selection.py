@@ -112,7 +112,7 @@ def select_AND_adjust_topology(
             if col in npv_pick.index:
                 npv_pick.drop(index=['NPV_stand', 'diff_NPV_rand'], inplace=True)
                 
-    inst_power = picked_flaech * scen.TECHspec_kWpeak_per_m2 * scen.TECHspec_share_roof_area_available
+    inst_power = picked_flaech * scen.TECspec_kWpeak_per_m2 * scen.TECspec_share_roof_area_available
     npv_pick['inst_TF'], npv_pick['info_source'], npv_pick['xtf_id'], npv_pick['BeginOp'], npv_pick['TotalPower'], npv_pick['iter_round'] = [True, 'alloc_algorithm', picked_uid, f'{m}', inst_power, i_alloc_loop]
     
 
