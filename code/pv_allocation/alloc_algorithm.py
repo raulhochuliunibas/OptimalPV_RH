@@ -529,9 +529,9 @@ def update_npv_df(scen,
     j = 0
     i, path = j, topo_subdf_paths[j]
     for i, path in enumerate(topo_subdf_paths):
-        if len(topo_subdf_paths) > 5 and i <5 : # i% (len(topo_subdf_paths) //3 ) == 0:
-            # print_to_logfile(f'  {2*"-"} update npv (tranche {i}/{len(topo_subdf_paths)}) {6*"-"}', scen.log_name)
-            checkpoint_to_logfile(f'updated npv (tranche {i+1}/{len(topo_subdf_paths)})', scen.log_name, 1, scen.show_debug_prints)
+        print_topo_subdf_TF = len(topo_subdf_paths) > 5 and i <5  # i% (len(topo_subdf_paths) //3 ) == 0:
+        if print_topo_subdf_TF:
+            print_to_logfile(f'updated npv (tranche {i+1}/{len(topo_subdf_paths)})', scen.log_name)
         subdf_t0 = pd.read_parquet(path)
 
         # drop egids with pv installations
@@ -646,8 +646,9 @@ def update_npv_df(scen,
         
 
         # NPV calculation -----------------------------------------------------
-        estim_instcost_chfpkW, estim_instcost_chftotal = initial_sml.get_estim_instcost_function(scen)
-        estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
+        if print_topo_subdf_TF:
+            estim_instcost_chfpkW, estim_instcost_chftotal = initial_sml.get_estim_instcost_function(scen)
+            estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 
         # # estim_instcost_chfpkW, estim_instcost_chftotal = initial.estimate_iterpolate_instcost_function(pvalloc_settings)
 
