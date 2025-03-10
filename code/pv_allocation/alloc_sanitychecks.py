@@ -6,7 +6,6 @@ import geopandas as gpd
 import json
 import copy
 import glob
-import openpyxl
 
 # own functions 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
