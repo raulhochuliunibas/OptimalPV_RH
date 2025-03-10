@@ -10,7 +10,7 @@ import glob
 # own functions 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from auxiliary.auxiliary_functions import  print_to_logfile, checkpoint_to_logfile
-
+    
 
 # ------------------------------------------------------------------------------------------------------
 # visualization of PV topology
