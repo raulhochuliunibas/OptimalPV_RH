@@ -6,7 +6,7 @@ import geopandas as gpd
 import json
 import copy
 import glob
-
+import openpyxl
 
 # own functions 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -402,11 +402,11 @@ def sanity_check_summary_byEGID(
         egid_summary_df.to_csv(f'{subdir_path}/summary_{egid}.csv')
         summary_toExcel_list.append(egid_summary_df)
    
-    
-    with pd.ExcelWriter(f'{subdir_path}/summary_all{scen.name_dir_export}.xlsx') as writer:
-        for i, df in enumerate(summary_toExcel_list):
-            sheet_egid = df.loc[df['key']=='EGID', 'val'].values[0]
-            df.to_excel(writer, sheet_name=sheet_egid, index=False)
+    try:
+        with pd.ExcelWriter(f'{subdir_path}/summary_all.xlsx') as writer:
+            for i, df in enumerate(summary_toExcel_list):
+                df.to_excel(writer, sheet_name=f'EGID_{i}', index=False)
+        checkpoint_to_logfile(f'exported summary for {len(scen.CHECKspec_egid_list)} EGIDs to excel', scen.log_name)
 
-    checkpoint_to_logfile(f'exported summary for {len(scen.CHECKspec_egid_list)} EGIDs to excel', scen.log_name)
-    
+    except Exception as e:
+        checkpoint_to_logfile(f'Failed to export summary_all.xlsx. Error: {e}', scen.log_name)
