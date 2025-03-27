@@ -1542,7 +1542,6 @@ if __name__ == '__main__':
     run_visualizations.plot_ind_line_installedCap()
 
 
-    run_visualizations.plot_pvalloc_mcalgorithm_visual()
 
     print('end <if __main__> chunk')
             
