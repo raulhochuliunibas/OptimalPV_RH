@@ -43,7 +43,7 @@ class VisualSetting:
                 plot_show: bool = False,
                 save_plot_by_scen_directory: bool = True,
                 remove_old_plot_scen_directories: bool = False,
-                remove_old_plots_in_visualizations: bool = False,
+                remove_old_plots_in_visualization: bool = False,
                 MC_subdir_for_plot: str = '*MC*1',
                 mc_plots_individual_traces: bool = True,
 
@@ -90,17 +90,17 @@ class VisualSetting:
                 },
 
                 # for pvalloc_MC_algorithm
-                plot_ind_line_installedCap: List[bool] =            [False,    True,       False],
-                plot_ind_line_PVproduction: List[bool] =            [False,    True,       False],
-                plot_ind_line_productionHOY_per_node: List[bool] =  [False,    True,       False],
-                plot_ind_line_gridPremiumHOY_per_node: List[bool] = [False,    True,       False],
-                plot_ind_line_gridPremium_structure: List[bool] =   [False,    True,       False],
-                plot_ind_hist_NPV_freepartitions: List[bool] =      [False,    True,       False],
-                plot_ind_hist_pvcapaprod: List[bool] =              [False,    True,       False],
-                plot_ind_map_topo_egid: List[bool] =                [False,    False,      False],
-                plot_ind_map_node_connections: List[bool] =         [False,    False,      False],
-                plot_ind_map_omitted_egids: List[bool] =            [False,    True,       False],
-                plot_ind_lineband_contcharact_newinst: List[bool] = [False,    True,       False],
+                plot_ind_line_installedCap_TF: List[bool] =            [False,    True,       False],
+                plot_ind_line_PVproduction_TF: List[bool] =            [False,    True,       False],
+                plot_ind_line_productionHOY_per_node_TF: List[bool] =  [False,    True,       False],
+                plot_ind_line_gridPremiumHOY_per_node_TF: List[bool] = [False,    True,       False],
+                plot_ind_line_gridPremium_structure_TF: List[bool] =   [False,    True,       False],
+                plot_ind_hist_NPV_freepartitions_TF: List[bool] =      [False,    True,       False],
+                plot_ind_hist_pvcapaprod_TF: List[bool] =              [False,    True,       False],
+                plot_ind_map_topo_egid_TF: List[bool] =                [False,    False,      False],
+                plot_ind_map_node_connections_TF: List[bool] =         [False,    False,      False],
+                plot_ind_map_omitted_egids_TF: List[bool] =            [False,    True,       False],
+                plot_ind_lineband_contcharact_newinst_TF: List[bool] = [False,    True,       False],
 
                 plot_ind_map_topo_egid_specs: Dict = {
                     'uniform_municip_color': '#fff2ae',
@@ -160,7 +160,7 @@ class VisualSetting:
         # self.remove_previous_plots: bool = remove_previous_plots
         self.save_plot_by_scen_directory: bool = save_plot_by_scen_directory
         self.remove_old_plot_scen_directories: bool = remove_old_plot_scen_directories
-        self.remove_old_plots_in_visualizations: bool = remove_old_plots_in_visualizations
+        self.remove_old_plots_in_visualization: bool = remove_old_plots_in_visualization
         self.MC_subdir_for_plot: str = MC_subdir_for_plot
         self.mc_plots_individual_traces: bool = mc_plots_individual_traces
 
@@ -181,17 +181,17 @@ class VisualSetting:
         self.plot_ind_hist_pvcapaprod_sanitycheck_specs: Dict = plot_ind_hist_pvcapaprod_sanitycheck_specs
         self.plot_ind_charac_omitted_gwr_specs: Dict = plot_ind_charac_omitted_gwr_specs
         
-        self.plot_ind_line_installedCap: List[bool] = plot_ind_line_installedCap
-        self.plot_ind_line_PVproduction: List[bool] = plot_ind_line_PVproduction
-        self.plot_ind_line_productionHOY_per_node: List[bool] = plot_ind_line_productionHOY_per_node
-        self.plot_ind_line_gridPremiumHOY_per_node: List[bool] = plot_ind_line_gridPremiumHOY_per_node
-        self.plot_ind_line_gridPremium_structure: List[bool] = plot_ind_line_gridPremium_structure
-        self.plot_ind_hist_NPV_freepartitions: List[bool] = plot_ind_hist_NPV_freepartitions
-        self.plot_ind_hist_pvcapaprod: List[bool] = plot_ind_hist_pvcapaprod
-        self.plot_ind_map_topo_egid: List[bool] = plot_ind_map_topo_egid
-        self.plot_ind_map_node_connections: List[bool] = plot_ind_map_node_connections
-        self.plot_ind_map_omitted_egids: List[bool] = plot_ind_map_omitted_egids
-        self.plot_ind_lineband_contcharact_newinst: List[bool] = plot_ind_lineband_contcharact_newinst
+        self.plot_ind_line_installedCap_TF: List[bool] = plot_ind_line_installedCap_TF
+        self.plot_ind_line_PVproduction_TF: List[bool] = plot_ind_line_PVproduction_TF
+        self.plot_ind_line_productionHOY_per_node_TF: List[bool] = plot_ind_line_productionHOY_per_node_TF
+        self.plot_ind_line_gridPremiumHOY_per_node_TF: List[bool] = plot_ind_line_gridPremiumHOY_per_node_TF
+        self.plot_ind_line_gridPremium_structure_TF: List[bool] = plot_ind_line_gridPremium_structure_TF
+        self.plot_ind_hist_NPV_freepartitions_TF: List[bool] = plot_ind_hist_NPV_freepartitions_TF
+        self.plot_ind_hist_pvcapaprod_TF: List[bool] = plot_ind_hist_pvcapaprod_TF
+        self.plot_ind_map_topo_egid_TF: List[bool] = plot_ind_map_topo_egid_TF
+        self.plot_ind_map_node_connections_TF: List[bool] = plot_ind_map_node_connections_TF
+        self.plot_ind_map_omitted_egids_TF: List[bool] = plot_ind_map_omitted_egids_TF
+        self.plot_ind_lineband_contcharact_newinst_TF: List[bool] = plot_ind_lineband_contcharact_newinst_TF
 
         self.plot_ind_map_topo_egid_specs: Dict = plot_ind_map_topo_egid_specs
         self.plot_ind_map_node_connections_specs: Dict = plot_ind_map_node_connections_specs
@@ -207,7 +207,7 @@ class VisualSetting:
         # SETUP --------------------
         self.wd_path = os.getcwd()
         self.data_path = os.path.join(self.wd_path, 'data')
-        self.visual_path = os.path.join(self.data_path, 'visualizations')
+        self.visual_path = os.path.join(self.data_path, 'visualization')
         self.log_name = f'{self.visual_path}/visual_log.txt'
 
         os.makedirs(self.visual_path, exist_ok=True)
@@ -234,7 +234,7 @@ class VisualSetting:
                 except Exception as e:
                     print(f'Could not remove {dir}: {e}')
 
-        if self.remove_old_plots_in_visualizations: 
+        if self.remove_old_plots_in_visualization: 
             old_plots = glob.glob(f'{self.visual_path}/*.html')
             for file in old_plots:
                 os.remove(file)
@@ -264,33 +264,40 @@ class VisualSetting:
             font=dict(size=12)
         )
         return fig_func
+    
+    def set_default_fig_zoom_year(self, fig, zoom_window, df, datecol):
+        start_zoom = pd.to_datetime(f'{zoom_window[0]}-01-01')
+        max_date = df[datecol].max() + pd.DateOffset(years=1)
+        if pd.to_datetime(f'{zoom_window[1]}-01-01') > max_date:
+            end_zoom = max_date
+        else:
+            end_zoom = pd.to_datetime(f'{zoom_window[1]}-01-01')
+        fig.update_layout(
+            xaxis = dict(range=[start_zoom, end_zoom])
+        )
+        return fig 
+
+    def set_default_fig_zoom_hour(self, fig, zoom_window):
+        start_zoom, end_zoom = zoom_window[0], zoom_window[1]
+        fig.update_layout(
+            xaxis_range=[start_zoom, end_zoom])
+        return fig
 
 
 
 
-    # ------------------------------------------------------------------------------------------------------
-    # PLOT-GROUP FUNCTIONS
-    # ------------------------------------------------------------------------------------------------------
-
-    # PLOT IND SCEN: pvalloc_initalization + sanitycheck ----------------------------------------
-    # def plot_pvalloc_initialization_visual(self, ):
-    #     print('asdf')
-
-    # PLOT IND SCEN: pvalloc_MC_algorithm ----------------------------------------
-    # def plot_pvalloc_mcalgorithm_visual(self, ):
-    #     print('asdf')
-
-    # PLOT ALL ----------------------------------------
-    # def plot_all_visualizations(self, ):
-    #     self.plot_pvalloc_initialization_visual()
-    #     self.plot_pvalloc_mcalgorithm_visual()
-
-
-    # --------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------------
     # ALL AVAILABLE PLOTS 
-    # --------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------------
 
     # PLOT IND SCEN: pvalloc_initalization + sanitycheck ----------------------------------------
+    def plot_ALL_init_sanitycheck(self, ):
+        self.plot_ind_var_summary_stats()
+        self.plot_ind_hist_pvcapaprod_sanitycheck()
+        self.plot_ind_boxp_radiation_rng_sanitycheck()
+        self.plot_ind_charac_omitted_gwr()
+        self.plot_ind_line_meteo_radiation()
+
     if True: 
         def plot_ind_var_summary_stats(self, ):
             if self.plot_ind_var_summary_stats_TF[0]:
@@ -691,7 +698,7 @@ class VisualSetting:
                         aggdf_noprod_gwrgeom_gdf = aggdf_combo_noprod.merge(gwr_gdf, on='EGID', how='left')
                         aggdf_noprod_gwrgeom_gdf = gpd.GeoDataFrame(aggdf_noprod_gwrgeom_gdf, geometry='geometry')
                         aggdf_noprod_gwrgeom_gdf.set_crs(epsg=2056, inplace=True)
-                        aggdf_noprod_gwrgeom_gdf.to_file(f'{self.data_path}.{scen}/topo_spatial_data/aggdf_noprod_gwrgeom_gdf.geojson', driver='GeoJSON')
+                        aggdf_noprod_gwrgeom_gdf.to_file(f'{self.data_path}/pvalloc/{scen}/topo_spatial_data/aggdf_noprod_gwrgeom_gdf.geojson', driver='GeoJSON')
                         print_to_logfile(f'\texport: aggdf_noprod_gwrgeom_gdf.geojson (scen: {scen}) for sanity check', self.log_name)
 
                         # try to match solkat geom to gdf
@@ -701,21 +708,22 @@ class VisualSetting:
                         
                         # i, row = 0, aggdf_combo_noprod.iloc[0]
                         # i, row = 2, aggdf_combo_noprod.iloc[2]
-                        for i, row in aggdf_combo_noprod.iterrows():
-                            dfuid_row_list = row['df_uid'].split('_')
-                            dfuid_row_solkatgeom = solkat_gdf.loc[solkat_gdf['DF_UID'].isin(dfuid_row_list)]
-                            if dfuid_row_solkatgeom.shape[0] == 1:
-                                aggdf_noprod_solkatgeom_gdf.loc[i, 'geometry'] = dfuid_row_solkatgeom.iloc[0]['geometry']
-                            elif dfuid_row_solkatgeom.shape[0] > 1:
-                                # aggdf_noprod_solkatgeom_gdf.loc[i, 'geometry'] = MultiPolygon([geom for geom in dfuid_row_solkatgeom['geometry']])
-                                aggdf_noprod_gwrgeom_gdf.loc[i, 'geometry'] = dfuid_row_solkatgeom.unary_union
-                            elif len(dfuid_row_solkatgeom) == 0:
-                                aggdf_noprod_solkatgeom_gdf.loc[i, 'geometry'] = 'NA_dfuid_aggdf_combo_notin_solkat_gdf'
+                        if not aggdf_combo_noprod.empty:
+                            for i, row in aggdf_combo_noprod.iterrows():
+                                dfuid_row_list = row['df_uid'].split('_')
+                                dfuid_row_solkatgeom = solkat_gdf.loc[solkat_gdf['DF_UID'].isin(dfuid_row_list)]
+                                if dfuid_row_solkatgeom.shape[0] == 1:
+                                    aggdf_noprod_solkatgeom_gdf.loc[i, 'geometry'] = dfuid_row_solkatgeom.iloc[0]['geometry']
+                                elif dfuid_row_solkatgeom.shape[0] > 1:
+                                    # aggdf_noprod_solkatgeom_gdf.loc[i, 'geometry'] = MultiPolygon([geom for geom in dfuid_row_solkatgeom['geometry']])
+                                    aggdf_noprod_gwrgeom_gdf.loc[i, 'geometry'] = dfuid_row_solkatgeom.unary_union
+                                elif len(dfuid_row_solkatgeom) == 0:
+                                    aggdf_noprod_solkatgeom_gdf.loc[i, 'geometry'] = 'NA_dfuid_aggdf_combo_notin_solkat_gdf'
 
                         aggdf_noprod_solkatgeom_gdf.loc[aggdf_noprod_solkatgeom_gdf['geometry'] == 'NA', 'geometry'] = None
                         aggdf_noprod_solkatgeom_gdf = gpd.GeoDataFrame(aggdf_noprod_solkatgeom_gdf, geometry='geometry')
                         aggdf_noprod_solkatgeom_gdf.set_crs(epsg=2056, inplace=True)
-                        aggdf_noprod_solkatgeom_gdf.to_file(f'{self.data_path}.{scen}/topo_spatial_data/aggdf_noprod_solkatgeom_gdf.geojson', driver='GeoJSON')
+                        aggdf_noprod_solkatgeom_gdf.to_file(f'{self.data_path}/pvalloc/{scen}/topo_spatial_data/aggdf_noprod_solkatgeom_gdf.geojson', driver='GeoJSON')
                         checkpoint_to_logfile(f'\texport: aggdf_noprod_solkatgeom_gdf.geojson (scen: {scen}) for sanity check', self.log_name)
 
 
@@ -992,9 +1000,9 @@ class VisualSetting:
                         elif not self.plot_ind_boxp_radiation_rng_sanitycheck_TF[2]:
                             fig_onebox.show() if i_scen == 0 else None
                     if self.save_plot_by_scen_directory:
-                        fig_onebox.write_html(f'{self.data_path}/visualizations/{scen}/{scen}__ind_boxp_radiation_rng_sanitycheck.html')
+                        fig_onebox.write_html(f'{self.visual_path}/{scen}/{scen}__ind_boxp_radiation_rng_sanitycheck.html')
                     else:
-                        fig_onebox.write_html(f'{self.data_path}/visualizations/{scen}__ind_boxp_radiation_rng_sanitycheck.html')
+                        fig_onebox.write_html(f'{self.visual_path}/{scen}__ind_boxp_radiation_rng_sanitycheck.html')
                     print_to_logfile(f'\texport: plot_ind_boxp_radiation_rng_sanitycheck.html (for: {scen})', self.log_name)
 
 
@@ -1190,32 +1198,301 @@ class VisualSetting:
                         elif not self.plot_ind_line_meteo_radiation_TF[2]:
                             fig.show() if i_scen == 0 else None
                     if self.save_plot_by_scen_directory:
-                        fig.write_html(f'{self.data_path}/visualizations/{scen}/{scen}__plot_ind_line_meteo_radiation.html')
+                        fig.write_html(f'{self.visual_path}/{scen}/{scen}__plot_ind_line_meteo_radiation.html')
                     else:
-                        fig.write_html(f'{self.data_path}/visualizations/{scen}__plot_ind_line_meteo_radiation.html')
+                        fig.write_html(f'{self.visual_path}/{scen}__plot_ind_line_meteo_radiation.html')
                     print_to_logfile(f'\texport: plot_ind_line_meteo_radiation.html (for: {scen})', self.log_name)
 
 
 
-# def plot_ind_line_installedCap(self, ): 
 
-# def plot_ind_line_PVproduction(self, ): 
+    # PLOT IND SCEN: pvalloc_MC_algorithm ----------------------------------------
 
-# def plot_ind_line_productionHOY_per_node(self, ): 
+    def plot_ind_line_installedCap(self, ): 
+        if self.plot_ind_line_installedCap_TF[0]:
 
-# def plot_ind_line_gridPremiumHOY_per_node(self, ): 
+            checkpoint_to_logfile('plot_ind_line_installedCap', self.log_name)
+            
+            # available color palettes
+            trace_color_dict = {
+                'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
+                'Viridis': pc.sequential.Viridis, 'Plotly3': pc.sequential.Plotly3, 
+                'Turbo': pc.sequential.Turbo, 'solar': pc.sequential.solar, 
+                'RdBu': pc.diverging.RdBu, 'Rainbow': pc.sequential.Rainbow, 
 
-# def plot_ind_line_gridPremium_structure(self, ): 
+                'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
+                'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
+                'Teal': pc.sequential.Teal, 'Magenta': pc.sequential.Magenta, 'Blackbody': pc.sequential.Blackbody, 
+            }        
 
-# def plot_ind_hist_NPV_freepartitions(self, ): 
+            fig_agg_pmonth = go.Figure()
+            for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                self.mc_data_path = glob.glob(f'{self.data_path}/pvalloc/{scen}/{self.MC_subdir_for_plot}')[0] 
+                self.get_pvallocscen_pickle_IN_SCEN_output(pvalloc_scen_name = scen)
 
-# def plot_ind_map_topo_egid(self, ): 
+                topo = json.load(open(f'{self.mc_data_path}/topo_egid.json', 'r'))
+                egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
 
-# def plot_ind_map_node_connections(self, ): 
 
-# def plot_ind_map_omitted_egids(self, ): 
+                for k,v, in topo.items():
+                    egid_list.append(k)
+                    inst_TF_list.append(v['pv_inst']['inst_TF'])
+                    info_source_list.append(v['pv_inst']['info_source'])
+                    BeginOp_list.append(v['pv_inst']['BeginOp'])
+                    TotalPower_list.append(v['pv_inst']['TotalPower'])
+                    bfs_list.append(v['gwr_info']['bfs'])
 
-# def plot_ind_lineband_contcharact_newinst(self, ): 
+                pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list, 
+                                        'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list})
+                pvinst_df = pvinst_df.loc[pvinst_df['inst_TF'] == True]
+
+                pvinst_df['TotalPower'] = pd.to_numeric(pvinst_df['TotalPower'], errors='coerce')
+                pvinst_df['BeginOp'] = pvinst_df['BeginOp'].apply(lambda x: x if len(x) == 10 else x + '-01') # add day to year-month string, to have a proper timestamp
+                pvinst_df['BeginOp'] = pd.to_datetime(pvinst_df['BeginOp'], format='%Y-%m-%d')
+                pvinst_df['bfs'] = pvinst_df['bfs'].astype(str)
+
+
+                # plot ind - line: Installed Capacity per Month ===========================
+                if self.plot_ind_line_installedCap_TF[0]:  #['plot_ind_line_installedCap_per_month']:
+                    checkpoint_to_logfile('plot_ind_line_installedCap_per_month', self.log_name)
+
+                    capa_month_df = pvinst_df.copy()
+                    capa_month_df['BeginOp_month'] = capa_month_df['BeginOp'].dt.to_period('M')
+                    capa_month_df = capa_month_df.groupby(['BeginOp_month', 'info_source'])['TotalPower'].sum().reset_index().copy()
+                    capa_month_df['BeginOp_month'] = capa_month_df['BeginOp_month'].dt.to_timestamp()
+                    capa_month_built = capa_month_df.loc[capa_month_df['info_source'] == 'pv_df'].copy()
+                    capa_month_predicted = capa_month_df.loc[capa_month_df['info_source'] == 'alloc_algorithm'].copy()
+
+                    capa_year_df = pvinst_df.copy()
+                    capa_year_df['BeginOp_year'] = capa_year_df['BeginOp'].dt.to_period('Y')
+                    capa_year_df = capa_year_df.groupby(['BeginOp_year', 'info_source'])['TotalPower'].sum().reset_index().copy()
+                    capa_year_df['BeginOp_year'] = capa_year_df['BeginOp_year'].dt.to_timestamp()
+                    capa_year_built = capa_year_df.loc[capa_year_df['info_source'] == 'pv_df'].copy()
+                    capa_year_predicted = capa_year_df.loc[capa_year_df['info_source'] == 'alloc_algorithm'].copy()
+
+                    capa_cumm_year_df =  pvinst_df.copy()
+                    capa_cumm_year_df['BeginOp_year'] = capa_cumm_year_df['BeginOp'].dt.to_period('Y')
+                    # capa_cumm_year_df.sort_values(by='BeginOp_year', inplace=True)
+                    capa_cumm_year_df = capa_cumm_year_df.groupby(['BeginOp_year',])['TotalPower'].sum().reset_index().copy()
+                    capa_cumm_year_df['Cumm_TotalPower'] = capa_cumm_year_df['TotalPower'].cumsum()
+                    capa_cumm_year_df['BeginOp_year'] = capa_cumm_year_df['BeginOp_year'].dt.to_timestamp()
+
+
+
+                    # plot ----------------
+                    fig1 = go.Figure()
+                    fig1.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'], line = dict(color = 'navy'),name='built + predicted (month)', mode='lines+markers'))
+                    fig1.add_trace(go.Scatter(x=capa_month_built['BeginOp_month'], y=capa_month_built['TotalPower'], line = dict(color = 'deepskyblue'), name='built (month)', mode='lines+markers'))
+                    fig1.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'], line = dict(color = 'cornflowerblue'), name='predicted (month)', mode='lines+markers'))
+
+                    fig1.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'], line = dict(color = 'forestgreen'), name='built + predicted (year)', mode='lines+markers',))
+                    fig1.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'], y=capa_year_built['TotalPower'], line = dict(color = 'lightgreen'), name='built (year)', mode='lines+markers'))
+                    fig1.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'], y=capa_year_predicted['TotalPower'], line = dict(color = 'limegreen'), name='predicted (year)', mode='lines+markers'))
+
+                    fig1.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'], line = dict(color ='purple'), name='cumulative built + pred (year)', mode='lines+markers'))
+
+                    fig1.update_layout(
+                        xaxis_title='Time',
+                        yaxis_title='Installed Capacity (kW)',
+                        legend_title='Time steps',
+                        title = f'Installed Capacity per Month (weather year: {self.pvalloc_scen.WEAspec_weather_year})'
+                    )
+
+                    # add T0 prediction
+                    T0_prediction = self.pvalloc_scen.T0_prediction
+                    date = '2008-01-01 00:00:00'
+                    fig1.add_shape(
+                        # Line Vertical
+                        dict(
+                            type="line",
+                            x0=T0_prediction,
+                            y0=0,
+                            x1=T0_prediction,
+                            y1=max(capa_year_df['TotalPower'].max(), capa_year_df['TotalPower'].max()),  # Dynamic height
+                            line=dict(color="black", width=1, dash="dot"),
+                        )
+                    )
+                    fig1.add_annotation(
+                        x=  T0_prediction,
+                        y=max(capa_year_df['TotalPower'].max(), capa_year_df['TotalPower'].max()),
+                        text="T0 Prediction",
+                        showarrow=False,
+                        yshift=10
+                    )
+
+                    fig1 = self.add_scen_name_to_plot(fig1, scen, self.pvalloc_scen)
+                    fig1 = self.set_default_fig_zoom_year(fig1, self.default_zoom_year, capa_year_df, 'BeginOp_year')
+
+                    if self.plot_show and self.plot_ind_line_installedCap_TF[1]:
+                        if self.plot_ind_line_installedCap_TF[2]:
+                            fig1.show()
+                        elif not self.plot_ind_line_installedCap_TF[2]:
+                            fig1.show() if i_scen == 0 else None
+                    if self.save_plot_by_scen_directory:
+                        fig1.write_html(f'{self.visual_path}/{scen}/{scen}__plot_ind_line_installedCap_per_month.html')
+                    else:
+                        fig1.write_html(f'{self.visual_path}/{scen}__plot_ind_line_installedCap_per_month.html')
+                    print_to_logfile(f'\texport: plot_ind_line_installedCap_per_month.html (for: {scen})', self.log_name)                    
+                    
+
+
+                # plot ind - line: Installed Capacity per BFS ===========================
+                if self.plot_ind_line_installedCap_TF[0]:  #['plot_ind_line_installedCap_per_BFS']:
+                    checkpoint_to_logfile(f'plot_ind_line_installedCap_per_BFS', self.log_nameg_name)
+                    capa_bfs_df = pvinst_df.copy()
+                    gm_gdf = gpd.read_file(f'{self.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
+                    gm_gdf.rename(columns={'BFS_NUMMER': 'bfs'}, inplace=True)
+                    gm_gdf['bfs'] = gm_gdf['bfs'].astype(str)
+                    capa_bfs_df = capa_bfs_df.merge(gm_gdf[['bfs', 'NAME']], on='bfs', how = 'left' )
+                    capa_bfs_df['BeginOp_month'] = capa_bfs_df['BeginOp'].dt.to_period('M')
+                    capa_bfs_month_df = capa_bfs_df.groupby(['BeginOp_month', 'bfs'])['TotalPower'].sum().reset_index().copy()
+                    capa_bfs_month_df['BeginOp_month'] = capa_bfs_month_df['BeginOp_month'].dt.to_timestamp()
+
+                    capa_bfs_df['BeginOp_year'] = capa_bfs_df['BeginOp'].dt.to_period('Y')
+                    capa_bfs_year_df = capa_bfs_df.groupby(['BeginOp_year', 'bfs'])['TotalPower'].sum().reset_index().copy()
+                    capa_bfs_year_df['BeginOp_year'] = capa_bfs_year_df['BeginOp_year'].dt.to_timestamp()
+
+                    # plot ----------------
+                    fig2 = go.Figure()
+                    for bfs in capa_bfs_month_df['bfs'].unique():
+                        name = gm_gdf.loc[gm_gdf['bfs'] == bfs, 'NAME'].values[0]
+                        subdf = capa_bfs_month_df.loc[capa_bfs_month_df['bfs'] == bfs].copy()
+                        fig2.add_trace(go.Scatter(x=subdf['BeginOp_month'], y=subdf['TotalPower'], name=f'{name} (by month)', legendgroup = 'By Month',  mode = 'lines'))
+
+                    for bfs in capa_bfs_year_df['bfs'].unique():
+                        name = gm_gdf.loc[gm_gdf['bfs'] == bfs, 'NAME'].values[0]
+                        subdf = capa_bfs_year_df.loc[capa_bfs_year_df['bfs'] == bfs].copy()
+                        fig2.add_trace(go.Scatter(x=subdf['BeginOp_year'], y=subdf['TotalPower'], name=f'{name} (by year)', legendgroup = 'By Year', mode = 'lines'))
+
+                    fig2.update_layout(
+                        xaxis_title='Time',
+                        yaxis_title='Installed Capacity (kW)',
+                        legend_title='BFS',
+                        title = f'Installed Capacity per Municipality (BFS) (weather year: {self.pvalloc_scen.WEAspec_weather_year})',
+                        showlegend=True, 
+                        legend=dict(
+                            title='Legend',  # You can customize the legend title here
+                            itemsizing='trace',  # Control the legend item sizing (can be 'trace' or 'constant')
+                        )
+                    )
+
+                    fig2.add_shape(
+                        # Line Vertical
+                        dict(
+                            type="line",
+                            x0=T0_prediction,
+                            y0=0,
+                            x1=T0_prediction,
+                            y1=capa_bfs_year_df['TotalPower'],  # Dynamic height
+                            line=dict(color="black", width=1, dash="dot"),
+                        )
+                    )
+                    fig2.add_annotation(
+                        x=  T0_prediction,
+                        y=1,
+                        text="T0 Prediction",
+                        showarrow=False,
+                        yshift=10
+                    )
+                    
+                    fig2 = self.add_scen_name_to_plot(fig2, scen, self.pvalloc_scen)
+                    fig2 = self.set_default_fig_zoom_year(fig2, self.default_zoom_year, capa_bfs_year_df, 'BeginOp_year')
+                    
+                    if self.plot_show and self.plot_ind_line_installedCap_TF[1]:
+                        if self.plot_ind_line_installedCap_TF[2]:
+                            fig2.show()
+                        elif not self.plot_ind_line_installedCap_TF[2]:
+                            fig2.show() if i_scen == 0 else None
+                    if self.save_plot_by_scen_directory:
+                        fig2.write_html(f'{self.visual_path}/{scen}/{scen}__plot_ind_line_installedCap_per_BFS.html')
+                    else:
+                        fig2.write_html(f'{self.visual_path}/{scen}__plot_ind_line_installedCap_per_BFS.html')
+                    print_to_logfile(f'\texport: plot_ind_line_installedCap_per_BFS.html (for: {scen})', self.log_name)
+                    
+
+                # plot add aggregated - line: Installed Capacity per Year ===========================
+                if self.plot_ind_line_installedCap_TF[0]:  #['plot_ind_line_installedCap_per_month']:
+                
+                    color_allscen_list = [list(trace_color_dict.keys())[i_scen] for i_scen in range(len(self.pvalloc_scen_list))]
+                    color_palette = trace_color_dict[list(trace_color_dict.keys())[i_scen]]
+
+                    # fig_agg_pmonth.add_trace(go.Scatter(x=[0,], y=[0,],  name=f'',opacity=1, ))
+                    fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],  name=f'',opacity=0, ))
+                    fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'], line = dict(color = 'black'), name=f'{scen}',opacity=0, mode='lines+markers'))
+
+                    fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],                opacity = 0.75, line = dict(color = color_palette[0]),                 name='-- built + predicted (month)', mode='lines+markers'))
+                    fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_built['BeginOp_month'], y=capa_month_built['TotalPower'],          opacity = 0.75, line = dict(color = color_palette[0+1]),               name='-- built (month)', mode='lines+markers'))
+                    fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'],  opacity = 0.75, line = dict(color = color_palette[0+2]),               name='-- predicted (month)', mode='lines+markers'))
+                    fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'],                   opacity = 0.75, line = dict(color = color_palette[0+3]),               name='-- built + predicted (year)', mode='lines+markers',))
+                    fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'], y=capa_year_built['TotalPower'],             opacity = 0.75, line = dict(color = color_palette[0+4]),               name='-- built (year)', mode='lines+markers'))
+                    fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'], y=capa_year_predicted['TotalPower'],     opacity = 0.75, line = dict(color = color_palette[0+5]),               name='-- predicted (year)', mode='lines+markers'))
+                    fig_agg_pmonth.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'],    opacity = 0.75, line = dict(color = color_palette[-1]),                name='-- cumulative built + pred (year)', mode='lines+markers'))
+
+
+
+                    # export plot add aggregated - line: Installed Capacity per Year 
+                    if i_scen == len(self.pvalloc_scen_list)-1:
+                        fig_agg_pmonth.update_layout(
+                        xaxis_title='Time',
+                        yaxis_title='Installed Capacity (kW)',
+                        legend_title='Time steps',
+                        title = f'Installed Capacity per Month/Year, {len(self.pvalloc_scen_list)}scen (weather year: {self.pvalloc_scen.WEAspec_weather_year})'
+                        )
+
+                        # add T0 prediction
+                        T0_prediction = self.pvalloc_scen.T0_prediction
+                        date = '2008-01-01 00:00:00'
+                        fig_agg_pmonth.add_shape(
+                            # Line Vertical
+                            dict(
+                                type="line",
+                                x0=T0_prediction,
+                                y0=0,
+                                x1=T0_prediction,
+                                y1=max(capa_year_df['TotalPower'].max(), capa_year_df['TotalPower'].max()),  # Dynamic height
+                                line=dict(color="black", width=1, dash="dot"),
+                            )
+                )
+                        fig_agg_pmonth.add_annotation(
+                            x=  T0_prediction,
+                            y=max(capa_year_df['TotalPower'].max(), capa_year_df['TotalPower'].max()),
+                            text="T0 Prediction",
+                            showarrow=False,
+                            yshift=10
+                        )
+
+                        fig_agg_pmonth = self.set_default_fig_zoom_year(fig_agg_pmonth, self.default_zoom_year, capa_year_df, 'BeginOp_year')
+                        
+                        if self.plot_show and self.plot_ind_line_installedCap_TF[1]:
+                            fig_agg_pmonth.show()
+
+                        fig_agg_pmonth.write_html(f'{self.visual_path}/plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen.html')
+                        print_to_logfile(f'\texport: plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen.html', self.log_name)
+                        
+
+    # def plot_ind_line_PVproduction(self, ): 
+
+    # def plot_ind_line_productionHOY_per_node(self, ): 
+
+    # def plot_ind_line_gridPremiumHOY_per_node(self, ): 
+
+    # def plot_ind_line_gridPremium_structure(self, ): 
+
+    # def plot_ind_hist_NPV_freepartitions(self, ): 
+
+    # def plot_ind_map_topo_egid(self, ): 
+
+    # def plot_ind_map_node_connections(self, ): 
+
+    # def plot_ind_map_omitted_egids(self, ): 
+
+    # def plot_ind_lineband_contcharact_newinst(self, ): 
+
+
+
+
+    # PLOT ALL ----------------------------------------
+
 
 
 class test_class:
@@ -1253,12 +1530,15 @@ if __name__ == '__main__':
 
     run_visualizations = VisualSetting(save_plot_by_scen_directory        = False, 
                                        remove_old_plot_scen_directories   = True,  
-                                       remove_old_plots_in_visualizations = True,  )
+                                       remove_old_plots_in_visualization = True,  )
+    
     # run_visualizations.plot_ind_var_summary_stats()
-    run_visualizations.plot_ind_hist_pvcapaprod_sanitycheck() # STILL TO BE TESTED!
+    run_visualizations.plot_ind_hist_pvcapaprod_sanitycheck() 
     # run_visualizations.plot_ind_boxp_radiation_rng_sanitycheck()
     # run_visualizations.plot_ind_charac_omitted_gwr()
     # run_visualizations.plot_ind_line_meteo_radiation()
+
+    run_visualizations.plot_ind_line_installedCap()
 
 
     # run_visualizations.plot_pvalloc_mcalgorithm_visual()
