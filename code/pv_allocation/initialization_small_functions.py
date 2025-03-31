@@ -28,7 +28,7 @@ def HOY_weatheryear_df(scen):
 
 
     # get every HOY of weather year ----------
-    HOY_weatheryear_df = pd.DataFrame({'timestamp': pd.date_range(start=f'{scen.WEAspec_weater_year}-01-01 00:00:00',end=f'{scen.WEAspec_weater_year}-12-31 23:00:00', freq='h')})
+    HOY_weatheryear_df = pd.DataFrame({'timestamp': pd.date_range(start=f'{scen.WEAspec_weather_year}-01-01 00:00:00',end=f'{scen.WEAspec_weather_year}-12-31 23:00:00', freq='h')})
     HOY_weatheryear_df['t'] = HOY_weatheryear_df.index.to_series().apply(lambda idx: f't_{idx + 1}')        
     HOY_weatheryear_df['month'] = HOY_weatheryear_df['timestamp'].dt.month
     HOY_weatheryear_df['day'] = HOY_weatheryear_df['timestamp'].dt.day

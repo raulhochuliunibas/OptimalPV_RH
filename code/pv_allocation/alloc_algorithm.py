@@ -11,7 +11,7 @@ import copy
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from auxiliary.auxiliary_functions import  checkpoint_to_logfile, print_to_logfile
 
-import initialization_small_functions as initial_sml
+import pv_allocation.initialization_small_functions as initial_sml
 
 
 # ------------------------------------------------------------------------------------------------------
@@ -126,6 +126,7 @@ def calc_economics_in_topo_df(
 
     stepsize = topo_subdf_partitioner if len(egids) > topo_subdf_partitioner else len(egids)
     tranche_counter = 0
+    checkpoint_to_logfile(' * * DEBUGGIGN * * *: START loop subdfs', scen.log_name, 1)
     for i in range(0, len(egids), stepsize):
 
         tranche_counter += 1
@@ -278,6 +279,7 @@ def calc_economics_in_topo_df(
         if (i == 0) & scen.export_csvs:
             subdf.to_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv', index=False)
         checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', scen.log_name, 1)
+        checkpoint_to_logfile(' * * DEBUGGIGN * * *: END loop subdfs', scen.log_name, 1)
 
 
     # print computation formula for comparing methods

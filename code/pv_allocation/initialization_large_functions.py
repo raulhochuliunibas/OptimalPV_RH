@@ -503,7 +503,7 @@ def import_ts_data(
     meteo_col_dir_radiation =  scen.WEAspec_meteo_col_dir_radiation
     meteo_col_diff_radiation = scen.WEAspec_meteo_col_diff_radiation
     meteo_col_temperature =    scen.WEAspec_meteo_col_temperature
-    weater_year =              scen.WEAspec_weater_year
+    weater_year =              scen.WEAspec_weather_year
 
     meteo = pd.read_parquet(f'{scen.name_dir_import_path}/meteo.parquet')
     meteo_cols = ['timestamp', meteo_col_dir_radiation, meteo_col_diff_radiation, meteo_col_temperature]
