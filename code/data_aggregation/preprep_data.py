@@ -392,14 +392,14 @@ def local_data_AND_spatial_mappings(scen, ):
 
 
     # (continued MAP: egid > pv) ----------
-    gwr_buff_gdf = copy.deepcopy(gwr_gdf)
+    gwr_buff_gdf = copy.deepcopy(gwr_all_building_gdf)
     gwr_buff_gdf.set_crs("EPSG:32632", allow_override=True, inplace=True)
     gwr_buff_gdf['geometry'] = gwr_buff_gdf['geometry'].buffer(scen.SOLKAT_GWR_EGID_buffer_size)
     gwr_buff_gdf, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, gwr_buff_gdf, pv_gdf)
-    checkpoint_to_logfile(f'gwr_gdf.crs == pv_gdf.crs: {gwr_buff_gdf.crs == pv_gdf.crs}', scen.log_name, 6, scen.show_debug_prints)
+    checkpoint_to_logfile(f'gwr_all_building_gdf.crs == pv_gdf.crs: {gwr_buff_gdf.crs == pv_gdf.crs}', scen.log_name, 6, scen.show_debug_prints)
 
     gwregid_pvid_all = gpd.sjoin(pv_gdf,gwr_buff_gdf, how="left", predicate="within")
-    gwregid_pvid_all.drop(columns = ['index_right'] + [col for col in gwr_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
+    gwregid_pvid_all.drop(columns = ['index_right'] + [col for col in gwr_all_building_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
 
     # keep only unique xtf_ids 
     gwregid_pvid_unique = copy.deepcopy(gwregid_pvid_all.loc[~gwregid_pvid_all.duplicated(subset='xtf_id', keep=False)])

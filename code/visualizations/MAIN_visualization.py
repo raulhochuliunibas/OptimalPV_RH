@@ -40,14 +40,14 @@ class VisualSetting:
                 pvalloc_exclude_pattern_list : List[str] = ['*.txt',
                                                             '*old_vers*',
                                                             ],
-                plot_show: bool = False,
+                plot_show: bool = True,
                 save_plot_by_scen_directory: bool = True,
                 remove_old_plot_scen_directories: bool = False,
                 remove_old_plots_in_visualization: bool = False,
                 MC_subdir_for_plot: str = '*MC*1',
                 mc_plots_individual_traces: bool = True,
 
-                default_zoom_year: List[int] = [2012, 2030],
+                default_zoom_year: List[int] = [2002, 2030],
                 default_zoom_hour: List[int] = [2400, 2400+(24*7)],
                 default_map_zoom: int = 11,
                 default_map_center: List[float] = [47.48, 7.57],
@@ -90,17 +90,17 @@ class VisualSetting:
                 },
 
                 # for pvalloc_MC_algorithm
-                plot_ind_line_installedCap_TF: List[bool] =            [False,    True,       False],
-                plot_ind_line_PVproduction_TF: List[bool] =            [False,    True,       False],
-                plot_ind_line_productionHOY_per_node_TF: List[bool] =  [False,    True,       False],
-                plot_ind_line_gridPremiumHOY_per_node_TF: List[bool] = [False,    True,       False],
-                plot_ind_line_gridPremium_structure_TF: List[bool] =   [False,    True,       False],
-                plot_ind_hist_NPV_freepartitions_TF: List[bool] =      [False,    True,       False],
-                plot_ind_hist_pvcapaprod_TF: List[bool] =              [False,    True,       False],
-                plot_ind_map_topo_egid_TF: List[bool] =                [False,    False,      False],
-                plot_ind_map_node_connections_TF: List[bool] =         [False,    False,      False],
-                plot_ind_map_omitted_egids_TF: List[bool] =            [False,    True,       False],
-                plot_ind_lineband_contcharact_newinst_TF: List[bool] = [False,    True,       False],
+                plot_ind_line_installedCap_TF: List[bool] =            [True,    True,       False],
+                plot_ind_line_PVproduction_TF: List[bool] =            [True,    True,       False],
+                plot_ind_line_productionHOY_per_node_TF: List[bool] =  [True,    True,       False],
+                plot_ind_line_gridPremiumHOY_per_node_TF: List[bool] = [True,    True,       False],
+                plot_ind_line_gridPremium_structure_TF: List[bool] =   [True,    True,       False],
+                plot_ind_hist_NPV_freepartitions_TF: List[bool] =      [True,    True,       False],
+                plot_ind_hist_pvcapaprod_TF: List[bool] =              [True,    True,       False],
+                plot_ind_map_topo_egid_TF: List[bool] =                [True,    False,      False],
+                plot_ind_map_node_connections_TF: List[bool] =         [True,    False,      False],
+                plot_ind_map_omitted_egids_TF: List[bool] =            [True,    True,       False],
+                plot_ind_lineband_contcharact_newinst_TF: List[bool] = [True,    True,       False],
 
                 plot_ind_map_topo_egid_specs: Dict = {
                     'uniform_municip_color': '#fff2ae',
@@ -214,7 +214,10 @@ class VisualSetting:
 
         # create a str list of scenarios in pvalloc to visualize (exclude by pattern recognition)
         scen_in_pvalloc_list = os.listdir(f'{self.data_path}/pvalloc')
-        self.pvalloc_scen_list: list[str] = [scen for scen in scen_in_pvalloc_list if not any(fnmatch.fnmatch(scen, pattern) for pattern in self.pvalloc_exclude_pattern_list)]
+        self.pvalloc_scen_list: list[str] = [
+            scen for scen in scen_in_pvalloc_list
+            if not any(fnmatch.fnmatch(scen, pattern) for pattern in self.pvalloc_exclude_pattern_list)
+        ]     
         
         # create new visual directories per scenario (+ remove old ones)
         for scen in self.pvalloc_scen_list:
@@ -691,6 +694,8 @@ class VisualSetting:
 
                     # Export shapes with 0 kWh annual production --------------------
                     if plot_ind_hist_pvcapaprod_sanitycheck_specs['export_spatial_data_for_prod0']:
+                        os.mkdir(f'{self.data_path}/pvalloc/{scen}/topo_spatial_data', exist_ok=True)
+
                         # EGID_no_prod = aggdf_combo.loc[aggdf_combo['pvprod_kW'] == 0, 'EGID'].unique()
                         aggdf_combo_noprod = aggdf_combo.loc[aggdf_combo['pvprod_kW'] == 0]
 
@@ -1207,6 +1212,12 @@ class VisualSetting:
 
 
     # PLOT IND SCEN: pvalloc_MC_algorithm ----------------------------------------
+    def plot_ALL_mcalgorithm(self,): 
+        self.plot_ind_line_installedCap()
+        self.plot_ind_line_PVproduction()
+        self.plot_ind_line_productionHOY_per_node()
+        self.plot_ind_hist_NPV_freepartitions()
+
 
     if True: 
         def plot_ind_line_installedCap(self, ): 
@@ -1232,9 +1243,15 @@ class VisualSetting:
                     self.get_pvallocscen_pickle_IN_SCEN_output(pvalloc_scen_name = scen)
 
                     topo = json.load(open(f'{self.mc_data_path}/topo_egid.json', 'r'))
+                    Map_egid_pv = pd.read_parquet(f'{self.data_path}/pvalloc/{scen}/Map_egid_pv.parquet')
+
+                    gm_shp = gpd.read_file(f'{self.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson') 
+                    pv_gdf = gpd.read_file(f'{self.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/pv_gdf.geojson')
+                    gwr_all_building_gdf = gpd.read_file(f'{self.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_all_building_gdf.geojson')
+
+
+                    # get pvinst_df from topo
                     egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
-
-
                     for k,v, in topo.items():
                         egid_list.append(k)
                         inst_TF_list.append(v['pv_inst']['inst_TF'])
@@ -1251,6 +1268,29 @@ class VisualSetting:
                     pvinst_df['BeginOp'] = pvinst_df['BeginOp'].apply(lambda x: x if len(x) == 10 else x + '-01') # add day to year-month string, to have a proper timestamp
                     pvinst_df['BeginOp'] = pd.to_datetime(pvinst_df['BeginOp'], format='%Y-%m-%d')
                     pvinst_df['bfs'] = pvinst_df['bfs'].astype(str)
+
+
+                    # arange pv_df for comparison
+                    instcomp_df = copy.deepcopy(pv_gdf)
+                    instcomp_df.rename(columns={'BeginningOfOperation': 'BeginOp', }, inplace=True)
+                    instcomp_df = instcomp_df.loc[instcomp_df['BFS_NUMMER'].isin([str(str_nr) for str_nr in self.pvalloc_scen.bfs_numbers])]
+    
+
+                    gwr_buff_select_BUT_year = copy.deepcopy(gwr_all_building_gdf)
+                    gwr_buff_select_BUT_year = gwr_buff_select_BUT_year.loc[(gwr_buff_select_BUT_year['GGDENR'].isin(self.pvalloc_scen.bfs_numbers)) &
+                                                                            (gwr_buff_select_BUT_year['GSTAT'].isin(self.pvalloc_scen.GWRspec_GSTAT)) & 
+                                                                            (gwr_buff_select_BUT_year['GKLAS'].isin(self.pvalloc_scen.GWRspec_GKLAS)) ]
+                    # gwr_buff_select_BUT_year.set_crs("EPSG:32632", allow_override=True, inplace=True)
+                    # gwr_buff_select_BUT_year['geometry'] = gwr_buff_select_BUT_year['geometry'].buffer(self.pvalloc_scen.SOLKAT_GWR_EGID_buffer_size)
+                    gwr_buff_select_BUT_year = gwr_buff_select_BUT_year.to_crs(gm_shp.crs)
+                    instcomp_df = instcomp_df.to_crs(gm_shp.crs)
+                    
+                    instcomp_mrg_df = gpd.sjoin(instcomp_df, gwr_buff_select_BUT_year, how='left', predicate='within')
+
+                    instcomp_mrg_df = instcomp_mrg_df.merge(Map_egid_pv, on = 'xtf_id', how = 'inner')
+                    instcomp_mrg_df = instcomp_mrg_df.loc[instcomp_mrg_df['TotalPower'] <= 30]
+
+
 
 
                     # plot ind - line: Installed Capacity per Month ===========================
@@ -1273,24 +1313,53 @@ class VisualSetting:
 
                         capa_cumm_year_df =  pvinst_df.copy()
                         capa_cumm_year_df['BeginOp_year'] = capa_cumm_year_df['BeginOp'].dt.to_period('Y')
-                        # capa_cumm_year_df.sort_values(by='BeginOp_year', inplace=True)
+                        capa_cumm_year_df.sort_values(by='BeginOp_year', inplace=True)
                         capa_cumm_year_df = capa_cumm_year_df.groupby(['BeginOp_year',])['TotalPower'].sum().reset_index().copy()
                         capa_cumm_year_df['Cumm_TotalPower'] = capa_cumm_year_df['TotalPower'].cumsum()
                         capa_cumm_year_df['BeginOp_year'] = capa_cumm_year_df['BeginOp_year'].dt.to_timestamp()
+                        # capa_cumm_year_built = capa_cumm_year_df.loc[capa_cumm_year_df['info_source'] == 'pv_df'].copy()
+                        # capa_cumm_year_predicted = capa_cumm_year_df.loc[capa_cumm_year_df['info_source'] == 'alloc_algorithm'].copy()
 
+                        instcomp_month_df = copy.deepcopy(instcomp_df)
+                        instcomp_month_df['BeginOp'] = pd.to_datetime(instcomp_month_df['BeginOp'], format='%Y-%m-%d')
+                        instcomp_month_df['BeginOp_month'] = instcomp_month_df['BeginOp'].dt.to_period('M')
+                        instcomp_month_df = instcomp_month_df.groupby(['BeginOp_month', ])['TotalPower'].sum().reset_index().copy()
+                        instcomp_month_df['BeginOp_month'] = instcomp_month_df['BeginOp_month'].dt.to_timestamp()
+
+                        instcomp_year_df = copy.deepcopy(instcomp_df)
+                        instcomp_year_df['BeginOp'] = pd.to_datetime(instcomp_year_df['BeginOp'], format='%Y-%m-%d')
+                        instcomp_year_df['BeginOp_year'] = instcomp_year_df['BeginOp'].dt.to_period('Y')
+                        instcomp_year_df = instcomp_year_df.groupby(['BeginOp_year',])['TotalPower'].sum().reset_index().copy()
+                        instcomp_year_df['BeginOp_year'] = instcomp_year_df['BeginOp_year'].dt.to_timestamp()
+                        instcomp_year_df['Cumm_TotalPower'] = instcomp_year_df['TotalPower'].cumsum()
+                        instcomp_year_df['growth_cumm_TotalPower'] = instcomp_year_df['Cumm_TotalPower'].diff() / instcomp_year_df['Cumm_TotalPower'].shift(1) 
+                        instcomp_year_df[['Cumm_TotalPower', 'growth_cumm_TotalPower']] 
+                        
+
+                        # -- DEBUGGING ----------
+                        capa_year_df.to_csv(f'{self.visual_path}/{scen}_capa_year_df.csv')
+                        capa_cumm_year_df.to_csv(f'{self.visual_path}/{scen}_capa_cumm_year_df.csv')
+                        instcomp_mrg_df.to_csv(f'{self.visual_path}/{scen}_instcomp_mrg_df.csv') 
+                        # -- DEBUGGING ----------
 
 
                         # plot ----------------
                         fig1 = go.Figure()
-                        fig1.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'], line = dict(color = 'navy'),name='built + predicted (month)', mode='lines+markers'))
+
                         fig1.add_trace(go.Scatter(x=capa_month_built['BeginOp_month'], y=capa_month_built['TotalPower'], line = dict(color = 'deepskyblue'), name='built (month)', mode='lines+markers'))
                         fig1.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'], line = dict(color = 'cornflowerblue'), name='predicted (month)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'], line = dict(color = 'navy'),name='built + predicted (month)', mode='lines+markers'))
 
-                        fig1.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'], line = dict(color = 'forestgreen'), name='built + predicted (year)', mode='lines+markers',))
                         fig1.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'], y=capa_year_built['TotalPower'], line = dict(color = 'lightgreen'), name='built (year)', mode='lines+markers'))
                         fig1.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'], y=capa_year_predicted['TotalPower'], line = dict(color = 'limegreen'), name='predicted (year)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'], line = dict(color = 'forestgreen'), name='built + predicted (year)', mode='lines+markers',))
 
-                        fig1.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'], line = dict(color ='purple'), name='cumulative built + pred (year)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'], line = dict(color ='purple'), name='cumulative built (year)', mode='lines+markers'))
+
+                        fig1.add_trace(go.Scatter(x=instcomp_month_df['BeginOp_month'], y=instcomp_month_df['TotalPower'], line = dict(color = 'orange'), name='pv_df (blw 30kwp month)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['TotalPower'], line = dict(color = 'darkorange'), name='pv_df (blw 30kwp year)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['Cumm_TotalPower'], line = dict(color = 'orangered'), name='pv_df (blw 30kwp cumulative)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['growth_cumm_TotalPower'], line = dict(color = 'orangered'), name='pv_df (blw 30kwp growth)', mode='lines+markers'))
 
                         fig1.update_layout(
                             xaxis_title='Time',
@@ -1338,8 +1407,8 @@ class VisualSetting:
 
 
                     # plot ind - line: Installed Capacity per BFS ===========================
-                    if self.plot_ind_line_installedCap_TF[0]:  #['plot_ind_line_installedCap_per_BFS']:
-                        checkpoint_to_logfile(f'plot_ind_line_installedCap_per_BFS', self.log_nameg_name)
+                    if False: # self.plot_ind_line_installedCap_TF[0]:  #['plot_ind_line_installedCap_per_BFS']:
+                        checkpoint_to_logfile(f'plot_ind_line_installedCap_per_BFS', self.log_name)
                         capa_bfs_df = pvinst_df.copy()
                         gm_gdf = gpd.read_file(f'{self.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
                         gm_gdf.rename(columns={'BFS_NUMMER': 'bfs'}, inplace=True)
@@ -1421,16 +1490,17 @@ class VisualSetting:
                         fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],  name=f'',opacity=0, ))
                         fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'], line = dict(color = 'black'), name=f'{scen}',opacity=0, mode='lines+markers'))
 
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],                opacity = 0.75, line = dict(color = color_palette[0]),                 name='-- built + predicted (month)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_built['BeginOp_month'], y=capa_month_built['TotalPower'],          opacity = 0.75, line = dict(color = color_palette[0+1]),               name='-- built (month)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'],  opacity = 0.75, line = dict(color = color_palette[0+2]),               name='-- predicted (month)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'],                   opacity = 0.75, line = dict(color = color_palette[0+3]),               name='-- built + predicted (year)', mode='lines+markers',))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'], y=capa_year_built['TotalPower'],             opacity = 0.75, line = dict(color = color_palette[0+4]),               name='-- built (year)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'], y=capa_year_predicted['TotalPower'],     opacity = 0.75, line = dict(color = color_palette[0+5]),               name='-- predicted (year)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'],    opacity = 0.75, line = dict(color = color_palette[-1]),                name='-- cumulative built + pred (year)', mode='lines+markers'))
-
-
-
+                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_built['BeginOp_month'], y=capa_month_built['TotalPower'],          opacity = 0.75, line = dict(color = color_palette[0+0]),    name='-- built (month)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'],  opacity = 0.75, line = dict(color = color_palette[0+1]),    name='-- predicted (month)', mode='lines+markers'))
+                        # fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],                opacity = 0.75, line = dict(color = color_palette[0+2]),    name='-- built + predicted (month)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'], y=capa_year_built['TotalPower'],             opacity = 0.75, line = dict(color = color_palette[0+2]),    name='-- built (year)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'], y=capa_year_predicted['TotalPower'],     opacity = 0.75, line = dict(color = color_palette[0+3]),    name='-- predicted (year)', mode='lines+markers'))
+                        # fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'],                   opacity = 0.75, line = dict(color = color_palette[0+5]),    name='-- built + predicted (year)', mode='lines+markers',))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'],    opacity = 0.75, line = dict(color = color_palette[0+4]),    name='-- cumulative built + pred (year)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=instcomp_month_df['BeginOp_month'], y=instcomp_month_df['TotalPower'],        opacity = 0.75, line = dict(color = color_palette[0+5]),    name='-- pv_df (blw 30kwp month)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['TotalPower'],           opacity = 0.75, line = dict(color = color_palette[0+6]),    name='-- pv_df (blw 30kwp year)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['Cumm_TotalPower'],      opacity = 0.75, line = dict(color = color_palette[0+0]),    name='-- pv_df (blw 30kwp cumulative)', mode='lines+markers'))
+                        
                         # export plot add aggregated - line: Installed Capacity per Year 
                         if i_scen == len(self.pvalloc_scen_list)-1:
                             fig_agg_pmonth.update_layout(
@@ -1469,13 +1539,292 @@ class VisualSetting:
 
                             fig_agg_pmonth.write_html(f'{self.visual_path}/plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen.html')
                             print_to_logfile(f'\texport: plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen.html', self.log_name)
+
+
+        def plot_ind_line_PVproduction(self, ): 
+            if self.plot_ind_line_PVproduction_TF[0]:
+
+                checkpoint_to_logfile('plot_ind_line_PVproduction', self.log_name)
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    self.mc_data_path = glob.glob(f'{self.data_path}/pvalloc/{scen}/{self.MC_subdir_for_plot}')[0]
+                    self.get_pvallocscen_pickle_IN_SCEN_output(pvalloc_scen_name = scen)
+
+                    topo = json.load(open(f'{self.mc_data_path}/topo_egid.json', 'r'))
+                    topo_subdf_paths = glob.glob(f'{self.data_path}/pvalloc/{scen}/topo_time_subdf/topo_subdf_*.parquet')
+                    gridnode_df_paths = glob.glob(f'{self.mc_data_path}/pred_gridprem_node_by_M/gridnode_df_*.parquet')
+                    gridnode_df = pd.read_parquet(f'{self.mc_data_path}/gridnode_df.parquet')
+
+                    # get installations of topo over time
+                    egid_list, inst_TF_list, info_source_list, BeginOp_list, xtf_id_list, TotalPower_list, = [], [], [], [], [], []
+                    k = list(topo.keys())[0]
+                    for k, v in topo.items():
+                        egid_list.append(k)
+                        inst_TF_list.append(v['pv_inst']['inst_TF'])
+                        info_source_list.append(v['pv_inst']['info_source'])
+                        BeginOp_list.append(v['pv_inst']['BeginOp'])
+                        xtf_id_list.append(v['pv_inst']['xtf_id'])
+                        TotalPower_list.append(v['pv_inst']['TotalPower'])
+
+                    pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,
+                                            'BeginOp': BeginOp_list, 'xtf_id': xtf_id_list, 'TotalPower': TotalPower_list,})
+                    pvinst_df = pvinst_df.loc[pvinst_df['inst_TF'] == True]
+
+
+                    pvinst_df['TotalPower'] = pd.to_numeric(pvinst_df['TotalPower'], errors='coerce')
+                    pvinst_df['BeginOp'] = pvinst_df['BeginOp'].apply(lambda x: x if len(x) == 10 else x + '-01') # add day to year-month string, to have a proper timestamp
+                    pvinst_df['BeginOp'] = pd.to_datetime(pvinst_df['BeginOp'], format='%Y-%m-%d')
+
+
+                    # attach annual production to each installation
+                    pvinst_df['pvprod_kW'] = float(0)
+                    aggdf_combo_list = []
+
+                    for ipath, path in enumerate(topo_subdf_paths):
+                        subdf = pd.read_parquet(path)
+                        subdf = subdf.loc[subdf['EGID'].isin(pvinst_df['EGID'])]
+
+                        agg_subdf = subdf.groupby(['EGID', 'df_uid', 'FLAECHE', 'STROMERTRAG']).agg({'pvprod_kW': 'sum',}).reset_index() 
+                        aggsub_npry = np.array(agg_subdf)
+
+
+                        # attach production to each installation                
+                        pvinst_egid_in_subdf = [egid for egid in pvinst_df['EGID'].unique() if egid in agg_subdf['EGID'].unique()]
+                        egid = pvinst_egid_in_subdf[0]
+                        for egid in pvinst_egid_in_subdf:
+                            df_uid_combo = pvinst_df.loc[pvinst_df['EGID'] == egid]['xtf_id'].values[0].split('_')
+
+                            if len(df_uid_combo) == 1:
+                                pvinst_df.loc[pvinst_df['EGID'] == egid, 'pvprod_kW'] = agg_subdf.loc[agg_subdf['EGID'] == egid]['pvprod_kW'].values[0]
+                            elif len(df_uid_combo) > 1:
+                                pvinst_df.loc[pvinst_df['EGID'] == egid, 'pvprod_kW'] = agg_subdf.loc[agg_subdf['df_uid'].isin(df_uid_combo), 'pvprod_kW'].sum()
+            
+
+                    # aggregate pvinst_df to monthly values
+                    prod_month_df = copy.deepcopy(pvinst_df)
+                    prod_month_df['BeginOp_month'] = prod_month_df['BeginOp'].dt.to_period('M')
+                    prod_month_df['BeginOp_month_str'] = prod_month_df['BeginOp_month'].astype(str)
+                    prod_month_df['TotalPower_month'] = prod_month_df.groupby(['BeginOp_month'])['TotalPower'].transform('sum')
+                    prod_month_df['pvprod_kW_month'] = prod_month_df.groupby(['BeginOp_month'])['pvprod_kW'].transform('sum')
+                    prod_month_df['BeginOp_month'] = prod_month_df['BeginOp_month'].dt.to_timestamp()
+                    prod_month_df.sort_values(by=['BeginOp_month'], inplace=True)
+
+
+                    # aggregate gridnode_df to monthly values
+                    BeginOp_month_list, feedin_all_list, feedin_taken_list, feedin_loss_list = [], [], [], []
+                    
+                    # ONLY KEEP THIS WHILE NOT ALL MONTHS ARE EXPORTED in PVALLOC
+                    month_iters = [path.split('gridnode_df_')[1].split('.parquet')[0] for path in gridnode_df_paths]
+                    gridnode_df_month_iters = [path.split('pred_gridprem_node_by_M\\')[1].split('.parquet')[0] for path in gridnode_df_paths]
+                    prod_month_df = prod_month_df.loc[prod_month_df['BeginOp_month_str'].isin(month_iters)]
+
+                    month = prod_month_df['BeginOp_month'].unique()[0]
+                    for month in prod_month_df['BeginOp_month'].unique():
+                        month_str = prod_month_df.loc[prod_month_df['BeginOp_month'] == month, 'BeginOp_month_str'].values[0]
+                        grid_subdf = pd.read_parquet(f'{self.mc_data_path}/pred_gridprem_node_by_M/gridnode_df_{month_str}.parquet')
+                        
+                        prod_month_df.loc[prod_month_df['BeginOp_month'] == month, 'feedin_kW'] = grid_subdf['feedin_kW'].sum()
+                        prod_month_df.loc[prod_month_df['BeginOp_month'] == month, 'feedin_kW_taken'] = grid_subdf['feedin_kW_taken'].sum()
+                        prod_month_df.loc[prod_month_df['BeginOp_month'] == month, 'feedin_kW_loss'] = grid_subdf['feedin_kW_loss'].sum()
+
+
+
+                    # plot ----------------
+                    # fig = go.Figure()
+                    fig = make_subplots(specs=[[{"secondary_y": True}]])
+                    fig.add_trace(go.Scatter(x=prod_month_df['BeginOp_month'], y=prod_month_df['pvprod_kW_month'], name='EGID Prod kWh (total pvprod_kW)', ))
+                    fig.add_trace(go.Scatter(x=prod_month_df['BeginOp_month'], y=prod_month_df['feedin_kW'], name='Grid feedin kWh (feedin_kwh)', ))
+                    fig.add_trace(go.Scatter(x=prod_month_df['BeginOp_month'], y=prod_month_df['feedin_kW_taken'], name='Grid feedin take kWh (feedin_taken kWh)', ))
+                    fig.add_trace(go.Scatter(x=prod_month_df['BeginOp_month'], y=prod_month_df['feedin_kW_loss'], name='Grid feedin loss kWh (feedin_loss kWh)', ))
+
+                    fig.add_trace(go.Scatter(x=prod_month_df['BeginOp_month'], y=prod_month_df['TotalPower_month'], name='Total installed capacity', line=dict(color='blue', width=2)), secondary_y=True)
+
+                    fig.update_layout(
+                        title=f'PV production per month',
+                        xaxis_title='Month',
+                        yaxis_title='Production [kW]',
+                        yaxis2_title='Installed capacity [kW]',
+                        legend_title='Legend',
+                    )
+                    fig.update_yaxes(title_text="Installed capacity [kW]", secondary_y=True)
+
+                    if self.plot_show and self.plot_ind_line_PVproduction_TF[1]:
+                        if self.plot_ind_line_PVproduction_TF[2]:
+                            fig.show()
+                        elif not self.plot_ind_line_PVproduction_TF[2]:
+                            fig.show() if i_scen == 0 else None
+                    if self.save_plot_by_scen_directory:
+                        fig.write_html(f'{self.visual_path}/{scen}/{scen}__plot_ind_line_PVproduction.html')
+                    else:
+                        fig.write_html(f'{self.visual_path}/{scen}__plot_ind_line_PVproduction.html')
+                    print_to_logfile(f'\texport: plot_ind_line_PVproduction.html (for: {scen})', self.log_name)
+
+
+        def plot_ind_line_productionHOY_per_node(self, ): 
+            if self.plot_ind_line_productionHOY_per_node_TF[0]:
+
+                checkpoint_to_logfile('plot_ind_line_productionHOY_per_node', self.log_name)
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+
+                    # setup + import ----------
+                    self.mc_data_path = glob.glob(f'{self.data_path}/pvalloc/{scen}/{self.MC_subdir_for_plot}')[0] # take first path if multiple apply, so code can still run properlyrly
+                    self.get_pvallocscen_pickle_IN_SCEN_output(pvalloc_scen_name = scen)
+
+                    self.node_selection
+
+                    gridnode_df = pd.read_parquet(f'{self.mc_data_path}/gridnode_df.parquet')
+                    gridnode_df['grid_node'].unique()
+                    gridnode_df['t_int'] = gridnode_df['t'].str.extract(r't_(\d+)').astype(int)
+                    gridnode_df.sort_values(by=['t_int'], inplace=True)
+
+                    # plot ----------------
+                    # unclear why if statement is necessary here? maybe older data versions featured col 'info_source'
+                    if 'info_source' in gridnode_df.columns:
+                        if isinstance(self.node_selection, list):
+                            nodes = self.node_selection
+                        elif self.node_selection == None:
+                            nodes = gridnode_df['grid_node'].unique()
                             
+                        pvsources = gridnode_df['info_source'].unique()
+                        fig = go.Figure()
 
-        # def plot_ind_line_PVproduction(self, ): 
+                        for node in nodes:
+                            for source in pvsources:
+                                if source != '':
+                                # if True:
+                                    filter_df = gridnode_df.loc[
+                                        (gridnode_df['grid_node'] == node) & (gridnode_df['info_source'] == source)].copy()
+                                    
+                                    # fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['pvprod_kW'], name=f'Prod Node: {node}, Source: {source}'))
+                                    fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW'], name=f'{node} - feedin (all),  Source: {source}'))
+                                    fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW_taken'], name= f'{node} - feedin_taken, Source: {source}'))
+                                    fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW_loss'], name=f'{node} - feedin_loss, Source: {source}'))
 
-        # def plot_ind_line_productionHOY_per_node(self, ): 
+                        
+                        # gridnode_total_df = gridnode_df.groupby(['t', 't_int'])['feedin_kW'].sum().reset_index()
+                        gridnode_total_df = gridnode_df.groupby(['t', 't_int']).agg({'pvprod_kW': 'sum', 'feedin_kW': 'sum','feedin_kW_taken': 'sum','feedin_kW_loss': 'sum'}).reset_index()
+                        gridnode_total_df.sort_values(by=['t_int'], inplace=True)
+                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['pvprod_kW'], name='Total production', line=dict(color='blue', width=2)))
+                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW'], name='Total feedin', line=dict(color='black', width=2)))
+                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_taken'], name='Total feedin_taken', line=dict(color='green', width=2)))
+                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_loss'], name='Total feedin_loss', line=dict(color='red', width=2)))
+                    
+                    else:
+                        if isinstance(self.node_selection, list):
+                            nodes = self.node_selection
+                        elif self.node_selection == None:
+                            nodes = gridnode_df['grid_node'].unique()
+
+                        fig = go.Figure()
+                        for node in nodes:
+                            filter_df = copy.deepcopy(gridnode_df.loc[gridnode_df['grid_node'] == node])
+                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW'], name=f'{node} - feedin (all)'))
+                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW_taken'], name= f'{node} - feedin_taken'))
+                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['feedin_kW_loss'], name=f'{node} - feedin_loss'))
+
+                        gridnode_total_df = gridnode_df.groupby(['t', 't_int']).agg({'pvprod_kW': 'sum', 'feedin_kW': 'sum','feedin_kW_taken': 'sum','feedin_kW_loss': 'sum'}).reset_index()
+                        gridnode_total_df.sort_values(by=['t_int'], inplace=True)
+                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['pvprod_kW'], name='Total production', line=dict(color='blue', width=2)))
+                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW'], name='Total feedin', line=dict(color='black', width=2)))
+                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_taken'], name='Total feedin_taken', line=dict(color='green', width=2)))
+                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_loss'], name='Total feedin_loss', line=dict(color='red', width=2)))
+                                    
+
+                    fig.update_layout(
+                        xaxis_title='Hour of Year',
+                        yaxis_title='Production / Feedin (kW)',
+                        legend_title='Node ID',
+                        title = f'Production per node (kW, weather year: {self.pvalloc_scen.WEAspec_weather_year}, self consum. rate: {self.pvalloc_scen.TECspec_self_consumption_ifapplicable})'
+                    )
+
+                    fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
+                    fig = self.set_default_fig_zoom_hour(fig, self.default_zoom_hour, gridnode_total_df, 't_int')
+
+                    if self.plot_show and self.plot_ind_line_productionHOY_per_node_TF[1]:
+                        if self.plot_ind_line_productionHOY_per_node_TF[2]:
+                            fig.show()
+                        elif not self.plot_ind_line_productionHOY_per_node_TF[2]:
+                            fig.show() if i_scen == 0 else None
+                    if self.save_plot_by_scen_directory:
+                        fig.write_html(f'{self.visual_path}/{scen}/{scen}__plot_ind_line_productionHOY_per_node.html')
+                    else:   
+                        fig.write_html(f'{self.visual_path}/{scen}__plot_ind_line_productionHOY_per_node.html')
+                    print_to_logfile(f'\texport: plot_ind_line_productionHOY_per_node.html (for: {scen})', self.log_name)
+
+
+        def plot_ind_hist_NPV_freepartitions(self, ): 
+            if self.plot_ind_hist_NPV_freepartitions_TF[0]:
+
+                checkpoint_to_logfile('plot_ind_hist_NPV_freepartitions', self.log_name)
+
+                fig_agg = go.Figure()
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    # setup + import ----------
+                    self.mc_data_path = glob.glob(f'{self.data_path}/pvalloc/{scen}/{self.MC_subdir_for_plot}')[0]
+                    self.get_pvallocscen_pickle_IN_SCEN_output(pvalloc_scen_name = scen)
+
+                    
+                    npv_df_paths = glob.glob(f'{self.mc_data_path}/pred_npv_inst_by_M/npv_df_*.parquet')
+                    periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
+                    before_period, after_period = min(periods_list), max(periods_list)
+
+                    npv_df_before = pd.read_parquet(f'{self.mc_data_path}/pred_npv_inst_by_M/npv_df_{before_period.to_period("M")}.parquet')
+                    npv_df_after  = pd.read_parquet(f'{self.mc_data_path}/pred_npv_inst_by_M/npv_df_{after_period.to_period("M")}.parquet')
+
+                    # plot ----------------
+                    fig = go.Figure()
+                    fig.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation Algorithm', opacity=0.5))
+                    fig.add_trace(go.Histogram(x=npv_df_after['NPV_uid'], name='After Allocation Algorithm', opacity=0.5))
+
+                    fig.update_layout(
+                        xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
+                        yaxis_title='Frequency',
+                        title = f'NPV Distribution of possible PV installations, first / last year (weather year: {self.pvalloc_scen.TECspec_weather_year})',
+                        barmode = 'overlay')
+                    fig.update_traces(bingroup=1, opacity=0.5)
+
+                    fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
+                        
+                    if self.plot_show and self.plot_ind_hist_NPV_freepartitions_TF[1]:
+                        if self.plot_ind_hist_NPV_freepartitions_TF[2]:
+                            fig.show()
+                        elif not self.plot_ind_hist_NPV_freepartitions_TF[2]:
+                            fig.show() if i_scen == 0 else None
+                    if self.save_plot_by_scen_directory:
+                        fig.write_html(f'{self.visual_path}/{scen}/{scen}__plot_ind_hist_NPV_freepartitions.html')
+                    else:
+                        fig.write_html(f'{self.visual_path}/{scen}__plot_ind_hist_NPV_freepartitions.html')
+                        
+
+                    # aggregate plot ----------------
+                    fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
+                    fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,)) 
+
+                    fig_agg.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name=f'Before Allocation', opacity=0.7, xbins=dict(size=500)))
+                    fig_agg.add_trace(go.Histogram(x=npv_df_after['NPV_uid'],  name=f'After Allocation',  opacity=0.7, xbins=dict(size=500)))
+
+                fig_agg.update_layout(
+                    xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
+                    yaxis_title='Frequency',
+                    title = f'NPV Distribution of possible PV installations, first / last year ({len(self.pvalloc_scen_list)} scen, weather year: {self.pvalloc_scen.TECspec_weather_year})',
+                    barmode = 'overlay')
+                # fig_agg.update_traces(bingroup=1, opacity=0.75)
+
+                if self.plot_show and self.plot_ind_hist_NPV_freepartitions_TF[1]:
+                    fig_agg.show()
+                fig_agg.write_html(f'{self.visual_path}/plot_agg_hist_NPV_freepartitions__{len(self.pvalloc_scen_list)}scen.html')
+
+                
+
+
+
+
+
 
         # def plot_ind_line_gridPremiumHOY_per_node(self, ): 
+
 
         # def plot_ind_line_gridPremium_structure(self, ): 
 
@@ -1492,7 +1841,39 @@ class VisualSetting:
 
 
 
-    # PLOT ALL ----------------------------------------
+# -------------------------
+# *** RUN VISUALIZATION ***
+# -------------------------
+
+if __name__ == '__main__':
+
+    run_visualizations = VisualSetting(
+        pvalloc_exclude_pattern_list = ['*.txt','*old_vers*', 
+                                        'pvalloc_BLsml_40y_f1983_1mc_meth2.2_rnd',
+                                        '*pvalloc_BLsml_20y*', 
+                                        ], 
+        save_plot_by_scen_directory        = False, 
+        remove_old_plot_scen_directories   = True,  
+        remove_old_plots_in_visualization = True,  )
+    
+    # run_visualizations.plot_ind_var_summary_stats()
+    # run_visualizations.plot_ind_hist_pvcapaprod_sanitycheck() 
+    # run_visualizations.plot_ind_boxp_radiation_rng_sanitycheck()
+    # run_visualizations.plot_ind_charac_omitted_gwr()
+    # run_visualizations.plot_ind_line_meteo_radiation()
+
+    run_visualizations.plot_ind_line_installedCap()
+    # run_visualizations.plot_ind_line_PVproduction()
+    # run_visualizations.plot_ind_line_productionHOY_per_node()
+    # run_visualizations.plot_ind_hist_NPV_freepartitions()
+
+
+
+    print('end <if __main__> chunk')
+            
+
+
+
 
 
 
@@ -1516,33 +1897,12 @@ class test_class:
         with open('test_class.pkl', 'wb') as f:
             pickle.dump(self, f)
 
+if False: 
+    test = test_class()
+    test.store_to_pickle()
 
-
-
-if __name__ == '__main__':
-
-    # test = test_class()
-    # test.store_to_pickle()
-
-    # print('-- before load ---------')
-    # test_reload = pickle.load(open('test_class.pkl', 'rb'))
-    # print('-- after load ---------')
-    # test_reload.meth3()
-
-    run_visualizations = VisualSetting(save_plot_by_scen_directory        = False, 
-                                       remove_old_plot_scen_directories   = True,  
-                                       remove_old_plots_in_visualization = True,  )
-    
-    run_visualizations.plot_ind_var_summary_stats()
-    run_visualizations.plot_ind_hist_pvcapaprod_sanitycheck() 
-    run_visualizations.plot_ind_boxp_radiation_rng_sanitycheck()
-    run_visualizations.plot_ind_charac_omitted_gwr()
-    run_visualizations.plot_ind_line_meteo_radiation()
-
-    run_visualizations.plot_ind_line_installedCap()
-
-
-
-    print('end <if __main__> chunk')
-            
+    print('-- before load ---------')
+    test_reload = pickle.load(open('test_class.pkl', 'rb'))
+    print('-- after load ---------')
+    test_reload.meth3()
               
