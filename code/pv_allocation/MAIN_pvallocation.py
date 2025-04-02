@@ -22,7 +22,7 @@ import plotly.express as px
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from auxiliary.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
 
-import pv_allocation.initialization_small_functions as initial_sml
+# import pv_allocation.initialization_small_functions as initial_sml
 # import pv_allocation.initialization_large_functions as  initial_lrg
 # import pv_allocation.alloc_algorithm as algo
 # # import pv_allocation.alloc_algorithm_SPARK as SPARKalgo
@@ -293,7 +293,7 @@ class PVAllocScenario:
         # make sanitycheck folder and move relevant initial files there (delete all old files, not distort results)
         os.makedirs(self.sett.sanity_check_path, exist_ok=False) 
 
-        fresh_initial_files = [f'{self.name_dir_export_path}/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
+        fresh_initial_files = [f'{self.sett.name_dir_export_path}/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
         topo_time_paths = glob.glob(f'{self.name_dir_export_path}/topo_time_subdf/*.parquet')
         for f in fresh_initial_files + topo_time_paths:
             shutil.copy(f, f'{self.sanity_check_path}/')
@@ -422,7 +422,7 @@ class PVAllocScenario:
                 # algo.update_gridprem(self, self.sett.mc_iter_path, m, i_m)
                 start_time_update_npv = datetime.datetime.now()
                 print_to_logfile('- START update npv', self.sett.log_name)
-                npv_df = self.algo_update_npv_df(self.sett.mc_iter_path, i_m, m)
+                npv_df = self.algo_update_npv_df_np(self.sett.mc_iter_path, i_m, m)
                 end_time_update_npv = datetime.datetime.now()
                 print_to_logfile(f'- END update npv: {end_time_update_npv - start_time_update_npv} (hh:mm:ss.s)', self.sett.log_name)
 
@@ -2979,18 +2979,18 @@ class PVAllocScenario:
                     
 # ==================================================================================================================
 pvalloc_scen_list = [
-    # PVAllocScenario_Settings(
-    #         name_dir_export    = 'pvalloc_BFS2761_2m_f2021_1mc_meth2.2_rnd_DEBUG',
-    #         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #         show_debug_prints  = True,
-    #         export_csvs        = True,
-    #         T0_prediction      = '2021-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #         months_prediction  = 2,
-    #         GWRspec_GBAUJ_minmax = [1920, 2020],
-    #         ALGOspec_inst_selection_method = 'random',
-    #         TECspec_pvprod_calc_method = 'method2.2',
-    #         MCspec_montecarlo_iterations = 2,
-    # ), 
+    PVAllocScenario_Settings(
+            name_dir_export    = 'pvalloc_BFS2761_2m_f2021_1mc_meth2.2_rnd_DEBUG',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            show_debug_prints  = True,
+            export_csvs        = True,
+            T0_prediction      = '2021-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 2,
+            GWRspec_GBAUJ_minmax = [1920, 2020],
+            ALGOspec_inst_selection_method = 'random',
+            TECspec_pvprod_calc_method = 'method2.2',
+            MCspec_montecarlo_iterations = 2,
+    ), 
     PVAllocScenario_Settings(
         name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv',
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
@@ -3011,7 +3011,7 @@ if __name__ == '__main__':
     for pvalloc_scen in pvalloc_scen_list:
         scen_class = PVAllocScenario(pvalloc_scen)
 
-        # scen_class.run_pvalloc_initalization()
+        scen_class.run_pvalloc_initalization()
         scen_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
 
