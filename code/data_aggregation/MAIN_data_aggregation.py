@@ -6,7 +6,7 @@ from typing_extensions import List
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from auxiliary.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, get_bfs_from_ktnr
+from code.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, get_bfs_from_ktnr
 
 import split_data_geometry
 import api_pvtarif

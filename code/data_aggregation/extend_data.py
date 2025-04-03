@@ -7,7 +7,7 @@ import itertools
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from auxiliary.auxiliary_functions import print_to_logfile
+from code.auxiliary_functions import print_to_logfile
 
 
 
