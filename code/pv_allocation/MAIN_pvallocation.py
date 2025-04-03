@@ -17,18 +17,11 @@ import itertools
 import plotly.graph_objects as go
 import plotly.express as px
 
-
-
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from auxiliary.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
 
-# import pv_allocation.initialization_small_functions as initial_sml
-# import pv_allocation.initialization_large_functions as  initial_lrg
-# import pv_allocation.alloc_algorithm as algo
-# # import pv_allocation.alloc_algorithm_SPARK as SPARKalgo
-# import pv_allocation.alloc_sanitychecks as sanity
-# import pv_allocation.inst_selection as select
+
 
 @dataclass
 class PVAllocScenario_Settings:
@@ -1791,11 +1784,13 @@ class PVAllocScenario:
             solkat_gdf_in_topo[solkat_gdf_in_topo['df_uid'].isin(topo_df_uid_list)].copy()
 
             # export to shp -----------------------------------------------------
-            shp_to_export2 = [(topo_above_npart_gdf, f'{self.sett.name_dir_export_path}/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.shp'),
-                            (solkat_above_npart_gdf, f'{self.sett.name_dir_export_path}/topo_spatial_data/solkat_above_{max_partitions}_npart_gdf.shp')]
-            for gdf, path in shp_to_export2:
+            gdf_to_export2 = [
+                            (topo_above_npart_gdf, f'{self.sett.name_dir_export_path}/topo_spatial_data/topo_above_{max_partitions}_npart_gdf.geojson'),
+                            (solkat_above_npart_gdf, f'{self.sett.name_dir_export_path}/topo_spatial_data/solkat_above_{max_partitions}_npart_gdf.geojson')]
+            for gdf, path in gdf_to_export2:
                 try:
-                    gdf.to_file(path)
+                    with open (path, 'w') as f:
+                        f.write(gdf.to_json())
                 except Exception as e:
                     print(f"Failed to export {path}. Error: {e}")
 
