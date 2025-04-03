@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 import copy
 import itertools
 import plotly.graph_objects as go
-import plotly.express as px
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -166,7 +165,6 @@ class PVAllocScenario_Settings:
 
 
 class PVAllocScenario:
-    # DEFAULT SETTINGS ---------------------------------------------------
     def __init__(self, settings: PVAllocScenario_Settings): 
         self.sett = settings
 
@@ -202,12 +200,11 @@ class PVAllocScenario:
     def run_pvalloc_initalization(self):
         """
         Input:
-            (preprep data directory defined in the pv allocation scenario settings)
-            dict: pvalloc_settings_func
-                > settings for pv allocation scenarios, for initalization and Monte Carlo iterations
+            > PVAllocScenario class containing a data class (_Settings) which specifies all scenraio settings (e.g. also path to preprep data directory where all data for the
+              executed computations is stored).
 
         Output (no function return but export to dir):
-            > directory renamed after scenario name (pvalloc_scenario), containing all data files form the INITIALIZATION of the pv allocation run.
+            > directory renamed after scenario name (name_dir_export), containing all data files form the INITIALIZATION of the pv allocation run.
 
         Description: 
             > Depending on the settings, certain steps of the model initalization can be run. (Debug function to only run certain steps, based on interim 
@@ -241,7 +238,7 @@ class PVAllocScenario:
             os.rename(self.sett.name_dir_export_path, f'{self.sett.name_dir_export_path}_{n_same_names}_old_vers')
         os.makedirs(self.sett.name_dir_export_path, exist_ok=True)
 
-        # export class instance to pickle
+        # export class instance settings to dir        
         self.export_pvalloc_scen_settings()
 
 
@@ -330,10 +327,8 @@ class PVAllocScenario:
     def run_pvalloc_mcalgorithm(self,):
         """
         Input: 
-            (preprep data directory defined in the pv allocation scenario settings)
-            (pvalloc data directory defined in the pv allocation scenario settings)
-            dict: pvalloc_settings_func
-                > settings for pv allocation scenarios, for initalization and Monte Carlo iterations
+            > PVAllocScenario class containing a data class (_Settings) which specifies all scenraio settings (e.g. also path to preprep data directory where all data for the
+              executed computations is stored).
     
         Output:
             > within the scenario name defined in pvalloc_settings, the MAIN_pvalloc_MCalgorithm function 
@@ -480,6 +475,12 @@ class PVAllocScenario:
     # POSTPROCESSING of PV Allocatoin Scenario
     # ------------------------------------------------------------------------------------------------------
     def run_pvalloc_postprocess(self):
+            """
+            Input: 
+                > PVAllocScenario class containing a data class (_Settings) which specifies all scenraio settings (e.g. also path to preprep data directory where all data 
+                  for theexecuted computations is stored).
+
+            """
 
             # SETUP -----------------------------------------------------------------------------
             self.log_name = os.path.join(self.sett.name_dir_export_path, 'pvalloc_postprocess_log.txt')
@@ -506,11 +507,6 @@ class PVAllocScenario:
                 
 
   
-
-
-
-
-
 
     # ======================================================================================================
     # ALL METHODS CALLED ABOVE in the MAIN METHODS
@@ -745,6 +741,15 @@ class PVAllocScenario:
 
 
         def initial_sml_get_instcost_interpolate_function(self, ): 
+            """
+            Input:
+                PVAllocScenario + PVAllocScenario_Settings dataclass containing all scenarios settings + methods
+            Tasks:
+                - import the coefficients for the interpolated cost function from energie rechner schweiz
+                - bring the coefficients back into their functional form. 
+            Output:
+                - estim_instcost_chfpkW, estim_instcost_chftotal: cost estimation functions to estimate the installation cost per kW and total installation cost
+            """
             # setup --------
             print_to_logfile('run function: get_estim_instcost_function', self.sett.log_name)
 
@@ -1473,6 +1478,18 @@ class PVAllocScenario:
     # SANITY CHECK ---------------------------------------------------------------------------
     if True:
         def sanity_check_summary_byEGID(self, subdir_path: str): 
+            """
+            Input: 
+                - PVAllocScenario + PVAllocScenario_Settings dataclass containing all scenarios settings + methods
+                - subdir_path: path to the subfolder where the data is stored
+            Tasks:
+                - import data from the topo_egid dict and npv_df by extracting data for a list of EGIDs defined in the settings
+                - extract e.g. buidling specs, demand type, roof partitions, pvprod capacity per roof etc. 
+                - append all these extractions to rows and those in turn to a data frame which exported as an xlsx file.
+            Export to subdir_path:
+                - sanity_check_summary_byEGID.xlsx ->
+
+            """
             print_to_logfile('run function: sanity_check_summary_byEGID', self.sett.log_name)
 
 
@@ -1671,6 +1688,17 @@ class PVAllocScenario:
 
 
         def sanity_create_gdf_export_of_topo(self,): 
+            """
+            Input:
+                - PVAllocScenario + PVAllocScenario_Settings dataclass containing all scenarios settings + methods
+            Tasks:
+                - transform topo_egid to a data frame
+                - import all the geo data and filter by the observations in topo_egid (EGIDs, DF_UIDs)
+                - export filtered gdfs to local dir
+            Output to pvalloc dir: 
+                - solkat_gdf_in_topo, gwr_gdf_in_topo, pv_gdf_in_topo, 
+                - solkat_gdf_notin_topo, gwr_gdf_notin_topo, pv_gdf_notin_topo, 
+                - topo_gdf, single_part_houses_w_tilt, dsonodes_withegids_gdf, gm_gdf,             """
             print_to_logfile('run function: create_gdf_export_of_topology', self.sett.log_name)
 
 
@@ -1746,29 +1774,32 @@ class PVAllocScenario:
             checkpoint_to_logfile(f'First 10 EGID rows: {single_part_houses_w_tilt["EGID"][0:10]}', self.sett.log_name) 
 
 
-            # EXPORT to shp -----------------------------------------------------
+            # EXPORT to geojson -----------------------------------------------------
             if not os.path.exists(f'{self.sett.name_dir_export_path}/topo_spatial_data'):
                 os.makedirs(f'{self.sett.data_path}/topo_spatial_data', exist_ok=True)
 
-            shp_to_export=[(solkat_gdf_in_topo, 'solkat_gdf_in_topo.shp'),
-                        (gwr_gdf_in_topo, 'gwr_gdf_in_topo.shp'),
-                        (pv_gdf_in_topo, 'pv_gdf_in_topo.shp'),
+            shp_to_export=[
+                (solkat_gdf_in_topo, 'solkat_gdf_in_topo.geojson'),
+                (gwr_gdf_in_topo, 'gwr_gdf_in_topo.geojson'),
+                (pv_gdf_in_topo, 'pv_gdf_in_topo.geojson'),
                 
-                        (solkat_gdf_notin_topo, 'solkat_gdf_notin_topo.shp'),
-                        (gwr_gdf_notin_topo, 'gwr_gdf_notin_topo.shp'),
-                        (pv_gdf_notin_topo, 'pv_gdf_notin_topo.shp'),
+                (solkat_gdf_notin_topo, 'solkat_gdf_notin_topo.geojson'),
+                (gwr_gdf_notin_topo, 'gwr_gdf_notin_topo.geojson'),
+                (pv_gdf_notin_topo, 'pv_gdf_notin_topo.geojson'),
                         
-                        (topo_gdf, 'topo_gdf.shp'),
-                        (single_part_houses_w_tilt, 'single_part_houses_w_tilt.shp'),
+                (topo_gdf, 'topo_gdf.geojson'),
+                (single_part_houses_w_tilt, 'single_part_houses_w_tilt.geojson'),
                 
-                        (dsonodes_withegids_gdf, 'dsonodes_withegids_gdf.shp'),
-                        (gm_gdf, 'gm_gdf.shp')
+                (dsonodes_withegids_gdf, 'dsonodes_withegids_gdf.geojson'),
+                (gm_gdf, 'gm_gdf.geojson')
             ]
 
             for gdf, file_name in shp_to_export:
                 path_file = f'{self.sett.name_dir_export_path}/topo_spatial_data/{file_name}'
                 try:
-                    gdf.to_file(path_file)
+                    with open (path_file, 'w') as f:
+                        f.write(gdf.to_json())
+
                 except Exception as e:
                     print(f"Failed to export {path_file}. Error: {e}")        
 
@@ -1798,9 +1829,19 @@ class PVAllocScenario:
 
 
         def sanity_check_multiple_xtf_ids_per_EGID(self, ):
+            """ 
+            Input: 
+                - PVAllocScenario + PVAllocScenario_Settings dataclass containing all scenarios settings + methods
+            Tasks:
+                - Import the CHECK_egid_with_problems.json file created previously (during the creation of the topology)
+                - filter through the rows and extract the issue occurences with "multiple xtf_ids"
+                - filter building (gwr with EGIDs) and pv installation (pv with xtf_ids) gdfs for these occurences and export them as spatial data
+            Output: 
+                - gwr_gdf_multiple_xtf_id.geojson; pv_gdf_multiple_xtf_id.geojson
+
+            """
+
             print_to_logfile('run function: check_multiple_xtf_ids_per_EGID', self.sett.log_name)
-
-
 
             # import -----------------------------------------------------
             gwr_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_gdf.geojson')
@@ -1832,8 +1873,10 @@ class PVAllocScenario:
             if not os.path.exists(f'{self.sett.name_dir_export_path}/topo_spatial_data'):
                 os.makedirs(f'{self.sett.name_dir_export_path}/topo_spatial_data')
             
-            gwr_gdf_multiple_xtf_id.to_file(f'{self.sett.name_dir_export_path}/topo_spatial_data/gwr_gdf_multiple_xtf_id.shp')
-            pv_gdf_multiple_xtf_id.to_file(f'{self.sett.name_dir_export_path}/topo_spatial_data/pv_gdf_multiple_xtf_id.shp')
+            with open (f'{self.sett.name_dir_export_path}/topo_spatial_data/gwr_gdf_multiple_xtf_id.geojson', 'w') as f:
+                f.write(gwr_gdf_multiple_xtf_id.to_json())
+            with open (f'{self.sett.name_dir_export_path}/topo_spatial_data/pv_gdf_multiple_xtf_id.geojson', 'w') as f:
+                f.write(pv_gdf_multiple_xtf_id.to_json())
 
 
  
@@ -2959,55 +3002,59 @@ class PVAllocScenario:
 
 
                     
-# ==================================================================================================================
-pvalloc_scen_list = [
-    # PVAllocScenario_Settings(
-    #         name_dir_export    = 'pvalloc_BFS2761_2m_f2021_1mc_meth2.2_rnd_DEBUG',
-    #         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #         show_debug_prints  = True,
-    #         export_csvs        = True,
-    #         T0_prediction      = '2021-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #         months_prediction  = 2,
-    #         GWRspec_GBAUJ_minmax = [1920, 2020],
-    #         ALGOspec_inst_selection_method = 'random',
-    #         TECspec_pvprod_calc_method = 'method2.2',
-    #         MCspec_montecarlo_iterations = 2,
-    # ), 
-    PVAllocScenario_Settings(
-        name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd',
-        name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-        show_debug_prints  = True,
-        bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-        months_prediction  = 156,
-        GWRspec_GBAUJ_minmax = [1920, 2009],
-        ALGOspec_inst_selection_method = 'random',
-        TECspec_pvprod_calc_method = 'method2.2',
-        MCspec_montecarlo_iterations = 1,
-        ),
 
-    PVAllocScenario_Settings(
-        name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd_NOpart',
-        name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-        show_debug_prints  = True,
-        bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-        months_prediction  = 156,
-        GWRspec_GBAUJ_minmax = [1920, 2009],
-        ALGOspec_inst_selection_method = 'random',
-        ALGOspec_topo_subdf_partitioner             = 999999999,
-        TECspec_pvprod_calc_method = 'method2.2',
-        MCspec_montecarlo_iterations = 1,
-        ),
-]
-
+# ======================================================================================================
+# RUN SCENARIOS
+# ======================================================================================================
 if __name__ == '__main__':
 
-    for pvalloc_scen in pvalloc_scen_list:
-        scen_class = PVAllocScenario(pvalloc_scen)
+    pvalloc_scen_list = [
+        # PVAllocScenario_Settings(
+        #         name_dir_export    = 'pvalloc_BFS2761_2m_f2021_1mc_meth2.2_rnd_DEBUG',
+        #         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+        #         show_debug_prints  = True,
+        #         export_csvs        = True,
+        #         T0_prediction      = '2021-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        #         months_prediction  = 2,
+        #         GWRspec_GBAUJ_minmax = [1920, 2020],
+        #         ALGOspec_inst_selection_method = 'random',
+        #         TECspec_pvprod_calc_method = 'method2.2',
+        #         MCspec_montecarlo_iterations = 2,
+        # ), 
+        PVAllocScenario_Settings(
+            name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            show_debug_prints  = True,
+            bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+            T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 156,
+            GWRspec_GBAUJ_minmax = [1920, 2009],
+            ALGOspec_inst_selection_method = 'random',
+            TECspec_pvprod_calc_method = 'method2.2',
+            MCspec_montecarlo_iterations = 1,
+            ),
 
-        scen_class.run_pvalloc_initalization()
-        scen_class.run_pvalloc_mcalgorithm()
+        PVAllocScenario_Settings(
+            name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd_NOpart',
+            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+            show_debug_prints  = True,
+            bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+            T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+            months_prediction  = 156,
+            GWRspec_GBAUJ_minmax = [1920, 2009],
+            ALGOspec_inst_selection_method = 'random',
+            ALGOspec_topo_subdf_partitioner             = 999999999,
+            TECspec_pvprod_calc_method = 'method2.2',
+            MCspec_montecarlo_iterations = 1,
+            ),
+    ]
+
+
+    for pvalloc_scen in pvalloc_scen_list:
+        pvalloc_class = PVAllocScenario(pvalloc_scen)
+
+        pvalloc_class.run_pvalloc_initalization()
+        pvalloc_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
 
 print('done')
