@@ -72,7 +72,7 @@ def checkpoint_to_logfile(str_def, log_file_name_def, n_tabs_def = 0, show_debug
             runtime_str = 'N/A'
         
         n_tabs_str = '\t' * n_tabs_def
-        check = f'* {str_def}{n_tabs_str} > runtime: {runtime_str};   (stamp: {datetime.now()})'
+        check = f' * {str_def}{n_tabs_str} > runtime: {runtime_str};   (stamp: {datetime.now()})'
         print(check)
 
         with open(f'{log_file_name_def}', 'a') as log_file:

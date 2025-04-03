@@ -19,7 +19,7 @@ import plotly.express as px
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from auxiliary.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
+from code.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
 
 
 
@@ -2974,18 +2974,31 @@ pvalloc_scen_list = [
     #         MCspec_montecarlo_iterations = 2,
     # ), 
     PVAllocScenario_Settings(
-        name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv',
+        name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd',
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-        mcalgo_w_np_TF     = True, 
-        bfs_numbers        = [2768, 2761, 2772, 2785, ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2013-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-        months_prediction  = 120,
-        GWRspec_GBAUJ_minmax = [1920, 2012],
-        ALGOspec_inst_selection_method = 'prob_weighted_npv',
+        show_debug_prints  = True,
+        bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+        T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        months_prediction  = 156,
+        GWRspec_GBAUJ_minmax = [1920, 2009],
+        ALGOspec_inst_selection_method = 'random',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 1,
         ),
 
+    PVAllocScenario_Settings(
+        name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd_NOpart',
+        name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+        show_debug_prints  = True,
+        bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
+        T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        months_prediction  = 156,
+        GWRspec_GBAUJ_minmax = [1920, 2009],
+        ALGOspec_inst_selection_method = 'random',
+        ALGOspec_topo_subdf_partitioner             = 999999999,
+        TECspec_pvprod_calc_method = 'method2.2',
+        MCspec_montecarlo_iterations = 1,
+        ),
 ]
 
 if __name__ == '__main__':
