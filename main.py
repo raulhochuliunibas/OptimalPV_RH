@@ -15,7 +15,7 @@ pvalloc_scen_list = [
     #         MCspec_montecarlo_iterations = 2,
     # ), 
     # pvalloc_BLsml_3y_f2020_10mc_meth2.2_npv        
-    PVAllocScenario(
+    PVAllocScenario_Settings(
         name_dir_export    = 'pvalloc_BLsml_3y_f2020_10mc_meth2.2_npv',
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
@@ -28,7 +28,7 @@ pvalloc_scen_list = [
         MCspec_montecarlo_iterations = 10
         ),
     # pvalloc_BLsml_3y_f2020_10mc_meth2.2_rnd
-    PVAllocScenario(
+    PVAllocScenario_Settings(
         name_dir_export    = 'pvalloc_BLsml_3y_f2020_10mc_meth2.2_rnd',
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
@@ -41,7 +41,7 @@ pvalloc_scen_list = [
         MCspec_montecarlo_iterations = 10
         ),
     # pvalloc_BLsml_3y_f2020_10mc_meth2.2_max
-    PVAllocScenario(
+    PVAllocScenario_Settings(
         name_dir_export    = 'pvalloc_BLsml_3y_f2020_10mc_meth2.2_max',
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
@@ -57,7 +57,7 @@ pvalloc_scen_list = [
 
 
     # pvalloc_BLsml_13y_f2010_5mc_meth2.2_npv        
-    PVAllocScenario(
+    PVAllocScenario_Settings(
         name_dir_export    = 'pvalloc_BLsml_13y_f2010_5mc_meth2.2_npv',
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
@@ -70,7 +70,7 @@ pvalloc_scen_list = [
         MCspec_montecarlo_iterations = 5,
         ),
     # pvalloc_BLsml_13y_f2010_5mc_meth2.2_rnd
-    PVAllocScenario(
+    PVAllocScenario_Settings(
         name_dir_export    = 'pvalloc_BLsml_13y_f2010_5mc_meth2.2_rnd',
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
@@ -83,7 +83,7 @@ pvalloc_scen_list = [
         MCspec_montecarlo_iterations = 5,
         ),
     # pvalloc_BLsml_13y_f2010_5mc_meth2.2_max
-    PVAllocScenario(
+    PVAllocScenario_Settings(
         name_dir_export    = 'pvalloc_BLsml_13y_f2010_5mc_meth2.2_max',
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
