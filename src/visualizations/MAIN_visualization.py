@@ -25,9 +25,9 @@ from plotly.subplots import make_subplots
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from code.auxiliary_functions import get_bfsnr_name_tuple_list, chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
+from src.auxiliary_functions import get_bfsnr_name_tuple_list, chapter_to_logfile, checkpoint_to_logfile, print_to_logfile
 
-from code.MAIN_pvallocation import PVAllocScenario
+from src.MAIN_pvallocation import PVAllocScenario
 
 # ------------------------
 # *** PV VISUALIZATION ***

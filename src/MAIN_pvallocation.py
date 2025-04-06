@@ -18,7 +18,7 @@ import plotly.graph_objects as go
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from code.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
+from auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
 
 
 
@@ -1875,6 +1875,8 @@ class PVAllocScenario:
             
             with open (f'{self.sett.name_dir_export_path}/topo_spatial_data/gwr_gdf_multiple_xtf_id.geojson', 'w') as f:
                 f.write(gwr_gdf_multiple_xtf_id.to_json())
+
+            pv_gdf_multiple_xtf_id['BeginningOfOperation'] = pv_gdf_multiple_xtf_id['BeginningOfOperation'].astype(str)
             with open (f'{self.sett.name_dir_export_path}/topo_spatial_data/pv_gdf_multiple_xtf_id.geojson', 'w') as f:
                 f.write(pv_gdf_multiple_xtf_id.to_json())
 

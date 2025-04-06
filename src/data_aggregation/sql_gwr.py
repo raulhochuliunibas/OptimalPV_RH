@@ -8,7 +8,7 @@ import copy
 from shapely.geometry import Point
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from code.auxiliary_functions import checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr
+from src.auxiliary_functions import checkpoint_to_logfile, print_to_logfile, get_bfs_from_ktnr
 
 
 # ------------------------------------------------------------------------------------------------------

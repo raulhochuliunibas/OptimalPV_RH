@@ -1,5 +1,5 @@
 
-from code.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
+from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 
 pvalloc_scen_list = [
     # PVAllocScenario_Settings(

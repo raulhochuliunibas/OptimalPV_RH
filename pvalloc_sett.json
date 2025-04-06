@@ -1,0 +1,275 @@
+{
+    "name_dir_export": "pvalloc_BLsml_3y_f2020_10mc_meth2.2_npv",
+    "name_dir_import": "preprep_BL_22to23_extSolkatEGID",
+    "show_debug_prints": true,
+    "export_csvs": false,
+    "kt_numbers": [],
+    "bfs_numbers": [
+        "2767",
+        "2771",
+        "2765",
+        "2764"
+    ],
+    "T0_prediction": "2019-01-01 00:00:00",
+    "months_lookback": 12,
+    "months_prediction": 36,
+    "mcalgo_w_np_TF": false,
+    "recreate_topology": true,
+    "recalc_economics_topo_df": true,
+    "sanitycheck_byEGID": true,
+    "create_gdf_export_of_topology": true,
+    "GWRspec_solkat_max_n_partitions": 10,
+    "GWRspec_solkat_area_per_EGID_range": [
+        2,
+        600
+    ],
+    "GWRspec_building_cols": [
+        "EGID",
+        "GDEKT",
+        "GGDENR",
+        "GKODE",
+        "GKODN",
+        "GKSCE",
+        "GSTAT",
+        "GKAT",
+        "GKLAS",
+        "GBAUJ",
+        "GBAUM",
+        "GBAUP",
+        "GABBJ",
+        "GANZWHG",
+        "GWAERZH1",
+        "GENH1",
+        "GWAERSCEH1",
+        "GWAERDATH1",
+        "GEBF",
+        "GAREA"
+    ],
+    "GWRspec_dwelling_cols": [],
+    "GWRspec_DEMAND_proxy": "GAREA",
+    "GWRspec_GSTAT": [
+        "1004"
+    ],
+    "GWRspec_GKLAS": [
+        "1110",
+        "1121"
+    ],
+    "GWRspec_GBAUJ_minmax": [
+        1920,
+        2019
+    ],
+    "WEAspec_meteo_col_dir_radiation": "Basel Direct Shortwave Radiation",
+    "WEAspec_meteo_col_diff_radiation": "Basel Diffuse Shortwave Radiation",
+    "WEAspec_meteo_col_temperature": "Basel Temperature [2 m elevation corrected]",
+    "WEAspec_weather_year": 2022,
+    "WEAspec_radiation_to_pvprod_method": "dfuid_ind",
+    "WEAspec_rad_rel_loc_max_by": "dfuid_specific",
+    "WEAspec_flat_direct_rad_factor": 1,
+    "WEAspec_flat_diffuse_rad_factor": 1,
+    "CSTRspec_ann_capacity_growth": 0.05,
+    "CSTRspec_constr_capa_overshoot_fact": 1,
+    "CSTRspec_month_constr_capa_tuples": [
+        [
+            1,
+            0.06
+        ],
+        [
+            2,
+            0.06
+        ],
+        [
+            3,
+            0.06
+        ],
+        [
+            4,
+            0.06
+        ],
+        [
+            5,
+            0.08
+        ],
+        [
+            6,
+            0.08
+        ],
+        [
+            7,
+            0.08
+        ],
+        [
+            8,
+            0.08
+        ],
+        [
+            9,
+            0.1
+        ],
+        [
+            10,
+            0.1
+        ],
+        [
+            11,
+            0.12
+        ],
+        [
+            12,
+            0.12
+        ]
+    ],
+    "TECspec_self_consumption_ifapplicable": 1,
+    "TECspec_interest_rate": 0.01,
+    "TECspec_pvtarif_year": 2022,
+    "TECspec_pvtarif_col": [
+        "energy1",
+        "eco1"
+    ],
+    "TECspec_pvprod_calc_method": "method2.2",
+    "TECspec_panel_efficiency": 0.21,
+    "TECspec_inverter_efficiency": 0.95,
+    "TECspec_elecpri_year": 2022,
+    "TECspec_elecpri_category": "H4",
+    "TECspec_invst_maturity": 25,
+    "TECspec_kWpeak_per_m2": 0.2,
+    "TECspec_share_roof_area_available": 1,
+    "TECspec_max_distance_m_for_EGID_node_matching": 0,
+    "TECspec_kW_range_for_pvinst_cost_estim": [
+        0,
+        61
+    ],
+    "TECspec_estim_pvinst_cost_correctionfactor": 1,
+    "PEFspec_variable_panel_efficiency_TF": true,
+    "PEFspec_summer_months": [
+        6,
+        7,
+        8,
+        9
+    ],
+    "PEFspec_hotsummer_hours": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+    ],
+    "PEFspec_hot_hours_discount": 0.1,
+    "CHECKspec_egid_list": [
+        "391292",
+        "390601",
+        "2347595",
+        "401781",
+        "391263",
+        "245057295",
+        "401753",
+        "245054165",
+        "245054166",
+        "245054175",
+        "245060521",
+        "391253",
+        "391255",
+        "391257",
+        "391258",
+        "391262",
+        "391263",
+        "391289",
+        "391290",
+        "391291",
+        "391292",
+        "245057295",
+        "245057294",
+        "245011456",
+        "391379",
+        "391377"
+    ],
+    "CHECKspec_n_EGIDs_of_alloc_algorithm": 20,
+    "CHECKspec_n_iterations_before_sanitycheck": 1,
+    "MCspec_montecarlo_iterations": 10,
+    "MCspec_fresh_initial_files": [
+        "topo_egid.json",
+        "months_prediction.parquet",
+        "gridprem_ts.parquet",
+        "constrcapa.parquet",
+        "dsonodes_df.parquet"
+    ],
+    "MCspec_keep_files_month_iter_TF": true,
+    "MCspec_keep_files_month_iter_max": 9999999999,
+    "MCspec_keep_files_month_iter_list": [
+        "topo_egid.json",
+        "npv_df.parquet",
+        "pred_inst_df.parquet",
+        "gridprem_ts.parquet"
+    ],
+    "ALGOspec_inst_selection_method": "prob_weighted_npv",
+    "ALGOspec_rand_seed": null,
+    "ALGOspec_while_inst_counter_max": 5000,
+    "ALGOspec_topo_subdf_partitioner": 400,
+    "ALGOspec_npv_update_groupby_cols_topo_aggdf": [
+        "EGID",
+        "df_uid",
+        "grid_node",
+        "bfs",
+        "gklas",
+        "demandtype",
+        "inst_TF",
+        "info_source",
+        "pvid",
+        "pv_tarif_Rp_kWh",
+        "elecpri_Rp_kWh",
+        "FLAECHE",
+        "FLAECH_angletilt",
+        "AUSRICHTUNG",
+        "NEIGUNG",
+        "STROMERTRAG"
+    ],
+    "ALGOspec_npv_update_agg_cols_topo_aggdf": {
+        "pvprod_kW": "sum",
+        "demand_kW": "sum",
+        "selfconsum_kW": "sum",
+        "netdemand_kW": "sum",
+        "netfeedin_kW": "sum",
+        "econ_inc_chf": "sum",
+        "econ_spend_chf": "sum"
+    },
+    "ALGOspec_tweak_constr_capacity_fact": 1,
+    "ALGOspec_tweak_npv_calc": 1,
+    "ALGOspec_tweak_npv_excl_elec_demand": true,
+    "ALGOspec_tweak_gridnode_df_prod_demand_fact": 1,
+    "ALGOspec_constr_capa_overshoot_fact": 1,
+    "GRIDspec_tier_description": "tier_level: (voltage_threshold, gridprem_Rp_kWh)",
+    "GRIDspec_power_factor": 1,
+    "GRIDspec_perf_factor_1kVA_to_XkW": 0.8,
+    "GRIDspec_colnames": [
+        "tier_level",
+        "used_node_capa_rate",
+        "gridprem_Rp_kWh"
+    ],
+    "GRIDspec_tiers": {
+        "1": [
+            0.7,
+            1
+        ],
+        "2": [
+            0.8,
+            3
+        ],
+        "3": [
+            0.85,
+            5
+        ],
+        "4": [
+            0.9,
+            7
+        ],
+        "5": [
+            0.95,
+            15
+        ],
+        "6": [
+            1,
+            100
+        ]
+    }
+}
