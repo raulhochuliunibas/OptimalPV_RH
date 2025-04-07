@@ -433,7 +433,7 @@ class PVAllocScenario:
 
                     if npv_df.shape[0] > 0: 
                         inst_power, npv_df = self.algo_select_AND_adjust_topology(self.sett.mc_iter_path,
-                                                                                    m, i_m)
+                                                                                    i_m, m)
 
                     # Loop Exit + adjust constr_built capacity ----------
                     end_time_installation_whileloop = datetime.datetime.now()
