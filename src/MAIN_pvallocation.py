@@ -1,20 +1,22 @@
+# python integrated packages
 import sys
-import os as os
+import os as os 
+import glob
+import shutil
+import json
+import copy
+import itertools
+
+# external packages
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-import glob
 import datetime as datetime
-import shutil
-import json
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 from dataclasses import dataclass, field, asdict
 from typing_extensions import List, Dict
-
 from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
-import copy
-import itertools
-import plotly.graph_objects as go
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
