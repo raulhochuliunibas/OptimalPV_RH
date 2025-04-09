@@ -18,6 +18,7 @@ venv*
 
 
 # ignore all model visualization files
+data/visualization/*
 data/visualizations/*
 data/visualizations/empty_txt_file_for_folder_structure_in_github.txt
 
@@ -86,6 +87,7 @@ data/input/SwissStore_DemandData/*
 
 # ignore all files api_keys_directory, except empty textfiles
 code/api_keys/*
+src/api_keys/*
 !code/api_keys/empty_txt_file_for_folder_structure_in_github.txt
 
 
