@@ -67,7 +67,7 @@ class PVAllocScenario_Settings:
     GWRspec_DEMAND_proxy: str                           = 'GAREA'
     GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: ['1004'])
     GWRspec_GKLAS: List[str]                            = field(default_factory=lambda: ['1110', '1121'])
-    # GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2021])
+    GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2021])
     
     # weather_specs
     WEAspec_meteo_col_dir_radiation: str                = 'Basel Direct Shortwave Radiation'
@@ -168,8 +168,11 @@ class PVAllocScenario_Settings:
 
     def __post_init__(self):
         # have post init for less error prone scen setting. define T0 year and reference remaining settings to that.
-        self.T0_prediction: str                 = f'{self.T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
-        self.GWRspec_GBAUJ_minmax: List[int]    = field(default_factory=lambda: [1920, self.T0_year_prediction-1])
+        self.T0_prediction: str                 = f'{self.T0_year_prediction}-01-01 00:00:00'  
+        # GBAUJ_min, GBAUJ_max = 1920, self.T0_year_prediction-1
+        # self.GWRspec_GBAUJ_minmax: List[int]    = field(default_factory=lambda: [GBAUJ_min, GBAUJ_max])
+        self.GWRspec_GBAUJ_minmax[0] = 1920
+        self.GWRspec_GBAUJ_minmax[1] = self.T0_year_prediction-1
 
 
 class PVAllocScenario:
