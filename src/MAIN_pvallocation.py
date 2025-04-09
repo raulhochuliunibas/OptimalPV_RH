@@ -1778,7 +1778,7 @@ class PVAllocScenario:
 
             # EXPORT to geojson -----------------------------------------------------
             if not os.path.exists(f'{self.sett.name_dir_export_path}/topo_spatial_data'):
-                os.makedirs(f'{self.sett.data_path}/topo_spatial_data', exist_ok=True)
+                os.makedirs(f'{self.sett.name_dir_export_path}/topo_spatial_data', exist_ok=True)
 
             shp_to_export=[
                 (solkat_gdf_in_topo, 'solkat_gdf_in_topo.geojson'),
@@ -3013,84 +3013,18 @@ class PVAllocScenario:
 if __name__ == '__main__':
 
     pvalloc_scen_list = [
-        # PVAllocScenario_Settings(
-        #         name_dir_export    = 'pvalloc_BFS2761_2m_f2021_1mc_meth2.2_rnd_DEBUG',
-        #         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-        #         show_debug_prints  = True,
-        #         export_csvs        = True,
-        #         T0_prediction      = '2021-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-        #         months_prediction  = 2,
-        #         GWRspec_GBAUJ_minmax = [1920, 2020],
-        #         ALGOspec_inst_selection_method = 'random',
-        #         TECspec_pvprod_calc_method = 'method2.2',
-        #         MCspec_montecarlo_iterations = 2,
-        # ), 
-        # PVAllocScenario_Settings(
-        #     name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd',
-        #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-        #     show_debug_prints  = True,
-        #     bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        #     T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-        #     months_prediction  = 156,
-        #     GWRspec_GBAUJ_minmax = [1920, 2009],
-        #     ALGOspec_inst_selection_method = 'random',
-        #     TECspec_pvprod_calc_method = 'method2.2',
-        #     MCspec_montecarlo_iterations = 1,
-        #     ),
-
-        # PVAllocScenario_Settings(
-        #     name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd_NOpart',
-        #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-        #     show_debug_prints  = True,
-        #     bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        #     T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-        #     months_prediction  = 156,
-        #     GWRspec_GBAUJ_minmax = [1920, 2009],
-        #     ALGOspec_inst_selection_method = 'random',
-        #     ALGOspec_topo_subdf_partitioner             = 999999999,
-        #     TECspec_pvprod_calc_method = 'method2.2',
-        #     MCspec_montecarlo_iterations = 1,
-        #     ),
-
-        # pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv        
         PVAllocScenario_Settings(
-            name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv',
-            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-            show_debug_prints  = True,
-            bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-            T0_prediction      = '2009-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-            months_prediction  = 120,
-            GWRspec_GBAUJ_minmax = [1920, 2009],
-            ALGOspec_inst_selection_method = 'prob_weighted_npv',
-            TECspec_pvprod_calc_method = 'method2.2',
-            MCspec_montecarlo_iterations = 1,
-            ),
-        # pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd
-        PVAllocScenario_Settings(
-            name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd',
-            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-            show_debug_prints  = True,
-            bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-            T0_prediction      = '2009-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-            months_prediction  = 120,
-            GWRspec_GBAUJ_minmax = [1920, 2009],
-            ALGOspec_inst_selection_method = 'random',
-            TECspec_pvprod_calc_method = 'method2.2',
-            MCspec_montecarlo_iterations = 1,
-            ),
-        # pvalloc_BLsml_10y_f2013_1mc_meth2.2_max
-        PVAllocScenario_Settings(
-            name_dir_export    = 'pvalloc_BLsml_10y_f2013_1mc_meth2.2_max',
-            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-            show_debug_prints  = True,
-            bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-            T0_prediction      = '2009-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-            months_prediction  = 120,
-            GWRspec_GBAUJ_minmax = [1920, 2009],
-            ALGOspec_inst_selection_method = 'max_npv',
-            TECspec_pvprod_calc_method = 'method2.2',
-            MCspec_montecarlo_iterations = 1,
-            ),
+                name_dir_export    = 'pvalloc_BFS2761_2m_f2021_1mc_meth2.2_rnd_DEBUG',
+                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+                show_debug_prints  = True,
+                export_csvs        = True,
+                T0_prediction      = '2021-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+                months_prediction  = 2,
+                GWRspec_GBAUJ_minmax = [1920, 2020],
+                ALGOspec_inst_selection_method = 'random',
+                TECspec_pvprod_calc_method = 'method2.2',
+                MCspec_montecarlo_iterations = 2,
+        ), 
 
     
     ]
@@ -3104,143 +3038,6 @@ if __name__ == '__main__':
         pvalloc_class.run_pvalloc_initalization()
         pvalloc_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
-
-print('done')
-
-
-
-    # # pvalloc_BLsml_13y_f2010_1mc_meth2.2_npv        
-    # PVAllocScenario(
-    #     name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_npv',
-    #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #     show_debug_prints  = True,
-    #     bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-    #     T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #     months_prediction  = 156,
-    #     GWRspec_GBAUJ_minmax = [1920, 2009],
-    #     ALGOspec_inst_selection_method = 'prob_weighted_npv',
-    #     TECspec_pvprod_calc_method = 'method2.2',
-    #     MCspec_montecarlo_iterations = 1,
-    #     ),
-    # # pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd
-    # PVAllocScenario(
-    #     name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_rnd',
-    #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #     show_debug_prints  = True,
-    #     bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-    #     T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #     months_prediction  = 156,
-    #     GWRspec_GBAUJ_minmax = [1920, 2009],
-    #     ALGOspec_inst_selection_method = 'random',
-    #     TECspec_pvprod_calc_method = 'method2.2',
-    #     MCspec_montecarlo_iterations = 1,
-    #     ),
-    # # pvalloc_BLsml_13y_f2010_1mc_meth2.2_max
-    # PVAllocScenario(
-    #     name_dir_export    = 'pvalloc_BLsml_13y_f2010_1mc_meth2.2_max',
-    #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #     show_debug_prints  = True,
-    #     bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-    #     T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #     months_prediction  = 156,
-    #     GWRspec_GBAUJ_minmax = [1920, 2009],
-    #     ALGOspec_inst_selection_method = 'max_npv',
-    #     TECspec_pvprod_calc_method = 'method2.2',
-    #     MCspec_montecarlo_iterations = 1,
-    #     ),
-   
-   
-    # # pvalloc_BLsml_13y_f2010_5mc_meth2.2_npv        
-    # PVAllocScenario(
-    #     name_dir_export    = 'pvalloc_BLsml_13y_f2010_5mc_meth2.2_npv',
-    #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #     show_debug_prints  = True,
-    #     bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-    #     T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #     months_prediction  = 156,
-    #     GWRspec_GBAUJ_minmax = [1920, 2009],
-    #     ALGOspec_inst_selection_method = 'prob_weighted_npv',
-    #     TECspec_pvprod_calc_method = 'method2.2',
-    #     MCspec_montecarlo_iterations = 5,
-    #     ),
-    # # pvalloc_BLsml_13y_f2010_5mc_meth2.2_rnd
-    # PVAllocScenario(
-    #     name_dir_export    = 'pvalloc_BLsml_13y_f2010_5mc_meth2.2_rnd',
-    #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #     show_debug_prints  = True,
-    #     bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-    #     T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #     months_prediction  = 156,
-    #     GWRspec_GBAUJ_minmax = [1920, 2009],
-    #     ALGOspec_inst_selection_method = 'random',
-    #     TECspec_pvprod_calc_method = 'method2.2',
-    #     MCspec_montecarlo_iterations = 5,
-    #     ),
-    # # pvalloc_BLsml_13y_f2010_5mc_meth2.2_max
-    # PVAllocScenario(
-    #     name_dir_export    = 'pvalloc_BLsml_13y_f2010_5mc_meth2.2_max',
-    #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #     show_debug_prints  = True,
-    #     bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-    #     T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #     months_prediction  = 156,
-    #     GWRspec_GBAUJ_minmax = [1920, 2009],
-    #     ALGOspec_inst_selection_method = 'max_npv',
-    #     TECspec_pvprod_calc_method = 'method2.2',
-    #     MCspec_montecarlo_iterations = 5,
-    #     ),
-    
-
-    # # pvalloc_BLSOmed_10y_f2013_5mc_meth2.2_npv        
-    # PVAllocScenario(
-    #     name_dir_export    = 'pvalloc_BLSOmed_10y_f2013_5mc_meth2.2_npv',
-    #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #     show_debug_prints  = True,
-    #     bfs_numbers        = [        
-    #         2768, 2761, 2772, 2785, 2787,
-    #         2473, 2475, 2480,        
-    #         ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-    #     T0_prediction      = '2013-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #     months_prediction  = 120,
-    #     GWRspec_GBAUJ_minmax = [1920, 2012],
-    #     ALGOspec_inst_selection_method = 'prob_weighted_npv',
-    #     TECspec_pvprod_calc_method = 'method2.2',
-    #     MCspec_montecarlo_iterations = 5,
-    #     ),
-    # # pvalloc_BLSOmed_10y_f2013_5mc_meth2.2_rnd
-    # PVAllocScenario(
-    #     name_dir_export    = 'pvalloc_BLSOmed_10y_f2013_5mc_meth2.2_rnd',
-    #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #     show_debug_prints  = True,
-    #     bfs_numbers        = [        
-    #         2768, 2761, 2772, 2785, 2787,
-    #         2473, 2475, 2480,        
-    #         ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)        
-    #     T0_prediction      = '2013-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #     months_prediction  = 120,
-    #     GWRspec_GBAUJ_minmax = [1920, 2012],
-    #     ALGOspec_inst_selection_method = 'random',
-    #     TECspec_pvprod_calc_method = 'method2.2',
-    #     MCspec_montecarlo_iterations = 5,
-    #     ),
-    # # pvalloc_BLSOmed_10y_f2013_5mc_meth2.2_max
-    # PVAllocScenario(
-    #     name_dir_export    = 'pvalloc_BLSOmed_10y_f2013_5mc_meth2.2_max',
-    #     name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-    #     show_debug_prints  = True,
-    #     bfs_numbers        = [        
-    #         2768, 2761, 2772, 2785, 2787,
-    #         2473, 2475, 2480,        
-    #         ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)       
-    #     T0_prediction      = '2013-01-01 00:00:00',            # start date for the prediction of the future construction capacity
-    #     months_prediction  = 120,
-    #     GWRspec_GBAUJ_minmax = [1920, 2012],
-    #     ALGOspec_inst_selection_method = 'max_npv',
-    #     TECspec_pvprod_calc_method = 'method2.2',
-    #     MCspec_montecarlo_iterations = 5,
-    #     ),
-
-
 
 
 
