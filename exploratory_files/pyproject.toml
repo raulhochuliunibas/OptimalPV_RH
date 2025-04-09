@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "optimalpv-rh"
+version = "0.1.0"
+description = ""
+authors = ["raulhochuliunibas <raul.hochuli@unibas.ch>"]
+readme = "README.md"
+package-mode = false  
+
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.2.2"
+numpy = "^2.1.1"
+scipy = "^1.14.1"
+plotly = "^5.24.0"
+requests = "^2.32.3"
+pyarrow = "^17.0.0"
+openpyxl = "^3.1.5"
+geopandas = "^1.0.1"
+folium = "^0.17.0"
+geopy = "^2.4.1"
+psutil = "^6.0.0"
+kaleido = "0.2.1"
+matplotlib = "^3.9.2"
+numba = "^0.61.0"
+typing-extensions = "^4.12.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -29,7 +29,7 @@ if True :
     import pv_allocation.default_settings as pvalloc_default_sett
     import postprocess_analysis.default_settings as postprocess_default_sett
 
-    import postprocess_analysis.pvalloc_to_today_sanitcheck as pvalloc_to_today_sanitcheck
+    import src.pvalloc_to_today_sanitcheck as pvalloc_to_today_sanitcheck
 
 
 

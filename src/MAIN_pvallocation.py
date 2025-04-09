@@ -3099,10 +3099,10 @@ if __name__ == '__main__':
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
         
-        pvalloc_class.export_pvalloc_scen_settings()
+        # pvalloc_class.export_pvalloc_scen_settings()
 
-        # pvalloc_class.run_pvalloc_initalization()
-        # pvalloc_class.run_pvalloc_mcalgorithm()
+        pvalloc_class.run_pvalloc_initalization()
+        pvalloc_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
 
 print('done')

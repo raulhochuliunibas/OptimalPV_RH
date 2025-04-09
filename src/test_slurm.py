@@ -1,10 +1,11 @@
 
 import os
+
 import time
+tstamp = time.localtime().tm_min
+# tstamp = '240407_0705h'
 
-miniute_of_hour = time.localtime().tm_min
-
-file = f'{os.getcwd()}/code/test_slurm_{miniute_of_hour}.txt'
+file = f'{os.getcwd()}/src/test_slurm_{tstamp}.txt'
 if os.path.exists(file):
     os.remove(file)
 
