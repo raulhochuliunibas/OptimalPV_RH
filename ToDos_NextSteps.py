@@ -34,7 +34,6 @@
             # OK > print numbers to summary log file 
 
         # TODO: Add CKW Loadcurve from Hector
-        # BOOKMARK!!
 
         # TODO: Select 1 house, analyse
             # > electricity prices / feedin tariffs / onetime subsidy (??)
