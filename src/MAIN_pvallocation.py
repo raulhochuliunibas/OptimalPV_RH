@@ -43,8 +43,8 @@ class PVAllocScenario_Settings:
                                                     # 2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,2787,    # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
                                                     # 2618, 2621, 2883, 2622, 2616,                           # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
                             ])
-    
-    T0_prediction: str                          = '2022-01-01 00:00:00'         # start date for the prediction of the future construction capacity
+    T0_year_prediction: int                     = 2022                          # year for the prediction of the future construction capacity
+    # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
     months_lookback: int                        = 12                           # number of months to look back for the prediction of the future construction capacity
     months_prediction: int                      = 12                         # number of months to predict the future construction capacity
     
@@ -67,7 +67,7 @@ class PVAllocScenario_Settings:
     GWRspec_DEMAND_proxy: str                           = 'GAREA'
     GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: ['1004'])
     GWRspec_GKLAS: List[str]                            = field(default_factory=lambda: ['1110', '1121'])
-    GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2022])
+    # GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2021])
     
     # weather_specs
     WEAspec_meteo_col_dir_radiation: str                = 'Basel Direct Shortwave Radiation'
@@ -164,6 +164,12 @@ class PVAllocScenario_Settings:
                                                                    1: [0.7, 1], 2: [0.8, 3], 3: [0.85, 5], 
                                                                    4: [0.9, 7], 5: [0.95, 15], 6: [1, 100]
                                                                 })
+    
+
+    def __post_init__(self):
+        # have post init for less error prone scen setting. define T0 year and reference remaining settings to that.
+        self.T0_prediction: str                 = f'{self.T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
+        self.GWRspec_GBAUJ_minmax: List[int]    = field(default_factory=lambda: [1920, self.T0_year_prediction-1])
 
 
 class PVAllocScenario:

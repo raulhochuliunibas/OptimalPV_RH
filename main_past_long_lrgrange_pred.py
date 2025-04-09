@@ -11,9 +11,8 @@ pvalloc_scen_list = [
             2768, 2761, 2772, 2785, 2787,
             2473, 2475, 2480,        
             ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2013-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        T0_year_prediction = 2013,            # start date for the prediction of the future construction capacity
         months_prediction  = 120,
-        GWRspec_GBAUJ_minmax = [1920, 2012],
         ALGOspec_inst_selection_method = 'prob_weighted_npv',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 5,
@@ -27,9 +26,8 @@ pvalloc_scen_list = [
             2768, 2761, 2772, 2785, 2787,
             2473, 2475, 2480,        
             ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)        
-        T0_prediction      = '2013-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        T0_year_prediction = 2013,            # start date for the prediction of the future construction capacity
         months_prediction  = 120,
-        GWRspec_GBAUJ_minmax = [1920, 2012],
         ALGOspec_inst_selection_method = 'random',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 5,
@@ -43,9 +41,8 @@ pvalloc_scen_list = [
             2768, 2761, 2772, 2785, 2787,
             2473, 2475, 2480,        
             ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)       
-        T0_prediction      = '2013-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        T0_year_prediction = 2013,            # start date for the prediction of the future construction capacity
         months_prediction  = 120,
-        GWRspec_GBAUJ_minmax = [1920, 2012],
         ALGOspec_inst_selection_method = 'max_npv',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 5,

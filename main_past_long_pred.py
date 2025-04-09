@@ -8,9 +8,8 @@ pvalloc_scen_list = [
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
         bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2009-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        T0_year_prediction = 2013,            # start date for the prediction of the future construction capacity
         months_prediction  = 120,
-        GWRspec_GBAUJ_minmax = [1920, 2009],
         ALGOspec_inst_selection_method = 'prob_weighted_npv',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 1,
@@ -21,9 +20,8 @@ pvalloc_scen_list = [
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
         bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2009-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        T0_year_prediction = 2013,            # start date for the prediction of the future construction capacity
         months_prediction  = 120,
-        GWRspec_GBAUJ_minmax = [1920, 2009],
         ALGOspec_inst_selection_method = 'random',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 1,
@@ -34,9 +32,8 @@ pvalloc_scen_list = [
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
         bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2009-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        T0_year_prediction = 2013,            # start date for the prediction of the future construction capacity
         months_prediction  = 120,
-        GWRspec_GBAUJ_minmax = [1920, 2009],
         ALGOspec_inst_selection_method = 'max_npv',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 1,
@@ -50,9 +47,8 @@ pvalloc_scen_list = [
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
         bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        T0_year_prediction = 2010,                     # start date for the prediction of the future construction capacity
         months_prediction  = 156,
-        GWRspec_GBAUJ_minmax = [1920, 2009],
         ALGOspec_inst_selection_method = 'prob_weighted_npv',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 1,
@@ -63,9 +59,8 @@ pvalloc_scen_list = [
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
         bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        T0_year_prediction = 2010,                     # start date for the prediction of the future construction capacity
         months_prediction  = 156,
-        GWRspec_GBAUJ_minmax = [1920, 2009],
         ALGOspec_inst_selection_method = 'random',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 1,
@@ -76,9 +71,8 @@ pvalloc_scen_list = [
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
         bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2010-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        T0_year_prediction = 2010,                     # start date for the prediction of the future construction capacity
         months_prediction  = 156,
-        GWRspec_GBAUJ_minmax = [1920, 2009],
         ALGOspec_inst_selection_method = 'max_npv',
         TECspec_pvprod_calc_method = 'method2.2',
         MCspec_montecarlo_iterations = 1,

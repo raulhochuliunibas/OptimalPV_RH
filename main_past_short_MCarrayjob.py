@@ -9,9 +9,9 @@ pvalloc_scen_list = [
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
         bfs_numbers        = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_prediction      = '2019-01-01 00:00:00',            # start date for the prediction of the future construction capacity
+        
+        T0_year_prediction = 2020,            
         months_prediction  = 36, 
-        GWRspec_GBAUJ_minmax = [1920, 2019],
         ALGOspec_inst_selection_method = 'prob_weighted_npv',
         ALGOspec_topo_subdf_partitioner = 99999999, 
         TECspec_pvprod_calc_method = 'method2.2',
