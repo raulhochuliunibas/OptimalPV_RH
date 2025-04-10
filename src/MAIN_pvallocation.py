@@ -2527,13 +2527,10 @@ class PVAllocScenario:
 
 
             # build gridnode_df -----------------------------------------------------
-            # gridnode_df = pd.concat(agg_subinst_df_list)
+            gridnode_df = pd.concat(agg_subinst_df_list)
             # groupby df again because grid nodes will be spreach accross multiple tranches
-            # gridnode_df = gridnode_df.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index() 
-            gridnode_df = pl.concat(agg_subinst_df_list).groupby(['grid_node', 't']).agg([
-                pl.col('feedin_kW').sum().alias('feedin_kW'),
-                pl.col('pvprod_kW').sum().alias('pvprod_kW')
-            ])
+            gridnode_df = gridnode_df.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index() 
+            
 
             # attach node thresholds 
             gridnode_df = gridnode_df.merge(dsonodes_df[['grid_node', 'kVA_threshold']], how='left', on='grid_node')
