@@ -363,6 +363,7 @@ class PVAllocScenario:
         """
         # SETUP -----------------------------------------------------------------------------
         self.sett.log_name = os.path.join(self.sett.name_dir_export_path, 'pvalloc_MCalgo_log.txt')
+        self.sett.timing_marks_csv_path = os.path.join(self.sett.name_dir_export_path, 'timing_marks.csv')
         total_runtime_start = datetime.datetime.now()
 
         # create log file
@@ -431,10 +432,13 @@ class PVAllocScenario:
                 
                 start_time_update_npv = datetime.datetime.now()
                 print_to_logfile('- START update npv', self.sett.log_name)
-                npv_df = self.algo_update_npv_df(self.sett.mc_iter_path, i_m, m)
+                if not self.sett.test_faster_array_computation:
+                    npv_df = self.algo_update_npv_df(self.sett.mc_iter_path, i_m, m)
+                elif self.sett.test_faster_array_computation:
+                    npv_df = self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
                 end_time_update_npv = datetime.datetime.now()
                 print_to_logfile(f'- END update npv: {end_time_update_npv - start_time_update_npv} (hh:mm:ss.s)', self.sett.log_name)
-                self.mark_to_timing_csv('MCalgo', f'update_npv_{i_m:0{max_digits}}', end_time_update_npv - start_time_update_npv, end_time_update_npv, '-')  if i_m < 7 else None< 7 
+                self.mark_to_timing_csv('MCalgo', f'update_npv_{i_m:0{max_digits}}', end_time_update_npv - start_time_update_npv, end_time_update_npv, '-')  if i_m < 7 else None
 
 
 
@@ -1840,10 +1844,16 @@ class PVAllocScenario:
             solkat_gdf_in_topo = copy.deepcopy(solkat_gdf.loc[solkat_gdf['df_uid'].isin(topo_df_uid_list)])
             gwr_gdf_in_topo = copy.deepcopy(gwr_gdf.loc[gwr_gdf['EGID'].isin(topo_df['EGID'].unique())])
             pv_gdf_in_topo = copy.deepcopy(pv_gdf.loc[pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())])
+            for column in pv_gdf_in_topo.columns:
+                if pd.api.types.is_datetime64_any_dtype(pv_gdf_in_topo[column]):
+                    pv_gdf_in_topo[column] = pv_gdf_in_topo[column].astype(str)  # Conv
 
             solkat_gdf_notin_topo = copy.deepcopy(solkat_gdf.loc[~solkat_gdf['df_uid'].isin(topo_df_uid_list)])
             gwr_gdf_notin_topo = copy.deepcopy(gwr_gdf.loc[~gwr_gdf['EGID'].isin(topo_df['EGID'].unique())])
             pv_gdf_notin_topo = copy.deepcopy(pv_gdf.loc[~pv_gdf['xtf_id'].isin(topo_df['inst_id'].unique())])
+            for column in pv_gdf_notin_topo.columns:
+                if pd.api.types.is_datetime64_any_dtype(pv_gdf_notin_topo[column]):
+                    pv_gdf_notin_topo[column] = pv_gdf_notin_topo[column].astype(str)  # Conv
             
 
             topo_gdf = topo_df.merge(gwr_gdf[['EGID', 'geometry']], on='EGID', how='left')
@@ -2246,8 +2256,8 @@ class PVAllocScenario:
 
             # import  -----------------------------------------------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
-            dsonodes_df = pd.read_parquet(f'{subdir_path}/dsonodes_df.parquet')
-            gridprem_ts = pd.read_parquet(f'{subdir_path}/gridprem_ts.parquet')
+            dsonodes_df = pl.read_parquet(f'{subdir_path}/dsonodes_df.parquet')    # dsonodes_df = pd.read_parquet(f'{subdir_path}/dsonodes_df.parquet')
+            gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    # gridprem_ts = pd.read_parquet(f'{subdir_path}/gridprem_ts.parquet')
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
             gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
@@ -2280,14 +2290,15 @@ class PVAllocScenario:
             for i, path in enumerate(topo_subdf_paths):
                 checkpoint_to_logfile('gridprem > subdf: start read subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
                 subdf = pl.read_parquet(path)           # subdf = pd.read_parquet(path)
-
+                Map_infosource_egid = pl.from_pandas(Map_infosource_egid) if isinstance(Map_infosource_egid, pd.DataFrame) else Map_infosource_egid
+                
                 checkpoint_to_logfile('gridprem > subdf: end read subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
                 subdf_updated = subdf.clone()                                       # subdf_updated = copy.deepcopy(subdf)
                 subdf_updated = subdf_updated.drop(['info_source', 'inst_TF'])      # subdf_updated.drop(columns=['info_source', 'inst_TF'], inplace=True)
 
                 checkpoint_to_logfile('gridprem > subdf: start pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
-                subdf_updated = subdf_updated.join(Map_infosource_egid.select(['EGID', 'info_source', 'inst_TF']), on='EGID', how='left')        # subdf_updated = subdf_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
+                subdf_updated = subdf_updated.join(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], on='EGID', how='left')          # subdf_updated = subdf_updated.join(Map_infosource_egid.select(['EGID', 'info_source', 'inst_TF']), on='EGID', how='left')        # subdf_updated = subdf_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
                 checkpoint_to_logfile('gridprem > subdf: end pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
                 # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
@@ -2302,7 +2313,7 @@ class PVAllocScenario:
 
                 subinst = subinst.with_columns([
                 selfconsum_expr.alias("selfconsum_kW"),
-                (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
+                (pl.col("pvprod_kW") - selfconsum_expr).alias("feedin_kW"),
                 (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                 ])
                 checkpoint_to_logfile('gridprem > subdf: end calc + update feedin_kw', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
@@ -2328,11 +2339,13 @@ class PVAllocScenario:
                             # subinst.loc[idx, 'pvprod_kW'] = share * TotalPower
                             print(share)
 
+                subinst = pl.from_pandas(subinst) if isinstance(subinst, pd.DataFrame) else subinst
                 # agg_subinst = subinst.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index()
-                agg_subinst = subinst.groupby(['grid_node', 't']).agg([
+                agg_subinst = subinst.group_by(["grid_node", "t"]).agg([
                     pl.col('feedin_kW').sum().alias('feedin_kW'),
                     pl.col('pvprod_kW').sum().alias('pvprod_kW')
                 ])
+                
                 del subinst
                 agg_subinst_df_list.append(agg_subinst)
             
@@ -2341,12 +2354,14 @@ class PVAllocScenario:
             checkpoint_to_logfile('gridprem: start merge with gridnode_df + np.where', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
 
             # gridnode_df = pd.concat(agg_subinst_df_list)
+            gridnode_df = pl.concat(agg_subinst_df_list)
             # # groupby df again because grid nodes will be spreach accross multiple tranches
             # gridnode_df = gridnode_df.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index() 
-            gridnode_df = pl.concat(agg_subinst_df_list).groupby(['grid_node', 't']).agg([
+            gridnode_df = gridnode_df.group_by(['grid_node', 't']).agg([
                 pl.col('feedin_kW').sum().alias('feedin_kW'),
                 pl.col('pvprod_kW').sum().alias('pvprod_kW')
             ])
+
 
             # attach node thresholds 
             # gridnode_df = gridnode_df.merge(dsonodes_df[['grid_node', 'kVA_threshold']], how='left', on='grid_node')
@@ -2354,11 +2369,18 @@ class PVAllocScenario:
             
             # gridnode_df['feedin_kW_taken'] = np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['kW_threshold'], gridnode_df['feedin_kW'])
             # gridnode_df['feedin_kW_loss'] =  np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['feedin_kW'] - gridnode_df['kW_threshold'], 0)
-            gridnode_df = gridnode_df.join(pl.from_pandas(dsonodes_df[['grid_node', 'kVA_threshold']]), on='grid_node', how='left')
+            gridnode_df = gridnode_df.join(dsonodes_df[['grid_node', 'kVA_threshold']], on='grid_node', how='left')
+            gridnode_df = gridnode_df.with_columns((pl.col("kVA_threshold") * self.sett.GRIDspec_perf_factor_1kVA_to_XkW).alias("kW_threshold"))
             gridnode_df = gridnode_df.with_columns([
-                (pl.col('kVA_threshold') * self.sett.GRIDspec_perf_factor_1kVA_to_XkW).alias('kW_threshold'),
-                pl.when(pl.col('feedin_kW') > pl.col('kW_threshold')).then(pl.col('kW_threshold')).otherwise(pl.col('feedin_kW')).alias('feedin_kW_taken'),
-                pl.when(pl.col('feedin_kW') > pl.col('kW_threshold')).then(pl.col('feedin_kW') - pl.col('kW_threshold')).otherwise(0).alias('feedin_kW_loss')
+                pl.when(pl.col("feedin_kW") > pl.col("kW_threshold"))
+                .then(pl.col("kW_threshold"))
+                .otherwise(pl.col("feedin_kW"))
+                .alias("feedin_kW_taken"),
+
+                pl.when(pl.col("feedin_kW") > pl.col("kW_threshold"))
+                .then(pl.col("feedin_kW") - pl.col("kW_threshold"))
+                .otherwise(0)
+                .alias("feedin_kW_loss")
             ])
 
             checkpoint_to_logfile('gridprem: end merge with gridnode_df + np.where', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
@@ -2366,11 +2388,10 @@ class PVAllocScenario:
 
             # update gridprem_ts -----------------------------------------------------
             checkpoint_to_logfile('gridprem: start update gridprem_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
-            gridnode_df.sort_values(by=['feedin_kW_taken'], ascending=False)
-            # gridnode_df_for_prem = gridnode_df.groupby(['grid_node','kW_threshold', 't']).agg({'feedin_kW_taken': 'sum'}).reset_index().copy()
+            gridnode_df = gridnode_df.sort("feedin_kW_taken", descending=True)            # gridnode_df_for_prem = gridnode_df.groupby(['grid_node','kW_threshold', 't']).agg({'feedin_kW_taken': 'sum'}).reset_index().copy()
             # gridprem_ts = gridprem_ts.merge(gridnode_df_for_prem[['grid_node', 't', 'kW_threshold', 'feedin_kW_taken']], how='left', on=['grid_node', 't'])
             # gridprem_ts['feedin_kW_taken'] = gridprem_ts['feedin_kW_taken'].replace(np.nan, 0)
-            gridnode_df_for_prem = gridnode_df.groupby(['grid_node', 'kW_threshold', 't']).agg(
+            gridnode_df_for_prem = gridnode_df.group_by(['grid_node', 'kW_threshold', 't']).agg(
                 pl.col('feedin_kW_taken').sum().alias('feedin_kW_taken')
             )            
             gridprem_ts = gridprem_ts.join(
@@ -2590,13 +2611,13 @@ class PVAllocScenario:
             checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, 1) if i_m < 3 else None
 
 
-        def algo_update_npv_df_np(self, subdir_path: str, i_m: int, m):
+        def algo_update_npv_df_POLARS(self, subdir_path: str, i_m: int, m):
 
             # setup -----------------------------------------------------
             print_to_logfile('run function: update_npv_df', self.sett.log_name)         
 
             # import -----------------------------------------------------
-            gridprem_ts = pd.read_parquet(f'{subdir_path}/gridprem_ts.parquet')
+            gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
 
 
@@ -2611,114 +2632,106 @@ class PVAllocScenario:
                 print_topo_subdf_TF = len(topo_subdf_paths) > 5 and i <5  # i% (len(topo_subdf_paths) //3 ) == 0:
                 if print_topo_subdf_TF:
                     print_to_logfile(f'updated npv (tranche {i+1}/{len(topo_subdf_paths)})', self.sett.log_name)
-                subdf_t0 = pd.read_parquet(path)
+                subdf_t0 = pl.read_parquet(path) # subdf_t0 = pd.read_parquet(path)
 
                 # drop egids with pv installations
-                subdf = copy.deepcopy(subdf_t0[subdf_t0['EGID'].isin(no_pv_egid)])
+                subdf = subdf_t0.filter(pl.col("EGID").is_in(no_pv_egid))   
 
-                if not subdf.empty:
+                if subdf.shape[0] > 0:
 
                     # merge gridprem_ts
                     checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
-                    subdf = subdf.merge(gridprem_ts[['t', 'prem_Rp_kWh', 'grid_node']], how='left', on=['t', 'grid_node']) 
+                    subdf = subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
                     checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
 
                     # compute selfconsumption + netdemand ----------------------------------------------
                     checkpoint_to_logfile('npv > subdf: start calc selfconsumption + netdemand', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
-                    subdf_array = subdf[['pvprod_kW', 'demand_kW', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'prem_Rp_kWh']].to_numpy()
-                    pvprod_kW, demand_kW, pv_tarif_Rp_kWh, elecpri_Rp_kWh, prem_Rp_kWh = subdf_array[:,0], subdf_array[:,1], subdf_array[:,2], subdf_array[:,3], subdf_array[:,4]
+                    prod_demand_fact = self.sett.ALGOspec_tweak_gridnode_df_prod_demand_fact
+                    selfcons_fact = self.sett.TECspec_self_consumption_ifapplicable
+                    exclude_elec_demand = self.sett.ALGOspec_tweak_npv_excl_elec_demand
 
-                    demand_kW = demand_kW * self.sett.ALGOspec_tweak_gridnode_df_prod_demand_fact
-                    selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * self.sett.TECspec_self_consumption_ifapplicable
-                    netdemand_kW = demand_kW - selfconsum_kW
-                    netfeedin_kW = pvprod_kW - selfconsum_kW
-
-                    econ_inc_chf = ((netfeedin_kW * pv_tarif_Rp_kWh) /100) + ((selfconsum_kW * elecpri_Rp_kWh) /100)
-                    if not self.sett.ALGOspec_tweak_npv_excl_elec_demand:
-                        econ_spend_chf = ((netfeedin_kW * prem_Rp_kWh) / 100)  + ((netdemand_kW * elecpri_Rp_kWh) /100)
+                    subdf = subdf.with_columns([
+                        (pl.col("demand_kW") * prod_demand_fact).alias("demand_kW"),
+                        (pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW") * prod_demand_fact]) * selfcons_fact).alias("selfconsum_kW"),
+                    ])
+                    subdf = subdf.with_columns([
+                        (pl.col("demand_kW") - pl.col("selfconsum_kW")).alias("netdemand_kW"),
+                        (pl.col("pvprod_kW") - pl.col("selfconsum_kW")).alias("netfeedin_kW"),
+                    ])
+                    subdf = subdf.with_columns([
+                        ((pl.col("netfeedin_kW") * pl.col("pv_tarif_Rp_kWh")) / 100 + (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf")
+                    ])
+                    
+                    if not exclude_elec_demand:
+                        subdf = subdf.with_columns([
+                            ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100 +
+                            (pl.col("netdemand_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_spend_chf")
+                        ])
                     else:
-                        econ_spend_chf = ((netfeedin_kW * prem_Rp_kWh) / 100)
+                        subdf = subdf.with_columns([
+                            ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100).alias("econ_spend_chf")
+                        ])
 
-                    subdf['demand_kW'], subdf['pvprod_kW'], subdf['selfconsum_kW'], subdf['netdemand_kW'], subdf['netfeedin_kW'], subdf['econ_inc_chf'], subdf['econ_spend_chf'] = demand_kW, pvprod_kW, selfconsum_kW, netdemand_kW, netfeedin_kW, econ_inc_chf, econ_spend_chf
                     checkpoint_to_logfile('npv > subdf: end calc selfconsumption + netdemand', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
 
                     checkpoint_to_logfile('npv > subdf: start groupgy agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
-                    agg_subdf = subdf.groupby(
-                                        self.sett.ALGOspec_npv_update_groupby_cols_topo_aggdf).agg(
-                                        self.sett.ALGOspec_npv_update_agg_cols_topo_aggdf).reset_index()
                     
+                    group_cols = self.sett.ALGOspec_npv_update_groupby_cols_topo_aggdf
+                    agg_map = self.sett.ALGOspec_npv_update_agg_cols_topo_aggdf
+                    agg_exprs = [
+                        getattr(pl.col(col), agg_func)().alias(f"{col}")
+                        for col, agg_func in agg_map.items()
+                    ]
+                    agg_subdf = subdf.group_by(group_cols).agg(agg_exprs)
+
+
                     checkpoint_to_logfile('npv > subdf: end groupgy agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
                     # create combinations ----------------------------------------------
                     checkpoint_to_logfile('npv > subdf: end groupgy agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
-                    aggsub_npry = np.array(agg_subdf)
 
-                    egid_list, combo_df_uid_list, df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list = [], [], [], [], [], [], []
-                    inst_list, info_source_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
-                    flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_Rp_kWh_list = [], [], [], [], []
-                
-                    flaech_angletilt_list = []
-                    demand_list, pvprod_list, selfconsum_list, netdemand_list, netfeedin_list = [], [], [], [], []
-                    econ_inc_chf_list, econ_spend_chf_list = [], []
+                    agg_sub_grouped = agg_subdf.group_by(['EGID'])
 
-                    egid = agg_subdf['EGID'].unique()[0]
-                    for i, egid in enumerate(agg_subdf['EGID'].unique()):
+                    combo_rows = []
 
-                        mask_egid_subdf = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('EGID')], egid)
-                        df_uids  = list(aggsub_npry[mask_egid_subdf, agg_subdf.columns.get_loc('df_uid')])
+                    for egid , egid_subdf in agg_sub_grouped:
+                        df_uids = egid_subdf['df_uid'].unique().to_list()
 
-                        for r in range(1,len(df_uids)+1):
-                            for combo in itertools.combinations(df_uids, r):
-                                combo_key_str = '_'.join([str(c) for c in combo])
-                                mask_dfuid_only = np.isin(aggsub_npry[:,agg_subdf.columns.get_loc('df_uid')], list(combo))
-                                mask_dfuid_subdf = mask_egid_subdf & mask_dfuid_only
+                        for r in range(1, len(df_uids)+1):
+                            for combo in itertools.combinations(df_uids,r):
+                                combo_str = '_'.join([str(c) for c in combo])
 
-                                egid_list.append(egid)
-                                combo_df_uid_list.append(combo_key_str)
-                                # df_uid_list.append(list(combo))
-                                bfs_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('bfs')][0])
-                                gklas_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('gklas')][0])
-                                demandtype_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('demandtype')][0])
-                                grid_node_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('grid_node')][0])
+                                combo_df = egid_subdf.filter(pl.col('df_uid').is_in(combo))
+                                row = {
+                                    "EGID": egid,
+                                    "df_uid_combo": combo_str,
+                                    "bfs": combo_df[0, "bfs"],
+                                    "gklas": combo_df[0, "gklas"],
+                                    "demandtype": combo_df[0, "demandtype"],
+                                    "grid_node": combo_df[0, "grid_node"],
+                                    "inst_TF": combo_df[0, "inst_TF"],
+                                    "info_source": combo_df[0, "info_source"],
+                                    "pvid": combo_df[0, "pvid"],
+                                    "pv_tarif_Rp_kWh": combo_df[0, "pv_tarif_Rp_kWh"],
+                                    "elecpri_Rp_kWh": combo_df[0, "elecpri_Rp_kWh"],
+                                    "demand_kW": combo_df[0, "demand_kW"],
+                                    "AUSRICHTUNG": combo_df[0, "AUSRICHTUNG"],
+                                    "NEIGUNG": combo_df[0, "NEIGUNG"],
+                                    "FLAECHE": combo_df["FLAECHE"].sum(),
+                                    "STROMERTRAG": combo_df["STROMERTRAG"].sum(),
+                                    "FLAECH_angletilt": combo_df["FLAECH_angletilt"].sum(),
+                                    "pvprod_kW": combo_df["pvprod_kW"].sum(),
+                                    "selfconsum_kW": combo_df["selfconsum_kW"].sum(),
+                                    "netdemand_kW": combo_df["netdemand_kW"].sum(),
+                                    "netfeedin_kW": combo_df["netfeedin_kW"].sum(),
+                                    "econ_inc_chf": combo_df["econ_inc_chf"].sum(),
+                                    "econ_spend_chf": combo_df["econ_spend_chf"].sum()
+                                }
+                                combo_rows.append(row)
+                    aggsubdf_combo = pl.DataFrame(combo_rows)
 
-                                inst_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('inst_TF')][0])
-                                info_source_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('info_source')][0])
-                                pvid_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pvid')][0])
-                                pv_tarif_Rp_kWh_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pv_tarif_Rp_kWh')][0]) 
-                                elecpri_Rp_kWh_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('elecpri_Rp_kWh')][0])
-                                demand_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('demand_kW')][0])
-
-                                ausrichtung_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('AUSRICHTUNG')][0])
-                                neigung_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('NEIGUNG')][0])
-
-                                flaeche_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('FLAECHE')].sum())
-                                stromertrag_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('STROMERTRAG')].sum())                    
-                                flaech_angletilt_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('FLAECH_angletilt')].sum())
-                                pvprod_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pvprod_kW')].sum())
-                                selfconsum_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('selfconsum_kW')].sum())
-                                netdemand_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('netdemand_kW')].sum())
-                                netfeedin_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('netfeedin_kW')].sum())
-                                econ_inc_chf_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('econ_inc_chf')].sum())
-                                econ_spend_chf_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('econ_spend_chf')].sum())
-
-
-
-                    aggsubdf_combo = pd.DataFrame({'EGID': egid_list, 'df_uid_combo': combo_df_uid_list, 'bfs': bfs_list,
-                                                'gklas': gklas_list, 'demandtype': demandtype_list, 'grid_node': grid_node_list,
-
-                                                'inst_TF': inst_list, 'info_source': info_source_list, 'pvid': pvid_list,
-                                                'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list, 'elecpri_Rp_kWh': elecpri_Rp_kWh_list,
-                                                'demand_kW': demand_list,
-
-                                                'AUSRICHTUNG': ausrichtung_list, 'NEIGUNG': neigung_list,
-                                                
-                                                'FLAECHE': flaeche_list, 'STROMERTRAG': stromertrag_list,
-                                                'FLAECH_angletilt': flaech_angletilt_list,
-                                                'pvprod_kW': pvprod_list,
-                                                'selfconsum_kW': selfconsum_list, 'netdemand_kW': netdemand_list, 'netfeedin_kW': netfeedin_list,
-                                                'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
 
                     checkpoint_to_logfile('npv > subdf: end groupgy agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
@@ -2728,48 +2741,53 @@ class PVAllocScenario:
                 
 
                 # NPV calculation -----------------------------------------------------
-                if print_topo_subdf_TF:
-                    # estim_instcost_chfpkW, estim_instcost_chftotal = initial_sml.get_estim_instcost_function(scen)
-                    estim_instcost_chfpkW, estim_instcost_chftotal = self.initial_sml_get_instcost_interpolate_function()
-                    estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
+                estim_instcost_chfpkW, estim_instcost_chftotal = self.initial_sml_get_instcost_interpolate_function()
+                estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 
-                # # estim_instcost_chfpkW, estim_instcost_chftotal = initial.estimate_iterpolate_instcost_function(pvalloc_settings)
 
-                # if not os.path.exists(f'{preprep_name_dir_path }/pvinstcost_coefficients.json') == True:
-                #     estim_instcost_chfpkW, estim_instcost_chftotal = initial.estimate_iterpolate_instcost_function(pvalloc_settings)
-                #     estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
-
-                # elif os.path.exists(f'{preprep_name_dir_path }/pvinstcost_coefficients.json') == True:    
-                #     estim_instcost_chfpkW, estim_instcost_chftotal = initial.get_estim_instcost_function(pvalloc_settings)
-                #     estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 
                 # correct cost estimation by a factor based on insights from pvprod_correction.py
-                aggsubdf_combo['estim_pvinstcost_chf'] = estim_instcost_chftotal(aggsubdf_combo['FLAECHE'] * 
-                                                                                self.sett.TECspec_kWpeak_per_m2 * 
-                                                                                self.sett.TECspec_share_roof_area_available) / self.sett.TECspec_estim_pvinst_cost_correctionfactor
+                aggsubdf_combo = aggsubdf_combo.with_columns([
+                    (pl.col("FLAECHE") * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available).alias("roof_area_for_cost"),
+                ])
+
+                # aggsubdf_combo = aggsubdf_combo.to_pandas()
+                # kwp_peak_array = aggsubdf_combo['FLAECHE'] * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available / self.sett.TECspec_estim_pvinst_cost_correctionfactor
+                # aggsubdf_combo['estim_pvinstcost_chf'] = estim_instcost_chftotal(kwp_peak_array) 
+                # aggsubdf_combo = aggsubdf_combo.from_pandas()
+                estim_instcost_chftotal_srs = estim_instcost_chftotal(aggsubdf_combo['roof_area_for_cost'] )
+                aggsubdf_combo = aggsubdf_combo.with_columns(
+                    pl.Series("estim_pvinstcost_chf", estim_instcost_chftotal_srs)
+                )
+
 
                 checkpoint_to_logfile('npv > subdf: start calc npv', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
-                def compute_npv(row):
-                    pv_cashflow = (row['econ_inc_chf'] - row['econ_spend_chf']) / (1+self.sett.TECspec_interest_rate)**np.arange(1, self.sett.TECspec_invst_maturity+1)
-                    npv = (-row['estim_pvinstcost_chf']) + np.sum(pv_cashflow)
-                    return npv
-                aggsubdf_combo['NPV_uid'] = aggsubdf_combo.apply(compute_npv, axis=1)
-                checkpoint_to_logfile('npv > subdf: staendrt calc npv', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
-                # if (i <3) and (i_m <3): 
-                #     checkpoint_to_logfile('\t computed NPV for agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints)
+                cashflow_srs =  aggsubdf_combo['econ_inc_chf'] - aggsubdf_combo['econ_spend_chf']
+                cashflow_disc_list = []
+                for j in range(1, self.sett.TECspec_invst_maturity+1):
+                    cashflow_disc_list.append(cashflow_srs / (1+self.sett.TECspec_interest_rate)**j)
+                cashflow_disc_srs = sum(cashflow_disc_list)
+                
+                npv_srs = (-aggsubdf_combo['estim_pvinstcost_chf']) + cashflow_disc_srs
+
+                aggsubdf_combo = aggsubdf_combo.with_columns(
+                    pl.Series("npv_chf", npv_srs)
+                )
+
+                checkpoint_to_logfile('npv > subdf: end calc npv', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
                 agg_npv_df_list.append(aggsubdf_combo)
 
-            agg_npv_df = pd.concat(agg_npv_df_list)
-            npv_df = copy.deepcopy(agg_npv_df)
+            agg_npv_df = pl.concat(agg_npv_df_list)
+            npv_df = agg_npv_df.clone()
 
 
             # export npv_df -----------------------------------------------------
-            npv_df.to_parquet(f'{subdir_path}/npv_df.parquet')
-            if self.sett.export_csvs:
-                npv_df.to_csv(f'{subdir_path}/npv_df.csv', index=False)
-
+            npv_df.write_parquet(f'{subdir_path}/npv_df.parquet')
+            # if self.sett.export_csvs:
+            #     npv_df.write_csv(f'{subdir_path}/npv_df.csv', index=False)
+                
 
             # export by Month -----------------------------------------------------
             if self.sett.MCspec_keep_files_month_iter_TF:
@@ -2778,16 +2796,17 @@ class PVAllocScenario:
                     if not os.path.exists(pred_npv_inst_by_M_path):
                         os.makedirs(pred_npv_inst_by_M_path)
 
-                    npv_df.to_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
-                    if self.sett.export_csvs:
-                        npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
-                    if i_m < 5:
-                        npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
-
+                    npv_df.write_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
+                    # if self.sett.export_csvs:
+                    #     npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', separator=',' )                    
+                    # if i_m < 5:
+                    #     npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
 
             checkpoint_to_logfile('exported npv_df', self.sett.log_name, 1)
                 
             return npv_df
+
+
 
 
         def algo_update_npv_df(self, subdir_path: str, i_m: int, m):
@@ -2925,10 +2944,8 @@ class PVAllocScenario:
                 
 
                 # NPV calculation -----------------------------------------------------
-                if print_topo_subdf_TF:
-                    # estim_instcost_chfpkW, estim_instcost_chftotal = initial_sml.get_estim_instcost_function(scen)
-                    estim_instcost_chfpkW, estim_instcost_chftotal = self.initial_sml_get_instcost_interpolate_function()
-                    estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
+                estim_instcost_chfpkW, estim_instcost_chftotal = self.initial_sml_get_instcost_interpolate_function()
+                estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 
                 # # estim_instcost_chfpkW, estim_instcost_chftotal = initial.estimate_iterpolate_instcost_function(pvalloc_settings)
 

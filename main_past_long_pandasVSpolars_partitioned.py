@@ -3,9 +3,9 @@ from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 
 pvalloc_scen_list = [
 
-    # pvalloc_BLsml_3m_f2020_5mc_npv.part300_polars
+    # pvalloc_BLsml_3m_f2020_1mc_npv.part300_polars
     PVAllocScenario_Settings(
-        name_dir_export    = 'pvalloc_BLsml_3m_f2020_5mc_npv.part300_polars',
+        name_dir_export    = 'pvalloc_BLsml_3m_f2020_1mc_npv.part300_polars',
         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         show_debug_prints  = True,
         bfs_numbers        = [
@@ -18,7 +18,7 @@ pvalloc_scen_list = [
         ALGOspec_inst_selection_method = 'prob_weighted_npv',
         ALGOspec_topo_subdf_partitioner = 300, 
         TECspec_pvprod_calc_method = 'method2.2',
-        MCspec_montecarlo_iterations = 5
+        MCspec_montecarlo_iterations = 1
         ),
 
     # pvalloc_BLsml_3m_f2020_1mc_npv.part300_pandas
@@ -32,6 +32,42 @@ pvalloc_scen_list = [
         ],
         T0_year_prediction = 2020,            
         months_prediction  = 3, 
+        test_faster_array_computation = False,
+        ALGOspec_inst_selection_method = 'prob_weighted_npv',
+        ALGOspec_topo_subdf_partitioner = 300, 
+        TECspec_pvprod_calc_method = 'method2.2',
+        MCspec_montecarlo_iterations = 1
+        ),
+
+    # pvalloc_BLsml_3y_f2020_1mc_npv.part300_polars
+    PVAllocScenario_Settings(
+        name_dir_export    = 'pvalloc_BLsml_3y_f2020_1mc_npv.part300_polars',
+        name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+        show_debug_prints  = True,
+        bfs_numbers        = [
+            2768, 2761, 2772, 2785, 2787,
+            2473, 2475, 2480,        
+        ],
+        T0_year_prediction = 2020,            
+        months_prediction  = 36, 
+        test_faster_array_computation = True,
+        ALGOspec_inst_selection_method = 'prob_weighted_npv',
+        ALGOspec_topo_subdf_partitioner = 300, 
+        TECspec_pvprod_calc_method = 'method2.2',
+        MCspec_montecarlo_iterations = 1
+        ),
+
+    # pvalloc_BLsml_3y_f2020_1mc_npv.part300_pandas
+    PVAllocScenario_Settings(
+        name_dir_export    = 'pvalloc_BLsml_3y_f2020_1mc_npv.part300_pandas',
+        name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+        show_debug_prints  = True,
+        bfs_numbers        = [
+            2768, 2761, 2772, 2785, 2787,
+            2473, 2475, 2480,        
+        ],
+        T0_year_prediction = 2020,            
+        months_prediction  = 36, 
         test_faster_array_computation = False,
         ALGOspec_inst_selection_method = 'prob_weighted_npv',
         ALGOspec_topo_subdf_partitioner = 300, 
