@@ -2705,7 +2705,7 @@ class PVAllocScenario:
 
                                 combo_df = egid_subdf.filter(pl.col('df_uid').is_in(combo))
                                 row = {
-                                    "EGID": egid,
+                                    "EGID": str(egid[0]),
                                     "df_uid_combo": combo_str,
                                     "bfs": combo_df[0, "bfs"],
                                     "gklas": combo_df[0, "gklas"],
@@ -2772,7 +2772,7 @@ class PVAllocScenario:
                 npv_srs = (-aggsubdf_combo['estim_pvinstcost_chf']) + cashflow_disc_srs
 
                 aggsubdf_combo = aggsubdf_combo.with_columns(
-                    pl.Series("npv_chf", npv_srs)
+                    pl.Series("NPV_uid", npv_srs)
                 )
 
                 checkpoint_to_logfile('npv > subdf: end calc npv', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
