@@ -35,7 +35,8 @@ class PVAllocScenario_Settings:
     
     kt_numbers: List[int]                       = field(default_factory=list)  # list of cantons to be considered
     bfs_numbers: List[int]                      = field(default_factory=lambda: [
-                                                    2767, 2771,                                               # BL mini with inst before 2006: Bottmingen, Oberwil
+                                                    2767,                                                     # for mini / debug model (with subselection for dsonodes_df)
+                                                    # 2767, 2771,                                             # BL mini with inst before 2006: Bottmingen, Oberwil
                                                     # 2767, 2771, 2765, 2764,                                 # BLsml with inst before 2008: Bottmingen, Oberwil, Binningen, Biel-Benken
                                                     # 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
                                                     # 2473, 2475, 2480,                                       # SOsml: Dornach, Hochwald, Seewen
@@ -44,6 +45,9 @@ class PVAllocScenario_Settings:
                                                     # 2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,2787,    # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
                                                     # 2618, 2621, 2883, 2622, 2616,                           # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
                             ])
+    mini_sub_model_TF: bool                     = False
+    mini_sub_model_grid_nodes: List[str]        = field(default_factory=lambda: ['295', '850', ]) # '348', '351'],)  
+    mini_sub_model_nEGIDs: int                 = 100
     T0_year_prediction: int                     = 2022                          # year for the prediction of the future construction capacity
     # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
     months_lookback: int                        = 12                           # number of months to look back for the prediction of the future construction capacity
@@ -141,7 +145,7 @@ class PVAllocScenario_Settings:
     ALGOspec_inst_selection_method: str                         = 'random'
     ALGOspec_rand_seed: bool                                    = None
     ALGOspec_while_inst_counter_max: int                        = 5000
-    ALGOspec_topo_subdf_partitioner: int                        = 400
+    ALGOspec_topo_subdf_partitioner: int                        = 250
     ALGOspec_npv_update_groupby_cols_topo_aggdf: List[str]      = field(default_factory=lambda: [
                                                                     'EGID', 'df_uid', 'grid_node', 'bfs', 'gklas', 'demandtype', 'inst_TF', 'info_source',
                                                                     'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 
@@ -282,7 +286,10 @@ class PVAllocScenario:
         self.mark_to_timing_csv('init', 'start_calc_economics', start_calc_economics, np.nan, '-')
         
         # algo.calc_economics_in_topo_df(self, topo, df_list, df_names, ts_list, ts_names)
-        self.algo_calc_economics_in_topo_df(topo, df_list, df_names, ts_list, ts_names)
+        if not self.sett.test_faster_array_computation:
+            self.algo_calc_economics_in_topo_df(topo, df_list, df_names, ts_list, ts_names)
+        elif self.sett.test_faster_array_computation:
+            self.algo_calc_economics_in_topo_df_POLARS(topo, df_list, df_names, ts_list, ts_names)
 
         end_calc_economics = datetime.datetime.now()
         self.mark_to_timing_csv('init', 'end_calc_economics', end_calc_economics, end_calc_economics - start_calc_economics, '-')
@@ -311,8 +318,8 @@ class PVAllocScenario:
 
         for i_m, m in enumerate(months_prediction[0:self.sett.CHECKspec_n_iterations_before_sanitycheck]):
             print_to_logfile(f'\n-- month {m} -- sanity check -- {self.sett.name_dir_export} --', self.sett.log_name)
-            self.algo_update_gridprem(self.sett.sanity_check_path, i_m, m)
-            self.algo_update_npv_df(self.sett.sanity_check_path, i_m, m)
+            self.algo_update_gridprem_POLARS(self.sett.sanity_check_path, i_m, m)
+            self.algo_update_npv_df_POLARS(self.sett.sanity_check_path, i_m, m)
             self.algo_select_AND_adjust_topology(self.sett.sanity_check_path, 
                                                  i_m, m)
 
@@ -334,7 +341,7 @@ class PVAllocScenario:
         self.mark_to_timing_csv('init', 'end_sanity_check', end_sanity_check, end_sanity_check - start_sanity_check, '-')
 
         # END ---------------------------------------------------
-        chapter_to_logfile(f'end start MAIN_pvalloc_INITIALIZATION\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.sett.total_runtime_start}', self.sett.log_name)
+        chapter_to_logfile(f'end start MAIN_pvalloc_INITIALIZATION for: {self.sett.name_dir_export}\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.sett.total_runtime_start}', self.sett.log_name)
 
 
     # ------------------------------------------------------------------------------------------------------
@@ -1076,6 +1083,17 @@ class PVAllocScenario:
 
             gwr_before_dsonode_selection = copy.deepcopy(gwr)
             gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(Map_egid_dsonode['EGID'].unique())])
+
+
+            # mini model for exploratory work ----------
+            if self.sett.mini_sub_model_TF:
+                # filter for mini model
+                mini_submodel_EGIDs = Map_egid_dsonode[Map_egid_dsonode['grid_node'].isin(self.sett.mini_sub_model_grid_nodes)]['EGID'].unique()
+                gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(mini_submodel_EGIDs)])
+                if self.sett.mini_sub_model_nEGIDs is not None: 
+                    gwr = copy.deepcopy(gwr.head(self.sett.mini_sub_model_nEGIDs))
+                # solkat = copy.deepcopy(solkat.loc[solkat['EGID'].isin(mini_submodel_EGIDs)])
+
                 
 
             # summary prints ----------
@@ -1978,7 +1996,331 @@ class PVAllocScenario:
  
     # MC ALGORITHM ---------------------------------------------------------------------------
     if True: 
-        
+
+        def algo_calc_economics_in_topo_df_POLARS(self, 
+                                           topo, 
+                                           df_list, df_names, 
+                                           ts_list, ts_names,
+        ): 
+                    
+            # setup -----------------------------------------------------
+            print_to_logfile('run function: calc_economics_in_topo_df', self.sett.log_name)
+
+
+            # import -----------------------------------------------------
+            angle_tilt_df = df_list[df_names.index('angle_tilt_df')]
+            solkat_month = df_list[df_names.index('solkat_month')]
+            demandtypes_ts = ts_list[ts_names.index('demandtypes_ts')]
+            meteo_ts = ts_list[ts_names.index('meteo_ts')]
+
+            angle_tilt_df = pl.DataFrame(angle_tilt_df.reset_index())  # If it was a multi-index
+            solkat_month = pl.DataFrame(solkat_month.reset_index())  
+            demandtypes_ts = pl.DataFrame(demandtypes_ts.reset_index())
+            meteo_ts = pl.DataFrame(meteo_ts.reset_index())
+
+
+            # TOPO to DF =============================================
+            # solkat_combo_df_exists = os.path.exists(f'{pvalloc_settings["interim_path"]}/solkat_combo_df.parquet')
+            # if pvalloc_settings['recalc_economics_topo_df']:
+
+            rows = []
+            # egid_list, df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list  = [], [], [], [], [], []
+            # inst_list, info_source_list, pvdf_totalpower_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], [], []
+            # flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_list = [], [], [], [], []
+            # keys = list(topo.keys())
+
+            for k,v in topo.items():
+                # if k in no_pv_egid:
+                # ADJUSTMENT: this needs to be removed, because I also need to calculate the pvproduction_kW per house 
+                # later when quantifying the grid feedin per grid node
+                partitions = v.get('solkat_partitions', {})
+                gwr_info = v.get('gwr_info', {})
+                pv_inst = v.get('pv_inst', {})
+
+                for k_p, v_p in partitions.items():
+                    row = {
+                        'EGID': k,
+                        'df_uid': k_p,
+                        'bfs': gwr_info.get('bfs'),
+                        'gklas': gwr_info.get('gklas'),
+                        'demandtype': v.get('demand_type'),
+                        'grid_node': v.get('grid_node'),
+
+                        'inst_TF': pv_inst.get('inst_TF'),
+                        'info_source': pv_inst.get('info_source'),
+                        'pvid': pv_inst.get('xtf_id'),
+                        'pv_tarif_Rp_kWh': v.get('pvtarif_Rp_kWh'),
+                        'TotalPower': pv_inst.get('TotalPower'),
+
+                        'FLAECHE': v_p.get('FLAECHE'),
+                        'AUSRICHTUNG': v_p.get('AUSRICHTUNG'),
+                        'STROMERTRAG': v_p.get('STROMERTRAG'),
+                        'NEIGUNG': v_p.get('NEIGUNG'),
+                        'elecpri_Rp_kWh': v.get('elecpri_Rp_kWh'),
+                    }
+                    rows.append(row)
+
+            topo_df = pl.DataFrame(rows)
+            
+
+            # make or clear dir for subdfs ----------------------------------------------
+            subdf_path = f'{self.sett.name_dir_export_path}/topo_time_subdf'
+
+            if not os.path.exists(subdf_path):
+                os.makedirs(subdf_path)
+            else:
+                old_files = glob.glob(f'{subdf_path}/*')
+                for f in old_files:
+                    os.remove(f)
+            
+
+            # round NEIGUNG + AUSRICHTUNG to 5 for easier computation
+            topo_df = topo_df.with_columns([
+                # Round and cast to int64 for NEIGUNG and AUSRICHTUNG
+                ((pl.col("NEIGUNG") / 5).round(0) * 5).cast(pl.Int64).alias("NEIGUNG"),
+                ((pl.col("AUSRICHTUNG") / 10).round(0) * 10).cast(pl.Int64).alias("AUSRICHTUNG")
+            ])        
+            angle_tilt_df = angle_tilt_df.rename({'angle': 'AUSRICHTUNG', 'tilt': 'NEIGUNG'})
+            topo_df = topo_df.join(
+                angle_tilt_df,
+                on=["AUSRICHTUNG", "NEIGUNG"],
+                how="left"
+            )
+
+            # transform TotalPower
+            topo_df = topo_df.with_columns([
+                pl.col("TotalPower")
+                .cast(str)                         # Ensure it's treated as string first
+                .str.replace_all("", "0")         # Replace empty string with "0"
+                .cast(pl.Float64)                 # Convert to float
+            ])
+
+            # MERGE + GET ECONOMIC VALUES FOR NPV CALCULATION =============================================
+            topo_subdf_partitioner = self.sett.ALGOspec_topo_subdf_partitioner
+            
+            share_roof_area_available = self.sett.TECspec_share_roof_area_available
+            inverter_efficiency       = self.sett.TECspec_inverter_efficiency
+            panel_efficiency          = self.sett.TECspec_panel_efficiency
+            pvprod_calc_method        = self.sett.TECspec_pvprod_calc_method
+            kWpeak_per_m2             = self.sett.TECspec_kWpeak_per_m2
+
+            flat_direct_rad_factor  = self.sett.WEAspec_flat_direct_rad_factor
+            flat_diffuse_rad_factor = self.sett.WEAspec_flat_diffuse_rad_factor
+
+
+            egids = topo_df['EGID'].unique()
+
+            stepsize = topo_subdf_partitioner if len(egids) > topo_subdf_partitioner else len(egids)
+            tranche_counter = 0
+            checkpoint_to_logfile(' * * DEBUGGIGN * * *: START loop subdfs', self.sett.log_name, 1)
+            for i in range(0, len(egids), stepsize):
+
+                tranche_counter += 1
+                # print_to_logfile(f'-- merges to topo_time_subdf {tranche_counter}/{len(range(0, len(egids), stepsize))} tranches ({i} to {i+stepsize-1} egids.iloc) ,  {7*"-"}  (stamp: {datetime.now()})', self.sett.log_name)
+                subdf = topo_df.filter(pl.col("EGID").is_in(egids[i:i+stepsize])).clone()
+                # subdf = copy.deepcopy(topo_df[topo_df['EGID'].isin(egids[i:i+stepsize])])
+
+
+                # merge production, grid prem + demand to partitions ----------
+                subdf = subdf.with_columns(pl.lit("Basel").alias("meteo_loc"))          
+                meteo_ts = meteo_ts.with_columns(pl.lit("Basel").alias("meteo_loc"))    
+                
+                # subdf = subdf.merge(meteo_ts[['rad_direct', 'rad_diffuse', 'temperature', 't', 'meteo_loc']], how='left', on='meteo_loc')
+                subdf = subdf.join(meteo_ts, on="meteo_loc", how="left")  
+                
+
+                # add radiation per h to subdf, "flat" OR "dfuid_ind" ----------
+                if self.sett.WEAspec_radiation_to_pvprod_method == 'flat':
+                    subdf = subdf.with_columns(
+                      (pl.col("rad_direct") * flat_direct_rad_factor + pl.col("rad_diffuse") * flat_diffuse_rad_factor)
+                      .alias("radiation")
+                    )
+                    meteo_ts = meteo_ts.with_columns(
+                        (pl.col("rad_direct") * flat_direct_rad_factor + pl.col("rad_diffuse") * flat_diffuse_rad_factor)
+                        .alias("radiation")
+                    )
+                    mean_top_radiation = meteo_ts.sort("radiation", descending=True).select(
+                        pl.col("radiation").head(10).mean()
+                    ).item()  # `.item()` extracts scalar value from single-element DataFrame
+
+                    subdf = subdf.with_columns(
+                        (pl.col("radiation") / mean_top_radiation).alias("radiation_rel_locmax")
+                    )
+                    
+
+                elif self.sett.WEAspec_radiation_to_pvprod_method == 'dfuid_ind':
+                    if 'DF_UID' in solkat_month.columns:
+                        solkat_month = solkat_month.rename({"DF_UID": "df_uid"})
+                    if 'MONAT' in solkat_month.columns:
+                        solkat_month = solkat_month.rename({"MONAT": "month"})
+                    subdf = subdf.with_columns([
+                        pl.col("timestamp").dt.month().cast(pl.Int32).alias("month")
+                    ])
+                    
+                    checkpoint_to_logfile(f'  start merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 1) if i < 2 else None
+                    subdf = subdf.join(
+                        solkat_month.select(["df_uid", "month", "A_PARAM", "B_PARAM", "C_PARAM"]),
+                        on=["df_uid", "month"],
+                        how="left"
+                    )   
+                    checkpoint_to_logfile(f'  end merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 1) if i < 2 else None
+                    subdf = subdf.with_columns([
+                        (
+                            pl.col("A_PARAM") * pl.col("rad_direct") +
+                            pl.col("B_PARAM") * pl.col("rad_diffuse") +
+                            pl.col("C_PARAM")
+                        ).alias("radiation")
+                    ])
+                    # some radiation values are negative, because of the linear transformation with abc parameters. 
+                    # force all negative values to 0
+                    subdf = subdf.with_columns([
+                        pl.when((pl.col("rad_direct") == 0) & (pl.col("rad_diffuse") == 0))
+                          .then(0.0)
+                          .when(pl.col("radiation") < 0)
+                          .then(0.0)
+                          .otherwise(pl.col("radiation"))
+                          .alias("radiation")
+                    ])
+
+                    meteo_ts = meteo_ts.with_columns([
+                        (pl.col("rad_direct") * flat_direct_rad_factor + pl.col("rad_diffuse") * flat_diffuse_rad_factor)
+                        .alias("radiation")
+                    ])
+
+
+                    # radiation_rel_locmax by "df_uid_specific" vs "all_HOY" ---------- 
+                    if self.sett.WEAspec_rad_rel_loc_max_by == 'dfuid_specific':
+                        subdf_dfuid_topradation = (
+                            subdf
+                            .group_by("df_uid")
+                            .agg([
+                                pl.col("radiation").top_k(10).mean().alias("mean_top_radiation")
+                            ])
+                        )
+                        subdf = subdf.join(subdf_dfuid_topradation, on="df_uid", how="left")
+                        subdf = subdf.with_columns([
+                            (pl.col("radiation") / pl.col("mean_top_radiation")).alias("radiation_rel_locmax")
+                        ])
+
+                    elif self.sett.WEAspec_rad_rel_loc_max_by == 'all_HOY':
+                        mean_nlargest_rad_all_HOY = (
+                            meteo_ts
+                            .select(pl.col("radiation").top_k(10).mean())
+                            .item()
+                        )
+                        subdf = subdf.with_columns([
+                            (pl.col("radiation") / mean_nlargest_rad_all_HOY).alias("radiation_rel_locmax")
+                        ])
+                
+
+                # add panel_efficiency by time ----------
+                if self.sett.PEFspec_variable_panel_efficiency_TF:
+                    summer_months      = self.sett.PEFspec_summer_months
+                    hotsummer_hours    = self.sett.PEFspec_hotsummer_hours
+                    hot_hours_discount = self.sett.PEFspec_hot_hours_discount
+
+                    HOY_weatheryear_df = pl.read_parquet(f'{self.sett.name_dir_export_path}/HOY_weatheryear_df.parquet')
+                    hot_hours_in_year = HOY_weatheryear_df.filter(
+                        pl.col("month").is_in(summer_months) & pl.col("hour").is_in(hotsummer_hours)
+                    )
+                    hot_t_set = set(hot_hours_in_year["t"].to_list())
+
+                    subdf = subdf.with_columns([
+                        pl.when(pl.col("t").is_in(hot_t_set))
+                        .then(panel_efficiency * (1 - hot_hours_discount))
+                        .otherwise(panel_efficiency)
+                        .alias("panel_efficiency")
+                    ])
+                elif self.sett.PEFspec_variable_panel_efficiency_TF:
+                    subdf = subdf.with_columns([
+                        pl.lit(panel_efficiency).alias("panel_efficiency")
+                    ])
+                    
+
+                # attach demand profiles ----------
+                demandtypes_names = [c for c in demandtypes_ts.columns if 'DEMANDprox' in c]
+                # demandtypes_melt = demandtypes_ts.melt(id_vars='t', value_vars=demandtypes_names, variable_name='demandtype', value_name='demand')
+                demandtypes_melt = demandtypes_ts.unpivot(
+                    on = demandtypes_names,
+                    index='t',  # The column that stays unchanged
+                    value_name='demand',  # Name of the column that will hold the values
+                    variable_name='demandtype'  # Name of the column that will hold the original column names
+                )
+                demandtypes_melt = demandtypes_melt.with_columns(
+                    pl.col('t').cast(pl.Utf8)
+                )  
+                subdf = subdf.join(demandtypes_melt, on=["t", "demandtype"], how="left")
+                subdf = subdf.rename({"demand": "demand_kW"})
+                # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', self.sett.log_name, 1)
+
+
+                # attach FLAECH_angletilt, might be usefull for later calculations
+                subdf = subdf.with_columns([
+                    (pl.col("FLAECHE") * pl.col("efficiency_factor")).alias("FLAECH_angletilt")
+                ])
+
+
+                # compute production ---------- 
+                # pvprod method 1 (false, presented to frank 8.11.24. missing efficiency grade)
+                if pvprod_calc_method == "method1":
+                    subdf = subdf.with_columns([
+                        (pl.col("radiation") * pl.col("FLAECHE") * pl.col("angletilt_factor") / 1000)
+                        .alias("pvprod_kW")
+                    ])
+                    formla_for_log_print = "method1"
+                
+                # pvprod method 2.1
+                elif pvprod_calc_method == "method2.1":
+                    subdf = subdf.with_columns([
+                        (
+                            (pl.col("radiation") / 1000) * inverter_efficiency * share_roof_area_available * pl.col("panel_efficiency") * pl.col("FLAECHE") * pl.col("efficiency_factor")
+                        ).alias("pvprod_kW")
+                    ])
+                    formla_for_log_print = "inPOLARS: subdf['pvprod_kW'] = subdf['radiation'] / 1000 * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] * subdf['efficiency_factor']"
+                
+                # pvprod method 2.2
+                elif pvprod_calc_method == "method2.2":
+                    subdf = subdf.with_columns([
+                        (
+                            (pl.col("radiation") / 1000) * inverter_efficiency * share_roof_area_available * pl.col("panel_efficiency") * pl.col("FLAECHE")
+                        ).alias("pvprod_kW")
+                    ])
+                    formla_for_log_print = "inPOLARS: subdf['pvprod_kW'] = subdf['radiation'] / 1000 * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE']"
+
+                # pvprod method 3.1
+                elif pvprod_calc_method == "method3.1":
+                    subdf = subdf.with_columns([
+                        (
+                            pl.col("radiation_rel_locmax") * share_roof_area_available * inverter_efficiency * share_roof_area_available * pl.col("panel_efficiency") * pl.col("FLAECHE") * pl.col("efficiency_factor")
+                        ).alias("pvprod_kW")
+                    ])
+                    formla_for_log_print = "inPOLARS: subdf['pvprod_kW'] = subdf['radiation_rel_locmax'] * kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE'] * subdf['efficiency_factor']"
+
+                # pvprod method 3.2
+                elif pvprod_calc_method == "method3.2":
+                    subdf = subdf.with_columns([
+                        (
+                            pl.col("radiation_rel_locmax") * kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * pl.col("panel_efficiency") * pl.col("FLAECHE")
+                        ).alias("pvprod_kW")
+                    ])
+                    formla_for_log_print = "inPOLARS: subdf['pvprod_kW'] = subdf['radiation_rel_locmax'] * kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * subdf['panel_efficiency'] * subdf['FLAECHE']"
+
+
+
+                # export subdf ----------------------------------------------
+                subdf.write_parquet(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.parquet')
+                if self.sett.export_csvs:
+                    subdf.write_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv')
+                if (i == 0) & self.sett.export_csvs:
+                    subdf.write_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv' )
+                checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', self.sett.log_name, 1)
+                checkpoint_to_logfile(' * * DEBUGGIGN * * *: END loop subdfs', self.sett.log_name, 1)
+
+
+            # print computation formula for comparing methods
+            print_to_logfile(f'* Computation formula for pv production per roof:\n{formla_for_log_print}', self.sett.log_name)
+
+
         def algo_calc_economics_in_topo_df(self, 
                                            topo, 
                                            df_list, df_names, 
@@ -2808,7 +3150,6 @@ class PVAllocScenario:
 
 
 
-
         def algo_update_npv_df(self, subdir_path: str, i_m: int, m):
 
             # setup -----------------------------------------------------
@@ -3141,12 +3482,15 @@ if __name__ == '__main__':
 
     pvalloc_scen_list = [
         PVAllocScenario_Settings(
-                name_dir_export    = 'pvalloc_BFS2761_2m_f2021_1mc_meth2.2_rnd_DEBUG',
+                name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
                 name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
                 show_debug_prints  = True,
                 export_csvs        = True,
+                mini_sub_model_TF  = True,
+                test_faster_array_computation = True,
                 T0_year_prediction = 2021,
                 months_prediction  = 2,
+                CHECKspec_n_iterations_before_sanitycheck = 2,
                 ALGOspec_inst_selection_method = 'prob_weighted_npv',
                 TECspec_pvprod_calc_method = 'method2.2',
                 MCspec_montecarlo_iterations = 2,
@@ -3164,9 +3508,6 @@ if __name__ == '__main__':
         pvalloc_class.run_pvalloc_initalization()
         pvalloc_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
-
-
-
 
 
 
