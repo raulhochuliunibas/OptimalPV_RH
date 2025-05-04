@@ -161,6 +161,14 @@ class PVAllocScenario_Settings:
     ALGOspec_tweak_gridnode_df_prod_demand_fact: float          = 1
     ALGOspec_constr_capa_overshoot_fact: float                  = 1
 
+    # dsonodes_ts_specs
+    GRIDspec_flat_profile_demand_dict: Dict                     = field(default_factory=lambda: {
+                                                                    '_window1':{'t': [6,21],  'demand_share': 0.9}, 
+                                                                    '_window2':{'t': [22, 5], 'demand_share': 0.1},
+                                                                    })
+    GRIDspec_flat_profile_demand_total_EGID: float              = 4500
+    GRIDspec_flat_profile_demand_type_col: set                  = 'flat'  #alternative: low_DEMANDprox_noHP demand profile from Netflex or Swissstore
+
     # gridprem_adjustment_specs
     GRIDspec_tier_description: str                              = 'tier_level: (voltage_threshold, gridprem_Rp_kWh)'
     GRIDspec_power_factor: float                                = 1
@@ -263,7 +271,7 @@ class PVAllocScenario:
         self.mark_to_timing_csv('init', 'start_create_topo', start_create_topo, np.nan, '-'),
 
         self.initial_sml_HOY_weatheryear_df()
-        self.initial_sml_get_gridnodes_DSO()
+        self.initial_sml_get_DSO_nodes_df_AND_ts()
         self.initial_sml_iterpolate_instcost_function()
 
         if self.sett.recreate_topology:
@@ -277,7 +285,7 @@ class PVAllocScenario:
             constrcapa, months_prediction, months_lookback = self.initial_lrg_define_construction_capacity(topo, df_list, df_names, ts_list, ts_names)
 
             end_create_topo = datetime.datetime.now()
-            self.mark_to_timing_csv('init', 'end_create_topo', end_create_topo, end_create_topo - start_create_topo, '-') 
+            self.mark_to_timing_csv('init', 'end_create_topo', end_create_topo, self.timediff_to_str_hhmmss(start_create_topo, end_create_topo), '-')
         
 
         # CALC ECONOMICS + TOPO_TIME SPECIFIC DFs ---------------------------------------------------------------------------------------------
@@ -292,7 +300,7 @@ class PVAllocScenario:
             self.algo_calc_economics_in_topo_df_POLARS(topo, df_list, df_names, ts_list, ts_names)
 
         end_calc_economics = datetime.datetime.now()
-        self.mark_to_timing_csv('init', 'end_calc_economics', end_calc_economics, end_calc_economics - start_calc_economics, '-')
+        self.mark_to_timing_csv('init', 'end_calc_economics', end_calc_economics, self.timediff_to_str_hhmmss(start_calc_economics, end_calc_economics),  '-')
         shutil.copy(f'{self.sett.name_dir_export_path}/topo_egid.json', f'{self.sett.name_dir_export_path}/topo_egid_before_alloc.json')
 
 
@@ -305,12 +313,13 @@ class PVAllocScenario:
         # make sanitycheck folder and move relevant initial files there (delete all old files, not distort results)
         os.makedirs(self.sett.sanity_check_path, exist_ok=False) 
 
-        fresh_initial_files = [f'{self.sett.name_dir_export_path}/{file}' for file in ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
+        fresh_initial_files = [f'{self.sett.name_dir_export_path}/{file}' for file in self.sett.MCspec_fresh_initial_files] # ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
         topo_time_paths = glob.glob(f'{self.sett.name_dir_export_path}/topo_time_subdf/*.parquet')
         for f in fresh_initial_files + topo_time_paths:
             shutil.copy(f, f'{self.sett.sanity_check_path}/')
 
         # ALLOCATION RUN ====================
+        start_sanity_check_allocation = datetime.datetime.now()
         dfuid_installed_list = []
         pred_inst_df = pd.DataFrame()
         months_prediction_pq = pd.read_parquet(f'{self.sett.name_dir_export_path}/months_prediction.parquet')['date']
@@ -323,22 +332,33 @@ class PVAllocScenario:
             self.algo_select_AND_adjust_topology(self.sett.sanity_check_path, 
                                                  i_m, m)
 
+        end_sanity_check_allocation = datetime.datetime.now()
+        self.mark_to_timing_csv('init', 'end_sanity_check_allocation', end_sanity_check_allocation, self.timediff_to_str_hhmmss(start_sanity_check_allocation, end_sanity_check_allocation), '-')
         
         # sanity.sanity_check_summary_byEGID(self, self.sanity_check_path)
+        start_sanity_check_summary_by_EGID = datetime.datetime.now()
         self.sanity_check_summary_byEGID(self.sett.sanity_check_path )
+
+        end_sanity_check_summary_by_EGID = datetime.datetime.now()
+        self.mark_to_timing_csv('init', 'end_sanity_check_summary_by_EGID', end_sanity_check_summary_by_EGID, self.timediff_to_str_hhmmss(start_sanity_check_summary_by_EGID, end_sanity_check_summary_by_EGID), '-')
         
         # EXPORT SPATIAL DATA ====================
         if self.sett.create_gdf_export_of_topology:
+            start_sanity_check_export_spatial_data = datetime.datetime.now()
+
             subchapter_to_logfile('sanity_check: CREATE SPATIAL EXPORTS OF TOPOLOGY_DF', self.sett.log_name)
-            # sanity.create_gdf_export_of_topology(self)  
             self.sanity_create_gdf_export_of_topo()
 
             subchapter_to_logfile('sanity_check: MULTIPLE INSTALLATIONS PER EGID', self.sett.log_name)
-            # sanity.check_multiple_xtf_ids_per_EGID(self)
             self.sanity_check_multiple_xtf_ids_per_EGID()
 
+            end_sanity_check_export_spatial_data = datetime.datetime.now()
+            self.mark_to_timing_csv('init', 'end_sanity_check_export_spatial_data', end_sanity_check_export_spatial_data, self.timediff_to_str_hhmmss(start_sanity_check_export_spatial_data, end_sanity_check_export_spatial_data), '-')
+        
+
         end_sanity_check = datetime.datetime.now()
-        self.mark_to_timing_csv('init', 'end_sanity_check', end_sanity_check, end_sanity_check - start_sanity_check, '-')
+        self.mark_to_timing_csv('init', 'end_sanity_check', end_sanity_check, self.timediff_to_str_hhmmss(start_sanity_check, end_sanity_check), '-')
+
 
         # END ---------------------------------------------------
         chapter_to_logfile(f'end start MAIN_pvalloc_INITIALIZATION for: {self.sett.name_dir_export}\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.sett.total_runtime_start}', self.sett.log_name)
@@ -434,9 +454,10 @@ class PVAllocScenario:
                 elif self.sett.test_faster_array_computation:
                     self.algo_update_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
                 end_time_update_gridprem = datetime.datetime.now()
-                print_to_logfile(f'- END update gridprem: {end_time_update_gridprem - start_time_update_gridprem} (hh:mm:ss.s)', self.sett.log_name)
-                self.mark_to_timing_csv('MCalgo', f'update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem - start_time_update_gridprem, end_time_update_gridprem, '-')  if i_m < 7 else None
                 
+                print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
+                self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  if i_m < 7 else None
+                                                                                                                        
                 start_time_update_npv = datetime.datetime.now()
                 print_to_logfile('- START update npv', self.sett.log_name)
                 if not self.sett.test_faster_array_computation:
@@ -444,8 +465,8 @@ class PVAllocScenario:
                 elif self.sett.test_faster_array_computation:
                     npv_df = self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
                 end_time_update_npv = datetime.datetime.now()
-                print_to_logfile(f'- END update npv: {end_time_update_npv - start_time_update_npv} (hh:mm:ss.s)', self.sett.log_name)
-                self.mark_to_timing_csv('MCalgo', f'update_npv_{i_m:0{max_digits}}', end_time_update_npv - start_time_update_npv, end_time_update_npv, '-')  if i_m < 7 else None
+                print_to_logfile(f'- END update npv: {self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv)} (hh:mm:ss.s)', self.sett.log_name)
+                self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  if i_m < 7 else None
 
 
 
@@ -474,8 +495,9 @@ class PVAllocScenario:
 
                     # Loop Exit + adjust constr_built capacity ----------
                     end_time_installation_whileloop = datetime.datetime.now()
-                    print_to_logfile(f'- END inst while loop: {end_time_installation_whileloop - start_time_installation_whileloop} (hh:mm:ss.s)', self.sett.log_name)
-                    self.mark_to_timing_csv('MCalgo', f'inst_whileloop_{i_m:0{max_digits}}', end_time_installation_whileloop - start_time_installation_whileloop, end_time_installation_whileloop, '-')  if i_m < 7 else None
+                    print_to_logfile(f'- END inst while loop: {self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop)} (hh:mm:ss.s)', self.sett.log_name)
+                    self.mark_to_timing_csv('MCalgo', f'end inst_whileloop_{i_m:0{max_digits}}', end_time_installation_whileloop, self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop),  '-')  if i_m < 7 else None
+                                            
                     
                     constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
                     overshoot_rate = self.sett.CSTRspec_constr_capa_overshoot_fact
@@ -503,12 +525,12 @@ class PVAllocScenario:
             mc_iter_time = datetime.datetime.now() - start_mc_iter
             subchapter_to_logfile(f'END MC{mc_iter:0{max_digits}}, runtime: {mc_iter_time} (hh:mm:ss.s)', self.sett.log_name)
             end_mc_iter = datetime.datetime.now()
-            self.mark_to_timing_csv('MCalgo', f'end_MC_iter_{mc_iter:0{max_digits}}', end_mc_iter, end_mc_iter-start_mc_iter, '-')
+            self.mark_to_timing_csv('MCalgo', f'end_MC_iter_{mc_iter:0{max_digits}}', end_mc_iter, self.timediff_to_str_hhmmss(start_mc_iter, end_mc_iter),  '-')
             print_to_logfile('\n', self.sett.log_name)
 
         
         end_mc_algo = datetime.datetime.now()
-        self.mark_to_timing_csv('MCalgo', 'END_MC_algo', start_mc_algo, end_mc_algo-start_mc_algo, '-')
+        self.mark_to_timing_csv('MCalgo', 'END_MC_algo', start_mc_algo, self.timediff_to_str_hhmmss(start_mc_algo, end_mc_algo),  '-')
 
 
         # END ---------------------------------------------------
@@ -608,6 +630,23 @@ class PVAllocScenario:
             df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
             df.to_csv(self.sett.timing_marks_csv_path, index=False)
 
+    def timediff_to_str_hhmmss(self, start_time, end_time):
+        """
+        Input:
+            > start_time: datetime object of the start time of a process
+            > end_time: datetime object of the end time of a process
+
+        Output:
+            > formatted string of the time difference between start and end time in hh:mm:ss.s format.
+        """
+        timediff = end_time - start_time
+        hours = timediff.seconds // 3600
+        minutes = (timediff.seconds // 60) % 60
+        seconds = timediff.seconds % 60
+        milliseconds = timediff.microseconds // 1000
+        formatted_time = f"{hours:2}:{minutes:02}:{seconds:02}.{milliseconds:03}"
+
+        return formatted_time
 
 
 
@@ -634,7 +673,7 @@ class PVAllocScenario:
             HOY_weatheryear_df.to_parquet(f'{self.sett.name_dir_export_path}/HOY_weatheryear_df.parquet')
 
 
-        def initial_sml_get_gridnodes_DSO(self,):
+        def initial_sml_get_DSO_nodes_df_AND_ts(self,):
             """
             Input: 
                 PVAllocScenario + PVAllocScenario_Settings dataclass containing all scenarios settings + methods
@@ -642,6 +681,7 @@ class PVAllocScenario:
                 - import Map_egid_dsonode and gwr_gdf from the import path
                 - merge DSO node and gwr dataframe 
                 - add centroids as approximative node locations to data frame. 
+                - create a demand time series for each house NOT in the pv sample but still connected to the dsonode through the building registery. 
             Output to pvalloc dir:
                 - dsonodes_df  containing nodes incl threshold
                 - dsonodes_gdf containing nodes incl threshold and approx location
@@ -682,11 +722,94 @@ class PVAllocScenario:
             checkpoint_to_logfile(f'In sample: {dsonodes_in_gwr_df["grid_node"].nunique()} DSO grid nodes for {dsonodes_in_gwr_df["EGID"].nunique()} EGIDs in {len(self.sett.bfs_numbers)} BFSs , (node/egid ratio: {round(dsonodes_in_gwr_df["grid_node"].nunique()/dsonodes_in_gwr_df["EGID"].nunique(),4)*100}%)', self.sett.summary_name)
             
 
+
+            # create dsonodes_ts -----------------------
+
+            # create empty time series for all node demand, through proxy and in sample
+            t_HOY_range = [f't_{hoy}' for hoy in range(1, 8760 + 1)]
+            t_HOY_range_df = pd.DataFrame({'t': t_HOY_range})
+            dsonodes_df_copy = dsonodes_df.copy()       # copy.deepcopy(dsonodes_df)
+            dsonodes_df_copy['key_for_merge_1'] = 1
+            t_HOY_range_df['key_for_merge_1'] = 1
+            
+            dsonodes_ts = pd.merge(dsonodes_df_copy, t_HOY_range_df, how='left', on='key_for_merge_1')
+            dsonodes_ts.drop(columns=['key_for_merge_1'], inplace=True)
+            t_HOY_range_df.drop(columns=['key_for_merge_1'], inplace=True)
+
+            dsonodes_ts['demand_outsample'] = 0
+            dsonodes_ts['demand_topo'] = 0
+                
+            # create single demand profile for each EGID, not covered in sample. 
+            if self.sett.GRIDspec_flat_profile_demand_type_col == 'flat':
+                demand_outsample_ts = t_HOY_range_df.copy()
+                demand_outsample_ts['t_int'] = demand_outsample_ts['t'].apply(lambda x: int(x.split('_')[1]))
+                demand_outsample_ts['DayOfYear'] = demand_outsample_ts['t_int'].apply(lambda x: int((x-1)//24) + 1)
+                demand_outsample_ts['HourOfDay'] = demand_outsample_ts['t_int'].apply(lambda x: int((x-1)%24) + 1)
+                demand_outsample_ts.groupby('DayOfYear').count()
+
+                demand_outsample_ts['demand_proxy_outsample_EGID'] = 0
+                ndays = demand_outsample_ts['DayOfYear'].nunique()
+                demand_pday = self.sett.GRIDspec_flat_profile_demand_total_EGID / ndays
+
+                flat_profile_demand_dict = self.sett.GRIDspec_flat_profile_demand_dict
+                hours_range = pd.Series([x for x in range(1,24+1)])
+                value = flat_profile_demand_dict['_window2']
+
+                # count n of hours in window to allocate proper x-share of demand_pday to the single hour
+                for i, (_, value) in enumerate(flat_profile_demand_dict.items()):
+                    t_start, t_end = value['t']
+                    if t_start <= t_end:
+                        mask_hoy_in_window = list((hours_range >= t_start) & (hours_range <= t_end))
+                    else:
+                        mask_hoy_in_window = list((hours_range >= t_start) | (hours_range <= t_end))
+
+                    hours_int_range = [int(x) for x in hours_range[mask_hoy_in_window].values]
+                    nhours = sum(mask_hoy_in_window)
+                    demand_phour = demand_pday * value['demand_share'] / nhours
+                    
+                    demand_outsample_ts.loc[demand_outsample_ts['HourOfDay'].isin(hours_int_range),'demand_proxy_outsample_EGID'] = demand_phour
+
+                notneeded_cols = [col for col in demand_outsample_ts.columns if col not in ['t', 'demand_proxy_outsample_EGID']]
+                demand_outsample_ts = demand_outsample_ts.loc[:,~demand_outsample_ts.columns.isin(notneeded_cols)]
+            
+            # or call a demand profile from the demandtypes
+            elif not self.sett.GRIDspec_flat_profile_demand_type_col == 'flat': 
+                demandtypes = pd.read_parquet(f'{self.sett.name_dir_import_path}/demandtypes.parquet')
+                demand_outsample_ts = demandtypes[self.sett.GRIDspec_flat_profile_demand_type_col].copy()
+
+
+            # calculate node usage through out of sample EGIDs
+            gwr_df, gwr_all_building_df = gwr_gdf.loc[:,gwr_gdf.columns != 'geometry'].copy(), gwr_all_building_gdf.loc[:,gwr_all_building_gdf.columns != 'geometry'].copy()
+            gwr_outsample = gwr_all_building_df.loc[~gwr_all_building_df['EGID'].isin(gwr_df['EGID'])].copy()
+            gwr_outsample['key_for_merge_1'] = 1
+            demand_outsample_ts['key_for_merge_1'] = 1
+
+            # BOOKMARK! use POLARS
+            gwr_outsample_ts = pd.merge(gwr_outsample, demand_outsample_ts, how='left', on='key_for_merge_1')   
+            gwr_outsample_ts.drop(columns=['key_for_merge_1'], inplace=True)
+
+            # gwr_outsample_ts.groupby(grid)
+            demand_outsample_ts['demand_proxy_outsample_EGID'].sum()
+
+
+            # gwr_outsample_ts = gwr_all_buidling_gdf.merge(demand_outsample_ts, how='left', on='t')
+            # dsonodes_ts = 
+            dsonodes_ts.merge(Map_egid_dsonode, how='left', on='grid_node')
+            dsonodes_ts
+
+            print('break')
+
+
+
+
+
             # export ----------------------
             dsonodes_df.to_parquet(f'{self.sett.name_dir_export_path}/dsonodes_df.parquet')
             dsonodes_df.to_csv(f'{self.sett.name_dir_export_path}/dsonodes_df.csv') if self.sett.export_csvs else None
             with open(f'{self.sett.name_dir_export_path}/dsonodes_gdf.geojson', 'w') as f:
                 f.write(dsonodes_gdf.to_json())
+
+            
 
 
         def initial_sml_iterpolate_instcost_function(self, ):
@@ -2024,10 +2147,6 @@ class PVAllocScenario:
             # if pvalloc_settings['recalc_economics_topo_df']:
 
             rows = []
-            # egid_list, df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list  = [], [], [], [], [], []
-            # inst_list, info_source_list, pvdf_totalpower_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], [], []
-            # flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_list = [], [], [], [], []
-            # keys = list(topo.keys())
 
             for k,v in topo.items():
                 # if k in no_pv_egid:
@@ -3479,21 +3598,21 @@ class PVAllocScenario:
 # RUN SCENARIOS
 # ======================================================================================================
 if __name__ == '__main__':
-
     pvalloc_scen_list = [
         PVAllocScenario_Settings(
                 name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
                 name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-                show_debug_prints  = True,
-                export_csvs        = True,
-                mini_sub_model_TF  = True,
-                test_faster_array_computation = True,
-                T0_year_prediction = 2021,
-                months_prediction  = 2,
-                CHECKspec_n_iterations_before_sanitycheck = 2,
-                ALGOspec_inst_selection_method = 'prob_weighted_npv',
-                TECspec_pvprod_calc_method = 'method2.2',
-                MCspec_montecarlo_iterations = 2,
+                show_debug_prints              = True,
+                export_csvs                    = True,
+                mini_sub_model_TF              = True,
+                create_gdf_export_of_topology  = False, 
+                test_faster_array_computation  = True,
+                T0_year_prediction             = 2021,
+                months_prediction              = 2,
+                CHECKspec_n_iterations_before_sanitycheck   = 2,
+                ALGOspec_inst_selection_method              = 'prob_weighted_npv',
+                TECspec_pvprod_calc_method                  = 'method2.2',
+                MCspec_montecarlo_iterations                = 2,
         ), 
 
     
@@ -3509,6 +3628,8 @@ if __name__ == '__main__':
         pvalloc_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
 
+
+print('')
 
 
 

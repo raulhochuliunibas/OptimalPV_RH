@@ -197,8 +197,39 @@ class Visualization:
 
 
         chapter_to_logfile('start MASTER_visualization\n', self.visual_sett.log_name, overwrite_file=True)
-        print('end_setup')
+        # print('end_setup')
 
+
+
+    # ------------------------------------------------------------------------------------------------------
+    # VISUALIZATION of PVAlloc_INITIALIZATION + SanityCHECK
+    # ------------------------------------------------------------------------------------------------------
+    def plot_ALL_init_sanitycheck(self, ):
+        self.plot_ind_var_summary_stats()
+        self.plot_ind_hist_pvcapaprod_sanitycheck()
+        # # self.plot_ind_boxp_radiation_rng_sanitycheck()
+        self.plot_ind_charac_omitted_gwr()
+        self.plot_ind_line_meteo_radiation()
+
+
+    # ------------------------------------------------------------------------------------------------------
+    # VISUALIZATION of PVAlloc_MC_ALGORITHM
+    # ------------------------------------------------------------------------------------------------------
+    def plot_ALL_mcalgorithm(self,): 
+        self.plot_ind_line_installedCap()
+        self.plot_ind_line_PVproduction()
+        self.plot_ind_line_productionHOY_per_node()
+        self.plot_ind_hist_NPV_freepartitions()
+        self.plot_ind_line_gridPremiumHOY_per_node()
+        self.plot_ind_line_gridPremium_structure()
+        self.plot_ind_hist_NPV_freepartitions()
+
+
+        # plot_ind_map_topo_egid()
+        # plot_ind_map_node_connections()
+        # plot_ind_map_omitted_egids()
+        # plot_ind_lineband_contcharact_newinst()
+# 
 
     # ------------------------------------------------------------------------------------------------------
     # PLOT-AUXILIARY FUNCTIONS
@@ -228,7 +259,7 @@ class Visualization:
         return fig_func
     
     def set_default_fig_zoom_year(self, fig, zoom_window, df, datecol):
-        start_zoom = pd.to_datetime(f'{zoom_window}-01-01')
+        start_zoom = pd.to_datetime(f'{zoom_window[0]}-01-01')
         max_date = df[datecol].max() + pd.DateOffset(years=1)
         if pd.to_datetime(f'{zoom_window[1]}-01-01') > max_date:
             end_zoom = max_date
@@ -247,19 +278,11 @@ class Visualization:
 
 
 
-
     # ------------------------------------------------------------------------------------------------------------------------
     # ALL AVAILABLE PLOTS 
     # ------------------------------------------------------------------------------------------------------------------------
 
     # PLOT IND SCEN: pvalloc_initalization + sanitycheck ----------------------------------------
-    def plot_ALL_init_sanitycheck(self, ):
-        self.plot_ind_var_summary_stats()
-        self.plot_ind_hist_pvcapaprod_sanitycheck()
-        self.plot_ind_boxp_radiation_rng_sanitycheck()
-        self.plot_ind_charac_omitted_gwr()
-        self.plot_ind_line_meteo_radiation()
-
     if True: 
         def plot_ind_var_summary_stats(self, ):
             if self.visual_sett.plot_ind_var_summary_stats_TF[0]:
@@ -643,7 +666,7 @@ class Visualization:
                         )
 
 
-                        if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_pvcapaprod_sanitycheck[1]:
+                        if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_pvcapaprod_sanitycheck_TF[1]:
                             fig_agg_abs.show()
                             fig_agg_stand.show()
                         fig_agg_abs.write_html(f'{self.visual_sett.visual_path}/plot_agg_hist_pvCapaProd_abs_values__{len(self.pvalloc_scen_list)}scen_KDE{uniform_scencolor_and_KDE_TF}.html')   
@@ -653,7 +676,7 @@ class Visualization:
 
                     # Export shapes with 0 kWh annual production --------------------
                     if plot_ind_hist_pvcapaprod_sanitycheck_specs['export_spatial_data_for_prod0']:
-                        os.mkdir(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_spatial_data', exist_ok=True)
+                        os.makedirs(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_spatial_data', exist_ok=True)
 
                         # EGID_no_prod = aggdf_combo.loc[aggdf_combo['pvprod_kW'] == 0, 'EGID'].unique()
                         aggdf_combo_noprod = aggdf_combo.loc[aggdf_combo['pvprod_kW'] == 0]
@@ -1169,15 +1192,7 @@ class Visualization:
 
 
 
-
     # PLOT IND SCEN: pvalloc_MC_algorithm ----------------------------------------
-    def plot_ALL_mcalgorithm(self,): 
-        self.plot_ind_line_installedCap()
-        self.plot_ind_line_PVproduction()
-        self.plot_ind_line_productionHOY_per_node()
-        self.plot_ind_hist_NPV_freepartitions()
-
-
     if True: 
         def plot_ind_line_installedCap(self, ): 
             if self.visual_sett.plot_ind_line_installedCap_TF[0]:
@@ -1198,7 +1213,7 @@ class Visualization:
 
                 fig_agg_pmonth = go.Figure()
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot[0]}')[0]
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
@@ -1350,7 +1365,7 @@ class Visualization:
                         )
 
                         fig1 = self.add_scen_name_to_plot(fig1, scen, self.pvalloc_scen)
-                        fig1 = self.set_default_fig_zoom_year(fig1, self.visual_sett.default_zoom_year[0], capa_year_df, 'BeginOp_year')
+                        fig1 = self.set_default_fig_zoom_year(fig1, self.visual_sett.default_zoom_year, capa_year_df, 'BeginOp_year')
 
                         if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_installedCap_TF[1]:
                             if self.visual_sett.plot_ind_line_installedCap_TF[2]:
@@ -1425,7 +1440,7 @@ class Visualization:
                         )
                         
                         fig2 = self.add_scen_name_to_plot(fig2, scen, self.pvalloc_scen)
-                        fig2 = self.set_default_fig_zoom_year(fig2, self.visual_sett.default_zoom_year[0], capa_bfs_year_df, 'BeginOp_year')
+                        fig2 = self.set_default_fig_zoom_year(fig2, self.visual_sett.default_zoom_year, capa_bfs_year_df, 'BeginOp_year')
                         
                         if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_installedCap_TF[1]:
                             if self.visual_sett.plot_ind_line_installedCap_TF[2]:
@@ -1491,7 +1506,7 @@ class Visualization:
                                 yshift=10
                             )
 
-                            fig_agg_pmonth = self.set_default_fig_zoom_year(fig_agg_pmonth, self.visual_sett.default_zoom_year[0], capa_year_df, 'BeginOp_year')
+                            fig_agg_pmonth = self.set_default_fig_zoom_year(fig_agg_pmonth, self.visual_sett.default_zoom_year, capa_year_df, 'BeginOp_year')
                             
                             if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_installedCap_TF[1]:
                                 fig_agg_pmonth.show()
@@ -1500,13 +1515,14 @@ class Visualization:
                             print_to_logfile(f'\texport: plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen.html', self.visual_sett.log_name)
 
 
+
         def plot_ind_line_PVproduction(self, ): 
             if self.visual_sett.plot_ind_line_PVproduction_TF[0]:
 
                 checkpoint_to_logfile('plot_ind_line_PVproduction', self.visual_sett.log_name)
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot[0]}')[0]
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
@@ -1577,7 +1593,7 @@ class Visualization:
                     gridnode_df_month_iters = [path.split('pred_gridprem_node_by_M\\')[1].split('.parquet')[0] for path in gridnode_df_paths]
                     prod_month_df = prod_month_df.loc[prod_month_df['BeginOp_month_str'].isin(month_iters)]
 
-                    month = prod_month_df['BeginOp_month'].unique()[0]
+                    # month = prod_month_df['BeginOp_month'].unique()[0]
                     for month in prod_month_df['BeginOp_month'].unique():
                         month_str = prod_month_df.loc[prod_month_df['BeginOp_month'] == month, 'BeginOp_month_str'].values[0]
                         grid_subdf = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_gridprem_node_by_M/gridnode_df_{month_str}.parquet')
@@ -1619,6 +1635,7 @@ class Visualization:
                     print_to_logfile(f'\texport: plot_ind_line_PVproduction.html (for: {scen})', self.visual_sett.log_name)
 
 
+
         def plot_ind_line_productionHOY_per_node(self, ): 
             if self.visual_sett.plot_ind_line_productionHOY_per_node_TF[0]:
 
@@ -1627,10 +1644,10 @@ class Visualization:
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
 
                     # setup + import ----------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot[0]}')[0] # take first path if multiple apply, so code can still run properlyrly
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0] # take first path if multiple apply, so code can still run properlyrly
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
-                    self.visual_sett.node_selection
+                    self.visual_sett.node_selection_for_plots
 
                     gridnode_df = pd.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
                     gridnode_df['grid_node'].unique()
@@ -1640,9 +1657,9 @@ class Visualization:
                     # plot ----------------
                     # unclear why if statement is necessary here? maybe older data versions featured col 'info_source'
                     if 'info_source' in gridnode_df.columns:
-                        if isinstance(self.visual_sett.node_selection, list):
-                            nodes = self.visual_sett.node_selection
-                        elif self.visual_sett.node_selection == None:
+                        if isinstance(self.visual_sett.node_selection_for_plots, list):
+                            nodes = self.visual_sett.node_selection_for_plots
+                        elif self.visual_sett.node_selection_for_plots == None:
                             nodes = gridnode_df['grid_node'].unique()
                             
                         pvsources = gridnode_df['info_source'].unique()
@@ -1670,9 +1687,9 @@ class Visualization:
                         fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['feedin_kW_loss'], name='Total feedin_loss', line=dict(color='red', width=2)))
                     
                     else:
-                        if isinstance(self.visual_sett.node_selection, list):
-                            nodes = self.visual_sett.node_selection
-                        elif self.visual_sett.node_selection == None:
+                        if isinstance(self.visual_sett.node_selection_for_plots, list):
+                            nodes = self.visual_sett.node_selection_for_plots
+                        elif self.visual_sett.node_selection_for_plots == None:
                             nodes = gridnode_df['grid_node'].unique()
 
                         fig = go.Figure()
@@ -1698,7 +1715,7 @@ class Visualization:
                     )
 
                     fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
-                    fig = self.set_default_fig_zoom_hour(fig, self.visual_sett.default_zoom_hour[0], gridnode_total_df, 't_int')
+                    fig = self.set_default_fig_zoom_hour(fig, self.visual_sett.default_zoom_hour)
 
                     if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_productionHOY_per_node_TF[1]:
                         if self.visual_sett.plot_ind_line_productionHOY_per_node_TF[2]:
@@ -1712,6 +1729,7 @@ class Visualization:
                     print_to_logfile(f'\texport: plot_ind_line_productionHOY_per_node.html (for: {scen})', self.visual_sett.log_name)
 
 
+
         def plot_ind_hist_NPV_freepartitions(self, ): 
             if self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[0]:
 
@@ -1721,7 +1739,7 @@ class Visualization:
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     # setup + import ----------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot[0]}')[0]
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     
@@ -1740,7 +1758,7 @@ class Visualization:
                     fig.update_layout(
                         xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
                         yaxis_title='Frequency',
-                        title = f'NPV Distribution of possible PV installations, first / last year (weather year: {self.pvalloc_scen.TECspec_weather_year})',
+                        title = f'NPV Distribution of possible PV installations, first / last year (weather year: {self.pvalloc_scen.WEAspec_weather_year})',
                         barmode = 'overlay')
                     fig.update_traces(bingroup=1, opacity=0.5)
 
@@ -1767,7 +1785,7 @@ class Visualization:
                 fig_agg.update_layout(
                     xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
                     yaxis_title='Frequency',
-                    title = f'NPV Distribution of possible PV installations, first / last year ({len(self.pvalloc_scen_list)} scen, weather year: {self.pvalloc_scen.TECspec_weather_year})',
+                    title = f'NPV Distribution of possible PV installations, first / last year ({len(self.pvalloc_scen_list)} scen, weather year: {self.pvalloc_scen.WEAspec_weather_year})',
                     barmode = 'overlay')
                 # fig_agg.update_traces(bingroup=1, opacity=0.75)
 
@@ -1775,19 +1793,246 @@ class Visualization:
                     fig_agg.show()
                 fig_agg.write_html(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions__{len(self.pvalloc_scen_list)}scen.html')
 
+               
+
+        def plot_ind_line_gridPremiumHOY_per_node(self, ): 
+            if self.visual_sett.plot_ind_line_gridPremiumHOY_per_node_TF[0]:
+
+                checkpoint_to_logfile('plot_ind_line_gridPremiumHOY_per_node', self.visual_sett.log_name)
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    # setup + import ----------
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+                    self.visual_sett.node_selection_for_plots
+
+                    gridprem_ts = pd.read_parquet(f'{self.visual_sett.mc_data_path}/gridprem_ts.parquet')
+                    gridprem_ts['t_int'] = gridprem_ts['t'].str.extract(r't_(\d+)').astype(int)
+
+                    # plot ----------------
+                    fig = go.Figure()
+                    for node in self.visuals_sett.node_selection:
+                        gridprem_ts_node = gridprem_ts[gridprem_ts['grid_node'] == node]
+                        gridprem_ts_node.sort_values(by=['t_int'], inplace=True)
+
+                        fig.add_trace(go.Scatter(x=gridprem_ts_node['t_int'], y=gridprem_ts_node['prem_Rp_kWh'],
+                                                 mode='lines', name=f'grid_premium node: {node}'))
+                        
+                    agg_gridprem = gridprem_ts.groupby('t_int').agg({
+                        't': 'first',
+                        'prem_Rp_kWh': ['mean', 'std']
+                    }).reset_index()
+                    agg_gridprem.columns = ['t_int', 't', 'prem_Rp_kWh_mean', 'prem_Rp_kWh_std']
+
+                    fig.add_trace(go.Scatter
+                        (x=agg_gridprem['t_int'], 
+                         y=agg_gridprem['prem_Rp_kWh_mean'],
+                         mode='lines',
+                         name='grid premium Rp/kWh (mean)',
+                         line=dict(color='black', width=2)
+                        ))
+                    fig.add_trace(go.Scatter
+                        (x=agg_gridprem['t_int'],
+                         y=agg_gridprem['prem_Rp_kWh_std'],
+                         mode='lines',
+                         name='grid premium Rp/kWh (std)',
+                         line=dict(color='darkgrey', width=1,
+                        dash='dash')
+                        ))
+
+                    # layout ----------------
+                    fig.update_layout(
+                        title=f'Grid premium Rp/kWh per node (scen: {scen})',
+                        xaxis_title='Hour of year',
+                        yaxis_title='Grid premium Rp/kWh',
+                        showlegend=True,
+                    )
+                    fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen_list[i_scen])
+                    fig = self.set_default_fig_zoom_hour(fig, self.visual_sett.default_zoom_hour)
+
+
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_gridPremiumHOY_per_node_TF[1]:
+                        if self.visual_sett.plot_ind_line_gridPremiumHOY_per_node_TF[2]:
+                            fig.show()
+                        elif not self.visual_sett.plot_ind_line_gridPremiumHOY_per_node_TF[2]:
+                            fig.show() if i_scen == 0 else None
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_line_gridPremiumHOY_per_node.html')
+                    else:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_line_gridPremiumHOY_per_node.html')
+
+
+
+        def plot_ind_line_gridPremium_structure(self, ): 
+            if self.visual_sett.plot_ind_line_gridPremium_structure_TF[0]:
                 
+                checkpoint_to_logfile('plot_ind_line_gridPremium_structure', self.visual_sett.log_name)
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+                    # setup + import ----------
+                    tiers = self.pvalloc_scen.GRIDspec_tiers
+                    tiers_rel_treshold_list, gridprem_Rp_kWh_list = [], []
+                    for k,v in tiers.items():
+                        tiers_rel_treshold_list.append(v[0])
+                        gridprem_Rp_kWh_list.append(v[1])
+
+                    gridprem_tiers_df = pd.DataFrame({'tiers_rel_treshold': tiers_rel_treshold_list, 'gridprem_Rp_kWh': gridprem_Rp_kWh_list})
+
+                    # plot ----------
+                    fig = go.Figure()
+
+                    fig.add_trace(go.Scatter
+                                    (x=gridprem_tiers_df['tiers_rel_treshold'], 
+                                     y=gridprem_tiers_df['gridprem_Rp_kWh'],
+                                     mode='lines+markers',
+                                     name='gridprem, marginal feedin premium (Rp)',
+                                     showlegend=True,
+                                     ))
+                    fig.update_layout(
+                        title='Grid premium structure, feed-in premium for reaching relative grid node capacity (kVA)',
+                        xaxis_title='Relative grid node capacity threshold',
+                        yaxis_title='Feed-in premium (Rp/kWh)',
+                    )
+
+                    fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen_list[i_scen])
+
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_gridPremium_structure_TF[1]:
+                        if self.visual_sett.plot_ind_line_gridPremium_structure_TF[2]:
+                            fig.show()
+                        elif not self.visual_sett.plot_ind_line_gridPremium_structure_TF[2]:
+                            fig.show() if i_scen == 0 else None
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_line_gridPremium_structure.html')
+                    else:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_line_gridPremium_structure.html')
+                        
 
 
+        def plot_ind_map_topo_egid(self, ): 
+            if self.visual_sett.plot_ind_map_topo_egid_TF[0]:
+                map_topo_egid_specs = self.visual_sett.plot_ind_map_topo_egid_specs
+                checkpoint_to_logfile('plot_ind_map_topo_egid', self.visual_sett.log_name)
 
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    
+                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
+                    # get pvinst_gdf ----------------
+                    if True: 
+                        self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
 
+                        # import
+                        gwr_gdf = gpd.read_file(f'{self.visual_sett.name_dir_export_path}/gwr_gdf.geojson')
 
-        # def plot_ind_line_gridPremiumHOY_per_node(self, ): 
+                # # import 
+                # gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
+                # gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gm_shp_gdf.geojson')                                         
 
+                # topo  = json.load(open(f'{mc_data_path}/topo_egid.json', 'r'))
+                # egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
+                # gklas_list, node_list, demand_type_list, pvtarif_list, elecpri_list, elecpri_info_list = [], [], [], [], [], []
 
-        # def plot_ind_line_gridPremium_structure(self, ): 
+                # for k,v, in topo.items():
+                #     egid_list.append(k)
+                #     inst_TF_list.append(v['pv_inst']['inst_TF'])
+                #     info_source_list.append(v['pv_inst']['info_source'])
+                #     BeginOp_list.append(v['pv_inst']['BeginOp'])
+                #     TotalPower_list.append(v['pv_inst']['TotalPower'])
+                #     bfs_list.append(v['gwr_info']['bfs'])
+
+                #     gklas_list.append(v['gwr_info']['gklas'])
+                #     node_list.append(v['grid_node'])
+                #     demand_type_list.append(v['demand_type'])
+                #     pvtarif_list.append(v['pvtarif_Rp_kWh'])
+                #     elecpri_list.append(v['elecpri_Rp_kWh'])
+                #     elecpri_info_list.append(v['elecpri_info'])
+
+                # pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,
+                #                         'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list, 
+                #                         'gklas': gklas_list, 'node': node_list, 'demand_type': demand_type_list,
+                #                         'pvtarif': pvtarif_list, 'elecpri': elecpri_list, 'elecpri_info': elecpri_info_list })
+                
+                # pvinst_df = pvinst_df.merge(gwr_gdf[['geometry', 'EGID']], on='EGID', how='left')
+                # pvinst_gdf = gpd.GeoDataFrame(pvinst_df, crs='EPSG:2056', geometry='geometry')
+                # firstkey_topo = topo[list(topo.keys())[0]]
 
         # def plot_ind_hist_NPV_freepartitions(self, ): 
+        #     if self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[0]:
+
+        #         checkpoint_to_logfile('plot_ind_hist_NPV_freepartitions', self.visual_sett.log_name)
+        #         fig_agg = go.Figure()
+
+        #         for i_scen, scen in enumerate(self.pvalloc_scen_list):
+        #             self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+        #             self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+        #             npv_df_paths = glob.glob(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_*.parquet')
+        #             periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
+        #             before_period, after_period = min(periods_list), max(periods_list)
+
+        #             npv_df_before = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{before_period.to_period("M")}.parquet')
+        #             npv_df_after  = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{after_period.to_period("M")}.parquet')
+
+        #             # plot ----------------
+        #             fig = go.Figure()
+
+        #             fig.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation Algorithm', opacity=0.5))
+
+        #             npv_df_paths = glob.glob(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_*.parquet')
+        #             periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
+        #             before_period, after_period = min(periods_list), max(periods_list)
+
+        #             npv_df_before = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{before_period.to_period("M")}.parquet')
+        #             npv_df_after  = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{after_period.to_period("M")}.parquet')
+
+        #             # plot ----------------
+        #             fig = go.Figure()
+        #             fig.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation Algorithm', opacity=0.5))
+        #             fig.add_trace(go.Histogram(x=npv_df_after['NPV_uid'], name='After Allocation Algorithm', opacity=0.5))
+
+        #             fig.update_layout(
+        #                 xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
+        #                 yaxis_title='Frequency',
+        #                 title = f'NPV Distribution of possible PV installations, first / last year (weather year: {self.pvalloc_scen.WEAspec_weather_year})',
+        #                 barmode = 'overlay')
+        #             fig.update_traces(bingroup=1, opacity=0.5)
+
+        #             fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen_list[i_scen])
+
+        #             if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[1]:
+        #                 if self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[2]:
+        #                     fig.show()
+        #                 elif not self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[2]:
+        #                     fig.show() if i_scen == 0 else None
+        #             if self.visual_sett.save_plot_by_scen_directory:
+        #                 fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_hist_NPV_freepartitions.html')
+        #             else:
+        #                 fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_hist_NPV_freepartitions.html')
+
+
+        #             # aggregate plot ----------------
+        #             fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
+        #             fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,)) 
+
+        #             fig_agg.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation', opacity=0.7, xbins=dict(size=500)))
+        #             fig_agg.add_trace(go.Histogram(x=npv_df_after['NPV_uid'],  name='After Allocation',  opacity=0.7, xbins=dict(size=500)))
+
+        #         fig_agg.update_layout(
+        #             xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
+        #             yaxis_title='Frequency',
+        #             title = f'NPV Distribution of possible PV installations, first / last year ({len(self.scen_dir_export_list)} scen, weather year: {self.pvalloc_scen.WEAspec_weather_year})',
+        #             barmode = 'overlay')
+        #         # fig_agg.update_traces(bingroup=1, opacity=0.75)
+
+        #         if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[1]:
+        #             fig_agg.show()
+        #             fig_agg.write_html(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions__{len(self.scen_dir_export_list)}scen.html')
+
+
 
         # def plot_ind_map_topo_egid(self, ): 
 
@@ -1800,9 +2045,10 @@ class Visualization:
 
 
 
-# -------------------------
-# *** RUN VISUALIZATION ***
-# -------------------------
+# ======================================================================================================
+# RUN VISUALIZATION
+# ======================================================================================================
+
 
 if __name__ == '__main__':
     # if False:
@@ -1814,16 +2060,34 @@ if __name__ == '__main__':
                 '*DEBUG*', 
                 'pvalloc_BLsml_40y_f1983_1mc_meth2.2_rnd',
                 '*pvalloc_BLsml_20y*', 
+                '*.part*00*'
                                         ], 
             save_plot_by_scen_directory        = False, 
-            remove_old_plot_scen_directories   = True,  
-            remove_old_plots_in_visualization = True,  
+            remove_old_plot_scen_directories   = False,  
+            remove_old_plots_in_visualization = False,  
+            ),        
+        Visual_Settings(
+            pvalloc_exclude_pattern_list = [
+                '*.txt','*old_vers*', 
+                '*DEBUG*', 
+                'pvalloc_BLsml_40y_f1983_1mc_meth2.2_rnd',
+                '*pvalloc_BLsml_10y*', 
+                'pvalloc_BLsml_20y_f2003_1mc_meth2.2_max',
+                '*.part*00*'
+                                        ], 
+            save_plot_by_scen_directory        = False, 
+            remove_old_plot_scen_directories   = False,  
+            remove_old_plots_in_visualization = False,  
             ),
     
     ]
 
     for visual_scen in visualization_list:
         visual_class = Visualization(visual_scen)
+
+        # visual_class.plot_ALL_init_sanitycheck()
+        # visual_class.plot_ALL_mcalgorithm()
+
 
         # visual_class.plot_ind_var_summary_stats()
         # visual_class.plot_ind_hist_pvcapaprod_sanitycheck()
@@ -1832,9 +2096,9 @@ if __name__ == '__main__':
         # visual_class.plot_ind_line_meteo_radiation()
 
         visual_class.plot_ind_line_installedCap()
-        # visual_class.plot_ind_line_PVproduction()
-        # visual_class.plot_ind_line_productionHOY_per_node()
-        # visual_class.plot_ind_hist_NPV_freepartitions()
+        visual_class.plot_ind_line_PVproduction()
+        visual_class.plot_ind_line_productionHOY_per_node()
+        visual_class.plot_ind_hist_NPV_freepartitions()
 
 
     print('end <if __main__> chunk')
