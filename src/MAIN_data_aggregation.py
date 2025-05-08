@@ -22,7 +22,7 @@ from typing_extensions import List, Dict
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
-from api_keys.api_keys import get_pvtarif_key, get_primeo_path
+from src.api_keys import get_pvtarif_key, get_primeo_path
 
 
 
@@ -48,7 +48,7 @@ class DataAggScenario_Settings:
     GWR_dwelling_cols: List[str] = field(default_factory=lambda: ['EGID', 'EWID', 'WAZIM', 'WAREA', ])
     GWR_DEMAND_proxy: str = 'GAREA'
     GWR_GSTAT: List[str] = field(default_factory=lambda: ['1004',])                                 # GSTAT - 1004: only existing, fully constructed buildings
-    GWR_GKLAS: List[str] = field(default_factory=lambda: ['1110','1121']) # ,'1276'])                # GKLAS - 1110: only 1 living space per building; 1121: Double-, row houses with each appartment (living unit) having it's own roof; 1276: structure for animal keeping (most likely still one owner)
+    GWR_GKLAS: List[str] = field(default_factory=lambda: ['1110',]) # , '1121','1276'])                # GKLAS - 1110: only 1 living space per building; 1121: Double-, row houses with each appartment (living unit) having it's own roof; 1276: structure for animal keeping (most likely still one owner)
     GWR_GBAUJ_minmax: List[int] = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
     GWR_GWAERZH: List[str] = field(default_factory=lambda: ['7410', '7411',])                       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
 

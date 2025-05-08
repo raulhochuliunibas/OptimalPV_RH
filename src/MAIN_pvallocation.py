@@ -15,6 +15,7 @@ import datetime as datetime
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import polars as pl
+from shapely import union_all
 from  dataclasses import dataclass, field, asdict
 from typing_extensions import List, Dict
 from scipy.optimize import curve_fit
@@ -72,8 +73,8 @@ class PVAllocScenario_Settings:
     GWRspec_dwelling_cols: List[str]                    = field(default_factory=list)
     GWRspec_DEMAND_proxy: str                           = 'GAREA'
     GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: ['1004'])
-    GWRspec_GKLAS: List[str]                            = field(default_factory=lambda: ['1110', '1121'])
-    GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2021])
+    GWRspec_GKLAS: List[str]                            = field(default_factory=lambda: ['1110', ]) # '1121'])  # 1110: Gebäude mit einer Wohnung, diese Klasse umfasst:// - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.// - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
+    GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2021])           # 1121: Gebäude mit zwei Wohnungen, diese Klasse umfasst:// - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
     
     # weather_specs
     WEAspec_meteo_col_dir_radiation: str                = 'Basel Direct Shortwave Radiation'
@@ -95,7 +96,7 @@ class PVAllocScenario_Settings:
                                                         ])
     
     # tech_economic_specs
-    TECspec_self_consumption_ifapplicable: float            = 1
+    TECspec_self_consumption_ifapplicable: float            = 0
     TECspec_interest_rate: float                            = 0.01
     TECspec_pvtarif_year: int                               = 2022
     TECspec_pvtarif_col: List[str]                          = field(default_factory=lambda: ['energy1', 'eco1'])
@@ -277,6 +278,7 @@ class PVAllocScenario:
         if self.sett.recreate_topology:
             subchapter_to_logfile('initialization: IMPORT PREPREP DATA & CREATE (building) TOPOLOGY', self.sett.log_name)
             topo, df_list, df_names = self.initial_lrg_import_preprep_AND_create_topology()
+            self.approx_outtopo_df_griddemand()
 
             subchapter_to_logfile('initialization: IMPORT TS DATA', self.sett.log_name)
             ts_list, ts_names = self.initial_lrg_import_ts_data()
@@ -288,7 +290,7 @@ class PVAllocScenario:
             self.mark_to_timing_csv('init', 'end_create_topo', end_create_topo, self.timediff_to_str_hhmmss(start_create_topo, end_create_topo), '-')
         
 
-        # CALC ECONOMICS + TOPO_TIME SPECIFIC DFs ---------------------------------------------------------------------------------------------
+        # CALC ECONOMICS + (OUT)TOPO_TIME SPECIFIC DFs ---------------------------------------------------------------------------------------------
         subchapter_to_logfile('prep: CALC ECONOMICS for TOPO_DF', self.sett.log_name)
         start_calc_economics = datetime.datetime.now()
         self.mark_to_timing_csv('init', 'start_calc_economics', start_calc_economics, np.nan, '-')
@@ -298,10 +300,10 @@ class PVAllocScenario:
             self.algo_calc_economics_in_topo_df(topo, df_list, df_names, ts_list, ts_names)
         elif self.sett.test_faster_array_computation:
             self.algo_calc_economics_in_topo_df_POLARS(topo, df_list, df_names, ts_list, ts_names)
+        shutil.copy(f'{self.sett.name_dir_export_path}/topo_egid.json', f'{self.sett.name_dir_export_path}/topo_egid_before_alloc.json')
 
         end_calc_economics = datetime.datetime.now()
         self.mark_to_timing_csv('init', 'end_calc_economics', end_calc_economics, self.timediff_to_str_hhmmss(start_calc_economics, end_calc_economics),  '-')
-        shutil.copy(f'{self.sett.name_dir_export_path}/topo_egid.json', f'{self.sett.name_dir_export_path}/topo_egid_before_alloc.json')
 
 
 
@@ -327,7 +329,7 @@ class PVAllocScenario:
 
         for i_m, m in enumerate(months_prediction[0:self.sett.CHECKspec_n_iterations_before_sanitycheck]):
             print_to_logfile(f'\n-- month {m} -- sanity check -- {self.sett.name_dir_export} --', self.sett.log_name)
-            self.algo_update_gridprem_POLARS(self.sett.sanity_check_path, i_m, m)
+            self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.sanity_check_path, i_m, m)
             self.algo_update_npv_df_POLARS(self.sett.sanity_check_path, i_m, m)
             self.algo_select_AND_adjust_topology(self.sett.sanity_check_path, 
                                                  i_m, m)
@@ -452,7 +454,7 @@ class PVAllocScenario:
                 if not self.sett.test_faster_array_computation:
                     self.algo_update_gridprem(self.sett.mc_iter_path, i_m, m)
                 elif self.sett.test_faster_array_computation:
-                    self.algo_update_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
                 end_time_update_gridprem = datetime.datetime.now()
                 
                 print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
@@ -630,6 +632,7 @@ class PVAllocScenario:
             df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
             df.to_csv(self.sett.timing_marks_csv_path, index=False)
 
+
     def timediff_to_str_hhmmss(self, start_time, end_time):
         """
         Input:
@@ -672,6 +675,144 @@ class PVAllocScenario:
             # export df ----------
             HOY_weatheryear_df.to_parquet(f'{self.sett.name_dir_export_path}/HOY_weatheryear_df.parquet')
 
+        
+        def approx_outtopo_df_griddemand(self,):
+            """
+            Input:
+                PVAllocScenario + PVAllocScenario_Settings dataclass containing all scenarios settings + methods
+            Tasks:
+                - import Map_egid_dsonode and gwr_gdf from the import path
+                - create outtopo_df for all EGIDs not covered in the sample area (their demand over time)
+                - assgin one / many load profile(s) to the EGIDs in sample to proxy demand over time.
+                - sub partition the entire outtopo_df into subdfs (otherwise too large)
+                - export the subdfs to the export path of the scenario
+            Output to pvalloc dir:
+                - subdf files of the outtopo_df, partitioned into nEGID-sized chunks            
+            """
+
+            # import settings + setup -------------------
+            print_to_logfile('run function: approx_outtopo_df_griddemand', self.sett.log_name)
+
+            # import --------------------
+            # gwr_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_gdf.geojson')
+            gwr_all_building_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_all_building_gdf.geojson')
+            Map_egid_dsonode = pl.read_parquet(f'{self.sett.name_dir_import_path}/Map_egid_dsonode.parquet')
+            with open(f'{self.sett.name_dir_export_path}/topo_egid.json') as f:
+                topo = json.load(f)
+
+            
+            # create outttopo_df -----------------------
+            # create single demand profile for each EGID, not covered in sample  
+            if self.sett.GRIDspec_flat_profile_demand_type_col == 'flat':
+                t_HOY_range_df = pl.DataFrame({
+                    "t": [f"t_{hoy}" for hoy in range(1, 8761)]
+                }) 
+                demand_outsample_ts = t_HOY_range_df.clone()
+                demand_outsample_ts = demand_outsample_ts.with_columns([
+                    pl.col("t").str.strip_chars("t_").cast(pl.Int64).alias("t_int")
+                ])                
+                demand_outsample_ts = demand_outsample_ts.with_columns([
+                    # Calculate 'DayOfYear' using vectorized operations
+                    ((pl.col("t_int") - 1) // 24 + 1).alias("DayOfYear"),
+                    
+                    # Calculate 'HourOfDay' using vectorized operations
+                    ((pl.col("t_int") - 1) % 24 + 1).alias("HourOfDay")
+                ])
+                demand_outsample_ts.group_by(["DayOfYear"]).agg([
+                    pl.len()
+                ])
+                demand_outsample_ts.group_by(["HourOfDay"]).agg([
+                    pl.len()
+                ])
+
+
+                # devide assumed yearly demand onto days to then distribute it to hours based weights for assumed high usage hours
+                demand_outsample_ts = demand_outsample_ts.with_columns([
+                    pl.lit(0).alias("demand_proxy_out_kW")
+                ])                
+                ndays = demand_outsample_ts['DayOfYear'].n_unique()
+                demand_pday = self.sett.GRIDspec_flat_profile_demand_total_EGID / ndays
+                flat_profile_demand_dict = self.sett.GRIDspec_flat_profile_demand_dict
+                hours_range = pl.DataFrame({'hour': [x for x in range(1,24+1)]})
+                value = flat_profile_demand_dict['_window2']
+
+                # count n of hours in window to allocate proper x-share of demand_pday to the single hour
+                for i, (_, value) in enumerate(flat_profile_demand_dict.items()):
+                    t_start, t_end = value['t']
+                    if t_start <= t_end:
+                        mask_hoy_in_window = list((hours_range['hour'] >= t_start) & (hours_range['hour'] <= t_end))
+                    else:
+                        mask_hoy_in_window = list((hours_range['hour'] >= t_start) | (hours_range['hour'] <= t_end))
+
+                    filtered_hours = hours_range.filter(mask_hoy_in_window)
+                    hours_int_range = filtered_hours["hour"].to_list()
+                    nhours = sum(mask_hoy_in_window)
+                    demand_phour = demand_pday * value['demand_share'] / nhours
+                    
+                    demand_outsample_ts = demand_outsample_ts.with_columns([
+                        pl.when(pl.col("HourOfDay").is_in(hours_int_range))  # Condition: HourOfDay is in hours_int_range
+                        .then(demand_phour)  # Set to demand_phour where the condition is True
+                        .otherwise(pl.col("demand_proxy_out_kW"))  # Keep the original value where the condition is False
+                        .alias("demand_proxy_out_kW")  # Assign to the same column
+                    ])
+
+                notneeded_cols = [col for col in demand_outsample_ts.columns if col not in ['t', 'demand_proxy_out_kW']]
+                demand_outsample_ts = demand_outsample_ts.drop(notneeded_cols)
+
+
+            # or call a demand profile from the demandtypes
+            elif not self.sett.GRIDspec_flat_profile_demand_type_col == 'flat': 
+                demandtypes  = pl.read_parquet(f'{self.sett.name_dir_import_path}/demandtypes.parquet')
+                demand_outsample_ts = demandtypes[self.sett.GRIDspec_flat_profile_demand_type_col].copy()
+
+
+            # calculate node usage through out of sample EGIDs
+            egids_topo = list(topo.keys())
+            gwr_all_building_pl = pl.from_pandas(gwr_all_building_gdf.loc[:,gwr_all_building_gdf.columns != 'geometry'].copy())
+            outtopo_df = gwr_all_building_pl.filter(pl.col('EGID').is_in(egids_topo)).clone()
+
+            outtopo_df = outtopo_df.join(Map_egid_dsonode, how='left', on='EGID') 
+
+            # partition the outtopo_df into subdfs because otherwise not readable with enough memory
+            topo_subdf_partitioner = self.sett.ALGOspec_topo_subdf_partitioner
+            
+            # clear old subdf files and create dir
+            # subdf_path = f'{self.sett.name_dir_export_path}/topo_time_subdf'
+            subdf_path = f'{self.sett.name_dir_export_path}/outtopo_time_subdf'
+
+            if not os.path.exists(subdf_path):
+                os.makedirs(subdf_path)
+            else:
+                old_files = glob.glob(f'{subdf_path}/*')
+                for f in old_files:
+                    os.remove(f)
+            
+            outtopo_df = outtopo_df.with_columns([
+                pl.lit(1).alias("key_for_merge_1")
+            ])
+            demand_outsample_ts = demand_outsample_ts.with_columns([
+                pl.lit(1).alias("key_for_merge_1")
+            ])
+
+
+            egids_outsample = outtopo_df['EGID'].unique().to_list()
+            stepsize = topo_subdf_partitioner if len(egids_outsample) > topo_subdf_partitioner else len(egids_outsample)
+            tranche_counter = 0
+            for i in range(0, len(egids_outsample), stepsize):
+                tranche_counter += 1
+                subdf = outtopo_df.filter(pl.col('EGID').is_in(egids_outsample[i:i + stepsize])).clone()
+
+                # merge proxy demand to gwr EGIDs out of sample
+                subdf_ts = subdf.join(demand_outsample_ts, how='left', on='key_for_merge_1')
+                subdf_ts = subdf_ts.drop('key_for_merge_1')
+
+                # export 
+                subdf_ts.write_parquet(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.parquet')
+                # if self.sett.export_csvs:
+                if (i<2) & self.sett.export_csvs:
+                    subdf_ts.write_csv(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.csv')
+                checkpoint_to_logfile(f'export outsample subdf_ts {i}to{i+stepsize-1}', self.sett.log_name, 1, self.sett.show_debug_prints)
+                
 
         def initial_sml_get_DSO_nodes_df_AND_ts(self,):
             """
@@ -681,11 +822,9 @@ class PVAllocScenario:
                 - import Map_egid_dsonode and gwr_gdf from the import path
                 - merge DSO node and gwr dataframe 
                 - add centroids as approximative node locations to data frame. 
-                - create a demand time series for each house NOT in the pv sample but still connected to the dsonode through the building registery. 
             Output to pvalloc dir:
                 - dsonodes_df  containing nodes incl threshold
                 - dsonodes_gdf containing nodes incl threshold and approx location
-
             """    
             # import settings + setup -------------------
             print_to_logfile('run function: get_gridnodes_DSO', self.sett.log_name)
@@ -706,7 +845,7 @@ class PVAllocScenario:
             for node in gwr_all_building_gdf['grid_node'].unique():
                 if pd.notna(node):
                     sub_gwr_node = gwr_all_building_gdf.loc[gwr_all_building_gdf['grid_node'] == node]
-                    node_centroid = sub_gwr_node.unary_union.centroid
+                    node_centroid = union_all(sub_gwr_node['geometry']).centroid
                     kVA_treshold = sub_gwr_node['kVA_threshold'].unique()[0]
 
                     node_centroid_list.append([node, kVA_treshold, node_centroid])
@@ -722,95 +861,38 @@ class PVAllocScenario:
             checkpoint_to_logfile(f'In sample: {dsonodes_in_gwr_df["grid_node"].nunique()} DSO grid nodes for {dsonodes_in_gwr_df["EGID"].nunique()} EGIDs in {len(self.sett.bfs_numbers)} BFSs , (node/egid ratio: {round(dsonodes_in_gwr_df["grid_node"].nunique()/dsonodes_in_gwr_df["EGID"].nunique(),4)*100}%)', self.sett.summary_name)
             
 
-
             # create dsonodes_ts -----------------------
+            checkpoint_to_logfile('create dsonodes_ts to assign grid usage for outsample gwr (later)', self.sett.log_name, 1, self.sett.show_debug_prints)
 
             # create empty time series for all node demand, through proxy and in sample
-            t_HOY_range = [f't_{hoy}' for hoy in range(1, 8760 + 1)]
-            t_HOY_range_df = pd.DataFrame({'t': t_HOY_range})
-            dsonodes_df_copy = dsonodes_df.copy()       # copy.deepcopy(dsonodes_df)
-            dsonodes_df_copy['key_for_merge_1'] = 1
-            t_HOY_range_df['key_for_merge_1'] = 1
+            t_HOY_range_df = pl.DataFrame({
+                "t": [f"t_{hoy}" for hoy in range(1, 8761)]
+            })        
+            dsonodes_df_copy = pl.from_pandas(dsonodes_df.copy())          
+            dsonodes_df_copy = dsonodes_df_copy.with_columns([
+                pl.lit(1).alias("key_for_merge_1")
+            ])
+            t_HOY_range_df = t_HOY_range_df.with_columns([
+                pl.lit(1).alias("key_for_merge_1")
+            ])
             
-            dsonodes_ts = pd.merge(dsonodes_df_copy, t_HOY_range_df, how='left', on='key_for_merge_1')
-            dsonodes_ts.drop(columns=['key_for_merge_1'], inplace=True)
-            t_HOY_range_df.drop(columns=['key_for_merge_1'], inplace=True)
-
-            dsonodes_ts['demand_outsample'] = 0
-            dsonodes_ts['demand_topo'] = 0
-                
-            # create single demand profile for each EGID, not covered in sample. 
-            if self.sett.GRIDspec_flat_profile_demand_type_col == 'flat':
-                demand_outsample_ts = t_HOY_range_df.copy()
-                demand_outsample_ts['t_int'] = demand_outsample_ts['t'].apply(lambda x: int(x.split('_')[1]))
-                demand_outsample_ts['DayOfYear'] = demand_outsample_ts['t_int'].apply(lambda x: int((x-1)//24) + 1)
-                demand_outsample_ts['HourOfDay'] = demand_outsample_ts['t_int'].apply(lambda x: int((x-1)%24) + 1)
-                demand_outsample_ts.groupby('DayOfYear').count()
-
-                demand_outsample_ts['demand_proxy_outsample_EGID'] = 0
-                ndays = demand_outsample_ts['DayOfYear'].nunique()
-                demand_pday = self.sett.GRIDspec_flat_profile_demand_total_EGID / ndays
-
-                flat_profile_demand_dict = self.sett.GRIDspec_flat_profile_demand_dict
-                hours_range = pd.Series([x for x in range(1,24+1)])
-                value = flat_profile_demand_dict['_window2']
-
-                # count n of hours in window to allocate proper x-share of demand_pday to the single hour
-                for i, (_, value) in enumerate(flat_profile_demand_dict.items()):
-                    t_start, t_end = value['t']
-                    if t_start <= t_end:
-                        mask_hoy_in_window = list((hours_range >= t_start) & (hours_range <= t_end))
-                    else:
-                        mask_hoy_in_window = list((hours_range >= t_start) | (hours_range <= t_end))
-
-                    hours_int_range = [int(x) for x in hours_range[mask_hoy_in_window].values]
-                    nhours = sum(mask_hoy_in_window)
-                    demand_phour = demand_pday * value['demand_share'] / nhours
-                    
-                    demand_outsample_ts.loc[demand_outsample_ts['HourOfDay'].isin(hours_int_range),'demand_proxy_outsample_EGID'] = demand_phour
-
-                notneeded_cols = [col for col in demand_outsample_ts.columns if col not in ['t', 'demand_proxy_outsample_EGID']]
-                demand_outsample_ts = demand_outsample_ts.loc[:,~demand_outsample_ts.columns.isin(notneeded_cols)]
-            
-            # or call a demand profile from the demandtypes
-            elif not self.sett.GRIDspec_flat_profile_demand_type_col == 'flat': 
-                demandtypes = pd.read_parquet(f'{self.sett.name_dir_import_path}/demandtypes.parquet')
-                demand_outsample_ts = demandtypes[self.sett.GRIDspec_flat_profile_demand_type_col].copy()
-
-
-            # calculate node usage through out of sample EGIDs
-            gwr_df, gwr_all_building_df = gwr_gdf.loc[:,gwr_gdf.columns != 'geometry'].copy(), gwr_all_building_gdf.loc[:,gwr_all_building_gdf.columns != 'geometry'].copy()
-            gwr_outsample = gwr_all_building_df.loc[~gwr_all_building_df['EGID'].isin(gwr_df['EGID'])].copy()
-            gwr_outsample['key_for_merge_1'] = 1
-            demand_outsample_ts['key_for_merge_1'] = 1
-
-            # BOOKMARK! use POLARS
-            gwr_outsample_ts = pd.merge(gwr_outsample, demand_outsample_ts, how='left', on='key_for_merge_1')   
-            gwr_outsample_ts.drop(columns=['key_for_merge_1'], inplace=True)
-
-            # gwr_outsample_ts.groupby(grid)
-            demand_outsample_ts['demand_proxy_outsample_EGID'].sum()
-
-
-            # gwr_outsample_ts = gwr_all_buidling_gdf.merge(demand_outsample_ts, how='left', on='t')
-            # dsonodes_ts = 
-            dsonodes_ts.merge(Map_egid_dsonode, how='left', on='grid_node')
-            dsonodes_ts
-
-            print('break')
-
-
-
+            dsonodes_ts = dsonodes_df_copy.join(t_HOY_range_df, how='left', on='key_for_merge_1')
+            dsonodes_ts = dsonodes_ts.drop('key_for_merge_1')
+            t_HOY_range_df = t_HOY_range_df.drop('key_for_merge_1')
+            dsonodes_ts = dsonodes_ts.with_columns([
+                pl.lit(0).alias("demand_outtopo"),
+                pl.lit(0).alias("demand_topo"),
+                pl.lit(0).alias("pvprod_kW"),
+            ])
 
 
             # export ----------------------
             dsonodes_df.to_parquet(f'{self.sett.name_dir_export_path}/dsonodes_df.parquet')
             dsonodes_df.to_csv(f'{self.sett.name_dir_export_path}/dsonodes_df.csv') if self.sett.export_csvs else None
+            dsonodes_ts.write_parquet(f'{self.sett.name_dir_export_path}/dsonodes_ts.parquet')
             with open(f'{self.sett.name_dir_export_path}/dsonodes_gdf.geojson', 'w') as f:
                 f.write(dsonodes_gdf.to_json())
-
             
-
 
         def initial_sml_iterpolate_instcost_function(self, ):
             """
@@ -990,6 +1072,7 @@ class PVAllocScenario:
                 return func_chf_total(x, *params_total)
             
             return estim_instcost_chfpkW, estim_instcost_chftotal            
+
 
         def initial_lrg_import_preprep_AND_create_topology(self, ):
             """
@@ -1475,6 +1558,7 @@ class PVAllocScenario:
                 return func_chf_total(x, *params_total)
             
             return estim_instcost_chfpkW, estim_instcost_chftotal
+
 
         def initial_lrg_import_ts_data(self,):
             """
@@ -2709,7 +2793,7 @@ class PVAllocScenario:
             print_to_logfile(f'* Computation formula for pv production per roof:\n{formla_for_log_print}', self.sett.log_name)
 
 
-        def algo_update_gridprem_POLARS(self, subdir_path: str, i_m: int, m): 
+        def algo_update_gridnode_AND_gridprem_POLARS(self, subdir_path: str, i_m: int, m): 
     
             # setup -----------------------------------------------------
             print_to_logfile('run function: update_gridprem', self.sett.log_name)
@@ -2743,7 +2827,8 @@ class PVAllocScenario:
             checkpoint_to_logfile('gridprem: start read subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
             topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
-            agg_subinst_df_list = []
+            agg_subdf_df_list = []
+            # agg_subinst_df_list = []
             # no_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == False]
             # wi_pv_egid = [k for k, v in topo.items() if v.get('pv_inst', {}).get('inst_TF') == True]
 
@@ -2763,88 +2848,96 @@ class PVAllocScenario:
                 checkpoint_to_logfile('gridprem > subdf: end pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
 
                 # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
-                subinst = subdf_updated.filter(pl.col('inst_TF') == True)       # subinst = copy.deepcopy(subdf_updated.loc[subdf_updated['inst_TF']==True])
+                # subinst = subdf_updated.filter(pl.col('inst_TF') == True)       # subinst = copy.deepcopy(subdf_updated.loc[subdf_updated['inst_TF']==True])
                 checkpoint_to_logfile('gridprem > subdf: start calc + update feedin_kw', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
-                # pvprod_kW, demand_kW = subinst['pvprod_kW'].to_numpy(), subinst['demand_kW'].to_numpy()
-                # selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * self.sett.TECspec_self_consumption_ifapplicable
-                # netdemand_kW = demand_kW - selfconsum_kW
-                # netfeedin_kW = pvprod_kW - selfconsum_kW
-                # subinst = subinst.with_column(pl.Series('feedin_kW', netfeedin_kW))   # subinst['feedin_kW'] = netfeedin_kW
                 selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.sett.TECspec_self_consumption_ifapplicable
 
-                subinst = subinst.with_columns([
+                subdf_updated = subdf_updated.with_columns([        # subinst = subinst.with_columns([
                 selfconsum_expr.alias("selfconsum_kW"),
                 (pl.col("pvprod_kW") - selfconsum_expr).alias("feedin_kW"),
                 (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                 ])
                 checkpoint_to_logfile('gridprem > subdf: end calc + update feedin_kw', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
-                # NOTE: attempt for a more elaborate way to handle already installed installations
-                if False:
-                    pv = pd.read_parquet(f'{subdir_path}/pv.parquet')
-                    pv['pvsource'] = 'pv_df'
-                    pv['pvid'] = pv['xtf_id']
 
-                    # if 'pv_df' in subinst['pvsource'].unique():
-                    # TotalPower = pv.loc[pv['xtf_id'].isin(subinst.loc[subinst['EGID'] == egid, 'pvid']), 'TotalPower'].sum()
-
-                    subinst = subinst.sort_values(by = 'STROMERTRAG', ascending=False)
-                    subinst['pvprod_kW'] = 0
-                    
-                    # t_steps = subinst['t'].unique()
-                    for t in subinst['t'].unique():
-                        timestep_df = subinst.loc[subinst['t'] == t]
-                        total_stromertrag = timestep_df['STROMERTRAG'].sum()
-
-                        for idx, row in timestep_df.iterrows():
-                            share = row['STROMERTRAG'] / total_stromertrag
-                            # subinst.loc[idx, 'pvprod_kW'] = share * TotalPower
-                            print(share)
-
-                subinst = pl.from_pandas(subinst) if isinstance(subinst, pd.DataFrame) else subinst
+                # subinst = pl.from_pandas(subinst) if isinstance(subinst, pd.DataFrame) else subinst
                 # agg_subinst = subinst.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index()
-                agg_subinst = subinst.group_by(["grid_node", "t"]).agg([
+                # agg_subinst = subinst.group_by(["grid_node", "t"]).agg([
+                agg_subdf = subdf_updated.group_by(["grid_node", "t"]).agg([
+                    pl.col('demand_kW').sum().alias('demand_kW'),
+                    pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                    pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                     pl.col('feedin_kW').sum().alias('feedin_kW'),
-                    pl.col('pvprod_kW').sum().alias('pvprod_kW')
+                    pl.col('netdemand_kW').sum().alias('netdemand_kW')
                 ])
                 
-                del subinst
-                agg_subinst_df_list.append(agg_subinst)
+                del subdf_updated
+                # agg_subinst_df_list.append(agg_subdf)
+                agg_subdf_df_list.append(agg_subdf)
+
             
+            agg_subdf_df = pl.concat(agg_subdf_df_list)
+            topo_gridnode_df = agg_subdf_df.group_by(['grid_node', 't']).agg([
+                pl.col('demand_kW').sum().alias('demand_kW'),
+                pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                pl.col('feedin_kW').sum().alias('feedin_kW'),
+                pl.col('netdemand_kW').sum().alias('netdemand_kW'),
+            ])
+            topo_gridnode_df = topo_gridnode_df.join()
+
+
+
+            # import outtopo_time_subfs -----------------------------------------------------
+            outtopo_subdf_paths = glob.glob(f'{self.sett.name_dir_export_path}/outtopo_time_subdf/*.parquet')
+
+            agg_subdf_df_list = []
+            for i, path in enumerate(outtopo_subdf_paths):
+                outsubdf = pl.read_parquet(path)  
+                agg_outsubdf = outsubdf.group_by(["grid_node", "t"]).agg([
+                    pl.col('demand_proxy_out_kW').sum().alias('demand_proxy_out_kW'),
+                ])
+                del outsubdf
+                agg_subdf_df_list.append(agg_outsubdf)
+                
+            agg_outsubdf_df = pl.concat(agg_subdf_df_list)
+            outtopo_gridnode_df = agg_outsubdf_df.group_by(['grid_node', 't']).agg([
+                pl.col('demand_proxy_out_kW').sum().alias('demand_proxy_out_kW'),
+            ])
+
 
             # build gridnode_df -----------------------------------------------------
-            checkpoint_to_logfile('gridprem: start merge with gridnode_df + np.where', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
-
-            # gridnode_df = pd.concat(agg_subinst_df_list)
-            gridnode_df = pl.concat(agg_subinst_df_list)
-            # # groupby df again because grid nodes will be spreach accross multiple tranches
-            # gridnode_df = gridnode_df.groupby(['grid_node', 't']).agg({'feedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index() 
-            gridnode_df = gridnode_df.group_by(['grid_node', 't']).agg([
-                pl.col('feedin_kW').sum().alias('feedin_kW'),
-                pl.col('pvprod_kW').sum().alias('pvprod_kW')
+            checkpoint_to_logfile('gridprem: start merge to (out)topo_gridnode_df to gridnode_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
+            gridnode_df = topo_gridnode_df.join(outtopo_gridnode_df, on=['grid_node', 't'], how='left')
+            
+            demand_proxy_out_kW = gridnode_df['demand_proxy_out_kW'].fill_null(0)
+            netdemand_kW = gridnode_df['netdemand_kW'].fill_null(0)
+            feedin_kW = gridnode_df['feedin_kW'].fill_null(0)
+            gridnode_df = gridnode_df.with_columns([
+                (feedin_kW - netdemand_kW - demand_proxy_out_kW).alias('netfeedin_all_kW'),
             ])
+
+            # sanity check
+            gridnode_df.group_by(['grid_node',]).agg([pl.len()])
+            gridnode_df.group_by(['t',]).agg([pl.len()])
 
 
             # attach node thresholds 
-            # gridnode_df = gridnode_df.merge(dsonodes_df[['grid_node', 'kVA_threshold']], how='left', on='grid_node')
-            # gridnode_df['kW_threshold'] = gridnode_df['kVA_threshold'] * self.sett.GRIDspec_perf_factor_1kVA_to_XkW
-            
-            # gridnode_df['feedin_kW_taken'] = np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['kW_threshold'], gridnode_df['feedin_kW'])
-            # gridnode_df['feedin_kW_loss'] =  np.where(gridnode_df['feedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['feedin_kW'] - gridnode_df['kW_threshold'], 0)
             gridnode_df = gridnode_df.join(dsonodes_df[['grid_node', 'kVA_threshold']], on='grid_node', how='left')
             gridnode_df = gridnode_df.with_columns((pl.col("kVA_threshold") * self.sett.GRIDspec_perf_factor_1kVA_to_XkW).alias("kW_threshold"))
+
             gridnode_df = gridnode_df.with_columns([
-                pl.when(pl.col("feedin_kW") > pl.col("kW_threshold"))
+                pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
                 .then(pl.col("kW_threshold"))
-                .otherwise(pl.col("feedin_kW"))
-                .alias("feedin_kW_taken"),
+                .otherwise(pl.col("netfeedin_all_kW"))
+                .alias("netfeedin_all_taken_kW"),
 
-                pl.when(pl.col("feedin_kW") > pl.col("kW_threshold"))
-                .then(pl.col("feedin_kW") - pl.col("kW_threshold"))
+                pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
+                .then(pl.col("netfeedin_all_kW") - pl.col("kW_threshold"))
                 .otherwise(0)
-                .alias("feedin_kW_loss")
+                .alias("netfeedin_all_loss_kW")
             ])
-
-            checkpoint_to_logfile('gridprem: end merge with gridnode_df + np.where', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
+            # BOOKMARK! what is the correct additino / subtraction for threshold application?
+            checkpoint_to_logfile('gridprem: end merge with gridnode_df + pl.when()', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
 
 
             # update gridprem_ts -----------------------------------------------------
