@@ -10,7 +10,7 @@ pvalloc_scen_list = [
         create_gdf_export_of_topology   = True,
         test_faster_array_computation   = True,
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_year                         = 2021,
+        T0_year_prediction                         = 2021,
         months_prediction               = 36,
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
@@ -26,7 +26,7 @@ pvalloc_scen_list = [
         create_gdf_export_of_topology   = True,
         test_faster_array_computation   = False,
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_year                         = 2021,
+        T0_year_prediction                         = 2021,
         months_prediction               = 36,
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
@@ -42,7 +42,7 @@ pvalloc_scen_list = [
         create_gdf_export_of_topology   = True,
         test_faster_array_computation   = True,
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_year                         = 2021,
+        T0_year_prediction                         = 2021,
         months_prediction               = 36,
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
@@ -59,7 +59,7 @@ pvalloc_scen_list = [
         create_gdf_export_of_topology   = True,
         test_faster_array_computation   = False,
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_year                         = 2021,
+        T0_year_prediction                         = 2021,
         months_prediction               = 36,
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
@@ -76,7 +76,7 @@ pvalloc_scen_list = [
         create_gdf_export_of_topology   = True,
         test_faster_array_computation   = True,
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_year                         = 2021,
+        T0_year_prediction                         = 2021,
         months_prediction               = 36,
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'max_npv', 
@@ -93,7 +93,7 @@ pvalloc_scen_list = [
         create_gdf_export_of_topology   = True,
         test_faster_array_computation   = True,
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ],        # list of municipalites to select for allocation (only used if kt_numbers == 0)
-        T0_year                         = 2021,
+        T0_year_prediction                         = 2021,
         months_prediction               = 36,
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'max_npv', 
