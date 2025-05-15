@@ -164,11 +164,7 @@ class PVAllocScenario_Settings:
     ALGOspec_tweak_npv_excl_elec_demand: bool                   = True
     ALGOspec_tweak_gridnode_df_prod_demand_fact: float          = 1
     ALGOspec_constr_capa_overshoot_fact: float                  = 1
-    ALGOspec_subselec_filter_TF: bool                           = False
-    ALGOspec_subselec_filter_angle_tuples: List[tuple]          = field(default_factory=lambda: [
-                                                                    (0, 90), (90, 180), (180, 270), (270, 360)                                  
-                                                                ])
-    ALGOspec_subselec_filter_criteria: str                      = 'southfacing_1spec'
+    ALGOspec_subselec_filter_criteria: str                      = None  #'eastwest_3spec':'southfacing_1spec'
     ALGOspec_subselec_filter_area_perc_first: float             = 0.5
 
 
