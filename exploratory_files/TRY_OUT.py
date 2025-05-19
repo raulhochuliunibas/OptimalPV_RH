@@ -23,13 +23,50 @@ scen = "pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind"
 name_dir_import = 'preprep_BLSO_22to23_1and2homes'
 
 # ------------------------------------------------------------------------------------------------------
-pq_path = "Z:\9_OptimalPV_RH_copypaste\pred_inst_df.parquet"
+
+pq_path = r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_mini_2m_2mc_rnd\topo_time_subdf\topo_subdf_0to99.parquet"
+file_name = pq_path.split('\\')[-1].split('.parquet')[0]
+csv_path = "\\".join(pq_path.split('\\')[0:-1])
+
+pq_path.split('\\')[0:-1]
+
 df  = pd.read_parquet(pq_path)
-df.to_csv(f'{wd_path}/pred_inst_df.csv')
+df = df.loc[df['EGID'].isin(['400415',])]
+# df = df.head(8760 * 40)
+df.to_csv(f'{csv_path}/{file_name}.csv')
+print(f'exported {file_name}.csv')
 
 
 
 
+
+
+
+# ------------------------------------------------------------------------------------------------------
+if True: 
+    wd_path = 'C:/Models/OptimalPV_RH'
+    data_path     = f'{wd_path}/data'
+    # data_path_def = f'{wd_path}_data'
+    scen = "pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd"
+
+    subdf_selected_list = []
+    pq_paths = glob.glob(f'{data_path}/pvalloc/{scen}/topo_time_subdf/*.parquet')
+    path = pq_paths[0]
+    for path in pq_paths:
+        subdf = pd.read_parquet(path)
+        # subdf = subdf.loc[
+        subdf['df_uid']
+
+    pq_path = r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_BLsml_10y_f2013_1mc_meth2.2_rnd\topo_time_subdf\topo_subdf_0to399.parquet"
+    file_name = pq_path.split('\\')[-1].split('.parquet')[0]
+    csv_path = "\\".join(pq_path.split('\\')[0:-1])
+
+    pq_path.split('\\')[0:-1]
+
+    df  = pd.read_parquet(pq_path)
+    df = df.head(8760 * 40)
+    df.to_csv(f'{csv_path}/{file_name}.csv')
+    print(f'exported {file_name}.csv')
 
 # ------------------------------------------------------------------------------------------------------
 if False:
