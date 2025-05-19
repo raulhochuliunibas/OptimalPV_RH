@@ -59,7 +59,7 @@ class PVAllocScenario_Settings:
     recalc_economics_topo_df: bool              = True
     sanitycheck_byEGID: bool                    = True
     create_gdf_export_of_topology: bool         = True
-    test_faster_array_computation: bool         = False
+    test_faster_array_computation: bool         = True
     
     # PART I: settings for alloc_initialization --------------------
     GWRspec_solkat_max_n_partitions: int                = 10          # larger number of partitions make all combos of roof partitions practically impossible to calculate
@@ -143,7 +143,7 @@ class PVAllocScenario_Settings:
                                                                 ])
 
     # algorithm_specs
-    ALGOspec_inst_selection_method: str                         = 'random'
+    ALGOspec_inst_selection_method: str                         = 'random'          # 'random', max_npv', 'prob_weighted_npv'
     ALGOspec_rand_seed: bool                                    = None
     ALGOspec_while_inst_counter_max: int                        = 5000
     ALGOspec_topo_subdf_partitioner: int                        = 250
@@ -156,7 +156,7 @@ class PVAllocScenario_Settings:
                                                                     'pvprod_kW': 'sum', 'demand_kW': 'sum', 'selfconsum_kW': 'sum', 'netdemand_kW': 'sum',
                                                                     'netfeedin_kW': 'sum', 'econ_inc_chf': 'sum', 'econ_spend_chf': 'sum'
                                                                 })
-    ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF: bool   = True
+    ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF: bool   = False
     ALGOspec_roundup_existing_pvdf_capa_topartition_TF: bool    = False
 
     ALGOspec_tweak_constr_capacity_fact: float                  = 1
@@ -164,7 +164,7 @@ class PVAllocScenario_Settings:
     ALGOspec_tweak_npv_excl_elec_demand: bool                   = True
     ALGOspec_tweak_gridnode_df_prod_demand_fact: float          = 1
     ALGOspec_constr_capa_overshoot_fact: float                  = 1
-    ALGOspec_subselec_filter_criteria: str                      = None  #'eastwest_3spec':'southfacing_1spec'
+    ALGOspec_subselec_filter_criteria: str                      = None  #'eastwestfacing_3spec':'southfacing_1spec'
     ALGOspec_subselec_filter_area_perc_first: float             = 0.5
 
 
@@ -3815,7 +3815,7 @@ class PVAllocScenario:
                 if npv_subdf_angle_dfuid.shape[0] > 0:
                     npv_df = copy.deepcopy(npv_subdf_angle_dfuid)
 
-            elif self.sett.ALGOspec_subselec_filter_criteria == 'eastwest_3spec':
+            elif self.sett.ALGOspec_subselec_filter_criteria == 'eastwestfacing_3spec':
                 npv_subdf_angle_dfuid = copy.deepcopy(npv_df)
                 
                 selected_rows = []
@@ -3852,6 +3852,35 @@ class PVAllocScenario:
                 if npv_subdf_selected.shape[0] > 0:
                     npv_df = copy.deepcopy(npv_subdf_selected)
 
+            elif self.sett.ALGOspec_subselec_filter_criteria == 'southwestfacing_3spec':
+                npv_subdf_angle_dfuid = copy.deepcopy(npv_df)
+                
+                selected_rows = []
+                for egid, group in npv_subdf_angle_dfuid.groupby('EGID'):
+                    eastsouth_single_spec = group[
+                        (group['n_df_uid'] == 1) &
+                        (group['AUSRICHTUNG'] > -45) &
+                        (group['AUSRICHTUNG'] < 135)
+                    ]
+                    eastsouth_group_spec = group[
+                        (group['n_df_uid'] > 1) &
+                        (group['AUSRICHTUNG'] > 0) &    
+                        (group['AUSRICHTUNG'] < 90)
+                    ]
+                    
+                    if not eastsouth_group_spec.empty:
+                        selected_rows.append(eastsouth_group_spec)
+                    elif not eastsouth_single_spec.empty:
+                        selected_rows.append(eastsouth_single_spec)
+
+                npv_subdf_selected = pd.concat(selected_rows, ignore_index = True)
+                # sanity check
+                cols_to_show = ['EGID', 'df_uid_combo', 'n_df_uid', 'inst_TF', 'AUSRICHTUNG', 'NEIGUNG', 'FLAECHE']
+                npv_subdf_angle_dfuid.loc[npv_subdf_angle_dfuid['EGID'].isin(['400507', '400614']), cols_to_show]
+                npv_subdf_selected.loc[npv_subdf_selected['EGID'].isin(['400507', '400614']), cols_to_show]
+
+                if npv_subdf_selected.shape[0] > 0:
+                    npv_df = copy.deepcopy(npv_subdf_selected)
 
 
             # SELECTION BY METHOD ---------------
