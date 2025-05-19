@@ -1046,7 +1046,7 @@ class PVAllocScenario:
             return estim_instcost_chfpkW, estim_instcost_chftotal
 
 
-        def initial_sml_get_instcost_interpolate_function(self, ): 
+        def initial_sml_get_instcost_interpolate_function(self, i_m: int): 
             """
             Input:
                 PVAllocScenario + PVAllocScenario_Settings dataclass containing all scenarios settings + methods
@@ -1057,7 +1057,7 @@ class PVAllocScenario:
                 - estim_instcost_chfpkW, estim_instcost_chftotal: cost estimation functions to estimate the installation cost per kW and total installation cost
             """
             # setup --------
-            print_to_logfile('run function: get_estim_instcost_function', self.sett.log_name)
+            print_to_logfile('run function: get_estim_instcost_function', self.sett.log_name) if i_m < 5 else None
 
             with open(f'{self.sett.name_dir_export_path}/pvinstcost_coefficients.json', 'r') as file:
                 pvinstcost_coefficients = json.load(file)
@@ -3055,7 +3055,7 @@ class PVAllocScenario:
                     pl.col('pvid').first().alias('pvid'), 
                     pl.col('grid_node').first().alias('grid_node'),
                     pl.col('FLAECHE').first().alias('FLAECHE'), 
-                    pl.col('MSTRAHLUNG').first().alias('MSTRAHLUNG'), 
+                    # pl.col('MSTRAHLUNG').first().alias('MSTRAHLUNG'), 
 
                     pl.col('t').len().alias('n_t'),
                     pl.col('month').len().alias('n_month'), 
