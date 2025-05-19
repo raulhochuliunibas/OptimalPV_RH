@@ -64,7 +64,7 @@ pvalloc_scen_list = [
         MCspec_montecarlo_iterations                = 2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
 
-        ALGOspec_subselec_filter_criteria = 'southwestfacing_3spec', 
+        ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
         ),        
 ]
 

@@ -3520,7 +3520,7 @@ class PVAllocScenario:
                 
 
                 # NPV calculation -----------------------------------------------------
-                estim_instcost_chfpkW, estim_instcost_chftotal = self.initial_sml_get_instcost_interpolate_function()
+                estim_instcost_chfpkW, estim_instcost_chftotal = self.initial_sml_get_instcost_interpolate_function(i_m)
                 estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 
 
@@ -3722,7 +3722,7 @@ class PVAllocScenario:
                 
 
                 # NPV calculation -----------------------------------------------------
-                estim_instcost_chfpkW, estim_instcost_chftotal = self.initial_sml_get_instcost_interpolate_function()
+                estim_instcost_chfpkW, estim_instcost_chftotal = self.initial_sml_get_instcost_interpolate_function(i_m)
                 estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 
                 # # estim_instcost_chfpkW, estim_instcost_chftotal = initial.estimate_iterpolate_instcost_function(pvalloc_settings)
@@ -3852,7 +3852,7 @@ class PVAllocScenario:
                 if npv_subdf_selected.shape[0] > 0:
                     npv_df = copy.deepcopy(npv_subdf_selected)
 
-            elif self.sett.ALGOspec_subselec_filter_criteria == 'southwestfacing_3spec':
+            elif self.sett.ALGOspec_subselec_filter_criteria == 'southwestfacing_2spec':
                 npv_subdf_angle_dfuid = copy.deepcopy(npv_df)
                 
                 selected_rows = []
