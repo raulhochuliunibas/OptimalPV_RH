@@ -43,7 +43,7 @@ def print_to_logfile(str_def, log_file_name_def):
     """
     Function to write just plain text to logfile
     """
-    check = f'{str_def}'
+    check = f'{str_def:60}'
     print(check)
 
     with open(f'{log_file_name_def}', 'a') as log_file:
@@ -66,13 +66,13 @@ def checkpoint_to_logfile(str_def, log_file_name_def, n_tabs_def = 0, show_debug
             # milliseconds = int((remainder_sec - seconds) * 1000)
             # runtime_str = f"{hours} hr {minutes} min {seconds} sec {milliseconds} ms"
 
-            runtime_str = f'{time_now - time_last_call} (hh:mm:ss.ms)'
+            runtime_str = f'{time_now - time_last_call} (h:m:s.s)'
             
         else:
             runtime_str = 'N/A'
         
         n_tabs_str = '\t' * n_tabs_def
-        check = f' * {str_def}{n_tabs_str} > runtime: {runtime_str};   (stamp: {datetime.now()})'
+        check = f' * {str_def:60}{n_tabs_str} > runtime: {runtime_str:18};      (stamp: {datetime.now()})'
         print(check)
 
         with open(f'{log_file_name_def}', 'a') as log_file:

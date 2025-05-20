@@ -4,7 +4,7 @@ from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 pvalloc_scen_list = [
     
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_polars_default',
+        name_dir_export                 = 'pvalloc_BLsml_test1_polars_default',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -17,7 +17,7 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_pandas_no_outtopo_demand',
+        name_dir_export                 = 'pvalloc_BLsml_test1_pandas_no_outtopo_demand',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -34,7 +34,7 @@ pvalloc_scen_list = [
     ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_partition300',
+        name_dir_export                 = 'pvalloc_BLsml_test1_partition300',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -49,7 +49,7 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_no_outtopo_demand',
+        name_dir_export                 = 'pvalloc_BLsml_test1_no_outtopo_demand',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -65,7 +65,7 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_pvdf_adjust_TRUE',
+        name_dir_export                 = 'pvalloc_BLsml_test1_pvdf_adjust_TRUE',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,

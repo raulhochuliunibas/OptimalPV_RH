@@ -31,7 +31,7 @@ class PVAllocScenario_Settings:
     # DEFAULT SETTINGS ---------------------------------------------------
     name_dir_export: str                        = 'pvalloc_BL_smallsample'   # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
     name_dir_import: str                        = 'preprep_BL_22to23_extSolkatEGID'
-    show_debug_prints: bool                     = True                    # F: certain print statements are omitted, T: includes print statements that help with debugging
+    show_debug_prints: bool                     = False                    # F: certain print statements are omitted, T: includes print statements that help with debugging
     export_csvs: bool                           = False
     
     kt_numbers: List[int]                       = field(default_factory=list)  # list of cantons to be considered
@@ -146,7 +146,7 @@ class PVAllocScenario_Settings:
     ALGOspec_inst_selection_method: str                         = 'random'          # 'random', max_npv', 'prob_weighted_npv'
     ALGOspec_rand_seed: bool                                    = None
     ALGOspec_while_inst_counter_max: int                        = 5000
-    ALGOspec_topo_subdf_partitioner: int                        = 250
+    ALGOspec_topo_subdf_partitioner: int                        = 9999999
     ALGOspec_npv_update_groupby_cols_topo_aggdf: List[str]      = field(default_factory=lambda: [
                                                                     'EGID', 'df_uid', 'grid_node', 'bfs', 'gklas', 'demandtype', 'inst_TF', 'info_source',
                                                                     'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 
@@ -464,7 +464,7 @@ class PVAllocScenario:
                 end_time_update_gridprem = datetime.datetime.now()
                 
                 print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
-                self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  if i_m < 7 else None
+                self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
                                                                                                                         
                 start_time_update_npv = datetime.datetime.now()
                 print_to_logfile('- START update npv', self.sett.log_name)
@@ -474,7 +474,7 @@ class PVAllocScenario:
                     npv_df = self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
                 end_time_update_npv = datetime.datetime.now()
                 print_to_logfile(f'- END update npv: {self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv)} (hh:mm:ss.s)', self.sett.log_name)
-                self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  if i_m < 7 else None
+                self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  #if i_m < 7 else None
 
 
 
@@ -494,7 +494,7 @@ class PVAllocScenario:
                 while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
                     
                     if npv_df.shape[0] == 0:
-                        checkpoint_to_logfile(' npv_df is EMPTY, exit while loop', self.sett.log_name, 1, self.sett.self.sett.show_debug_prints)                    
+                        checkpoint_to_logfile(' npv_df is EMPTY, exit while loop', self.sett.log_name, 0, self.sett.self.sett.show_debug_prints)                    
                         safety_counter = safety_counter_max
 
                     if npv_df.shape[0] > 0: 
@@ -502,11 +502,6 @@ class PVAllocScenario:
                                                                                     i_m, m)
 
                     # Loop Exit + adjust constr_built capacity ----------
-                    end_time_installation_whileloop = datetime.datetime.now()
-                    print_to_logfile(f'- END inst while loop: {self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop)} (hh:mm:ss.s)', self.sett.log_name)
-                    self.mark_to_timing_csv('MCalgo', f'end inst_whileloop_{i_m:0{max_digits}}', end_time_installation_whileloop, self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop),  '-')  if i_m < 7 else None
-                                            
-                    
                     constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
                     overshoot_rate = self.sett.CSTRspec_constr_capa_overshoot_fact
                     constr_m_TF, constr_y_TF, safety_TF = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y*overshoot_rate, safety_counter > safety_counter_max
@@ -514,21 +509,26 @@ class PVAllocScenario:
                     if any([constr_m_TF, constr_y_TF, safety_TF]):
                         print_to_logfile('exit While Loop', self.sett.log_name)
                         if constr_m_TF:
-                            checkpoint_to_logfile(f'exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built', self.sett.log_name, 1, self.sett.show_debug_prints)                    
+                            checkpoint_to_logfile(f'exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built', self.sett.log_name, 0, self.sett.show_debug_prints)                    
                         if constr_y_TF:
-                            checkpoint_to_logfile(f'exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built', self.sett.log_name, 1, self.sett.show_debug_prints)                    
+                            checkpoint_to_logfile(f'exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built', self.sett.log_name, 0, self.sett.show_debug_prints)                    
                         if safety_TF:
-                            checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}', self.sett.log_name, 1, self.sett.show_debug_prints)                    
+                            checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}', self.sett.log_name, 0, self.sett.show_debug_prints)                    
 
                         if constr_m_TF or constr_y_TF:    
-                            checkpoint_to_logfile(f'{safety_counter} pv installations allocated', self.sett.log_name, 3, self.sett.show_debug_prints)                                        
+                            checkpoint_to_logfile(f'{safety_counter} pv installations allocated', self.sett.log_name, 0, self.sett.show_debug_prints)                                        
+                               
+                end_time_installation_whileloop = datetime.datetime.now()
+                print_to_logfile(f'- END inst while loop: {self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop)} (hh:mm:ss.s)', self.sett.log_name)
+                self.mark_to_timing_csv('MCalgo', f'end inst_whileloop_{i_m:0{max_digits}}', end_time_installation_whileloop, self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop),  '-')  #if i_m < 7 else None
+                                            
+                checkpoint_to_logfile(f'end month allocation, runtime: {datetime.datetime.now() - start_allocation_month} (hh:mm:ss.s)', self.sett.log_name, 0, True)                    
 
-                checkpoint_to_logfile(f'end month allocation, runtime: {datetime.datetime.now() - start_allocation_month} (hh:mm:ss.s)', self.sett.log_name, 1, self.sett.show_debug_prints)                    
 
             # CLEAN UP interim files of MC run ==========
             files_to_remove_paths =  glob.glob(f'{self.sett.mc_iter_path}/topo_subdf_*.parquet')
-            for f in files_to_remove_paths:
-                os.remove(f)
+            # for f in files_to_remove_paths:
+            #     os.remove(f)
 
             mc_iter_time = datetime.datetime.now() - start_mc_iter
             subchapter_to_logfile(f'END MC{mc_iter:0{max_digits}}, runtime: {mc_iter_time} (hh:mm:ss.s)', self.sett.log_name)
@@ -740,7 +740,6 @@ class PVAllocScenario:
                 demand_pday = self.sett.GRIDspec_flat_profile_demand_total_EGID / ndays
                 flat_profile_demand_dict = self.sett.GRIDspec_flat_profile_demand_dict
                 hours_range = pl.DataFrame({'hour': [x for x in range(1,24+1)]})
-                value = flat_profile_demand_dict['_window2']
 
                 # count n of hours in window to allocate proper x-share of demand_pday to the single hour
                 for i, (_, value) in enumerate(flat_profile_demand_dict.items()):
@@ -817,7 +816,7 @@ class PVAllocScenario:
                 # if self.sett.export_csvs:
                 if (i<2) & self.sett.export_csvs:
                     subdf_ts.write_csv(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.csv')
-                checkpoint_to_logfile(f'export outsample subdf_ts {i}to{i+stepsize-1}', self.sett.log_name, 1, self.sett.show_debug_prints)
+                checkpoint_to_logfile(f'export outsample subdf_ts {i}to{i+stepsize-1}', self.sett.log_name, 0, self.sett.show_debug_prints)
                 
 
         def initial_sml_get_DSO_nodes_df_AND_ts(self,):
@@ -868,7 +867,7 @@ class PVAllocScenario:
             
 
             # create dsonodes_ts -----------------------
-            checkpoint_to_logfile('create dsonodes_ts to assign grid usage for outsample gwr (later)', self.sett.log_name, 1, self.sett.show_debug_prints)
+            checkpoint_to_logfile('create dsonodes_ts to assign grid usage for outsample gwr (later)', self.sett.log_name, 0, self.sett.show_debug_prints)
 
             # create empty time series for all node demand, through proxy and in sample
             t_HOY_range_df = pl.DataFrame({
@@ -1041,7 +1040,7 @@ class PVAllocScenario:
             # installation_cost_df.to_parquet(f'{self.sett.name_dir_import_path}/pvinstcost_table.parquet')
             installation_cost_df.to_parquet(f'{self.sett.name_dir_export_path}/pvinstcost_table.parquet')
             installation_cost_df.to_csv(f'{self.sett.name_dir_export_path}/pvinstcost_table.csv')
-            checkpoint_to_logfile('exported pvinstcost_table', self.sett.log_name, 5)
+            checkpoint_to_logfile('exported pvinstcost_table', self.sett.log_name, 0)
 
             return estim_instcost_chfpkW, estim_instcost_chftotal
 
@@ -1057,7 +1056,8 @@ class PVAllocScenario:
                 - estim_instcost_chfpkW, estim_instcost_chftotal: cost estimation functions to estimate the installation cost per kW and total installation cost
             """
             # setup --------
-            print_to_logfile('run function: get_estim_instcost_function', self.sett.log_name) if i_m < 5 else None
+            # print_to_logfile('run function: get_estim_instcost_function', self.sett.log_name) if i_m < 5 else None
+            checkpoint_to_logfile('npv > subdf: get_estim_instcost_function', self.sett.log_name, 0, self.sett.show_debug_prints)
 
             with open(f'{self.sett.name_dir_export_path}/pvinstcost_coefficients.json', 'r') as file:
                 pvinstcost_coefficients = json.load(file)
@@ -1314,20 +1314,20 @@ class PVAllocScenario:
 
             # summary prints ----------
             print_to_logfile('\nEGID selection for TOPOLOGY:', self.sett.summary_name)
-            checkpoint_to_logfile('Loop for topology creation over GWR EGIDs', self.sett.summary_name, 5, True)
-            checkpoint_to_logfile('In Total: {gwr["EGID"].nunique()} gwrEGIDs ({round(gwr["EGID"].nunique() / gwr_before_solkat_selection["EGID"].nunique() * 100,1)}% of {gwr_before_solkat_selection["EGID"].nunique()} total gwrEGIDs) are used for topology creation', self.sett.summary_name, 3, True)
-            checkpoint_to_logfile('  The rest drops out because gwrEGID not present in all data sources', self.sett.summary_name, 3, True)
+            checkpoint_to_logfile('Loop for topology creation over GWR EGIDs', self.sett.summary_name, 0, True)
+            checkpoint_to_logfile('In Total: {gwr["EGID"].nunique()} gwrEGIDs ({round(gwr["EGID"].nunique() / gwr_before_solkat_selection["EGID"].nunique() * 100,1)}% of {gwr_before_solkat_selection["EGID"].nunique()} total gwrEGIDs) are used for topology creation', self.sett.summary_name, 0, True)
+            checkpoint_to_logfile('  The rest drops out because gwrEGID not present in all data sources', self.sett.summary_name, 0, True)
             
             subtraction1 = gwr_before_solkat_selection["EGID"].nunique() - gwr_before_dsonode_selection["EGID"].nunique()
-            checkpoint_to_logfile(f'  > {subtraction1} ({round(subtraction1 / gwr_before_solkat_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in solkat', self.sett.summary_name, 5, True)
+            checkpoint_to_logfile(f'  > {subtraction1} ({round(subtraction1 / gwr_before_solkat_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in solkat', self.sett.summary_name, 0, True)
             
             subtraction2 = gwr_before_dsonode_selection["EGID"].nunique() - gwr["EGID"].nunique()
-            checkpoint_to_logfile(f'  > {subtraction2} ({round(subtraction2 / gwr_before_dsonode_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in dsonodes', self.sett.summary_name, 5, True)
+            checkpoint_to_logfile(f'  > {subtraction2} ({round(subtraction2 / gwr_before_dsonode_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in dsonodes', self.sett.summary_name, 0, True)
             if Map_appendings_df.shape[0] > 0:
 
-                checkpoint_to_logfile(f'  > (REMARK: Even matched {Map_appendings_df.shape[0]} EGIDs matched artificially to gridnode, because EGID lies in close node range, max_distance_m_for_EGID_node_matching: {self.sett.TECspec_max_distance_m_for_EGID_node_matching} meters', self.sett.summary_name, 3, True)
+                checkpoint_to_logfile(f'  > (REMARK: Even matched {Map_appendings_df.shape[0]} EGIDs matched artificially to gridnode, because EGID lies in close node range, max_distance_m_for_EGID_node_matching: {self.sett.TECspec_max_distance_m_for_EGID_node_matching} meters', self.sett.summary_name, 0, True)
             elif Map_appendings_df.shape[0] == 0:
-                checkpoint_to_logfile(f'  > (REMARK: No EGIDs matched to nearest gridnode, max_distance_m_for_EGID_node_matching: {self.sett.TECspec_max_distance_m_for_EGID_node_matching} meters', self.sett.summary_name, 3, True)
+                checkpoint_to_logfile(f'  > (REMARK: No EGIDs matched to nearest gridnode, max_distance_m_for_EGID_node_matching: {self.sett.TECspec_max_distance_m_for_EGID_node_matching} meters', self.sett.summary_name, 0, True)
 
 
 
@@ -1344,7 +1344,7 @@ class PVAllocScenario:
             modulus_print = int(len(gwr['EGID'])//5)
             CHECK_egid_with_problems = []
             print_to_logfile('\n', self.sett.log_name)
-            checkpoint_to_logfile('start attach to topo', self.sett.log_name, 1 , True)
+            checkpoint_to_logfile('start attach to topo', self.sett.log_name, 0 , True)
 
             # transform to np.array for faster lookups
             pv_npry, gwr_npry, elecpri_npry = np.array(pv), np.array(gwr), np.array(elecpri) 
@@ -1372,7 +1372,7 @@ class PVAllocScenario:
                 elif not Map_xtf.empty:
                     xtfid = Map_xtf.iloc[0]
                     if xtfid not in pv['xtf_id'].values:
-                        checkpoint_to_logfile(f'---- pv xtf_id {xtfid} in Mapping_egid_pv, but NOT in pv data', self.sett.log_name, 3, False)
+                        checkpoint_to_logfile(f'---- pv xtf_id {xtfid} in Mapping_egid_pv, but NOT in pv data', self.sett.log_name, 0, False)
                         
                     if (Map_xtf.shape[0] == 1) and (xtfid in pv['xtf_id'].values):
                         mask_xtfid = np.isin(pv_npry[:, pv.columns.get_loc('xtf_id')], [xtfid,])
@@ -1391,7 +1391,7 @@ class PVAllocScenario:
                         # pv_inst['TotalPower'] = pv.loc[pv['xtf_id'] == xtfid, 'TotalPower'].iloc[0]
                         
                     elif Map_xtf.shape[0] > 1:
-                        checkpoint_to_logfile(f'ERROR: multiple xtf_ids for EGID: {egid}', self.sett.log_name, 3, self.sett.show_debug_prints)
+                        checkpoint_to_logfile(f'ERROR: multiple xtf_ids for EGID: {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
                         CHECK_egid_with_problems.append((egid, 'multiple xtf_ids'))
 
 
@@ -1404,7 +1404,7 @@ class PVAllocScenario:
                 
                 elif egid not in solkat['EGID'].unique():
                     solkat_partitions = {}
-                    checkpoint_to_logfile(f'egid {egid} not in solkat', self.sett.log_name, 3, self.sett.show_debug_prints)
+                    checkpoint_to_logfile(f'egid {egid} not in solkat', self.sett.log_name, 0, self.sett.show_debug_prints)
 
 
                 # add demand type --------
@@ -1421,7 +1421,7 @@ class PVAllocScenario:
 
                 pvtarif_sub = pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid)]
                 if pvtarif_sub.empty:
-                    checkpoint_to_logfile(f'ERROR: no pvtarif data for EGID {egid}', self.sett.log_name, 3, self.sett.show_debug_prints)
+                    checkpoint_to_logfile(f'ERROR: no pvtarif data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
                     ewr_info = {}
                     CHECK_egid_with_problems.append((egid, 'no pvtarif data'))
                 elif pvtarif_sub.shape[0] == 1:
@@ -1439,7 +1439,7 @@ class PVAllocScenario:
                         'eco1': pvtarif_sub['eco1'].mean(),
                     }
                 
-                    # checkpoint_to_logfile(f'multiple pvtarif data for EGID {egid}', self.sett.log_name, 3, self.sett.show_debug_prints)
+                    # checkpoint_to_logfile(f'multiple pvtarif data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
                     CHECK_egid_with_problems.append((egid, 'multiple pvtarif data'))
 
 
@@ -1452,10 +1452,10 @@ class PVAllocScenario:
                 mask_cat = np.isin(elecpri_npry[:, elecpri.columns.get_loc('category')], self.sett.TECspec_elecpri_category)
 
                 if sum(mask_bfs & mask_year & mask_cat) < 1:
-                    checkpoint_to_logfile(f'ERROR: no elecpri data for EGID {egid}', self.sett.log_name, 3, self.sett.show_debug_prints)
+                    checkpoint_to_logfile(f'ERROR: no elecpri data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
                     CHECK_egid_with_problems.append((egid, 'no elecpri data'))
                 elif sum(mask_bfs & mask_year & mask_cat) > 1:
-                    checkpoint_to_logfile(f'ERROR: multiple elecpri data for EGID {egid}', self.sett.log_name, 3, self.sett.show_debug_prints)
+                    checkpoint_to_logfile(f'ERROR: multiple elecpri data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
                     CHECK_egid_with_problems.append((egid, 'multiple elecpri data'))
                 elif sum(mask_bfs & mask_year & mask_cat) == 1:
                     energy =   elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('energy')].sum()
@@ -1509,7 +1509,7 @@ class PVAllocScenario:
 
                 
             # end loop ------------------------------------------------
-            checkpoint_to_logfile('end attach to topo', self.sett.log_name, 1 , True)
+            checkpoint_to_logfile('end attach to topo', self.sett.log_name, 0 , True)
             print_to_logfile('\nsanity check for installtions in topo_egid', self.sett.summary_name)
             checkpoint_to_logfile(f'number of EGIDs with multiple installations: {CHECK_egid_with_problems.count("multiple xtf_ids")}', self.sett.summary_name)
 
@@ -1591,8 +1591,8 @@ class PVAllocScenario:
             start_loockback = T0 - pd.DateOffset(months = self.sett.months_lookback) # + pd.DateOffset(hours=1)
             end_prediction = T0 + pd.DateOffset(months = self.sett.months_prediction) - pd.DateOffset(hours=1)
             date_range = pd.date_range(start=start_loockback, end=end_prediction, freq='h')
-            checkpoint_to_logfile(f'import TS: lookback range   {start_loockback} to {T0-pd.DateOffset(hours=1)}', self.sett.log_name, 2)
-            checkpoint_to_logfile(f'import TS: prediction range {T0} to {end_prediction}', self.sett.log_name, 2)
+            checkpoint_to_logfile(f'import TS: lookback range   {start_loockback} to {T0-pd.DateOffset(hours=1)}', self.sett.log_name, 0)
+            checkpoint_to_logfile(f'import TS: prediction range {T0} to {end_prediction}', self.sett.log_name, 0)
 
             Map_daterange = pd.DataFrame({'date_range': date_range, 'DoY': date_range.dayofyear, 'hour': date_range.hour})
             Map_daterange['HoY'] = (Map_daterange['DoY'] - 1) * 24 + (Map_daterange['hour']+1)
@@ -1780,13 +1780,13 @@ class PVAllocScenario:
             months_prediction_df = pd.DataFrame({'date': months_prediction, 'year': months_prediction.year, 'month': months_prediction.month})
 
             # PRINTs to LOGFILE ----------------------------------------------------------------------------
-            checkpoint_to_logfile(f'constr_capacity month lookback, between :                {months_lookback[0]} to {months_lookback[-1]}', self.sett.log_name, 2)
-            checkpoint_to_logfile(f'constr_capacity KW built in period (sum_TP_kW_lookback): {round(sum_TP_kW_lookback,2)} kW', self.sett.log_name, 2)
+            checkpoint_to_logfile(f'constr_capacity month lookback, between :                {months_lookback[0]} to {months_lookback[-1]}', self.sett.log_name, 0)
+            checkpoint_to_logfile(f'constr_capacity KW built in period (sum_TP_kW_lookback): {round(sum_TP_kW_lookback,2)} kW', self.sett.log_name, 0)
             print_to_logfile('\n', self.sett.log_name)
-            checkpoint_to_logfile(f'constr_capacity: month prediction {months_prediction[0]} to {months_prediction[-1]}', self.sett.log_name, 2)
-            checkpoint_to_logfile(f'sum_TP_kw_lookback {round(sum_TP_kW_lookback,3)} kW to distribute across months_prediction', self.sett.log_name, 2)
+            checkpoint_to_logfile(f'constr_capacity: month prediction {months_prediction[0]} to {months_prediction[-1]}', self.sett.log_name, 0)
+            checkpoint_to_logfile(f'sum_TP_kw_lookback {round(sum_TP_kW_lookback,3)} kW to distribute across months_prediction', self.sett.log_name, 0)
             print_to_logfile('\n', self.sett.log_name)
-            checkpoint_to_logfile(f'sum_TP_kW_lookback (T0: {round(sum_TP_kW_lookback,2)} kW) increase by {capacity_growth*100}% per year', self.sett.log_name, 2)
+            checkpoint_to_logfile(f'sum_TP_kW_lookback (T0: {round(sum_TP_kW_lookback,2)} kW) increase by {capacity_growth*100}% per year', self.sett.log_name, 0)
 
 
             # EXPORT ----------------------------------------------------------------------------
@@ -2331,7 +2331,7 @@ class PVAllocScenario:
             tranche_counter = 0
             egids = topo_df['EGID'].unique()
             stepsize = topo_subdf_partitioner if len(egids) > topo_subdf_partitioner else len(egids)
-            checkpoint_to_logfile(' * * DEBUGGIGN * * *: START loop subdfs', self.sett.log_name, 1)
+            checkpoint_to_logfile(' * * DEBUGGIGN * * *: START loop subdfs', self.sett.log_name, 0)
             for i in range(0, len(egids), stepsize):
 
                 tranche_counter += 1
@@ -2377,13 +2377,13 @@ class PVAllocScenario:
                             pl.col("timestamp").dt.month().cast(pl.Int32).alias("month")
                         ])
                         
-                        checkpoint_to_logfile(f'  start merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 1) if i < 2 else None
+                        checkpoint_to_logfile(f'  start merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 0) if i < 2 else None
                         subdf = subdf.join(
                             solkat_month.select(["df_uid", "month", "A_PARAM", "B_PARAM", "C_PARAM"]),
                             on=["df_uid", "month"],
                             how="left"
                         )   
-                        checkpoint_to_logfile(f'  end merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 1) if i < 2 else None
+                        checkpoint_to_logfile(f'  end merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 0) if i < 2 else None
                         subdf = subdf.with_columns([
                             (
                                 pl.col("A_PARAM") * pl.col("rad_direct") +
@@ -2471,7 +2471,7 @@ class PVAllocScenario:
                     )  
                     subdf = subdf.join(demandtypes_melt, on=["t", "demandtype"], how="left")
                     subdf = subdf.rename({"demand": "demand_kW"})
-                    # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', self.sett.log_name, 1)
+                    # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', self.sett.log_name, 0)
 
 
                     # attach FLAECH_angletilt, might be usefull for later calculations
@@ -2581,7 +2581,7 @@ class PVAllocScenario:
 
                             # adjust pvprod, actual / partition kWpeak-ratio ----------
                             if subdf_dfuid_pvdf.shape[0] > 1:
-                                print_to_logfile(f'  **WARNING**: df_uid {df_uid_inst} has more than one row in subdf_egid_pvdf', self.sett.log_name, 1)
+                                print_to_logfile(f'  **WARNING**: df_uid {df_uid_inst} has more than one row in subdf_egid_pvdf', self.sett.log_name, 0)
                             
                             # elif subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0] > subdf_dfuid_pvdf['TotalPower'][0]:                            
                             # roundup_pvdf_capa_topartition_TF: round up kWpeak to full partition size or not.
@@ -2649,8 +2649,8 @@ class PVAllocScenario:
                     subdf.write_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv')
                 if (i == 0) & self.sett.export_csvs:
                     subdf.write_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv' )
-                checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', self.sett.log_name, 1)
-                checkpoint_to_logfile(' * * DEBUGGIGN * * *: END loop subdfs', self.sett.log_name, 1)
+                checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', self.sett.log_name, 0)
+                checkpoint_to_logfile(' * * DEBUGGIGN * * *: END loop subdfs', self.sett.log_name, 0)
 
 
             # merge subdf_pvdf and export ----------------------------------------------
@@ -2789,7 +2789,7 @@ class PVAllocScenario:
 
             stepsize = topo_subdf_partitioner if len(egids) > topo_subdf_partitioner else len(egids)
             tranche_counter = 0
-            checkpoint_to_logfile(' * * DEBUGGIGN * * *: START loop subdfs', self.sett.log_name, 1)
+            checkpoint_to_logfile(' * * DEBUGGIGN * * *: START loop subdfs', self.sett.log_name, 0)
             for i in range(0, len(egids), stepsize):
 
                 tranche_counter += 1
@@ -2822,9 +2822,9 @@ class PVAllocScenario:
                     subdf['month'] = subdf['timestamp'].dt.month.astype(int)
                     
                 
-                    checkpoint_to_logfile(f'  start merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 1) if i < 2 else None
+                    checkpoint_to_logfile(f'  start merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 0) if i < 2 else None
                     subdf = subdf.merge(solkat_month[['df_uid', 'month', 'A_PARAM', 'B_PARAM', 'C_PARAM']], how='left', on=['df_uid', 'month'])
-                    checkpoint_to_logfile(f'  end merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 1) if i < 2 else None
+                    checkpoint_to_logfile(f'  end merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 0) if i < 2 else None
                     subdf['radiation'] = subdf['A_PARAM'] * subdf['rad_direct'] + subdf['B_PARAM'] * subdf['rad_diffuse'] + subdf['C_PARAM']
                     # some radiation values are negative, because of the linear transformation with abc parameters. 
                     # force all negative values to 0
@@ -2874,7 +2874,7 @@ class PVAllocScenario:
                 demandtypes_melt = demandtypes_ts.melt(id_vars='t', value_vars=demandtypes_names, var_name= 'demandtype', value_name= 'demand')
                 subdf = subdf.merge(demandtypes_melt, how='left', on=['t', 'demandtype'])
                 subdf.rename(columns={'demand': 'demand_kW'}, inplace=True)
-                # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', self.sett.log_name, 1)
+                # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', self.sett.log_name, 0)
 
 
                 # attach FLAECH_angletilt, might be usefull for later calculations
@@ -2931,7 +2931,7 @@ class PVAllocScenario:
                         shading_factor = stromertrag_dfuid / pvprod_kWhYear_noshade
                         
                         if shading_factor > 1:
-                            checkpoint_to_logfile(f' *ERROR* shading factor > 1 for df_uid: {dfuid}, EGID: {subdf.loc[dfuid_TF, "EGID"].unique()} ', self.sett.log_name, 1)
+                            checkpoint_to_logfile(f' *ERROR* shading factor > 1 for df_uid: {dfuid}, EGID: {subdf.loc[dfuid_TF, "EGID"].unique()} ', self.sett.log_name, 0)
                         subdf.loc[dfuid_TF, 'pvprod_kW'] = subdf.loc[dfuid_TF, 'pvprod_kW_noshade'] * shading_factor
                     subdf.drop(columns=['meteo_loc', 'radiation', 'pvprod_kW_noshade'], inplace=True)
                     print_to_logfile("* calculation formula for pv production per roof:\n   > subdf['pvprod_kW'] = <retrofitted_shading_factor> * inverter_efficiency  * (subdf['radiation'] / 1000 ) * subdf['FLAECHE'] * subdf['angletilt_factor'] \n", self.sett.log_name)
@@ -2946,8 +2946,8 @@ class PVAllocScenario:
                     subdf.to_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv', index=False)
                     topo_df.head(500).to_csv(f'{subdf_path}/topo_df_500.csv', index=False) if i < 5 else None
 
-                checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', self.sett.log_name, 1)
-                checkpoint_to_logfile(' * * DEBUGGIGN * * *: END loop subdfs', self.sett.log_name, 1)
+                checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', self.sett.log_name, 0)
+                checkpoint_to_logfile(' * * DEBUGGIGN * * *: END loop subdfs', self.sett.log_name, 0)
 
 
             # print computation formula for comparing methods
@@ -2972,7 +2972,7 @@ class PVAllocScenario:
 
 
             # create Map_infosource_egid ----------------------------------------------
-            checkpoint_to_logfile('gridprem: start loop Map_infosource_egid', self.sett.log_name, 1, self.sett.show_debug_prints)
+            checkpoint_to_logfile('gridprem: start loop Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints)
             k,v = list(topo.items())[0]
             egid_list, dfuid_list, info_source_list, inst_TF_list = [], [], [], []
             for k,v in topo.items():
@@ -2989,13 +2989,13 @@ class PVAllocScenario:
                     inst_TF_list.append(False)
             Map_pvinfo_topo_egid = pd.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'info_source': info_source_list, 'inst_TF': inst_TF_list})
 
-            checkpoint_to_logfile('gridprem: end loop Map_infosource_egid', self.sett.log_name, 1, self.sett.show_debug_prints)
+            checkpoint_to_logfile('gridprem: end loop Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints)
             #sanity check
             Map_pvinfo_topo_egid.loc[Map_pvinfo_topo_egid['inst_TF']]
             
 
             # import topo_time_subdfs -----------------------------------------------------
-            checkpoint_to_logfile('gridprem: start read subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+            checkpoint_to_logfile('gridprem: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
             topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
             subdf_updated_pvdf_agg_list = []
@@ -3003,16 +3003,16 @@ class PVAllocScenario:
 
             i, path = 0, topo_subdf_paths[0]
             for i, path in enumerate(topo_subdf_paths):
-                checkpoint_to_logfile('gridprem > subdf: start read subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('gridprem > subdf: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                 subdf = pl.read_parquet(path)          
                 Map_pvinfo_topo_egid = pl.from_pandas(Map_pvinfo_topo_egid) if isinstance(Map_pvinfo_topo_egid, pd.DataFrame) else Map_pvinfo_topo_egid
                 
-                checkpoint_to_logfile('gridprem > subdf: end read subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('gridprem > subdf: end read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
                 subdf_updated = subdf.clone()                                      
                 subdf_updated = subdf_updated.drop(['info_source', 'inst_TF'])                      
 
-                checkpoint_to_logfile('gridprem > subdf: start pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('gridprem > subdf: start pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                 subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid', 'info_source', 'inst_TF']], on=['EGID', 'df_uid'], how='left')         
                 # remove the nulls from the merged columns
                 subdf_updated = subdf_updated.with_columns([
@@ -3021,11 +3021,11 @@ class PVAllocScenario:
                     pl.when(pl.col('info_source').is_null())
                         .then(pl.lit("")).otherwise(pl.col('info_source')).alias('info_source'),
                 ])
-                checkpoint_to_logfile('gridprem > subdf: end pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('gridprem > subdf: end pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
                 # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
                 subdf_updated = subdf_updated.filter(pl.col('inst_TF'))       
-                checkpoint_to_logfile('gridprem > subdf: start calc + update netfeedin_kW', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
+                checkpoint_to_logfile('gridprem > subdf: start calc + update netfeedin_kW', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
 
                 selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.sett.TECspec_self_consumption_ifapplicable
 
@@ -3034,7 +3034,7 @@ class PVAllocScenario:
                 (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
                 (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                 ])
-                checkpoint_to_logfile('gridprem > subdf: end calc + update netfeedin_kW', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
+                checkpoint_to_logfile('gridprem > subdf: end calc + update netfeedin_kW', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
 
                 # subinst = pl.from_pandas(subinst) if isinstance(subinst, pd.DataFrame) else subinst
                 # agg_subinst = subinst.groupby(['grid_node', 't']).agg({'netfeedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index()
@@ -3105,7 +3105,7 @@ class PVAllocScenario:
 
 
             # build gridnode_df -----------------------------------------------------
-            checkpoint_to_logfile('gridprem: start merge to (out)topo_gridnode_df to gridnode_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
+            checkpoint_to_logfile('gridprem: start merge to (out)topo_gridnode_df to gridnode_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
             gridnode_df = topo_gridnode_df.join(outtopo_gridnode_df, on=['grid_node', 't'], how='left')
             
             demand_proxy_out_kW = gridnode_df['demand_proxy_out_kW'].fill_null(0)
@@ -3135,11 +3135,11 @@ class PVAllocScenario:
                 .otherwise(0)
                 .alias("netfeedin_all_loss_kW")
             ])
-            checkpoint_to_logfile('gridprem: end merge with gridnode_df + pl.when()', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
+            checkpoint_to_logfile('gridprem: end merge with gridnode_df + pl.when()', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
 
 
             # update gridprem_ts -----------------------------------------------------
-            checkpoint_to_logfile('gridprem: start update gridprem_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
+            checkpoint_to_logfile('gridprem: start update gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
             gridnode_df = gridnode_df.sort("netfeedin_all_taken_kW", descending=True)            
             gridnode_df_for_prem = gridnode_df.group_by(['grid_node', 'kW_threshold', 't']).agg(
                 pl.col('netfeedin_all_taken_kW').sum().alias('netfeedin_all_taken_kW'), 
@@ -3191,7 +3191,7 @@ class PVAllocScenario:
                     .alias("prem_Rp_kWh")
                 )
 
-            checkpoint_to_logfile('gridprem: end update gridprem_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None   
+            checkpoint_to_logfile('gridprem: end update gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
             
             # sanity check
             gridnode_df_for_prem.filter(pl.col('prem_Rp_kWh') > 0)
@@ -3206,9 +3206,10 @@ class PVAllocScenario:
                 gridnode_df.write_csv(f'{subdir_path}/gridnode_df.csv')        
                 gridprem_ts.write_csv(f'{subdir_path}/gridprem_ts.csv')        
 
-            subdf_updated_pvdf_agg.write_parquet(f'{subdir_path}/SANITYCHECK_topo_subdf_updated_pvdf_agg_iter{i_m}.parquet')
             if self.sett.export_csvs and (i_m < 3):
-                subdf_updated_pvdf_agg.write_csv(f'{subdir_path}/SANITYCHECK_topo_subdf_updated_pvdf_agg_iter{i_m}.csv')        
+                subdf_updated_pvdf_agg.write_parquet(f'{subdir_path}/SANITYCHECK_topo_subdf_updated_pvdf_agg_iter{i_m}.parquet')
+                subdf_updated_pvdf_agg.write_csv(f'{subdir_path}/SANITYCHECK_topo_subdf_updated_pvdf_agg_iter{i_m}.csv')       
+
 
 
             # export by Month -----------------------------------------------------
@@ -3229,7 +3230,7 @@ class PVAllocScenario:
                         gridnode_df.write_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv')             
                         gridprem_ts.write_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv')             
         
-            checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, 1) if i_m < 3 else None
+            checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, 0) if i_m < 3 else None
             
 
         def algo_update_gridprem(self, subdir_path: str, i_m: int, m): 
@@ -3246,7 +3247,7 @@ class PVAllocScenario:
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
             gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
 
-            checkpoint_to_logfile('**DEBUGGIG** > START LOOP through topo_egid', self.sett.log_name, 1, self.sett.show_debug_prints)
+            checkpoint_to_logfile('**DEBUGGIG** > START LOOP through topo_egid', self.sett.log_name, 0, self.sett.show_debug_prints)
             egid_list, info_source_list, inst_TF_list = [], [], []
             for k,v in topo.items():
                 egid_list.append(k)
@@ -3258,12 +3259,12 @@ class PVAllocScenario:
                     inst_TF_list.append(False)
             Map_infosource_egid = pd.DataFrame({'EGID': egid_list, 'info_source': info_source_list, 'inst_TF': inst_TF_list}, index=egid_list)
 
-            checkpoint_to_logfile('**DEBUGGIG** > end loop through topo_egid', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+            checkpoint_to_logfile('**DEBUGGIG** > end loop through topo_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
 
             # import topo_time_subdfs -----------------------------------------------------
             # topo_subdf_paths = glob.glob(f'{self.sett.pvalloc_path}/topo_time_subdf/*.parquet')
-            checkpoint_to_logfile('**DEBUGGIG** > start loop through subdfs', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+            checkpoint_to_logfile('**DEBUGGIG** > start loop through subdfs', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
             topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
             agg_subinst_df_list = []
@@ -3272,22 +3273,22 @@ class PVAllocScenario:
 
             i, path = 0, topo_subdf_paths[0]
             for i, path in enumerate(topo_subdf_paths):
-                checkpoint_to_logfile('**DEBUGGIG** \t> start read subdfs', self.sett.log_name, 2) if i < 2 else None
+                checkpoint_to_logfile('**DEBUGGIG** \t> start read subdfs', self.sett.log_name, 0) if i < 2 else None
                 subdf = pd.read_parquet(path)
-                checkpoint_to_logfile('**DEBUGGIG** \t> end read subdfs', self.sett.log_name, 2) if i < 2 else None
+                checkpoint_to_logfile('**DEBUGGIG** \t> end read subdfs', self.sett.log_name, 0) if i < 2 else None
 
                 subdf_updated = copy.deepcopy(subdf)
                 subdf_updated.drop(columns=['info_source', 'inst_TF'], inplace=True)
 
-                checkpoint_to_logfile('**DEBUGGIG** \t> start Map_infosource_egid', self.sett.log_name, 1, self.sett.show_debug_prints) if i < 2 else None
+                checkpoint_to_logfile('**DEBUGGIG** \t> start Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i < 2 else None
                 subdf_updated = subdf_updated.merge(Map_infosource_egid[['EGID', 'info_source', 'inst_TF']], how='left', on='EGID')
-                checkpoint_to_logfile('**DEBUGGIG** \t> end Map_infosource_egid', self.sett.log_name, 1, self.sett.show_debug_prints) if i < 2 else None
+                checkpoint_to_logfile('**DEBUGGIG** \t> end Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i < 2 else None
                 # updated_instTF_srs, update_infosource_srs = subdf_updated['inst_TF'].fillna(subdf['inst_TF']), subdf_updated['info_source'].fillna(subdf['info_source'])
                 # subdf['inst_TF'], subdf['info_source'] = updated_instTF_srs.infer_objects(copy=False), update_infosource_srs.infer_objects(copy=False)
 
                 # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
                 subinst = copy.deepcopy(subdf_updated.loc[subdf_updated['inst_TF']==True])
-                checkpoint_to_logfile('**DEBUGGIG** \t> pvprod_kw_to_numpy', self.sett.log_name, 2) if i < 2 else None
+                checkpoint_to_logfile('**DEBUGGIG** \t> pvprod_kw_to_numpy', self.sett.log_name, 0) if i < 2 else None
                 pvprod_kW, demand_kW = subinst['pvprod_kW'].to_numpy(), subinst['demand_kW'].to_numpy()
                 selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * self.sett.TECspec_self_consumption_ifapplicable
                 netdemand_kW = demand_kW - selfconsum_kW
@@ -3295,7 +3296,7 @@ class PVAllocScenario:
 
                 subinst['netfeedin_kW'] = netfeedin_kW
                 
-                checkpoint_to_logfile('**DEBUGGIG** > end pvprod_kw_to_numpy', self.sett.log_name, 2, self.sett.show_debug_prints) if i < 2 else None
+                checkpoint_to_logfile('**DEBUGGIG** > end pvprod_kw_to_numpy', self.sett.log_name, 0, self.sett.show_debug_prints) if i < 2 else None
                 # NOTE: attempt for a more elaborate way to handle already installed installations
                 if False:
                     pv = pd.read_parquet(f'{subdir_path}/pv.parquet')
@@ -3322,7 +3323,7 @@ class PVAllocScenario:
                 del subinst
                 agg_subinst_df_list.append(agg_subinst)
             
-            checkpoint_to_logfile('**DEBUGGIG** > end loop through subdfs', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+            checkpoint_to_logfile('**DEBUGGIG** > end loop through subdfs', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
 
             # build gridnode_df -----------------------------------------------------
@@ -3338,7 +3339,7 @@ class PVAllocScenario:
             gridnode_df['feedin_kW_taken'] = np.where(gridnode_df['netfeedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['kW_threshold'], gridnode_df['netfeedin_kW'])
             gridnode_df['feedin_kW_loss'] =  np.where(gridnode_df['netfeedin_kW'] > gridnode_df['kW_threshold'], gridnode_df['netfeedin_kW'] - gridnode_df['kW_threshold'], 0)
 
-            checkpoint_to_logfile('**DEBUGGIG** > end merge + npwhere subdfs', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+            checkpoint_to_logfile('**DEBUGGIG** > end merge + npwhere subdfs', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
 
             # update gridprem_ts -----------------------------------------------------
@@ -3357,7 +3358,7 @@ class PVAllocScenario:
             gridprem_ts['prem_Rp_kWh'] = np.select(conditions, choices, default=gridprem_ts['prem_Rp_kWh'])
             gridprem_ts.drop(columns=['feedin_kW_taken', 'kW_threshold'], inplace=True)
 
-            checkpoint_to_logfile('**DEBUGGIG** > end update gridprem_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+            checkpoint_to_logfile('**DEBUGGIG** > end update gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
 
             # EXPORT -----------------------------------------------------
@@ -3386,13 +3387,13 @@ class PVAllocScenario:
                         gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
                         gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
 
-            checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, 1) if i_m < 3 else None
+            checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, 0) if i_m < 3 else None
 
 
         def algo_update_npv_df_POLARS(self, subdir_path: str, i_m: int, m):
 
             # setup -----------------------------------------------------
-            print_to_logfile('run function: update_npv_df', self.sett.log_name)         
+            print_to_logfile('run function: update_npv_df_POLARS', self.sett.log_name)         
 
             # import -----------------------------------------------------
             gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    
@@ -3418,13 +3419,13 @@ class PVAllocScenario:
                 if subdf.shape[0] > 0:
 
                     # merge gridprem_ts
-                    checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                    checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                     subdf = subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
-                    checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                    checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
 
                     # compute selfconsumption + netdemand ----------------------------------------------
-                    checkpoint_to_logfile('npv > subdf: start calc selfconsumption + netdemand', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                    checkpoint_to_logfile('npv > subdf: start calc selfconsumption + netdemand', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                     
                     selfcons_fact, prod_demand_fact = self.sett.TECspec_self_consumption_ifapplicable, self.sett.ALGOspec_tweak_gridnode_df_prod_demand_fact
                     selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")* prod_demand_fact]) * selfcons_fact
@@ -3449,10 +3450,10 @@ class PVAllocScenario:
                             ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100).alias("econ_spend_chf")
                         ])
 
-                    checkpoint_to_logfile('npv > subdf: end calc selfconsumption + netdemand', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                    checkpoint_to_logfile('npv > subdf: end calc selfconsumption + netdemand', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
 
-                    checkpoint_to_logfile('npv > subdf: start groupgy agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                    checkpoint_to_logfile('npv > subdf: start groupgy agg_subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                     
                     group_cols = self.sett.ALGOspec_npv_update_groupby_cols_topo_aggdf
                     agg_map = self.sett.ALGOspec_npv_update_agg_cols_topo_aggdf
@@ -3463,10 +3464,10 @@ class PVAllocScenario:
                     agg_subdf = subdf.group_by(group_cols).agg(agg_exprs)
 
 
-                    checkpoint_to_logfile('npv > subdf: end groupgy agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                    checkpoint_to_logfile('npv > subdf: end groupgy agg_subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
                     # create combinations ----------------------------------------------
-                    checkpoint_to_logfile('npv > subdf: end groupgy agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                    checkpoint_to_logfile('npv > subdf: end groupgy agg_subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
                     agg_sub_grouped = agg_subdf.group_by(['EGID'])
 
@@ -3512,10 +3513,10 @@ class PVAllocScenario:
                     aggsubdf_combo = pl.DataFrame(combo_rows)
 
 
-                    checkpoint_to_logfile('npv > subdf: end groupgy agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                    checkpoint_to_logfile('npv > subdf: end groupgy agg_subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
                 # if (i <3) and (i_m <3): 
-                #     checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', self.sett.log_name, 1, self.sett.show_debug_prints)
+                #     checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', self.sett.log_name, 0, self.sett.show_debug_prints)
 
                 
 
@@ -3540,7 +3541,7 @@ class PVAllocScenario:
                 )
 
 
-                checkpoint_to_logfile('npv > subdf: start calc npv', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('npv > subdf: start calc npv', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
                 cashflow_srs =  aggsubdf_combo['econ_inc_chf'] - aggsubdf_combo['econ_spend_chf']
                 cashflow_disc_list = []
@@ -3554,7 +3555,7 @@ class PVAllocScenario:
                     pl.Series("NPV_uid", npv_srs)
                 )
 
-                checkpoint_to_logfile('npv > subdf: end calc npv', self.sett.log_name, 1, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('npv > subdf: end calc npv', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
                 agg_npv_df_list.append(aggsubdf_combo)
 
@@ -3581,7 +3582,7 @@ class PVAllocScenario:
                     # if i_m < 5:
                     #     npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
 
-            checkpoint_to_logfile('exported npv_df', self.sett.log_name, 1)
+            checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
                 
             return npv_df
 
@@ -3637,7 +3638,7 @@ class PVAllocScenario:
                     
 
                     if (i <3) and (i_m <3): 
-                        checkpoint_to_logfile('\t end compute econ factors', self.sett.log_name, 1, self.sett.show_debug_prints) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', self.sett.log_name, 1, self.sett.show_debug_prints)
+                        checkpoint_to_logfile('\t end compute econ factors', self.sett.log_name, 0, self.sett.show_debug_prints) #for subdf EGID {path.split("topo_subdf_")[1].split(".parquet")[0]}', self.sett.log_name, 0, self.sett.show_debug_prints)
 
                     agg_subdf = subdf.groupby(
                                         self.sett.ALGOspec_npv_update_groupby_cols_topo_aggdf).agg(
@@ -3645,7 +3646,7 @@ class PVAllocScenario:
                         
                     
                     if (i <3) and (i_m <3): 
-                        checkpoint_to_logfile('\t groupby subdf to agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints)
+                        checkpoint_to_logfile('\t groupby subdf to agg_subdf', self.sett.log_name, 0, self.sett.show_debug_prints)
 
 
                     # create combinations ----------------------------------------------
@@ -3717,7 +3718,7 @@ class PVAllocScenario:
                                                 'econ_inc_chf': econ_inc_chf_list, 'econ_spend_chf': econ_spend_chf_list})
                             
                 if (i <3) and (i_m <3): 
-                    checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', self.sett.log_name, 1, self.sett.show_debug_prints)
+                    checkpoint_to_logfile(f'\t created df_uid combos for {agg_subdf["EGID"].nunique()} EGIDs', self.sett.log_name, 0, self.sett.show_debug_prints)
 
                 
 
@@ -3751,7 +3752,7 @@ class PVAllocScenario:
                 aggsubdf_combo['NPV_uid'] = aggsubdf_combo.apply(compute_npv, axis=1)
 
                 if (i <3) and (i_m <3): 
-                    checkpoint_to_logfile('\t computed NPV for agg_subdf', self.sett.log_name, 1, self.sett.show_debug_prints)
+                    checkpoint_to_logfile('\t computed NPV for agg_subdf', self.sett.log_name, 0, self.sett.show_debug_prints)
 
                 agg_npv_df_list.append(aggsubdf_combo)
 
@@ -3779,7 +3780,7 @@ class PVAllocScenario:
                         npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
 
 
-            checkpoint_to_logfile('exported npv_df', self.sett.log_name, 1)
+            checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
                 
             return npv_df
 
@@ -4020,15 +4021,11 @@ if __name__ == '__main__':
                 T0_year_prediction             = 2021,
                 months_prediction              = 2,
                 CHECKspec_n_iterations_before_sanitycheck   = 2,
+                ALGOspec_topo_subdf_partitioner             = 250, 
                 ALGOspec_inst_selection_method              = 'random', 
                 # ALGOspec_inst_selection_method              = 'prob_weighted_npv',
                 ALGOspec_rand_seed                          = 123,
-                ALGOspec_subselec_filter_TF                 = True,
-                ALGOspec_subselec_filter_angle_tuples       = [
-                                                                (45, 135), 
-                                                                (135, 225), 
-                                                                (225, 315),
-                                                                ],
+                ALGOspec_subselec_filter_criteria           = None,
                 ALGOspec_subselec_filter_area_perc_first    = 0.5,
                 TECspec_pvprod_calc_method                  = 'method2.2',
                 MCspec_montecarlo_iterations                = 2,
