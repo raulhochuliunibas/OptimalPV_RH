@@ -3282,7 +3282,7 @@ class PVAllocScenario:
             # import  -----------------------------------------------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
             dsonodes_df = pd.read_parquet(f'{subdir_path}/dsonodes_df.parquet')
-            gridprem_ts = pd.read_parqut(f'{subdir_path}/gridprem_ts.parquet')
+            gridprem_ts = pd.read_parquet(f'{subdir_path}/gridprem_ts.parquet')
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
             gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
@@ -4049,12 +4049,36 @@ class PVAllocScenario:
 # ======================================================================================================
 if __name__ == '__main__':
     pvalloc_scen_list = [
+        # PVAllocScenario_Settings(
+        #         name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
+        #         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+        #         show_debug_prints                                    = True,
+        #         export_csvs                                          = True,
+        #         mini_sub_model_TF                                    = True,
+        #         create_gdf_export_of_topology                        = False, 
+        #         test_faster_array_computation                        = True,
+        #         T0_year_prediction                                   = 2021,
+        #         months_prediction                                    = 30,
+        #         CSTRspec_iter_time_unit                              = 'month',
+        #         CHECKspec_n_iterations_before_sanitycheck            = 2,
+        #         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        #         ALGOspec_topo_subdf_partitioner                      = 250, 
+        #         ALGOspec_inst_selection_method                       = 'random', 
+        #         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        #         ALGOspec_rand_seed                                   = 123,
+        #         # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
+        #         ALGOspec_subselec_filter_criteria                    = None,
+        #         ALGOspec_subselec_filter_area_perc_first             = 0.5,
+        #         TECspec_pvprod_calc_method                           = 'method2.2',
+        #         # MCspec_montecarlo_iterations                       = 2,
+        # ),
         PVAllocScenario_Settings(
-                name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
+                name_dir_export    = 'pvalloc_test_ktnumbers',
                 name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
                 show_debug_prints                                    = True,
                 export_csvs                                          = True,
-                mini_sub_model_TF                                    = True,
+                # mini_sub_model_TF                                    = True,
+                kt_numbers                                           = [13, ],
                 create_gdf_export_of_topology                        = False, 
                 test_faster_array_computation                        = True,
                 T0_year_prediction                                   = 2021,
@@ -4071,7 +4095,8 @@ if __name__ == '__main__':
                 ALGOspec_subselec_filter_area_perc_first             = 0.5,
                 TECspec_pvprod_calc_method                           = 'method2.2',
                 # MCspec_montecarlo_iterations                       = 2,
-        ),]
+        ),
+        ]
 
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)

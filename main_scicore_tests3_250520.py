@@ -5,69 +5,67 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 pvalloc_scen_list = [
     
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2_default_w_pvdf_adjust',
+        name_dir_export                 = 'pvalloc_BLsml_test3_2013_4bfs',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
-        T0_year_prediction              = 2021,
+        T0_year_prediction              = 2013,
         months_prediction               = 120,
         CHECKspec_n_iterations_before_sanitycheck   = 2,
-        ALGOspec_inst_selection_method              = 'max_npv', 
-        ALGOspec_rand_seed                          = 123,
+        ALGOspec_inst_selection_method              = 'prob_weighted_npv',
         TECspec_pvprod_calc_method                  = 'method2.2',
-        MCspec_montecarlo_iterations                = 2,
+        MCspec_montecarlo_iterations                = 1,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
-
-        ALGOspec_subselec_filter_criteria = None, 
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2_southfacing_max',
+        name_dir_export                 = 'pvalloc_BLsml_test3_2013_16bfs',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
-        T0_year_prediction              = 2021,
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
+        T0_year_prediction              = 2013,
         months_prediction               = 120,
         CHECKspec_n_iterations_before_sanitycheck   = 2,
-        ALGOspec_inst_selection_method              = 'max_npv', 
-        ALGOspec_rand_seed                          = 123,
+        ALGOspec_inst_selection_method              = 'prob_weighted_npv',
         TECspec_pvprod_calc_method                  = 'method2.2',
-        MCspec_montecarlo_iterations                = 2,
+        MCspec_montecarlo_iterations                = 1,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
-
-        ALGOspec_subselec_filter_criteria = 'southfacing_1spec', 
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2_eastwestfacing_max',
+        name_dir_export                 = 'pvalloc_BLsml_test3_2013_30y_16bfs',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
-        T0_year_prediction              = 2021,
-        months_prediction               = 120,
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
+        T0_year_prediction              = 2013,
+        months_prediction               = 360,
+        CSTRspec_iter_time_unit         = 'year',
         CHECKspec_n_iterations_before_sanitycheck   = 2,
-        ALGOspec_inst_selection_method              = 'max_npv', 
-        ALGOspec_rand_seed                          = 123,
+        ALGOspec_inst_selection_method              = 'prob_weighted_npv',
         TECspec_pvprod_calc_method                  = 'method2.2',
-        MCspec_montecarlo_iterations                = 2,
+        MCspec_montecarlo_iterations                = 1,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
-
-        ALGOspec_subselec_filter_criteria = 'eastwestfacing_3spec', 
         ),
 
-    PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2_southwestfacing_max',
-        name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
-        T0_year_prediction              = 2021,
-        months_prediction               = 120,
-        CHECKspec_n_iterations_before_sanitycheck   = 2,
-        ALGOspec_inst_selection_method              = 'max_npv', 
-        ALGOspec_rand_seed                          = 123,
-        TECspec_pvprod_calc_method                  = 'method2.2',
-        MCspec_montecarlo_iterations                = 2,
-        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
 
-        ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    PVAllocScenario_Settings(
+        name_dir_export                 = 'pvalloc_BLsml_test3_2013_5kt',
+        name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
+        kt_numbers                      = [ 2, 11, 12, 13, 26 ], 
+        T0_year_prediction              = 2013,
+        months_prediction               = 120,
+        CSTRspec_iter_time_unit        = 'year',
+        CHECKspec_n_iterations_before_sanitycheck   = 2,
+        ALGOspec_inst_selection_method              = 'prob_weighted_npv',
+        TECspec_pvprod_calc_method                  = 'method2.2',
+        MCspec_montecarlo_iterations                = 1,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
         ),        
 ]
+
+
+
 
 
 visualization_list = [
@@ -76,7 +74,7 @@ visualization_list = [
             pvalloc_exclude_pattern_list = [
                 '*.txt','*old_vers*', 
                 '*test1*',
-                '*test3*',
+                '*test2*',
                 ], 
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = False,  

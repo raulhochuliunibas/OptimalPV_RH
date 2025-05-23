@@ -1535,14 +1535,14 @@ if __name__ == '__main__':
             # kt_numbers = [13, 12, 11], # BL, BS, SO
             bfs_numbers = [2761, 2768,],
             year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', '1121'],
+            GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
         DataAggScenario(
             name_dir_export = 'preprep_BL_22to23_extSolkatEGID',
             kt_numbers = [13,],
             year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', '1121'],
+            GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
 
@@ -1550,10 +1550,28 @@ if __name__ == '__main__':
             name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID',
             kt_numbers = [13, 11],
             year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', '1121'],
+            GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
-    ]
+
+        DataAggScenario(
+            name_dir_export = 'preprep_BLBSSO_22to23_extSolkatEGID',
+            kt_numbers = [13, 12, 11],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', ],  # '1121'],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),    
+        
+        DataAggScenario(
+            name_dir_export = 'preprep_BESOBSBLJU_22to23_extSolkatEGID',
+            kt_numbers = [2, 11, 12, 13, 26],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', ],  # '1121'],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),    
+        2, 11, 12, 13, 26
+        
+        ]
 
     for dataagg_scen in dataagg_scen_list:
         dataagg_class = DataAggScenario(dataagg_scen)
