@@ -87,12 +87,22 @@ class PVAllocScenario_Settings:
     WEAspec_flat_diffuse_rad_factor: int                = 1
 
     # constr_capacity_specs
-    CSTRspec_ann_capacity_growth: float                 = 0.05
+    CSTRspec_iter_time_unit: str                        = 'month'   # month, year
+    CSTRspec_ann_capacity_growth: float                 = 0.20
     CSTRspec_constr_capa_overshoot_fact: int            = 1
     CSTRspec_month_constr_capa_tuples: List[tuple]      = field(default_factory=lambda: [
-                                                            (1, 0.06), (2, 0.06), (3, 0.06), (4, 0.06),
-                                                            (5, 0.08), (6, 0.08), (7, 0.08), (8, 0.08),
-                                                            (9, 0.10), (10, 0.10), (11, 0.12), (12, 0.12)
+                                                            (1,  0.04), 
+                                                            (2,  0.04), 
+                                                            (3,  0.04), 
+                                                            (4,  0.06),
+                                                            (5,  0.06), 
+                                                            (6,  0.06), 
+                                                            (7,  0.1), 
+                                                            (8,  0.1),
+                                                            (9,  0.1), 
+                                                            (10, 0.1), 
+                                                            (11, 0.14), 
+                                                            (12, 0.16)
                                                         ])
     
     # tech_economic_specs
@@ -133,7 +143,7 @@ class PVAllocScenario_Settings:
     # PART II: settings for MC algorithm --------------------
     MCspec_montecarlo_iterations: int                           = 1
     MCspec_fresh_initial_files: List[str]                       = field(default_factory=lambda: [
-                                                                    'topo_egid.json', 'months_prediction.parquet',# 'gridprem_ts.parquet', 
+                                                                    'topo_egid.json', 'trange_prediction.parquet',# 'gridprem_ts.parquet', 
                                                                     'constrcapa.parquet', 'dsonodes_df.parquet'
                                                                 ])
     MCspec_keep_files_month_iter_TF: bool                       = True
@@ -242,11 +252,13 @@ class PVAllocScenario:
 
         """
         # SETUP ---------------------------------------------------------------------------------------------
+        self.sett.start_total_runtime = datetime.datetime.now()
         self.sett.log_name = os.path.join(self.sett.name_dir_export_path, 'pvalloc_Initial_log.txt')
         self.sett.summary_name = os.path.join(self.sett.name_dir_export_path, 'summary_data_selection_log.txt')
+        self.sett.timing_marks_csv_path = os.path.join(self.sett.name_dir_export_path, 'timing_marks.csv')
+
         
         self.sett.bfs_numbers: List[str] = get_bfs_from_ktnr(self.sett.kt_numbers, self.sett.data_path, self.sett.log_name) if self.sett.kt_numbers != [] else [str(bfs) for bfs in self.sett.bfs_numbers]
-        self.sett.total_runtime_start = datetime.datetime.now()
 
         # create dir for export, rename old export dir not to overwrite
         if os.path.exists(self.sett.name_dir_export_path):
@@ -268,8 +280,10 @@ class PVAllocScenario:
         chapter_to_logfile(f'OptimalPV Sample Summary of Building Topology, scen: {self.sett.name_dir_export}', self.sett.summary_name, overwrite_file=True)
 
         # create timing csv
-        self.sett.timing_marks_csv_path = os.path.join(self.sett.name_dir_export_path, 'timing_marks.csv')
+        start_initalization = datetime.datetime.now()
         self.mark_to_timing_csv
+        self.mark_to_timing_csv('init', 'END_INIT', start_initalization, np.nan, '-')
+
 
 
         # CREATE TOPOLOGY ---------------------------------------------------------------------------------------------
@@ -290,7 +304,7 @@ class PVAllocScenario:
             ts_list, ts_names = self.initial_lrg_import_ts_data()
 
             subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', self.sett.log_name)
-            constrcapa, months_prediction, months_lookback = self.initial_lrg_define_construction_capacity(topo, df_list, df_names, ts_list, ts_names)
+            self.initial_lrg_define_construction_capacity(topo, df_list, df_names, ts_list, ts_names)
 
             end_create_topo = datetime.datetime.now()
             self.mark_to_timing_csv('init', 'end_create_topo', end_create_topo, self.timediff_to_str_hhmmss(start_create_topo, end_create_topo), '-')
@@ -330,10 +344,10 @@ class PVAllocScenario:
         start_sanity_check_allocation = datetime.datetime.now()
         dfuid_installed_list = []
         pred_inst_df = pd.DataFrame()
-        months_prediction_pq = pd.read_parquet(f'{self.sett.name_dir_export_path}/months_prediction.parquet')['date']
-        months_prediction = [str(m) for m in months_prediction_pq]
+        trange_prediction_df = pd.read_parquet(f'{self.sett.name_dir_export_path}/trange_prediction.parquet')
+        trange_prediction = [str(m.date()) for m in trange_prediction_df['date']]
 
-        for i_m, m in enumerate(months_prediction[0:self.sett.CHECKspec_n_iterations_before_sanitycheck]):
+        for i_m, m in enumerate(trange_prediction[0:self.sett.CHECKspec_n_iterations_before_sanitycheck]):
             print_to_logfile(f'\n-- month {m} -- sanity check -- {self.sett.name_dir_export} --', self.sett.log_name)
             self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.sanity_check_path, i_m, m)
             self.algo_update_npv_df_POLARS(self.sett.sanity_check_path, i_m, m)
@@ -369,7 +383,10 @@ class PVAllocScenario:
 
 
         # END ---------------------------------------------------
-        chapter_to_logfile(f'end start MAIN_pvalloc_INITIALIZATION for: {self.sett.name_dir_export}\n Runtime (hh:mm:ss):{datetime.datetime.now() - self.sett.total_runtime_start}', self.sett.log_name)
+        end_initalization = datetime.datetime.now()
+        self.mark_to_timing_csv('init', 'END_INIT', end_initalization, self.timediff_to_str_hhmmss(start_initalization, end_initalization), '-')
+
+        chapter_to_logfile(f'end MAIN_pvalloc_INITIALIZATION for: {self.sett.name_dir_export}\n Runtime (hh:mm:ss):{datetime.datetime.now() - start_initalization}', self.sett.log_name)
 
 
     # ------------------------------------------------------------------------------------------------------
@@ -399,12 +416,11 @@ class PVAllocScenario:
         # SETUP -----------------------------------------------------------------------------
         self.sett.log_name = os.path.join(self.sett.name_dir_export_path, 'pvalloc_MCalgo_log.txt')
         self.sett.timing_marks_csv_path = os.path.join(self.sett.name_dir_export_path, 'timing_marks.csv')
-        total_runtime_start = datetime.datetime.now()
 
         # create log file
         chapter_to_logfile(f'start MAIN_pvalloc_MCalgorithm for : {self.sett.name_dir_export}', self.sett.log_name, overwrite_file=True)
         print_to_logfile('*model allocation specifications*:', self.sett.log_name)
-        print_to_logfile(f'> n_bfs_municipalities: {len(self.sett.bfs_numbers)} \n> n_months_prediction: {self.sett.months_prediction} \n> n_montecarlo_iterations: {self.sett.MCspec_montecarlo_iterations}', self.sett.log_name)
+        print_to_logfile(f'> n_bfs_municipalities: {len(self.sett.bfs_numbers)} \n> n_trange_prediction: {self.sett.months_prediction} \n> n_montecarlo_iterations: {self.sett.MCspec_montecarlo_iterations}', self.sett.log_name)
         print_to_logfile(f'> pvalloc_settings, MCalloc_{self.sett.name_dir_export}', self.sett.log_name)
         for k, v in vars(self).items():
             print_to_logfile(f'{k}: {v}', self.sett.log_name)
@@ -442,11 +458,11 @@ class PVAllocScenario:
             # ALLOCATION ALGORITHM -----------------------------------------------------------------------------    
             dfuid_installed_list = []
             pred_inst_df = pd.DataFrame()  
-            months_prediction_df = pd.read_parquet(f'{self.sett.mc_iter_path}/months_prediction.parquet')
-            months_prediction = months_prediction_df['date']
+            trange_prediction_df = pd.read_parquet(f'{self.sett.mc_iter_path}/trange_prediction.parquet')
+            trange_prediction = [m.date() for m in trange_prediction_df['date']]
             constrcapa = pd.read_parquet(f'{self.sett.mc_iter_path}/constrcapa.parquet')
 
-            for i_m, m in enumerate(months_prediction):
+            for i_m, m in enumerate(trange_prediction):
                 print_to_logfile(f'\n-- month {m} -- iter MC{mc_iter:0{max_digits}} -- {self.sett.name_dir_export} --', self.sett.log_name)
                 start_allocation_month = datetime.datetime.now()
                 i_m = i_m + 1        
@@ -480,9 +496,9 @@ class PVAllocScenario:
 
                 # init constr capa ==========
                 constr_built_m = 0
-                if m.year != (m-1).year:
+                if m.year != (m.year-1):
                     constr_built_y = 0
-                constr_capa_m = constrcapa.loc[constrcapa['date'] == m, 'constr_capacity_kw'].iloc[0]
+                constr_capa_m = constrcapa.loc[constrcapa['date'] == str(m), 'constr_capacity_kw'].iloc[0]
                 constr_capa_y = constrcapa.loc[constrcapa['year'].isin([m.year]), 'constr_capacity_kw'].sum()
 
                 # INST PICK ==========
@@ -504,7 +520,7 @@ class PVAllocScenario:
                     # Loop Exit + adjust constr_built capacity ----------
                     constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
                     overshoot_rate = self.sett.CSTRspec_constr_capa_overshoot_fact
-                    constr_m_TF, constr_y_TF, safety_TF = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y*overshoot_rate, safety_counter > safety_counter_max
+                    constr_m_TF, constr_y_TF, safety_TF = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y, safety_counter > safety_counter_max
 
                     if any([constr_m_TF, constr_y_TF, safety_TF]):
                         print_to_logfile('exit While Loop', self.sett.log_name)
@@ -527,8 +543,8 @@ class PVAllocScenario:
 
             # CLEAN UP interim files of MC run ==========
             files_to_remove_paths =  glob.glob(f'{self.sett.mc_iter_path}/topo_subdf_*.parquet')
-            # for f in files_to_remove_paths:
-            #     os.remove(f)
+            for f in files_to_remove_paths:
+                os.remove(f)
 
             mc_iter_time = datetime.datetime.now() - start_mc_iter
             subchapter_to_logfile(f'END MC{mc_iter:0{max_digits}}, runtime: {mc_iter_time} (hh:mm:ss.s)', self.sett.log_name)
@@ -537,12 +553,14 @@ class PVAllocScenario:
             print_to_logfile('\n', self.sett.log_name)
 
         
-        end_mc_algo = datetime.datetime.now()
-        self.mark_to_timing_csv('MCalgo', 'END_MC_algo', start_mc_algo, self.timediff_to_str_hhmmss(start_mc_algo, end_mc_algo),  '-')
-
-
         # END ---------------------------------------------------
-        chapter_to_logfile(f'end MAIN_pvalloc_MCalgorithm\n Runtime (hh:mm:ss):{datetime.datetime.now() - total_runtime_start}', self.sett.log_name, overwrite_file=False)
+        end_mc_algo = datetime.datetime.now()
+        self.mark_to_timing_csv('MCalgo', 'END_MC_algo', end_mc_algo, self.timediff_to_str_hhmmss(start_mc_algo, end_mc_algo),  '-')
+
+        self.mark_to_timing_csv('TOTAL', 'END_total_runtime', end_mc_algo, self.timediff_to_str_hhmmss(self.sett.start_total_runtime, end_mc_algo),  '-')
+        os.rename(self.sett.timing_marks_csv_path, f'{self.sett.timing_marks_csv_path.split(".cs")[0]}_{self.sett.name_dir_export}.csv')
+
+        chapter_to_logfile(f'end MAIN_pvalloc_MCalgorithm\n Runtime (hh:mm:ss):{datetime.datetime.now() - start_mc_algo}', self.sett.log_name, overwrite_file=False)
 
 
     # ------------------------------------------------------------------------------------------------------
@@ -561,12 +579,11 @@ class PVAllocScenario:
             self.sett.postprocess_path = os.path.join(self.sett.data_path, 'postprocess')
             os.makedirs(self.sett.postprocess_path)
 
-            total_runtime_start = datetime.datetime.now()
 
             # create log file
             chapter_to_logfile(f'start MAIN_pvalloc_postprocess for : {self.sett.name_dir_export}', self.sett.log_name, overwrite_file=True)
             print_to_logfile('*model allocation specifications*:', self.sett.log_name)
-            print_to_logfile(f'> n_bfs_municipalities: {len(self.sett.bfs_numbers)} \n> n_months_prediction: {self.sett.months_prediction} \n> n_montecarlo_iterations: {self.sett.MCspec_montecarlo_iterations}', self.sett.log_name)
+            print_to_logfile(f'> n_bfs_municipalities: {len(self.sett.bfs_numbers)} \n> n_trange_prediction: {self.sett.months_prediction} \n> n_montecarlo_iterations: {self.sett.MCspec_montecarlo_iterations}', self.sett.log_name)
             print_to_logfile(f'> pvalloc_settings, MCalloc_{self.sett.name_dir_export}', self.sett.log_name)
             for k, v in vars(self).items():
                 print_to_logfile(f'{k}: {v}', self.sett.log_name)
@@ -1638,23 +1655,24 @@ class PVAllocScenario:
 
 
             # # grid premium --------
-            # setup 
-            # if os.path.exists(f'{self.sett.name_dir_export_path}/gridprem_ts.parquet'):
-            #     os.remove(f'{self.sett.name_dir_export_path}/gridprem_ts.parquet')    
+            if not self.sett.test_faster_array_computation:
+                # setup 
+                if os.path.exists(f'{self.sett.name_dir_export_path}/gridprem_ts.parquet'):
+                    os.remove(f'{self.sett.name_dir_export_path}/gridprem_ts.parquet')    
 
-            # # import 
-            # dsonodes_df = pd.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
-            # t_range = [f't_{t}' for t in range(1,8760 + 1)]
+                # import 
+                dsonodes_df = pd.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
+                t_range = [f't_{t}' for t in range(1,8760 + 1)]
 
-            # gridprem_ts = pd.DataFrame(np.repeat(dsonodes_df.values, len(t_range), axis=0), columns=dsonodes_df.columns)  
-            # gridprem_ts['t'] = np.tile(t_range, len(dsonodes_df))
-            # gridprem_ts['prem_Rp_kWh'] = 0
+                gridprem_ts = pd.DataFrame(np.repeat(dsonodes_df.values, len(t_range), axis=0), columns=dsonodes_df.columns)  
+                gridprem_ts['t'] = np.tile(t_range, len(dsonodes_df))
+                gridprem_ts['prem_Rp_kWh'] = 0
 
-            # gridprem_ts = gridprem_ts[['t', 'grid_node', 'kVA_threshold', 'prem_Rp_kWh']]
-            # gridprem_ts.drop(columns='kVA_threshold', inplace=True)
+                gridprem_ts = gridprem_ts[['t', 'grid_node', 'kVA_threshold', 'prem_Rp_kWh']]
+                gridprem_ts.drop(columns='kVA_threshold', inplace=True)
 
-            # # export 
-            # gridprem_ts.to_parquet(f'{self.sett.name_dir_export_path}/gridprem_ts.parquet')
+                # export 
+                gridprem_ts.to_parquet(f'{self.sett.name_dir_export_path}/gridprem_ts.parquet')
 
             
 
@@ -1683,20 +1701,19 @@ class PVAllocScenario:
                 - based on assumptions, calculate the capacity for every month and total year in the prediciton period. 
             Export to pvalloc dir:
                 - constrcapa.parquet    ->
-                - months_prediction_df  ->
+                - trange_prediction_df  ->
             """
 
             # import settings + setup -------------------
             print_to_logfile('run function: define_construction_capacity.py', self.sett.log_name)
 
-
-
             # create monthly time structure
-            T0 = pd.to_datetime(f'{self.sett.T0_prediction}')
+            # T0 = pd.to_datetime(f'{self.sett.T0_prediction}')
+            T0 = pd.to_datetime(f'{self.sett.T0_year_prediction}-01-01 00:00:00')
             start_loockback = T0 - pd.DateOffset(months=self.sett.months_lookback) #+ pd.DateOffset(hours=1)
             end_prediction = T0 + pd.DateOffset(months=self.sett.months_prediction) - pd.DateOffset(hours=1)
             months_lookback = pd.date_range(start=start_loockback, end=T0, freq='ME').to_period('M')
-            months_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME').to_period('M')
+            # trange_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME').to_period('M')
 
 
             # IMPORT ----------------------------------------------------------------------------
@@ -1764,27 +1781,47 @@ class PVAllocScenario:
             # CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
             capacity_growth = self.sett.CSTRspec_ann_capacity_growth
             month_constr_capa_tuples = self.sett.CSTRspec_month_constr_capa_tuples
-
             sum_TP_kW_lookback = pv_sub['TotalPower'].sum()
 
-            constrcapa = pd.DataFrame({'date': months_prediction, 'year': months_prediction.year, 'month': months_prediction.month})
-            years_prediction = months_prediction.year.unique()
-            i, y = 0, years_prediction[0]
-            for i,y in enumerate(years_prediction):
-
-                TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
-                for m, TP_m in month_constr_capa_tuples:
-                    constrcapa.loc[(constrcapa['year'] == y) & 
-                                (constrcapa['month'] == m), 'constr_capacity_kw'] = TP_y * TP_m
+            
+            if self.sett.CSTRspec_iter_time_unit == 'month':
+                trange_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='M')
+                # trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='MS')
+                constrcapa = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
                 
-            months_prediction_df = pd.DataFrame({'date': months_prediction, 'year': months_prediction.year, 'month': months_prediction.month})
+                years_prediction = trange_prediction.year.unique()
+                i, y = 0, years_prediction[0]
+                for i,y in enumerate(years_prediction):
+
+                    TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
+                    for m, TP_m in month_constr_capa_tuples:
+                        constrcapa.loc[(constrcapa['year'] == y) & 
+                                    (constrcapa['month'] == m), 'constr_capacity_kw'] = TP_y * TP_m
+
+                trange_prediction_df_month = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
+
+
+            elif self.sett.CSTRspec_iter_time_unit == 'year':
+                trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='Y')
+                constrcapa = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
+
+                years_prediction = trange_prediction.year.unique()
+                for i,y in enumerate(years_prediction):
+                    TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
+                    constrcapa.loc[(constrcapa['year'] == y), 'constr_capacity_kw'] = TP_y 
+
+                trange_prediction_df_year = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
+
+                    
+                
+            trange_prediction_df = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
 
             # PRINTs to LOGFILE ----------------------------------------------------------------------------
             checkpoint_to_logfile(f'constr_capacity month lookback, between :                {months_lookback[0]} to {months_lookback[-1]}', self.sett.log_name, 0)
             checkpoint_to_logfile(f'constr_capacity KW built in period (sum_TP_kW_lookback): {round(sum_TP_kW_lookback,2)} kW', self.sett.log_name, 0)
             print_to_logfile('\n', self.sett.log_name)
-            checkpoint_to_logfile(f'constr_capacity: month prediction {months_prediction[0]} to {months_prediction[-1]}', self.sett.log_name, 0)
-            checkpoint_to_logfile(f'sum_TP_kw_lookback {round(sum_TP_kW_lookback,3)} kW to distribute across months_prediction', self.sett.log_name, 0)
+            checkpoint_to_logfile(f'constr_capacity: month prediction {trange_prediction[0]} to {trange_prediction[-1]}', self.sett.log_name, 0)
+            checkpoint_to_logfile(f'sum_TP_kw_lookback {round(sum_TP_kW_lookback,3)} kW to distribute across trange_prediction', self.sett.log_name, 0)
             print_to_logfile('\n', self.sett.log_name)
             checkpoint_to_logfile(f'sum_TP_kW_lookback (T0: {round(sum_TP_kW_lookback,2)} kW) increase by {capacity_growth*100}% per year', self.sett.log_name, 0)
 
@@ -1793,10 +1830,10 @@ class PVAllocScenario:
             constrcapa.to_parquet(f'{self.sett.name_dir_export_path}/constrcapa.parquet')
             constrcapa.to_csv(f'{self.sett.name_dir_export_path}/constrcapa.csv', index=False)
 
-            months_prediction_df.to_parquet(f'{self.sett.name_dir_export_path}/months_prediction.parquet')
-            months_prediction_df.to_csv(f'{self.sett.name_dir_export_path}/months_prediction.csv', index=False)
+            trange_prediction_df.to_parquet(f'{self.sett.name_dir_export_path}/trange_prediction.parquet')
+            trange_prediction_df.to_csv(f'{self.sett.name_dir_export_path}/trange_prediction.csv', index=False)
 
-            return constrcapa, months_prediction, months_lookback
+            return constrcapa, trange_prediction, months_lookback
 
 
 
@@ -2678,8 +2715,6 @@ class PVAllocScenario:
                     f.write(str(topo))
 
 
-
-
         def algo_calc_economics_in_topo_df(self, 
                                            topo, 
                                            df_list, df_names, 
@@ -2998,7 +3033,7 @@ class PVAllocScenario:
             checkpoint_to_logfile('gridprem: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
             topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
-            subdf_updated_pvdf_agg_list = []
+            agg_subdf_updated_pvdf_list = []
             agg_subdf_df_list = []
 
             i, path = 0, topo_subdf_paths[0]
@@ -3024,22 +3059,34 @@ class PVAllocScenario:
                 checkpoint_to_logfile('gridprem > subdf: end pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
                 # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
-                subdf_updated = subdf_updated.filter(pl.col('inst_TF'))       
+                # EDIT: Switched off, because we also need the demand of those houses per grid node (and non_inst houses can not feed in by design, so no probelm there)
+                # subdf_updated = subdf_updated.filter(pl.col('inst_TF'))       
                 checkpoint_to_logfile('gridprem > subdf: start calc + update netfeedin_kW', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
 
                 selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.sett.TECspec_self_consumption_ifapplicable
 
                 subdf_updated = subdf_updated.with_columns([        
-                selfconsum_expr.alias("selfconsum_kW"),
-                (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
-                (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
+                    selfconsum_expr.alias("selfconsum_kW"),
+                    (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
+                    (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                 ])
                 checkpoint_to_logfile('gridprem > subdf: end calc + update netfeedin_kW', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
 
                 # subinst = pl.from_pandas(subinst) if isinstance(subinst, pd.DataFrame) else subinst
                 # agg_subinst = subinst.groupby(['grid_node', 't']).agg({'netfeedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index()
                 # agg_subinst = subinst.group_by(["grid_node", "t"]).agg([
-                agg_subdf = subdf_updated.group_by(["grid_node", "t"]).agg([
+                
+                # necessary, not too exagerate demand per gridnode
+                agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
+                    pl.col('grid_node').first().alias('grid_node'),
+                    pl.col('demand_kW').first().alias('demand_kW'),
+                    pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                    pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                    pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                    pl.col('netdemand_kW').sum().alias('netdemand_kW')
+                ])
+
+                agg_subdf = agg_egids.group_by(["grid_node", "t"]).agg([
                     pl.col('demand_kW').sum().alias('demand_kW'),
                     pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                     pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
@@ -3061,7 +3108,7 @@ class PVAllocScenario:
                     pl.col('month').len().alias('n_month'), 
 
                     pl.col('demand_kW').sum().alias('sum_demand_kW'), 
-                    pl.col('pvprod_kW').sum().alias('sum_pvprod_kW'), 
+                    pl.col('pvprod_kW').first().alias('sum_pvprod_kW'), 
 
                     pl.col('TotalPower').first().alias('TotalPower'), 
                     ])
@@ -3073,17 +3120,17 @@ class PVAllocScenario:
                 del subdf_updated
 
                 agg_subdf_df_list.append(agg_subdf)
-                subdf_updated_pvdf_agg_list.append(subdf_updated_dfuid_pvdf)
+                agg_subdf_updated_pvdf_list.append(subdf_updated_dfuid_pvdf)
 
             agg_subdf_df = pl.concat(agg_subdf_df_list)
             topo_gridnode_df = agg_subdf_df.group_by(['grid_node', 't']).agg([
-                pl.col('demand_kW').sum().alias('demand_kW'),
+                pl.col('demand_kW').first().alias('demand_kW'),
                 pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                 pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                 pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
                 pl.col('netdemand_kW').sum().alias('netdemand_kW'),
             ])
-            subdf_updated_pvdf_agg = pl.concat(subdf_updated_pvdf_agg_list)
+            agg_subdf_updated_pvdf = pl.concat(agg_subdf_updated_pvdf_list)
 
 
             # import outtopo_time_subfs -----------------------------------------------------
@@ -3107,6 +3154,9 @@ class PVAllocScenario:
             # build gridnode_df -----------------------------------------------------
             checkpoint_to_logfile('gridprem: start merge to (out)topo_gridnode_df to gridnode_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
             gridnode_df = topo_gridnode_df.join(outtopo_gridnode_df, on=['grid_node', 't'], how='left')
+            gridnode_df = gridnode_df.with_columns([
+                pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
+            ])
             
             demand_proxy_out_kW = gridnode_df['demand_proxy_out_kW'].fill_null(0)
             netdemand_kW = gridnode_df['netdemand_kW'].fill_null(0)
@@ -3129,7 +3179,14 @@ class PVAllocScenario:
                 .then(pl.col("kW_threshold"))
                 .otherwise(pl.col("netfeedin_all_kW"))
                 .alias("netfeedin_all_taken_kW"),
-
+                ])
+            gridnode_df = gridnode_df.with_columns([
+                pl.when(pl.col("netfeedin_all_kW") < 0)
+                .then(0)
+                .otherwise(pl.col("netfeedin_all_kW"))
+                .alias("netfeedin_all_kW"),
+                ])
+            gridnode_df = gridnode_df.with_columns([
                 pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
                 .then(pl.col("netfeedin_all_kW") - pl.col("kW_threshold"))
                 .otherwise(0)
@@ -3151,24 +3208,6 @@ class PVAllocScenario:
                 .drop('kW_threshold')
                 .rename({'kW_threshold_first': 'kW_threshold'})
             )            
-
-            # gridprem_ts = gridprem_ts.join(
-            #     gridnode_df_for_prem.select(['grid_node', 't', 'kW_threshold', 'feedin_kW_taken']),
-            #     on=['grid_node', 't'],
-            #     how='left'
-            # )
-            # gridprem_ts = gridprem_ts.with_columns(
-            #     pl.col('feedin_kW_taken').fill_null(0)
-            # )
-            # gridtiers_df['kW_threshold'] = gridtiers_df['kVA_threshold'] / gridtiers_power_factor
-            # conditions, choices = [], []
-            # for i in range(len(gridtiers_df)):
-            #     i_adj = len(gridtiers_df) - i -1 # order needs to be reversed, because otherwise first condition is always met and disregards the higher tiers
-            #     conditions.append((gridprem_ts['feedin_kW_taken'] / gridprem_ts['kW_threshold'])  > gridtiers_df.loc[i_adj, 'used_node_capa_rate'])
-            #     choices.append(gridtiers_df.loc[i_adj, 'gridprem_Rp_kWh'])
-            # gridprem_ts['prem_Rp_kWh'] = np.select(conditions, choices, default=gridprem_ts['prem_Rp_kWh'])
-            # gridprem_ts.drop(columns=['feedin_kW_taken', 'kW_threshold'], inplace=True)
-            # expr = pl.col('prem_Rp_kWh')
 
             gridnode_df_for_prem = gridnode_df_for_prem.with_columns(
                 pl.lit(0).alias("prem_Rp_kWh")
@@ -3200,6 +3239,7 @@ class PVAllocScenario:
     
 
             # EXPORT -----------------------------------------------------
+            gridnode_df = gridnode_df.sort("t_int", descending=False)            
             gridnode_df.write_parquet(f'{subdir_path}/gridnode_df.parquet')    
             gridprem_ts.write_parquet(f'{subdir_path}/gridprem_ts.parquet')    
             if self.sett.export_csvs and (i_m < 3):                                          
@@ -3207,8 +3247,8 @@ class PVAllocScenario:
                 gridprem_ts.write_csv(f'{subdir_path}/gridprem_ts.csv')        
 
             if self.sett.export_csvs and (i_m < 3):
-                subdf_updated_pvdf_agg.write_parquet(f'{subdir_path}/SANITYCHECK_topo_subdf_updated_pvdf_agg_iter{i_m}.parquet')
-                subdf_updated_pvdf_agg.write_csv(f'{subdir_path}/SANITYCHECK_topo_subdf_updated_pvdf_agg_iter{i_m}.csv')       
+                agg_subdf_updated_pvdf.write_parquet(f'{subdir_path}/SANITYCHECK_topo_agg_subdf_updated_pvdf_iter{i_m}.parquet')
+                agg_subdf_updated_pvdf.write_csv(f'{subdir_path}/SANITYCHECK_topo_agg_subdf_updated_pvdf_iter{i_m}.csv')       
 
 
 
@@ -3220,15 +3260,15 @@ class PVAllocScenario:
                     if not os.path.exists(gridprem_node_by_M_path):
                         os.makedirs(gridprem_node_by_M_path)
 
-                        gridnode_df.write_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{m}.parquet')   
-                        gridprem_ts.write_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.parquet')   
+                        gridnode_df.write_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.parquet')   
+                        gridprem_ts.write_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.parquet')   
 
                     if self.sett.export_csvs:
-                        gridnode_df.write_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv')           
-                        gridprem_ts.write_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv')           
+                        gridnode_df.write_csv(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.csv')           
+                        gridprem_ts.write_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.csv')           
       
-                        gridnode_df.write_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv')             
-                        gridprem_ts.write_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv')             
+                        gridnode_df.write_csv(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.csv')             
+                        gridprem_ts.write_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.csv')             
         
             checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, 0) if i_m < 3 else None
             
@@ -3242,7 +3282,7 @@ class PVAllocScenario:
             # import  -----------------------------------------------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
             dsonodes_df = pd.read_parquet(f'{subdir_path}/dsonodes_df.parquet')
-            gridprem_ts = pd.read_parquet(f'{subdir_path}/gridprem_ts.parquet')
+            gridprem_ts = pd.read_parqut(f'{subdir_path}/gridprem_ts.parquet')
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
             gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
@@ -3377,15 +3417,15 @@ class PVAllocScenario:
                     if not os.path.exists(gridprem_node_by_M_path):
                         os.makedirs(gridprem_node_by_M_path)
 
-                    gridnode_df.to_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{m}.parquet')
-                    gridprem_ts.to_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.parquet')
+                    gridnode_df.to_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.parquet')
+                    gridprem_ts.to_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.parquet')
 
                     if self.sett.export_csvs:
-                        gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
-                        gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
+                        gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.csv', index=False)
+                        gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.csv', index=False)
                     if i_m < 5:
-                        gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{m}.csv', index=False)
-                        gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{m}.csv', index=False)
+                        gridnode_df.to_csv(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.csv', index=False)
+                        gridprem_ts.to_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.csv', index=False)
 
             checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, 0) if i_m < 3 else None
 
@@ -3576,16 +3616,15 @@ class PVAllocScenario:
                     if not os.path.exists(pred_npv_inst_by_M_path):
                         os.makedirs(pred_npv_inst_by_M_path)
 
-                    npv_df.write_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
+                    npv_df.write_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.parquet')
                     # if self.sett.export_csvs:
-                    #     npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', separator=',' )                    
+                    #     npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_i_m.csv', separator=',' )                    
                     # if i_m < 5:
                     #     npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
 
             checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
                 
             return npv_df
-
 
 
         def algo_update_npv_df(self, subdir_path: str, i_m: int, m):
@@ -3773,11 +3812,11 @@ class PVAllocScenario:
                     if not os.path.exists(pred_npv_inst_by_M_path):
                         os.makedirs(pred_npv_inst_by_M_path)
 
-                    npv_df.to_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{m}.parquet')
+                    npv_df.to_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.parquet')
                     if self.sett.export_csvs:
-                        npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
+                        npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.csv', index=False)
                     if i_m < 5:
-                        npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
+                        npv_df.to_csv(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.csv', index=False)
 
 
             checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
@@ -3994,9 +4033,9 @@ class PVAllocScenario:
 
 
             # export by Month ------------------------------------------
-            pred_inst_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.parquet')
-            pred_inst_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{m}.csv') if self.sett.export_csvs else None
-            with open(f'{subdir_path}/pred_npv_inst_by_M/topo_{m}.json', 'w') as f:
+            pred_inst_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{i_m}.parquet')
+            pred_inst_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{i_m}.csv') if self.sett.export_csvs else None
+            with open(f'{subdir_path}/pred_npv_inst_by_M/topo_{i_m}.json', 'w') as f:
                 json.dump(topo, f)
                         
             return  inst_power, npv_df  # , picked_uid, picked_combo_uid, pred_inst_df, dfuid_installed_list, topo
@@ -4013,22 +4052,25 @@ if __name__ == '__main__':
         PVAllocScenario_Settings(
                 name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
                 name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-                show_debug_prints              = True,
-                export_csvs                    = True,
-                mini_sub_model_TF              = True,
-                create_gdf_export_of_topology  = False, 
-                test_faster_array_computation  = True,
-                T0_year_prediction             = 2021,
-                months_prediction              = 2,
-                CHECKspec_n_iterations_before_sanitycheck   = 2,
-                ALGOspec_topo_subdf_partitioner             = 250, 
-                ALGOspec_inst_selection_method              = 'random', 
-                # ALGOspec_inst_selection_method              = 'prob_weighted_npv',
-                ALGOspec_rand_seed                          = 123,
-                ALGOspec_subselec_filter_criteria           = None,
-                ALGOspec_subselec_filter_area_perc_first    = 0.5,
-                TECspec_pvprod_calc_method                  = 'method2.2',
-                MCspec_montecarlo_iterations                = 2,
+                show_debug_prints                                    = True,
+                export_csvs                                          = True,
+                mini_sub_model_TF                                    = True,
+                create_gdf_export_of_topology                        = False, 
+                test_faster_array_computation                        = True,
+                T0_year_prediction                                   = 2021,
+                months_prediction                                    = 30,
+                CSTRspec_iter_time_unit                              = 'month',
+                CHECKspec_n_iterations_before_sanitycheck            = 2,
+                ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+                ALGOspec_topo_subdf_partitioner                      = 250, 
+                ALGOspec_inst_selection_method                       = 'random', 
+                # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+                ALGOspec_rand_seed                                   = 123,
+                # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
+                ALGOspec_subselec_filter_criteria                    = None,
+                ALGOspec_subselec_filter_area_perc_first             = 0.5,
+                TECspec_pvprod_calc_method                           = 'method2.2',
+                # MCspec_montecarlo_iterations                       = 2,
         ),]
 
     for pvalloc_scen in pvalloc_scen_list:
