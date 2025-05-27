@@ -110,9 +110,7 @@ class Visual_Settings:
 
     plot_ind_map_topo_egid_TF: List[bool]                   = field(default_factory=lambda: [True,      True,       False])
     plot_ind_map_topo_egid_incl_gridarea_TF: List[bool]     = field(default_factory=lambda: [True,      True,       False])
-
     plot_ind_map_node_connections_TF: List[bool]            = field(default_factory=lambda: [True,      True,       False])
-
     plot_ind_map_omitted_egids_TF: List[bool]               = field(default_factory=lambda: [True,      True,       False])
     plot_ind_lineband_contcharact_newinst_TF: List[bool]    = field(default_factory=lambda: [True,      True,       False])
 
@@ -1605,25 +1603,25 @@ class Visualization:
                     else:
                         nodes = gridnode_df['grid_node'].unique()
 
-                        fig = go.Figure()
+                    fig = go.Figure()
 
-                        for node in nodes:
-                            filter_df = copy.deepcopy(gridnode_df.loc[gridnode_df['grid_node'] == node])
-                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['pvprod_kW'], name=f'{node} - pvprod_kW'))
-                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['selfconsum_kW'], name=f'{node} - selfconsum_kW'))
-                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['demand_kW'], name=f'{node} - demand_kW'))
-                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netdemand_kW'], name=f'{node} - netdemand_kW'))
-                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['demand_proxy_out_kW'], name=f'{node} - demand_proxy_out_kW'))
-                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netfeedin_all_kW'], name=f'{node} - feedin (all)'))
-                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netfeedin_all_taken_kW'], name= f'{node} - feedin_taken'))
-                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netfeedin_all_loss_kW'], name=f'{node} - feedin_loss'))
+                    for node in nodes:
+                        filter_df = copy.deepcopy(gridnode_df.loc[gridnode_df['grid_node'] == node])
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['pvprod_kW'], name=f'{node} - pvprod_kW'))
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['selfconsum_kW'], name=f'{node} - selfconsum_kW'))
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['demand_kW'], name=f'{node} - demand_kW'))
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netdemand_kW'], name=f'{node} - netdemand_kW'))
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['demand_proxy_out_kW'], name=f'{node} - demand_proxy_out_kW'))
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netfeedin_all_kW'], name=f'{node} - feedin (all)'))
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netfeedin_all_taken_kW'], name= f'{node} - feedin_taken'))
+                        fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netfeedin_all_loss_kW'], name=f'{node} - feedin_loss'))
 
-                        gridnode_total_df = gridnode_df.groupby(['t', 't_int']).agg({'pvprod_kW': 'sum', 'netfeedin_all_kW': 'sum','netfeedin_all_taken_kW': 'sum','netfeedin_all_loss_kW': 'sum'}).reset_index()
-                        gridnode_total_df.sort_values(by=['t_int'], inplace=True)
-                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['pvprod_kW'], name='Total production', line=dict(color='blue', width=2)))
-                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['netfeedin_all_kW'], name='Total feedin', line=dict(color='black', width=2)))
-                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['netfeedin_all_taken_kW'], name='Total feedin_taken', line=dict(color='green', width=2)))
-                        fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['netfeedin_all_loss_kW'], name='Total feedin_loss', line=dict(color='red', width=2)))
+                    gridnode_total_df = gridnode_df.groupby(['t', 't_int']).agg({'pvprod_kW': 'sum', 'netfeedin_all_kW': 'sum','netfeedin_all_taken_kW': 'sum','netfeedin_all_loss_kW': 'sum'}).reset_index()
+                    gridnode_total_df.sort_values(by=['t_int'], inplace=True)
+                    fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['pvprod_kW'], name='Total production', line=dict(color='blue', width=2)))
+                    fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['netfeedin_all_kW'], name='Total feedin', line=dict(color='black', width=2)))
+                    fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['netfeedin_all_taken_kW'], name='Total feedin_taken', line=dict(color='green', width=2)))
+                    fig.add_trace(go.Scatter(x=gridnode_total_df['t'], y=gridnode_total_df['netfeedin_all_loss_kW'], name='Total feedin_loss', line=dict(color='red', width=2)))
                                     
 
                     fig.update_layout(
@@ -2198,7 +2196,113 @@ class Visualization:
                         fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_line_gridPremium_structure.html')
                     else:
                         fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_line_gridPremium_structure.html')
+
+
+        def plot_ind_lineband_contcharact_newinst(self, ):
+            if self.visual_sett.plot_ind_lineband_contcharact_newinst_TF[0]:
+                checkpoint_to_logfile('plot_ind_line_gridPremium_structure', self.visual_sett.log_name)
+
+                # available color palettes
+                trace_color_dict = {
+                    'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
+                    'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
+                    'Teal': pc.sequential.Teal, 'Magenta': pc.sequential.Magenta, 'Plotly3': pc.sequential.Plotly3,
+                    'Viridis': pc.sequential.Viridis, 'Turbo': pc.sequential.Turbo, 'Blackbody': pc.sequential.Blackbody, 
+                    'Bluered': pc.sequential.Bluered, 'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
+                }   
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                        self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                        self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+                        # setup + import ----------
+                        colnams_charac_AND_numerator = self.visual_sett.plot_ind_line_contcharact_newinst_specs['colnames_cont_charact_installations_AND_numerator']
+                        trace_color_palette = self.visual_sett.plot_ind_line_contcharact_newinst_specs['trace_color_palette']
+                        # col_colors = [val / len(colnams_charac_AND_numerator) for val in range(1,len(colnams_charac_AND_numerator)+1)]
+                        col_colors = list(range(1,len(colnams_charac_AND_numerator)+1))
+                        palette = trace_color_dict[trace_color_palette]
+                    
+                        topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+                        predinst_all= pd.read_parquet( f'{self.visual_sett.mc_data_path}/pred_inst_df.parquet')
+                        predinst_absdf = copy.deepcopy(predinst_all)
+
+                        agg_dict ={}
+                        for col_tuple in colnams_charac_AND_numerator:
+                            agg_dict[f'{col_tuple[0]}'] = ['mean', 'std']
+                            predinst_absdf[f'{col_tuple[0]}'] = predinst_absdf[f'{col_tuple[0]}'] / col_tuple[1]
+
+                        agg_predinst_absdf = predinst_absdf.groupby('iter_round').agg(agg_dict)
+                        agg_predinst_absdf['iter_round'] = agg_predinst_absdf.index
+
+                        agg_predinst_absdf.replace(np.nan, 0, inplace=True) # replace NaNs with 0, needed if no deviation in std
+
+                        # plot ----------------
+                        fig = go.Figure()
+                        i_col = 3
+                        col, col_numerator = colnams_charac_AND_numerator[i_col][0], colnams_charac_AND_numerator[i_col][1]
+                        for i_col, col_tuple in enumerate(colnams_charac_AND_numerator):
+                            col = col_tuple[0]
+                            col_numerator = col_tuple[1]
+
+                            xaxis   =           agg_predinst_absdf['iter_round']
+                            y_mean  =           agg_predinst_absdf[col]['mean']
+                            y_lower, y_upper =  agg_predinst_absdf[col]['mean'] - agg_predinst_absdf[col]['std'], agg_predinst_absdf[col]['mean'] + agg_predinst_absdf[col]['std']
+                            trace_color = palette[col_colors[i_col % len(col_colors)]]
+
+                            # mean trace
+                            fig.add_trace(go.Scatter(x=xaxis, y=y_mean,
+                                                    name=f'{col} mean (1/{col_numerator})',
+                                                    legendgroup=f'{col}',
+                                                    line=dict(color=trace_color),
+                                                    mode='lines+markers', showlegend=True))
+                            # upper / lower bound band
+                            fig.add_trace(go.Scatter(
+                                x=xaxis.tolist() + xaxis.tolist()[::-1],  # Concatenate xaxis with its reverse
+                                y=y_upper.tolist() + y_lower.tolist()[::-1],  # Concatenate y_upper with reversed y_lower
+                                fill='toself',
+                                fillcolor=trace_color,  # Dynamic color with 50% transparency
+                                opacity=0.2,
+                                line=dict(color='rgba(255,255,255,0)'),  # No boundary line
+                                hoverinfo="skip",  # Don't show info on hover
+                                showlegend=False,  # Do not show this trace in the legend
+                                legendgroup=f'{col}',  # Group with the mean line
+                                visible=True  # Make this visible/toggleable with the mean line
+                            ))
                         
+                        # add nEGID count trace
+                        total_EGID_in_topo  = len(topo)
+                        agg_predinst_counts = predinst_absdf.groupby('iter_round').size().reset_index(name='nEGID_count')
+                        agg_predinst_counts['nEGID_cumm'] = agg_predinst_counts['nEGID_count'].cumsum()
+                        agg_predinst_counts['nEGID_cumm_rel'] = agg_predinst_counts['nEGID_cumm'] / total_EGID_in_topo 
+                        fig.add_trace(go.Scatter(x=agg_predinst_counts['iter_round'],
+                                                y=agg_predinst_counts['nEGID_cumm_rel'],
+                                                name='nEGID count (rel total EGID in topo)',
+                                                legendgroup='nEGID count',
+                                                line=dict(color='black', width=2),
+                                                mode='lines+markers', showlegend=True))
+                                                 
+
+                        fig.update_layout(
+                            xaxis_title='Iteration Round',
+                            yaxis_title='Mean (+/- 1 std)',
+                            legend_title='Scenarios',
+                            title = f'Agg. Cont. Charact. of Newly Installed Buildings per Iteration Round (iter unit: {self.pvalloc_scen.CSTRspec_iter_time_unit})', 
+                                uirevision='constant'  # Maintain the state of the plot when interacting
+
+                        )
+                        fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen_list[i_scen])
+
+                        if self.visual_sett.plot_show and self.visual_sett.plot_ind_lineband_contcharact_newinst_TF[1]:
+                            if self.visual_sett.plot_ind_lineband_contcharact_newinst_TF[2]:
+                                fig.show()
+                            elif not self.visual_sett.plot_ind_lineband_contcharact_newinst_TF[2]:
+                                fig.show() if i_scen == 0 else None
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_lineband_contcharact_newinst.html')
+                        else:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_lineband_contcharact_newinst.html')
+
+
 
         def plot_ind_map_topo_egid(self, ): 
             if self.visual_sett.plot_ind_map_topo_egid_TF[0]:
@@ -2645,9 +2749,181 @@ class Visualization:
                         fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_map_topo_egid_incl_gridarea.html')
 
 
+        def plot_ind_map_node_connections(self, ): 
+            if self.visual_sett.plot_ind_map_node_connections_TF[0]:
+
+                map_topo_egid_specs = self.visual_sett.plot_ind_map_topo_egid_specs
+                map_node_connections_specs = self.visual_sett.plot_ind_map_node_connections_specs
+                checkpoint_to_logfile('plot_ind_map_node_connections', self.visual_sett.log_name)
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+
+                    # import
+                    gwr_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
+                    gm_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
+                    dsonodes_gdf = gpd.read_file(f'{self.visual_sett.data_path}/pvalloc/{scen}/dsonodes_gdf.geojson')
+                    Map_egid_dsonode = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/Map_egid_dsonode.parquet')
+                    topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+
+                    # transformations
+                    egid_in_topo = [k for k in topo.keys()]
+                    gwr_gdf = copy.deepcopy(gwr_gdf.loc[gwr_gdf['EGID'].isin(egid_in_topo)])
+                    Map_egid_dsonode.reset_index(drop=True, inplace=True)
+                    gwr_gdf = gwr_gdf.merge(Map_egid_dsonode, on='EGID', how='left')
+
+                    # pv_instdf_creation for base map
+                    egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
+                    gklas_list, node_list, demand_type_list, pvtarif_list, elecpri_list, elecpri_info_list = [], [], [], [], [], []
+
+                    for k,v, in topo.items():
+                        egid_list.append(k)
+                        inst_TF_list.append(v['pv_inst']['inst_TF'])
+                        info_source_list.append(v['pv_inst']['info_source'])
+                        BeginOp_list.append(v['pv_inst']['BeginOp'])
+                        TotalPower_list.append(v['pv_inst']['TotalPower'])
+                        bfs_list.append(v['gwr_info']['bfs'])
+                        gklas_list.append(v['gwr_info']['gklas'])
+                        node_list.append(v['grid_node'])
+                        demand_type_list.append(v['demand_type'])
+                        pvtarif_list.append(v['pvtarif_Rp_kWh'])
+                        elecpri_list.append(v['elecpri_Rp_kWh'])
+                        elecpri_info_list.append(v['elecpri_info'])
+
+                    pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,
+                                            'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list, 
+                                            'gklas': gklas_list, 'grid_node': node_list, 'demand_type': demand_type_list,
+                                            'pvtarif': pvtarif_list, 'elecpri': elecpri_list, 'elecpri_info': elecpri_info_list })
+                    pvinst_df = pvinst_df.merge(gwr_gdf[['geometry', 'EGID']], on='EGID', how='left')
+                    pvinst_gdf = gpd.GeoDataFrame(pvinst_df, crs='EPSG:2056', geometry='geometry')
+                    
+                    # base map ----------------
+                    if True:
+                        # transformations
+                        gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
+                        gm_gdf = gm_gdf.loc[gm_gdf['BFS_NUMMER'].isin(pvinst_df['bfs'].unique())].copy()
+                        date_cols = [col for col in gm_gdf.columns if (gm_gdf[col].dtype == 'datetime64[ns]') or (gm_gdf[col].dtype == 'datetime64[ms]')]
+                        gm_gdf.drop(columns=date_cols, inplace=True)
+                        
+                        # add map relevant columns
+                        gm_gdf['hover_text'] = gm_gdf.apply(lambda row: f"{row['NAME']}<br>BFS_NUMMER: {row['BFS_NUMMER']}", axis=1)
+
+                        # geo transformations
+                        gm_gdf = gm_gdf.to_crs('EPSG:4326')
+                        gm_gdf['geometry'] = gm_gdf['geometry'].apply(self.flatten_geometry)
+
+                        # geojson = gm_gdf.__geo_interface__
+                        geojson = json.loads(gm_gdf.to_json())
+
+                        # Plot using Plotly Express
+                        fig_topobase = px.choropleth_mapbox(
+                            gm_gdf,
+                            geojson=geojson,
+                            locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
+                            featureidkey="properties.BFS_NUMMER",  # This must match the GeoJSON's property for BFS_NUMMER
+                            color_discrete_sequence=[map_topo_egid_specs['uniform_municip_color']],  # Apply the single color to all shapes
+                            hover_name="hover_text",  # Use the new column for hover text
+                            mapbox_style="carto-positron",  # Basemap style
+                            center={"lat": self.visual_sett.default_map_center[0], "lon": self.visual_sett.default_map_center[1]},  # Center the map on the region
+                            zoom=self.visual_sett.default_map_zoom,  # Adjust zoom as needed
+                            opacity=map_topo_egid_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
+                        )   
+                        # Update layout for borders and title
+                        fig_topobase.update_layout(
+                            mapbox=dict(
+                                layers=[{
+                                    'source': geojson,
+                                    'type': 'line',
+                                    'color': 'black',  # Set border color for polygons
+                                    'opacity': 0.25,
+                                }]
+                            ),
+                            title=f"Map of PV topology (scen: {scen})", 
+                            legend=dict(
+                                itemsizing='constant',
+                                title='Legend',
+                                traceorder='normal'
+                            ),
+                        )
 
 
-        # def plot_ind_map_node_connections(self, ): 
+                    # dsonode map ----------
+                    if True:
+                        fig_dsonodes = copy.deepcopy(fig_topobase)
+                        gwr_gdf = gwr_gdf.set_crs('EPSG:2056', allow_override=True)
+                        gwr_gdf = gwr_gdf.to_crs('EPSG:4326')
+                        gwr_gdf['geometry'] = gwr_gdf['geometry'].apply(self.flatten_geometry)
+
+                        dsonodes_gdf = dsonodes_gdf.set_crs('EPSG:2056', allow_override=True)
+                        dsonodes_gdf = dsonodes_gdf.to_crs('EPSG:4326')
+                        dsonodes_gdf['geometry'] = dsonodes_gdf['geometry'].apply(self.flatten_geometry)
+
+                        # define point coloring
+                        unique_nodes = gwr_gdf['grid_node'].unique()
+                        colors = pc.sample_colorscale(map_node_connections_specs['point_color_palette'], [n/(len(unique_nodes)) for n in range(len(unique_nodes))])
+                        node_colors = [colors[c] for c in range(len(unique_nodes))]
+                        colors_df = pd.DataFrame({'grid_node': unique_nodes, 'node_color': node_colors})
+                        
+                        gwr_gdf = gwr_gdf.merge(colors_df, on='grid_node', how='left')
+                        dsonodes_gdf = dsonodes_gdf.merge(colors_df, on='grid_node', how='left')
+
+                        # plot points as Scattermapbox
+                        gwr_gdf['hover_text'] = gwr_gdf['EGID'].apply(lambda egid: f'EGID: {egid}')
+
+                        fig_dsonodes.add_trace(go.Scattermapbox(lat=gwr_gdf.geometry.y,lon=gwr_gdf.geometry.x, mode='markers',
+                            marker=dict(
+                                size=map_node_connections_specs['point_size_all'],
+                                color=map_node_connections_specs['point_color_all'],
+                                opacity=map_node_connections_specs['point_opacity_all']
+                                ),
+                                text=gwr_gdf['hover_text'],
+                                hoverinfo='text',
+                                showlegend=False
+                                ))
+
+                        for un in unique_nodes:
+                            # node center / trafo location
+                            dsonodes_gdf_node = dsonodes_gdf.loc[dsonodes_gdf['grid_node'] == un]
+                            fig_dsonodes.add_trace(go.Scattermapbox(lat=dsonodes_gdf_node.geometry.y,lon=dsonodes_gdf_node.geometry.x, mode='markers',
+                                # marker_symbol = 'cross', 
+                                marker=dict(
+                                    size=map_node_connections_specs['point_size_dsonode_loc'],
+                                    color=dsonodes_gdf_node['node_color'],
+                                    opacity=map_node_connections_specs['point_opacity_dsonode_loc']
+                                    ),
+                                    name= f'trafo: {un}',
+                                    text=f'node: {un}, kVA_thres: {dsonodes_gdf_node["kVA_threshold"].sum()}',
+                                    hoverinfo='text',
+                                    legendgroup='trafo',
+                                    legendgrouptitle=dict(text='Trafo Locations'),
+                                    showlegend=True
+                                    ))
+
+                            # all buildings
+                            gwr_gdf_node = gwr_gdf.loc[gwr_gdf['grid_node'] == un]
+                            fig_dsonodes.add_trace(go.Scattermapbox(lat=gwr_gdf_node.geometry.y,lon=gwr_gdf_node.geometry.x, mode='markers',
+                                marker=dict(
+                                    size=map_node_connections_specs['point_size_bynode'],
+                                    color=gwr_gdf_node['node_color'],
+                                    opacity=map_node_connections_specs['point_opacity_bynode']
+                                    ),
+                                    name= f'{un}',
+                                    text=gwr_gdf_node['grid_node'],
+                                    hoverinfo='text',
+                                    showlegend=True
+                                    ))
+
+
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_map_node_connections_TF[1]:
+                        if self.visual_sett.plot_ind_map_node_connections_TF[2]:
+                            fig_dsonodes.show()
+                        elif not self.visual_sett.plot_ind_map_node_connections_TF[2]:
+                            fig_dsonodes.show() if i_scen == 0 else None
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        fig_dsonodes.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_map_node_connections.html')
+                    else:
+                        fig_dsonodes.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_map_node_connections.html')
+                            
 
         # def plot_ind_map_omitted_egids(self, ): 
 
@@ -2700,18 +2976,24 @@ if __name__ == '__main__':
         # # -- def plot_ALL_mcalgorithm(self,): -------------
         # visual_class.plot_ind_line_installedCap()                     # runs as intended
         visual_class.plot_ind_line_productionHOY_per_node()           # runs as intended
-        visual_class.plot_ind_line_productionHOY_per_EGID()           # runs as intended
+        # try: 
+        #     visual_class.plot_ind_line_productionHOY_per_EGID()           # runs as intended
+        # except Exception as e:
+        #     continue
+
         # visual_class.plot_ind_line_PVproduction()                     # runs
         # visual_class.plot_ind_hist_NPV_freepartitions()               # runs as intended
         # visual_class.plot_ind_line_gridPremiumHOY_per_node()          # runs 
         # visual_class.plot_ind_line_gridPremium_structure()            # runs 
+        visual_class.plot_ind_lineband_contcharact_newinst()
         visual_class.plot_ind_map_topo_egid()                           # runs as intended
         # visual_class.plot_ind_map_topo_egid_incl_gridarea()            # runs as intended
+        visual_class.plot_ind_map_node_connections()                  
 
 
         # plot_ind_map_node_connections()
         # plot_ind_map_omitted_egids()
-        # plot_ind_lineband_contcharact_newinst()
+        
 
 
             
