@@ -11,7 +11,7 @@ import shutil
 import fnmatch
 import polars as pl
 import copy
-from shapely import union_all
+from shapely import union_all, Polygon, MultiPolygon, MultiPoint
 from scipy.stats import gaussian_kde
 from scipy.stats import skewnorm
 from itertools import chain
@@ -40,6 +40,7 @@ class Visual_Settings:
                                                     '*.txt',
                                                     '*old_vers*',
                                                     ]),
+    pvalloc_include_pattern_list : List[str]      = field(default_factory=lambda: [])
     plot_show: bool                              = True
     save_plot_by_scen_directory: bool            = True
     remove_old_plot_scen_directories: bool       = False
@@ -106,10 +107,25 @@ class Visual_Settings:
     plot_ind_line_gridPremium_structure_TF: List[bool]      = field(default_factory=lambda: [True,      True,       False])
     plot_ind_hist_NPV_freepartitions_TF: List[bool]         = field(default_factory=lambda: [True,      True,       False])
     plot_ind_hist_pvcapaprod_TF: List[bool]                 = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_map_topo_egid_TF: List[bool]                   = field(default_factory=lambda: [True,      False,      False])
-    plot_ind_map_node_connections_TF: List[bool]            = field(default_factory=lambda: [True,      False,      False])
+
+    plot_ind_map_topo_egid_TF: List[bool]                   = field(default_factory=lambda: [True,      True,       False])
+    plot_ind_map_topo_egid_incl_gridarea_TF: List[bool]     = field(default_factory=lambda: [True,      True,       False])
+
+    plot_ind_map_node_connections_TF: List[bool]            = field(default_factory=lambda: [True,      True,       False])
+
     plot_ind_map_omitted_egids_TF: List[bool]               = field(default_factory=lambda: [True,      True,       False])
     plot_ind_lineband_contcharact_newinst_TF: List[bool]    = field(default_factory=lambda: [True,      True,       False])
+
+    plot_ind_line_productionHOY_per_EGID_specs: Dict         = field(default_factory=lambda: {
+        'include_EGID_traces_TF': True,
+        'n_egid_for_info_source': 10,
+        'grid_col_to_plot':         ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW',
+                                     'netfeedin_all_kW', 'netfeedin_all_taken_kW', 'netfeedin_all_loss_kW',
+                                     'kW_threshold',], 
+        'egid_col_to_plot':         ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', ],
+        'egid_col_only_first_few':  ['demand_kW', 'pvprod_kW', 'selfconsum_kW', ]
+    })
+
 
     plot_ind_map_topo_egid_specs: Dict                      = field(default_factory=lambda: {
         'uniform_municip_color': '#fff2ae',
@@ -124,6 +140,13 @@ class Visual_Settings:
         'point_color_alloc_algo': '#ffa600', # yellow 
         'point_color_rest': '#383838',       # dark grey
         'point_color_sanity_check': '#0041c2', # blue
+        'gridnode_area_geom_buffer': 0.5,
+        'gridnode_area_palette': 'Turbo',
+        'girdnode_egid_size': 20, 
+        'girdnode_egid_opacity': 0.1,
+        'gridnode_point_size': 15,
+        'gridnode_point_opacity': 1,
+        
     })
     plot_ind_map_node_connections_specs: Dict               = field(default_factory=lambda: {
         'uniform_municip_color': '#fff2ae',
@@ -177,10 +200,17 @@ class Visualization:
 
         # create a str list of scenarios in pvalloc to visualize (exclude by pattern recognition)
         scen_in_pvalloc_list = os.listdir(f'{self.visual_sett.data_path}/pvalloc')
-        self.pvalloc_scen_list: list[str] = [
-            scen for scen in scen_in_pvalloc_list
-            if not any(fnmatch.fnmatch(scen, pattern) for pattern in self.visual_sett.pvalloc_exclude_pattern_list)
-        ]     
+        
+        if not self.visual_sett.pvalloc_include_pattern_list == []:
+            self.pvalloc_scen_list: list[str] = [
+                scen for scen in scen_in_pvalloc_list
+                if any(fnmatch.fnmatch(scen, pattern) for pattern in self.visual_sett.pvalloc_include_pattern_list)
+            ]
+        else:
+            self.pvalloc_scen_list: list[str] = [
+                scen for scen in scen_in_pvalloc_list
+                if not any(fnmatch.fnmatch(scen, pattern) for pattern in self.visual_sett.pvalloc_exclude_pattern_list)
+            ]     
         
         # create new visual directories per scenario (+ remove old ones)
         for scen in self.pvalloc_scen_list:
@@ -235,8 +265,8 @@ class Visualization:
         self.plot_ind_line_gridPremium_structure()
         self.plot_ind_hist_NPV_freepartitions()
 
-
-        # plot_ind_map_topo_egid()
+        self.plot_ind_map_topo_egid()
+        self.plot_ind_map_topo_egid_incl_gridarea()
         # plot_ind_map_node_connections()
         # plot_ind_map_omitted_egids()
         # plot_ind_lineband_contcharact_newinst()
@@ -282,12 +312,21 @@ class Visualization:
             return fig 
 
         def set_default_fig_zoom_hour(self, fig, zoom_window):
-            start_zoom, end_zoom = zoom_window, zoom_window[1]
+            start_zoom, end_zoom = zoom_window[0], zoom_window[1]
             fig.update_layout(
                 xaxis_range=[start_zoom, end_zoom])
+            
             return fig
 
-
+        def flatten_geometry(self, geom):
+            if geom.has_z:
+                if geom.geom_type == 'Polygon':
+                    exterior = [(x, y) for x, y, z in geom.exterior.coords]
+                    interiors = [[(x, y) for x, y, z in interior.coords] for interior in geom.interiors]
+                    return Polygon(exterior, interiors)
+                elif geom.geom_type == 'MultiPolygon':
+                    return MultiPolygon([self.flatten_geometry(poly) for poly in geom.geoms])
+            return geom
 
     # ------------------------------------------------------------------------------------------------------------------------
     # ALL AVAILABLE PLOTS 
@@ -723,6 +762,7 @@ class Visualization:
                         aggdf_noprod_solkatgeom_gdf.set_crs(epsg=2056, inplace=True)
                         aggdf_noprod_solkatgeom_gdf.to_file(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_spatial_data/aggdf_noprod_solkatgeom_gdf.geojson', driver='GeoJSON')
                         print_to_logfile(f'\texport: aggdf_noprod_solkatgeom_gdf.geojson (scen: {scen}) for sanity check', self.visual_sett.log_name)
+
 
 
         def plot_ind_boxp_radiation_rng_sanitycheck(self,): 
@@ -1566,17 +1606,17 @@ class Visualization:
                         nodes = gridnode_df['grid_node'].unique()
 
                         fig = go.Figure()
+
                         for node in nodes:
                             filter_df = copy.deepcopy(gridnode_df.loc[gridnode_df['grid_node'] == node])
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['pvprod_kW'], name=f'{node} - pvprod_kW'))
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['selfconsum_kW'], name=f'{node} - selfconsum_kW'))
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['demand_kW'], name=f'{node} - demand_kW'))
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['netdemand_kW'], name=f'{node} - netdemand_kW'))
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['demand_proxy_out_kW'], name=f'{node} - demand_proxy_out_kW'))
-
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['netfeedin_all_kW'], name=f'{node} - feedin (all)'))
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['netfeedin_all_taken_kW'], name= f'{node} - feedin_taken'))
-                            fig.add_trace(go.Scatter(x=filter_df['t'], y=filter_df['netfeedin_all_loss_kW'], name=f'{node} - feedin_loss'))
+                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['pvprod_kW'], name=f'{node} - pvprod_kW'))
+                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['selfconsum_kW'], name=f'{node} - selfconsum_kW'))
+                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['demand_kW'], name=f'{node} - demand_kW'))
+                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netdemand_kW'], name=f'{node} - netdemand_kW'))
+                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['demand_proxy_out_kW'], name=f'{node} - demand_proxy_out_kW'))
+                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netfeedin_all_kW'], name=f'{node} - feedin (all)'))
+                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netfeedin_all_taken_kW'], name= f'{node} - feedin_taken'))
+                            fig.add_trace(go.Scatter(x=filter_df['t_int'], y=filter_df['netfeedin_all_loss_kW'], name=f'{node} - feedin_loss'))
 
                         gridnode_total_df = gridnode_df.groupby(['t', 't_int']).agg({'pvprod_kW': 'sum', 'netfeedin_all_kW': 'sum','netfeedin_all_taken_kW': 'sum','netfeedin_all_loss_kW': 'sum'}).reset_index()
                         gridnode_total_df.sort_values(by=['t_int'], inplace=True)
@@ -1614,9 +1654,10 @@ class Visualization:
 
                 checkpoint_to_logfile('plot_ind_line_productionHOY_per_EGID', self.visual_sett.log_name)
 
-                n_egid_for_info_source = 2
-                arbitrary_kW_threshold = 30.0
-                col_to_plot = ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', ]
+                n_egid_for_info_source  = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['n_egid_for_info_source']
+                grid_col_to_plot        = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['grid_col_to_plot']
+                egid_col_to_plot        = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['egid_col_to_plot']
+                egid_col_only_first_few = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['egid_col_only_first_few']
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
 
@@ -1626,6 +1667,11 @@ class Visualization:
 
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
                     topo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_time_subdf/topo_subdf_*.parquet')
+                    outtopo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/outtopo_time_subdf/*.parquet')
+                    
+                    gridnode_df = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
+                    dsonodes_df = pl.read_parquet(f'{self.visual_sett.mc_data_path}/dsonodes_df.parquet')  
+
 
 
                     # select EGIDs by info_source --------------------------
@@ -1640,24 +1686,32 @@ class Visualization:
                     topo_df = pd.DataFrame({'EGID': egid_list, 'info_source': info_source_list, 'grid_node': grid_node_list,
                                             'df_uid_w_inst': df_uid_w_inst_list, 'xtf_id': xtf_id_list}) 
                     
+                    # select EGIDs to plot ----------
                     egid_info_list = []
-                    for info in topo_df['info_source'].unique():
-                        egid_info = topo_df.loc[topo_df['info_source'] == info].head(n_egid_for_info_source).copy()
-                        egid_info_list.append(egid_info)
-                    egid_info = pd.concat(egid_info_list, axis=0)
 
+                    # select all egids of smalles gridnode ----------
+                    gridnodes_counts = topo_df['grid_node'].value_counts()
+                    gridnodes_counts.sort_values(ascending=False, inplace=True)
+                    gridnode_pick = gridnodes_counts.index[0]  # take the most common gridnode
+                    egid_info = topo_df.loc[topo_df['grid_node'] == gridnode_pick].copy()
+
+                    # # select n_egid for each info_source ----------
+                    # egid_info_list = []
+                    # for info in topo_df['info_source'].unique():
+                    #     egid_info = topo_df.loc[topo_df['info_source'] == info].head(n_egid_for_info_source).copy()
+                    #     egid_info_list.append(egid_info)
+                    # egid_info = pd.concat(egid_info_list, axis=0)
+                    # ----------
 
                     # iterate topo_time_subdf to extract production
+                    k = 0
+                    path, i, egid_info_row = topo_subdf_paths[k], k, egid_info.iloc[k]
                     subdf_prod_df_list = [] 
                     for i_path, path in enumerate(topo_subdf_paths):
                         subdf = pl.read_parquet(path)
-                        
-                        # --------
-                        j = 1
-                        i, egid_info_row = j, egid_info.iloc[j]
-                        i_path, path = 0, topo_subdf_paths[0]
-                        topo[list(topo.keys())[0]]
-                        # --------
+
+                        subdf = subdf.join(dsonodes_df[['grid_node', 'kVA_threshold', ]], on='grid_node', how='left')
+                        subdf = subdf.with_columns((pl.col('kVA_threshold') * self.pvalloc_scen.GRIDspec_perf_factor_1kVA_to_XkW).alias("kW_threshold"))
 
                         for i, egid_info_row in egid_info.iterrows():
 
@@ -1686,6 +1740,7 @@ class Visualization:
                                 pl.col("grid_node").first(),
                                 pl.col("pvprod_kW").sum(),
                                 pl.col("demand_kW").first(), 
+                                pl.col("kW_threshold").first(),
                             ])
 
                             selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) 
@@ -1699,33 +1754,51 @@ class Visualization:
                             subdf_prod_df_list.append(subdf_prod)
 
                     subdf_prod_df = pl.concat(subdf_prod_df_list)
+
+                    
+                    # import outtopo_time_subfs -----------------------------------------------------
+                    agg_subdf_df_list = []
+                    for i, path in enumerate(outtopo_subdf_paths):
+                        outsubdf = pl.read_parquet(path)  
+                        agg_outsubdf = outsubdf.group_by(["grid_node", "t"]).agg([
+                            pl.col('demand_proxy_out_kW').sum().alias('demand_proxy_out_kW'),
+                        ])
+                        del outsubdf
+                        agg_subdf_df_list.append(agg_outsubdf)
+                        
+                    agg_outsubdf_df = pl.concat(agg_subdf_df_list)
+                    outtopo_gridnode_df = agg_outsubdf_df.group_by(['grid_node', 't']).agg([
+                        pl.col('demand_proxy_out_kW').sum().alias('demand_proxy_out_kW'),
+                    ])
+                    subdf_prod_df = subdf_prod_df.join(outtopo_gridnode_df, on=['grid_node', 't'], how='left')
+
                         
                     # make arbitrary gridnode_df calculation --------------------------
                     subdf_prod_agg_byegid = subdf_prod_df.group_by(['EGID', 't', 't_int']).agg(
                         pl.col('grid_node').first().alias('grid_node'),
+                        pl.col('kW_threshold').first().alias('kW_threshold'),
                         pl.col('demand_kW').first().alias('demand_kW'),
+                        pl.col('demand_proxy_out_kW').sum().alias('demand_proxy_out_kW'),
                         pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                         pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                         pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
-                        pl.col('netdemand_kW').sum().alias('netdemand_kW')
+                        pl.col('netdemand_kW').sum().alias('netdemand_kW'),
                     )
 
                     subdf_prod_agg_bynode = subdf_prod_agg_byegid.group_by(['grid_node', 't', 't_int']).agg(
+                        pl.col('kW_threshold').first().alias('kW_threshold'),
                         pl.col('demand_kW').sum().alias('demand_kW'),
+                        pl.col('demand_proxy_out_kW').sum().alias('demand_proxy_out_kW'),
                         pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                         pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                         pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
                         pl.col('netdemand_kW').sum().alias('netdemand_kW'), 
                     )
+
+                    # code replication from gridnode_updating
                     subdf_prod_agg_bynode = subdf_prod_agg_bynode.with_columns([
-                        (pl.col('netfeedin_kW') - pl.col('netdemand_kW')).alias('netfeedin_all_kW'),
+                        (pl.col('netfeedin_kW') - pl.col('netdemand_kW') - pl.col('demand_proxy_out_kW')).alias('netfeedin_all_kW'),
                     ])
-                    subdf_prod_agg_bynode = subdf_prod_agg_bynode.with_columns([
-                        pl.when(pl.col("netfeedin_all_kW") > arbitrary_kW_threshold)
-                        .then(pl.lit(arbitrary_kW_threshold))
-                        .otherwise(pl.col("netfeedin_all_kW"))
-                        .alias("netfeedin_all_taken_kW"),
-                        ])
                     subdf_prod_agg_bynode = subdf_prod_agg_bynode.with_columns([
                         pl.when(pl.col("netfeedin_all_kW") < 0)
                         .then(0)
@@ -1733,59 +1806,87 @@ class Visualization:
                         .alias("netfeedin_all_kW"),
                         ])
                     subdf_prod_agg_bynode = subdf_prod_agg_bynode.with_columns([
-                        pl.when(pl.col("netfeedin_all_kW") > arbitrary_kW_threshold)
-                        .then(pl.col("netfeedin_all_kW") - arbitrary_kW_threshold)
+                        pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
+                        .then(pl.col("kW_threshold"))
+                        .otherwise(pl.col("netfeedin_all_kW"))
+                        .alias("netfeedin_all_taken_kW"),
+                        ])
+                    subdf_prod_agg_bynode = subdf_prod_agg_bynode.with_columns([
+                        pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
+                        .then(pl.col("netfeedin_all_kW") - pl.col("kW_threshold"))
                         .otherwise(0)
                         .alias("netfeedin_all_loss_kW")
                     ])
-                        
                 
 
                     # plot --------------------------
-                    subdf_prod_agg_byegid_df = subdf_prod_agg_byegid.to_pandas()
-                    subdf_prod_agg_bynode_df = subdf_prod_agg_bynode.to_pandas()
-                    fig = go.Figure()
+                    include_EGID_traces_TF = [True, False]
+                    for incl_EGID_TF in include_EGID_traces_TF: 
+                        subdf_prod_agg_byegid_df = subdf_prod_agg_byegid.to_pandas()
+                        subdf_prod_agg_bynode_df = subdf_prod_agg_bynode.to_pandas()
+                        fig = go.Figure()
 
-                    for node in subdf_prod_agg_bynode_df['grid_node'].unique():
-                        node_subdf = subdf_prod_agg_bynode_df.loc[subdf_prod_agg_bynode_df['grid_node'] == node]
-                        node_subdf = node_subdf.sort_values(by=['t_int'])   
+                        fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'grid_node_from_subdf {20*"-"}', opacity=0)) 
+                        for node in subdf_prod_agg_bynode_df['grid_node'].unique():
+                            node_subdf = subdf_prod_agg_bynode_df.loc[subdf_prod_agg_bynode_df['grid_node'] == node]
+                            node_subdf = node_subdf.sort_values(by=['t_int'])   
 
-                        for col in col_to_plot:
-                            fig.add_trace(go.Scatter(x=node_subdf['t'], y=node_subdf[col], name=f'grid_node: {node} - {col}'))
+                            for col in grid_col_to_plot:
+                                fig.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf[col], name=f'grid_node: {node} - {col}'))
+                        
+                        # sanity check ----------
+                        # add values form gridnode_df to make in-plot sanity check
+                        fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name='', opacity=0)) 
+                        fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'gridnode_df_sanitycheck {20*"-"}', opacity=0)) 
+                        if 't_int' not in gridnode_df.columns:
+                            gridnode_df = gridnode_df.with_columns([
+                                pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
+                            ])
+                            gridnode_df = gridnode_df.sort("t_int", descending=False)            
+                            gridnode_df = gridnode_df.filter(pl.col('grid_node') == gridnode_pick)
+
+                        gridnode_df_pd = gridnode_df.to_pandas()
+                        for col in grid_col_to_plot:
+                            fig.add_trace(go.Scatter(x=gridnode_df_pd['t_int'], y=gridnode_df_pd[col], name=f'from gridnode_df: {gridnode_pick} - {col}', 
+                                                    mode = 'lines+markers',))
+                        fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name='', opacity=0)) 
+                        # ----------
+
+                        if incl_EGID_TF:
+                            for i_egid, egid in enumerate(egid_info['EGID'].unique()):
+                                egid_subdf = subdf_prod_agg_byegid_df.loc[subdf_prod_agg_byegid_df['EGID'] == egid]
+                                egid_subdf = egid_subdf.sort_values(by=['t_int'])
+
+                                for col in egid_col_to_plot:
+                                    if col not in egid_col_only_first_few or i_egid < 3:  # only plot first few egids with all columns
+                                        fig.add_trace(go.Scatter(x=egid_subdf['t_int'], y=egid_subdf[col], name=f'EGID: {egid:15} - {col}'))
+                                        fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name='', opacity=0)) 
 
 
-                    for egid in subdf_prod_agg_byegid_df['EGID'].unique():
-                        fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name='', opacity=0))
-                        egid_subdf = subdf_prod_agg_byegid_df.loc[subdf_prod_agg_byegid_df['EGID'] == egid]
-                        egid_subdf = egid_subdf.sort_values(by=['t_int'])
-
-                        for col in col_to_plot:
-                            fig.add_trace(go.Scatter(x=egid_subdf['t'], y=egid_subdf[col], name=f'EGID: {egid} - {col}'))
-
-                    fig.update_layout(
-                        title = 'Production per EGID / Grid Node (kW, Hour of Year)', 
-                        xaxis_title='Hour of Year',
-                        yaxis_title='Production / Feedin (kW)',
-                        legend_title='EGID / Node ID',
-                        template='plotly_white',
-                        showlegend=True,
-                    )
-                    fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
-                    fig = self.set_default_fig_zoom_hour(fig, self.visual_sett.default_zoom_hour)
+                        fig.update_layout(
+                            title = 'Production per EGID / Grid Node (kW, Hour of Year)', 
+                            xaxis_title='Hour of Year',
+                            yaxis_title='Production / Feedin (kW)',
+                            legend_title='EGID / Node ID',
+                            template='plotly_white',
+                            showlegend=True,
+                        )
+                        fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
+                        fig = self.set_default_fig_zoom_hour(fig, self.visual_sett.default_zoom_hour)
 
 
-                    
-                    # export plot --------------------------
-                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[1]:
-                        if self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[2]:
-                            fig.show()
-                        elif not self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[2]:
-                            fig.show() if i_scen == 0 else None
-                    if self.visual_sett.save_plot_by_scen_directory:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_line_productionHOY_per_EGID.html')
-                    else:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_line_productionHOY_per_EGID.html')
-                    print_to_logfile(f'\texport: plot_ind_line_productionHOY_per_EGID.html (for: {scen})', self.visual_sett.log_name)
+                        
+                        # export plot --------------------------
+                        if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[1]:
+                            if self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[2]:
+                                fig.show()
+                            elif not self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[2]:
+                                fig.show() if i_scen == 0 else None
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_line_productionHOY_per_EGID_inclEGID_{incl_EGID_TF}.html')
+                        else:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_line_productionHOY_per_EGID_inclEGID_{incl_EGID_TF}.html')
+                        print_to_logfile(f'\texport: plot_ind_line_productionHOY_per_EGID.html (for: {scen})', self.visual_sett.log_name)
 
 
 
@@ -1932,7 +2033,8 @@ class Visualization:
 
                     
                     npv_df_paths = glob.glob(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_*.parquet')
-                    periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
+                    # periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
+                    periods_list = [path.split('npv_df_')[-1].split('.parquet')[0] for path in npv_df_paths]
                     before_period, after_period = min(periods_list), max(periods_list)
 
                     npv_df_before = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{before_period.to_period("M")}.parquet')
@@ -2098,11 +2200,20 @@ class Visualization:
                         fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_line_gridPremium_structure.html')
                         
 
-
         def plot_ind_map_topo_egid(self, ): 
             if self.visual_sett.plot_ind_map_topo_egid_TF[0]:
+
                 map_topo_egid_specs = self.visual_sett.plot_ind_map_topo_egid_specs
                 checkpoint_to_logfile('plot_ind_map_topo_egid', self.visual_sett.log_name)
+
+                trace_color_dict = {
+                    'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
+                    'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
+                    'Teal': pc.sequential.Teal, 'Magenta': pc.sequential.Magenta, 'Plotly3': pc.sequential.Plotly3,
+                    'Viridis': pc.sequential.Viridis, 'Turbo': pc.sequential.Turbo, 'Blackbody': pc.sequential.Blackbody, 
+                    'Bluered': pc.sequential.Bluered, 'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
+                    'Rainbow': pc.sequential.Rainbow, 
+                }     
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     
@@ -2113,115 +2224,428 @@ class Visualization:
                         self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
 
                         # import
-                        gwr_gdf = gpd.read_file(f'{self.visual_sett.name_dir_export_path}/gwr_gdf.geojson')
+                        gwr_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
+                        gm_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
+                        dsonodes_gdf = gpd.read_file(f'{self.visual_sett.data_path}/pvalloc/{scen}/dsonodes_gdf.geojson')
 
-                # # import 
-                # gwr_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gwr_gdf.geojson')
-                # gm_gdf = gpd.read_file(f'{data_path}/output/{pvalloc_scen["name_dir_import"]}/gm_shp_gdf.geojson')                                         
+                        topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+                        egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
+                        gklas_list, node_list, demand_type_list, pvtarif_list, elecpri_list, elecpri_info_list = [], [], [], [], [], []
 
-                # topo  = json.load(open(f'{mc_data_path}/topo_egid.json', 'r'))
-                # egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
-                # gklas_list, node_list, demand_type_list, pvtarif_list, elecpri_list, elecpri_info_list = [], [], [], [], [], []
+                        for k,v, in topo.items():
+                            egid_list.append(k)
+                            inst_TF_list.append(v['pv_inst']['inst_TF'])
+                            info_source_list.append(v['pv_inst']['info_source'])
+                            BeginOp_list.append(v['pv_inst']['BeginOp'])
+                            TotalPower_list.append(v['pv_inst']['TotalPower'])
+                            bfs_list.append(v['gwr_info']['bfs'])
+                            gklas_list.append(v['gwr_info']['gklas'])
+                            node_list.append(v['grid_node'])
+                            demand_type_list.append(v['demand_type'])
+                            pvtarif_list.append(v['pvtarif_Rp_kWh'])
+                            elecpri_list.append(v['elecpri_Rp_kWh'])
+                            elecpri_info_list.append(v['elecpri_info'])
 
-                # for k,v, in topo.items():
-                #     egid_list.append(k)
-                #     inst_TF_list.append(v['pv_inst']['inst_TF'])
-                #     info_source_list.append(v['pv_inst']['info_source'])
-                #     BeginOp_list.append(v['pv_inst']['BeginOp'])
-                #     TotalPower_list.append(v['pv_inst']['TotalPower'])
-                #     bfs_list.append(v['gwr_info']['bfs'])
+                        pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,
+                                                'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list, 
+                                                'gklas': gklas_list, 'grid_node': node_list, 'demand_type': demand_type_list,
+                                                'pvtarif': pvtarif_list, 'elecpri': elecpri_list, 'elecpri_info': elecpri_info_list })
+                        pvinst_df = pvinst_df.merge(gwr_gdf[['geometry', 'EGID']], on='EGID', how='left')
+                        pvinst_gdf = gpd.GeoDataFrame(pvinst_df, crs='EPSG:2056', geometry='geometry')
+                    
+                    # base map ----------------
+                    if True:
+                        # transformations
+                        gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
+                        gm_gdf = gm_gdf.loc[gm_gdf['BFS_NUMMER'].isin(pvinst_df['bfs'].unique())].copy()
+                        date_cols = [col for col in gm_gdf.columns if (gm_gdf[col].dtype == 'datetime64[ns]') or (gm_gdf[col].dtype == 'datetime64[ms]')]
+                        gm_gdf.drop(columns=date_cols, inplace=True)
+                        
+                        # add map relevant columns
+                        gm_gdf['hover_text'] = gm_gdf.apply(lambda row: f"{row['NAME']}<br>BFS_NUMMER: {row['BFS_NUMMER']}", axis=1)
 
-                #     gklas_list.append(v['gwr_info']['gklas'])
-                #     node_list.append(v['grid_node'])
-                #     demand_type_list.append(v['demand_type'])
-                #     pvtarif_list.append(v['pvtarif_Rp_kWh'])
-                #     elecpri_list.append(v['elecpri_Rp_kWh'])
-                #     elecpri_info_list.append(v['elecpri_info'])
+                        # geo transformations
+                        gm_gdf = gm_gdf.to_crs('EPSG:4326')
+                        gm_gdf['geometry'] = gm_gdf['geometry'].apply(self.flatten_geometry)
 
-                # pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,
-                #                         'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list, 
-                #                         'gklas': gklas_list, 'node': node_list, 'demand_type': demand_type_list,
-                #                         'pvtarif': pvtarif_list, 'elecpri': elecpri_list, 'elecpri_info': elecpri_info_list })
-                
-                # pvinst_df = pvinst_df.merge(gwr_gdf[['geometry', 'EGID']], on='EGID', how='left')
-                # pvinst_gdf = gpd.GeoDataFrame(pvinst_df, crs='EPSG:2056', geometry='geometry')
-                # firstkey_topo = topo[list(topo.keys())[0]]
+                        # geojson = gm_gdf.__geo_interface__
+                        geojson = json.loads(gm_gdf.to_json())
 
-        # def plot_ind_hist_NPV_freepartitions(self, ): 
-        #     if self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[0]:
-
-        #         checkpoint_to_logfile('plot_ind_hist_NPV_freepartitions', self.visual_sett.log_name)
-        #         fig_agg = go.Figure()
-
-        #         for i_scen, scen in enumerate(self.pvalloc_scen_list):
-        #             self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
-        #             self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
-
-        #             npv_df_paths = glob.glob(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_*.parquet')
-        #             periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
-        #             before_period, after_period = min(periods_list), max(periods_list)
-
-        #             npv_df_before = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{before_period.to_period("M")}.parquet')
-        #             npv_df_after  = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{after_period.to_period("M")}.parquet')
-
-        #             # plot ----------------
-        #             fig = go.Figure()
-
-        #             fig.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation Algorithm', opacity=0.5))
-
-        #             npv_df_paths = glob.glob(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_*.parquet')
-        #             periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
-        #             before_period, after_period = min(periods_list), max(periods_list)
-
-        #             npv_df_before = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{before_period.to_period("M")}.parquet')
-        #             npv_df_after  = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{after_period.to_period("M")}.parquet')
-
-        #             # plot ----------------
-        #             fig = go.Figure()
-        #             fig.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation Algorithm', opacity=0.5))
-        #             fig.add_trace(go.Histogram(x=npv_df_after['NPV_uid'], name='After Allocation Algorithm', opacity=0.5))
-
-        #             fig.update_layout(
-        #                 xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
-        #                 yaxis_title='Frequency',
-        #                 title = f'NPV Distribution of possible PV installations, first / last year (weather year: {self.pvalloc_scen.WEAspec_weather_year})',
-        #                 barmode = 'overlay')
-        #             fig.update_traces(bingroup=1, opacity=0.5)
-
-        #             fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen_list[i_scen])
-
-        #             if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[1]:
-        #                 if self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[2]:
-        #                     fig.show()
-        #                 elif not self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[2]:
-        #                     fig.show() if i_scen == 0 else None
-        #             if self.visual_sett.save_plot_by_scen_directory:
-        #                 fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_hist_NPV_freepartitions.html')
-        #             else:
-        #                 fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_hist_NPV_freepartitions.html')
+                        # Plot using Plotly Express
+                        fig_topobase = px.choropleth_mapbox(
+                            gm_gdf,
+                            geojson=geojson,
+                            locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
+                            featureidkey="properties.BFS_NUMMER",  # This must match the GeoJSON's property for BFS_NUMMER
+                            color_discrete_sequence=[map_topo_egid_specs['uniform_municip_color']],  # Apply the single color to all shapes
+                            hover_name="hover_text",  # Use the new column for hover text
+                            mapbox_style="carto-positron",  # Basemap style
+                            center={"lat": self.visual_sett.default_map_center[0], "lon": self.visual_sett.default_map_center[1]},  # Center the map on the region
+                            zoom=self.visual_sett.default_map_zoom,  # Adjust zoom as needed
+                            opacity=map_topo_egid_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
+                        )   
+                        # Update layout for borders and title
+                        fig_topobase.update_layout(
+                            mapbox=dict(
+                                layers=[{
+                                    'source': geojson,
+                                    'type': 'line',
+                                    'color': 'black',  # Set border color for polygons
+                                    'opacity': 0.25,
+                                }]
+                            ),
+                            title=f"Map of PV topology (scen: {scen})", 
+                            legend=dict(
+                                itemsizing='constant',
+                                title='Legend',
+                                traceorder='normal'
+                            ),
+                        )
 
 
-        #             # aggregate plot ----------------
-        #             fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
-        #             fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,)) 
+                    # topo egid map: highlight EGIDs selected for summary ----------------
+                    if True:
+                        fig_topoegid = copy.deepcopy(fig_topobase)
+                        pvinst_gdf = pvinst_gdf.to_crs('EPSG:4326')
+                        pvinst_gdf['geometry'] = pvinst_gdf['geometry'].apply(self.flatten_geometry)
 
-        #             fig_agg.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation', opacity=0.7, xbins=dict(size=500)))
-        #             fig_agg.add_trace(go.Histogram(x=npv_df_after['NPV_uid'],  name='After Allocation',  opacity=0.7, xbins=dict(size=500)))
+                        if len(glob.glob(f'{self.visual_sett.mc_data_path}/topo_egid_summary_byEGID/*.csv')) > 1:
+                            files_sanity_check = glob.glob(f'{self.visual_sett.mc_data_path}/topo_egid_summary_byEGID/*.csv')
+                            file = files_sanity_check[0]
+                            egid_sanity_check = [file.split('summary_')[-1].split('.csv')[0] for file in files_sanity_check]
 
-        #         fig_agg.update_layout(
-        #             xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
-        #             yaxis_title='Frequency',
-        #             title = f'NPV Distribution of possible PV installations, first / last year ({len(self.scen_dir_export_list)} scen, weather year: {self.pvalloc_scen.WEAspec_weather_year})',
-        #             barmode = 'overlay')
-        #         # fig_agg.update_traces(bingroup=1, opacity=0.75)
+                            subinst4_gdf = pvinst_gdf.copy()
+                            subinst4_gdf = subinst4_gdf.loc[subinst4_gdf['EGID'].isin(egid_sanity_check)]
+                            
+                            # Add the points using Scattermapbox
+                            fig_topoegid.add_trace(go.Scattermapbox(lat=subinst4_gdf.geometry.y,lon=subinst4_gdf.geometry.x, mode='markers',
+                                marker=dict(
+                                    size=map_topo_egid_specs['point_size_sanity_check'],
+                                    color=map_topo_egid_specs['point_color_sanity_check'],
+                                    opacity=map_topo_egid_specs['point_opacity_sanity_check']
+                                ),
+                                name = 'EGIDs in sanity check xlsx',
+                            ))
+                        
+                    # topo egid map: all buildings ----------------
+                    if True:
+                        # subset inst_gdf for different traces in map plot
+                        pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>node: {row['grid_node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
 
-        #         if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[1]:
-        #             fig_agg.show()
-        #             fig_agg.write_html(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions__{len(self.scen_dir_export_list)}scen.html')
+                        subinst1_gdf, subinst2_gdf, subinst3_gdf  = pvinst_gdf.copy(), pvinst_gdf.copy(), pvinst_gdf.copy()
+                        subinst1_gdf, subinst2_gdf, subinst3_gdf = subinst1_gdf.loc[(subinst1_gdf['inst_TF'] == True) & (subinst1_gdf['info_source'] == 'pv_df')], subinst2_gdf.loc[(subinst2_gdf['inst_TF'] == True) & (subinst2_gdf['info_source'] == 'alloc_algorithm')], subinst3_gdf.loc[(subinst3_gdf['inst_TF'] == False)]
+
+                        # Add the points using Scattermapbox
+                        fig_topoegid.add_trace(go.Scattermapbox(lat=subinst1_gdf.geometry.y,lon=subinst1_gdf.geometry.x, mode='markers',
+                            marker=dict(
+                                size=map_topo_egid_specs['point_size_pv'],
+                                color=map_topo_egid_specs['point_color_pv_df'],
+                                opacity=map_topo_egid_specs['point_opacity']
+                            ),
+                            name = 'house w pv (real)',
+                            text=subinst1_gdf['hover_text'],
+                            hoverinfo='text'
+                        ))
+                        fig_topoegid.add_trace(go.Scattermapbox(lat=subinst2_gdf.geometry.y,lon=subinst2_gdf.geometry.x, mode='markers',
+                            marker=dict(
+                                size=map_topo_egid_specs['point_size_pv'],
+                                color=map_topo_egid_specs['point_color_alloc_algo'],
+                                opacity=map_topo_egid_specs['point_opacity']
+                            ),
+                            name = 'house w pv (predicted)',
+                            text=subinst2_gdf['hover_text'],
+                            hoverinfo='text'
+                        ))
+                        fig_topoegid.add_trace(go.Scattermapbox(lat=subinst3_gdf.geometry.y,lon=subinst3_gdf.geometry.x, mode='markers',
+                            marker=dict(
+                                size=map_topo_egid_specs['point_size_rest'],
+                                color=map_topo_egid_specs['point_color_rest'],
+                                opacity=map_topo_egid_specs['point_opacity']
+                            ),
+                            name = 'house w/o pv',
+                            text=subinst3_gdf['hover_text'],
+                            hoverinfo='text'
+                        ))
+ 
+                    
+                    # Update layout ----------------
+                    fig_topoegid.update_layout(
+                            title=f"Map of model PV Topology ({scen})",
+                            mapbox=dict(
+                                style="carto-positron",
+                                center={"lat": self.visual_sett.default_map_center[0], "lon": self.visual_sett.default_map_center[1]},  # Center the map on the region
+                                zoom=self.visual_sett.default_map_zoom
+                            ))
+
+
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_map_topo_egid_TF[1]:
+                        if self.visual_sett.plot_ind_map_topo_egid_TF[2]:
+                            fig_topoegid.show()
+                        elif not self.visual_sett.plot_ind_map_topo_egid_TF[2]:
+                            fig_topoegid.show() if i_scen == 0 else None
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_map_topo_egid.html')
+                    else:
+                        fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_map_topo_egid.html')
+
+
+        def plot_ind_map_topo_egid_incl_gridarea(self, ): 
+            if self.visual_sett.plot_ind_map_topo_egid_incl_gridarea_TF[0]:
+
+                map_topo_egid_specs = self.visual_sett.plot_ind_map_topo_egid_specs
+                checkpoint_to_logfile('plot_ind_map_topo_egid', self.visual_sett.log_name)
+
+                trace_color_dict = {
+                    'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
+                    'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
+                    'Teal': pc.sequential.Teal, 'Magenta': pc.sequential.Magenta, 'Plotly3': pc.sequential.Plotly3,
+                    'Viridis': pc.sequential.Viridis, 'Turbo': pc.sequential.Turbo, 'Blackbody': pc.sequential.Blackbody, 
+                    'Bluered': pc.sequential.Bluered, 'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
+                    'Rainbow': pc.sequential.Rainbow, 
+                }     
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    
+                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+                    # get pvinst_gdf ----------------
+                    if True: 
+                        self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+
+                        # import
+                        gwr_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
+                        gm_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
+                        dsonodes_gdf = gpd.read_file(f'{self.visual_sett.data_path}/pvalloc/{scen}/dsonodes_gdf.geojson')
+
+                        topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+                        egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
+                        gklas_list, node_list, demand_type_list, pvtarif_list, elecpri_list, elecpri_info_list = [], [], [], [], [], []
+
+                        for k,v, in topo.items():
+                            egid_list.append(k)
+                            inst_TF_list.append(v['pv_inst']['inst_TF'])
+                            info_source_list.append(v['pv_inst']['info_source'])
+                            BeginOp_list.append(v['pv_inst']['BeginOp'])
+                            TotalPower_list.append(v['pv_inst']['TotalPower'])
+                            bfs_list.append(v['gwr_info']['bfs'])
+                            gklas_list.append(v['gwr_info']['gklas'])
+                            node_list.append(v['grid_node'])
+                            demand_type_list.append(v['demand_type'])
+                            pvtarif_list.append(v['pvtarif_Rp_kWh'])
+                            elecpri_list.append(v['elecpri_Rp_kWh'])
+                            elecpri_info_list.append(v['elecpri_info'])
+
+                        pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,
+                                                'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list, 
+                                                'gklas': gklas_list, 'grid_node': node_list, 'demand_type': demand_type_list,
+                                                'pvtarif': pvtarif_list, 'elecpri': elecpri_list, 'elecpri_info': elecpri_info_list })
+                        pvinst_df = pvinst_df.merge(gwr_gdf[['geometry', 'EGID']], on='EGID', how='left')
+                        pvinst_gdf = gpd.GeoDataFrame(pvinst_df, crs='EPSG:2056', geometry='geometry')
+                    
+                    # base map ----------------
+                    if True:
+                        # transformations
+                        gm_gdf['BFS_NUMMER'] = gm_gdf['BFS_NUMMER'].astype(str)
+                        gm_gdf = gm_gdf.loc[gm_gdf['BFS_NUMMER'].isin(pvinst_df['bfs'].unique())].copy()
+                        date_cols = [col for col in gm_gdf.columns if (gm_gdf[col].dtype == 'datetime64[ns]') or (gm_gdf[col].dtype == 'datetime64[ms]')]
+                        gm_gdf.drop(columns=date_cols, inplace=True)
+                        
+                        # add map relevant columns
+                        gm_gdf['hover_text'] = gm_gdf.apply(lambda row: f"{row['NAME']}<br>BFS_NUMMER: {row['BFS_NUMMER']}", axis=1)
+
+                        # geo transformations
+                        gm_gdf = gm_gdf.to_crs('EPSG:4326')
+                        gm_gdf['geometry'] = gm_gdf['geometry'].apply(self.flatten_geometry)
+
+                        # geojson = gm_gdf.__geo_interface__
+                        geojson = json.loads(gm_gdf.to_json())
+
+                        # Plot using Plotly Express
+                        fig_topobase = px.choropleth_mapbox(
+                            gm_gdf,
+                            geojson=geojson,
+                            locations="BFS_NUMMER",  # Link BFS_NUMMER for color and location
+                            featureidkey="properties.BFS_NUMMER",  # This must match the GeoJSON's property for BFS_NUMMER
+                            color_discrete_sequence=[map_topo_egid_specs['uniform_municip_color']],  # Apply the single color to all shapes
+                            hover_name="hover_text",  # Use the new column for hover text
+                            mapbox_style="carto-positron",  # Basemap style
+                            center={"lat": self.visual_sett.default_map_center[0], "lon": self.visual_sett.default_map_center[1]},  # Center the map on the region
+                            zoom=self.visual_sett.default_map_zoom,  # Adjust zoom as needed
+                            opacity=map_topo_egid_specs['shape_opacity'],   # Opacity to make shapes and basemap visible    
+                        )   
+                        # Update layout for borders and title
+                        fig_topobase.update_layout(
+                            mapbox=dict(
+                                layers=[{
+                                    'source': geojson,
+                                    'type': 'line',
+                                    'color': 'black',  # Set border color for polygons
+                                    'opacity': 0.25,
+                                }]
+                            ),
+                            title=f"Map of PV topology (scen: {scen})", 
+                            legend=dict(
+                                itemsizing='constant',
+                                title='Legend',
+                                traceorder='normal'
+                            ),
+                        )
+
+
+                    # topo egid map: highlight EGIDs selected for summary ----------------
+                    if True:
+                        fig_topoegid = copy.deepcopy(fig_topobase)
+                        pvinst_gdf = pvinst_gdf.to_crs('EPSG:4326')
+                        pvinst_gdf['geometry'] = pvinst_gdf['geometry'].apply(self.flatten_geometry)
+
+                        if len(glob.glob(f'{self.visual_sett.mc_data_path}/topo_egid_summary_byEGID/*.csv')) > 1:
+                            files_sanity_check = glob.glob(f'{self.visual_sett.mc_data_path}/topo_egid_summary_byEGID/*.csv')
+                            file = files_sanity_check[0]
+                            egid_sanity_check = [file.split('summary_')[-1].split('.csv')[0] for file in files_sanity_check]
+
+                            subinst4_gdf = pvinst_gdf.copy()
+                            subinst4_gdf = subinst4_gdf.loc[subinst4_gdf['EGID'].isin(egid_sanity_check)]
+                            
+                            # Add the points using Scattermapbox
+                            fig_topoegid.add_trace(go.Scattermapbox(lat=subinst4_gdf.geometry.y,lon=subinst4_gdf.geometry.x, mode='markers',
+                                marker=dict(
+                                    size=map_topo_egid_specs['point_size_sanity_check'],
+                                    color=map_topo_egid_specs['point_color_sanity_check'],
+                                    opacity=map_topo_egid_specs['point_opacity_sanity_check']
+                                ),
+                                name = 'EGIDs in sanity check xlsx',
+                            ))
+                        
+                    # topo egid map: all buildings ----------------
+                    if True:
+                        # subset inst_gdf for different traces in map plot
+                        pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>node: {row['grid_node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
+
+                        subinst1_gdf, subinst2_gdf, subinst3_gdf  = pvinst_gdf.copy(), pvinst_gdf.copy(), pvinst_gdf.copy()
+                        subinst1_gdf, subinst2_gdf, subinst3_gdf = subinst1_gdf.loc[(subinst1_gdf['inst_TF'] == True) & (subinst1_gdf['info_source'] == 'pv_df')], subinst2_gdf.loc[(subinst2_gdf['inst_TF'] == True) & (subinst2_gdf['info_source'] == 'alloc_algorithm')], subinst3_gdf.loc[(subinst3_gdf['inst_TF'] == False)]
+
+                        # Add the points using Scattermapbox
+                        fig_topoegid.add_trace(go.Scattermapbox(lat=subinst1_gdf.geometry.y,lon=subinst1_gdf.geometry.x, mode='markers',
+                            marker=dict(
+                                size=map_topo_egid_specs['point_size_pv'],
+                                color=map_topo_egid_specs['point_color_pv_df'],
+                                opacity=map_topo_egid_specs['point_opacity']
+                            ),
+                            name = 'house w pv (real)',
+                            text=subinst1_gdf['hover_text'],
+                            hoverinfo='text'
+                        ))
+                        fig_topoegid.add_trace(go.Scattermapbox(lat=subinst2_gdf.geometry.y,lon=subinst2_gdf.geometry.x, mode='markers',
+                            marker=dict(
+                                size=map_topo_egid_specs['point_size_pv'],
+                                color=map_topo_egid_specs['point_color_alloc_algo'],
+                                opacity=map_topo_egid_specs['point_opacity']
+                            ),
+                            name = 'house w pv (predicted)',
+                            text=subinst2_gdf['hover_text'],
+                            hoverinfo='text'
+                        ))
+                        fig_topoegid.add_trace(go.Scattermapbox(lat=subinst3_gdf.geometry.y,lon=subinst3_gdf.geometry.x, mode='markers',
+                            marker=dict(
+                                size=map_topo_egid_specs['point_size_rest'],
+                                color=map_topo_egid_specs['point_color_rest'],
+                                opacity=map_topo_egid_specs['point_opacity']
+                            ),
+                            name = 'house w/o pv',
+                            text=subinst3_gdf['hover_text'],
+                            hoverinfo='text'
+                        ))
+
+
+                    # topo egid map: add grid nodes ----------------
+                    if True:
+                        dsonodes_in_topo_gdf = dsonodes_gdf.loc[dsonodes_gdf['grid_node'].isin(pvinst_gdf['grid_node'].unique())].copy()
+                        dsonodes_in_topo_gdf.to_crs('EPSG:4326', inplace=True)
+                        dsonodes_in_topo_gdf['kW_threshold'] = dsonodes_in_topo_gdf['kVA_threshold'] * self.pvalloc_scen.GRIDspec_perf_factor_1kVA_to_XkW
+
+                        # add color 
+                        area_palette= trace_color_dict[map_topo_egid_specs['gridnode_area_palette']]
+                        unique_nodes = sorted(pvinst_gdf['grid_node'].unique())
+                        n_nodes = len(unique_nodes)
+                        n_palette = len(area_palette)
+                        palette_indices = np.linspace(0, n_palette - 1, n_nodes, dtype=int)
+
+                        node_color_map = {node: area_palette[i] for node, i in zip(unique_nodes, palette_indices)}
+                        pvinst_gdf['color'] = pvinst_gdf['grid_node'].map(node_color_map)
+                        dsonodes_in_topo_gdf['color'] = dsonodes_in_topo_gdf['grid_node'].map(node_color_map)
+    
+                        fig_topoegid.add_trace(
+                            go.Scattermapbox(
+                                lat=dsonodes_in_topo_gdf.geometry.y,
+                                lon=dsonodes_in_topo_gdf.geometry.x,
+                                mode='markers+text',  # Add text next to markers
+                                marker=dict(
+                                    size=map_topo_egid_specs['gridnode_point_size'],
+                                    color=dsonodes_in_topo_gdf['color'],
+                                    opacity=map_topo_egid_specs['gridnode_point_opacity']
+                                ),
+                                text=dsonodes_in_topo_gdf['grid_node'],  # Or any other label (e.g. 'id')
+                                textposition='top right',  # Position relative to marker
+                                textfont=dict(
+                                    size=10,  # Adjust font size as needed
+                                    color='black'
+                                ),
+                                customdata=dsonodes_in_topo_gdf[['grid_node', 'kW_threshold']],
+                                hovertemplate=(
+                                    "Grid Node: %{customdata[0]}<br>" +
+                                    "kW Limit: %{customdata[1]}<extra></extra>"
+                                ),
+                                name='Grid Nodes (Centroid)',
+                                showlegend=True
+                            )
+                        )
+                        
+                        first_node_hull = True
+                        for node in pvinst_gdf['grid_node'].unique():
+                            subdf_node_egid = pvinst_gdf.loc[pvinst_gdf['grid_node'] == node].copy()
+                            hull_subdf = MultiPoint(subdf_node_egid.geometry.tolist()).convex_hull
+                            hull_subdf_gdf = gpd.GeoDataFrame(geometry=[hull_subdf], crs='EPSG:4326')
+                            hull_subdf_geojson = json.loads(hull_subdf_gdf.to_json())
+                            color = subdf_node_egid["color"].iloc[0]
+                                                    
+                            hull_trace = px.choropleth_mapbox(
+                                hull_subdf_gdf,
+                                geojson=hull_subdf_geojson,
+                                locations=hull_subdf_gdf.index.astype(str),
+                                color_discrete_sequence=[color], 
+                                opacity=map_topo_egid_specs['girdnode_egid_opacity'],
+                            ).data[0]
+                            hull_trace.name = "Grid Node (EGID hull)"
+                            hull_trace.legendgroup = "grid_node_area"  # <== GROUPING KEY
+                            hull_trace.showlegend = first_node_hull     # Show only on first
+                            # hull_trace.visible = True                   # Ensures all toggle together
+                            first_node_hull = False
+                            
+                            fig_topoegid.add_trace(hull_trace)                          
+ 
+                    
+                    # Update layout ----------------
+                    fig_topoegid.update_layout(
+                            title=f"Map of model PV Topology ({scen})",
+                            mapbox=dict(
+                                style="carto-positron",
+                                center={"lat": self.visual_sett.default_map_center[0], "lon": self.visual_sett.default_map_center[1]},  # Center the map on the region
+                                zoom=self.visual_sett.default_map_zoom
+                            ))
+
+
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_map_topo_egid_incl_gridarea_TF[1]:
+                        if self.visual_sett.plot_ind_map_topo_egid_incl_gridarea_TF[2]:
+                            fig_topoegid.show()
+                        elif not self.visual_sett.plot_ind_map_topo_egid_incl_gridarea_TF[2]:
+                            fig_topoegid.show() if i_scen == 0 else None
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_map_topo_egid_incl_gridarea.html')
+                    else:
+                        fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_map_topo_egid_incl_gridarea.html')
 
 
 
-        # def plot_ind_map_topo_egid(self, ): 
 
         # def plot_ind_map_node_connections(self, ): 
 
@@ -2242,12 +2666,16 @@ if __name__ == '__main__':
 
     visualization_list = [
         Visual_Settings(
-            pvalloc_exclude_pattern_list = [
-                '*.txt','*.xlsx','*.csv','*.parquet',
-                '*old_vers*', 
-                'pvalloc_BLsml_10y_f2013_1mc_meth2.2*', 
-                'pvalloc_mini_2m*',
-                ], 
+            # pvalloc_exclude_pattern_list = [
+            #     '*.txt','*.xlsx','*.csv','*.parquet',
+            #     '*old_vers*', 
+            #     'pvalloc_BLsml_10y_f2013_1mc_meth2.2*', 
+            #     'pvalloc_mini_2m*',
+            #     ], 
+            pvalloc_include_pattern_list = [
+                'pvalloc_BLsml_test3_2013_30y_16bfs',
+                # 'pvalloc_mini_BYMONTH_rnd', 
+            ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = False,  
             remove_old_plots_in_visualization = False,  
@@ -2270,16 +2698,17 @@ if __name__ == '__main__':
         # visual_class.plot_ind_line_meteo_radiation()                  # runs as intended
 
         # # -- def plot_ALL_mcalgorithm(self,): -------------
-        visual_class.plot_ind_line_installedCap()                     # runs as intended
+        # visual_class.plot_ind_line_installedCap()                     # runs as intended
         visual_class.plot_ind_line_productionHOY_per_node()           # runs as intended
         visual_class.plot_ind_line_productionHOY_per_EGID()           # runs as intended
         # visual_class.plot_ind_line_PVproduction()                     # runs
-        visual_class.plot_ind_hist_NPV_freepartitions()               # runs as intended
-        visual_class.plot_ind_line_gridPremiumHOY_per_node()          # runs 
-        visual_class.plot_ind_line_gridPremium_structure()            # runs 
+        # visual_class.plot_ind_hist_NPV_freepartitions()               # runs as intended
+        # visual_class.plot_ind_line_gridPremiumHOY_per_node()          # runs 
+        # visual_class.plot_ind_line_gridPremium_structure()            # runs 
+        visual_class.plot_ind_map_topo_egid()                           # runs as intended
+        # visual_class.plot_ind_map_topo_egid_incl_gridarea()            # runs as intended
 
 
-        # plot_ind_map_topo_egid()
         # plot_ind_map_node_connections()
         # plot_ind_map_omitted_egids()
         # plot_ind_lineband_contcharact_newinst()
