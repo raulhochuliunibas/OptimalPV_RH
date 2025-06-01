@@ -88,7 +88,7 @@ class PVAllocScenario_Settings:
 
     # constr_capacity_specs
     CSTRspec_iter_time_unit: str                        = 'month'   # month, year
-    CSTRspec_ann_capacity_growth: float                 = 0.20
+    CSTRspec_ann_capacity_growth: float                 = 0.15
     CSTRspec_constr_capa_overshoot_fact: int            = 1
     CSTRspec_month_constr_capa_tuples: List[tuple]      = field(default_factory=lambda: [
                                                             (1,  0.04), 
@@ -465,56 +465,58 @@ class PVAllocScenario:
             for i_m, m in enumerate(trange_prediction):
                 print_to_logfile(f'\n-- month {m} -- iter MC{mc_iter:0{max_digits}} -- {self.sett.name_dir_export} --', self.sett.log_name)
                 start_allocation_month = datetime.datetime.now()
-                i_m = i_m + 1        
+                i_m = i_m + 1    
+                topo = json.load(open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r'))
+                egid_without_pv = [k for k,v in topo.items() if not v['pv_inst']['inst_TF']]
 
-                # GRIDPREM + NPV_DF UPDATE ==========
-                # if self.sett.mcalgo_w_np_TF:
-                #     self.algo_update_gridprem_np(self.sett.mc_iter_path, i_m, m)
-                # else:
-                start_time_update_gridprem = datetime.datetime.now()
-                print_to_logfile('- START update gridprem', self.sett.log_name)
-                if not self.sett.test_faster_array_computation:
-                    self.algo_update_gridprem(self.sett.mc_iter_path, i_m, m)
-                elif self.sett.test_faster_array_computation:
-                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
-                end_time_update_gridprem = datetime.datetime.now()
-                
-                print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
-                self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
-                                                                                                                        
-                start_time_update_npv = datetime.datetime.now()
-                print_to_logfile('- START update npv', self.sett.log_name)
-                if not self.sett.test_faster_array_computation:
-                    npv_df = self.algo_update_npv_df(self.sett.mc_iter_path, i_m, m)
-                elif self.sett.test_faster_array_computation:
-                    npv_df = self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
-                end_time_update_npv = datetime.datetime.now()
-                print_to_logfile(f'- END update npv: {self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv)} (hh:mm:ss.s)', self.sett.log_name)
-                self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  #if i_m < 7 else None
+                if len(egid_without_pv) > 0:
 
+                    # GRIDPREM + NPV_DF UPDATE ==========
+                    start_time_update_gridprem = datetime.datetime.now()
+                    print_to_logfile('- START update gridprem', self.sett.log_name)
+                    if not self.sett.test_faster_array_computation:
+                        self.algo_update_gridprem(self.sett.mc_iter_path, i_m, m)
+                    elif self.sett.test_faster_array_computation:
+                        self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                    end_time_update_gridprem = datetime.datetime.now()
+                    
+                    print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
+                    self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
+                                                                                                                            
+                    start_time_update_npv = datetime.datetime.now()
+                    print_to_logfile('- START update npv', self.sett.log_name)
+                    if not self.sett.test_faster_array_computation:
+                        self.algo_update_npv_df(self.sett.mc_iter_path, i_m, m)
+                    elif self.sett.test_faster_array_computation:
+                        self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
+                    end_time_update_npv = datetime.datetime.now()
+                    print_to_logfile(f'- END update npv: {self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv)} (hh:mm:ss.s)', self.sett.log_name)
+                    self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  #if i_m < 7 else None
 
-
-                # init constr capa ==========
+                # init constr capa + safety_counter ==========
                 constr_built_m = 0
                 if m.year != (m.year-1):
                     constr_built_y = 0
                 constr_capa_m = constrcapa.loc[constrcapa['date'] == str(m), 'constr_capacity_kw'].iloc[0]
                 constr_capa_y = constrcapa.loc[constrcapa['year'].isin([m.year]), 'constr_capacity_kw'].sum()
 
+                safety_counter = 0 if len(egid_without_pv) > 0 else safety_counter_max
+
+
                 # INST PICK ==========
                 start_time_installation_whileloop = datetime.datetime.now()
                 print_to_logfile('- START inst while loop', self.sett.log_name)
 
-                safety_counter = 0
                 print_to_logfile('start inst pick while loop', self.sett.log_name)
                 while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
-                    
-                    if npv_df.shape[0] == 0:
-                        checkpoint_to_logfile(' npv_df is EMPTY, exit while loop', self.sett.log_name, 0, self.sett.self.sett.show_debug_prints)                    
+                    npv_df = pl.read_parquet(f'{self.sett.mc_iter_path}/npv_df.parquet')
+                    npv_df_empty_TF = npv_df.shape[0] == 0
+
+                    if npv_df_empty_TF:
                         safety_counter = safety_counter_max
 
-                    if npv_df.shape[0] > 0: 
-                        inst_power, npv_df = self.algo_select_AND_adjust_topology(self.sett.mc_iter_path,
+                    if not npv_df_empty_TF: 
+                        inst_power = self.algo_select_AND_adjust_topology(self.sett.mc_iter_path,
                                                                                     i_m, m)
 
                     # Loop Exit + adjust constr_built capacity ----------
@@ -529,7 +531,10 @@ class PVAllocScenario:
                         if constr_y_TF:
                             checkpoint_to_logfile(f'exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built', self.sett.log_name, 0, self.sett.show_debug_prints)                    
                         if safety_TF:
-                            checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}', self.sett.log_name, 0, self.sett.show_debug_prints)                    
+                            if npv_df_empty_TF:
+                                checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), NO MORE EGID to install PV on', self.sett.log_name, 0, self.sett.show_debug_prints)
+                            else:
+                                checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}', self.sett.log_name, 0, self.sett.show_debug_prints)                    
 
                         if constr_m_TF or constr_y_TF:    
                             checkpoint_to_logfile(f'{safety_counter} pv installations allocated', self.sett.log_name, 0, self.sett.show_debug_prints)                                        
@@ -2691,7 +2696,7 @@ class PVAllocScenario:
 
 
             # merge subdf_pvdf and export ----------------------------------------------
-            if self.sett.ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF: 
+            if self.sett.ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF and len(subdf_pvdf_agg_before_list) > 0: 
 
                 subdf_pvdf_agg_before = pl.concat(subdf_pvdf_agg_before_list)
                 subdf_pvdf_agg_after = pl.concat(subdf_pvdf_agg_after_list)
@@ -2704,15 +2709,16 @@ class PVAllocScenario:
                 else:
                     subdf_pvdf_agg_before.write_csv(f'{subdf_path}/SANITYCHECK_topo_subdf_pvdf_agg_before.csv')
                     subdf_pvdf_agg_after.write_csv(f'{subdf_path}/SANITYCHECK_topo_subdf_pvdf_agg_after.csv')
-                    
-                # export topo ----------------------------------------------
+
                 shutil.copy(f'{self.sett.name_dir_export_path}/topo_egid.json', f'{self.sett.name_dir_export_path}/topo_egid_before_pvdf_existing_inst_adjustment.json')
                 shutil.copy(f'{self.sett.name_dir_export_path}/topo_egid.txt', f'{self.sett.name_dir_export_path}/topo_egid_before_pvdf_existing_inst_adjustment.txt')
-                
-                with open (f'{self.sett.name_dir_export_path}/topo_egid.json', 'w') as f:
-                    json.dump(topo, f, indent=4)
-                with open(f'{self.sett.name_dir_export_path}/topo_egid.txt', 'w') as f:
-                    f.write(str(topo))
+
+
+            # export topo ----------------------------------------------
+            with open (f'{self.sett.name_dir_export_path}/topo_egid.json', 'w') as f:
+                json.dump(topo, f, indent=4)
+            with open(f'{self.sett.name_dir_export_path}/topo_egid.txt', 'w') as f:
+                f.write(str(topo))
 
 
         def algo_calc_economics_in_topo_df(self, 
@@ -3173,18 +3179,18 @@ class PVAllocScenario:
             # attach node thresholds 
             gridnode_df = gridnode_df.join(dsonodes_df[['grid_node', 'kVA_threshold']], on='grid_node', how='left')
             gridnode_df = gridnode_df.with_columns((pl.col("kVA_threshold") * self.sett.GRIDspec_perf_factor_1kVA_to_XkW).alias("kW_threshold"))
-
-            gridnode_df = gridnode_df.with_columns([
-                pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
-                .then(pl.col("kW_threshold"))
-                .otherwise(pl.col("netfeedin_all_kW"))
-                .alias("netfeedin_all_taken_kW"),
-                ])
+            
             gridnode_df = gridnode_df.with_columns([
                 pl.when(pl.col("netfeedin_all_kW") < 0)
                 .then(0)
                 .otherwise(pl.col("netfeedin_all_kW"))
                 .alias("netfeedin_all_kW"),
+                ])
+            gridnode_df = gridnode_df.with_columns([
+                pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
+                .then(pl.col("kW_threshold"))
+                .otherwise(pl.col("netfeedin_all_kW"))
+                .alias("netfeedin_all_taken_kW"),
                 ])
             gridnode_df = gridnode_df.with_columns([
                 pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
@@ -3282,7 +3288,7 @@ class PVAllocScenario:
             # import  -----------------------------------------------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
             dsonodes_df = pd.read_parquet(f'{subdir_path}/dsonodes_df.parquet')
-            gridprem_ts = pd.read_parquet(f'{subdir_path}/gridprem_ts.parquet')
+            # gridprem_ts = pd.read_parquet(f'{subdir_path}/gridprem_ts.parquet')
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
             gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
@@ -3385,7 +3391,9 @@ class PVAllocScenario:
             # update gridprem_ts -----------------------------------------------------
             gridnode_df.sort_values(by=['feedin_kW_taken'], ascending=False)
             gridnode_df_for_prem = gridnode_df.groupby(['grid_node','kW_threshold', 't']).agg({'feedin_kW_taken': 'sum'}).reset_index().copy()
-            gridprem_ts = gridprem_ts.merge(gridnode_df_for_prem[['grid_node', 't', 'kW_threshold', 'feedin_kW_taken']], how='left', on=['grid_node', 't'])
+            # gridprem_ts = gridprem_ts.merge(gridnode_df_for_prem[['grid_node', 't', 'kW_threshold', 'feedin_kW_taken']], how='left', on=['grid_node', 't'])
+            gridprem_ts = gridnode_df_for_prem.copy()
+            gridprem_ts['prem_Rp_kWh'] = 0.0
             gridprem_ts['feedin_kW_taken'] = gridprem_ts['feedin_kW_taken'].replace(np.nan, 0)
             gridprem_ts.sort_values(by=['feedin_kW_taken'], ascending=False)
 
@@ -3624,8 +3632,6 @@ class PVAllocScenario:
 
             checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
                 
-            return npv_df
-
 
         def algo_update_npv_df(self, subdir_path: str, i_m: int, m):
 
@@ -3821,13 +3827,12 @@ class PVAllocScenario:
 
             checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
                 
-            return npv_df
 
 
         def algo_select_AND_adjust_topology(self, subdir_path: str, i_m: int, m):
-            
+
     
-            print_to_logfile('run function: select_AND_adjust_topology', self.sett.log_name)
+            print_to_logfile('run function: select_AND_adjust_topology', self.sett.log_name) 
 
             # import ----------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
@@ -3933,7 +3938,6 @@ class PVAllocScenario:
             # if isinstance(install_EGIDs_summary_sanitycheck, list):
             if False:
 
-
                 # remove duplicates from install_EGIDs_summary_sanitycheck
                 unique_EGID = []
                 for e in install_EGIDs_summary_sanitycheck:
@@ -4015,7 +4019,7 @@ class PVAllocScenario:
                 pred_inst_df = pd.concat([pred_inst_df, npv_pick.to_frame().T])
             
 
-            # Adjust topo
+            # Adjust topo + npv_df -----------------
             topo[picked_egid]['pv_inst'] = {'inst_TF': True, 
                                             'info_source': 'alloc_algorithm', 
                                             'xtf_id': picked_uid, 
@@ -4023,9 +4027,14 @@ class PVAllocScenario:
                                             'TotalPower': inst_power, 
                                             'df_uid_w_inst': df_uid_w_inst}
 
+            # again drop installed EGID (just to be sure, even though installed egids are excluded at the beginning)
+            sum(npv_df['EGID'] != picked_egid)
+            npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'] != picked_egid])
+
 
             # export main dfs ------------------------------------------
             # do not overwrite the original npv_df, this way can reimport it every month and filter for sanitycheck
+            npv_df.to_parquet(f'{subdir_path}/npv_df.parquet')
             pred_inst_df.to_parquet(f'{subdir_path}/pred_inst_df.parquet')
             pred_inst_df.to_csv(f'{subdir_path}/pred_inst_df.csv') if self.sett.export_csvs else None
             with open (f'{subdir_path}/topo_egid.json', 'w') as f:
@@ -4038,7 +4047,7 @@ class PVAllocScenario:
             with open(f'{subdir_path}/pred_npv_inst_by_M/topo_{i_m}.json', 'w') as f:
                 json.dump(topo, f)
                         
-            return  inst_power, npv_df  # , picked_uid, picked_combo_uid, pred_inst_df, dfuid_installed_list, topo
+            return  inst_power    #, npv_df  # , picked_uid, picked_combo_uid, pred_inst_df, dfuid_installed_list, topo
 
 
 
@@ -4049,13 +4058,38 @@ class PVAllocScenario:
 # ======================================================================================================
 if __name__ == '__main__':
     pvalloc_scen_list = [
+        PVAllocScenario_Settings(
+                name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
+                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+                show_debug_prints                                    = True,
+                export_csvs                                          = True,
+                mini_sub_model_TF                                    = True,
+                mini_sub_model_nEGIDs                                = 50, 
+                create_gdf_export_of_topology                        = False, 
+                test_faster_array_computation                        = True,
+                T0_year_prediction                                   = 2021,
+                months_prediction                                    = 60,
+                CSTRspec_iter_time_unit                              = 'month',
+                CHECKspec_n_iterations_before_sanitycheck            = 2,
+                ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+                ALGOspec_topo_subdf_partitioner                      = 250, 
+                ALGOspec_inst_selection_method                       = 'random', 
+                # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+                ALGOspec_rand_seed                                   = 123,
+                # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
+                ALGOspec_subselec_filter_criteria                    = None,
+                ALGOspec_subselec_filter_area_perc_first             = 0.5,
+                TECspec_pvprod_calc_method                           = 'method2.2',
+                # MCspec_montecarlo_iterations                       = 2,
+        ),
         # PVAllocScenario_Settings(
-        #         name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
+        #         name_dir_export    = 'pvalloc_test_ktnumbers',
         #         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
         #         show_debug_prints                                    = True,
         #         export_csvs                                          = True,
-        #         mini_sub_model_TF                                    = True,
-        #         create_gdf_export_of_topology                        = False, 
+        #         # mini_sub_model_TF                                    = True,
+        #         kt_numbers                                           = [13, ],
+        #         create_gdf_export_of_topology                        = True, 
         #         test_faster_array_computation                        = True,
         #         T0_year_prediction                                   = 2021,
         #         months_prediction                                    = 30,
@@ -4072,30 +4106,6 @@ if __name__ == '__main__':
         #         TECspec_pvprod_calc_method                           = 'method2.2',
         #         # MCspec_montecarlo_iterations                       = 2,
         # ),
-        PVAllocScenario_Settings(
-                name_dir_export    = 'pvalloc_test_ktnumbers',
-                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-                show_debug_prints                                    = True,
-                export_csvs                                          = True,
-                # mini_sub_model_TF                                    = True,
-                kt_numbers                                           = [13, ],
-                create_gdf_export_of_topology                        = False, 
-                test_faster_array_computation                        = True,
-                T0_year_prediction                                   = 2021,
-                months_prediction                                    = 30,
-                CSTRspec_iter_time_unit                              = 'month',
-                CHECKspec_n_iterations_before_sanitycheck            = 2,
-                ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-                ALGOspec_topo_subdf_partitioner                      = 250, 
-                ALGOspec_inst_selection_method                       = 'random', 
-                # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-                ALGOspec_rand_seed                                   = 123,
-                # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
-                ALGOspec_subselec_filter_criteria                    = None,
-                ALGOspec_subselec_filter_area_perc_first             = 0.5,
-                TECspec_pvprod_calc_method                           = 'method2.2',
-                # MCspec_montecarlo_iterations                       = 2,
-        ),
         ]
 
     for pvalloc_scen in pvalloc_scen_list:
