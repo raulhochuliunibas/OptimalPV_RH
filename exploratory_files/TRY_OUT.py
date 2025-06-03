@@ -23,27 +23,135 @@ scen = "pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind"
 name_dir_import = 'preprep_BLSO_22to23_1and2homes'
 
 # ------------------------------------------------------------------------------------------------------
+# CONVERT parquet to csv
+if False:
 
-pq_path = r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_mini_2m_2mc_rnd\topo_time_subdf\topo_subdf_0to99.parquet"
-file_name = pq_path.split('\\')[-1].split('.parquet')[0]
-csv_path = "\\".join(pq_path.split('\\')[0:-1])
+    pq_path = r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_mini_2m_2mc_rnd\zMC1\npv_df.parquet"
+    file_name = pq_path.split('\\')[-1].split('.parquet')[0]
+    csv_path = "\\".join(pq_path.split('\\')[0:-1])
 
-pq_path.split('\\')[0:-1]
+    pq_path.split('\\')[0:-1]
 
-df  = pd.read_parquet(pq_path)
-df = df.loc[df['EGID'].isin(['400415',])]
-# df = df.head(8760 * 40)
-df.to_csv(f'{csv_path}/{file_name}.csv')
-print(f'exported {file_name}.csv')
+    df  = pd.read_parquet(pq_path)
+    df = df.loc[df['EGID'].isin(['400415',])]
+    # df = df.head(8760 * 40)
+    df.to_csv(f'{csv_path}/{file_name}.csv')
+    print(f'exported {file_name}.csv')
+
+    topo = json.load(open(r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_mini_2m_2mc_rnd\zMC1\topo_egid.json", 'r'))
+    egid_w_pv = [k for k, v in topo.items() if v['pv_inst']['inst_TF']]
+    egid_wout_pv = [k for k, v in topo.items() if not v['pv_inst']['inst_TF'] ]
 
 
+# ------------------------------------------------------------------------------------------------------
+
+if False: 
+    # import geopandas as gpd
+    import pandas as pd
+    import numpy as np
+    from shapely.geometry import Point, MultiPoint
+    import plotly.express as px
+    import json
+
+    # Step 1: Create sample GeoDataFrame with random points in central Europe
+    np.random.seed(42)
+    lons = np.random.uniform(5.0, 10.0, 10)
+    lats = np.random.uniform(46.0, 49.0, 10)
+    points = [Point(lon, lat) for lon, lat in zip(lons, lats)]
+
+    gdf = gpd.GeoDataFrame({
+        'id': range(1, 11),
+        'name': [f"Point {i}" for i in range(1, 11)],
+    }, geometry=points, crs='EPSG:4326')
+
+    # Step 2: Create convex hull polygon
+    multipoint = MultiPoint(gdf.geometry.tolist())
+    hull_polygon = multipoint.convex_hull
+
+    hull_gdf = gpd.GeoDataFrame(geometry=[hull_polygon], crs='EPSG:4326')
+
+    # Step 3: Convert to GeoJSON for plotly
+    geojson_hull = json.loads(hull_gdf.to_json())
+
+    # Step 4: Plot hull using px.choropleth_mapbox
+    fig = px.choropleth_mapbox(
+        hull_gdf,
+        geojson=geojson_hull,
+        locations=hull_gdf.index.astype(str),
+        color_discrete_sequence=["lightblue"],
+        center=dict(lat=gdf.geometry.y.mean(), lon=gdf.geometry.x.mean()),
+        zoom=6,
+        opacity=0.4,
+        mapbox_style="carto-positron"
+    )
+
+    # Optional: Add the original points for reference
+    import plotly.graph_objects as go
+    fig.add_trace(go.Scattermapbox(
+        lat=gdf.geometry.y,
+        lon=gdf.geometry.x,
+        mode='markers',
+        marker=dict(size=8, color='red'),
+        name='Points'
+    ))
+
+    # Compute the median longitude
+    median_lon = gdf.geometry.x.median()
+
+    # Assign groups based on longitude
+    gdf['group'] = np.where(gdf.geometry.x <= median_lon, 'A', 'B')
+
+
+    # Define color mapping
+    group_colors = {'A': 'green', 'B': 'orange'}
+
+    from shapely.geometry import MultiPoint
+
+    # Create two GeoDataFrames by group
+    gdf_A = gdf[gdf['group'] == 'A']
+    gdf_B = gdf[gdf['group'] == 'B']
+
+    # Generate convex hulls for each group
+    hull_A = MultiPoint(gdf_A.geometry.tolist()).convex_hull
+    hull_B = MultiPoint(gdf_B.geometry.tolist()).convex_hull
+
+    # Create GeoDataFrames for each hull
+    hull_A_gdf = gpd.GeoDataFrame(geometry=[hull_A], crs='EPSG:4326')
+    hull_B_gdf = gpd.GeoDataFrame(geometry=[hull_B], crs='EPSG:4326')
+
+    import json
+
+    hull_A_geojson = json.loads(hull_A_gdf.to_json())
+    hull_B_geojson = json.loads(hull_B_gdf.to_json())
+
+    # Extract trace from px figure
+    hull_A_trace = px.choropleth_mapbox(
+        hull_A_gdf,
+        geojson=hull_A_geojson,
+        locations=hull_A_gdf.index.astype(str),
+        color_discrete_sequence=["rgba(0, 255, 0, 0.3)"],
+    ).data[0]
+    hull_A_trace.name = "Hull A"
+    fig.add_trace(hull_A_trace)
+
+    # Same for Hull B
+    hull_B_trace = px.choropleth_mapbox(
+        hull_B_gdf,
+        geojson=hull_B_geojson,
+        locations=hull_B_gdf.index.astype(str),
+        color_discrete_sequence=["rgba(255, 165, 0, 0.3)"],
+    ).data[0]
+    hull_B_trace.name = "Hull B"
+    fig.add_trace(hull_B_trace)
+
+    fig.show()
 
 
 
 
 
 # ------------------------------------------------------------------------------------------------------
-if True: 
+if False: 
     wd_path = 'C:/Models/OptimalPV_RH'
     data_path     = f'{wd_path}/data'
     # data_path_def = f'{wd_path}_data'

@@ -104,6 +104,7 @@ class Visual_Settings:
     plot_ind_line_productionHOY_per_EGID_TF: List[bool]     = field(default_factory=lambda: [True,      True,       False])
     plot_ind_line_gridPremiumHOY_per_node_TF: List[bool]    = field(default_factory=lambda: [True,      True,       False])
     plot_ind_line_gridPremiumHOY_per_EGID_TF: List[bool]    = field(default_factory=lambda: [True,      True,       False])
+    plot_ind_line_PVproduction_TF: List[bool]               = field(default_factory=lambda: [True,      True,       False])
     plot_ind_line_gridPremium_structure_TF: List[bool]      = field(default_factory=lambda: [True,      True,       False])
     plot_ind_hist_NPV_freepartitions_TF: List[bool]         = field(default_factory=lambda: [True,      True,       False])
     plot_ind_hist_pvcapaprod_TF: List[bool]                 = field(default_factory=lambda: [True,      True,       False])
@@ -184,7 +185,6 @@ class Visual_Settings:
     plot_mc_line_PVproduction: List[bool]                    = field(default_factory=lambda: [False,  True,    False])
 
     # old out of use plots -------------------------------------------------------------->  [run plot,  show plot,  show all scen]
-    plot_ind_line_PVproduction_TF: List[bool]               = field(default_factory=lambda: [False,      True,       False])
 
 
 
@@ -1599,7 +1599,6 @@ class Visualization:
                     self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0] # take first path if multiple apply, so code can still run properlyrly
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
-
                     gridnode_df = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
                     gridnode_df = gridnode_df.with_columns([
                         pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
@@ -2027,9 +2026,106 @@ class Visualization:
 
                 checkpoint_to_logfile('plot_ind_line_PVproduction', self.visual_sett.log_name)
 
+                trace_color_dict = {
+                    'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
+                    'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
+                    'Teal': pc.sequential.Teal, 'Magenta': pc.sequential.Magenta, 'Plotly3': pc.sequential.Plotly3,
+                    'Viridis': pc.sequential.Viridis, 'Turbo': pc.sequential.Turbo, 'Blackbody': pc.sequential.Blackbody, 
+                    'Bluered': pc.sequential.Bluered, 'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
+                    'Rainbow': pc.sequential.Rainbow, 
+                }     
+
+                fig_agg_color_palettes = ['Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', ]
+                fig_agg = go.Figure()
+
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
+
+                    # setup + import --------------------------
                     self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+                    gridnode_df_paths = glob.glob(f'{self.visual_sett.mc_data_path}/pred_gridprem_node_by_M/gridnode_df_*.parquet')
+                    trange_prediction = pd.read_parquet(f'{self.visual_sett.mc_data_path}/trange_prediction.parquet')
+                    
+                    # TOBE DELETED EVENTUALLY .................
+                    if 'n_iter' not in trange_prediction.columns:
+                        trange_prediction['n_iter'] = trange_prediction.index+1
+                    # .................
+
+                    gridnode_df_by_iter_list = []
+                    for path in gridnode_df_paths:
+                        n_iter = int(path.split('gridnode_df_')[1].split('.parquet')[0])
+                        
+                        # taken 1:1 from plot_ind_line_productionHOY_per_node() ==========
+                        gridnode_df = pl.read_parquet(path)
+                        gridnode_df = gridnode_df.with_columns([
+                            pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
+                        ])
+                        gridnode_df = gridnode_df.sort("t_int", descending=False)
+
+                        # aggregate to total production per HOY
+                        gridnode_total_df = gridnode_df.group_by(['t', 't_int']).agg([
+                            pl.col('netfeedin_all_kW').sum().alias('netfeedin_all_kW'),
+                            pl.col('netfeedin_all_taken_kW').sum().alias('netfeedin_all_taken_kW'),
+                            pl.col('netfeedin_all_loss_kW').sum().alias('netfeedin_all_loss_kW'),
+                            pl.col('kW_threshold').sum().alias('kW_threshold'),
+                            # pl.col('holding_capacity').mean().alias('holding_capacity_all'),
+                        ])
+                        gridnode_total_df = gridnode_total_df.sort("t_int", descending=False)
+                        # ==========
+
+                        agg_gridnode_row = gridnode_total_df.select([
+                            pl.sum('netfeedin_all_kW').alias('netfeedin_all_kW'), 
+                            pl.sum('netfeedin_all_taken_kW').alias('netfeedin_all_taken_kW'), 
+                            pl.sum('netfeedin_all_loss_kW').alias('netfeedin_all_loss_kW'), 
+                            pl.first('kW_threshold').alias('kW_threshold'),
+                        ]).with_columns([
+                            pl.lit(n_iter).alias('n_iter'),
+                            pl.lit(scen).alias('scen'),
+                        ])
+
+                        gridnode_df_by_iter_list.append(agg_gridnode_row)
+
+                    gridnode_df_by_iter = pl.concat(gridnode_df_by_iter_list, how="vertical")
+                    gridnode_df_by_iter = gridnode_df_by_iter.sort("n_iter", descending=False)
+
+
+                    # plot ----------------
+                    fig = go.Figure()
+                    gridnode_total_df = gridnode_total_df.to_pandas()
+
+                    fig.add_trace(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_kW'],       name='Total netfeedin_all_kW',       mode='lines+markers',  line=dict(color='black', width=1), marker=dict(symbol='cross',), )
+                    fig.add_trace(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_taken_kW'], name='Total netfeedin_all_taken_kW', mode='lines+markers',  line=dict(color='green', width=1), marker=dict(symbol='cross',), )                                  
+                    fig.add_trace(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_loss_kW'],  name='Total netfeedin_all_loss_kW',  mode='lines+markers',  lline=dict(color='red', width=1),  marker=dict(symbol='cross',),  )
+                    fig.add_trace(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['kW_threshold'],           name='Total kW_threshold',           mode='lines+markers',  line=dict(color='blue', width=1),  arker=dict(symbol='cross',), )
+ 
+                    fig.update_layout(
+                        xaxis_title='Time', 
+                        yaxis_title='Energy (kWh Feedin / Loss)', 
+                        legend_title='Legend',
+                        title = f'Development of Energy Feedin / Loss for 1 Year (weather year: {self.pvalloc_scen.WEAspec_weather_year}) Over Time',
+                    )
+
+                    # export ----------------
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_PVproduction_TF[1]:
+                        if self.visual_sett.plot_ind_line_PVproduction_TF[2]:
+                            fig.show()
+                        elif not self.visual_sett.plot_ind_line_PVproduction_TF[2]:
+                            fig.show() if i_scen == 0 else None
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_line_PVproduction.html')
+                        else:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_line_PVproduction.html')
+                        print_to_logfile(f'\texport: plot_ind_line_PVproduction.html (for: {scen})', self.visual_sett.log_name)                    
+                        
+
+                                  
+
+
+
+
+
+
 
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
                     topo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_time_subdf/topo_subdf_*.parquet')
@@ -3083,8 +3179,8 @@ if __name__ == '__main__':
             pvalloc_include_pattern_list = [
                 # 'pvalloc_BLsml_test3_2013_30y_16bfs',
                 # 'pvalloc_mini_BYMONTH_rnd',
-                # 'pvalloc_mini_BYYEAR_rnd',
-                '*test2*',
+                'pvalloc_mini_BYYEAR_rnd',
+                # '*test2*',
 
             ],
             save_plot_by_scen_directory        = True, 
@@ -3121,16 +3217,16 @@ if __name__ == '__main__':
 
         # # -- def plot_ALL_mcalgorithm(self,): -------------
         # visual_class.plot_ind_line_installedCap()                     # runs as intended
-        visual_class.plot_ind_line_productionHOY_per_node()           # 1) TOTAL FEEDI ETC still not working, 
-        visual_class.plot_ind_line_productionHOY_per_EGID()            # runs as intended
+        # visual_class.plot_ind_line_productionHOY_per_node()           # 1) TOTAL FEEDI ETC still not working, 
+        # visual_class.plot_ind_line_productionHOY_per_EGID()            # runs as intended
         visual_class.plot_ind_line_PVproduction()                     # runs — optional, uncomment if needed
         # visual_class.plot_ind_hist_NPV_freepartitions()               # runs as intended
         # visual_class.plot_ind_line_gridPremiumHOY_per_node()          # runs 
         # visual_class.plot_ind_line_gridPremium_structure()            # runs 
         # visual_class.plot_ind_lineband_contcharact_newinst()
-        visual_class.plot_ind_map_topo_egid()                           # runs as intended
-        visual_class.plot_ind_map_topo_egid_incl_gridarea()            # runs as intended
-        visual_class.plot_ind_map_node_connections()            
+        # visual_class.plot_ind_map_topo_egid()                           # runs as intended
+        # visual_class.plot_ind_map_topo_egid_incl_gridarea()            # runs as intended
+        # visual_class.plot_ind_map_node_connections()            
          
         # # -- older plots, no longer used -------------
 

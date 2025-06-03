@@ -1802,8 +1802,7 @@ class PVAllocScenario:
                     for m, TP_m in month_constr_capa_tuples:
                         constrcapa.loc[(constrcapa['year'] == y) & 
                                     (constrcapa['month'] == m), 'constr_capacity_kw'] = TP_y * TP_m
-
-                trange_prediction_df_month = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
+                # trange_prediction_df_month = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
 
 
             elif self.sett.CSTRspec_iter_time_unit == 'year':
@@ -1814,12 +1813,10 @@ class PVAllocScenario:
                 for i,y in enumerate(years_prediction):
                     TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
                     constrcapa.loc[(constrcapa['year'] == y), 'constr_capacity_kw'] = TP_y 
-
-                trange_prediction_df_year = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
-
-                    
+                # trange_prediction_df_year = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
                 
-            trange_prediction_df = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
+            trange_prediction_df = pd.DataFrame({'n_iter': range(1,len(trange_prediction) + 1), 'date': trange_prediction, 
+                                                 'year': trange_prediction.year, 'month': trange_prediction.month, })
 
             # PRINTs to LOGFILE ----------------------------------------------------------------------------
             checkpoint_to_logfile(f'constr_capacity month lookback, between :                {months_lookback[0]} to {months_lookback[-1]}', self.sett.log_name, 0)
@@ -4089,7 +4086,7 @@ if __name__ == '__main__':
                 create_gdf_export_of_topology                        = False, 
                 test_faster_array_computation                        = True,
                 T0_year_prediction                                   = 2021,
-                months_prediction                                    = 120,
+                months_prediction                                    = 60,
                 CSTRspec_iter_time_unit                              = 'month',
                 CSTRspec_ann_capacity_growth                         = 0.05,
                 CHECKspec_n_iterations_before_sanitycheck            = 2,

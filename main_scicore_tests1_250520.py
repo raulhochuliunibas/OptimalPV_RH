@@ -105,8 +105,18 @@ if __name__ == '__main__':
     for pvalloc_scen in pvalloc_scen_list:
         scen_class = PVAllocScenario(pvalloc_scen)
 
-        scen_class.run_pvalloc_initalization()
-        scen_class.run_pvalloc_mcalgorithm()
+        try:    
+            scen_class.run_pvalloc_initalization()
+        except Exception as e:
+            print(f"Error during initialization: {e}")
+            continue    
+        try:
+            scen_class.run_pvalloc_mcalgorithm()
+        except Exception as e:
+            print(f"Error during MC algorithm: {e}")
+            continue
+        # scen_class.run_pvalloc_initalization()
+        # scen_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
 
 

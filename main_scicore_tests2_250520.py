@@ -148,7 +148,6 @@ if __name__ == '__main__':
             try:
                 method = getattr(visual_class, plot_method)
                 method()
-                print(f"Ran successfully: {plot_method}")
             except Exception as e:
                 print(f"Error in {plot_method}: {e}")
 
