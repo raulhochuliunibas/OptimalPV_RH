@@ -3006,6 +3006,7 @@ class PVAllocScenario:
 
             # import  -----------------------------------------------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
+            topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
             dsonodes_df = pl.read_parquet(f'{subdir_path}/dsonodes_df.parquet')  
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
@@ -3015,30 +3016,30 @@ class PVAllocScenario:
             # create Map_infosource_egid ----------------------------------------------
             checkpoint_to_logfile('gridprem: start loop Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints)
             k,v = list(topo.items())[0]
-            egid_list, dfuid_list, info_source_list, inst_TF_list = [], [], [], []
+            egid_list, dfuid_list, info_source_list, inst_TF_list, grid_node_list = [], [], [], [], []
             for k,v in topo.items():
                 if v['pv_inst']['inst_TF']:
                     for dfuid_w_inst in v['pv_inst']['df_uid_w_inst']:
                         egid_list.append(k)
                         dfuid_list.append(dfuid_w_inst)
                         info_source_list.append(v['pv_inst']['info_source'])
-                        inst_TF_list.append(v['pv_inst']['inst_TF'])    
+                        inst_TF_list.append(v['pv_inst']['inst_TF'])   
+                        grid_node_list.append(v['grid_node']) 
                 else: 
                     egid_list.append(k)
                     dfuid_list.append('')
                     info_source_list.append('')
                     inst_TF_list.append(False)
-            Map_pvinfo_topo_egid = pd.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'info_source': info_source_list, 'inst_TF': inst_TF_list})
+                    grid_node_list.append(v['grid_node'])            
+
+            Map_pvinfo_topo_egid = pl.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'info_source': info_source_list, 'inst_TF': inst_TF_list})
 
             checkpoint_to_logfile('gridprem: end loop Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints)
-            #sanity check
-            Map_pvinfo_topo_egid.loc[Map_pvinfo_topo_egid['inst_TF']]
             
 
             # import topo_time_subdfs -----------------------------------------------------
             checkpoint_to_logfile('gridprem: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
-            topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
             agg_subdf_updated_pvdf_list = []
             agg_subdf_df_list = []
 
@@ -3046,7 +3047,6 @@ class PVAllocScenario:
             for i, path in enumerate(topo_subdf_paths):
                 checkpoint_to_logfile('gridprem > subdf: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                 subdf = pl.read_parquet(path)          
-                Map_pvinfo_topo_egid = pl.from_pandas(Map_pvinfo_topo_egid) if isinstance(Map_pvinfo_topo_egid, pd.DataFrame) else Map_pvinfo_topo_egid
                 
                 checkpoint_to_logfile('gridprem > subdf: end read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
@@ -3055,6 +3055,7 @@ class PVAllocScenario:
 
                 checkpoint_to_logfile('gridprem > subdf: start pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                 subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid', 'info_source', 'inst_TF']], on=['EGID', 'df_uid'], how='left')         
+                
                 # remove the nulls from the merged columns
                 subdf_updated = subdf_updated.with_columns([
                     pl.when(pl.col('inst_TF').is_null())
@@ -3064,9 +3065,39 @@ class PVAllocScenario:
                 ])
                 checkpoint_to_logfile('gridprem > subdf: end pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
+                # pvprod_kW for non_inst EGIDs to 0 --------------------
                 # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
-                # EDIT: Switched off, because we also need the demand of those houses per grid node (and non_inst houses can not feed in by design, so no probelm there)
+                # EDIT 1: Switched off, because we also need the demand of those houses per grid node (and non_inst houses can not feed in by design, so no probelm there)
                 # subdf_updated = subdf_updated.filter(pl.col('inst_TF'))       
+                # EDIT 2: Previous comment not fully true, pvprod_kW is calculated as the pvproduction potential for a df_uid partition, so those columns are also positive for
+                # non-installed houses. SOLUTION: set all pvproduction to 0 for all df_uid that are not in Map_pvinfo_topo_egid (derived from most recent version of topo_egid)
+                Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
+                subdf_no_inst = subdf_updated.join(
+                    Map_pvinst_topo_egid[['EGID', 'df_uid']], 
+                    on=['EGID', 'df_uid'], 
+                    how='anti'
+                )
+                subdf_updated = subdf_updated.with_columns([
+                    pl.when(
+                        (pl.col('EGID').is_in(subdf_no_inst['EGID'])) &
+                        (pl.col('df_uid').is_in(subdf_no_inst['df_uid']))
+                    ).then(pl.lit(0.0)).otherwise(pl.col('pvprod_kW')).alias('pvprod_kW'),
+                ])
+
+                # sanity_check: pvprod_kW for an EGID wo installation
+                subdf_no_inst[['EGID', 'df_uid', 'inst_TF', 'pvprod_kW']]
+                sum(subdf_no_inst['inst_TF'])
+                sum(subdf_no_inst['pvprod_kW'])
+                
+                egid_w_inst = Map_pvinfo_topo_egid.filter(pl.col('inst_TF'))['EGID'].unique()
+                EGID_no_inst = Map_pvinfo_topo_egid.filter(pl.col('EGID').is_in(egid_w_inst) == False)['EGID'].unique()[0]
+                sum(subdf.filter(pl.col('EGID') == EGID_no_inst)['inst_TF'])
+                sum(subdf.filter(pl.col('EGID') == EGID_no_inst)['pvprod_kW'])
+                sum(subdf_updated.filter(pl.col('EGID') == EGID_no_inst)['inst_TF'])
+                sum(subdf_updated.filter(pl.col('EGID') == EGID_no_inst)['pvprod_kW'])
+                # --------------------
+
+
                 checkpoint_to_logfile('gridprem > subdf: start calc + update netfeedin_kW', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
 
                 selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.sett.TECspec_self_consumption_ifapplicable
@@ -3077,10 +3108,6 @@ class PVAllocScenario:
                     (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                 ])
                 checkpoint_to_logfile('gridprem > subdf: end calc + update netfeedin_kW', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
-
-                # subinst = pl.from_pandas(subinst) if isinstance(subinst, pd.DataFrame) else subinst
-                # agg_subinst = subinst.groupby(['grid_node', 't']).agg({'netfeedin_kW': 'sum', 'pvprod_kW':'sum'}).reset_index()
-                # agg_subinst = subinst.group_by(["grid_node", "t"]).agg([
                 
                 # necessary, not too exagerate demand per gridnode
                 agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
@@ -3122,9 +3149,7 @@ class PVAllocScenario:
                 subdf_updated_dfuid_pvdf = subdf_updated_dfuid_pvdf.with_columns([
                     (kWpeak_per_m2 * share_roof_area_available * pl.col('FLAECHE')).alias('poss_prod_capa_kW_peak')
                 ])
-                
-                del subdf_updated
-
+            
                 agg_subdf_df_list.append(agg_subdf)
                 agg_subdf_updated_pvdf_list.append(subdf_updated_dfuid_pvdf)
 
@@ -3182,7 +3207,7 @@ class PVAllocScenario:
             
             gridnode_df = gridnode_df.with_columns([
                 pl.when(pl.col("netfeedin_all_kW") < 0)
-                .then(0)
+                .then(0.0)
                 .otherwise(pl.col("netfeedin_all_kW"))
                 .alias("netfeedin_all_kW"),
                 ])
@@ -3195,7 +3220,7 @@ class PVAllocScenario:
             gridnode_df = gridnode_df.with_columns([
                 pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
                 .then(pl.col("netfeedin_all_kW") - pl.col("kW_threshold"))
-                .otherwise(0)
+                .otherwise(0.0)
                 .alias("netfeedin_all_loss_kW")
             ])
             checkpoint_to_logfile('gridprem: end merge with gridnode_df + pl.when()', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
@@ -3266,15 +3291,12 @@ class PVAllocScenario:
                     if not os.path.exists(gridprem_node_by_M_path):
                         os.makedirs(gridprem_node_by_M_path)
 
-                        gridnode_df.write_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.parquet')   
-                        gridprem_ts.write_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.parquet')   
+                    gridnode_df.write_parquet(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.parquet')   
+                    gridprem_ts.write_parquet(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.parquet')   
 
                     if self.sett.export_csvs:
                         gridnode_df.write_csv(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.csv')           
                         gridprem_ts.write_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.csv')           
-      
-                        gridnode_df.write_csv(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.csv')             
-                        gridprem_ts.write_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.csv')             
         
             checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, 0) if i_m < 3 else None
             
@@ -3625,11 +3647,10 @@ class PVAllocScenario:
                         os.makedirs(pred_npv_inst_by_M_path)
 
                     npv_df.write_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.parquet')
-                    # if self.sett.export_csvs:
-                    #     npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_i_m.csv', separator=',' )                    
-                    # if i_m < 5:
-                    #     npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{m}.csv', index=False)
 
+                    if self.sett.export_csvs:
+                        npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.csv', index=False)               
+                    
             checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
                 
 
@@ -4064,12 +4085,13 @@ if __name__ == '__main__':
                 show_debug_prints                                    = True,
                 export_csvs                                          = True,
                 mini_sub_model_TF                                    = True,
-                mini_sub_model_nEGIDs                                = 50, 
+                mini_sub_model_nEGIDs                                = 100, 
                 create_gdf_export_of_topology                        = False, 
                 test_faster_array_computation                        = True,
                 T0_year_prediction                                   = 2021,
-                months_prediction                                    = 60,
+                months_prediction                                    = 120,
                 CSTRspec_iter_time_unit                              = 'month',
+                CSTRspec_ann_capacity_growth                         = 0.05,
                 CHECKspec_n_iterations_before_sanitycheck            = 2,
                 ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
                 ALGOspec_topo_subdf_partitioner                      = 250, 
