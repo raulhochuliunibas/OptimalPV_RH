@@ -517,7 +517,7 @@ class PVAllocScenario:
 
                     if not npv_df_empty_TF: 
                         inst_power = self.algo_select_AND_adjust_topology(self.sett.mc_iter_path,
-                                                                                    i_m, m)
+                                                                          i_m, m, safety_counter)
 
                     # Loop Exit + adjust constr_built capacity ----------
                     constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
@@ -3847,10 +3847,10 @@ class PVAllocScenario:
                 
 
 
-        def algo_select_AND_adjust_topology(self, subdir_path: str, i_m: int, m):
+        def algo_select_AND_adjust_topology(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
 
     
-            print_to_logfile('run function: select_AND_adjust_topology', self.sett.log_name) 
+            print_to_logfile('run function: select_AND_adjust_topology', self.sett.log_name) if while_safety_counter < 5 else None
 
             # import ----------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
@@ -3906,15 +3906,15 @@ class PVAllocScenario:
                     elif not east_spec.empty:
                         selected_rows.append(east_spec)
 
-                npv_subdf_selected = pd.concat(selected_rows, ignore_index = True)
-                # sanity check
-                cols_to_show = ['EGID', 'df_uid_combo', 'n_df_uid', 'inst_TF', 'AUSRICHTUNG', 'NEIGUNG', 'FLAECHE']
-                npv_subdf_angle_dfuid.loc[npv_subdf_angle_dfuid['EGID'].isin(['400507', '400614']), cols_to_show]
-                npv_subdf_selected.loc[npv_subdf_selected['EGID'].isin(['400507', '400614']), cols_to_show]
+                if len(selected_rows) > 0:
+                    npv_subdf_selected = pd.concat(selected_rows, ignore_index = True)
+                    # sanity check
+                    cols_to_show = ['EGID', 'df_uid_combo', 'n_df_uid', 'inst_TF', 'AUSRICHTUNG', 'NEIGUNG', 'FLAECHE']
+                    npv_subdf_angle_dfuid.loc[npv_subdf_angle_dfuid['EGID'].isin(['400507', '400614']), cols_to_show]
+                    npv_subdf_selected.loc[npv_subdf_selected['EGID'].isin(['400507', '400614']), cols_to_show]
 
-                if npv_subdf_selected.shape[0] > 0:
                     npv_df = copy.deepcopy(npv_subdf_selected)
-
+                    
             elif self.sett.ALGOspec_subselec_filter_criteria == 'southwestfacing_2spec':
                 npv_subdf_angle_dfuid = copy.deepcopy(npv_df)
                 
@@ -3936,14 +3936,15 @@ class PVAllocScenario:
                     elif not eastsouth_single_spec.empty:
                         selected_rows.append(eastsouth_single_spec)
 
-                npv_subdf_selected = pd.concat(selected_rows, ignore_index = True)
-                # sanity check
-                cols_to_show = ['EGID', 'df_uid_combo', 'n_df_uid', 'inst_TF', 'AUSRICHTUNG', 'NEIGUNG', 'FLAECHE']
-                npv_subdf_angle_dfuid.loc[npv_subdf_angle_dfuid['EGID'].isin(['400507', '400614']), cols_to_show]
-                npv_subdf_selected.loc[npv_subdf_selected['EGID'].isin(['400507', '400614']), cols_to_show]
+                if len(selected_rows) > 0:
+                    npv_subdf_selected = pd.concat(selected_rows, ignore_index = True)
+                    # sanity check
+                    cols_to_show = ['EGID', 'df_uid_combo', 'n_df_uid', 'inst_TF', 'AUSRICHTUNG', 'NEIGUNG', 'FLAECHE']
+                    npv_subdf_angle_dfuid.loc[npv_subdf_angle_dfuid['EGID'].isin(['400507', '400614']), cols_to_show]
+                    npv_subdf_selected.loc[npv_subdf_selected['EGID'].isin(['400507', '400614']), cols_to_show]
 
-                if npv_subdf_selected.shape[0] > 0:
                     npv_df = copy.deepcopy(npv_subdf_selected)
+                    
 
 
             # SELECTION BY METHOD ---------------
@@ -4088,7 +4089,7 @@ if __name__ == '__main__':
                 T0_year_prediction                                   = 2021,
                 months_prediction                                    = 60,
                 CSTRspec_iter_time_unit                              = 'month',
-                CSTRspec_ann_capacity_growth                         = 0.05,
+                CSTRspec_ann_capacity_growth                         = 0.2,
                 CHECKspec_n_iterations_before_sanitycheck            = 2,
                 ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
                 ALGOspec_topo_subdf_partitioner                      = 250, 
