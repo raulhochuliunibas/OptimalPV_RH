@@ -19,19 +19,22 @@ pvalloc_scen_list = [
     #     ALGOspec_rand_seed                                   = 123,
     # ), 
     PVAllocScenario_Settings(
-        name_dir_export ='pvalloc_mini_BYYEAR_rnd',
+        name_dir_export ='pvalloc_mini_BYYEAR_rnd_to_end',
         mini_sub_model_TF                                    = True,
-        mini_sub_model_nEGIDs                                = 50,
+        mini_sub_model_nEGIDs                                = 100,
         test_faster_array_computation                        = True,
         create_gdf_export_of_topology                        = True,
         T0_year_prediction                                   = 2021,
-        months_prediction                                    = 60,
+        months_prediction                                    = 360,
         CSTRspec_iter_time_unit                              = 'year',
+        CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
         ALGOspec_topo_subdf_partitioner                      = 250, 
         ALGOspec_inst_selection_method                       = 'random', 
         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
         ALGOspec_rand_seed                                   = 123,
+        ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+
     ),    
 
 ]
@@ -46,6 +49,7 @@ visualization_list = [
             pvalloc_include_pattern_list = [
                 'pvalloc_mini_BYMONTH_rnd',
                 'pvalloc_mini_BYYEAR_rnd',
+                'pvalloc_mini_BYYEAR_rnd_to_end'
                 ],
             save_plot_by_scen_directory        = False, 
             remove_old_plot_scen_directories   = False,  
@@ -87,7 +91,7 @@ if __name__ == '__main__':
             # "plot_ind_line_gridPremiumHOY_per_node",          # runs
             # "plot_ind_line_gridPremium_structure",            # runs
             # "plot_ind_lineband_contcharact_newinst",          # status not noted
-            # "plot_ind_map_topo_egid",                         # runs as intended
+            "plot_ind_map_topo_egid",                         # runs as intended
             # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
             # "plot_ind_map_node_connections"                   # status not noted
         ]
