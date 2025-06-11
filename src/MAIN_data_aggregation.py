@@ -68,10 +68,10 @@ class DataAggScenario:
     def __init__(self, settings: DataAggScenario_Settings):
         self.sett = settings
     
-        self.wd_path = os.getcwd()
-        self.data_path = os.path.join(self.wd_path, 'data')
-        self.preprep_path = os.path.join(self.data_path, 'preprep', 'preprep_scen__temp_to_be_renamed')
-        self.dir_move_to = os.path.join(self.data_path, 'preprep', self.name_dir_export)
+        self.sett.wd_path = os.getcwd()
+        self.sett.data_path = os.path.join(self.sett.wd_path, 'data')
+        self.sett.preprep_path = os.path.join(self.sett.data_path, 'preprep', 'preprep_scen__temp_to_be_renamed')
+        self.sett.dir_move_to = os.path.join(self.sett.data_path, 'preprep', self.sett.name_dir_export)
 
     def export_dataagg_scen_settings(self):
             """
@@ -977,7 +977,12 @@ class DataAggScenario:
             # drop duplicates and append single_egid_dsonode_df
             Map_egid_dsonode.drop(Map_egid_dsonode[Map_egid_dsonode['EGID'].isin(multip_egid_dsonode)].index, inplace = True)
             Map_egid_dsonode = pd.concat([Map_egid_dsonode, single_egid_dsonode_df], ignore_index=True)
-            
+
+            # create gdf of all EGIDs with grid nodes for visualization
+            gwr_dsonode_gdf = gwr_all_building_gdf.merge(Map_egid_dsonode, how = 'left', on = 'EGID')
+            if '' in gwr_dsonode_gdf['grid_node'].unique():
+                gwr_dsonode_gdf = gwr_dsonode_gdf.loc[gwr_dsonode_gdf['grid_node'] != '']
+
 
             # MAP: solkatdfuid > egid ---------------------------------------------------------------------------------
             Map_solkatdfuid_egid = solkat_gdf.loc[:,['DF_UID', 'DF_NUMMER', 'SB_UUID', 'EGID']].copy()
@@ -1103,8 +1108,8 @@ class DataAggScenario:
 
 
             # EXPORTS (parquet) ---------------------------------------------------------------------------------
-            df_to_export_names = ['pv', 'solkat', 'solkat_month', 'Map_egid_dsonode', 'Map_solkatdfuid_egid', 'Map_egid_pv']
-            df_to_export_list = [pv, solkat, solkat_month,  Map_egid_dsonode, Map_solkatdfuid_egid, Map_egid_pv] 
+            df_to_export_names  = ['pv', 'solkat', 'solkat_month', 'Map_egid_dsonode', 'Map_solkatdfuid_egid', 'Map_egid_pv', ]
+            df_to_export_list   = [ pv,   solkat,   solkat_month,   Map_egid_dsonode,   Map_solkatdfuid_egid,   Map_egid_pv , ]
             for i, df in enumerate(df_to_export_list):
                 df.to_parquet(f'{self.sett.preprep_path}/{df_to_export_names[i]}.parquet')
                 # df.to_csv(f'{self.sett.preprep_path}/{df_to_export_names[i]}.csv', sep=';', index=False)
@@ -1112,10 +1117,12 @@ class DataAggScenario:
 
 
             # EXPORT SPATIAL DATA ---------------------------------------------------------------------------------
-            gdf_to_export_names = ['gm_shp_gdf', 'pv_gdf', 'solkat_gdf', 'gwr_gdf','gwr_buff_gdf', 'gwr_all_building_gdf', 
-                                'omitt_gwregid_gdf', 'omitt_solkat_gdf', 'omitt_pv_gdf', 'omitt_gwregid_gridnode_gdf' ]
-            gdf_to_export_list = [gm_shp_gdf, pv_gdf, solkat_gdf, gwr_gdf, gwr_buff_gdf, gwr_all_building_gdf, 
-                                omitt_gwregid_gdf, omitt_solkat_gdf, omitt_pv_gdf, omitt_gwregid_gridnode_gdf]
+            gdf_to_export_names = [ 'gm_shp_gdf', 'pv_gdf', 'solkat_gdf', 'gwr_gdf','gwr_buff_gdf', 'gwr_all_building_gdf', 
+                                    'omitt_gwregid_gdf', 'omitt_solkat_gdf', 'omitt_pv_gdf', 'omitt_gwregid_gridnode_gdf', 
+                                    'gwr_dsonode_gdf' ]
+            gdf_to_export_list = [  gm_shp_gdf, pv_gdf, solkat_gdf, gwr_gdf, gwr_buff_gdf, gwr_all_building_gdf, 
+                                    omitt_gwregid_gdf, omitt_solkat_gdf, omitt_pv_gdf, omitt_gwregid_gridnode_gdf, 
+                                    gwr_dsonode_gdf]
             
             for i,g in enumerate(gdf_to_export_list):
                 cols_DATUM = [col for col in g.columns if 'DATUM' in col]
@@ -1530,7 +1537,8 @@ if __name__ == '__main__':
         #     GWR_GKLAS = ['1110', '1121', '1276'],
         #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         # ),
-          DataAggScenario(
+        
+        DataAggScenario_Settings(
             name_dir_export = 'preprep_debug',
             # kt_numbers = [13, 12, 11], # BL, BS, SO
             bfs_numbers = [2761, 2768,],
@@ -1538,39 +1546,75 @@ if __name__ == '__main__':
             GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
-        DataAggScenario(
-            name_dir_export = 'preprep_BL_22to23_extSolkatEGID',
+
+
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
+            kt_numbers = [13,],
+            year_range = [2022, 2023],
+            GWR_GKLAS = [
+                '1110', '1121', '1122', 
+                '1276', '1278'
+                         ],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BL_22to23_extSolkatEGID_singlehouse',
             kt_numbers = [13,],
             year_range = [2022, 2023],
             GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
 
-        DataAggScenario(
-            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID',
+
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
+            kt_numbers = [13, 11],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278'],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_singlehouse',
             kt_numbers = [13, 11],
             year_range = [2022, 2023],
             GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
 
-        DataAggScenario(
-            name_dir_export = 'preprep_BLBSSO_22to23_extSolkatEGID',
+
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
+            kt_numbers = [13, 12, 11],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278'],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),  
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BLBSSO_22to23_extSolkatEGID_singlehouse',
             kt_numbers = [13, 12, 11],
             year_range = [2022, 2023],
             GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),    
+        ),     
         
-        DataAggScenario(
-            name_dir_export = 'preprep_BESOBSBLJU_22to23_extSolkatEGID',
+
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BESOBSBLJU_22to23_extSolkatEGID_aggrfarms',
+            kt_numbers = [2, 11, 12, 13, 26],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278'],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BESOBSBLJU_22to23_extSolkatEGID_singlehouse',
             kt_numbers = [2, 11, 12, 13, 26],
             year_range = [2022, 2023],
             GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),    
-        2, 11, 12, 13, 26
-        
+        ),   
+
+    
         ]
 
     for dataagg_scen in dataagg_scen_list:
