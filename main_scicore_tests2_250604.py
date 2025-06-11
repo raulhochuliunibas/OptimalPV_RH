@@ -5,7 +5,7 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 pvalloc_scen_list = [
     
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2_default_w_pvdf_adjust_rnd',
+        name_dir_export                 = 'pvalloc_BLsml_test2_default_rnd',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -22,7 +22,7 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2_default_w_pvdf_adjust_max',
+        name_dir_export                 = 'pvalloc_BLsml_test2_default_max',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -39,14 +39,14 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2_southfacing_max',
+        name_dir_export                 = 'pvalloc_BLsml_test2_southfacing_rnd',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
         CHECKspec_n_iterations_before_sanitycheck   = 2,
-        ALGOspec_inst_selection_method              = 'max_npv', 
+        ALGOspec_inst_selection_method              = 'random', 
         ALGOspec_rand_seed                          = 123,
         TECspec_pvprod_calc_method                  = 'method2.2',
         MCspec_montecarlo_iterations                = 2,
@@ -56,14 +56,14 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2_eastwestfacing_max',
+        name_dir_export                 = 'pvalloc_BLsml_test2_eastwestfacing_rnd',
         name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
         CHECKspec_n_iterations_before_sanitycheck   = 2,
-        ALGOspec_inst_selection_method              = 'max_npv', 
+        ALGOspec_inst_selection_method              = 'random', 
         ALGOspec_rand_seed                          = 123,
         TECspec_pvprod_calc_method                  = 'method2.2',
         MCspec_montecarlo_iterations                = 2,
@@ -72,22 +72,22 @@ pvalloc_scen_list = [
         ALGOspec_subselec_filter_criteria = 'eastwestfacing_3spec', 
         ),
 
-    PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2_southwestfacing_max',
-        name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
-        T0_year_prediction              = 2021,
-        months_prediction               = 360,
-        CSTRspec_iter_time_unit         = 'year',
-        CHECKspec_n_iterations_before_sanitycheck   = 2,
-        ALGOspec_inst_selection_method              = 'max_npv', 
-        ALGOspec_rand_seed                          = 123,
-        TECspec_pvprod_calc_method                  = 'method2.2',
-        MCspec_montecarlo_iterations                = 2,
-        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
+    # PVAllocScenario_Settings(
+    #     name_dir_export                 = 'pvalloc_BLsml_test2_southwestfacing_max',
+    #     name_dir_import                 = 'preprep_BL_22to23_extSolkatEGID',
+    #     bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+    #     T0_year_prediction              = 2021,
+    #     months_prediction               = 360,
+    #     CSTRspec_iter_time_unit         = 'year',
+    #     CHECKspec_n_iterations_before_sanitycheck   = 2,
+    #     ALGOspec_inst_selection_method              = 'max_npv', 
+    #     ALGOspec_rand_seed                          = 123,
+    #     TECspec_pvprod_calc_method                  = 'method2.2',
+    #     MCspec_montecarlo_iterations                = 2,
+    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
 
-        ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-        ),        
+    #     ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    #     ),        
 ]
 
 
@@ -102,7 +102,8 @@ visualization_list = [
             ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = False,  
-            remove_old_plots_in_visualization = False,  
+            remove_old_plots_in_visualization  = False,  
+            remove_old_csvs_in_visualization   = False, 
             ),    
     ]       
 

@@ -6,6 +6,7 @@ import shutil
 import json
 import copy
 import itertools
+import time
 
 # external packages
 import numpy as np
@@ -47,7 +48,11 @@ class PVAllocScenario_Settings:
                                                     # 2618, 2621, 2883, 2622, 2616,                           # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
                             ])
     mini_sub_model_TF: bool                     = False
-    mini_sub_model_grid_nodes: List[str]        = field(default_factory=lambda: ['295', '850', ]) # '348', '351'],)  
+    mini_sub_model_grid_nodes: List[str]        = field(default_factory=lambda: [
+                                                                                #  '295',
+                                                                                 '265', 
+                                                                                 '341', '345', 
+                                                                                 ]) 
     mini_sub_model_nEGIDs: int                  = 100
     T0_year_prediction: int                     = 2022                          # year for the prediction of the future construction capacity
     # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
@@ -60,6 +65,7 @@ class PVAllocScenario_Settings:
     sanitycheck_byEGID: bool                    = True
     create_gdf_export_of_topology: bool         = True
     test_faster_array_computation: bool         = True
+    overwrite_scen_init: bool                   = True
     
     # PART I: settings for alloc_initialization --------------------
     GWRspec_solkat_max_n_partitions: int                = 10          # larger number of partitions make all combos of roof partitions practically impossible to calculate
@@ -87,7 +93,7 @@ class PVAllocScenario_Settings:
     WEAspec_flat_diffuse_rad_factor: int                = 1
 
     # constr_capacity_specs
-    CSTRspec_iter_time_unit: str                        = 'month'   # month, year
+    CSTRspec_iter_time_unit: str                        = 'year'   # month, year
     CSTRspec_ann_capacity_growth: float                 = 0.15
     CSTRspec_constr_capa_overshoot_fact: int            = 1
     CSTRspec_month_constr_capa_tuples: List[tuple]      = field(default_factory=lambda: [
@@ -141,7 +147,7 @@ class PVAllocScenario_Settings:
     CHECKspec_n_iterations_before_sanitycheck: int          = 1
 
     # PART II: settings for MC algorithm --------------------
-    MCspec_montecarlo_iterations: int                           = 1
+    MCspec_montecarlo_iterations_fordev_sequentially: int        = 1
     MCspec_fresh_initial_files: List[str]                       = field(default_factory=lambda: [
                                                                     'topo_egid.json', 'trange_prediction.parquet',# 'gridprem_ts.parquet', 
                                                                     'constrcapa.parquet', 'dsonodes_df.parquet'
@@ -420,7 +426,7 @@ class PVAllocScenario:
         # create log file
         chapter_to_logfile(f'start MAIN_pvalloc_MCalgorithm for : {self.sett.name_dir_export}', self.sett.log_name, overwrite_file=True)
         print_to_logfile('*model allocation specifications*:', self.sett.log_name)
-        print_to_logfile(f'> n_bfs_municipalities: {len(self.sett.bfs_numbers)} \n> n_trange_prediction: {self.sett.months_prediction} \n> n_montecarlo_iterations: {self.sett.MCspec_montecarlo_iterations}', self.sett.log_name)
+        print_to_logfile(f'> n_bfs_municipalities: {len(self.sett.bfs_numbers)} \n> n_trange_prediction: {self.sett.months_prediction} \n> n_montecarlo_iterations: {self.sett.MCspec_montecarlo_iterations_fordev_sequentially}', self.sett.log_name)
         print_to_logfile(f'> pvalloc_settings, MCalloc_{self.sett.name_dir_export}', self.sett.log_name)
         for k, v in vars(self).items():
             print_to_logfile(f'{k}: {v}', self.sett.log_name)
@@ -431,17 +437,25 @@ class PVAllocScenario:
 
 
         # CREATE MC DIR + TRANSFER INITIAL DATA FILES ----------------------------------------------
-        montecarlo_iterations = [*range(1, self.sett.MCspec_montecarlo_iterations+1, 1)]
+        montecarlo_iterations_fordev_seq = [*range(1, self.sett.MCspec_montecarlo_iterations_fordev_sequentially+1, 1)]
         safety_counter_max = self.sett.ALGOspec_while_inst_counter_max
         
         # get all initial files to start a fresh MC iteration
         fresh_initial_paths = [f'{self.sett.name_dir_export_path}/{file}' for file in self.sett.MCspec_fresh_initial_files]
         topo_time_paths = glob.glob(f'{self.sett.name_dir_export_path}/topo_time_subdf/topo_subdf*.parquet')
 
-        max_digits = len(str(max(montecarlo_iterations)))
-        # mc_iter = montecarlo_iterations[0]
-        # if True:    
-        for mc_iter in montecarlo_iterations:
+        max_digits = len(str(max(montecarlo_iterations_fordev_seq)))
+        for _ in montecarlo_iterations_fordev_seq:
+
+            # set a random sleep so array tasks in scicore don't overwrite MC directories
+            sleep_range = list(range(10, 61, 5))
+            sleep_time = np.random.choice(sleep_range)
+            time.sleep(sleep_time)
+
+            # create additional next MC dir and copy init files
+            n_mc_dir = len(glob.glob(f'{self.sett.name_dir_export_path}/zMC*'))
+            mc_iter = n_mc_dir + 1 
+
             start_mc_iter = datetime.datetime.now()
             subchapter_to_logfile(f'START MC{mc_iter:0{max_digits}} iteration', self.sett.log_name)
             self.mark_to_timing_csv('MCalgo', f'start_MC_iter_{mc_iter:0{max_digits}}', start_mc_iter, np.nan, '-')
@@ -463,7 +477,7 @@ class PVAllocScenario:
             constrcapa = pd.read_parquet(f'{self.sett.mc_iter_path}/constrcapa.parquet')
 
             for i_m, m in enumerate(trange_prediction):
-                print_to_logfile(f'\n-- month {m} -- iter MC{mc_iter:0{max_digits}} -- {self.sett.name_dir_export} --', self.sett.log_name)
+                print_to_logfile(f'\n-- n_iter {i_m} -- month {m} -- iter MC{mc_iter:0{max_digits}} -- {self.sett.name_dir_export} --', self.sett.log_name)
                 start_allocation_month = datetime.datetime.now()
                 i_m = i_m + 1    
                 topo = json.load(open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r'))
@@ -509,7 +523,11 @@ class PVAllocScenario:
 
                 print_to_logfile('start inst pick while loop', self.sett.log_name)
                 while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
+                    topo = json.load(open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r'))
                     npv_df = pl.read_parquet(f'{self.sett.mc_iter_path}/npv_df.parquet')
+
+                    egid_wo_inst = [egid for egid in topo if not topo.get(egid, {}).get('pv_inst', {}).get('inst_TF')]
+                    npv_df = npv_df.filter(pl.col('EGID').is_in(egid_wo_inst))
                     npv_df_empty_TF = npv_df.shape[0] == 0
 
                     if npv_df_empty_TF:
@@ -562,8 +580,9 @@ class PVAllocScenario:
         end_mc_algo = datetime.datetime.now()
         self.mark_to_timing_csv('MCalgo', 'END_MC_algo', end_mc_algo, self.timediff_to_str_hhmmss(start_mc_algo, end_mc_algo),  '-')
 
-        self.mark_to_timing_csv('TOTAL', 'END_total_runtime', end_mc_algo, self.timediff_to_str_hhmmss(self.sett.start_total_runtime, end_mc_algo),  '-')
-        os.rename(self.sett.timing_marks_csv_path, f'{self.sett.timing_marks_csv_path.split(".cs")[0]}_{self.sett.name_dir_export}.csv')
+        if 'start_total_runtime' in dir(self.sett): 
+            self.mark_to_timing_csv('TOTAL', 'END_total_runtime', end_mc_algo, self.timediff_to_str_hhmmss(self.sett.start_total_runtime, end_mc_algo),  '-')
+            os.rename(self. sett.timing_marks_csv_path, f'{self.sett.timing_marks_csv_path.split(".cs")[0]}_{self.sett.name_dir_export}.csv')
 
         chapter_to_logfile(f'end MAIN_pvalloc_MCalgorithm\n Runtime (hh:mm:ss):{datetime.datetime.now() - start_mc_algo}', self.sett.log_name, overwrite_file=False)
 
@@ -588,7 +607,7 @@ class PVAllocScenario:
             # create log file
             chapter_to_logfile(f'start MAIN_pvalloc_postprocess for : {self.sett.name_dir_export}', self.sett.log_name, overwrite_file=True)
             print_to_logfile('*model allocation specifications*:', self.sett.log_name)
-            print_to_logfile(f'> n_bfs_municipalities: {len(self.sett.bfs_numbers)} \n> n_trange_prediction: {self.sett.months_prediction} \n> n_montecarlo_iterations: {self.sett.MCspec_montecarlo_iterations}', self.sett.log_name)
+            print_to_logfile(f'> n_bfs_municipalities: {len(self.sett.bfs_numbers)} \n> n_trange_prediction: {self.sett.months_prediction} \n> n_montecarlo_iterations: {self.sett.MCspec_montecarlo_iterations_fordev_sequentially}', self.sett.log_name)
             print_to_logfile(f'> pvalloc_settings, MCalloc_{self.sett.name_dir_export}', self.sett.log_name)
             for k, v in vars(self).items():
                 print_to_logfile(f'{k}: {v}', self.sett.log_name)
@@ -1314,6 +1333,8 @@ class PVAllocScenario:
                     Map_egid_dsonode_appendings.append([egid, dsonodes_gdf.loc[min_idx, 'grid_node'], dsonodes_gdf.loc[min_idx, 'kVA_threshold']])
             
             Map_appendings_df = pd.DataFrame(Map_egid_dsonode_appendings, columns=['EGID', 'grid_node', 'kVA_threshold'])
+            Map_appendings_df = Map_appendings_df.dropna(how='all')
+
             Map_egid_dsonode = pd.concat([Map_egid_dsonode, Map_appendings_df], axis=0)
 
             gwr_before_dsonode_selection = copy.deepcopy(gwr)
@@ -1790,7 +1811,7 @@ class PVAllocScenario:
 
             
             if self.sett.CSTRspec_iter_time_unit == 'month':
-                trange_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='M')
+                trange_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME')
                 # trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='MS')
                 constrcapa = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
                 
@@ -1806,7 +1827,7 @@ class PVAllocScenario:
 
 
             elif self.sett.CSTRspec_iter_time_unit == 'year':
-                trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='Y')
+                trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='YE')
                 constrcapa = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
 
                 years_prediction = trange_prediction.year.unique()
@@ -3187,10 +3208,10 @@ class PVAllocScenario:
             ])
             
             demand_proxy_out_kW = gridnode_df['demand_proxy_out_kW'].fill_null(0)
-            netdemand_kW = gridnode_df['netdemand_kW'].fill_null(0)
+            # netdemand_kW = gridnode_df['netdemand_kW'].fill_null(0)
             netfeedin_kW = gridnode_df['netfeedin_kW'].fill_null(0)
             gridnode_df = gridnode_df.with_columns([
-                (netfeedin_kW - netdemand_kW - demand_proxy_out_kW).alias('netfeedin_all_kW'),
+                (netfeedin_kW - demand_proxy_out_kW).alias('netfeedin_all_kW'),
             ])
 
             # sanity check
@@ -3646,7 +3667,7 @@ class PVAllocScenario:
                     npv_df.write_parquet(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.parquet')
 
                     if self.sett.export_csvs:
-                        npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.csv', index=False)               
+                        npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.csv')               
                     
             checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
                 
@@ -3861,8 +3882,7 @@ class PVAllocScenario:
             # drop installed partitions from npv_df 
             #   -> otherwise multiple selection possible
             #   -> easier to drop inst before each selection than to create a list / df and carry it through the entire code)
-            npv_df_start_inst_selection = copy.deepcopy(npv_df)
-            egid_wo_inst = [egid for egid in topo if topo.get(egid, {}).get('pv_inst', {}).get('inst_TF') == False]
+            egid_wo_inst = [egid for egid in topo if  not topo.get(egid, {}).get('pv_inst', {}).get('inst_TF')]
             npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'].isin(egid_wo_inst)])
 
 
@@ -3900,7 +3920,7 @@ class PVAllocScenario:
                     ]
                     
                     if not eastwest_spec.empty:
-                        selected_rows.append(east_spec)
+                        selected_rows.append(eastwest_spec)
                     elif not west_spec.empty:
                         selected_rows.append(west_spec)
                     elif not east_spec.empty:
@@ -4086,9 +4106,10 @@ if __name__ == '__main__':
                 mini_sub_model_nEGIDs                                = 100, 
                 create_gdf_export_of_topology                        = False, 
                 test_faster_array_computation                        = True,
+                overwrite_scen_init                                  = False,
                 T0_year_prediction                                   = 2021,
                 months_prediction                                    = 60,
-                CSTRspec_iter_time_unit                              = 'month',
+                CSTRspec_iter_time_unit                              = 'year',
                 CSTRspec_ann_capacity_growth                         = 0.2,
                 CHECKspec_n_iterations_before_sanitycheck            = 2,
                 ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
@@ -4100,40 +4121,42 @@ if __name__ == '__main__':
                 ALGOspec_subselec_filter_criteria                    = None,
                 ALGOspec_subselec_filter_area_perc_first             = 0.5,
                 TECspec_pvprod_calc_method                           = 'method2.2',
-                # MCspec_montecarlo_iterations                       = 2,
+                # MCspec_montecarlo_iterations_fordev_sequentially    = 2,
         ),
-        # PVAllocScenario_Settings(
-        #         name_dir_export    = 'pvalloc_test_ktnumbers',
-        #         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-        #         show_debug_prints                                    = True,
-        #         export_csvs                                          = True,
-        #         # mini_sub_model_TF                                    = True,
-        #         kt_numbers                                           = [13, ],
-        #         create_gdf_export_of_topology                        = True, 
-        #         test_faster_array_computation                        = True,
-        #         T0_year_prediction                                   = 2021,
-        #         months_prediction                                    = 30,
-        #         CSTRspec_iter_time_unit                              = 'month',
-        #         CHECKspec_n_iterations_before_sanitycheck            = 2,
-        #         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-        #         ALGOspec_topo_subdf_partitioner                      = 250, 
-        #         ALGOspec_inst_selection_method                       = 'random', 
-        #         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-        #         ALGOspec_rand_seed                                   = 123,
-        #         # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
-        #         ALGOspec_subselec_filter_criteria                    = None,
-        #         ALGOspec_subselec_filter_area_perc_first             = 0.5,
-        #         TECspec_pvprod_calc_method                           = 'method2.2',
-        #         # MCspec_montecarlo_iterations                       = 2,
-        # ),
+        PVAllocScenario_Settings(
+                name_dir_export    = 'pvalloc_mini_2m_2mc_npv',
+                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+                show_debug_prints                                    = True,
+                export_csvs                                          = True,
+                mini_sub_model_TF                                    = True,
+                mini_sub_model_nEGIDs                                = 100, 
+                create_gdf_export_of_topology                        = False, 
+                test_faster_array_computation                        = True,
+                overwrite_scen_init                                  = False,
+                T0_year_prediction                                   = 2021,
+                months_prediction                                    = 60,
+                CSTRspec_iter_time_unit                              = 'year',
+                CSTRspec_ann_capacity_growth                         = 0.2,
+                CHECKspec_n_iterations_before_sanitycheck            = 2,
+                ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+                ALGOspec_topo_subdf_partitioner                      = 250, 
+                # ALGOspec_inst_selection_method                       = 'random', 
+                ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+                ALGOspec_rand_seed                                   = 123,
+                # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
+                ALGOspec_subselec_filter_criteria                    = None,
+                ALGOspec_subselec_filter_area_perc_first             = 0.5,
+                TECspec_pvprod_calc_method                           = 'method2.2',
+                # MCspec_montecarlo_iterations_fordev_sequentially    = 2,
+        ),
         ]
 
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
         
-        # pvalloc_class.export_pvalloc_scen_settings()
+        if (pvalloc_class.sett.overwrite_scen_init) or (not os.path.exists(pvalloc_class.sett.name_dir_export_path)): 
+            pvalloc_class.run_pvalloc_initalization()
 
-        pvalloc_class.run_pvalloc_initalization()
         pvalloc_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
 

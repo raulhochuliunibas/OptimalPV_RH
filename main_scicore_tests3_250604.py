@@ -104,6 +104,7 @@ visualization_list = [
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = False,  
             remove_old_plots_in_visualization = False,  
+            remove_old_csvs_in_visualization   = False, 
             ),      
 ]
 
