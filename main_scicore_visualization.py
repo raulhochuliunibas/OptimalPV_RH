@@ -16,7 +16,8 @@ visualization_list = [
             ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  
-            remove_old_plots_in_visualization = True,  
+            remove_old_plots_in_visualization  = False,  
+            remove_old_csvs_in_visualization   = False, 
             ),    
     ]    
 
@@ -28,7 +29,7 @@ if __name__ == '__main__':
         visual_class = Visualization(visual_scen)
 
         plot_method_names = [
-            
+
             # # -- def plot_ALL_init_sanitycheck(self, ): -------------
             # visual_class.plot_ind_var_summary_stats()                     # runs as intended
             # visual_class.plot_ind_hist_pvcapaprod_sanitycheck()           # runs as intended
@@ -36,28 +37,29 @@ if __name__ == '__main__':
             # visual_class.plot_ind_charac_omitted_gwr()                    # runs as intended
             # visual_class.plot_ind_line_meteo_radiation()                  # runs as intended
 
-            # # -- def plot_ALL_mcalgorithm(self,): -------------
+            # -- def plot_ALL_mcalgorithm(self,): -------------
             "plot_ind_line_installedCap",                     # runs as intended
             "plot_ind_line_productionHOY_per_node",           # runs as intended
             "plot_ind_line_productionHOY_per_EGID",           # runs as intended
-            # "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
+            "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
             "plot_ind_hist_NPV_freepartitions",               # runs as intended
-            "plot_ind_line_gridPremiumHOY_per_node",          # runs
-            "plot_ind_line_gridPremium_structure",            # runs
+            # "plot_ind_line_gridPremiumHOY_per_node",          # runs
+            # "plot_ind_line_gridPremium_structure",            # runs
             "plot_ind_lineband_contcharact_newinst",          # status not noted
             "plot_ind_map_topo_egid",                         # runs as intended
-            "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
-            # "plot_ind_map_node_connections"                   # status not noted
+            # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
+            # "plot_ind_map_node_connections"                   # status not noted        
+        
+            # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
+            # plot_ind_map_node_connections()
+            # plot_ind_map_omitted_egids()
         ]
 
         for plot_method in plot_method_names:
-            try:
-                method = getattr(visual_class, plot_method)
-                method()
-                print(f"Ran successfully: {plot_method}")
-            except Exception as e:
-                print(f"Error in {plot_method}: {e}")
-
-
-print('done')
+            # try:
+            method = getattr(visual_class, plot_method)
+            method()
+            # except Exception as e:
+                # print(f"Error in {plot_method}: {e}")
+ 
 
