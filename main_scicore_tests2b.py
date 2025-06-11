@@ -6,7 +6,7 @@ pvalloc_scen_list = [
 
     # SCENARIOS 2B: test2 scens with MULTIPLE HOUSING BUILDINGS
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2b_default_rnd',
+        name_dir_export                 = 'pvalloc_BLsml_test2b_all_default_rnd',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -25,7 +25,7 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2b_default_max',
+        name_dir_export                 = 'pvalloc_BLsml_test2b_all_default_max',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -44,7 +44,7 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2b_southfacing_rnd',
+        name_dir_export                 = 'pvalloc_BLsml_test2b_all_southfacing_rnd',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -63,7 +63,7 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2b_eastwestfacing_rnd',
+        name_dir_export                 = 'pvalloc_BLsml_test2b_all_eastwestfacing_rnd',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
