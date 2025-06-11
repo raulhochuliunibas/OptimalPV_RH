@@ -119,9 +119,20 @@ class Visual_Settings:
         'specific_gridnodes_egid_HOY': None, 
         'egid_col_to_plot'          : ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW' ],
         'grid_col_to_plot_tuples'   : [('netfeedin_kW', 'netfeedin_all_kW'),
-                                       ('netfeedin_kW', 'netfeedin_all_taken_kW'),
-                                       ('netfeedin_kW', 'netfeedin_all_loss_kW'),
-                                       ('netfeedin_kW', 'kW_threshold')],
+                                       ('netfeedin_kW', 'demand_proxy_out_kW'),
+                                    #    ('netfeedin_kW', 'netfeedin_all_taken_kW'),
+                                    #    ('netfeedin_kW', 'netfeedin_all_loss_kW'),
+                                    #    ('netfeedin_kW', 'kW_threshold'),
+                                    ],
+        'gridnode_pick_col_to_agg':  [  
+                                        'demand_kW',
+                                        'netfeedin_kW', 
+                                        'netfeedin_all_kW', 
+                                        # 'netfeedin_all_taken_kW', 
+                                        # 'netfeedin_all_loss_kW', 
+                                        'kW_threshold', 
+                                        'demand_proxy_out_kW'
+                                        ], 
         'egid_trace_opacity' : 0.4,
         'grid_trace_opacity' : 0.8,
     })
@@ -200,19 +211,23 @@ class Visualization:
 
         os.makedirs(self.visual_sett.visual_path, exist_ok=True)
 
-        # create a str list of scenarios in pvalloc to visualize (exclude by pattern recognition)
-        scen_in_pvalloc_list = os.listdir(f'{self.visual_sett.data_path}/pvalloc')
+        # create a str list of scenarios in pvalloc to visualize (include/exclude by pattern recognition)
+        filered_scen_list = os.listdir(f'{self.visual_sett.data_path}/pvalloc')
         
         if not self.visual_sett.pvalloc_include_pattern_list == []:
-            self.pvalloc_scen_list: list[str] = [
-                scen for scen in scen_in_pvalloc_list
+            filered_scen_list: list[str] = [
+                scen for scen in filered_scen_list
                 if any(fnmatch.fnmatch(scen, pattern) for pattern in self.visual_sett.pvalloc_include_pattern_list)
             ]
-        else:
-            self.pvalloc_scen_list: list[str] = [
-                scen for scen in scen_in_pvalloc_list
+
+        if not self.visual_sett.pvalloc_exclude_pattern_list == []:
+            filered_scen_list: list[str] = [
+                scen for scen in filered_scen_list 
                 if not any(fnmatch.fnmatch(scen, pattern) for pattern in self.visual_sett.pvalloc_exclude_pattern_list)
-            ]     
+                # if not any(fnmatch.fnmatch(scen, pattern) for pattern in self.visual_sett.pvalloc_exclude_pattern_list)
+            ]
+
+        self.pvalloc_scen_list = filered_scen_list
         
         # create new visual directories per scenario (+ remove old ones)
         for scen in self.pvalloc_scen_list:
@@ -1592,6 +1607,7 @@ class Visualization:
             if self.visual_sett.plot_ind_line_productionHOY_per_node_TF[0]:
 
                 checkpoint_to_logfile('plot_ind_line_productionHOY_per_node', self.visual_sett.log_name)
+                print_to_logfile(f'{self.pvalloc_scen_list}', self.visual_sett.log_name)
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
 
@@ -1686,8 +1702,9 @@ class Visualization:
 
                 grid_nodes_counts_minmax    = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['grid_nodes_counts_minmax']
                 specific_gridnodes_egid_HOY = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['specific_gridnodes_egid_HOY']
-                grid_col_to_plot_tuples     = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['grid_col_to_plot_tuples']
                 egid_col_to_plot            = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['egid_col_to_plot']
+                grid_col_to_plot_tuples     = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['grid_col_to_plot_tuples']
+                gridnode_pick_col_to_agg    = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['gridnode_pick_col_to_agg']
                 egid_trace_opacity          = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['egid_trace_opacity']
                 grid_trace_opacity          = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['grid_trace_opacity']
 
@@ -1861,10 +1878,10 @@ class Visualization:
                     ])
                     
                     demand_proxy_out_kW = gridnode_df['demand_proxy_out_kW'].fill_null(0)
-                    netdemand_kW = gridnode_df['netdemand_kW'].fill_null(0)
+                    # netdemand_kW = gridnode_df['netdemand_kW'].fill_null(0)
                     netfeedin_kW = gridnode_df['netfeedin_kW'].fill_null(0)
                     gridnode_df = gridnode_df.with_columns([
-                        (netfeedin_kW - netdemand_kW - demand_proxy_out_kW).alias('netfeedin_all_kW'),
+                        (netfeedin_kW - demand_proxy_out_kW).alias('netfeedin_all_kW'),
                     ])
 
                     # sanity check
@@ -1901,13 +1918,15 @@ class Visualization:
 
                         
                     # plot --------------------------
-                    fig_demand, fig_pvprod, fig_selfconsum, fig_netfeedin, fig_netdemand, = go.Figure(), go.Figure(), go.Figure(), go.Figure(), go.Figure()
+                    fig_demand, fig_pvprod, fig_selfconsum, fig_netdemand, fig_netfeedin, fig_netfeedin_all = go.Figure(), go.Figure(), go.Figure(), go.Figure(), go.Figure(), go.Figure()
                     fig_dict = {
                     'fig_demand_kW':     fig_demand     ,
                     'fig_pvprod_kW':     fig_pvprod     ,
                     'fig_selfconsum_kW': fig_selfconsum ,
-                    'fig_netfeedin_kW':  fig_netfeedin  ,
                     'fig_netdemand_kW':  fig_netdemand  ,
+                    'fig_netfeedin_kW':  fig_netfeedin  ,
+                    'fig_netfeedin_ALL_kW':  fig_netfeedin_all  ,
+
                     }
                     gridnode_pick_df = gridnode_pick_df.to_pandas()
                     topo_agg_egids_df = topo_agg_egids_df.to_pandas()
@@ -1943,7 +1962,8 @@ class Visualization:
                                 agg_columns = [t[1] for t in grid_col_to_plot_tuples if t[0] == col]
                                 for agg_col in agg_columns:
                                     fig_sub.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf[agg_col],
-                                                                mode='lines+markers', name=f'grid_node: {node} - {agg_col} (agg)', 
+                                                                name=f'grid_node: {node} - {agg_col} (agg)', 
+                                                                mode='lines+markers', 
                                                                 marker=dict(symbol='cross', ), 
                                                                 hoverinfo='skip',
                                                                 opacity=grid_trace_opacity
@@ -1957,7 +1977,6 @@ class Visualization:
                                 ))
                         fig_sub.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'gridnode_pick_df from subdf {20*"-"}', opacity=0))
                                                                 
-
 
                     # # Sanity Check: picked node from gridnode_df ----------
                     # # add values form gridnode_df to make in-plot sanity check
@@ -1981,14 +2000,46 @@ class Visualization:
                                                 opacity=grid_trace_opacity
                                                 ))
                             fig_sub.add_trace(go.Scatter(x=gridnode_subdf['t_int'], y=gridnode_subdf[col],
-                                                    name=f'grid_node: {gridnode_pick} - {col} (gridnode_df)',
+                                                    name=f'grid_node: {node} - {col} (gridnode_df)',
                                                     mode='lines+markers', 
                                                     hoverinfo='skip',
                                                     opacity=grid_trace_opacity
                                                     ))
                         fig_sub.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'picked node from gridnode_df {20*"-"}', opacity=0))
                     # ----------
-                    
+
+
+                    # plot fig_netfeedin_ALL ----------
+                    gridnode_pick_df['netfeedin_all_kW+demand_proxy_out_kW'] = gridnode_pick_df['netfeedin_all_kW'] + gridnode_pick_df['demand_proxy_out_kW']
+
+                    for node in gridnode_pick_df['grid_node'].unique():
+                        node_subdf = gridnode_pick_df.loc[gridnode_pick_df['grid_node'] == node]
+                        node_subdf = node_subdf.sort_values(by=['t_int'])   
+
+                        fig_netfeedin_all.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'gridnode_pick_df from subdf {20*"-"}', opacity=0))
+                        for agg_col in gridnode_pick_col_to_agg:    
+                            fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf[agg_col],           name= f'grid_node: {node} - {agg_col} (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
+                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_kW'],           name= f'grid_node: {node} - netfeedin_kW (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
+                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_kW'],       name= f'grid_node: {node} - netfeedin_all_kW (agg subdf)',         mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity, stackgroup='netfeedin_all_kW'))
+                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['demand_proxy_out_kW' ],   name= f'grid_node: {node} - demand_proxy_out_kW (agg subdf)',      mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity, stackgroup='netfeedin_all_kW'))
+                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_taken_kW'], name= f'grid_node: {node} - netfeedin_all_taken_kW (agg subdf)',   mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
+                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_loss_kW'],  name= f'grid_node: {node} - netfeedin_all_loss_kW (agg subdf)',    mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
+                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['kW_threshold'],           name= f'grid_node: {node} - kW_threshold (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
+                        fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_kW+demand_proxy_out_kW'],           name= f'grid_node: {node} - netfeedin_all_kW+demand_proxy_out_kW (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
+                        
+                        
+                        gridnode_subdf = gridnode_df.filter(pl.col('grid_node') == node)
+                        gridnode_subdf = gridnode_subdf.sort("t_int", descending=False)
+                        gridnode_subdf = gridnode_subdf.to_pandas()
+
+                        fig_netfeedin_all.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'picked node from gridnode_df {20*"-"}', opacity=0))
+                        for agg_col in gridnode_pick_col_to_agg:    
+                            fig_netfeedin_all.add_trace(go.Scatter(x=gridnode_subdf['t_int'], y=gridnode_subdf[col],
+                                name=f'grid_node: {node} - {agg_col} (gridnode_df)',
+                                mode='lines+markers', 
+                                hoverinfo='skip',
+                                opacity=grid_trace_opacity
+                                ))  
 
 
                     # export plot --------------------------
@@ -2008,7 +2059,7 @@ class Visualization:
                         fig_sub = self.set_default_fig_zoom_hour(fig_sub, self.visual_sett.default_zoom_hour)
 
                         if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[1]:
-                            if self.vnisual_sett.plot_ind_line_productionHOY_per_EGID_TF[2]:
+                            if self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[2]:
                                 fig_sub.show()
                             elif not self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[2]:
                                 fig_sub.show() if i_scen == 0 else None
@@ -2173,6 +2224,8 @@ class Visualization:
                         legend_title='Legend',
                         title=f'Development of Energy Feedin / Loss for 1 Year (weather year: {self.pvalloc_scen.WEAspec_weather_year}) Over Time',
                     )
+                    fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
+
 
 
                     # export ----------------
@@ -2189,15 +2242,17 @@ class Visualization:
 
 
                     # plot AGGREGATION ----------------
-                    color_pal_idx = 0
                     color_pal = trace_color_dict[fig_agg_color_palettes[i_scen]]
-
+                    color_pal_idx = len(color_pal)
+                    
                     fig_agg.add_trace(go.Scatter(x=[None,], y=[None,], name=scen, opacity=0, ))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_kW'], name='Total netfeedin_all_kW', mode='lines', line=dict(color=color_pal[color_pal_idx],), marker=dict(symbol='cross',), ))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_taken_kW'], name='Total netfeedin_all_taken_kW', mode='lines', line=dict(color=color_pal[color_pal_idx+1],), marker=dict(symbol='cross',), ))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_loss_kW'], name='Total netfeedin_all_loss_kW', mode='lines', line=dict(color=color_pal[color_pal_idx+2],), marker=dict(symbol='cross',), ))
-                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],             name='ratio pvinst cumulative',     mode='lines+markers',  line=dict(color='purple',)                               , yaxis ='y2'))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_mean'],          name='Holding Capac mean',  mode='lines+markers',  line=dict(color='goldenrod',),    marker=dict(symbol='diamond',), yaxis = 'y2'))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_kW'], name='Total netfeedin_all_kW', mode='lines',                     line=dict(color=color_pal[color_pal_idx-1],),      marker=dict(symbol='cross',), ))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_taken_kW'], name='Total netfeedin_all_taken_kW', mode='lines',         line=dict(color=color_pal[color_pal_idx-2],),      marker=dict(symbol='cross',), ))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_loss_kW'], name='Total netfeedin_all_loss_kW', mode='lines',           line=dict(color=color_pal[color_pal_idx-3],),      marker=dict(symbol='cross',), ))
+                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],             name='ratio pvinst cumulative',     mode='lines+markers',  line=dict(color=color_pal[color_pal_idx-4],),      marker=dict(symbol='circle',), yaxis ='y2'))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_mean'],          name='Holding Capac mean',  mode='lines+markers',  line=dict(color=color_pal[color_pal_idx-5],),      marker=dict(symbol='diamond',), yaxis = 'y2'))
+                    fig_agg.add_trace(go.Scatter(x=[None,], y=[None,], name='', opacity=0, ))
+
 
                 
                 # export AGGREGATION ----------------
@@ -2237,11 +2292,11 @@ class Visualization:
                     
                     npv_df_paths = glob.glob(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_*.parquet')
                     # periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
-                    periods_list = [path.split('npv_df_')[-1].split('.parquet')[0] for path in npv_df_paths]
+                    periods_list = [int(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
                     before_period, after_period = min(periods_list), max(periods_list)
 
-                    npv_df_before = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{before_period.to_period("M")}.parquet')
-                    npv_df_after  = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{after_period.to_period("M")}.parquet')
+                    npv_df_before = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{before_period}.parquet')
+                    npv_df_after  = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{after_period}.parquet')
 
                     # plot ----------------
                     fig = go.Figure()
@@ -3147,35 +3202,20 @@ if __name__ == '__main__':
 
     visualization_list = [
         Visual_Settings(
-            # pvalloc_exclude_pattern_list = [
-            #     '*.txt','*.xlsx','*.csv','*.parquet',
-            #     '*old_vers*', 
-            #     ], 
+            pvalloc_exclude_pattern_list = [
+                '*.txt','*.xlsx','*.csv','*.parquet',
+                '*old_vers*', 
+                ], 
             pvalloc_include_pattern_list = [
-                # 'pvalloc_BLsml_test3_2013_30y_16bfs',
-                # 'pvalloc_mini_BYMONTH_rnd',
-                # 'pvalloc_mini_BYYEAR_rnd',
-                # 'pvalloc_mini_BYYEAR_rnd_to_end',
-                '*test2*',
-
+                # '*pvalloc_mini_BYYEAR*',
+                # '*test2*',
+                'pvalloc_mini_BYYEAR_EASTWEST_max', 
             ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  
             remove_old_plots_in_visualization  = False,  
             remove_old_csvs_in_visualization   = False, 
-
-            # plot_ind_line_productionHOY_per_EGID_specs = {       
-            #       'grid_nodes_counts_minmax': (4,10), 
-            #       'egid_col_to_plot'          : ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW' ],
-            #       'grid_col_to_plot_tuples'   : [('netfeedin_kW', 'netfeedin_all_kW'),
-            #                                      ('netfeedin_kW', 'netfeedin_all_taken_kW'),
-            #                                      ('netfeedin_kW', 'netfeedin_all_loss_kW'),
-            #                                      ('netfeedin_kW', 'kW_threshold')],
-            #       'egid_trace_opacity' : 0.4,
-            #       'grid_trace_opacity' : 0.5,
-            #   },
-
-              )        
+    )        
     ]
 
     for visual_scen in visualization_list:
@@ -3191,30 +3231,29 @@ if __name__ == '__main__':
             # visual_class.plot_ind_line_meteo_radiation()                  # runs as intended
 
             # -- def plot_ALL_mcalgorithm(self,): -------------
-            "plot_ind_line_installedCap",                     # runs as intended
-            "plot_ind_line_productionHOY_per_node",           # runs as intended
-            # "plot_ind_line_productionHOY_per_EGID",           # runs as intended
-            "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
-            "plot_ind_hist_NPV_freepartitions",               # runs as intended
-            "plot_ind_line_gridPremiumHOY_per_node",          # runs
-            "plot_ind_line_gridPremium_structure",            # runs
-            "plot_ind_lineband_contcharact_newinst",          # status not noted
-            "plot_ind_map_topo_egid",                         # runs as intended
+            # "plot_ind_line_installedCap",                     # runs as intended
+            # "plot_ind_line_productionHOY_per_node",           # runs as intended
+            "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            # "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
+            # "plot_ind_hist_NPV_freepartitions",               # runs as intended
+            # "plot_ind_line_gridPremiumHOY_per_node",          # runs
+            # "plot_ind_line_gridPremium_structure",            # runs
+            # "plot_ind_lineband_contcharact_newinst",          # status not noted
+            # "plot_ind_map_topo_egid",                         # runs as intended
             # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
             # "plot_ind_map_node_connections"                   # status not noted        
-        
-
+    
             # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
             # plot_ind_map_node_connections()
             # plot_ind_map_omitted_egids()
         ]
 
         for plot_method in plot_method_names:
-            try:
-                method = getattr(visual_class, plot_method)
-                method()
-            except Exception as e:
-                print(f"Error in {plot_method}: {e}")
+            # try:
+            method = getattr(visual_class, plot_method)
+            method()
+            # except Exception as e:
+            #     print(f"Error in {plot_method}: {e}")
  
 
 

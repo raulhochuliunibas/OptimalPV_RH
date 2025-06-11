@@ -1,34 +1,54 @@
-
+import numpy as np
+import os
+import time
 from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 from src.MAIN_visualization import Visual_Settings, Visualization
 
 pvalloc_scen_list = [
     
+    # PVAllocScenario_Settings(
+    #         name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
+    #         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+    #         show_debug_prints                                    = True,
+    #         export_csvs                                          = True,
+    #         mini_sub_model_TF                                    = True,
+    #         mini_sub_model_nEGIDs                                = 100, 
+    #         create_gdf_export_of_topology                        = False, 
+    #         test_faster_array_computation                        = True,
+    #         T0_year_prediction                                   = 2021,
+    #         months_prediction                                    = 60,
+    #         CSTRspec_iter_time_unit                              = 'year',
+    #         CSTRspec_ann_capacity_growth                         = 0.2,
+    #         CHECKspec_n_iterations_before_sanitycheck            = 2,
+    #         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+    #         ALGOspec_topo_subdf_partitioner                      = 250, 
+    #         ALGOspec_inst_selection_method                       = 'random', 
+    #         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+    #         ALGOspec_rand_seed                                   = 123,
+    #         # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
+    #         ALGOspec_subselec_filter_criteria                    = None,
+    #         ALGOspec_subselec_filter_area_perc_first             = 0.5,
+    #         TECspec_pvprod_calc_method                           = 'method2.2',
+    #         MCspec_montecarlo_iterations                         = 1,
+    # ),
     PVAllocScenario_Settings(
-            name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
-            name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
-            show_debug_prints                                    = True,
-            export_csvs                                          = True,
-            mini_sub_model_TF                                    = True,
-            mini_sub_model_nEGIDs                                = 100, 
-            create_gdf_export_of_topology                        = False, 
-            test_faster_array_computation                        = True,
-            T0_year_prediction                                   = 2021,
-            months_prediction                                    = 60,
-            CSTRspec_iter_time_unit                              = 'year',
-            CSTRspec_ann_capacity_growth                         = 0.2,
-            CHECKspec_n_iterations_before_sanitycheck            = 2,
-            ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-            ALGOspec_topo_subdf_partitioner                      = 250, 
-            ALGOspec_inst_selection_method                       = 'random', 
-            # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-            ALGOspec_rand_seed                                   = 123,
-            # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
-            ALGOspec_subselec_filter_criteria                    = None,
-            ALGOspec_subselec_filter_area_perc_first             = 0.5,
-            TECspec_pvprod_calc_method                           = 'method2.2',
-            MCspec_montecarlo_iterations                         = 1,
-    ),
+        name_dir_export                 = 'pvalloc_BLsml_test2a_default_npv_MCtryout',
+        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
+        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        T0_year_prediction              = 2021,
+        months_prediction               = 360,
+        CSTRspec_iter_time_unit         = 'year',
+        overwrite_scen_init             = False,
+        GWRspec_GKLAS                               = ['1110', ],
+        CHECKspec_n_iterations_before_sanitycheck   = 2,
+        ALGOspec_inst_selection_method              = 'prob_weighted_npv', 
+        ALGOspec_rand_seed                          = 123,
+        TECspec_pvprod_calc_method                  = 'method2.2',
+        MCspec_montecarlo_iterations_fordev_sequentially                = 1,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
+
+        ALGOspec_subselec_filter_criteria = None, 
+        ),
 
 ]
 
@@ -54,10 +74,15 @@ if __name__ == '__main__':
 
     # pv alloctaion ---------------------
     for pvalloc_scen in pvalloc_scen_list:
-        scen_class = PVAllocScenario(pvalloc_scen)
+        pvalloc_class = PVAllocScenario(pvalloc_scen)
+        
+        sleep_range = list(range(10, 61, 5))
+        sleep_time = np.random.choice(sleep_range)
+        time.sleep(sleep_time)
+        if (pvalloc_class.sett.overwrite_scen_init) or (not os.path.exists(pvalloc_class.sett.name_dir_export_path)): 
+            pvalloc_class.run_pvalloc_initalization()
 
-        scen_class.run_pvalloc_initalization()
-        # scen_class.run_pvalloc_mcalgorithm()
+        pvalloc_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
 
     # visualization ---------------------

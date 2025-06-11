@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=test2ary_48h_12c64GB                   #This is the name of your job
+#SBATCH --job-name=test2_ary_48h_12c64G                   #This is the name of your job
 #SBATCH --cpus-per-task=12                  #This is the number of cores reserved
 #SBATCH --mem-per-cpu=64G              #This is the memory reserved per core.
 #Total memory reserved: 768GB
@@ -14,10 +14,8 @@
 #SBATCH --output=myrun.o%j     #These are the STDOUT and STDERR files
 #SBATCH --error=myrun.e%j
 
-#You selected an array of jobs from 1 to 4 with 2 simultaneous jobs
-#SBATCH --array=1-4%2
-#SBATCH --mail-type=END,FAIL,TIME_LIMIT
-#SBATCH --mail-user=raul.hochuli@unibas.ch        #You will be notified via email when your task ends or fails
+#You selected an array of jobs from 1 to 50 with 10 simultaneous jobs
+#SBATCH --array=1-50%10
 
 #This job runs from the current working directory
 

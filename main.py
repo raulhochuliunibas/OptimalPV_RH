@@ -4,28 +4,32 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 
 
 pvalloc_scen_list = [
+
     # PVAllocScenario_Settings(
-    #     name_dir_export='pvalloc_mini_BYMONTH_rnd',
-    #     mini_sub_model_TF= True,
-    #     test_faster_array_computation= True,
-    #     create_gdf_export_of_topology = True,
+    #     name_dir_export ='pvalloc_mini_BYYEAR_max',
+    #     mini_sub_model_TF                                    = True,
+    #     mini_sub_model_nEGIDs                                = 100,
+    #     test_faster_array_computation                        = True,
+    #     create_gdf_export_of_topology                        = True,
     #     T0_year_prediction                                   = 2021,
-    #     months_prediction                                    = 30,
-    #     CSTRspec_iter_time_unit                              = 'month',
+    #     months_prediction                                    = 240,
+    #     CSTRspec_iter_time_unit                              = 'year',
+    #     CSTRspec_ann_capacity_growth                         = 0.2,
     #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
     #     ALGOspec_topo_subdf_partitioner                      = 250, 
-    #     ALGOspec_inst_selection_method                       = 'random', 
+    #     ALGOspec_inst_selection_method                       = 'max_npv', 
     #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
     #     ALGOspec_rand_seed                                   = 123,
-    # ), 
+    #     # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    # ),    
     PVAllocScenario_Settings(
-        name_dir_export ='pvalloc_mini_BYYEAR_rnd_to_end',
+        name_dir_export ='pvalloc_mini_BYYEAR_EASTWEST_max',
         mini_sub_model_TF                                    = True,
         mini_sub_model_nEGIDs                                = 100,
         test_faster_array_computation                        = True,
         create_gdf_export_of_topology                        = True,
         T0_year_prediction                                   = 2021,
-        months_prediction                                    = 360,
+        months_prediction                                    = 480,
         CSTRspec_iter_time_unit                              = 'year',
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
@@ -33,29 +37,28 @@ pvalloc_scen_list = [
         ALGOspec_inst_selection_method                       = 'random', 
         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
         ALGOspec_rand_seed                                   = 123,
-        ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-
-    ),    
+        ALGOspec_subselec_filter_criteria = 'eastwestfacing_3spec', 
+    ),   
 
 ]
 
 visualization_list = [
-
         Visual_Settings(
             # pvalloc_exclude_pattern_list = [
-            #     '*.txt','*old_vers*', 
-            #     'pvalloc_BLsml_10y_f2013_1mc_meth2.2_npv'
+            #     '*.txt','*.xlsx','*.csv','*.parquet',
+            #     '*old_vers*', 
             #     ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_mini_BYMONTH_rnd',
-                'pvalloc_mini_BYYEAR_rnd',
-                'pvalloc_mini_BYYEAR_rnd_to_end'
-                ],
-            save_plot_by_scen_directory        = False, 
-            remove_old_plot_scen_directories   = False,  
-            remove_old_plots_in_visualization = False,  
-            ),    
-    ]    
+                # '*pvalloc_mini_BYYEAR*',
+                # '*test2*',
+                'pvalloc_mini_BYYEAR*max', 
+            ],
+            save_plot_by_scen_directory        = True, 
+            remove_old_plot_scen_directories   = True,  
+            remove_old_plots_in_visualization  = False,  
+            remove_old_csvs_in_visualization   = False, 
+    )        
+    ]   
 
 
 if __name__ == '__main__':
@@ -84,15 +87,15 @@ if __name__ == '__main__':
 
             # # -- def plot_ALL_mcalgorithm(self,): -------------
             # "plot_ind_line_installedCap",                     # runs as intended
-            # "plot_ind_line_productionHOY_per_node",           # runs as intended
-            # "plot_ind_line_productionHOY_per_EGID",           # runs as intended
-            # # "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
+            "plot_ind_line_productionHOY_per_node",           # runs as intended
+            "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
             # "plot_ind_hist_NPV_freepartitions",               # runs as intended
             # "plot_ind_line_gridPremiumHOY_per_node",          # runs
             # "plot_ind_line_gridPremium_structure",            # runs
             # "plot_ind_lineband_contcharact_newinst",          # status not noted
-            "plot_ind_map_topo_egid",                         # runs as intended
-            # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
+            # "plot_ind_map_topo_egid",                         # runs as intended
+            "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
             # "plot_ind_map_node_connections"                   # status not noted
         ]
 

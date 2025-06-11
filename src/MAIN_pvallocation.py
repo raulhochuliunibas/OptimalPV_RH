@@ -933,10 +933,10 @@ class PVAllocScenario:
 
 
             # export ----------------------
-            dsonodes_df.to_parquet(f'{self.sett.name_dir_export_path}/dsonodes_df.parquet')
-            dsonodes_df.to_csv(f'{self.sett.name_dir_export_path}/dsonodes_df.csv') if self.sett.export_csvs else None
-            dsonodes_ts.write_parquet(f'{self.sett.name_dir_export_path}/dsonodes_ts.parquet')
-            with open(f'{self.sett.name_dir_export_path}/dsonodes_gdf.geojson', 'w') as f:
+            dsonodes_df.to_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
+            dsonodes_df.to_csv(f'{self.sett.name_dir_import_path}/dsonodes_df.csv') if self.sett.export_csvs else None
+            dsonodes_ts.write_parquet(f'{self.sett.name_dir_import_path}/dsonodes_ts.parquet')
+            with open(f'{self.sett.name_dir_import_path}/dsonodes_gdf.geojson', 'w') as f:
                 f.write(dsonodes_gdf.to_json())
             
 
@@ -1332,10 +1332,11 @@ class PVAllocScenario:
                 if min_dist < self.sett.TECspec_max_distance_m_for_EGID_node_matching:
                     Map_egid_dsonode_appendings.append([egid, dsonodes_gdf.loc[min_idx, 'grid_node'], dsonodes_gdf.loc[min_idx, 'kVA_threshold']])
             
-            Map_appendings_df = pd.DataFrame(Map_egid_dsonode_appendings, columns=['EGID', 'grid_node', 'kVA_threshold'])
-            Map_appendings_df = Map_appendings_df.dropna(how='all')
+            if len(Map_egid_dsonode_appendings) > 0:
+                Map_appendings_df = pd.DataFrame(Map_egid_dsonode_appendings, columns=['EGID', 'grid_node', 'kVA_threshold'])
+                Map_appendings_df = Map_appendings_df.dropna(how='all')
 
-            Map_egid_dsonode = pd.concat([Map_egid_dsonode, Map_appendings_df], axis=0)
+                Map_egid_dsonode = pd.concat([Map_egid_dsonode, Map_appendings_df], axis=0)
 
             gwr_before_dsonode_selection = copy.deepcopy(gwr)
             gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(Map_egid_dsonode['EGID'].unique())])
@@ -1366,11 +1367,11 @@ class PVAllocScenario:
             
             subtraction2 = gwr_before_dsonode_selection["EGID"].nunique() - gwr["EGID"].nunique()
             checkpoint_to_logfile(f'  > {subtraction2} ({round(subtraction2 / gwr_before_dsonode_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in dsonodes', self.sett.summary_name, 0, True)
-            if Map_appendings_df.shape[0] > 0:
+            # if Map_appendings_df.shape[0] > 0:
 
-                checkpoint_to_logfile(f'  > (REMARK: Even matched {Map_appendings_df.shape[0]} EGIDs matched artificially to gridnode, because EGID lies in close node range, max_distance_m_for_EGID_node_matching: {self.sett.TECspec_max_distance_m_for_EGID_node_matching} meters', self.sett.summary_name, 0, True)
-            elif Map_appendings_df.shape[0] == 0:
-                checkpoint_to_logfile(f'  > (REMARK: No EGIDs matched to nearest gridnode, max_distance_m_for_EGID_node_matching: {self.sett.TECspec_max_distance_m_for_EGID_node_matching} meters', self.sett.summary_name, 0, True)
+            #     checkpoint_to_logfile(f'  > (REMARK: Even matched {Map_appendings_df.shape[0]} EGIDs matched artificially to gridnode, because EGID lies in close node range, max_distance_m_for_EGID_node_matching: {self.sett.TECspec_max_distance_m_for_EGID_node_matching} meters', self.sett.summary_name, 0, True)
+            # elif Map_appendings_df.shape[0] == 0:
+            #     checkpoint_to_logfile(f'  > (REMARK: No EGIDs matched to nearest gridnode, max_distance_m_for_EGID_node_matching: {self.sett.TECspec_max_distance_m_for_EGID_node_matching} meters', self.sett.summary_name, 0, True)
 
 
 
@@ -4106,7 +4107,7 @@ if __name__ == '__main__':
                 mini_sub_model_nEGIDs                                = 100, 
                 create_gdf_export_of_topology                        = False, 
                 test_faster_array_computation                        = True,
-                overwrite_scen_init                                  = False,
+                # overwrite_scen_init                                  = False,
                 T0_year_prediction                                   = 2021,
                 months_prediction                                    = 60,
                 CSTRspec_iter_time_unit                              = 'year',
@@ -4132,7 +4133,7 @@ if __name__ == '__main__':
                 mini_sub_model_nEGIDs                                = 100, 
                 create_gdf_export_of_topology                        = False, 
                 test_faster_array_computation                        = True,
-                overwrite_scen_init                                  = False,
+                # overwrite_scen_init                                  = False,
                 T0_year_prediction                                   = 2021,
                 months_prediction                                    = 60,
                 CSTRspec_iter_time_unit                              = 'year',
@@ -4154,6 +4155,9 @@ if __name__ == '__main__':
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
         
+        sleep_range = list(range(10, 61, 5))
+        sleep_time = np.random.choice(sleep_range)
+        time.sleep(sleep_time)
         if (pvalloc_class.sett.overwrite_scen_init) or (not os.path.exists(pvalloc_class.sett.name_dir_export_path)): 
             pvalloc_class.run_pvalloc_initalization()
 
