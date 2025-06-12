@@ -31,7 +31,7 @@ from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, p
 class PVAllocScenario_Settings:
     # DEFAULT SETTINGS ---------------------------------------------------
     name_dir_export: str                        = 'pvalloc_BL_smallsample'   # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
-    name_dir_import: str                        = 'preprep_BL_22to23_extSolkatEGID'
+    name_dir_import: str                        = 'preprep_BL_22to23_extSolkatEGID_aggrfarms'
     show_debug_prints: bool                     = False                    # F: certain print statements are omitted, T: includes print statements that help with debugging
     export_csvs: bool                           = False
     
@@ -79,8 +79,12 @@ class PVAllocScenario_Settings:
     GWRspec_dwelling_cols: List[str]                    = field(default_factory=list)
     GWRspec_DEMAND_proxy: str                           = 'GAREA'
     GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: ['1004'])
-    GWRspec_GKLAS: List[str]                            = field(default_factory=lambda: ['1110', ]) # '1121'])  # 1110: Gebäude mit einer Wohnung, diese Klasse umfasst:// - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.// - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
-    GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2021])           # 1121: Gebäude mit zwei Wohnungen, diese Klasse umfasst:// - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
+    GWRspec_GKLAS: List[str]                            = field(default_factory=lambda: [
+                                                                                        '1110',                 # 1110: Gebäude mit einer Wohnung, diese Klasse umfasst:// - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.// - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
+                                                                                        '1121', '1122',         # 1121: Gebäude mit zwei Wohnungen, diese Klasse umfasst:// - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
+                                                                                        # '1276', '1278'          # 1122: Gebäude mit mehreren Wohnungen,         
+                                                                                        ])                      # 1276, 1278: Aggrikulture Gebäude
+    GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2021])           
     
     # weather_specs
     WEAspec_meteo_col_dir_radiation: str                = 'Basel Direct Shortwave Radiation'
@@ -150,7 +154,7 @@ class PVAllocScenario_Settings:
     MCspec_montecarlo_iterations_fordev_sequentially: int        = 1
     MCspec_fresh_initial_files: List[str]                       = field(default_factory=lambda: [
                                                                     'topo_egid.json', 'trange_prediction.parquet',# 'gridprem_ts.parquet', 
-                                                                    'constrcapa.parquet', 'dsonodes_df.parquet'
+                                                                    'constrcapa.parquet', # 'dsonodes_df.parquet'
                                                                 ])
     MCspec_keep_files_month_iter_TF: bool                       = True
     MCspec_keep_files_month_iter_max: int                       = 9999999999
@@ -341,7 +345,7 @@ class PVAllocScenario:
         # make sanitycheck folder and move relevant initial files there (delete all old files, not distort results)
         os.makedirs(self.sett.sanity_check_path, exist_ok=False) 
 
-        fresh_initial_files = [f'{self.sett.name_dir_export_path}/{file}' for file in self.sett.MCspec_fresh_initial_files] # ['topo_egid.json', 'gridprem_ts.parquet', 'dsonodes_df.parquet']]
+        fresh_initial_files = [f'{self.sett.name_dir_export_path}/{file}' for file in self.sett.MCspec_fresh_initial_files] 
         topo_time_paths = glob.glob(f'{self.sett.name_dir_export_path}/topo_time_subdf/*.parquet')
         for f in fresh_initial_files + topo_time_paths:
             shutil.copy(f, f'{self.sett.sanity_check_path}/')
@@ -3026,7 +3030,7 @@ class PVAllocScenario:
             # import  -----------------------------------------------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
             topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
-            dsonodes_df = pl.read_parquet(f'{subdir_path}/dsonodes_df.parquet')  
+            dsonodes_df = pl.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
             gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
@@ -3328,7 +3332,7 @@ class PVAllocScenario:
 
             # import  -----------------------------------------------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
-            dsonodes_df = pd.read_parquet(f'{subdir_path}/dsonodes_df.parquet')
+            dsonodes_df = pd.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
             # gridprem_ts = pd.read_parquet(f'{subdir_path}/gridprem_ts.parquet')
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
@@ -4100,7 +4104,7 @@ if __name__ == '__main__':
     pvalloc_scen_list = [
         PVAllocScenario_Settings(
                 name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
-                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
                 show_debug_prints                                    = True,
                 export_csvs                                          = True,
                 mini_sub_model_TF                                    = True,
@@ -4111,7 +4115,8 @@ if __name__ == '__main__':
                 T0_year_prediction                                   = 2021,
                 months_prediction                                    = 60,
                 CSTRspec_iter_time_unit                              = 'year',
-                CSTRspec_ann_capacity_growth                         = 0.2,
+                CSTRspec_ann_capacity_growth                         = 0.15,
+                # CSTRspec_target_capacity_growth
                 CHECKspec_n_iterations_before_sanitycheck            = 2,
                 ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
                 ALGOspec_topo_subdf_partitioner                      = 250, 
@@ -4126,7 +4131,7 @@ if __name__ == '__main__':
         ),
         PVAllocScenario_Settings(
                 name_dir_export    = 'pvalloc_mini_2m_2mc_npv',
-                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID',
+                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
                 show_debug_prints                                    = True,
                 export_csvs                                          = True,
                 mini_sub_model_TF                                    = True,

@@ -22,25 +22,22 @@ data_path     = f'{wd_path}/data'
 scen = "pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind"
 name_dir_import = 'preprep_BLSO_22to23_1and2homes'
 
-# ------------------------------------------------------------------------------------------------------
-# CONVERT parquet to csv
-if False:
 
-    pq_path = r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_mini_2m_2mc_rnd\zMC1\npv_df.parquet"
+# CONVERT parquet to csv
+if True:
+
+    pq_path = r"C:\Users\hocrau00\Downloads\npv_df_13.parquet"
     file_name = pq_path.split('\\')[-1].split('.parquet')[0]
     csv_path = "\\".join(pq_path.split('\\')[0:-1])
 
     pq_path.split('\\')[0:-1]
 
     df  = pd.read_parquet(pq_path)
-    df = df.loc[df['EGID'].isin(['400415',])]
+    # df = df.loc[df['EGID'].isin(['400415',])]
     # df = df.head(8760 * 40)
     df.to_csv(f'{csv_path}/{file_name}.csv')
     print(f'exported {file_name}.csv')
 
-    topo = json.load(open(r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_mini_2m_2mc_rnd\zMC1\topo_egid.json", 'r'))
-    egid_w_pv = [k for k, v in topo.items() if v['pv_inst']['inst_TF']]
-    egid_wout_pv = [k for k, v in topo.items() if not v['pv_inst']['inst_TF'] ]
 
 
 # ------------------------------------------------------------------------------------------------------

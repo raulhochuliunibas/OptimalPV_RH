@@ -12,7 +12,7 @@ pvalloc_scen_list = [
     #     test_faster_array_computation                        = True,
     #     create_gdf_export_of_topology                        = True,
     #     T0_year_prediction                                   = 2021,
-    #     months_prediction                                    = 240,
+    #     months_prediction                                    = 48,
     #     CSTRspec_iter_time_unit                              = 'year',
     #     CSTRspec_ann_capacity_growth                         = 0.2,
     #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
@@ -29,7 +29,7 @@ pvalloc_scen_list = [
         test_faster_array_computation                        = True,
         create_gdf_export_of_topology                        = True,
         T0_year_prediction                                   = 2021,
-        months_prediction                                    = 480,
+        months_prediction                                    = 48,
         CSTRspec_iter_time_unit                              = 'year',
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
@@ -87,15 +87,15 @@ if __name__ == '__main__':
 
             # # -- def plot_ALL_mcalgorithm(self,): -------------
             # "plot_ind_line_installedCap",                     # runs as intended
-            "plot_ind_line_productionHOY_per_node",           # runs as intended
-            "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            # "plot_ind_line_productionHOY_per_node",           # runs as intended
+            # "plot_ind_line_productionHOY_per_EGID",           # runs as intended
             "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
             # "plot_ind_hist_NPV_freepartitions",               # runs as intended
             # "plot_ind_line_gridPremiumHOY_per_node",          # runs
             # "plot_ind_line_gridPremium_structure",            # runs
             # "plot_ind_lineband_contcharact_newinst",          # status not noted
             # "plot_ind_map_topo_egid",                         # runs as intended
-            "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
+            # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
             # "plot_ind_map_node_connections"                   # status not noted
         ]
 

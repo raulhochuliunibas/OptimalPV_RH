@@ -39,7 +39,12 @@ class Visual_Settings:
     pvalloc_exclude_pattern_list : List[str]     = field(default_factory=lambda: [
                                                     '*.txt',
                                                     '*old_vers*',
-                                                    ]),
+                                                    '*testX',
+                                                    '*pandas_no_outtopo*',
+                                                    '*test2_*', 
+                                                    '*test3_*',
+                                                    '*test2*all*',
+                                                    ])
     pvalloc_include_pattern_list : List[str]      = field(default_factory=lambda: [])
     plot_show: bool                              = True
     save_plot_by_scen_directory: bool            = True
@@ -1597,7 +1602,10 @@ class Visualization:
                             
                             if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_installedCap_TF[1]:
                                 fig_agg_pmonth.show()
-
+                            if os.path.exists(f'{self.visual_sett.visual_path}/plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen.html'):
+                                n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}/plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen*.html'))
+                                os.rename(f'{self.visual_sett.visual_path}/plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen.html', 
+                                          f'{self.visual_sett.visual_path}/plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.html')
                             fig_agg_pmonth.write_html(f'{self.visual_sett.visual_path}/plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen.html')
                             print_to_logfile(f'\texport: plot_agg_line_installedCap__{len(self.pvalloc_scen_list)}scen.html', self.visual_sett.log_name)
 
@@ -1719,7 +1727,7 @@ class Visualization:
                     outtopo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/outtopo_time_subdf/*.parquet')
                     
                     gridnode_df = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
-                    dsonodes_df = pl.read_parquet(f'{self.visual_sett.mc_data_path}/dsonodes_df.parquet')  
+                    dsonodes_df = pl.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/dsonodes_df.parquet')  
 
 
                     # select EGIDs by EGID - DF_UID combo --------------------------
@@ -2130,9 +2138,6 @@ class Visualization:
                             pl.col('kW_threshold').sum().alias('kW_threshold'),
 
                             pl.col('holding_capacity').min().alias('holding_capacity_min'),
-                            pl.col('holding_capacity').quantile(0.25).alias('holding_capacity_q25'),
-                            pl.col('holding_capacity').quantile(0.50).alias('holding_capacity_q50'),
-                            pl.col('holding_capacity').quantile(0.75).alias('holding_capacity_q75'),
                             pl.col('holding_capacity').max().alias('holding_capacity_max'),
                             pl.col('holding_capacity').mean().alias('holding_capacity_mean'),
                         ])
@@ -2145,12 +2150,11 @@ class Visualization:
                             pl.sum('netfeedin_all_loss_kW').alias('netfeedin_all_loss_kW'), 
                             pl.first('kW_threshold').alias('kW_threshold'),
 
-                            pl.first('holding_capacity_min').alias('holding_capacity_min'),
-                            pl.first('holding_capacity_q25').alias('holding_capacity_q25'),
-                            pl.first('holding_capacity_q50').alias('holding_capacity_q50'),
-                            pl.first('holding_capacity_q75').alias('holding_capacity_q75'),
-                            pl.first('holding_capacity_max').alias('holding_capacity_max'),
-                            pl.first('holding_capacity_mean').alias('holding_capacity_mean'),
+                            pl.col('holding_capacity_min').min().alias('holding_capacity_min_abs'),
+                            pl.col('holding_capacity_mean').min().alias('holding_capacity_min_of_mean'),
+                            pl.col('holding_capacity_mean').mean().alias('holding_capacity_mean_of_mean'),
+                            pl.col('holding_capacity_mean').max().alias('holding_capacity_max_of_mean'),
+                            pl.col('holding_capacity_max').max().alias('holding_capacity_max_abs'),
                         ]).with_columns([
                             pl.lit(n_iter).alias('n_iter'),
                             pl.lit(scen).alias('scen'),
@@ -2159,6 +2163,9 @@ class Visualization:
                         gridnode_df_by_iter_list.append(agg_gridnode_row)
 
                     gridnode_df_by_iter = pl.concat(gridnode_df_by_iter_list, how="vertical")
+                    gridnode_df_by_iter = gridnode_df_by_iter.with_columns([
+                        (pl.col('netfeedin_all_loss_kW') / pl.col('netfeedin_all_taken_kW')).alias('netfeedin_loss_ratio')
+                    ])
                     gridnode_df_by_iter = gridnode_df_by_iter.sort("n_iter", descending=False)
 
 
@@ -2197,33 +2204,37 @@ class Visualization:
                     fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_taken_kW'], name='Total netfeedin_all_taken_kW', mode='lines+markers',  line=dict(color='green',), marker=dict(symbol='cross',), ))
                     fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_loss_kW'],  name='Total netfeedin_all_loss_kW',  mode='lines+markers',  line=dict(color='red',  ),   marker=dict(symbol='cross',), ))
                     fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['kW_threshold'],           name='Total kW_threshold',           mode='lines+markers',  line=dict(color='blue', ),  marker=dict(symbol='cross',),  ))
+                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_loss_ratio'],   name='netfeedin_loss_ratio',        mode='lines+markers',  line=dict(color='orange', dash = 'dot'), opacity = 1     , yaxis = 'y2'))
 
+                    fig.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],             name='ratio pvinst cumulative',     mode='lines+markers',  line=dict(color='purple',)                               , yaxis ='y2'))
                     fig.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['n_EGID_pvinst'],                 name='n pvinst insample',           mode='lines+markers',  line=dict(color='purple', dash = 'dot'), opacity = 0.5   , ))
                     fig.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['n_EGID_pvinst_cum'],             name='n pvinst cumulative',         mode='lines+markers',  line=dict(color='purple', dash = 'dash'),opacity = 0.8   , ))
-                    fig.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],             name='ratio pvinst cumulative',     mode='lines+markers',  line=dict(color='purple',)                               , yaxis ='y2'))
                     
-                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_min'],           name='Holding Capac min',   mode='lines+markers',  line=dict(color='goldenrod', dash = 'dot'),   opacity = 0.5, yaxis = 'y2'))
-                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_max'],           name='Holding Capac max',   mode='lines+markers',  line=dict(color='goldenrod', dash = 'dot'),   opacity = 0.5, yaxis = 'y2'))
-                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_q25'],           name='Holding Capac q25',   mode='lines+markers',  line=dict(color='goldenrod', dash = 'dash'),  opacity = 0.8, yaxis = 'y2'))
-                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_q75'],           name='Holding Capac q75',   mode='lines+markers',  line=dict(color='goldenrod', dash = 'dash'),  opacity = 0.8, yaxis = 'y2'))
-                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_q75'],           name='Area q25-q75'     ,   mode='none', fill='tonexty', fillcolor='rgba(255, 215, 0, 0.3)', line=dict(color='rgba(255, 215, 0, 0.3)'),  yaxis='y2'))
-
-
-                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_q50'],           name='Holding Capac q50',   mode='lines+markers',  line=dict(color='goldenrod', ),   marker=dict(symbol='circle',),  yaxis = 'y2'))
-                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_mean'],          name='Holding Capac mean',  mode='lines+markers',  line=dict(color='goldenrod',),    marker=dict(symbol='diamond',), yaxis = 'y2'))
+                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_max_abs'],       name='Holding Capac max abs',      mode='lines+markers',  line=dict(color='goldenrod', dash = 'dot'),  opacity = 0.5, yaxis = 'y2'))
+                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_max_of_mean'],   name='Holding Capac max of mean',  mode='lines+markers',  line=dict(color='goldenrod', dash = 'dash'), opacity = 0.8, yaxis = 'y2'))
+                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_mean_of_mean'],  name='Holding Capac mean of mean', mode='lines+markers',  line=dict(color='goldenrod', ),              opacity = 1.0, yaxis = 'y2'))
+                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_min_of_mean'],   name='Holding Capac min of mean',  mode='lines+markers',  line=dict(color='goldenrod', dash = 'dash'), opacity = 0.8, yaxis = 'y2'))     
+                    fig.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_min_abs'],       name='Holding Capac min abs',      mode='lines+markers',  line=dict(color='goldenrod', dash = 'dot'),  opacity = 0.5, yaxis = 'y2'))
 
                     fig.update_layout(
                         xaxis_title='Time',
                         yaxis_title='Energy (kWh Feedin / Loss)',
+                        yaxis=dict(
+                            title='Energy Feedin / Loss (kW)',
+                            range=[0, max(gridnode_df_by_iter['netfeedin_all_kW']) * 1.2],  # Adjust range as needed
+                        ),
                         yaxis2=dict(
                             title='Holding Capacity',
                             overlaying='y',
                             side='right',
-                            range=[0, max(gridnode_df_by_iter['holding_capacity_max']) * 1.2]  # Adjust range as needed
+                            range=[0, max(gridnode_df_by_iter['holding_capacity_max_abs']) * 1.2],  # Adjust range as needed
+                            showgrid = False, 
                         ),
                         legend_title='Legend',
                         title=f'Development of Energy Feedin / Loss for 1 Year (weather year: {self.pvalloc_scen.WEAspec_weather_year}) Over Time',
+                        template='plotly_white',
                     )
+
                     fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
 
 
@@ -2246,32 +2257,43 @@ class Visualization:
                     color_pal_idx = len(color_pal)
                     
                     fig_agg.add_trace(go.Scatter(x=[None,], y=[None,], name=scen, opacity=0, ))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_kW'], name='Total netfeedin_all_kW', mode='lines',                     line=dict(color=color_pal[color_pal_idx-1],),      marker=dict(symbol='cross',), ))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_taken_kW'], name='Total netfeedin_all_taken_kW', mode='lines',         line=dict(color=color_pal[color_pal_idx-2],),      marker=dict(symbol='cross',), ))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_loss_kW'], name='Total netfeedin_all_loss_kW', mode='lines',           line=dict(color=color_pal[color_pal_idx-3],),      marker=dict(symbol='cross',), ))
-                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],             name='ratio pvinst cumulative',     mode='lines+markers',  line=dict(color=color_pal[color_pal_idx-4],),      marker=dict(symbol='circle',), yaxis ='y2'))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_mean'],          name='Holding Capac mean',  mode='lines+markers',  line=dict(color=color_pal[color_pal_idx-5],),      marker=dict(symbol='diamond',), yaxis = 'y2'))
-                    fig_agg.add_trace(go.Scatter(x=[None,], y=[None,], name='', opacity=0, ))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_kW'],                name='Total netfeedin_all_kW',       mode='lines',         line=dict(color=color_pal[color_pal_idx-1],),                 marker=dict(symbol='cross',),   ))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_taken_kW'],          name='Total netfeedin_all_taken_kW', mode='lines',         line=dict(color=color_pal[color_pal_idx-2],),                 marker=dict(symbol='cross',),   ))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_all_loss_kW'],           name='Total netfeedin_all_loss_kW',  mode='lines',         line=dict(color=color_pal[color_pal_idx-3],),                 marker=dict(symbol='cross',),   ))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_loss_ratio'],            name='netfeedin_loss_ratio',         mode='lines',         line=dict(color=color_pal[color_pal_idx-4],),                 marker=dict(symbol='circle',),  yaxis = 'y2'))
+                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],                      name='ratio pvinst cumulative',      mode='lines+markers', line=dict(color=color_pal[color_pal_idx-5],),                 marker=dict(symbol='circle',),  yaxis = 'y2'))                    
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_mean_of_mean'],   name='Holding Capac mean of mean',   mode='lines+markers', line=dict(color=color_pal[color_pal_idx-6],),                 marker=dict(symbol='diamond',), yaxis = 'y2'))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_max_abs'],        name='Holding Capac max abs',        mode='lines',         line=dict(color=color_pal[color_pal_idx-6], dash = 'dash'),                                   yaxis = 'y2'))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_min_abs'],        name='Holding Capac min abs',        mode='lines',         line=dict(color=color_pal[color_pal_idx-6], dash = 'dash'),                                   yaxis = 'y2'))
 
+                    fig_agg.add_trace(go.Scatter(x=[None,], y=[None,], name='', opacity=0, ))
 
                 
                 # export AGGREGATION ----------------
                 fig_agg.update_layout(
                     xaxis_title='Time',
                     yaxis_title='Energy (kWh Feedin / Loss)',
+                    yaxis=dict(
+                        title='Energy Feedin / Loss (kW)',
+                        range=[0, max(gridnode_df_by_iter['netfeedin_all_kW']) * 1.2],  # Adjust range as needed
+                    ),  
                     yaxis2=dict(
                         title='Holding Capacity',
                         overlaying='y',
                         side='right',
-                        range=[0, max(gridnode_df_by_iter['holding_capacity_mean']) * 1.2]  # Adjust range as needed
+                        range=[0, max(gridnode_df_by_iter['holding_capacity_mean_of_mean']) * 1.2]  # Adjust range as needed
                     ),
                     legend_title='Legend',
                     title=f'Development of Energy Feedin / Loss for 1 Year (weather year: {self.pvalloc_scen.WEAspec_weather_year}) Over Time',
+                    template='plotly_white',
                 )
 
                 if self.visual_sett.plot_show and self.visual_sett.plot_ind_line_PVproduction_TF[1]:
                     fig_agg.show()
-
+                if os.path.exists(f'{self.visual_sett.visual_path}/plot_agg_line_PVproduction__{len(self.pvalloc_scen_list)}scen.html'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}/plot_agg_line_PVproduction__{len(self.pvalloc_scen_list)}scen*.html'))
+                    os.rename(f'{self.visual_sett.visual_path}/plot_agg_line_PVproduction__{len(self.pvalloc_scen_list)}scen.html', 
+                              f'{self.visual_sett.visual_path}/plot_agg_line_PVproduction__{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.html')
                 fig_agg.write_html(f'{self.visual_sett.visual_path}/plot_agg_line_PVproduction__{len(self.pvalloc_scen_list)}scen.html')
                 print_to_logfile(f'\texport: plot_agg_line_PVproduction__{len(self.pvalloc_scen_list)}scen.html', self.visual_sett.log_name)
 
@@ -2339,6 +2361,10 @@ class Visualization:
 
                 if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[1]:
                     fig_agg.show()
+                if os.path.exists(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions__{len(self.pvalloc_scen_list)}scen.html'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions__{len(self.pvalloc_scen_list)}scen*.html'))
+                    os.rename(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions__{len(self.pvalloc_scen_list)}scen.html', 
+                              f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions__{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.html')
                 fig_agg.write_html(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions__{len(self.pvalloc_scen_list)}scen.html')
 
                
@@ -2588,9 +2614,8 @@ class Visualization:
                         self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
 
                         # import
-                        gwr_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
-                        gm_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
-                        dsonodes_gdf = gpd.read_file(f'{self.visual_sett.data_path}/pvalloc/{scen}/dsonodes_gdf.geojson')
+                        gwr_gdf =       gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
+                        gm_gdf =        gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
 
                         topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
                         egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
@@ -2777,9 +2802,9 @@ class Visualization:
                         self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
 
                         # import
-                        gwr_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
-                        gm_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
-                        dsonodes_gdf = gpd.read_file(f'{self.visual_sett.data_path}/pvalloc/{scen}/dsonodes_gdf.geojson')
+                        gwr_gdf         = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
+                        gm_gdf          = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
+                        dsonodes_gdf    = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/dsonodes_gdf.geojson')
 
                         topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
                         egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
@@ -3022,7 +3047,7 @@ class Visualization:
                     # import
                     gwr_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
                     gm_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
-                    dsonodes_gdf = gpd.read_file(f'{self.visual_sett.data_path}/pvalloc/{scen}/dsonodes_gdf.geojson')
+                    dsonodes_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/dsonodes_gdf.geojson')
                     Map_egid_dsonode = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/Map_egid_dsonode.parquet')
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
 
@@ -3209,7 +3234,9 @@ if __name__ == '__main__':
             pvalloc_include_pattern_list = [
                 # '*pvalloc_mini_BYYEAR*',
                 # '*test2*',
-                'pvalloc_mini_BYYEAR_EASTWEST_max', 
+                # 'pvalloc_mini_BYYEAR_EASTWEST_max',
+                'pvalloc_mini_BYYEAR_EASTWEST_max',
+
             ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  
@@ -3230,18 +3257,18 @@ if __name__ == '__main__':
             # visual_class.plot_ind_charac_omitted_gwr()                    # runs as intended
             # visual_class.plot_ind_line_meteo_radiation()                  # runs as intended
 
-            # -- def plot_ALL_mcalgorithm(self,): -------------
+            # # -- def plot_ALL_mcalgorithm(self,): -------------
             # "plot_ind_line_installedCap",                     # runs as intended
             # "plot_ind_line_productionHOY_per_node",           # runs as intended
-            "plot_ind_line_productionHOY_per_EGID",           # runs as intended
-            # "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
+            # "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
             # "plot_ind_hist_NPV_freepartitions",               # runs as intended
-            # "plot_ind_line_gridPremiumHOY_per_node",          # runs
-            # "plot_ind_line_gridPremium_structure",            # runs
+            # # "plot_ind_line_gridPremiumHOY_per_node",          # runs
+            # # "plot_ind_line_gridPremium_structure",            # runs
             # "plot_ind_lineband_contcharact_newinst",          # status not noted
             # "plot_ind_map_topo_egid",                         # runs as intended
             # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
-            # "plot_ind_map_node_connections"                   # status not noted        
+            # # "plot_ind_map_node_connections"                   # status not noted        
     
             # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
             # plot_ind_map_node_connections()
