@@ -1,19 +1,23 @@
+import sys
 import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 from src.MAIN_visualization import Visual_Settings, Visualization
-
 pvalloc_scen_list = [
 
-    # SCENARIOS 2C: test2 scens with MULTIPLE HOUSING BUILDINGS + AGGRICULTURAL BUILDINGS
+    # SCENARIOS 2B: test2 scens with MULTIPLE HOUSING BUILDINGS
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2c_eastwestfacing_rnd',
+        name_dir_export                 = 'pvalloc_BLsml_test2b_eastwestfacing_rnd',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
-        GWRspec_GKLAS                               = ['1110', '1121', '1122', '1276', '1278',  ],
+        overwrite_scen_init             = False,
+        GWRspec_GKLAS                               = ['1110', '1121', '1122', ],
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
         ALGOspec_rand_seed                          = 123,
@@ -62,6 +66,25 @@ if __name__ == '__main__':
 
         plot_method_names = [
             
+            # # -- def plot_ALL_init_sanitycheck(self, ): -------------
+            # visual_class.plot_ind_var_summary_stats()                     # runs as intended
+            # visual_class.plot_ind_hist_pvcapaprod_sanitycheck()           # runs as intended
+            # # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
+            # visual_class.plot_ind_charac_omitted_gwr()                    # runs as intended
+            # visual_class.plot_ind_line_meteo_radiation()                  # runs as intended
+
+            # # # -- def plot_ALL_mcalgorithm(self,): -------------
+            # "plot_ind_line_installedCap",                     # runs as intended
+            # "plot_ind_line_productionHOY_per_node",           # runs as intended
+            # "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            # # "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
+            # "plot_ind_hist_NPV_freepartitions",               # runs as intended
+            # "plot_ind_line_gridPremiumHOY_per_node",          # runs
+            # "plot_ind_line_gridPremium_structure",            # runs
+            # "plot_ind_lineband_contcharact_newinst",          # status not noted
+            # "plot_ind_map_topo_egid",                         # runs as intended
+            # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
+            # # "plot_ind_map_node_connections"                   # status not noted
         ]
 
         for plot_method in plot_method_names:

@@ -1,18 +1,22 @@
+import sys
 import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 from src.MAIN_visualization import Visual_Settings, Visualization
-
 pvalloc_scen_list = [
 
-    # SCENARIOS 2C: test2 scens with MULTIPLE HOUSING BUILDINGS + AGGRICULTURAL BUILDINGS
+    # SCENARIOS 2B: test2 scens with MULTIPLE HOUSING BUILDINGS
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2c_all_default_rnd',
+        name_dir_export                 = 'pvalloc_BLsml_test2b_all_default_rnd',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
-        GWRspec_GKLAS                               = ['1110', '1121', '1122', '1276', '1278',  ],
+        overwrite_scen_init             = False,
+        GWRspec_GKLAS                               = ['1110', '1121', '1122', ],
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
         ALGOspec_rand_seed                          = 123,
@@ -24,13 +28,14 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2c_all_default_max',
+        name_dir_export                 = 'pvalloc_BLsml_test2b_all_default_max',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
-        GWRspec_GKLAS                               = ['1110', '1121', '1122', '1276', '1278',  ],
+        overwrite_scen_init             = False,
+        GWRspec_GKLAS                               = ['1110', '1121', '1122', ],
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'max_npv', 
         ALGOspec_rand_seed                          = 123,
@@ -42,13 +47,14 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2c_all_southfacing_rnd',
+        name_dir_export                 = 'pvalloc_BLsml_test2b_all_southfacing_rnd',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
-        GWRspec_GKLAS                               = ['1110', '1121', '1122', '1276', '1278',  ],
+        overwrite_scen_init             = False,
+        GWRspec_GKLAS                               = ['1110', '1121', '1122', ],
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
         ALGOspec_rand_seed                          = 123,
@@ -60,13 +66,14 @@ pvalloc_scen_list = [
         ),
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2c_all_eastwestfacing_rnd',
+        name_dir_export                 = 'pvalloc_BLsml_test2b_all_eastwestfacing_rnd',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
-        GWRspec_GKLAS                               = ['1110', '1121', '1122', '1276', '1278',  ],
+        overwrite_scen_init             = False,
+        GWRspec_GKLAS                               = ['1110', '1121', '1122', ],
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
         ALGOspec_rand_seed                          = 123,

@@ -1,12 +1,17 @@
+import sys
 import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 from src.MAIN_visualization import Visual_Settings, Visualization
 
 pvalloc_scen_list = [
 
     # SCENARIOS 2A: test2 scens with SINGLE HOUSING BUILDINGS
+
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2a_default_rnd',
+        name_dir_export                 = 'pvalloc_BLsml_test2a_eastwestfacing_rnd',
         name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
         bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
         T0_year_prediction              = 2021,
@@ -21,9 +26,8 @@ pvalloc_scen_list = [
         MCspec_montecarlo_iterations_fordev_sequentially                = 1,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True,
 
-        ALGOspec_subselec_filter_criteria = None, 
+        ALGOspec_subselec_filter_criteria = 'eastwestfacing_3spec', 
         ),
-
 
 ]
 

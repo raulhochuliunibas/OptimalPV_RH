@@ -1,7 +1,10 @@
+import sys
 import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 from src.MAIN_visualization import Visual_Settings, Visualization
-
 pvalloc_scen_list = [
 
     # SCENARIOS 2B: test2 scens with MULTIPLE HOUSING BUILDINGS
