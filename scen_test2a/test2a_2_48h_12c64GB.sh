@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#SBATCH --job-name=test2c_1_24h_12c32GB.sh                   #This is the name of your job
+#SBATCH --job-name=test2a_2_48h_12c64GB                   #This is the name of your job
 #SBATCH --cpus-per-task=12                  #This is the number of cores reserved
-#SBATCH --mem-per-cpu=32G              #This is the memory reserved per core.
-#Total memory reserved: 384GB
+#SBATCH --mem-per-cpu=64G              #This is the memory reserved per core.
+#Total memory reserved: 768GB
 
 # Are you sure that you need THAT much memory?
 
-#SBATCH --time=24:00:00        #This is the time that your task will run
-#SBATCH --qos=1day           #You will run in this queue
+#SBATCH --time=48:00:00        #This is the time that your task will run
+#SBATCH --qos=1week           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
 #SBATCH --output=myrun.o%j     #These are the STDOUT and STDERR files
@@ -31,14 +31,10 @@ ml purge
 ml Python/3.11.5-GCCcore-13.2.0
 source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 
-
 #export your required environment variables below
 #################################################
 
 
 #add your command lines below
 #############################
-python main_scicore_test2c_1.py
-
-
-
+python main_scicore_test2a_2.py

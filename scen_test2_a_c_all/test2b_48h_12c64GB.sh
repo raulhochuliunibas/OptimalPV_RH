@@ -37,4 +37,4 @@ source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 
 #add your command lines below
 #############################
-python main_scicore_tests2b.py
+python main_scicore_test2b.py

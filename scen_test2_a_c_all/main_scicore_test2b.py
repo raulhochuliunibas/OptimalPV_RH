@@ -10,8 +10,9 @@ pvalloc_scen_list = [
     # SCENARIOS 2B: test2 scens with MULTIPLE HOUSING BUILDINGS
     PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_BLsml_test2b_all_default_rnd',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
@@ -29,8 +30,9 @@ pvalloc_scen_list = [
 
     PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_BLsml_test2b_all_default_max',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
@@ -48,8 +50,9 @@ pvalloc_scen_list = [
 
     PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_BLsml_test2b_all_southfacing_rnd',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
@@ -67,8 +70,9 @@ pvalloc_scen_list = [
 
     PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_BLsml_test2b_all_eastwestfacing_rnd',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
@@ -116,19 +120,6 @@ if __name__ == '__main__':
         pvalloc_class.run_pvalloc_mcalgorithm()
         # pvalloc_self.sett.run_pvalloc_postprocess()
 
-    # visualization ---------------------
-    for visual_scen in visualization_list:
-        visual_class = Visualization(visual_scen)
 
-        plot_method_names = [
-            
-        ]
-
-        for plot_method in plot_method_names:
-            try:
-                method = getattr(visual_class, plot_method)
-                method()
-            except Exception as e:
-                print(f"Error in {plot_method}: {e}")
 
 print('\n\n -------- done -------')

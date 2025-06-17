@@ -11,8 +11,9 @@ pvalloc_scen_list = [
     # SCENARIOS 2A: test2 scens with SINGLE HOUSING BUILDINGS
     PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_BLsml_test2a_all_default_rnd',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
@@ -30,8 +31,9 @@ pvalloc_scen_list = [
 
     PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_BLsml_test2a_all_default_max',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
@@ -49,8 +51,9 @@ pvalloc_scen_list = [
 
     PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_BLsml_test2a_all_southfacing_rnd',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
@@ -68,8 +71,9 @@ pvalloc_scen_list = [
 
     PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_BLsml_test2a_all_eastwestfacing_rnd',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        bfs_numbers                     = [ 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                            2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,                         # SOsml: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren
+        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
