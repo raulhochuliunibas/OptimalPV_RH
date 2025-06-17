@@ -41,16 +41,43 @@ class DataAggScenario_Settings:
     rerun_localimport_and_mappings: bool = True               # F: use existi ng parquet files, T: recreate parquet files in data prep
     reextend_fixed_data: bool = True               # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again
 
-    GWR_building_cols: List[str] = field(default_factory=lambda: ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE',
-                                        'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
-                                        'GANZWHG','GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
-                                        'GEBF', 'GAREA'])
-    GWR_dwelling_cols: List[str] = field(default_factory=lambda: ['EGID', 'EWID', 'WAZIM', 'WAREA', ])
-    GWR_DEMAND_proxy: str = 'GAREA'
-    GWR_GSTAT: List[str] = field(default_factory=lambda: ['1004',])                                 # GSTAT - 1004: only existing, fully constructed buildings
-    GWR_GKLAS: List[str] = field(default_factory=lambda: ['1110',]) # , '1121','1276'])                # GKLAS - 1110: only 1 living space per building; 1121: Double-, row houses with each appartment (living unit) having it's own roof; 1276: structure for animal keeping (most likely still one owner)
-    GWR_GBAUJ_minmax: List[int] = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
-    GWR_GWAERZH: List[str] = field(default_factory=lambda: ['7410', '7411',])                       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
+    GWR_building_cols: List[str]    = field(default_factory=lambda: ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE',
+                                            'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
+                                            'GANZWHG','GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
+                                            'GEBF', 'GAREA'])
+    GWR_dwelling_cols: List[str]    = field(default_factory=lambda: ['EGID', 'EWID', 'WAZIM', 'WAREA', ])
+    GWR_DEMAND_proxy: str           = 'GAREA'
+    GWR_GSTAT: List[str]            = field(default_factory=lambda: ['1004',])                                 # GSTAT - 1004: only existing, fully constructed buildings
+    GWR_GKLAS: List[str]            = field(default_factory=lambda: [
+                                            '1110', # GKLAS - 1110: only 1 living space per building
+                                            '1121', # GKLAS - 1121: Double-, row houses with each appartment (living unit) having it's own roof;
+                                            '1122', # GKLAS - 1122: Buildings with three or more appartments
+                                            '1276', # GKLAS - 1276: structure for animal keeping (most likely still one owner)
+                                            '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
+                                            ])
+    GWR_GBAUJ_minmax: List[int]     = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
+    GWR_GWAERZH: List[str]          = field(default_factory=lambda: ['7410', '7411',])                       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
+    GWR_AREtypology : Dict          = field(default_factory=lambda:  {
+                                            'Urban': [2, 4, ],
+                                            'Suburban': [3, 5 ], 
+                                            'Rural': [7, 8,],                        
+                                            # 1 - big centers   # https://map.geo.admin.ch/#/map?lang=en&center=2611872.51,1270543.42&z=3.703&topic=ech&layers=ch.swisstopo.zeitreihen@year=1864,f;ch.bfs.gebaeude_wohnungs_register,f;ch.bav.haltestellen-oev,f;ch.swisstopo.swisstlm3d-wanderwege,f;ch.vbs.schiessanzeigen,f;ch.astra.wanderland-sperrungen_umleitungen,f;ch.are.gemeindetypen;ch.swisstopo.swissboundaries3d-kanton-flaeche.fill&bgLayer=ch.swisstopo.pixelkarte-farbe            # '1' - big centers => URBAN
+                                            # 2 - secondary centers of big centers  => URBAN 
+                                            # 3 - crown big centers => SEMI-URBAN
+                                            # 4 - medium centers => 
+                                            # 5 - crown medium centers =>
+                                            # 6 - small centers => 
+                                            # 7 - peri-urban rural communes => RURAL
+                                            # 8 - agricultural communes => RURAL
+                                            # 9 - tourist communes => RURAL
+    })
+    GWR_SFHMFHtypology: Dict       = field(default_factory=lambda: {
+                                            'SFh': ['1110', ], 
+                                            'MFH': ['1121', '1122', '1276', '1278', ],
+    })
+    GWR_SFHMFH_outsample_proxy:str = 'MFH'
+
+
 
     SOLKAT_col_partition_union: str = 'SB_UUID'                   # column name used for the union of partitions
     SOLKAT_GWR_EGID_buffer_size: int = 10                          # buffer size in meters for the GWR selection
@@ -59,7 +86,7 @@ class DataAggScenario_Settings:
     SOLKAT_test_loop_optim_buff_size_TF: bool = False
     SOLKAT_test_loop_optim_buff_arang: List[float] = field(default_factory=lambda: [0, 10, 0.1])
 
-    DEMAND_input_data_source: str = "NETFLEX" #    Netflex OR SwissStore
+    DEMAND_input_data_source: str = 'SwissStore'#    # "NETFLEX"  OR "SwissStore"
 
 
 
@@ -83,7 +110,7 @@ class DataAggScenario:
             """
             sett_dict = asdict(self.sett)
 
-            with open('dataagg_sett.json', 'w') as f:
+            with open(f'{self.sett.preprep_path}/dataagg_sett.json', 'w') as f:
                 json.dump(sett_dict, f, indent=4)
 
     def run_data_agg(self):
@@ -953,6 +980,10 @@ class DataAggScenario:
             solkat_month = solkat_month_all_pq[solkat_month_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
 
 
+            # BFS-ARE Gemeinde Type ====================
+            gemeinde_type_gdf = gpd.read_file(f'{self.sett.data_path}/input/gemeindetypen_2056.gpkg/gemeindetypen_2056.gpkg', layer=None)
+
+
             # GRID_NODE ====================
             Map_egid_dsonode = pd.read_excel(f'{get_primeo_path()}/Daten_Primeo_x_UniBasel_V2.0.xlsx')
             # transformations
@@ -980,9 +1011,8 @@ class DataAggScenario:
 
             # create gdf of all EGIDs with grid nodes for visualization
             gwr_dsonode_gdf = gwr_all_building_gdf.merge(Map_egid_dsonode, how = 'left', on = 'EGID')
-            if '' in gwr_dsonode_gdf['grid_node'].unique():
-                gwr_dsonode_gdf = gwr_dsonode_gdf.loc[gwr_dsonode_gdf['grid_node'] != '']
-
+            if gwr_dsonode_gdf['grid_node'].isna().any():
+                gwr_dsonode_gdf = gwr_dsonode_gdf.loc[~gwr_dsonode_gdf['grid_node'].isna()]
 
             # MAP: solkatdfuid > egid ---------------------------------------------------------------------------------
             Map_solkatdfuid_egid = solkat_gdf.loc[:,['DF_UID', 'DF_NUMMER', 'SB_UUID', 'EGID']].copy()
@@ -1119,10 +1149,10 @@ class DataAggScenario:
             # EXPORT SPATIAL DATA ---------------------------------------------------------------------------------
             gdf_to_export_names = [ 'gm_shp_gdf', 'pv_gdf', 'solkat_gdf', 'gwr_gdf','gwr_buff_gdf', 'gwr_all_building_gdf', 
                                     'omitt_gwregid_gdf', 'omitt_solkat_gdf', 'omitt_pv_gdf', 'omitt_gwregid_gridnode_gdf', 
-                                    'gwr_dsonode_gdf' ]
+                                    'gwr_dsonode_gdf', 'gemeinde_type_gdf', ]
             gdf_to_export_list = [  gm_shp_gdf, pv_gdf, solkat_gdf, gwr_gdf, gwr_buff_gdf, gwr_all_building_gdf, 
                                     omitt_gwregid_gdf, omitt_solkat_gdf, omitt_pv_gdf, omitt_gwregid_gridnode_gdf, 
-                                    gwr_dsonode_gdf]
+                                    gwr_dsonode_gdf, gemeinde_type_gdf, ]
             
             for i,g in enumerate(gdf_to_export_list):
                 cols_DATUM = [col for col in g.columns if 'DATUM' in col]
@@ -1361,16 +1391,59 @@ class DataAggScenario:
 
             # DEMAND DATA SOURCE: SwissStore ============================================================
             elif self.sett.DEMAND_input_data_source == "SwissStore" :
-                print("STUCK")     # follow up call with Hector. => for match all houses to archetypes of Swisstore and then later extract demand profile
+                swstore_sfhmfh_factors  = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/12.swisstore_table12_unige.xlsx', sheet_name='Feuil1')
+                swstore_sfhmfh_ts       = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx', sheet_name='dmnd_prof_sfh_mfh_avg')
+                gwr                     = pd.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
+                gwr_all_building_gdf    = gpd.read_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson')
+                gemeinde_type_gdf       = gpd.read_file(f'{self.sett.preprep_path}/gemeinde_type_gdf.geojson')
                 
-                swstore_demand_inclnan = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx')
-                swstore_demand = swstore_demand_inclnan.loc[~swstore_demand_inclnan['time'].isna()]
-                swstore_demand['SFH'].sum(), swstore_demand['MFH'].sum()
-                swstore_demand.head()
-                swstore_demand.shape
 
 
-                os.listdir(f'{self.sett.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx')
+                # classify EGIDs into SFH / MFH, Rural / Urban -------------------------------------------------
+
+                # get ARE type classification
+                gwr_all_building_gdf['ARE_typ'] = ''
+                gwr_all_building_gdf = gpd.sjoin(gwr_all_building_gdf, gemeinde_type_gdf[['NAME', 'TYP', 'BFS_NO', 'geometry']], 
+                                                 how='left', predicate='intersects')
+                gwr_all_building_gdf.rename(columns={'NAME': 'ARE_NAME', 'TYP': 'ARE_TYP', }, inplace=True)
+                for k,v in self.sett.GWR_AREtypology.items():
+                    gwr_all_building_gdf.loc[gwr_all_building_gdf['ARE_TYP'].isin(v), 'ARE_typ'] = k
+
+                # get SFH / MFH classification from GWR data
+                gwr_all_building_gdf['sfhmfh_typ'] = ''
+                for k,v in self.sett.GWR_SFHMFHtypology.items():
+                    gwr_all_building_gdf.loc[gwr_all_building_gdf['GKLAS'].isin(v), 'sfhmfh_typ'] = k
+                gwr_all_building_gdf.loc[gwr_all_building_gdf['sfhmfh_typ'] == '', 'sfhmfh_typ'] = self.sett.GWR_SFHMFH_outsample_proxy
+
+                # build swstore_type to attach swstore factors
+                gwr_all_building_gdf['arch_typ'] = gwr_all_building_gdf['sfhmfh_typ'].str.cat(gwr_all_building_gdf['ARE_typ'], sep='-')
+                gwr_all_building_gdf = gwr_all_building_gdf.merge(swstore_sfhmfh_factors[['arch_typ', 'elec_dem_ind_cecb', ]])
+                gwr_all_building_gdf.rename(columns={'elec_dem_ind_cecb': 'elec_dem_pGAREA'}, inplace=True)
+
+                # attach information to gwr and export
+                gwr = gwr.merge(gwr_all_building_gdf[['EGID', 'ARE_typ', 'sfhmfh_typ', 'arch_typ', 'elec_dem_pGAREA']], on='EGID', how='left')
+                gwr_all_building_df = gwr_all_building_gdf.drop(columns=['geometry', ]).copy()
+
+                # export 
+                gwr.to_parquet(f'{self.sett.preprep_path}/gwr.parquet')
+                gwr.to_csv(f'{self.sett.preprep_path}/gwr.csv', sep=';', index=False)  
+
+                gwr_all_building_df.to_parquet(f'{self.sett.preprep_path}/gwr_all_building_df.parquet')
+                gwr_all_building_df.to_csv(f'{self.sett.preprep_path}/gwr_all_building_df.csv', sep=';', index=False)
+
+                gwr_all_building_gdf.to_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson', driver='GeoJSON')
+
+
+                # transform demand profiles to TS -------------------------------------------------
+                swstore_sfhmfh_ts = swstore_sfhmfh_ts.dropna(subset=['MFH', 'SFH'], how='all')
+                swstore_sfhmfh_ts['t'] = [f't_{i+1}' for i in range(len(swstore_sfhmfh_ts))]
+                swstore_sfhmfh_ts['t_int'] = [i+1 for i in range(len(swstore_sfhmfh_ts))]
+                demandtypes_ts = copy.deepcopy(swstore_sfhmfh_ts)
+
+                # export
+                demandtypes_ts.to_parquet(f'{self.sett.preprep_path}/demandtypes_ts.parquet')
+                demandtypes_ts.to_csv(f'{self.sett.preprep_path}/demandtypes_ts.csv',)
+
 
 
         def preprep_data_import_meteo_data(self):
@@ -1541,80 +1614,51 @@ if __name__ == '__main__':
         DataAggScenario_Settings(
             name_dir_export = 'preprep_debug',
             # kt_numbers = [13, 12, 11], # BL, BS, SO
-            bfs_numbers = [2761, 2768,],
+            bfs_numbers = [
+                2761, 2768,
+                2546,  	 # Grenchen,  	
+                           ],
             year_range = [2022, 2023],
             GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
 
 
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
-            kt_numbers = [13,],
-            year_range = [2022, 2023],
-            GWR_GKLAS = [
-                '1110', '1121', '1122', 
-                '1276', '1278'
-                         ],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BL_22to23_extSolkatEGID_singlehouse',
-            kt_numbers = [13,],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', ],  # '1121'],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
+        #     kt_numbers = [13,],
+        #     year_range = [2022, 2023],
+        #     GWR_GKLAS = [
+        #         '1110', 
+        #         '1121', '1122', 
+        #         '1276', '1278'
+        #                  ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        # ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_BL_22to23_extSolkatEGID_singlehouse',
+        #     kt_numbers = [13,],
+        #     year_range = [2022, 2023],
+        #     GWR_GKLAS = ['1110', ],  # '1121'],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        # ),
 
 
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
-            kt_numbers = [13, 11],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278'],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_singlehouse',
-            kt_numbers = [13, 11],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', ],  # '1121'],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
+        #     kt_numbers = [13, 11],
+        #     year_range = [2022, 2023],
+        #     GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278', ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        # ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_singlehouse',
+        #     kt_numbers = [13, 11],
+        #     year_range = [2022, 2023],
+        #     GWR_GKLAS = ['1110', ],  # '1121'],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        # ),
 
-
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-            kt_numbers = [13, 12, 11],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278'],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),  
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BLBSSO_22to23_extSolkatEGID_singlehouse',
-            kt_numbers = [13, 12, 11],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', ],  # '1121'],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),     
-        
-
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BESOBSBLJU_22to23_extSolkatEGID_aggrfarms',
-            kt_numbers = [2, 11, 12, 13, 26],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278'],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BESOBSBLJU_22to23_extSolkatEGID_singlehouse',
-            kt_numbers = [2, 11, 12, 13, 26],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', ],  # '1121'],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),   
-
-    
         ]
 
     for dataagg_scen in dataagg_scen_list:
