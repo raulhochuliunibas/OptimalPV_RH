@@ -72,7 +72,7 @@ class DataAggScenario_Settings:
                                             # 9 - tourist communes => RURAL
     })
     GWR_SFHMFHtypology: Dict       = field(default_factory=lambda: {
-                                            'SFh': ['1110', ], 
+                                            'SFH': ['1110', ], 
                                             'MFH': ['1121', '1122', '1276', '1278', ],
     })
     GWR_SFHMFH_outsample_proxy:str = 'MFH'
@@ -1391,7 +1391,7 @@ class DataAggScenario:
 
             # DEMAND DATA SOURCE: SwissStore ============================================================
             elif self.sett.DEMAND_input_data_source == "SwissStore" :
-                swstore_sfhmfh_factors  = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/12.swisstore_table12_unige.xlsx', sheet_name='Feuil1')
+                swstore_arch_typ_factors  = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/12.swisstore_table12_unige.xlsx', sheet_name='Feuil1')
                 swstore_sfhmfh_ts       = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx', sheet_name='dmnd_prof_sfh_mfh_avg')
                 gwr                     = pd.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
                 gwr_all_building_gdf    = gpd.read_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson')
@@ -1417,8 +1417,8 @@ class DataAggScenario:
 
                 # build swstore_type to attach swstore factors
                 gwr_all_building_gdf['arch_typ'] = gwr_all_building_gdf['sfhmfh_typ'].str.cat(gwr_all_building_gdf['ARE_typ'], sep='-')
-                gwr_all_building_gdf = gwr_all_building_gdf.merge(swstore_sfhmfh_factors[['arch_typ', 'elec_dem_ind_cecb', ]])
-                gwr_all_building_gdf.rename(columns={'elec_dem_ind_cecb': 'elec_dem_pGAREA'}, inplace=True)
+                gwr_all_building_gdf = gwr_all_building_gdf.merge(swstore_arch_typ_factors[['arch_typ', 'elec_dem_ind_cecb', ]])
+                gwr_all_building_gdf.rename(columns={'elec_dem_ind_cecb': 'demand_elec_dem_pGAREA'}, inplace=True)
 
                 # attach information to gwr and export
                 gwr = gwr.merge(gwr_all_building_gdf[['EGID', 'ARE_typ', 'sfhmfh_typ', 'arch_typ', 'elec_dem_pGAREA']], on='EGID', how='left')
@@ -1443,6 +1443,8 @@ class DataAggScenario:
                 # export
                 demandtypes_ts.to_parquet(f'{self.sett.preprep_path}/demandtypes_ts.parquet')
                 demandtypes_ts.to_csv(f'{self.sett.preprep_path}/demandtypes_ts.csv',)
+                swstore_arch_typ_factors.to_parquet(f'{self.sett.preprep_path}/swstore_arch_typ_factors.parquet')
+                swstore_arch_typ_factors.to_csv(f'{self.sett.preprep_path}/swstore_arch_typ_factors.csv')
 
 
 
@@ -1651,13 +1653,14 @@ if __name__ == '__main__':
         #     GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278', ],
         #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         # ),
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_singlehouse',
-        #     kt_numbers = [13, 11],
-        #     year_range = [2022, 2023],
-        #     GWR_GKLAS = ['1110', ],  # '1121'],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
+
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_singlehouse',
+            kt_numbers = [13, 11],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', ],  # '1121'],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),
 
         ]
 

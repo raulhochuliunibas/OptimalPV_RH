@@ -31,7 +31,7 @@ from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, p
 class PVAllocScenario_Settings:
     # DEFAULT SETTINGS ---------------------------------------------------
     name_dir_export: str                        = 'pvalloc_BL_smallsample'   # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
-    name_dir_import: str                        = 'preprep_BL_22to23_extSolkatEGID_aggrfarms'
+    name_dir_import: str                        = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms'
     show_debug_prints: bool                     = False                    # F: certain print statements are omitted, T: includes print statements that help with debugging
     export_csvs: bool                           = False
     
@@ -40,12 +40,15 @@ class PVAllocScenario_Settings:
                                                     2767,                                                     # for mini / debug model (with subselection for dsonodes_df)
                                                     # 2767, 2771,                                             # BL mini with inst before 2006: Bottmingen, Oberwil
                                                     # 2767, 2771, 2765, 2764,                                 # BLsml with inst before 2008: Bottmingen, Oberwil, Binningen, Biel-Benken
-                                                    # 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,         # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
-                                                    # 2473, 2475, 2480,                                       # SOsml: Dornach, Hochwald, Seewen
+                                                    
+                                                    2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,           # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
+                                                    2473, 2475, 2480,                                         # SOsml: Dornach, Hochwald, Seewen
+                                                    2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,           # SOmed: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren    
 
-                                                    # 2768, 2761, 2772, 2785,                                 # BLsml: Ettingen, Aesch, Pfeffingen, Duggingen; + Laufen for comparison with own PV installation
-                                                    # 2763, 2773, 2775, 2764, 2471, 2481, 2476, 2786,2787,    # BLmed: Arlesheim, Reinach, Therwil, Biel-Benken, Bättwil, Witterswil, Hofstetten-Flüh, Grellingen
-                                                    # 2618, 2621, 2883, 2622, 2616,                           # SOmed: Himmelried, Nunningen, Bretzwil, Zullwil, Fehre
+                                                    2773, 2769, 2770,                    # URBAN: Reinach, Münchenstein, Muttenz
+                                                    2767, 2771, 2775, 2764,              # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
+                                                    2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+
                             ])
     mini_sub_model_TF: bool                     = False
     mini_sub_model_grid_nodes: List[str]        = field(default_factory=lambda: [
@@ -77,6 +80,7 @@ class PVAllocScenario_Settings:
                                                         ])
     
     GWRspec_dwelling_cols: List[str]                    = field(default_factory=list)
+    GWRspec_swstore_demand_cols: List[str]              = field(default_factory=lambda: ['ARE_typ', 'sfhmfh_typ', 'arch_typ', 'elec_dem_pGAREA'])
     GWRspec_DEMAND_proxy: str                           = 'GAREA'
     GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: ['1004'])
     GWRspec_GKLAS: List[str]                            = field(default_factory=lambda: [
@@ -116,7 +120,7 @@ class PVAllocScenario_Settings:
                                                         ])
     
     # tech_economic_specs
-    TECspec_self_consumption_ifapplicable: float            = 1
+    TECspec_self_consumption_ifapplicable: float            = 0
     TECspec_interest_rate: float                            = 0.01
     TECspec_pvtarif_year: int                               = 2022
     TECspec_pvtarif_col: List[str]                          = field(default_factory=lambda: ['energy1', 'eco1'])
@@ -168,7 +172,7 @@ class PVAllocScenario_Settings:
     ALGOspec_while_inst_counter_max: int                        = 5000
     ALGOspec_topo_subdf_partitioner: int                        = 9999999
     ALGOspec_npv_update_groupby_cols_topo_aggdf: List[str]      = field(default_factory=lambda: [
-                                                                    'EGID', 'df_uid', 'grid_node', 'bfs', 'gklas', 'demandtype', 'inst_TF', 'info_source',
+                                                                    'EGID', 'df_uid', 'grid_node', 'bfs', 'GKLAS', 'GAREA', 'sfhmfh_typ', 'demand_arch_typ', 'inst_TF', 'info_source',
                                                                     'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 
                                                                     'NEIGUNG', 'STROMERTRAG'
                                                                 ])
@@ -194,7 +198,7 @@ class PVAllocScenario_Settings:
                                                                     '_window2':{'t': [22, 5], 'demand_share': 0.1},
                                                                     })
     GRIDspec_flat_profile_demand_total_EGID: float              = 4500
-    GRIDspec_flat_profile_demand_type_col: set                  = 'flat'  #alternative: low_DEMANDprox_noHP demand profile from Netflex or Swissstore
+    GRIDspec_flat_profile_demand_type_col: set                  = 'MFH_swstore'  # 'flat' / 'MFH_swstore'
 
     # gridprem_adjustment_specs
     GRIDspec_tier_description: str                              = 'tier_level: (voltage_threshold, gridprem_Rp_kWh)'
@@ -746,12 +750,39 @@ class PVAllocScenario:
 
             # import --------------------
             # gwr_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_gdf.geojson')
-            gwr_all_building_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_all_building_gdf.geojson')
+            gwr_all_building_df = pd.read_parquet(f'{self.sett.name_dir_import_path}/gwr_all_building_df.parquet')
             Map_egid_dsonode = pl.read_parquet(f'{self.sett.name_dir_import_path}/Map_egid_dsonode.parquet')
             with open(f'{self.sett.name_dir_export_path}/topo_egid.json') as f:
                 topo = json.load(f)
 
-            
+            # transformations in sample topo selection BUT in Polars
+            gwr_all_building_df['EGID'] = gwr_all_building_df['EGID'].astype(str)
+            gwr_all_building_df.loc[gwr_all_building_df['GBAUJ'] == '', 'GBAUJ'] = 0  # transform GBAUJ to apply filter and transform back
+            gwr_all_building_df['GBAUJ'] = gwr_all_building_df['GBAUJ'].astype(int)
+            # filtering for self.sett.GWR_specs
+            gwr_all_building_df = gwr_all_building_df.loc[(gwr_all_building_df['GSTAT'].isin(self.sett.GWRspec_GSTAT)) &
+                        # (gwr_all_building_df['GKLAS'].isin(self.sett.GWRspec_GKLAS)) &  => EXCEPTION TO IN SAMPLE SELECTION!
+                        (gwr_all_building_df['GBAUJ'] >= self.sett.GWRspec_GBAUJ_minmax[0]) &
+                        (gwr_all_building_df['GBAUJ'] <= self.sett.GWRspec_GBAUJ_minmax[1])]
+            gwr_all_building_df['GBAUJ'] = gwr_all_building_df['GBAUJ'].astype(str)
+            gwr_all_building_df.loc[gwr_all_building_df['GBAUJ'] == '0', 'GBAUJ'] = ''
+            # because not all buldings have dwelling information, need to remove dwelling columns and rows again (remove duplicates where 1 building had multiple dwellings)
+            gwr_all_building_df.loc[gwr_all_building_df['GAREA'] == '', 'GAREA'] = 0
+            gwr_all_building_df['GAREA'] = gwr_all_building_df['GAREA'].astype(float)
+
+            gwr_all_building_df = pl.from_pandas(gwr_all_building_df)
+
+
+            # clear old subdf files and create dir
+            subdf_path = f'{self.sett.name_dir_export_path}/outtopo_time_subdf'
+
+            if not os.path.exists(subdf_path):
+                os.makedirs(subdf_path)
+            else:
+                old_files = glob.glob(f'{subdf_path}/*')
+                for f in old_files:
+                    os.remove(f)
+
             # create outttopo_df -----------------------
             # create single demand profile for each EGID, not covered in sample  
             if self.sett.GRIDspec_flat_profile_demand_type_col == 'flat':
@@ -808,61 +839,86 @@ class PVAllocScenario:
 
                 notneeded_cols = [col for col in demand_outsample_ts.columns if col not in ['t', 'demand_proxy_out_kW']]
                 demand_outsample_ts = demand_outsample_ts.drop(notneeded_cols)
+  
+                # calculate node usage through out of sample EGIDs
+                egids_topo = list(topo.keys())
+                outtopo_df = gwr_all_building_df.filter(pl.col('EGID').is_in(egids_topo)).clone()
+
+                outtopo_df = outtopo_df.join(Map_egid_dsonode, how='left', on='EGID') 
+
+                # partition the outtopo_df into subdfs because otherwise not readable with enough memory
+                topo_subdf_partitioner = self.sett.ALGOspec_topo_subdf_partitioner
+                
+                # add key for merge             
+                outtopo_df = outtopo_df.with_columns([
+                    pl.lit(1).alias("key_for_merge_1")
+                ])
+                demand_outsample_ts = demand_outsample_ts.with_columns([
+                    pl.lit(1).alias("key_for_merge_1")
+                ])
+
+                # attach demand ts to outtopo_df by subdf
+                egids_outsample = outtopo_df['EGID'].unique().to_list()
+                stepsize = topo_subdf_partitioner if len(egids_outsample) > topo_subdf_partitioner else len(egids_outsample)
+                tranche_counter = 0
+                for i in range(0, len(egids_outsample), stepsize):
+                    tranche_counter += 1
+                    subdf = outtopo_df.filter(pl.col('EGID').is_in(egids_outsample[i:i + stepsize])).clone()
+
+                    # merge proxy demand to gwr EGIDs out of sample
+                    subdf_ts = subdf.join(demand_outsample_ts, how='left', on='key_for_merge_1')
+                    subdf_ts = subdf_ts.drop('key_for_merge_1')
+
+                    # export 
+                    subdf_ts.write_parquet(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.parquet')
+                    # if self.sett.export_csvs:
+                    if (i<2) & self.sett.export_csvs:
+                        subdf_ts.write_csv(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.csv')
+                    checkpoint_to_logfile(f'export outsample subdf_ts {i}to{i+stepsize-1}', self.sett.log_name, 0, self.sett.show_debug_prints)
 
 
             # or call a demand profile from the demandtypes
-            elif not self.sett.GRIDspec_flat_profile_demand_type_col == 'flat': 
-                demandtypes  = pl.read_parquet(f'{self.sett.name_dir_import_path}/demandtypes.parquet')
-                demand_outsample_ts = demandtypes[self.sett.GRIDspec_flat_profile_demand_type_col].copy()
+            elif self.sett.GRIDspec_flat_profile_demand_type_col == 'MFH_swstore': 
 
+                demandtypes_ts  = pl.read_parquet(f'{self.sett.name_dir_import_path}/demandtypes_ts.parquet')
+                demandtypes_unpivot = demandtypes_ts.unpivot(
+                    on = ['SFH', 'MFH', ],
+                    index=['t', 't_int'],  # col that stays unchanged
+                    value_name='demand_profile',  # name of the column that will hold the values
+                    variable_name='sfhmfh_typ'  # name of the column that will hold the original column names
+                )                
 
-            # calculate node usage through out of sample EGIDs
-            egids_topo = list(topo.keys())
-            gwr_all_building_pl = pl.from_pandas(gwr_all_building_gdf.loc[:,gwr_all_building_gdf.columns != 'geometry'].copy())
-            outtopo_df = gwr_all_building_pl.filter(pl.col('EGID').is_in(egids_topo)).clone()
+                # calculate node usage through out of sample EGIDs
+                egids_topo = list(topo.keys())
+                outtopo_df = gwr_all_building_df.filter(pl.col('EGID').is_in(egids_topo)).clone()
+                outtopo_df = outtopo_df.join(Map_egid_dsonode, how='left', on='EGID') 
 
-            outtopo_df = outtopo_df.join(Map_egid_dsonode, how='left', on='EGID') 
-
-            # partition the outtopo_df into subdfs because otherwise not readable with enough memory
-            topo_subdf_partitioner = self.sett.ALGOspec_topo_subdf_partitioner
-            
-            # clear old subdf files and create dir
-            # subdf_path = f'{self.sett.name_dir_export_path}/topo_time_subdf'
-            subdf_path = f'{self.sett.name_dir_export_path}/outtopo_time_subdf'
-
-            if not os.path.exists(subdf_path):
-                os.makedirs(subdf_path)
-            else:
-                old_files = glob.glob(f'{subdf_path}/*')
-                for f in old_files:
-                    os.remove(f)
-            
-            outtopo_df = outtopo_df.with_columns([
-                pl.lit(1).alias("key_for_merge_1")
-            ])
-            demand_outsample_ts = demand_outsample_ts.with_columns([
-                pl.lit(1).alias("key_for_merge_1")
-            ])
-
-
-            egids_outsample = outtopo_df['EGID'].unique().to_list()
-            stepsize = topo_subdf_partitioner if len(egids_outsample) > topo_subdf_partitioner else len(egids_outsample)
-            tranche_counter = 0
-            for i in range(0, len(egids_outsample), stepsize):
-                tranche_counter += 1
-                subdf = outtopo_df.filter(pl.col('EGID').is_in(egids_outsample[i:i + stepsize])).clone()
-
-                # merge proxy demand to gwr EGIDs out of sample
-                subdf_ts = subdf.join(demand_outsample_ts, how='left', on='key_for_merge_1')
-                subdf_ts = subdf_ts.drop('key_for_merge_1')
-
-                # export 
-                subdf_ts.write_parquet(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.parquet')
-                # if self.sett.export_csvs:
-                if (i<2) & self.sett.export_csvs:
-                    subdf_ts.write_csv(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.csv')
-                checkpoint_to_logfile(f'export outsample subdf_ts {i}to{i+stepsize-1}', self.sett.log_name, 0, self.sett.show_debug_prints)
+                # partition the outtopo_df into subdfs because otherwise not readable with enough memory
+                topo_subdf_partitioner = self.sett.ALGOspec_topo_subdf_partitioner
                 
+                # attach demand ts to outtopo_df by subdf
+                egids_outsample = outtopo_df['EGID'].unique().to_list()
+                stepsize = topo_subdf_partitioner if len(egids_outsample) > topo_subdf_partitioner else len(egids_outsample)
+                tranche_counter = 0
+                for i in range(0, len(egids_outsample), stepsize):
+                    tranche_counter += 1
+                    subdf = outtopo_df.filter(pl.col('EGID').is_in(egids_outsample[i:i + stepsize])).clone()
+
+                    # merge demand profile by SFHMFH and scale by GAREA
+                    if 'elec_dem_pGAREA' in subdf.columns:
+                        subdf= subdf.rename({"elec_dem_pGAREA": "demand_elec_dem_pGAREA"})
+                    subdf_ts = subdf.join(demandtypes_unpivot, on='sfhmfh_typ', how='left') 
+                    subdf_ts = subdf_ts.with_columns([
+                        (pl.col("demand_elec_dem_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") / 1000).alias("demand_proxy_out_kW")  # convert to kW
+                    ])
+
+                    # export 
+                    subdf_ts.write_parquet(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.parquet')
+                    # if self.sett.export_csvs:
+                    if (i<2) & self.sett.export_csvs:
+                        subdf_ts.write_csv(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.csv')
+                    checkpoint_to_logfile(f'export outsample subdf_ts {i}to{i+stepsize-1}', self.sett.log_name, 0, self.sett.show_debug_prints)
+
 
         def initial_sml_get_DSO_nodes_df_AND_ts(self,):
             """
@@ -1172,12 +1228,15 @@ class PVAllocScenario:
                 gwr['GBAUJ'] = gwr['GBAUJ'].astype(str)
                 gwr.loc[gwr['GBAUJ'] == '0', 'GBAUJ'] = ''
                 # because not all buldings have dwelling information, need to remove dwelling columns and rows again (remove duplicates where 1 building had multiple dwellings)
+                gwr.loc[gwr['GAREA'] == '', 'GAREA'] = 0
+                gwr['GAREA'] = gwr['GAREA'].astype(float)
+
                 if self.sett.GWRspec_dwelling_cols == []:
-                    gwr = copy.deepcopy(gwr.loc[:, self.sett.GWRspec_building_cols])
+                    gwr = copy.deepcopy(gwr.loc[:, self.sett.GWRspec_building_cols + self.sett.GWRspec_swstore_demand_cols])
                     gwr = gwr.drop_duplicates(subset=['EGID'])
                 gwr = gwr.loc[gwr['GGDENR'].isin(self.sett.bfs_numbers)]
                 gwr = copy.deepcopy(gwr)
-
+                
 
                 # SOLKAT -------
                 solkat = pd.read_parquet(f'{self.sett.name_dir_import_path}/solkat.parquet')
@@ -1265,16 +1324,6 @@ class PVAllocScenario:
                 Map_egid_pv = Map_egid_pv.dropna()
                 Map_egid_pv['EGID'] = Map_egid_pv['EGID'].astype(int).astype(str)
                 Map_egid_pv['xtf_id'] = Map_egid_pv['xtf_id'].fillna('').astype(int).astype(str)
-
-
-                # Map demandtypes > egid -------
-                with open(f'{self.sett.name_dir_import_path}/Map_demandtype_EGID.json', 'r') as file:
-                    Map_demandtypes_egid = json.load(file)
-
-
-                # Map egid > demandtypes -------
-                with open(f'{self.sett.name_dir_import_path}/Map_EGID_demandtypes.json', 'r') as file:
-                    Map_egid_demandtypes = json.load(file)
 
 
                 # Map egid > node -------
@@ -1455,14 +1504,6 @@ class PVAllocScenario:
                     checkpoint_to_logfile(f'egid {egid} not in solkat', self.sett.log_name, 0, self.sett.show_debug_prints)
 
 
-                # add demand type --------
-                if egid in Map_egid_demandtypes.keys():
-                    demand_type = Map_egid_demandtypes[egid]
-                elif egid not in Map_egid_demandtypes.keys():
-                    print_to_logfile(f'\n ** ERROR ** EGID {egid} not in Map_egid_demandtypes, but must be because Map file is based on GWR', self.sett.log_name)
-                    demand_type = 'NA'
-                    CHECK_egid_with_problems.append((egid, 'not in Map_egid_demandtypes (both based on GWR)'))
-
                 # add pvtarif --------
                 bfs_of_egid = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0]
                 pvtarif_egid = sum([pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), col].sum() for col in pvtarif_col])
@@ -1523,12 +1564,19 @@ class PVAllocScenario:
 
 
                     # add GWR --------
-                    bfs_of_egid = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0] 
-                    glkas_of_egid = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GKLAS')][0]
                     gwr_info ={
-                        'bfs': bfs_of_egid,
-                        'gklas': glkas_of_egid,
+                        'bfs':        gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0],
+                        'gklas':      gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GKLAS')][0],
+                        'garea':      gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GAREA')][0],
+                        'are_typ':    gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('ARE_typ')][0],
+                        'sfhmfh_typ': gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('sfhmfh_typ')][0],
                     }
+                    
+
+                    # add demand type --------
+                    demand_arch_typ         = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('arch_typ')][0]
+                    demand_elec_dem_pGAREA  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('elec_dem_pGAREA')][0]
+
 
                     # add grid node --------
                     if isinstance(Map_egid_dsonode.loc[egid, 'grid_node'], str):
@@ -1544,7 +1592,8 @@ class PVAllocScenario:
                     'grid_node': grid_node,
                     'pv_inst': pv_inst,
                     'solkat_partitions': solkat_partitions, 
-                    'demand_type': demand_type,
+                    'demand_arch_typ': demand_arch_typ,
+                    'demand_elec_dem_pGAREA': demand_elec_dem_pGAREA,
                     'pvtarif_Rp_kWh': pvtarif_egid, 
                     'EWR': ewr_info, 
                     'elecpri_Rp_kWh': elecpri_egid,
@@ -1648,10 +1697,7 @@ class PVAllocScenario:
 
 
             # IMPORT ----------------------------------------------------------------------------
-
-            # demand types --------
-            demandtypes_tformat = pd.read_parquet(f'{self.sett.name_dir_import_path}/demandtypes.parquet')
-            demandtypes_ts = demandtypes_tformat.copy()
+            demandtypes_ts = pd.read_parquet(f'{self.sett.name_dir_import_path}/demandtypes_ts.parquet')
 
             nas =   sum([demandtypes_ts[col].isna().sum() for col in demandtypes_ts.columns])
             nulls = sum([demandtypes_ts[col].isnull().sum() for col in demandtypes_ts.columns])
@@ -1932,7 +1978,7 @@ class PVAllocScenario:
                         row_bfs['key'], row_bfs['descr'], row_bfs['val'] = 'BFS', 'municipality identifier ID', topo.get(egid).get('gwr_info').get('bfs')
                         row_gklas['key'], row_gklas['descr'], row_gklas['val'] = 'GKLAS', 'building type classification', topo.get(egid).get('gwr_info').get('gklas')
                         row_node['key'], row_node['descr'], row_node['val'] = 'node', 'grid node identifier (artificial)', topo.get(egid).get('node')
-                        row_demand_type['key'], row_demand_type['descr'], row_demand_type['val'] = 'demand_type', 'type of artifical demand profile (Netflex, maybe CKW later)', topo.get(egid).get('demand_type')
+                        row_demand_type['key'], row_demand_type['descr'], row_demand_type['val'] = 'demand_arch_typ', 'type of artifical demand profile (Netflex, maybe CKW later)', topo.get(egid).get('demand_arch_typ')
 
                         # row_pvinst_info, row_pvinst_BeginOp, row_pvinst_TotalPower = get_new_row(), get_new_row(), get_new_row() 
                         row_pvinst_info['key'], row_pvinst_info['descr'], row_pvinst_info['val'] = 'pv_inst > info_source', 'Origin behind pv inst on house (real data or model alloc)', topo.get(egid).get('pv_inst').get('info_source')
@@ -2321,8 +2367,11 @@ class PVAllocScenario:
                         'EGID': k,
                         'df_uid': k_p,
                         'bfs': gwr_info.get('bfs'),
-                        'gklas': gwr_info.get('gklas'),
-                        'demandtype': v.get('demand_type'),
+                        'GKLAS': gwr_info.get('gklas'),
+                        'GAREA': gwr_info.get('garea'),
+                        'sfhmfh_typ': gwr_info.get('sfhmfh_typ'),
+                        'demand_arch_typ': v.get('demand_arch_typ'),
+                        'demand_elec_dem_pGAREA': v.get('demand_elec_dem_pGAREA'),
                         'grid_node': v.get('grid_node'),
 
                         'inst_TF': pv_inst.get('inst_TF'),
@@ -2522,21 +2571,17 @@ class PVAllocScenario:
                         ])
                         
 
-                    # attach demand profiles ----------
-                    demandtypes_names = [c for c in demandtypes_ts.columns if 'DEMANDprox' in c]
-                    # demandtypes_melt = demandtypes_ts.melt(id_vars='t', value_vars=demandtypes_names, variable_name='demandtype', value_name='demand')
-                    demandtypes_melt = demandtypes_ts.unpivot(
-                        on = demandtypes_names,
-                        index='t',  # The column that stays unchanged
-                        value_name='demand',  # Name of the column that will hold the values
-                        variable_name='demandtype'  # Name of the column that will hold the original column names
+                    # attach / calculatedemand profiles ----------
+                    demandtypes_unpivot = demandtypes_ts.unpivot(
+                        on = ['SFH', 'MFH', ],
+                        index=['t', 't_int'],  # col that stays unchanged
+                        value_name='demand_profile',  # name of the column that will hold the values
+                        variable_name='sfhmfh_typ'  # name of the column that will hold the original column names
                     )
-                    demandtypes_melt = demandtypes_melt.with_columns(
-                        pl.col('t').cast(pl.Utf8)
-                    )  
-                    subdf = subdf.join(demandtypes_melt, on=["t", "demandtype"], how="left")
-                    subdf = subdf.rename({"demand": "demand_kW"})
-                    # checkpoint_to_logfile(f'  end merge demandtypes for subdf {i} to {i+stepsize-1}', self.sett.log_name, 0)
+                    subdf = subdf.join(demandtypes_unpivot, on=['t', 'sfhmfh_typ'], how="left")
+                    subdf = subdf.with_columns([
+                        (pl.col("demand_elec_dem_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") / 1000).alias("demand_kW")  # convert to kW
+                    ])
 
 
                     # attach FLAECH_angletilt, might be usefull for later calculations
@@ -2712,6 +2757,7 @@ class PVAllocScenario:
                 subdf.write_parquet(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.parquet')
                 if self.sett.export_csvs:
                     subdf.write_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv')
+
                 if (i == 0) & self.sett.export_csvs:
                     subdf.write_csv(f'{subdf_path}/topo_subdf_{i}to{i+stepsize-1}.csv' )
                 checkpoint_to_logfile(f'end merge to topo_time_subdf (tranche {tranche_counter}/{len(range(0, len(egids), stepsize))}, size {stepsize})', self.sett.log_name, 0)
@@ -2766,11 +2812,11 @@ class PVAllocScenario:
             # if pvalloc_settings['recalc_economics_topo_df']:
             topo = topo
 
-            egid_list, df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list  = [], [], [], [], [], []
+            egid_list, df_uid_list, bfs_list, gklas_list, demand_arch_typ_list, grid_node_list  = [], [], [], [], [], []
             inst_list, info_source_list, pvdf_totalpower_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], [], []
             flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_list = [], [], [], [], []
 
-            keys = list(topo.keys())
+            k,v = list(topo.items())[0]
 
             for k,v in topo.items():
                 # if k in no_pv_egid:
@@ -2783,7 +2829,7 @@ class PVAllocScenario:
                     df_uid_list.append(k_p)
                     bfs_list.append(v.get('gwr_info').get('bfs'))
                     gklas_list.append(v.get('gwr_info').get('gklas'))
-                    demandtype_list.append(v.get('demand_type'))
+                    demand_arch_typ_list.append(v.get('demand_arch_typ'))
                     grid_node_list.append(v.get('grid_node'))
 
                     inst_list.append(v.get('pv_inst').get('inst_TF'))
@@ -2800,7 +2846,7 @@ class PVAllocScenario:
                         
                 
             topo_df = pd.DataFrame({'EGID': egid_list, 'df_uid': df_uid_list, 'bfs': bfs_list,
-                                    'gklas': gklas_list, 'demandtype': demandtype_list, 'grid_node': grid_node_list,
+                                    'gklas': gklas_list, 'demand_arch_typ': demand_arch_typ_list, 'grid_node': grid_node_list,
 
                                     'inst_TF': inst_list, 'info_source': info_source_list, 'pvid': pvid_list,
                                     'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list, 'TotalPower': pvdf_totalpower_list,
@@ -3548,8 +3594,8 @@ class PVAllocScenario:
 
                     checkpoint_to_logfile('npv > subdf: start groupgy agg_subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                     
-                    group_cols = self.sett.ALGOspec_npv_update_groupby_cols_topo_aggdf
-                    agg_map = self.sett.ALGOspec_npv_update_agg_cols_topo_aggdf
+                    group_cols  = self.sett.ALGOspec_npv_update_groupby_cols_topo_aggdf
+                    agg_map     = self.sett.ALGOspec_npv_update_agg_cols_topo_aggdf
                     agg_exprs = [
                         getattr(pl.col(col), agg_func)().alias(f"{col}")
                         for col, agg_func in agg_map.items()
@@ -3579,8 +3625,9 @@ class PVAllocScenario:
                                     "df_uid_combo": combo_str,
                                     "n_df_uid": len(combo),
                                     "bfs": combo_df[0, "bfs"],
-                                    "gklas": combo_df[0, "gklas"],
-                                    "demandtype": combo_df[0, "demandtype"],
+                                    "GKLAS": combo_df[0, "GKLAS"],
+                                    "GAREA": combo_df[0, "GAREA"],
+                                    "demand_arch_typ": combo_df[0, "demand_arch_typ"],
                                     "grid_node": combo_df[0, "grid_node"],
                                     "inst_TF": combo_df[0, "inst_TF"],
                                     "info_source": combo_df[0, "info_source"],
@@ -4103,8 +4150,8 @@ class PVAllocScenario:
 if __name__ == '__main__':
     pvalloc_scen_list = [
         PVAllocScenario_Settings(
-                name_dir_export    = 'pvalloc_mini_2m_2mc_rnd',
-                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
+                name_dir_export    = 'pvalloc_mini_rnd',
+                name_dir_import    = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
                 show_debug_prints                                    = True,
                 export_csvs                                          = True,
                 mini_sub_model_TF                                    = True,
@@ -4113,7 +4160,7 @@ if __name__ == '__main__':
                 test_faster_array_computation                        = True,
                 # overwrite_scen_init                                  = False,
                 T0_year_prediction                                   = 2021,
-                months_prediction                                    = 60,
+                months_prediction                                    = 24,
                 CSTRspec_iter_time_unit                              = 'year',
                 CSTRspec_ann_capacity_growth                         = 0.15,
                 # CSTRspec_target_capacity_growth
@@ -4129,32 +4176,32 @@ if __name__ == '__main__':
                 TECspec_pvprod_calc_method                           = 'method2.2',
                 # MCspec_montecarlo_iterations_fordev_sequentially    = 2,
         ),
-        PVAllocScenario_Settings(
-                name_dir_export    = 'pvalloc_mini_2m_2mc_npv',
-                name_dir_import    = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
-                show_debug_prints                                    = True,
-                export_csvs                                          = True,
-                mini_sub_model_TF                                    = True,
-                mini_sub_model_nEGIDs                                = 100, 
-                create_gdf_export_of_topology                        = False, 
-                test_faster_array_computation                        = True,
-                # overwrite_scen_init                                  = False,
-                T0_year_prediction                                   = 2021,
-                months_prediction                                    = 60,
-                CSTRspec_iter_time_unit                              = 'year',
-                CSTRspec_ann_capacity_growth                         = 0.2,
-                CHECKspec_n_iterations_before_sanitycheck            = 2,
-                ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-                ALGOspec_topo_subdf_partitioner                      = 250, 
-                # ALGOspec_inst_selection_method                       = 'random', 
-                ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-                ALGOspec_rand_seed                                   = 123,
-                # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
-                ALGOspec_subselec_filter_criteria                    = None,
-                ALGOspec_subselec_filter_area_perc_first             = 0.5,
-                TECspec_pvprod_calc_method                           = 'method2.2',
-                # MCspec_montecarlo_iterations_fordev_sequentially    = 2,
-        ),
+        # PVAllocScenario_Settings(
+        #         name_dir_export    = 'pvalloc_mini_2m_2mc_npv',
+        #         name_dir_import    = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
+        #         show_debug_prints                                    = True,
+        #         export_csvs                                          = True,
+        #         mini_sub_model_TF                                    = True,
+        #         mini_sub_model_nEGIDs                                = 100, 
+        #         create_gdf_export_of_topology                        = False, 
+        #         test_faster_array_computation                        = True,
+        #         # overwrite_scen_init                                  = False,
+        #         T0_year_prediction                                   = 2021,
+        #         months_prediction                                    = 60,
+        #         CSTRspec_iter_time_unit                              = 'year',
+        #         CSTRspec_ann_capacity_growth                         = 0.2,
+        #         CHECKspec_n_iterations_before_sanitycheck            = 2,
+        #         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        #         ALGOspec_topo_subdf_partitioner                      = 250, 
+        #         # ALGOspec_inst_selection_method                       = 'random', 
+        #         ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        #         ALGOspec_rand_seed                                   = 123,
+        #         # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
+        #         ALGOspec_subselec_filter_criteria                    = None,
+        #         ALGOspec_subselec_filter_area_perc_first             = 0.5,
+        #         TECspec_pvprod_calc_method                           = 'method2.2',
+        #         # MCspec_montecarlo_iterations_fordev_sequentially    = 2,
+        # ),
         ]
 
     for pvalloc_scen in pvalloc_scen_list:
