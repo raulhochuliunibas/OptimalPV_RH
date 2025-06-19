@@ -11,14 +11,13 @@ pvalloc_scen_list = [
     # SCENARIOS 2A: test2 scens with SINGLE HOUSING BUILDINGS
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2a_southfacing_rnd',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        # bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        name_dir_export                 = 'pvalloc_URB_test2a_southfacing_rnd',
+        bfs_numbers                     = [2773, 2769, 2770,                    # URBAN: Reinach, Münchenstein, Muttenz
+                                        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
         overwrite_scen_init             = False,
-        GWRspec_GKLAS                               = ['1110', ],
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
         ALGOspec_rand_seed                          = 123,

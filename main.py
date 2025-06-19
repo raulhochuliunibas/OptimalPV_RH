@@ -5,25 +5,11 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 
 pvalloc_scen_list = [
 
-    # PVAllocScenario_Settings(
-    #     name_dir_export ='pvalloc_mini_BYYEAR_max',
-    #     mini_sub_model_TF                                    = True,
-    #     mini_sub_model_nEGIDs                                = 100,
-    #     test_faster_array_computation                        = True,
-    #     create_gdf_export_of_topology                        = True,
-    #     T0_year_prediction                                   = 2021,
-    #     months_prediction                                    = 48,
-    #     CSTRspec_iter_time_unit                              = 'year',
-    #     CSTRspec_ann_capacity_growth                         = 0.2,
-    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-    #     ALGOspec_topo_subdf_partitioner                      = 250, 
-    #     ALGOspec_inst_selection_method                       = 'max_npv', 
-    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-    #     ALGOspec_rand_seed                                   = 123,
-    #     # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-    # ),    
     PVAllocScenario_Settings(
-        name_dir_export ='pvalloc_mini_BYYEAR_EASTWEST_max',
+        name_dir_export ='pvalloc_mini_aggr_URB_southf_rnd',
+        bfs_numbers                                          = [
+                                                                2773, 2769, 2770,   # URBAN: Reinach, Münchenstein, Muttenz
+                                                                ],          
         mini_sub_model_TF                                    = True,
         mini_sub_model_nEGIDs                                = 100,
         test_faster_array_computation                        = True,
@@ -37,8 +23,30 @@ pvalloc_scen_list = [
         ALGOspec_inst_selection_method                       = 'random', 
         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
         ALGOspec_rand_seed                                   = 123,
-        ALGOspec_subselec_filter_criteria = 'eastwestfacing_3spec', 
+        ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ),   
+
+    PVAllocScenario_Settings(
+        name_dir_export ='pvalloc_mini_aggr_RUR_southf_rnd',
+        bfs_numbers                                          = [
+                                                                2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                                                ],          
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_nEGIDs                                = 100,
+        test_faster_array_computation                        = True,
+        create_gdf_export_of_topology                        = True,
+        T0_year_prediction                                   = 2021,
+        months_prediction                                    = 48,
+        CSTRspec_iter_time_unit                              = 'year',
+        CSTRspec_ann_capacity_growth                         = 0.2,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'random', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ), 
+
 
 ]
 
@@ -49,9 +57,7 @@ visualization_list = [
             #     '*old_vers*', 
             #     ], 
             pvalloc_include_pattern_list = [
-                # '*pvalloc_mini_BYYEAR*',
-                # '*test2*',
-                'pvalloc_mini_BYYEAR*max', 
+                'pvalloc_mini_aggr_*_southf_rnd'
             ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  

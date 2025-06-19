@@ -9,14 +9,15 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 pvalloc_scen_list = [
 
     # SCENARIOS 2C: test2 scens with MULTIPLE HOUSING BUILDINGS + AGGRICULTURAL BUILDINGS
+
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_BLsml_test2c_default_rnd',
-        name_dir_import                 = 'preprep_BLBSSO_22to23_extSolkatEGID_aggrfarms',
-        # bfs_numbers                     = [2767, 2771, 2765, 2764,  ], 
+        name_dir_export                 = 'pvalloc_RUR_test2c_default_rnd',
+        bfs_numbers                     = [2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                        ], 
         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
-        GWRspec_GKLAS                               = ['1110', '1121', '1122', '1276', '1278',  ],
+        overwrite_scen_init             = False,
         CHECKspec_n_iterations_before_sanitycheck   = 2,
         ALGOspec_inst_selection_method              = 'random', 
         ALGOspec_rand_seed                          = 123,
@@ -26,7 +27,6 @@ pvalloc_scen_list = [
 
         ALGOspec_subselec_filter_criteria = None, 
         ),
-
 ]
 
 
