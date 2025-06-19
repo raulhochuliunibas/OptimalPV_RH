@@ -3388,7 +3388,7 @@ if __name__ == '__main__':
             # # "plot_ind_line_gridPremiumHOY_per_node",          # runs
             # # "plot_ind_line_gridPremium_structure",            # runs
             # "plot_ind_lineband_contcharact_newinst",          # status not noted
-            # "plot_ind_map_topo_egid",                         # runs as intended
+            "plot_ind_map_topo_egid",                         # runs as intended
             # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
             # # "plot_ind_map_node_connections"                   # status not noted        
     

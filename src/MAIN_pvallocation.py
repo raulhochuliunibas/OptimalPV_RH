@@ -93,8 +93,8 @@ class PVAllocScenario_Settings:
                                                                 '1110', # GKLAS - 1110: only 1 living space per building
                                                                 '1121', # GKLAS - 1121: Double-, row houses with each appartment (living unit) having it's own roof;
                                                                 '1122', # GKLAS - 1122: Buildings with three or more appartments
-                                                                '1276', # GKLAS - 1276: structure for animal keeping (most likely still one owner)
-                                                                '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
+                                                                # '1276', # GKLAS - 1276: structure for animal keeping (most likely still one owner)
+                                                                # '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
                                                                 ])
     GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2021])           
     
@@ -198,7 +198,6 @@ class PVAllocScenario_Settings:
     ALGOspec_tweak_gridnode_df_prod_demand_fact: float          = 1
     ALGOspec_constr_capa_overshoot_fact: float                  = 1
     ALGOspec_subselec_filter_criteria: str                      = None  #'eastwestfacing_3spec':'southfacing_1spec'
-    ALGOspec_subselec_filter_area_perc_first: float             = 0.5
 
 
     # dsonodes_ts_specs
@@ -4182,7 +4181,6 @@ if __name__ == '__main__':
                 ALGOspec_rand_seed                                   = 123,
                 # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
                 ALGOspec_subselec_filter_criteria                    = None,
-                ALGOspec_subselec_filter_area_perc_first             = 0.5,
                 TECspec_pvprod_calc_method                           = 'method2.2',
                 # MCspec_montecarlo_iterations_fordev_sequentially    = 2,
         ),
@@ -4208,7 +4206,6 @@ if __name__ == '__main__':
         #         ALGOspec_rand_seed                                   = 123,
         #         # CSTRspec_constr_capa_overshoot_fact                  = 0.75,
         #         ALGOspec_subselec_filter_criteria                    = None,
-        #         ALGOspec_subselec_filter_area_perc_first             = 0.5,
         #         TECspec_pvprod_calc_method                           = 'method2.2',
         #         # MCspec_montecarlo_iterations_fordev_sequentially    = 2,
         # ),
