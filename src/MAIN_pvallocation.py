@@ -80,16 +80,25 @@ class PVAllocScenario_Settings:
                                                         ])
     
     GWRspec_dwelling_cols: List[str]                    = field(default_factory=list)
-    GWRspec_swstore_demand_cols: List[str]              = field(default_factory=lambda: ['ARE_typ', 'sfhmfh_typ', 'arch_typ', 'elec_dem_pGAREA'])
+    GWRspec_swstore_demand_cols: List[str]              = field(default_factory=lambda: ['ARE_typ', 'sfhmfh_typ', 'arch_typ', 'demand_elec_pGAREA'])
     GWRspec_DEMAND_proxy: str                           = 'GAREA'
-    GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: ['1004'])
+    # gwr topo_egid selection
+    GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: [
+                                                                '1001', # GSTAT - 1001: in planing
+                                                                '1002', # GSTAT - 1002: construction right granted 
+                                                                '1003', # GSTAT - 1003: in construction
+                                                                '1004', # GSTAT - 1004: fully constructed, existing buildings
+                                                                ])    
     GWRspec_GKLAS: List[str]                            = field(default_factory=lambda: [
-                                                                                        '1110',                 # 1110: Gebäude mit einer Wohnung, diese Klasse umfasst:// - Einzelhäuser wie Bungalows, Villen, Chalets, Forsthäuser, Bauernhäuser, Landhäuser usw.// - Doppel- und Reihenhäuser, wobei jede Wohnung ein eigenes Dach und einen eigenen ebenerdigen Eingang hat
-                                                                                        '1121', '1122',         # 1121: Gebäude mit zwei Wohnungen, diese Klasse umfasst:// - Einzel-, Doppel- oder Reihenhäuser mit zwei Wohnungen
-                                                                                        # '1276', '1278'          # 1122: Gebäude mit mehreren Wohnungen,         
-                                                                                        ])                      # 1276, 1278: Aggrikulture Gebäude
+                                                                '1110', # GKLAS - 1110: only 1 living space per building
+                                                                '1121', # GKLAS - 1121: Double-, row houses with each appartment (living unit) having it's own roof;
+                                                                '1122', # GKLAS - 1122: Buildings with three or more appartments
+                                                                '1276', # GKLAS - 1276: structure for animal keeping (most likely still one owner)
+                                                                '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
+                                                                ])
     GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2021])           
     
+
     # weather_specs
     WEAspec_meteo_col_dir_radiation: str                = 'Basel Direct Shortwave Radiation'
     WEAspec_meteo_col_diff_radiation: str               = 'Basel Diffuse Shortwave Radiation'
@@ -308,6 +317,7 @@ class PVAllocScenario:
         self.initial_sml_HOY_weatheryear_df()
         self.initial_sml_get_DSO_nodes_df_AND_ts()
         self.initial_sml_iterpolate_instcost_function()
+        self.overwrite_gwr_for_demand_calc()
 
         if self.sett.recreate_topology:
             subchapter_to_logfile('initialization: IMPORT PREPREP DATA & CREATE (building) TOPOLOGY', self.sett.log_name)
@@ -906,10 +916,10 @@ class PVAllocScenario:
 
                     # merge demand profile by SFHMFH and scale by GAREA
                     if 'elec_dem_pGAREA' in subdf.columns:
-                        subdf= subdf.rename({"elec_dem_pGAREA": "demand_elec_dem_pGAREA"})
+                        subdf= subdf.rename({"elec_dem_pGAREA": "demand_elec_pGAREA"})
                     subdf_ts = subdf.join(demandtypes_unpivot, on='sfhmfh_typ', how='left') 
                     subdf_ts = subdf_ts.with_columns([
-                        (pl.col("demand_elec_dem_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") / 1000).alias("demand_proxy_out_kW")  # convert to kW
+                        (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") ).alias("demand_proxy_out_kW")  # convert to kW
                     ])
 
                     # export 
@@ -1575,7 +1585,7 @@ class PVAllocScenario:
 
                     # add demand type --------
                     demand_arch_typ         = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('arch_typ')][0]
-                    demand_elec_dem_pGAREA  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('elec_dem_pGAREA')][0]
+                    demand_elec_pGAREA  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('demand_elec_pGAREA')][0]
 
 
                     # add grid node --------
@@ -1593,7 +1603,7 @@ class PVAllocScenario:
                     'pv_inst': pv_inst,
                     'solkat_partitions': solkat_partitions, 
                     'demand_arch_typ': demand_arch_typ,
-                    'demand_elec_dem_pGAREA': demand_elec_dem_pGAREA,
+                    'demand_elec_pGAREA': demand_elec_pGAREA,
                     'pvtarif_Rp_kWh': pvtarif_egid, 
                     'EWR': ewr_info, 
                     'elecpri_Rp_kWh': elecpri_egid,
@@ -2371,7 +2381,7 @@ class PVAllocScenario:
                         'GAREA': gwr_info.get('garea'),
                         'sfhmfh_typ': gwr_info.get('sfhmfh_typ'),
                         'demand_arch_typ': v.get('demand_arch_typ'),
-                        'demand_elec_dem_pGAREA': v.get('demand_elec_dem_pGAREA'),
+                        'demand_elec_pGAREA': v.get('demand_elec_pGAREA'),
                         'grid_node': v.get('grid_node'),
 
                         'inst_TF': pv_inst.get('inst_TF'),
@@ -2580,7 +2590,7 @@ class PVAllocScenario:
                     )
                     subdf = subdf.join(demandtypes_unpivot, on=['t', 'sfhmfh_typ'], how="left")
                     subdf = subdf.with_columns([
-                        (pl.col("demand_elec_dem_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") / 1000).alias("demand_kW")  # convert to kW
+                        (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") ).alias("demand_kW")  # convert to kW
                     ])
 
 

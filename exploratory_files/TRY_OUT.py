@@ -24,7 +24,7 @@ name_dir_import = 'preprep_BLSO_22to23_1and2homes'
 
 
 # CONVERT parquet to csv
-if True:
+if False:
 
     pq_path = r"C:\Users\hocrau00\Downloads\npv_df_13.parquet"
     file_name = pq_path.split('\\')[-1].split('.parquet')[0]
@@ -37,6 +37,31 @@ if True:
     # df = df.head(8760 * 40)
     df.to_csv(f'{csv_path}/{file_name}.csv')
     print(f'exported {file_name}.csv')
+
+
+# ------------------------------------------------------------------------------------------------------
+if True:
+    gwr_all_building_df = pd.read_parquet("C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_22to23_extSolkatEGID_aggrfarms\gwr_all_building_df.parquet")
+    gwr_all_building_df.dtypes
+
+    no_GAREA = gwr_all_building_df.loc[gwr_all_building_df['GAREA'] == '']
+    no_GEBF = gwr_all_building_df.loc[gwr_all_building_df['GEBF'] == '']
+
+    gwr_all_building_df.loc[gwr_all_building_df['GAREA'] == '', 'GAREA'] = 0
+    gwr_all_building_df['GAREA'] = gwr_all_building_df['GAREA'].astype(float)
+
+    gwr_all_building_df['GEBF'].value_counts()
+    no_GAREA['GKLAS'].value_counts()
+    no_GAREA['GSTAT'].value_counts()
+    no_GEBF['GKLAS'].value_counts()
+    no_GEBF['GSTAT'].value_counts()
+
+    gwr_agg = gwr_all_building_df.groupby('arch_typ')['GAREA'].agg(
+        mean_GAREA='mean',   # Calculate the mean
+        median_GAREA='median',  # Calculate the median
+        sum_GAREA='sum'      # Calculate the sum
+    ).reset_index()    
+    gwr_agg.to_csv(f'{data_path}/preprep_BLSO_22to23_extSolkatEGID_aggrfarms__gwr_all_building_df_GAREA_mean.csv', index=False)
 
 
 

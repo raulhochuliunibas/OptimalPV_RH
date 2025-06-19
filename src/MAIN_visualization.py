@@ -90,6 +90,8 @@ class Visual_Settings:
         'gwr_code_name_tuples_GKLAS': [
             ('1110', 'Bldg. w one flat (incl double, row houses, w indiv roofs)'),
             ('1121', 'Bldg. w two flat (incl double, row houses, w 2 flats'),
+            ('1122', 'Bldg. w three flat (incl double, row houses, w 3 flats)'),
+            # ('1274', 'look up meaning'),
             ('1276', 'Bldg. for animal shelter'), ],
         'gwr_code_name_tuples_GSTAT': [
             ('1004', 'Existing bldg.'),], 
@@ -369,20 +371,144 @@ class Visualization:
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
-                    # total kWh by demandtypes ------------------------
-                    demandtypes = pd.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/demandtypes.parquet')
-                    
-                    demandtypes_names = [col for col in demandtypes.columns if 't' not in col]
-                    totaldemand_kWh = [demandtypes[type].sum() for type in demandtypes_names]
-                    
-                    fig = go.Figure()
-                    fig.add_trace(go.Bar(x=demandtypes_names, y=totaldemand_kWh, name='Total Demand [kWh]'))
-                    fig.update_layout(
-                        xaxis_title='Demand Type',
-                        yaxis_title='Total Demand [kWh], 1 year',
-                        title = f'Total Demand per Demand Type (scen: {scen})'
+                    # import 
+                    topo                     = json.load(open(f'{self.visual_sett.data_path}/pvalloc/{scen}/sanity_check_byEGID/topo_egid.json', 'r'))
+                    swstore_arch_typ_factors = pl.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/swstore_arch_typ_factors.parquet')                    
+                    demandtypes_ts           = pl.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/demandtypes_ts.parquet')
+
+                    # compute topo_df
+                    rows = []
+
+                    for k,v in topo.items():
+
+                        partitions = v.get('solkat_partitions', {})
+                        gwr_info = v.get('gwr_info', {})
+                        pv_inst = v.get('pv_inst', {})
+
+                        for k_p, v_p in partitions.items():
+                            row = {
+                                'EGID': k,
+                                'df_uid': k_p,
+                                'bfs': gwr_info.get('bfs'),
+                                'GKLAS': gwr_info.get('gklas'),
+                                'GAREA': gwr_info.get('garea'),
+                                'sfhmfh_typ': gwr_info.get('sfhmfh_typ'),
+                                'demand_arch_typ': v.get('demand_arch_typ'),
+                                'demand_elec_dem_pGAREA': v.get('demand_elec_dem_pGAREA'),
+                                'grid_node': v.get('grid_node'),
+
+                                'inst_TF': pv_inst.get('inst_TF'),
+                                'info_source': pv_inst.get('info_source'),
+                                'pvid': pv_inst.get('xtf_id'),
+                                'pv_tarif_Rp_kWh': v.get('pvtarif_Rp_kWh'),
+                                'TotalPower': pv_inst.get('TotalPower'),
+                                'df_uid_w_inst': v.get('df_uid_w_inst'),
+
+                                'FLAECHE': v_p.get('FLAECHE'),
+                                'AUSRICHTUNG': v_p.get('AUSRICHTUNG'),
+                                'STROMERTRAG': v_p.get('STROMERTRAG'),
+                                'NEIGUNG': v_p.get('NEIGUNG'),
+                                'MSTRAHLUNG': v_p.get('MSTRAHLUNG'),
+                                'elecpri_Rp_kWh': v.get('elecpri_Rp_kWh'),
+                            }
+                            rows.append(row)
+
+                    topo_df = pl.DataFrame(rows)
+
+                    demandtypes_mean_df = topo_df.group_by(['demand_arch_typ']).agg([
+                        pl.col('GAREA').mean().alias('GAREA_mean'),
+                        pl.col('GAREA').median().alias('GAREA_median'),
+                    ])                    
+                    demandtypes_mean_df = demandtypes_mean_df.with_columns(
+                        pl.col('demand_arch_typ').str.extract(r'^(SFH|MFH)', 1).alias('sfhmfh_typ')
                     )
-                    fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
+
+                    
+                    # extend by demandtypes_ts + factors
+                    swstore_arch_typ_factors = swstore_arch_typ_factors.rename({'arch_typ': 'demand_arch_typ',
+                                                                                'elec_dem_ind_cecb': 'demand_elec_pGAREA'})
+                    demandtypes_mean_df = demandtypes_mean_df.join(swstore_arch_typ_factors, on='demand_arch_typ', how='left')
+
+                    demandtypes_unpivot = demandtypes_ts.unpivot(
+                        on = ['SFH', 'MFH', ],
+                        index=['t', 't_int'],  # col that stays unchanged
+                        value_name='demand_profile',  # name of the column that will hold the values
+                        variable_name='sfhmfh_typ'  # name of the column that will hold the original column names
+                    )   
+                    demandtypes_mean_df = demandtypes_mean_df.join(demandtypes_unpivot, on='sfhmfh_typ', how='left')
+
+                    demandtypes_mean_df = demandtypes_mean_df.with_columns([
+                        (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA_mean") ).alias("demand_kW_mean"),  
+                        (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA_median")).alias("demand_kW_median")
+                    ])
+
+
+                    # aggregate demand per month
+                    demandtypes_monthly = demandtypes_ts.with_columns([
+                        pl.col("time").str.strptime(pl.Datetime, format="%d.%m.%y %H:%M").alias("parsed_time"),
+                        pl.col("time").str.strptime(pl.Datetime, format="%d.%m.%y %H:%M").dt.truncate("1mo").alias("month")
+                    ])
+                    demandtypes_monthly = demandtypes_monthly.group_by("month").agg([
+                        pl.col("MFH").sum().alias("MFH"),
+                        pl.col("SFH").sum().alias("SFH"),
+                        pl.col("t_int").min().alias("t_int")  # use min or first
+                    ])
+                    demandtypes_monthly = demandtypes_monthly.sort(['t_int',], descending=False, )  
+
+                    demandtypes_monthly_unpivot = demandtypes_monthly.unpivot(
+                        on = ['SFH', 'MFH', ],
+                        index=['t_int'],  # col that stays unchanged
+                        value_name='demand_profile',  # name of the column that will hold the values
+                        variable_name='sfhmfh_typ'  # name of the column that will hold the original column names
+                    )   
+                    demandtypes_mean_monthly = demandtypes_mean_df[['demand_arch_typ', 'GAREA_mean', 'GAREA_median', 'sfhmfh_typ', 'demand_elec_pGAREA' ]].join(demandtypes_monthly_unpivot, on='sfhmfh_typ', how='left')
+                    demandtypes_mean_monthly = demandtypes_mean_monthly.with_columns([
+                        (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA_mean") ).alias("demand_kW_mean"),  
+                        (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA_median")).alias("demand_kW_median")
+                    ])
+
+                    # plot
+                    fig = go.Figure()
+                    for i, arch_typ in enumerate(demandtypes_mean_df['demand_arch_typ'].unique()):
+                        plotdf = demandtypes_mean_df.filter(pl.col('demand_arch_typ') == arch_typ)
+                        plotdf = plotdf.with_columns([
+                            pl.col('demand_kW_mean').sum().alias('total_demand_kW_mean'), 
+                            pl.col('demand_kW_median').sum().alias('total_demand_kW_median')
+                        ])
+                        plotdf_monthly = demandtypes_mean_monthly.filter(pl.col('demand_arch_typ') == arch_typ)
+
+                        plotdf = plotdf.to_pandas()
+                        plotdf_monthly = plotdf_monthly.to_pandas()
+
+                        fig.add_trace(go.Scatter(x=plotdf['t_int'], y=plotdf['total_demand_kW_mean'], name= f'{arch_typ} total annual demand GAREA_mean',
+                                                 mode='lines', yaxis = 'y2'))
+                        fig.add_trace(go.Scatter(x=plotdf['t_int'], y=plotdf['total_demand_kW_median'], name= f'{arch_typ} total annual demand by GAREA_median',
+                                                 mode='lines', yaxis = 'y2'))
+                        # fig.add_trace(go.Scatter(x=plotdf_monthly['t_int'], y=plotdf_monthly['demand_kW_mean'], name= f'{arch_typ} demand by GAREA_mean (monthly)',
+                        #                          mode='lines+markers', yaxis='y2'))
+                        # fig.add_trace(go.Scatter(x=plotdf_monthly['t_int'], y=plotdf_monthly['demand_kW_median'], name= f'{arch_typ} demand by GAREA_median (monthly)',
+                        #                          mode='lines+markers', yaxis='y2'))
+                        fig.add_trace(go.Scatter(x=plotdf['t_int'], y=plotdf['demand_kW_mean'], name= f'{arch_typ} demand by GAREA_mean', 
+                                                 mode='lines', line=dict(dash='dot'), ))
+                        fig.add_trace(go.Scatter(x=plotdf['t_int'], y=plotdf['demand_kW_median'], name= f'{arch_typ} demand by GAREA_median',
+                                                 mode='lines', line=dict(dash='dot'), ))
+                        fig.add_trace(go.Scatter(x=[None,], y=[None,], name= '', mode='lines', opacity = 0))
+                        
+                    fig.update_layout(
+                        title=f'Demand Profiles by Demand Arch Type (scen: {scen})',
+                        xaxis_title='Time',
+                        yaxis_title='Demand [kW]',
+                        yaxis2=dict(
+                            title='Total Demand [kWh]',
+                            overlaying='y',
+                            side='right',
+                            showgrid=False,
+                        ),
+                        legend_title = 'Demand Arch Type',
+                    )
+                    fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen_list[i_scen])
+                    fig = self.set_default_fig_zoom_hour(fig, self.visual_sett.default_zoom_hour)
+
 
                     if self.visual_sett.plot_show and self.visual_sett.plot_ind_var_summary_stats_TF[1]:
                         if self.visual_sett.plot_ind_var_summary_stats_TF[2]:
@@ -390,9 +516,9 @@ class Visualization:
                         elif not self.visual_sett.plot_ind_var_summary_stats_TF[2]:
                             fig.show() if i_scen == 0 else None
                     if self.visual_sett.save_plot_by_scen_directory:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_bar_totaldemand_by_type.html')
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_line_demand_by_arch_typ.html')
                     else:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_bar_totaldemand_by_type.html')
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_line_demand_by_arch_typ.html')
                     print_to_logfile(f'\texport: plot_ind_bar_totaldemand_by_type.html (for: {scen})', self.visual_sett.log_name)
 
 
@@ -1406,7 +1532,7 @@ class Visualization:
                         instcomp_mrg_df.to_csv(f'{self.visual_sett.visual_path}/{scen}_instcomp_mrg_df.csv') 
                         # -- DEBUGGING ----------
 
-
+                
                         # plot ----------------
                         fig1 = go.Figure()
 
@@ -3232,12 +3358,8 @@ if __name__ == '__main__':
                 '*old_vers*', 
                 ], 
             pvalloc_include_pattern_list = [
-                # '*pvalloc_mini_BYYEAR*',
-                # '*test2*',
-                # 'pvalloc_mini_BYYEAR_EASTWEST_max',
-                'pvalloc_mini_BYYEAR_EASTWEST_max',
-
-            ],
+                'pvalloc_mini_rnd',
+          ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  
             remove_old_plots_in_visualization  = False,  
@@ -3250,17 +3372,17 @@ if __name__ == '__main__':
 
         plot_method_names = [
 
-            # # -- def plot_ALL_init_sanitycheck(self, ): -------------
-            # visual_class.plot_ind_var_summary_stats()                     # runs as intended
-            # visual_class.plot_ind_hist_pvcapaprod_sanitycheck()           # runs as intended
-            # # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
-            # visual_class.plot_ind_charac_omitted_gwr()                    # runs as intended
-            # visual_class.plot_ind_line_meteo_radiation()                  # runs as intended
+            # -- def plot_ALL_init_sanitycheck(self, ): -------------
+            "plot_ind_var_summary_stats",                     # runs as intended
+            # "plot_ind_hist_pvcapaprod_sanitycheck",           # runs as intended
+            # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
+            "plot_ind_charac_omitted_gwr",                     # runs as intended
+            # "plot_ind_line_meteo_radiation",                   # runs as intended
 
             # # -- def plot_ALL_mcalgorithm(self,): -------------
             # "plot_ind_line_installedCap",                     # runs as intended
-            # "plot_ind_line_productionHOY_per_node",           # runs as intended
-            # "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            "plot_ind_line_productionHOY_per_node",           # runs as intended
+            "plot_ind_line_productionHOY_per_EGID",           # runs as intended
             "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
             # "plot_ind_hist_NPV_freepartitions",               # runs as intended
             # # "plot_ind_line_gridPremiumHOY_per_node",          # runs

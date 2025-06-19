@@ -47,7 +47,12 @@ class DataAggScenario_Settings:
                                             'GEBF', 'GAREA'])
     GWR_dwelling_cols: List[str]    = field(default_factory=lambda: ['EGID', 'EWID', 'WAZIM', 'WAREA', ])
     GWR_DEMAND_proxy: str           = 'GAREA'
-    GWR_GSTAT: List[str]            = field(default_factory=lambda: ['1004',])                                 # GSTAT - 1004: only existing, fully constructed buildings
+    GWR_GSTAT: List[str]            = field(default_factory=lambda: [
+                                            '1001', # GSTAT - 1001: in planing
+                                            '1002', # GSTAT - 1002: construction right granted 
+                                            '1003', # GSTAT - 1003: in construction
+                                            '1004', # GSTAT - 1004: fully constructed, existing buildings
+                                            ])                                 
     GWR_GKLAS: List[str]            = field(default_factory=lambda: [
                                             '1110', # GKLAS - 1110: only 1 living space per building
                                             '1121', # GKLAS - 1121: Double-, row houses with each appartment (living unit) having it's own roof;
@@ -1186,7 +1191,8 @@ class DataAggScenario:
             
 
             # DEMAND DATA SOURCE: NETFLEX ============================================================
-            if self.sett.DEMAND_input_data_source == "NETFLEX" :
+            # if self.sett.DEMAND_input_data_source == "NETFLEX" :
+            if False:
                 # import demand TS --------
                 netflex_consumers_list = glob.glob(f'{self.sett.data_path}/input/NETFLEX_consumers/ID*') # os.listdir(f'{self.sett.data_path}/input/NETFLEX_consumers')
                         
@@ -1392,11 +1398,11 @@ class DataAggScenario:
             # DEMAND DATA SOURCE: SwissStore ============================================================
             elif self.sett.DEMAND_input_data_source == "SwissStore" :
                 swstore_arch_typ_factors  = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/12.swisstore_table12_unige.xlsx', sheet_name='Feuil1')
-                swstore_sfhmfh_ts       = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx', sheet_name='dmnd_prof_sfh_mfh_avg')
-                gwr                     = pd.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
-                gwr_all_building_gdf    = gpd.read_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson')
-                gemeinde_type_gdf       = gpd.read_file(f'{self.sett.preprep_path}/gemeinde_type_gdf.geojson')
-                
+                swstore_arch_typ_master   = pd.read_csv(f'{self.sett.data_path}/input/SwissStore_DemandData/Master_table_archetype.csv', sep=';')
+                swstore_sfhmfh_ts         = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx', sheet_name='dmnd_prof_sfh_mfh_avg')
+                gwr                       = pd.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
+                gwr_all_building_gdf      = gpd.read_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson')
+                gemeinde_type_gdf         = gpd.read_file(f'{self.sett.preprep_path}/gemeinde_type_gdf.geojson')
 
 
                 # classify EGIDs into SFH / MFH, Rural / Urban -------------------------------------------------
@@ -1418,10 +1424,10 @@ class DataAggScenario:
                 # build swstore_type to attach swstore factors
                 gwr_all_building_gdf['arch_typ'] = gwr_all_building_gdf['sfhmfh_typ'].str.cat(gwr_all_building_gdf['ARE_typ'], sep='-')
                 gwr_all_building_gdf = gwr_all_building_gdf.merge(swstore_arch_typ_factors[['arch_typ', 'elec_dem_ind_cecb', ]])
-                gwr_all_building_gdf.rename(columns={'elec_dem_ind_cecb': 'demand_elec_dem_pGAREA'}, inplace=True)
+                gwr_all_building_gdf.rename(columns={'elec_dem_ind_cecb': 'demand_elec_pGAREA'}, inplace=True)
 
                 # attach information to gwr and export
-                gwr = gwr.merge(gwr_all_building_gdf[['EGID', 'ARE_typ', 'sfhmfh_typ', 'arch_typ', 'elec_dem_pGAREA']], on='EGID', how='left')
+                gwr = gwr.merge(gwr_all_building_gdf[['EGID', 'ARE_typ', 'sfhmfh_typ', 'arch_typ', 'demand_elec_pGAREA']], on='EGID', how='left')
                 gwr_all_building_df = gwr_all_building_gdf.drop(columns=['geometry', ]).copy()
 
                 # export 
@@ -1445,6 +1451,8 @@ class DataAggScenario:
                 demandtypes_ts.to_csv(f'{self.sett.preprep_path}/demandtypes_ts.csv',)
                 swstore_arch_typ_factors.to_parquet(f'{self.sett.preprep_path}/swstore_arch_typ_factors.parquet')
                 swstore_arch_typ_factors.to_csv(f'{self.sett.preprep_path}/swstore_arch_typ_factors.csv')
+                swstore_arch_typ_master.to_parquet(f'{self.sett.preprep_path}/swstore_arch_typ_master.parquet')
+                swstore_arch_typ_master.to_csv(f'{self.sett.preprep_path}/swstore_arch_typ_master.csv', sep=';')
 
 
 
@@ -1646,13 +1654,13 @@ if __name__ == '__main__':
         # ),
 
 
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
-        #     kt_numbers = [13, 11],
-        #     year_range = [2022, 2023],
-        #     GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278', ],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
+            kt_numbers = [13, 11],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278', ],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),
 
         DataAggScenario_Settings(
             name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_singlehouse',
