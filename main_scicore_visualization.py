@@ -28,13 +28,13 @@ visualization_list = [
             
             
         Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc_BLsml_test2*_default_rnd',],),         
+            pvalloc_include_pattern_list = ['pvalloc*_default_rnd',],),         
         Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc_BLsml_test2*_southfacing_rnd',],),
+            pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd',],),
         Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc_BLsml_test2*_eastwestfacing_rnd',],),
+            pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd',],),
         Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc_BLsml_test2*_default_max',],),
+            pvalloc_include_pattern_list = ['pvalloc*_default_max',],),
 
     ]    
 
@@ -48,11 +48,11 @@ if __name__ == '__main__':
         plot_method_names = [
 
             # # -- def plot_ALL_init_sanitycheck(self, ): -------------
-            # visual_class.plot_ind_var_summary_stats()                     # runs as intended
-            # visual_class.plot_ind_hist_pvcapaprod_sanitycheck()           # runs as intended
-            # # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
-            # visual_class.plot_ind_charac_omitted_gwr()                    # runs as intended
-            # visual_class.plot_ind_line_meteo_radiation()                  # runs as intended
+            "plot_ind_var_summary_stats",                      # runs as intended
+            "plot_ind_hist_pvcapaprod_sanitycheck",            # runs as intended
+            # # "plot_ind_boxp_radiation_rng_sanitycheck", 
+            "plot_ind_charac_omitted_gwr",                     # runs as intended
+            # "plot_ind_line_meteo_radiation",                   # runs as intended
 
             # -- def plot_ALL_mcalgorithm(self,): -------------
             # "plot_ind_line_installedCap",                     # runs as intended

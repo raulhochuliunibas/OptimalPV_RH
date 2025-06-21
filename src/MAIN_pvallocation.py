@@ -45,11 +45,11 @@ class PVAllocScenario_Settings:
                                                     2473, 2475, 2480,                                         # SOsml: Dornach, Hochwald, Seewen
                                                     2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,           # SOmed: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren    
 
-                                                    2773, 2769, 2770,                    # URBAN: Reinach, Münchenstein, Muttenz
-                                                    2767, 2771, 2775, 2764,              # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
-                                                    2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
-
-                            ])
+                                                    2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
+                                                    2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
+                                                    # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                                    2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    ])
     mini_sub_model_TF: bool                     = False
     mini_sub_model_grid_nodes: List[str]        = field(default_factory=lambda: [
                                                                                 #  '295',
@@ -301,7 +301,7 @@ class PVAllocScenario:
         # create summary file + Timing file
         chapter_to_logfile(f'OptimalPV Sample Summary of Building Topology, scen: {self.sett.name_dir_export}', self.sett.summary_name, overwrite_file=True)
 
-        # create timing csv
+        # create timing cwith open(src, 'rb') as fsrc:v
         start_initalization = datetime.datetime.now()
         self.mark_to_timing_csv
         self.mark_to_timing_csv('init', 'END_INIT', start_initalization, np.nan, '-')
@@ -316,7 +316,6 @@ class PVAllocScenario:
         self.initial_sml_HOY_weatheryear_df()
         self.initial_sml_get_DSO_nodes_df_AND_ts()
         self.initial_sml_iterpolate_instcost_function()
-        self.overwrite_gwr_for_demand_calc()
 
         if self.sett.recreate_topology:
             subchapter_to_logfile('initialization: IMPORT PREPREP DATA & CREATE (building) TOPOLOGY', self.sett.log_name)

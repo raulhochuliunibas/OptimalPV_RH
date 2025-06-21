@@ -40,10 +40,10 @@ class Visual_Settings:
                                                     '*.txt',
                                                     '*old_vers*',
                                                     '*testX',
-                                                    '*pandas_no_outtopo*',
-                                                    '*test2_*', 
-                                                    '*test3_*',
-                                                    '*test2*all*',
+                                                    '*pandas*',
+                                                    '*text2_*', 
+                                                    '*_BLsml_*', 
+                                                    '*_mini_2m_*',
                                                     ])
     pvalloc_include_pattern_list : List[str]      = field(default_factory=lambda: [])
     plot_show: bool                              = True
@@ -2756,7 +2756,7 @@ class Visualization:
                             bfs_list.append(v['gwr_info']['bfs'])
                             gklas_list.append(v['gwr_info']['gklas'])
                             node_list.append(v['grid_node'])
-                            demand_type_list.append(v['demand_type'])
+                            demand_type_list.append(v['demand_arch_typ'])
                             pvtarif_list.append(v['pvtarif_Rp_kWh'])
                             elecpri_list.append(v['elecpri_Rp_kWh'])
                             elecpri_info_list.append(v['elecpri_info'])
@@ -2945,7 +2945,7 @@ class Visualization:
                             bfs_list.append(v['gwr_info']['bfs'])
                             gklas_list.append(v['gwr_info']['gklas'])
                             node_list.append(v['grid_node'])
-                            demand_type_list.append(v['demand_type'])
+                            demand_type_list.append(v['demand_arch_typ'])
                             pvtarif_list.append(v['pvtarif_Rp_kWh'])
                             elecpri_list.append(v['elecpri_Rp_kWh'])
                             elecpri_info_list.append(v['elecpri_info'])
@@ -3196,7 +3196,7 @@ class Visualization:
                         bfs_list.append(v['gwr_info']['bfs'])
                         gklas_list.append(v['gwr_info']['gklas'])
                         node_list.append(v['grid_node'])
-                        demand_type_list.append(v['demand_type'])
+                        demand_type_list.append(v['demand_arch_typ'])
                         pvtarif_list.append(v['pvtarif_Rp_kWh'])
                         elecpri_list.append(v['elecpri_Rp_kWh'])
                         elecpri_info_list.append(v['elecpri_info'])
@@ -3355,10 +3355,11 @@ if __name__ == '__main__':
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
                 '*.txt','*.xlsx','*.csv','*.parquet',
-                '*old_vers*', 
+                '*old_vers*',
                 ], 
             pvalloc_include_pattern_list = [
                 'pvalloc_mini_rnd',
+
           ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  
