@@ -58,6 +58,7 @@ if __name__ == '__main__':
             # # "plot_ind_line_installedCap",                     # runs as intended
             # "plot_ind_line_productionHOY_per_node",           # runs as intended
             "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            "plot_ind_cols_HOYagg_per_EGID",                    # runs as intended
             # "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
             # "plot_ind_hist_NPV_freepartitions",               # runs as intended
             # # "plot_ind_line_gridPremiumHOY_per_node",          # runs

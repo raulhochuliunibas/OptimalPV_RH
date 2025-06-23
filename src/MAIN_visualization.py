@@ -110,6 +110,7 @@ class Visual_Settings:
     plot_ind_line_productionHOY_per_EGID_TF: List[bool]     = field(default_factory=lambda: [True,      True,       False])
     plot_ind_line_gridPremiumHOY_per_node_TF: List[bool]    = field(default_factory=lambda: [True,      True,       False])
     plot_ind_line_gridPremiumHOY_per_EGID_TF: List[bool]    = field(default_factory=lambda: [True,      True,       False])
+    plot_ind_cols_HOYagg_per_EGID_TF: List[bool]  = field(default_factory=lambda: [True,      True,       False])
     plot_ind_line_PVproduction_TF: List[bool]               = field(default_factory=lambda: [True,      True,       False])
     plot_ind_line_gridPremium_structure_TF: List[bool]      = field(default_factory=lambda: [True,      True,       False])
     plot_ind_hist_NPV_freepartitions_TF: List[bool]         = field(default_factory=lambda: [True,      True,       False])
@@ -122,8 +123,8 @@ class Visual_Settings:
     plot_ind_lineband_contcharact_newinst_TF: List[bool]    = field(default_factory=lambda: [True,      True,       False])
 
     plot_ind_line_productionHOY_per_EGID_specs: Dict         = field(default_factory=lambda: {
-        'grid_nodes_counts_minmax': (5,10), 
-        'specific_gridnodes_egid_HOY': None, 
+        'grid_nodes_counts_minmax': (4,8),         # try to select grid node with nEGIDs for visualization
+        'specific_gridnodes_egid_HOY': None,        # select specific gridn node by id number for visualization
         'egid_col_to_plot'          : ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW' ],
         'grid_col_to_plot_tuples'   : [('netfeedin_kW', 'netfeedin_all_kW'),
                                        ('netfeedin_kW', 'demand_proxy_out_kW'),
@@ -288,6 +289,7 @@ class Visualization:
         self.plot_ind_line_installedCap()
         self.plot_ind_line_productionHOY_per_node()
         self.plot_ind_line_productionHOY_per_EGID()
+        self.plot_ind_cols_HOYagg_per_EGID()
         self.plot_ind_line_PVproduction()
         self.plot_ind_hist_NPV_freepartitions()
         self.plot_ind_line_gridPremiumHOY_per_node()
@@ -1852,7 +1854,7 @@ class Visualization:
                     topo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_time_subdf/topo_subdf_*.parquet')
                     outtopo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/outtopo_time_subdf/*.parquet')
                     
-                    gridnode_df = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
+                    gridnode_df_import = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
                     dsonodes_df = pl.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/dsonodes_df.parquet')  
 
 
@@ -1877,20 +1879,21 @@ class Visualization:
                     Map_pvinfo_topo_egid  = pl.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,  'grid_node': grid_node_list})
 
 
-
-                    # select EGIDs to plot ----------
-
-                    # select all egids of smallest gridnode ----------
-
+                    # select gridnodes / EGIDs to plot ----------
                     if specific_gridnodes_egid_HOY != None: 
                         gridnode_pick = specific_gridnodes_egid_HOY
                     else: 
-                        gridnodes_counts = gridnode_freq['grid_node'].value_counts()
-                        gridnode_selec = gridnodes_counts[(gridnodes_counts >= grid_nodes_counts_minmax[0]) & (gridnodes_counts <= grid_nodes_counts_minmax[1]) ]
+                        gridnodes_counts =  gridnode_freq.groupby(['EGID', ]).agg({
+                            'inst_TF': 'first',
+                            'info_source': 'first',
+                            'grid_node': 'first',})
+                        egid_gridnode_counts = gridnodes_counts['grid_node'].value_counts()
+                        egid_gridnode_counts.sort_values(ascending=False)
+                        gridnode_selec = egid_gridnode_counts[(egid_gridnode_counts >= grid_nodes_counts_minmax[0]) & (egid_gridnode_counts <= grid_nodes_counts_minmax[1]) ]
 
                         if len(gridnode_selec) == 0:
-                            gridnodes_counts.sort_values(ascending=True, inplace=True)
-                            gridnode_pick = gridnodes_counts.index[0]  # take the smallest gridnode
+                            egid_gridnode_counts.sort_values(ascending=True, inplace=True)
+                            gridnode_pick = egid_gridnode_counts.index[0]  # take the smallest gridnode
                         else:
                             gridnode_selec.sort_values(ascending=True, inplace=True)
                             gridnode_pick = gridnode_selec.index[0]
@@ -2112,14 +2115,14 @@ class Visualization:
                         fig_sub.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'gridnode_pick_df from subdf {20*"-"}', opacity=0))
                                                                 
 
-                    # # Sanity Check: picked node from gridnode_df ----------
+                    # # Sanity Check: picked node from gridnode_df +  ----------
                     # # add values form gridnode_df to make in-plot sanity check
                     for col in egid_col_to_plot:
                         fig_sub = fig_dict[f'fig_{col}']
 
                         for node in gridnode_pick_df['grid_node'].unique():
                             grid_col_agg_tuples = [t[0] for t in grid_col_to_plot_tuples]
-                            gridnode_subdf = gridnode_df.filter(pl.col('grid_node') == node)
+                            gridnode_subdf = gridnode_df_import.filter(pl.col('grid_node') == node)
                             gridnode_subdf = gridnode_subdf.sort("t_int", descending=False)
                             gridnode_subdf = gridnode_subdf.to_pandas()
 
@@ -2162,7 +2165,7 @@ class Visualization:
                         fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_kW+demand_proxy_out_kW'],           name= f'grid_node: {node} - netfeedin_all_kW+demand_proxy_out_kW (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
                         
                         
-                        gridnode_subdf = gridnode_df.filter(pl.col('grid_node') == node)
+                        gridnode_subdf = gridnode_df_import.filter(pl.col('grid_node') == node)
                         gridnode_subdf = gridnode_subdf.sort("t_int", descending=False)
                         gridnode_subdf = gridnode_subdf.to_pandas()
 
@@ -2205,6 +2208,400 @@ class Visualization:
                     print_to_logfile(f'\texport: plot_ind_line_productionHOY_per_EGID.html (for: {scen})', self.visual_sett.log_name)
 
 
+
+        def plot_ind_cols_HOYagg_per_EGID(self, ):
+            if self.visual_sett.plot_ind_cols_HOYagg_per_EGID_TF[0]:
+
+                checkpoint_to_logfile('plot_ind_cols_HOYagg_per_EGID', self.visual_sett.log_name)
+
+                grid_nodes_counts_minmax    = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['grid_nodes_counts_minmax']
+                specific_gridnodes_egid_HOY = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['specific_gridnodes_egid_HOY']
+                egid_col_to_plot            = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['egid_col_to_plot']
+                grid_col_to_plot_tuples     = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['grid_col_to_plot_tuples']
+                gridnode_pick_col_to_agg    = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['gridnode_pick_col_to_agg']
+                egid_trace_opacity          = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['egid_trace_opacity']
+                grid_trace_opacity          = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['grid_trace_opacity']
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+
+                    # setup + import --------------------------
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+                    topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+                    topo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_time_subdf/topo_subdf_*.parquet')
+                    outtopo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/outtopo_time_subdf/*.parquet')
+                    
+                    gridnode_df_import = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
+                    dsonodes_df = pl.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/dsonodes_df.parquet')  
+
+
+                    # select EGIDs by EGID - DF_UID combo --------------------------
+                    egid_list, dfuid_list, info_source_list, inst_TF_list, grid_node_list = [], [], [], [], []
+                    for k,v in topo.items():
+                        if v['pv_inst']['inst_TF']:
+                            for dfuid_w_inst in v['pv_inst']['df_uid_w_inst']:
+                                egid_list.append(k)
+                                dfuid_list.append(dfuid_w_inst)
+                                info_source_list.append(v['pv_inst']['info_source'])
+                                inst_TF_list.append(v['pv_inst']['inst_TF'])   
+                                grid_node_list.append(v['grid_node']) 
+                        else: 
+                            egid_list.append(k)
+                            dfuid_list.append('')
+                            info_source_list.append('')
+                            inst_TF_list.append(False)
+                            grid_node_list.append(v['grid_node'])
+
+                    gridnode_freq         = pd.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,  'grid_node': grid_node_list})
+                    Map_pvinfo_topo_egid  = pl.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,  'grid_node': grid_node_list})
+
+
+                    # select gridnodes / EGIDs to plot ----------
+                    if specific_gridnodes_egid_HOY != None: 
+                        gridnode_pick = specific_gridnodes_egid_HOY
+                    else: 
+                        gridnodes_counts =  gridnode_freq.groupby(['EGID', ]).agg({
+                            'inst_TF': 'first',
+                            'info_source': 'first',
+                            'grid_node': 'first',})
+                        egid_gridnode_counts = gridnodes_counts['grid_node'].value_counts()
+                        egid_gridnode_counts.sort_values(ascending=False)
+                        gridnode_selec = egid_gridnode_counts[(egid_gridnode_counts >= grid_nodes_counts_minmax[0]) & (egid_gridnode_counts <= grid_nodes_counts_minmax[1]) ]
+
+                        if len(gridnode_selec) == 0:
+                            egid_gridnode_counts.sort_values(ascending=True, inplace=True)
+                            gridnode_pick = egid_gridnode_counts.index[0]  # take the smallest gridnode
+                        else:
+                            gridnode_selec.sort_values(ascending=True, inplace=True)
+                            gridnode_pick = gridnode_selec.index[0]
+
+
+                    Map_pvinfo_gridnode = gridnode_freq.loc[gridnode_freq['grid_node'] == gridnode_pick].copy()
+
+
+
+                    agg_subdf_df_list, agg_egids_list = [], []
+                    for i_path, path in enumerate(topo_subdf_paths):
+                        subdf = pl.read_parquet(path)
+
+                        # Only plot EGIDs for 1 node: 
+                        # subdf = subdf.filter(pl.col('grid_node') == gridnode_pick)  
+
+
+                        # taken 1:1 from algo_update_gridnode_AND_gridprem_POLARS() =============================================
+                        subdf_updated = subdf.clone()                                      
+                        subdf_updated = subdf_updated.drop(['info_source', 'inst_TF'])                      
+
+                        subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid', 'info_source', 'inst_TF']], on=['EGID', 'df_uid'], how='left')         
+                        # remove the nulls from the merged columns
+                        subdf_updated = subdf_updated.with_columns([
+                            pl.when(pl.col('inst_TF').is_null())
+                                .then(False).otherwise(pl.col('inst_TF')).alias('inst_TF'),
+                            pl.when(pl.col('info_source').is_null())
+                                .then(pl.lit("")).otherwise(pl.col('info_source')).alias('info_source'),
+                        ])
+
+                        Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('inst_TF'))  # indifferetn => should give same result, Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
+
+                        subdf_no_inst = subdf_updated.join(
+                            Map_pvinst_topo_egid[['EGID', 'df_uid']], 
+                            on=['EGID', 'df_uid'], 
+                            how='anti'
+                        )
+                        subdf_updated = subdf_updated.with_columns([
+                            pl.when(
+                                (pl.col('EGID').is_in(subdf_no_inst['EGID'])) &
+                                (pl.col('df_uid').is_in(subdf_no_inst['df_uid']))
+                            ).then(pl.lit(0.0)).otherwise(pl.col('pvprod_kW')).alias('pvprod_kW'),
+                        ])
+
+
+                        selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.pvalloc_scen.TECspec_self_consumption_ifapplicable
+
+                        subdf_updated = subdf_updated.with_columns([        
+                            selfconsum_expr.alias("selfconsum_kW"),
+                            (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
+                            (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
+                        ])
+                        
+                        # necessary, not too exagerate demand per gridnode
+                        agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
+                            pl.col('grid_node').first().alias('grid_node'),
+                            pl.col('demand_kW').first().alias('demand_kW'),
+                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                            pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                            pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                            pl.col('netdemand_kW').sum().alias('netdemand_kW')
+                        ])
+
+                        # only select egids for grid_node mentioned above
+                        # agg_egids = agg_egids.filter(pl.col('EGID').is_in(Map_pvinfo_gridnode['EGID'].to_list()))
+                        agg_egids_list.append(agg_egids)
+                        # -----
+
+                        agg_subdf = agg_egids.group_by(["grid_node", "t"]).agg([
+                            pl.col('demand_kW').sum().alias('demand_kW'),
+                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                            pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                            pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                            pl.col('netdemand_kW').sum().alias('netdemand_kW')
+                        ])
+
+                        agg_subdf_df_list.append(agg_subdf)
+
+                    
+                    agg_subdf_df = pl.concat(agg_subdf_df_list)
+                    topo_gridnode_df = agg_subdf_df.group_by(['grid_node', 't']).agg([
+                        pl.col('demand_kW').first().alias('demand_kW'),
+                        pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                        pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                        pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                        pl.col('netdemand_kW').sum().alias('netdemand_kW'),
+                    ])
+
+                    # MAIN DF of this plot, all feedin TS by EGID ------------
+                    topo_agg_egids_df = pl.concat(agg_egids_list)
+                    topo_agg_egids_df = topo_agg_egids_df.with_columns([
+                        pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
+                    ])
+                    topo_agg_egids_df = topo_agg_egids_df.sort("t_int", descending=False)
+                    # -----
+
+
+                    # import outtopo_time_subfs -----------------------------------------------------
+
+                    agg_subdf_df_list = []
+                    for i, path in enumerate(outtopo_subdf_paths):
+                        outsubdf = pl.read_parquet(path)  
+                        agg_outsubdf = outsubdf.group_by(["grid_node", "t"]).agg([
+                            pl.col('demand_proxy_out_kW').sum().alias('demand_proxy_out_kW'),
+                        ])
+                        del outsubdf
+                        agg_subdf_df_list.append(agg_outsubdf)
+                        
+                    agg_outsubdf_df = pl.concat(agg_subdf_df_list)
+                    outtopo_gridnode_df = agg_outsubdf_df.group_by(['grid_node', 't']).agg([
+                        pl.col('demand_proxy_out_kW').sum().alias('demand_proxy_out_kW'),
+                    ])
+
+
+                    # build gridnode_df -----------------------------------------------------
+                    gridnode_df = topo_gridnode_df.join(outtopo_gridnode_df, on=['grid_node', 't'], how='left')
+                    gridnode_df = gridnode_df.with_columns([
+                        pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
+                    ])
+                    
+                    demand_proxy_out_kW = gridnode_df['demand_proxy_out_kW'].fill_null(0)
+                    # netdemand_kW = gridnode_df['netdemand_kW'].fill_null(0)
+                    netfeedin_kW = gridnode_df['netfeedin_kW'].fill_null(0)
+                    gridnode_df = gridnode_df.with_columns([
+                        (netfeedin_kW - demand_proxy_out_kW).alias('netfeedin_all_kW'),
+                    ])
+
+                    # sanity check
+                    gridnode_df.group_by(['grid_node',]).agg([pl.len()])
+                    gridnode_df.group_by(['t',]).agg([pl.len()])
+
+
+                    # attach node thresholds 
+                    gridnode_df = gridnode_df.join(dsonodes_df[['grid_node', 'kVA_threshold']], on='grid_node', how='left')
+                    gridnode_df = gridnode_df.with_columns((pl.col("kVA_threshold") * self.pvalloc_scen.GRIDspec_perf_factor_1kVA_to_XkW).alias("kW_threshold"))
+                    
+                    gridnode_df = gridnode_df.with_columns([
+                        pl.when(pl.col("netfeedin_all_kW") < 0)
+                        .then(0.0)
+                        .otherwise(pl.col("netfeedin_all_kW"))
+                        .alias("netfeedin_all_kW"),
+                        ])
+                    gridnode_df = gridnode_df.with_columns([
+                        pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
+                        .then(pl.col("kW_threshold"))
+                        .otherwise(pl.col("netfeedin_all_kW"))
+                        .alias("netfeedin_all_taken_kW"),
+                        ])
+                    gridnode_df = gridnode_df.with_columns([
+                        pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
+                        .then(pl.col("netfeedin_all_kW") - pl.col("kW_threshold"))
+                        .otherwise(0.0)
+                        .alias("netfeedin_all_loss_kW")
+                    ])
+
+                    # end 1:1 copy from pvallocation =============================================
+                    gridnode_pick_df = gridnode_df.clone()
+
+
+                    gridnode_pick_df = gridnode_pick_df.to_pandas()
+                    topo_agg_egids_df = topo_agg_egids_df.to_pandas()
+
+                    # plot line --------------------------
+                    if True:
+                        fig = go.Figure()
+
+                        # subset topo_agg_egids_df for line plot
+                        topo_agg_egids_gridnode_pick_df = topo_agg_egids_df.loc[topo_agg_egids_df['grid_node'] == gridnode_pick]
+
+
+                        # stack egid traces for comparison ----------
+                        selfconsumHOY_cols_to_plot = ['selfconsum_kW', ]
+                        for col in selfconsumHOY_cols_to_plot:
+                            for egid in topo_agg_egids_gridnode_pick_df['EGID'].unique():
+                                stack_subdf = topo_agg_egids_gridnode_pick_df.loc[topo_agg_egids_gridnode_pick_df['EGID'] == egid]
+                                stack_subdf = stack_subdf.sort_values(by=['t_int'])
+                                fig.add_trace(go.Scatter(x=stack_subdf['t_int'], y=stack_subdf[col],
+                                                            mode='lines', 
+                                                            stackgroup= col, 
+                                                            name=f'EGID: {egid} - {col}', 
+                                                            hoverinfo='skip',
+                                                            opacity=egid_trace_opacity
+                                                            ))
+                            fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'topo_agg_egids_df from subdf {20*"-"}', opacity=0)) 
+
+
+                        # aggregated traces per month ----------
+                        for col in selfconsumHOY_cols_to_plot:
+                            for egid in topo_agg_egids_gridnode_pick_df['EGID'].unique():
+                                dated_subdf =  topo_agg_egids_gridnode_pick_df.loc[topo_agg_egids_gridnode_pick_df['EGID'] == egid].copy()
+                                start_year = pd.Timestamp(f'{self.pvalloc_scen.T0_year_prediction}-01-01')
+                                dated_subdf['datetime'] =start_year + pd.to_timedelta(dated_subdf['t_int'] -1 , unit ='h' )
+                                dated_subdf['month'] = dated_subdf['datetime'].dt.month
+
+                                subdf_agg = dated_subdf.groupby(['EGID', 'month', ]).agg({
+                                    't': 'first', 
+                                    't_int': 'first',
+                                    col: 'sum',
+                                })
+
+                                fig.add_trace(go.Scatter(x=subdf_agg['t_int'], y=subdf_agg[col],
+                                                            mode='lines', 
+                                                            name=f'EGID: {egid} - {col} (agg month)', 
+                                                            hoverinfo='skip',       
+                                                            opacity=egid_trace_opacity
+                                                            ))
+                            fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'agg month from subdf {20*"-"}', opacity=0))
+                                                        
+
+                        # aggregated traces per year ----------
+                        for col in selfconsumHOY_cols_to_plot:
+                            for node in gridnode_pick_df['grid_node'].unique():
+                                dated_subdf =  topo_agg_egids_gridnode_pick_df.loc[topo_agg_egids_gridnode_pick_df['EGID'] == egid].copy()
+                                start_year = pd.Timestamp(f'{self.pvalloc_scen.T0_year_prediction}-01-01')
+                                dated_subdf['datetime'] =start_year + pd.to_timedelta(dated_subdf['t_int'] -1 , unit ='h' )
+                                dated_subdf['year'] = dated_subdf['datetime'].dt.year
+
+                                subdf_agg = dated_subdf.groupby(['EGID', 'year', ]).agg({
+                                    't': 'first', 
+                                    't_int': 'first',
+                                    col: 'sum',
+                                })
+
+                                fig.add_trace(go.Scatter(x=[min(topo_agg_egids_gridnode_pick_df['t_int']), max(topo_agg_egids_gridnode_pick_df['t_int'])], y=subdf_agg[col],
+                                                            mode='lines', 
+                                                            name=f'EGID: {egid} - {col} (agg year)', 
+                                                            hoverinfo='skip',       
+                                                            opacity=egid_trace_opacity
+                                                            ))
+                            fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'agg month from subdf {20*"-"}', opacity=0))
+                                        
+                        # export plot 
+                        if self.visual_sett.plot_show and self.visual_sett.plot_ind_cols_HOYagg_per_EGID_TF[1]:
+                            if self.visual_sett.plot_ind_cols_HOYagg_per_EGID_TF[2]:
+                                fig.show()
+                            elif not self.visual_sett.plot_ind_cols_HOYagg_per_EGID_TF[2]:
+                                fig.show() if i_scen == 0 else None
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_cols_HOYagg_per_EGID.html')
+                        else:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_cols_HOYagg_per_EGID.html')
+
+
+
+                    # plot hist --------------------------
+                    if True:
+                        fig_hist = go.Figure()
+
+                        # subset topo_agg_egids_df for line plot
+                        topo_agg_egids_gridnode_pick_df = topo_agg_egids_df.loc[topo_agg_egids_df['grid_node'] == gridnode_pick]
+
+                        selfconsum_hist_cols_to_plot = [
+                            'demand_kW', 
+                            'pvprod_kW', 
+                            'selfconsum_kW', 
+                            'netdemand_kW', 
+                            'netfeedin_kW', ]
+
+
+                        # add hist for selected gridnode
+                        topo_agg_egids_df
+                        topo_agg_egids_gridnode_pick_df_hist = topo_agg_egids_gridnode_pick_df.groupby(['EGID', 'grid_node']).agg({
+                            'demand_kW'     : 'sum' ,
+                            'pvprod_kW'     : 'sum' ,
+                            'selfconsum_kW' : 'sum' ,
+                            'netdemand_kW'  : 'sum' ,
+                            'netfeedin_kW'  : 'sum' ,
+                        }).reset_index()
+
+                        fig_hist.add_trace(go.Histogram(
+                            x=[None, ],
+                            name=f'EGIDs in gridnode_pick_df {20*"-"}',
+                            opacity=0,
+                        ))
+
+                        for node in topo_agg_egids_gridnode_pick_df_hist['grid_node'].unique():
+                            node_subdf = topo_agg_egids_gridnode_pick_df_hist.loc[topo_agg_egids_gridnode_pick_df_hist['grid_node'] == node]
+                            
+                            for col in selfconsum_hist_cols_to_plot:
+                                fig_hist.add_trace(go.Histogram(
+                                        x=node_subdf[col],
+                                        name=f'{col} select grid_node {node}',
+                                        histnorm='percent',
+                                        opacity=0.75,
+                                ))
+
+
+                        # add hist for all EGIDs
+                        topo_agg_egids_hist = topo_agg_egids_df.groupby(['EGID', 'grid_node']).agg({
+                            'demand_kW'     : 'sum' ,
+                            'pvprod_kW'     : 'sum' ,
+                            'selfconsum_kW' : 'sum' ,
+                            'netdemand_kW'  : 'sum' ,
+                            'netfeedin_kW'  : 'sum' ,
+                        }).reset_index()
+
+                        fig_hist.add_trace(go.Histogram(
+                            x=[None, ],
+                            name=f'All EGIDs in topo  {20*"-"}',
+                            opacity=0,
+                        ))
+
+                        for col in selfconsum_hist_cols_to_plot:
+                            fig_hist.add_trace(go.Histogram(
+                                x=topo_agg_egids_hist[col],
+                                name=f'{col} all EGIDs in topo',
+                                histnorm='percent',
+                                opacity=0.75,
+                            ))
+
+                        fig_hist.update_layout(
+                            title=f'Histogramm Annual Numbers per EGID', 
+                            xaxis_title='Total (sum kWh per year)',
+                            yaxis_title='Frequency',
+                            barmode='overlay',
+                            template='plotly_white',
+                        )
+
+                    # export plot --------------------------
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_cols_HOYagg_per_EGID_TF[1]:
+                        if self.visual_sett.plot_ind_cols_HOYagg_per_EGID_TF[2]:
+                            fig_hist.show()
+                        elif not self.visual_sett.plot_ind_cols_HOYagg_per_EGID_TF[2]:
+                            fig_hist.show() if i_scen == 0 else None
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        fig_hist.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_hist_selfconsumHOYagg_per_EGID.html')
+                    else:
+                        fig_hist.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_hist_selfconsumHOYagg_per_EGID.html')
+
+               
 
         def plot_ind_line_PVproduction(self, ): 
             if self.visual_sett.plot_ind_line_PVproduction_TF[0]:
@@ -3359,7 +3756,7 @@ if __name__ == '__main__':
                 ], 
             pvalloc_include_pattern_list = [
                 'pvalloc_mini_rnd',
-
+                # 'pvalloc_RUR_test2c_default_max', 
           ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  
@@ -3373,29 +3770,30 @@ if __name__ == '__main__':
 
         plot_method_names = [
 
-            # -- def plot_ALL_init_sanitycheck(self, ): -------------
-            "plot_ind_var_summary_stats",                     # runs as intended
-            # "plot_ind_hist_pvcapaprod_sanitycheck",           # runs as intended
-            # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
-            "plot_ind_charac_omitted_gwr",                     # runs as intended
-            # "plot_ind_line_meteo_radiation",                   # runs as intended
+            # # -- def plot_ALL_init_sanitycheck(self, ): -------------
+            # "plot_ind_var_summary_stats",                     # runs as intended
+            # # "plot_ind_hist_pvcapaprod_sanitycheck",           # runs as intended
+            # # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
+            # "plot_ind_charac_omitted_gwr",                     # runs as intended
+            # # "plot_ind_line_meteo_radiation",                   # runs as intended
 
-            # # -- def plot_ALL_mcalgorithm(self,): -------------
-            # "plot_ind_line_installedCap",                     # runs as intended
-            "plot_ind_line_productionHOY_per_node",           # runs as intended
-            "plot_ind_line_productionHOY_per_EGID",           # runs as intended
-            "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
-            # "plot_ind_hist_NPV_freepartitions",               # runs as intended
-            # # "plot_ind_line_gridPremiumHOY_per_node",          # runs
-            # # "plot_ind_line_gridPremium_structure",            # runs
-            # "plot_ind_lineband_contcharact_newinst",          # status not noted
-            "plot_ind_map_topo_egid",                         # runs as intended
-            # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
-            # # "plot_ind_map_node_connections"                   # status not noted        
+            # # # -- def plot_ALL_mcalgorithm(self,): -------------
+            # # "plot_ind_line_installedCap",                     # runs as intended
+            # "plot_ind_line_productionHOY_per_node",           # runs as intended
+            # "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            "plot_ind_cols_HOYagg_per_EGID", 
+            # "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
+            # # "plot_ind_hist_NPV_freepartitions",               # runs as intended
+            # # # "plot_ind_line_gridPremiumHOY_per_node",          # runs
+            # # # "plot_ind_line_gridPremium_structure",            # runs
+            # # "plot_ind_lineband_contcharact_newinst",          # status not noted
+            # "plot_ind_map_topo_egid",                         # runs as intended
+            # # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
+            # # # "plot_ind_map_node_connections"                   # status not noted        
     
-            # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
-            # plot_ind_map_node_connections()
-            # plot_ind_map_omitted_egids()
+            # # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
+            # # plot_ind_map_node_connections()
+            # # plot_ind_map_omitted_egids()
         ]
 
         for plot_method in plot_method_names:
@@ -3405,6 +3803,7 @@ if __name__ == '__main__':
             # except Exception as e:
             #     print(f"Error in {plot_method}: {e}")
  
+    print('end MAIN_visualization.py')
 
 
             
