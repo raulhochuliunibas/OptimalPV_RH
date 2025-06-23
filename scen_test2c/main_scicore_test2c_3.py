@@ -11,7 +11,7 @@ pvalloc_scen_list = [
     # SCENARIOS 2C: test2 scens with MULTIPLE HOUSING BUILDINGS + AGGRICULTURAL BUILDINGS
 
         PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_RUR_test2c_southfacing_rnd',
+        name_dir_export                 = 'pvalloc_RUR_test2c_southfacing_rnd_selfcons1',
         bfs_numbers                     = [2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
                                         ], 
         T0_year_prediction              = 2021,

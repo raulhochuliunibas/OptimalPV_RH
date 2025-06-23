@@ -10,7 +10,7 @@ pvalloc_scen_list = [
     # SCENARIOS 2B: test2 scens with MULTIPLE HOUSING BUILDINGS
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_SUB_test2b_default_max',
+        name_dir_export                 = 'pvalloc_SUB_test2b_default_max_selfcons1',
         bfs_numbers                     = [2767, 2771, 2775, 2764,              # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
                                         ], 
         T0_year_prediction              = 2021,

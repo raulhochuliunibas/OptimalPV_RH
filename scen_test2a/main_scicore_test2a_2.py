@@ -11,7 +11,7 @@ pvalloc_scen_list = [
     # SCENARIOS 2A: test2 scens with SINGLE HOUSING BUILDINGS
 
     PVAllocScenario_Settings(
-        name_dir_export                 = 'pvalloc_URB_test2a_default_max',
+        name_dir_export                 = 'pvalloc_URB_test2a_default_max_selfcons1',
         bfs_numbers                     = [2773, 2769, 2770,                    # URBAN: Reinach, Münchenstein, Muttenz
                                         ], 
         T0_year_prediction              = 2021,

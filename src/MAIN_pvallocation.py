@@ -129,7 +129,7 @@ class PVAllocScenario_Settings:
                                                         ])
     
     # tech_economic_specs
-    TECspec_self_consumption_ifapplicable: float            = 0
+    TECspec_self_consumption_ifapplicable: float            = 1.0
     TECspec_interest_rate: float                            = 0.01
     TECspec_pvtarif_year: int                               = 2022
     TECspec_pvtarif_col: List[str]                          = field(default_factory=lambda: ['energy1', 'eco1'])
@@ -4163,12 +4163,12 @@ if __name__ == '__main__':
                 show_debug_prints                                    = True,
                 export_csvs                                          = True,
                 mini_sub_model_TF                                    = True,
-                mini_sub_model_nEGIDs                                = 100, 
+                mini_sub_model_nEGIDs                                = 200, 
                 create_gdf_export_of_topology                        = False, 
                 test_faster_array_computation                        = True,
                 # overwrite_scen_init                                  = False,
                 T0_year_prediction                                   = 2021,
-                months_prediction                                    = 24,
+                months_prediction                                    = 48,
                 CSTRspec_iter_time_unit                              = 'year',
                 CSTRspec_ann_capacity_growth                         = 0.15,
                 # CSTRspec_target_capacity_growth
