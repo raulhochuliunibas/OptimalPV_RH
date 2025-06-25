@@ -2494,10 +2494,11 @@ class Visualization:
                                     't_int': 'first',
                                     col: 'sum',
                                 })
-
-                                fig.add_trace(go.Scatter(x=[min(topo_agg_egids_gridnode_pick_df['t_int']), max(topo_agg_egids_gridnode_pick_df['t_int'])], y=subdf_agg[col],
+                                xarray = [min(topo_agg_egids_gridnode_pick_df['t_int']), max(topo_agg_egids_gridnode_pick_df['t_int'])]
+                                yarray = [subdf_agg[col].values[0], subdf_agg[col].values[0]]
+                                fig.add_trace(go.Scatter(x=xarray, y=yarray,
                                                             mode='lines', 
-                                                            name=f'EGID: {egid} - {col} (agg year)', 
+                                                            name=f'node: {node} - {col} (agg year)', 
                                                             hoverinfo='skip',       
                                                             opacity=egid_trace_opacity
                                                             ))
@@ -2521,18 +2522,18 @@ class Visualization:
                         fig_hist = go.Figure()
 
                         # subset topo_agg_egids_df for line plot
+                        topo_agg_egids_df
                         topo_agg_egids_gridnode_pick_df = topo_agg_egids_df.loc[topo_agg_egids_df['grid_node'] == gridnode_pick]
 
-                        selfconsum_hist_cols_to_plot = [
-                            'demand_kW', 
-                            'pvprod_kW', 
-                            'selfconsum_kW', 
-                            'netdemand_kW', 
-                            'netfeedin_kW', ]
+                        # aggregate subset + all cols by EGID over year
+                        topo_agg_egids_hist = topo_agg_egids_df.groupby(['EGID', 'grid_node']).agg({
+                            'demand_kW'     : 'sum' ,
+                            'pvprod_kW'     : 'sum' ,
+                            'selfconsum_kW' : 'sum' ,
+                            'netdemand_kW'  : 'sum' ,
+                            'netfeedin_kW'  : 'sum' ,
+                        }).reset_index()
 
-
-                        # add hist for selected gridnode
-                        topo_agg_egids_df
                         topo_agg_egids_gridnode_pick_df_hist = topo_agg_egids_gridnode_pick_df.groupby(['EGID', 'grid_node']).agg({
                             'demand_kW'     : 'sum' ,
                             'pvprod_kW'     : 'sum' ,
@@ -2541,6 +2542,27 @@ class Visualization:
                             'netfeedin_kW'  : 'sum' ,
                         }).reset_index()
 
+                        # plot hist traces
+                        hist_cols_to_plot = [
+                            'demand_kW', 
+                            'pvprod_kW', 
+                            'selfconsum_kW', 
+                            'netdemand_kW', 
+                            'netfeedin_kW', ]
+        
+
+                        # adjust binsize in standardized way
+                        for col in hist_cols_to_plot:
+                            global_min = min(topo_agg_egids_gridnode_pick_df_hist[col].min(), topo_agg_egids_hist[col].min())
+                            global_max = max(topo_agg_egids_gridnode_pick_df_hist[col].max(), topo_agg_egids_hist[col].max())
+                            bin_size = (global_max - global_min) / 50  # 50 bins for example
+                            xbins_config = dict(
+                                start=global_min,
+                                end=global_max,
+                                size=bin_size
+                            )
+
+                        # subset EGID hist traces
                         fig_hist.add_trace(go.Histogram(
                             x=[None, ],
                             name=f'EGIDs in gridnode_pick_df {20*"-"}',
@@ -2550,36 +2572,29 @@ class Visualization:
                         for node in topo_agg_egids_gridnode_pick_df_hist['grid_node'].unique():
                             node_subdf = topo_agg_egids_gridnode_pick_df_hist.loc[topo_agg_egids_gridnode_pick_df_hist['grid_node'] == node]
                             
-                            for col in selfconsum_hist_cols_to_plot:
+                            for col in hist_cols_to_plot:
                                 fig_hist.add_trace(go.Histogram(
                                         x=node_subdf[col],
                                         name=f'{col} select grid_node {node}',
                                         histnorm='percent',
                                         opacity=0.75,
+                                        xbins=xbins_config
                                 ))
 
-
-                        # add hist for all EGIDs
-                        topo_agg_egids_hist = topo_agg_egids_df.groupby(['EGID', 'grid_node']).agg({
-                            'demand_kW'     : 'sum' ,
-                            'pvprod_kW'     : 'sum' ,
-                            'selfconsum_kW' : 'sum' ,
-                            'netdemand_kW'  : 'sum' ,
-                            'netfeedin_kW'  : 'sum' ,
-                        }).reset_index()
-
+                        # all EGID hist traces
                         fig_hist.add_trace(go.Histogram(
                             x=[None, ],
                             name=f'All EGIDs in topo  {20*"-"}',
                             opacity=0,
                         ))
 
-                        for col in selfconsum_hist_cols_to_plot:
+                        for col in hist_cols_to_plot:
                             fig_hist.add_trace(go.Histogram(
                                 x=topo_agg_egids_hist[col],
                                 name=f'{col} all EGIDs in topo',
                                 histnorm='percent',
                                 opacity=0.75,
+                                xbins=xbins_config
                             ))
 
                         fig_hist.update_layout(

@@ -5,36 +5,36 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 
 visualization_list = [
 
-        Visual_Settings(
+        # Visual_Settings(
             # pvalloc_exclude_pattern_list = [
                 # '*.txt','*old_vers*', 
                 # '*testX',
                 # '*pandas_no_outtopo*',
                 # '*test2_*'
                 # ], 
-            pvalloc_include_pattern_list = [
-                '*test2a*',
-                # 'pvalloc_BLsml_test2_default_w_pvdf_adjust_max_FORPLOT',  
-            ],
-            save_plot_by_scen_directory        = True, 
-            remove_old_plot_scen_directories   = True,  
-            remove_old_plots_in_visualization  = True,  
-            remove_old_csvs_in_visualization   = True,
-            ),   
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['*test2b*',],),  
+        #     pvalloc_include_pattern_list = [
+        #         '*test2a*',
+        #         # 'pvalloc_BLsml_test2_default_w_pvdf_adjust_max_FORPLOT',  
+        #     ],
+        #     save_plot_by_scen_directory        = True, 
+        #     remove_old_plot_scen_directories   = True,  
+        #     remove_old_plots_in_visualization  = True,  
+        #     remove_old_csvs_in_visualization   = True,
+        #     ),   
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['*test2b*',],),  
         Visual_Settings(
             pvalloc_include_pattern_list = ['*test2c*',],),   
             
             
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_default_rnd',],),         
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd',],),
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd',],),
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_default_max',],),
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['pvalloc*_default_rnd',],),         
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd',],),
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd',],),
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['pvalloc*_default_max',],),
 
     ]    
 

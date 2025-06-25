@@ -16,7 +16,7 @@
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT
 #SBATCH --mail-user=raul.hochuli@unibas.ch        #You will be notified via email when your task ends or fails
 
-#This job runs from the current working directory
+cd $HOME/OptimalPV_RH/
 
 
 #Remember:

@@ -1,14 +1,14 @@
 #!/bin/bash
 
-#SBATCH --job-name=test4_48h_12c64GB                   #This is the name of your job
+#SBATCH --job-name=visual_30min_12c32GB                   #This is the name of your job
 #SBATCH --cpus-per-task=12                  #This is the number of cores reserved
-#SBATCH --mem-per-cpu=64G              #This is the memory reserved per core.
-#Total memory reserved: 768GB
+#SBATCH --mem-per-cpu=32G              #This is the memory reserved per core.
+#Total memory reserved: 384GB
 
 # Are you sure that you need THAT much memory?
 
-#SBATCH --time=48:00:00        #This is the time that your task will run
-#SBATCH --qos=1week           #You will run in this queue
+#SBATCH --time=00:30:00        #This is the time that your task will run
+#SBATCH --qos=30min           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
 #SBATCH --output=myrun.o%j     #These are the STDOUT and STDERR files
@@ -24,6 +24,7 @@ cd $HOME/OptimalPV_RH/
 #The variable $HOME points to your home directory.
 #The variable $SLURM_JOBID stores the ID number of your job.
 
+
 #load your required modules below
 #################################
 ml purge
@@ -37,8 +38,7 @@ source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 
 #add your command lines below
 #############################
-python main_enoe_tests4_250604.py
-
+python main_scicore_visualization.py
 
 
 

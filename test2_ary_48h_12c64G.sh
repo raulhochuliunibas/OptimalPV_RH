@@ -17,7 +17,7 @@
 #You selected an array of jobs from 1 to 50 with 10 simultaneous jobs
 #SBATCH --array=1-50%10
 
-#This job runs from the current working directory
+cd $HOME/OptimalPV_RH/
 
 
 #Remember:
