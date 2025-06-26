@@ -3894,7 +3894,7 @@ if __name__ == '__main__':
                 '*old_vers*',
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_mini_rnd',
+                'pvalloc_mini_aggr',
                 # 'pvalloc_RUR_test2c_default_max', 
           ],
             save_plot_by_scen_directory        = True, 
