@@ -1406,17 +1406,20 @@ class PVAllocScenario:
             # mini model for exploratory work ----------
             if self.sett.mini_sub_model_TF:
                 gridnodes_in_gwr = Map_egid_dsonode.loc[Map_egid_dsonode['EGID'].isin(gwr['EGID'])]['grid_node'].unique()
-                if all([node not in gridnodes_in_gwr for node in self.sett.mini_sub_model_grid_nodes]):
-                    mini_submodel_nodes = gridnodes_in_gwr[0:3]
+                if any([node in gridnodes_in_gwr for node in self.sett.mini_sub_model_grid_nodes]):
+                    mini_sub_model_nodes = self.sett.mini_sub_model_grid_nodes
                 else:
-                    mini_submodel_nodes = self.sett.mini_sub_model_grid_nodes
+                    mini_sub_model_nodes = gridnodes_in_gwr[0:3]
                     
-                mini_submodel_EGIDs = Map_egid_dsonode[Map_egid_dsonode['grid_node'].isin(mini_submodel_nodes)]['EGID'].unique()
+                mini_submodel_EGIDs = Map_egid_dsonode[Map_egid_dsonode['grid_node'].isin(mini_sub_model_nodes)]['EGID'].unique()
                 gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(mini_submodel_EGIDs)])
 
-                if self.sett.mini_sub_model_nEGIDs is not None: 
+                if self.sett.mini_sub_model_nEGIDs is not None & self.sett.mini_sub_model_nEGIDs < gwr['EGID'].nunique(): 
                     # gwr = copy.deepcopy(gwr.head(self.sett.mini_sub_model_nEGIDs))
                     gwr = copy.deepcopy(gwr.sample(n=self.sett.mini_sub_model_nEGIDs, random_state=self.sett.ALGOspec_rand_seed))
+                elif self.sett.mini_sub_model_nEGIDs is not None & self.sett.mini_sub_model_nEGIDs >= gwr['EGID'].nunique():
+                    gwr = copy.deepcopy(gwr)  
+
                     
 
                 # solkat = copy.deepcopy(solkat.loc[solkat['EGID'].isin(mini_submodel_EGIDs)])
