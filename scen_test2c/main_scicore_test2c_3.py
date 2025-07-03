@@ -12,9 +12,10 @@ pvalloc_scen_list = [
 
         PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_RUR_test2c_southfacing_rnd_selfcons1',
-        bfs_numbers                     = [2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
-                                        ], 
-        T0_year_prediction              = 2021,
+        bfs_numbers                     = [
+                                            2612, 2889, 2883, 2621, 2622, 
+                                            2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                        ],         T0_year_prediction              = 2021,
         months_prediction               = 360,
         CSTRspec_iter_time_unit         = 'year',
         overwrite_scen_init             = False,
