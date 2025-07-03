@@ -179,7 +179,7 @@ class PVAllocScenario_Settings:
     ALGOspec_inst_selection_method: str                         = 'random'          # 'random', max_npv', 'prob_weighted_npv'
     ALGOspec_rand_seed: bool                                    = None
     ALGOspec_while_inst_counter_max: int                        = 5000
-    ALGOspec_topo_subdf_partitioner: int                        = 400  # 9999999
+    ALGOspec_topo_subdf_partitioner: int                        = 250  # 9999999
     ALGOspec_npv_update_groupby_cols_topo_aggdf: List[str]      = field(default_factory=lambda: [
                                                                     'EGID', 'df_uid', 'grid_node', 'bfs', 'GKLAS', 'GAREA', 'sfhmfh_typ', 'demand_arch_typ', 'inst_TF', 'info_source',
                                                                     'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 
@@ -1414,10 +1414,10 @@ class PVAllocScenario:
                 mini_submodel_EGIDs = Map_egid_dsonode[Map_egid_dsonode['grid_node'].isin(mini_sub_model_nodes)]['EGID'].unique()
                 gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(mini_submodel_EGIDs)])
 
-                if self.sett.mini_sub_model_nEGIDs is not None & self.sett.mini_sub_model_nEGIDs < gwr['EGID'].nunique(): 
+                if (self.sett.mini_sub_model_nEGIDs is not None) & (self.sett.mini_sub_model_nEGIDs < gwr['EGID'].nunique()): 
                     # gwr = copy.deepcopy(gwr.head(self.sett.mini_sub_model_nEGIDs))
                     gwr = copy.deepcopy(gwr.sample(n=self.sett.mini_sub_model_nEGIDs, random_state=self.sett.ALGOspec_rand_seed))
-                elif self.sett.mini_sub_model_nEGIDs is not None & self.sett.mini_sub_model_nEGIDs >= gwr['EGID'].nunique():
+                elif (self.sett.mini_sub_model_nEGIDs is not None) & (self.sett.mini_sub_model_nEGIDs >= gwr['EGID'].nunique()):
                     gwr = copy.deepcopy(gwr)  
 
                     
@@ -3202,7 +3202,8 @@ class PVAllocScenario:
                     pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                     pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                     pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
-                    pl.col('netdemand_kW').sum().alias('netdemand_kW')
+                    pl.col('netdemand_kW').sum().alias('netdemand_kW'),
+                    pl.col('inst_TF').first().alias('inst_TF'),
                 ])
 
                 agg_subdf = agg_egids.group_by(["grid_node", "t"]).agg([
@@ -3210,7 +3211,8 @@ class PVAllocScenario:
                     pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                     pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                     pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
-                    pl.col('netdemand_kW').sum().alias('netdemand_kW')
+                    pl.col('netdemand_kW').sum().alias('netdemand_kW'), 
+                    pl.col('inst_TF').first().alias('inst_TF'),
                 ])
                 
                 subdf_updated_dfuid_pvdf = subdf_updated.filter(pl.col('info_source') != '').clone()
@@ -3246,6 +3248,7 @@ class PVAllocScenario:
                 pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                 pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
                 pl.col('netdemand_kW').sum().alias('netdemand_kW'),
+                pl.col('inst_TF').first().alias('inst_TF'),
             ])
             agg_subdf_updated_pvdf = pl.concat(agg_subdf_updated_pvdf_list)
 

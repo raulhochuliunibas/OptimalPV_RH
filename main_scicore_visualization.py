@@ -71,7 +71,7 @@ if __name__ == '__main__':
             # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
             # plot_ind_map_node_connections()
             # plot_ind_map_omitted_egids()
-            "plot_ind_line_installedCap",                     # runs as intended
+            # "plot_ind_line_installedCap",                     # runs as intended
 
         ]
 
