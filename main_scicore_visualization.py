@@ -5,36 +5,36 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 
 visualization_list = [
 
-        # Visual_Settings(
-            # pvalloc_exclude_pattern_list = [
-                # '*.txt','*old_vers*', 
-                # '*testX',
-                # '*pandas_no_outtopo*',
-                # '*test2_*'
-                # ], 
-        #     pvalloc_include_pattern_list = [
-        #         '*test2a*',
-        #         # 'pvalloc_BLsml_test2_default_w_pvdf_adjust_max_FORPLOT',  
-        #     ],
-        #     save_plot_by_scen_directory        = True, 
-        #     remove_old_plot_scen_directories   = True,  
-        #     remove_old_plots_in_visualization  = True,  
-        #     remove_old_csvs_in_visualization   = True,
-        #     ),   
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['*test2b*',],),  
         Visual_Settings(
-            pvalloc_include_pattern_list = ['*test2c*',],),   
+            pvalloc_exclude_pattern_list = [
+                '*.txt','*old_vers*', 
+                '*testX',
+                '*pandas_no_outtopo*',
+                '*test2_*'
+                ], 
+            pvalloc_include_pattern_list = [
+                '*test2a*_selfcons1',
+                # 'pvalloc_BLsml_test2_default_w_pvdf_adjust_max_FORPLOT',  
+            ],
+            # save_plot_by_scen_directory        = True, 
+            # remove_old_plot_scen_directories   = True,  
+            # remove_old_plots_in_visualization  = True,  
+            # remove_old_csvs_in_visualization   = True,
+            ),   
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['*test2b*_selfcons1',],),  
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['*test2c*_selfcons1',],),   
             
             
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_default_rnd',],),         
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd',],),
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd',],),
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_default_max',],),
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_default_rnd_selfcons1',],),         
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd_selfcons1',],),
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd_selfcons1',],),
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_default_max_selfcons1',],),
 
     ]    
 
@@ -57,8 +57,8 @@ if __name__ == '__main__':
             # # -- def plot_ALL_mcalgorithm(self,): -------------
             # # "plot_ind_line_installedCap",                     # runs as intended
             # "plot_ind_line_productionHOY_per_node",           # runs as intended
-            "plot_ind_line_productionHOY_per_EGID",           # runs as intended
-            "plot_ind_cols_HOYagg_per_EGID",                    # runs as intended
+            # "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            "plot_ind_hist_cols_HOYagg_per_EGID",                    # runs as intended
             # "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
             # "plot_ind_hist_NPV_freepartitions",               # runs as intended
             # # "plot_ind_line_gridPremiumHOY_per_node",          # runs
@@ -71,13 +71,11 @@ if __name__ == '__main__':
             # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
             # plot_ind_map_node_connections()
             # plot_ind_map_omitted_egids()
+            "plot_ind_line_installedCap",                     # runs as intended
+
         ]
 
         for plot_method in plot_method_names:
-            # try:
             method = getattr(visual_class, plot_method)
             method()
-            # except Exception as e:
-                # print(f"Error in {plot_method}: {e}")
- 
 
