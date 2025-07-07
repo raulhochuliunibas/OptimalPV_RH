@@ -158,12 +158,12 @@ class Visual_Settings:
                             'selfconsum_kW':            20,           
                             'netdemand_kW':             20,            
                             'netfeedin_kW':             50,            
-                            'selfconsum_feedin_ratio':  10, 
+                            'selfconsum_feedin_ratio':  20, 
                         }, 
         'hist_opacity': 0.85,
         'mean_y_height': [0, 60], 
         'subset_trace_color_palette': 'Turbo',
-        'all_trace_color_palette': 'Viridis',
+        'all_egid_trace_color_palette': 'Viridis',
     })
     plot_ind_map_topo_egid_specs: Dict                      = field(default_factory=lambda: {
         'uniform_municip_color': '#fff2ae',
@@ -2601,10 +2601,14 @@ class Visualization:
                             )
                             col_xbins_config[col] = xbins_config
 
-                        # set coloring                        
-                        color_pal_agg_palette = trace_color_dict[fig_agg_color_palettes[i_scen]]
-                        subset_trace_color_palette =  trace_color_dict[self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['subset_trace_color_palette']]
-                        all_trace_color_palette = trace_color_dict[self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['all_trace_color_palette']]
+                        # set coloring         
+                        subset_trace_color_palette      = trace_color_dict[self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['subset_trace_color_palette']]
+                        agg_subset_color_palette        = trace_color_dict[fig_agg_color_palettes[i_scen]]
+
+                        all_egid_trace_color_palette    = trace_color_dict[self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['all_egid_trace_color_palette']]
+                        agg_allegid_color_palette       = trace_color_dict[fig_agg_color_palettes[-i_scen]]
+
+
 
                         # add trace func 
                         def add_hist_cols_trace(figfunc, hist_df, col_func, col_NAME, color_func, ):
@@ -2613,6 +2617,27 @@ class Visualization:
                             bin_start = xbins['start']
                             bin_end = xbins['end']
                             bin_size = xbins['size']
+                            
+                            # Clean data to avoid inf/nan issues
+                            clean_data = hist_df[col_func].replace([np.inf, -np.inf], np.nan).dropna()
+
+                            # check if xbins are valid - otherwise update
+                            checkpoint_to_logfile(f'check: bin_start: {bin_start}, bin_end: {bin_end}, bin_size: {bin_size}', self.visual_sett.log_name)
+                            if (pd.isna(bin_start) or pd.isna(bin_end) or pd.isna(bin_size) or 
+                                bin_size <= 0 or bin_start >= bin_end or len(clean_data) == 0):
+
+                                if len(clean_data) > 0:
+                                    bin_start = float(clean_data.min())
+                                    bin_end = float(clean_data.max())
+                                    if bin_start == bin_end:
+                                        bin_start -= 0.5
+                                        bin_end += 0.5
+                                    bin_size = (bin_end - bin_start) / 10
+                                else:
+                                    # If no valid data, use dummy values
+                                    bin_start = 0
+                                    bin_end = 1
+                                    bin_size = 0.1
 
                             bin_edges = np.arange(bin_start, bin_end + bin_size, bin_size)
                             counts, _ = np.histogram(hist_df[col_func], bins=bin_edges)
@@ -2649,38 +2674,48 @@ class Visualization:
                         # hist traces - SUBSET EGID W INST ---------------
                         fig_hist.add_trace(go.Histogram(
                             x=[None, ],
-                            name=f'EGIDs in gridnode_pick_df {20*"-"}',
-                            opacity=0,
-                        ))
-
-                        subset_color_pal_idx = len(subset_trace_color_palette)
-
-                        for i_col, col in enumerate(hist_cols_to_plot):
-                            color = subset_trace_color_palette[subset_color_pal_idx-(i_col+1) ]
-                            fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_winst_hist, col, 'subset egid w/inst', color)
-                            fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_winst_hist, col, 'subset egid w/inst', color)
-
-
-                        # hist traces - ALL EGID in topo ---------------
-                        fig_hist.add_trace(go.Histogram(
-                            x=[None, ],
-                            name=f'All EGIDs in topo  {20*"-"}',
+                            name=f'EGIDs with pvinst {20*"-"}',
                             opacity=0,
                         ))
                         fig_hist_agg.add_trace(go.Histogram(
                             x=[None, ],
-                            name=f'scen: {scen}, all EGIDs in topo  {20*"-"}',
+                            name=f'{scen} {30*"-"}',
                             opacity=0,
                         ))
-                        
-                        color_pal_idx = len(color_pal_agg_palette)
-                        all_color_pal_idx = len(all_trace_color_palette)
+                        subset_color_pal_idx    = len(subset_trace_color_palette)
+                        agg_subset_color_pal_idx = len(agg_subset_color_palette)
 
                         for i_col, col in enumerate(hist_cols_to_plot):
-                            color       = subset_trace_color_palette[all_color_pal_idx-(i_col+1) ]
-                            color_agg   = color_pal_agg_palette[color_pal_idx-(i_col+1) ]
-                            fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_hist, col, 'all egids in topo', color)
-                            fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_hist, col, 'all egids in topo', color_agg)
+                            color      = subset_trace_color_palette[subset_color_pal_idx-(i_col+1) ]
+                            agg_color  = agg_subset_color_palette[agg_subset_color_pal_idx-(i_col+1) ]
+
+                            try:
+                                fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_winst_hist, col, 'subset egid w/inst', color)
+                                fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_winst_hist, col, 'subset egid w/inst', agg_color)
+                            except Exception as e:
+                                print_to_logfile(f'Error in add_hist_cols_trace for col {col}: {e}', self.visual_sett.log_name)
+                                continue
+
+
+                        # hist traces - ALL EGID in topo ---------------  
+                        fig_hist.add_trace(go.Histogram(
+                            x=[None, ],
+                            name=f'All EGIDs in topo  {20*"-"}',
+                            opacity=0,
+                        ))         
+                        all_color_pal_idx    = len(all_egid_trace_color_palette)
+                        agg_all_color_pal_idx = len(agg_allegid_color_palette)             
+
+                        for i_col, col in enumerate(hist_cols_to_plot):
+                            color      = all_egid_trace_color_palette[all_color_pal_idx-(i_col+1) ]
+                            agg_color  = agg_allegid_color_palette[agg_all_color_pal_idx-(i_col+1) ]
+
+                            try:
+                                fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_hist, col, 'all egids in topo', color)  
+                                fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_hist, col, 'all egids in topo', agg_color)
+                            except Exception as e:
+                                print_to_logfile(f'Error in add_hist_cols_trace for col {col}: {e}', self.visual_sett.log_name)
+                                continue
 
 
                         fig_hist.update_layout(
