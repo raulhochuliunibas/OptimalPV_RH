@@ -21,20 +21,20 @@ visualization_list = [
             remove_old_plots_in_visualization  = True,  
             remove_old_csvs_in_visualization   = True,
             ),   
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['*test2b*_selfcons1',],),  
-        # Visual_Settings(
-            # pvalloc_include_pattern_list = ['*test2a*_selfcons1',],),   
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['*test2b*_selfcons1',],),  
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['*test2a*_selfcons1',],),   
             
             
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_default_rnd_selfcons1',],),         
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd_selfcons1',],),
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd_selfcons1',],),
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_default_max_selfcons1',],),
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_default_rnd_selfcons1',],),         
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd_selfcons1',],),
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd_selfcons1',],),
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_default_max_selfcons1',],),
 
     ]    
 
@@ -46,8 +46,8 @@ if __name__ == '__main__':
         visual_class = Visualization(visual_scen)
 
         plot_method_names = [
-            "plot_ind_hist_cols_HOYagg_per_EGID",                    # runs as intended
 
+            # "plot_ind_hist_cols_HOYagg_per_EGID",                    # runs as intended
 
             # # # -- def plot_ALL_init_sanitycheck(self, ): -------------
             "plot_ind_var_summary_stats",                      # runs as intended
@@ -60,7 +60,7 @@ if __name__ == '__main__':
             # # "plot_ind_line_installedCap",                     # runs as intended
             "plot_ind_line_productionHOY_per_node",           # runs as intended
             "plot_ind_line_productionHOY_per_EGID",           # runs as intended
-            # "plot_ind_hist_cols_HOYagg_per_EGID",                    # runs as intended
+            "plot_ind_hist_cols_HOYagg_per_EGID",                    # runs as intended
             "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
             # # "plot_ind_hist_NPV_freepartitions",               # runs as intended
             # # "plot_ind_line_gridPremiumHOY_per_node",          # runs

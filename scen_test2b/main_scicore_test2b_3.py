@@ -7,7 +7,7 @@ from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 from src.MAIN_visualization import Visual_Settings, Visualization
 pvalloc_scen_list = [
 
-    # SCENARIOS 2B: test2 scens with MULTIPLE HOUSING BUILDINGS
+    # SCENARIOS 2B
 
     PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_SUB_test2b_southfacing_rnd_selfcons1',
