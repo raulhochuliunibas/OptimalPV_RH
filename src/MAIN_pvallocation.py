@@ -3157,6 +3157,39 @@ class PVAllocScenario:
                 # subdf_updated = subdf_updated.filter(pl.col('inst_TF'))       
                 # EDIT 2: Previous comment not fully true, pvprod_kW is calculated as the pvproduction potential for a df_uid partition, so those columns are also positive for
                 # non-installed houses. SOLUTION: set all pvproduction to 0 for all df_uid that are not in Map_pvinfo_topo_egid (derived from most recent version of topo_egid)
+                # EDIT 3: Because demand is per unit of EGID but the subdf data frame is by df_uid, demand_kW will be double counted when simply sumed up like other pvproduction relevant columns.
+                # So I need to devide the demand on a house level by n_dfuid (with and / or without installations) so the actuall amount of feedin is calculated and not distorted by double counting. 
+                # Two cases should solve all possible applications for this transformation
+
+                # add number of df_uid (total + with installation)
+                subdf_updated = subdf_updated.with_columns([
+                    pl.n_unique('df_uid').over('EGID').alias('n_dfuid_pEGID')
+                ])
+                subdf_updated = subdf_updated.with_columns([
+                    pl.when(pl.col('inst_TF'))
+                        .then(pl.lit(1))
+                        .otherwise(pl.lit(0))
+                        .alias('d_inst_dfuid')
+                ])
+                subdf_updated = subdf_updated.with_columns([
+                    pl.sum('d_inst_dfuid').over('EGID').alias('n_inst_pEGID')
+                ])
+                # two cases
+                # 1: n_inst_pEGID == 0 -> no installations. demand is devided by n_dfuid per EGID, which later sums up to actual demand per EGID again. 
+                #   1a: n_dfuid =1 -> demand / 1
+                #   1b: n_dfuid >1 -> demand / n
+                # 2: n_inst_pEGID > 0 -> demand is devided by n_inst_pEGID per EGID, the number of partitions actually producing pv
+                #   2a: n_dfuid =1 -> all installed, 1 roof house -> demand / n_inst = n_dfuid = 1
+                #   2b: n_dfuid >1 -> all installed, n roof house -> demand / n_inst = n_dfuid = n
+                #   2c: n_dfuid >1 -> only part installed -> demand / n_inst != n_dfuid
+                subdf_updated = subdf_updated.with_columns([
+                    pl.when(pl.col('n_inst_pEGID') == 0)
+                        .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
+                        .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
+                        .alias('demand_kW')
+                ])
+                
+                # force pvprod == 0 for EGID-df_uid without inst
                 Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
                 subdf_no_inst = subdf_updated.join(
                     Map_pvinst_topo_egid[['EGID', 'df_uid']], 
@@ -3586,6 +3619,34 @@ class PVAllocScenario:
                     # compute selfconsumption + netdemand ----------------------------------------------
                     checkpoint_to_logfile('npv > subdf: start calc selfconsumption + netdemand', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                     
+                    # add number of df_uid (total + with installation)
+                    subdf = subdf.with_columns([
+                        pl.n_unique('df_uid').over('EGID').alias('n_dfuid_pEGID')
+                    ])
+                    subdf = subdf.with_columns([
+                        pl.when(pl.col('inst_TF'))
+                            .then(pl.lit(1))
+                            .otherwise(pl.lit(0))
+                            .alias('d_inst_dfuid')
+                    ])
+                    subdf = subdf.with_columns([
+                        pl.sum('d_inst_dfuid').over('EGID').alias('n_inst_pEGID')
+                    ])
+                    # two cases
+                    # 1: n_inst_pEGID == 0 -> no installations. demand is devided by n_dfuid per EGID, which later sums up to actual demand per EGID again. 
+                    #   1a: n_dfuid =1 -> demand / 1
+                    #   1b: n_dfuid >1 -> demand / n
+                    # 2: n_inst_pEGID > 0 -> demand is devided by n_inst_pEGID per EGID, the number of partitions actually producing pv
+                    #   2a: n_dfuid =1 -> all installed, 1 roof house -> demand / n_inst = n_dfuid = 1
+                    #   2b: n_dfuid >1 -> all installed, n roof house -> demand / n_inst = n_dfuid = n
+                    #   2c: n_dfuid >1 -> only part installed -> demand / n_inst != n_dfuid
+                    subdf = subdf.with_columns([
+                        pl.when(pl.col('n_inst_pEGID') == 0)
+                            .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
+                            .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
+                            .alias('demand_kW')
+                    ])
+
                     selfcons_fact, prod_demand_fact = self.sett.TECspec_self_consumption_ifapplicable, self.sett.ALGOspec_tweak_gridnode_df_prod_demand_fact
                     selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")* prod_demand_fact]) * selfcons_fact
 
