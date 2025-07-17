@@ -63,11 +63,11 @@ class Visual_Settings:
 
     # PLOT CHUCK 
     # for pvalloc_inital + sanitycheck -------------------------------------------------->  [run plot,  show plot,  show all scen]
-    plot_ind_var_summary_stats_TF: List[bool]               = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_hist_pvcapaprod_sanitycheck_TF: List[bool]     = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_hist_pvprod_deviation_TF: List[bool]           = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_charac_omitted_gwr_TF: List[bool]              = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_line_meteo_radiation_TF: List[bool]            = field(default_factory=lambda: [True,      True,       False])
+    plot_ind_var_summary_stats_TF: List[bool]               = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_hist_pvcapaprod_sanitycheck_TF: List[bool]     = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_hist_pvprod_deviation_TF: List[bool]           = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_charac_omitted_gwr_TF: List[bool]              = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_line_meteo_radiation_TF: List[bool]            = field(default_factory=lambda: [False,      True,       False])
 
     plot_ind_hist_pvcapaprod_sanitycheck_specs: Dict        = field(default_factory=lambda:  {
         'xbins_hist_instcapa_abs': 0.5,
@@ -106,21 +106,21 @@ class Visual_Settings:
     })
 
     # for pvalloc_MC_algorithm ---------------------------------------------------------->  [run plot,  show plot,  show all scen]
-    plot_ind_line_installedCap_TF: List[bool]                   = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_line_productionHOY_per_node_TF: List[bool]         = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_line_productionHOY_per_EGID_TF: List[bool]         = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_line_gridPremiumHOY_per_node_TF: List[bool]        = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_line_gridPremiumHOY_per_EGID_TF: List[bool]        = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_hist_cols_HOYagg_per_EGID_TF: List[bool]           = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_line_PVproduction_TF: List[bool]                   = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_line_gridPremium_structure_TF: List[bool]          = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_hist_NPV_freepartitions_TF: List[bool]             = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_hist_pvcapaprod_TF: List[bool]                     = field(default_factory=lambda: [True,      True,       False])
+    plot_ind_line_installedCap_TF: List[bool]                   = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_line_productionHOY_per_node_TF: List[bool]         = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_line_productionHOY_per_EGID_TF: List[bool]         = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_line_gridPremiumHOY_per_node_TF: List[bool]        = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_line_gridPremiumHOY_per_EGID_TF: List[bool]        = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_hist_cols_HOYagg_per_EGID_TF: List[bool]           = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_line_PVproduction_TF: List[bool]                   = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_line_gridPremium_structure_TF: List[bool]          = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_hist_NPV_freepartitions_TF: List[bool]             = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_hist_pvcapaprod_TF: List[bool]                     = field(default_factory=lambda: [False,      True,       False])
 
-    plot_ind_map_topo_egid_TF: List[bool]                       = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_map_topo_egid_incl_gridarea_TF: List[bool]         = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_mapline_prodHOY_EGIDrfcombo_TF: List[bool]         = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_lineband_contcharact_newinst_TF: List[bool]        = field(default_factory=lambda: [True,      True,       False])
+    plot_ind_map_topo_egid_TF: List[bool]                       = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_map_topo_egid_incl_gridarea_TF: List[bool]         = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_mapline_prodHOY_EGIDrfcombo_TF: List[bool]         = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_lineband_contcharact_newinst_TF: List[bool]        = field(default_factory=lambda: [False,      True,       False])
 
     plot_ind_line_productionHOY_per_EGID_specs: Dict        = field(default_factory=lambda: {
         'grid_nodes_counts_minmax': (5,8),         # try to select grid node with nEGIDs for visualization
@@ -338,7 +338,6 @@ class Visualization:
         self.plot_ind_mapline_prodHOY_EGIDrfcombo()
         
         # plot_ind_map_node_connections()
-        self.plot_ind_map_omitted_egids()
         # plot_ind_lineband_contcharact_newinst()
  
 
@@ -2226,14 +2225,18 @@ class Visualization:
 
                         fig_netfeedin_all.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'gridnode_pick_df from subdf {20*"-"}', opacity=0))
                         for agg_col in gridnode_pick_col_to_agg:    
-                            fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf[agg_col],           name= f'grid_node: {node} - {agg_col} (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
+                            fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf[agg_col],           
+                                                                   name= f'grid_node: {node} - {agg_col} (agg subdf)',             
+                                                                   mode = 'lines+markers', 
+                                                                   hoverinfo = 'skip', 
+                                                                   opacity= grid_trace_opacity))
                         # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_kW'],           name= f'grid_node: {node} - netfeedin_kW (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
                         # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_kW'],       name= f'grid_node: {node} - netfeedin_all_kW (agg subdf)',         mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity, stackgroup='netfeedin_all_kW'))
                         # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['demand_proxy_out_kW' ],   name= f'grid_node: {node} - demand_proxy_out_kW (agg subdf)',      mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity, stackgroup='netfeedin_all_kW'))
                         # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_taken_kW'], name= f'grid_node: {node} - netfeedin_all_taken_kW (agg subdf)',   mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
                         # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_loss_kW'],  name= f'grid_node: {node} - netfeedin_all_loss_kW (agg subdf)',    mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
                         # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['kW_threshold'],           name= f'grid_node: {node} - kW_threshold (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
-                        fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_kW+demand_proxy_out_kW'],           name= f'grid_node: {node} - netfeedin_all_kW+demand_proxy_out_kW (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
+                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_kW+demand_proxy_out_kW'],           name= f'grid_node: {node} - netfeedin_all_kW+demand_proxy_out_kW (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
                         
                         
                         gridnode_subdf = gridnode_df_import.filter(pl.col('grid_node') == node)
@@ -4522,57 +4525,41 @@ if __name__ == '__main__':
                 '*old_vers*',
                 ], 
             pvalloc_include_pattern_list = [
-                # 'pvalloc_RUR_test2c*',
-                # 'pvalloc_mini_aggr_RUR*',
                 'pvalloc_mini_rnd',
-
           ],
             plot_show                          = True,
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  
             remove_old_plots_in_visualization  = True,  
             remove_old_csvs_in_visualization   = False, 
-    )        
-    ]
+
+            # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
+            plot_ind_var_summary_stats_TF                   = [True,      True,       False],
+            # plot_ind_hist_pvcapaprod_sanitycheck_TF         = [True,      True,       False],
+            # plot_ind_hist_pvprod_deviation_TF               = [True,      True,       False],
+            plot_ind_charac_omitted_gwr_TF                  = [True,      True,       False],
+            # plot_ind_line_meteo_radiation_TF                = [True,      True,       False],
+
+            # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
+            # plot_ind_line_installedCap_TF                   = [True,      True,       False],
+            plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],
+            plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],           
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False],
+            plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],
+            # plot_ind_line_gridPremiumHOY_per_node_TF        = [True,      True,       False],
+            # plot_ind_line_gridPremiumHOY_per_EGID_TF        = [True,      True,       False],
+            # plot_ind_line_gridPremium_structure_TF          = [True,      True,       False],
+            # plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
+            # plot_ind_hist_pvcapaprod_TF                     = [True,      True,       False],
+            plot_ind_map_topo_egid_TF                       = [True,      True,       False],
+            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
+            # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
+        )]
 
     for visual_scen in visualization_list:
         visual_class = Visualization(visual_scen)
-
-        plot_method_names = [
-
-            # # # -- def plot_ALL_init_sanitycheck(self, ): -------------
-            # "plot_ind_var_summary_stats",               
-            # # # "plot_ind_hist_pvcapaprod_sanitycheck",     
-            # "plot_ind_charac_omitted_gwr",              
-            
-            # # # -- def plot_ALL_mcalgorithm(self,): -------------
-            # # "plot_ind_line_installedCap", 
-            # "plot_ind_mapline_prodHOY_EGIDrfcombo",
-            # "plot_ind_line_productionHOY_per_node",     
-            # "plot_ind_line_productionHOY_per_EGID",
-            # "plot_ind_line_PVproduction",               
-            # "plot_ind_hist_cols_HOYagg_per_EGID", 
-            # # "plot_ind_hist_NPV_freepartitions",       
-            # # # "plot_ind_line_gridPremiumHOY_per_node",
-            # # # "plot_ind_line_gridPremium_structure",  
-            # "plot_ind_lineband_contcharact_newinst",  
-            "plot_ind_map_topo_egid",                   
-            # "plot_ind_map_topo_egid_incl_gridarea",   
-            # # # "plot_ind_map_node_connections"         
-    
-
-            # # # # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
-            # # # # plot_ind_map_node_connections()
-            # # # # plot_ind_map_omitted_egids()
-
-        ]
-
-        for plot_method in plot_method_names:
-            # try:
-            method = getattr(visual_class, plot_method)
-            method()
-            # except Exception as e:
-            #     print(f"Error in {plot_method}: {e}")
+        visual_class.plot_ALL_init_sanitycheck()
+        visual_class.plot_ALL_mcalgorithm()
  
     print('end MAIN_visualization.py')
 

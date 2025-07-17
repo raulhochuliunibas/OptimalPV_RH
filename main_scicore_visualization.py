@@ -21,20 +21,20 @@ visualization_list = [
             remove_old_plots_in_visualization  = True,  
             remove_old_csvs_in_visualization   = True,
             ),   
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['*test2b*_selfcons1',],),  
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['*test2a*_selfcons1',],),   
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['*test2b*_selfcons1',],),  
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['*test2a*_selfcons1',],),   
             
             
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_default_rnd_selfcons1',],),         
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd_selfcons1',],),
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd_selfcons1',],),
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_default_max_selfcons1',],),
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['pvalloc*_default_rnd_selfcons1',],),         
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd_selfcons1',],),
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd_selfcons1',],),
+        # Visual_Settings(
+        #     pvalloc_include_pattern_list = ['pvalloc*_default_max_selfcons1',],),
 
     ]    
 
@@ -43,41 +43,31 @@ if __name__ == '__main__':
 
     # visualization ---------------------
     for visual_scen in visualization_list:
+
+        # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
+        visual_scen.plot_ind_var_summary_stats_TF                   = [True,      True,       False]
+        # visual_scen.plot_ind_hist_pvcapaprod_sanitycheck_TF         = [True,      True,       False]
+        # visual_scen.plot_ind_hist_pvprod_deviation_TF               = [True,      True,       False]
+        visual_scen.plot_ind_charac_omitted_gwr_TF                  = [True,      True,       False]
+        # visual_scen.plot_ind_line_meteo_radiation_TF                = [True,      True,       False]
+
+        # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
+        # visual_scen.plot_ind_line_installedCap_TF                   = [True,      True,       False]    
+        visual_scen.plot_ind_mapline_prodHOY_EGIDrfcombo_TF     
+        visual_scen.plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False]         
+        visual_scen.plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]         
+        visual_scen.plot_ind_line_PVproduction_TF                   = [True,      True,       False]         
+        visual_scen.plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False]         
+        # visual_scen.plot_ind_line_gridPremiumHOY_per_node_TF        = [True,      True,       False]         
+        # visual_scen.plot_ind_line_gridPremiumHOY_per_EGID_TF        = [True,      True,       False]         
+        # visual_scen.plot_ind_line_gridPremium_structure_TF          = [True,      True,       False]         
+        # visual_scen.plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False]         
+        # visual_scen.plot_ind_hist_pvcapaprod_TF                     = [True,      True,       False]         
+        visual_scen.plot_ind_map_topo_egid_TF                       = [True,      True,       False]         
+        visual_scen.plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]         
+        # visual_scen.plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False]         
+
         visual_class = Visualization(visual_scen)
-
-        plot_method_names = [
-
-            # "plot_ind_hist_cols_HOYagg_per_EGID",                    # runs as intended
-
-            # # # -- def plot_ALL_init_sanitycheck(self, ): -------------
-            "plot_ind_var_summary_stats",                      # runs as intended
-            "plot_ind_hist_pvcapaprod_sanitycheck",            # runs as intended
-            # # "plot_ind_boxp_radiation_rng_sanitycheck", 
-            "plot_ind_charac_omitted_gwr",                     # runs as intended
-            # # "plot_ind_line_meteo_radiation",                   # runs as intended
-
-            # # -- def plot_ALL_mcalgorithm(self,): -------------
-            # # "plot_ind_line_installedCap",                     # runs as intended
-            "plot_ind_line_productionHOY_per_node",           # runs as intended
-            "plot_ind_line_productionHOY_per_EGID",           # runs as intended
-            "plot_ind_hist_cols_HOYagg_per_EGID",                    # runs as intended
-            "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
-            # # "plot_ind_hist_NPV_freepartitions",               # runs as intended
-            # # "plot_ind_line_gridPremiumHOY_per_node",          # runs
-            # # "plot_ind_line_gridPremium_structure",            # runs
-            # # "plot_ind_lineband_contcharact_newinst",          # status not noted
-            "plot_ind_map_topo_egid",                         # runs as intended
-            "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
-            # # "plot_ind_map_node_connections"                   # status not noted        
-        
-            # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
-            # plot_ind_map_node_connections()
-            # plot_ind_map_omitted_egids()
-            # "plot_ind_line_installedCap",                     # runs as intended
-
-        ]
-
-        for plot_method in plot_method_names:
-            method = getattr(visual_class, plot_method)
-            method()
+        visual_class.plot_ALL_init_sanitycheck()
+        visual_class.plot_ALL_mcalgorithm()
 
