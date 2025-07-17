@@ -56,6 +56,7 @@ class PVAllocScenario_Settings:
                                                                                  '265', 
                                                                                  '341', '345', 
                                                                                  ]) 
+    mini_sub_model_ngridnodes: int              = 20
     mini_sub_model_nEGIDs: int                  = 100
     T0_year_prediction: int                     = 2022                          # year for the prediction of the future construction capacity
     # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
@@ -206,7 +207,7 @@ class PVAllocScenario_Settings:
                                                                     '_window2':{'t': [22, 5], 'demand_share': 0.1},
                                                                     })
     GRIDspec_flat_profile_demand_total_EGID: float              = 4500
-    GRIDspec_flat_profile_demand_type_col: set                  = 'MFH_swstore'  # 'flat' / 'MFH_swstore'
+    GRIDspec_flat_profile_demand_type_col: set                  = 'MFH_swstore'  # 'flat' / 'MFH_swstore' / 'outtopo_demand_zero'
 
     # gridprem_adjustment_specs
     GRIDspec_tier_description: str                              = 'tier_level: (voltage_threshold, gridprem_Rp_kWh)'
@@ -769,7 +770,8 @@ class PVAllocScenario:
             gwr_all_building_df['GBAUJ'] = gwr_all_building_df['GBAUJ'].astype(int)
             # filtering for self.sett.GWR_specs
             gwr_all_building_df = gwr_all_building_df.loc[(gwr_all_building_df['GSTAT'].isin(self.sett.GWRspec_GSTAT)) &
-                        # (gwr_all_building_df['GKLAS'].isin(self.sett.GWRspec_GKLAS)) &  => EXCEPTION TO IN SAMPLE SELECTION!
+                        # (gwr_all_building_df['GKLAS'].isin(self.sett.GWRspec_GKLAS)) &  # => EXCEPTION TO IN SAMPLE SELECTION!
+                        (gwr_all_building_df['GGDENR'].isin(self.sett.bfs_numbers)) &     # => EXCEPTION TO IN SAMPLE SELECTION!
                         (gwr_all_building_df['GBAUJ'] >= self.sett.GWRspec_GBAUJ_minmax[0]) &
                         (gwr_all_building_df['GBAUJ'] <= self.sett.GWRspec_GBAUJ_minmax[1])]
             gwr_all_building_df['GBAUJ'] = gwr_all_building_df['GBAUJ'].astype(str)
@@ -793,7 +795,7 @@ class PVAllocScenario:
 
             # create outttopo_df -----------------------
             # create single demand profile for each EGID, not covered in sample  
-            if self.sett.GRIDspec_flat_profile_demand_type_col == 'flat':
+            if False: #self.sett.GRIDspec_flat_profile_demand_type_col == 'flat':
                 t_HOY_range_df = pl.DataFrame({
                     "t": [f"t_{hoy}" for hoy in range(1, 8761)]
                 }) 
@@ -850,7 +852,7 @@ class PVAllocScenario:
   
                 # calculate node usage through out of sample EGIDs
                 egids_topo = list(topo.keys())
-                outtopo_df = gwr_all_building_df.filter(pl.col('EGID').is_in(egids_topo)).clone()
+                outtopo_df = gwr_all_building_df.filter(~pl.col('EGID').is_in(egids_topo)).clone()
 
                 outtopo_df = outtopo_df.join(Map_egid_dsonode, how='left', on='EGID') 
 
@@ -886,7 +888,7 @@ class PVAllocScenario:
 
 
             # or call a demand profile from the demandtypes
-            elif self.sett.GRIDspec_flat_profile_demand_type_col == 'MFH_swstore': 
+            elif (self.sett.GRIDspec_flat_profile_demand_type_col == 'MFH_swstore') or (self.sett.GRIDspec_flat_profile_demand_type_col == 'outtopo_demand_zero') : 
 
                 demandtypes_ts  = pl.read_parquet(f'{self.sett.name_dir_import_path}/demandtypes_ts.parquet')
                 demandtypes_unpivot = demandtypes_ts.unpivot(
@@ -898,7 +900,7 @@ class PVAllocScenario:
 
                 # calculate node usage through out of sample EGIDs
                 egids_topo = list(topo.keys())
-                outtopo_df = gwr_all_building_df.filter(pl.col('EGID').is_in(egids_topo)).clone()
+                outtopo_df = gwr_all_building_df.filter(~pl.col('EGID').is_in(egids_topo)).clone()
                 outtopo_df = outtopo_df.join(Map_egid_dsonode, how='left', on='EGID') 
 
                 # partition the outtopo_df into subdfs because otherwise not readable with enough memory
@@ -919,6 +921,11 @@ class PVAllocScenario:
                     subdf_ts = subdf_ts.with_columns([
                         (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") ).alias("demand_proxy_out_kW")  # convert to kW
                     ])
+
+                    if self.sett.GRIDspec_flat_profile_demand_type_col == 'outtopo_demand_zero':
+                        subdf_ts = subdf_ts.with_columns([
+                            pl.lit(0).alias("demand_proxy_out_kW")  # set demand to 0
+                        ])
 
                     # export 
                     subdf_ts.write_parquet(f'{subdf_path}/outtopo_subdf_{i}to{i+stepsize-1}.parquet')
@@ -1409,9 +1416,9 @@ class PVAllocScenario:
                 if any([node in gridnodes_in_gwr for node in self.sett.mini_sub_model_grid_nodes]):
                     mini_sub_model_nodes = self.sett.mini_sub_model_grid_nodes
                 else:
-                    mini_sub_model_nodes = gridnodes_in_gwr[0:3]
+                    mini_sub_model_nodes = gridnodes_in_gwr[0:self.sett.mini_sub_model_ngridnodes]
                     
-                mini_submodel_EGIDs = Map_egid_dsonode[Map_egid_dsonode['grid_node'].isin(mini_sub_model_nodes)]['EGID'].unique()
+                mini_submodel_EGIDs = Map_egid_dsonode.loc[Map_egid_dsonode['grid_node'].isin(mini_sub_model_nodes)]['EGID'].unique()
                 gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(mini_submodel_EGIDs)])
 
                 if (self.sett.mini_sub_model_nEGIDs is not None) & (self.sett.mini_sub_model_nEGIDs < gwr['EGID'].nunique()): 
@@ -3231,7 +3238,7 @@ class PVAllocScenario:
                 # necessary, not too exagerate demand per gridnode
                 agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
                     pl.col('grid_node').first().alias('grid_node'),
-                    pl.col('demand_kW').first().alias('demand_kW'),
+                    pl.col('demand_kW').sum().alias('demand_kW'),
                     pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                     pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                     pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
@@ -3276,7 +3283,7 @@ class PVAllocScenario:
 
             agg_subdf_df = pl.concat(agg_subdf_df_list)
             topo_gridnode_df = agg_subdf_df.group_by(['grid_node', 't']).agg([
-                pl.col('demand_kW').first().alias('demand_kW'),
+                pl.col('demand_kW').sum().alias('demand_kW'),
                 pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                 pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                 pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
@@ -4230,9 +4237,11 @@ class PVAllocScenario:
 # ======================================================================================================
 if __name__ == '__main__':
     pvalloc_scen_list = [
-        PVAllocScenario_Settings(
-                name_dir_export    = 'pvalloc_mini_rnd',
+        PVAllocScenario_Settings(name_dir_export    = 'pvalloc_mini_rnd',
                 name_dir_import    = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
+                bfs_numbers                                          = [
+                                                                        2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                                                        ],          
                 show_debug_prints                                    = True,
                 export_csvs                                          = True,
                 mini_sub_model_TF                                    = True,
@@ -4281,6 +4290,7 @@ if __name__ == '__main__':
         #         TECspec_pvprod_calc_method                           = 'method2.2',
         #         # MCspec_montecarlo_iterations_fordev_sequentially    = 2,
         # ),
+
         ]
 
     for pvalloc_scen in pvalloc_scen_list:

@@ -119,9 +119,7 @@ class Visual_Settings:
 
     plot_ind_map_topo_egid_TF: List[bool]                       = field(default_factory=lambda: [True,      True,       False])
     plot_ind_map_topo_egid_incl_gridarea_TF: List[bool]         = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_map_node_connections_TF: List[bool]                = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_mapline_prodHOY_EGIDrfcombo_TF: List[bool]  = field(default_factory=lambda: [True,      True,       False])
-    plot_ind_map_omitted_egids_TF: List[bool]                   = field(default_factory=lambda: [True,      True,       False])
+    plot_ind_mapline_prodHOY_EGIDrfcombo_TF: List[bool]         = field(default_factory=lambda: [True,      True,       False])
     plot_ind_lineband_contcharact_newinst_TF: List[bool]        = field(default_factory=lambda: [True,      True,       False])
 
     plot_ind_line_productionHOY_per_EGID_specs: Dict        = field(default_factory=lambda: {
@@ -175,11 +173,13 @@ class Visual_Settings:
         'point_size_pv': 6,
         'point_size_rest': 4.5,
         'point_size_sanity_check': 20,
+        'point_size_outsample': 3,
         'point_color_pv_df': '#54f533',      # green
         'point_color_solkat': '#f06a1d',     # turquoise
         'point_color_alloc_algo': '#ffa600', # yellow 
         'point_color_rest': '#383838',       # dark grey
         'point_color_sanity_check': '#0041c2', # blue
+        'point_color_outsample': '#ed4242',  
         'gridnode_area_geom_buffer': 0.5,
         'gridnode_area_palette': 'Turbo',
         'girdnode_egid_size': 20, 
@@ -204,20 +204,13 @@ class Visual_Settings:
         'specific_selected_EGIDs': [], 
         'n_rndm_egid_winst_pvdf': 2, 
         'n_rndm_egid_winst_alloc': 2,
-        'n_rndm_egid_woinst': 2,
-        'n_rndm_egid_outsample': 2, 
-        'n_partition_pegid_minmax': (1,5), 
+        'n_rndm_egid_woinst': 1,
+        'n_rndm_egid_outsample': 4, 
+        'n_partition_pegid_minmax': (1,2), 
         'roofpartition_color': '#fff2ae',
         'actual_ts_trace_marker': 'cross'
         })
-    plot_ind_map_omitted_egids_specs: Dict                  = field(default_factory=lambda: {
-        'point_opacity': 0.7,
-        'point_size_select_but_omitted': 10,
-        'point_size_rest_not_selected': 1, # 4.5,
-        'point_color_select_but_omitted': '#ed4242', # red
-        'point_color_rest_not_selected': '#ff78ef',  # pink
-        'export_gdfs_to_shp': True, 
-    })
+    
     plot_ind_line_contcharact_newinst_specs: Dict           = field(default_factory=lambda: {
             'trace_color_palette': 'Turbo',
             'upper_lower_bound_interval': [0.05, 0.95],
@@ -237,7 +230,18 @@ class Visual_Settings:
 
     # old out of use plots -------------------------------------------------------------->  [run plot,  show plot,  show all scen]
     plot_ind_boxp_radiation_rng_sanitycheck_TF: List[bool]  = field(default_factory=lambda: [False,      True,       False])
-
+    plot_ind_map_node_connections_TF: List[bool]                = field(default_factory=lambda: [True,      True,       False])
+    plot_ind_map_omitted_egids_TF: List[bool]                   = field(default_factory=lambda: [True,      True,       False])
+    
+    plot_ind_map_omitted_egids_specs: Dict                  = field(default_factory=lambda: {
+            'point_opacity': 0.7,
+            'point_size_select_but_omitted': 10,
+            'point_size_rest_not_selected': 1, # 4.5,
+            'point_color_select_but_omitted': '#ed4242', # red
+            'point_color_rest_not_selected': '#ff78ef',  # pink
+            'export_gdfs_to_shp': True, 
+        })
+    
 
 
 class Visualization:
@@ -332,8 +336,9 @@ class Visualization:
         self.plot_ind_map_topo_egid()
         self.plot_ind_map_topo_egid_incl_gridarea()
         self.plot_ind_mapline_prodHOY_EGIDrfcombo()
+        
         # plot_ind_map_node_connections()
-        # plot_ind_map_omitted_egids()
+        self.plot_ind_map_omitted_egids()
         # plot_ind_lineband_contcharact_newinst()
  
 
@@ -610,7 +615,7 @@ class Visualization:
                         egid_with_pvdf = [egid for egid in topo.keys() if topo[egid]['pv_inst']['info_source'] == 'pv_df']
                         xtf_in_topo = [topo[egid]['pv_inst']['xtf_id'] for egid in egid_with_pvdf]
                         topo_subdf_paths = glob.glob(f'{self.visual_sett.sanity_scen_data_path}/topo_subdf_*.parquet')
-                        topo.get(egid_with_pvdf[0])
+                        # topo.get(egid_with_pvdf[0])
                         
                         aggdf_combo_list = []
                         path = topo_subdf_paths[0]
@@ -2005,7 +2010,7 @@ class Visualization:
                         # necessary, not too exagerate demand per gridnode
                         agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
                             pl.col('grid_node').first().alias('grid_node'),
-                            pl.col('demand_kW').first().alias('demand_kW'),
+                            pl.col('demand_kW').sum().alias('demand_kW'),
                             pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                             pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                             pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
@@ -2030,7 +2035,7 @@ class Visualization:
                     
                     agg_subdf_df = pl.concat(agg_subdf_df_list)
                     topo_gridnode_df = agg_subdf_df.group_by(['grid_node', 't']).agg([
-                        pl.col('demand_kW').first().alias('demand_kW'),
+                        pl.col('demand_kW').sum().alias('demand_kW'),
                         pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                         pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                         pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
@@ -2451,7 +2456,7 @@ class Visualization:
                             # necessary, not too exagerate demand per gridnode
                             agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
                                 pl.col('grid_node').first().alias('grid_node'),
-                                pl.col('demand_kW').first().alias('demand_kW'),
+                                pl.col('demand_kW').sum().alias('demand_kW'),
                                 pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                                 pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                                 pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
@@ -2480,7 +2485,7 @@ class Visualization:
                         
                         agg_subdf_df = pl.concat(agg_subdf_df_list)
                         topo_gridnode_df = agg_subdf_df.group_by(['grid_node', 't']).agg([
-                            pl.col('demand_kW').first().alias('demand_kW'),
+                            pl.col('demand_kW').sum().alias('demand_kW'),
                             pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                             pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                             pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
@@ -3393,6 +3398,10 @@ class Visualization:
                         gm_gdf =        gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
 
                         topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+                        # gwr_all_building_df  = pd.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_all_building_df.parquet')
+                        gwr_all_building_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_all_building_gdf.geojson')
+                        outtopo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/outtopo_time_subdf/outtopo_subdf_*.parquet')
+
                         egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
                         gklas_list, node_list, demand_type_list, pvtarif_list, elecpri_list, elecpri_info_list = [], [], [], [], [], []
 
@@ -3529,6 +3538,28 @@ class Visualization:
                             name = 'house w/o pv',
                             text=subinst3_gdf['hover_text'],
                             hoverinfo='text'
+                        ))
+
+                    # topo egid map: outsample buildings ----------------
+                    if True: 
+                        outtopo_egid_list = []
+                        for i_path, path in enumerate(outtopo_subdf_paths):
+                            outtopo_subdf = pl.read_parquet(path)
+                            unique_egids_in_subdf = outtopo_subdf.select(pl.col("EGID").unique()).to_series().to_list()
+                            outtopo_egid_list.extend(unique_egids_in_subdf)
+
+                        outtopo_gdf = gwr_all_building_gdf.loc[gwr_all_building_gdf['EGID'].isin(outtopo_egid_list)].copy()
+                        outtopo_gdf = outtopo_gdf.to_crs('EPSG:4326')
+                        outtopo_gdf['geometry'] = outtopo_gdf['geometry'].apply(self.flatten_geometry)
+
+                        # Add out sample points to map
+                        fig_topoegid.add_trace(go.Scattermapbox(lat=outtopo_gdf.geometry.y,lon=outtopo_gdf.geometry.x, mode='markers',
+                                marker=dict(
+                                    size    = map_topo_egid_specs['point_size_outsample'], 
+                                    color   = map_topo_egid_specs['point_color_outsample'], 
+                                    opacity = map_topo_egid_specs['point_opacity'], 
+                                ), 
+                                name = 'EGIDs out of sample',
                         ))
  
                     
@@ -4000,7 +4031,8 @@ class Visualization:
 
                     # import
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
-                    topo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_time_subdf/topo_subdf_*.parquet')
+                    topo_subdf_paths    = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_time_subdf/topo_subdf_*.parquet')
+                    outtopo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/outtopo_time_subdf/outtopo_subdf_*.parquet') 
 
                     # solkat_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/solkat_gdf.geojson')
                     solkat_gdf = gpd.read_file(f'{self.visual_sett.data_path}/pvalloc/{self.pvalloc_scen.name_dir_export}/topo_spatial_data/solkat_gdf_in_topo.geojson')
@@ -4010,13 +4042,13 @@ class Visualization:
                     if True:    
                         egid_list, dfuid_list, info_source_list, inst_TF_list, grid_node_list = [], [], [], [], []
                         for k,v in topo.items():
-                            if v['pv_inst']['inst_TF']:
-                                for dfuid_w_inst in v['pv_inst']['df_uid_w_inst']:
-                                    egid_list.append(k)
-                                    dfuid_list.append(dfuid_w_inst)
-                                    info_source_list.append(v['pv_inst']['info_source'])
-                                    inst_TF_list.append(v['pv_inst']['inst_TF'])   
-                                    grid_node_list.append(v['grid_node']) 
+                            # if v['pv_inst']['inst_TF']:
+                            for dfuid_w_inst in v['pv_inst']['df_uid_w_inst']:
+                                egid_list.append(k)
+                                dfuid_list.append(dfuid_w_inst)
+                                info_source_list.append(v['pv_inst']['info_source'])
+                                inst_TF_list.append(v['pv_inst']['inst_TF'])   
+                                grid_node_list.append(v['grid_node']) 
                             else: 
                                 egid_list.append(k)
                                 dfuid_list.append('')
@@ -4044,7 +4076,8 @@ class Visualization:
                             (pl.col('info_source') == 'pv_df') & 
                             (pl.col('df_uid_count') >= npartion_minmax[0]) &
                             (pl.col('df_uid_count') <= npartion_minmax[1])
-                        ).head(plot_mapline_specs['n_rndm_egid_winst_pvdf'])
+                        )
+                        egid_winst_pvdf_df = egid_winst_pvdf_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_pvdf'], with_replacement=False,).clone()
                         egid_winst_pvdf = egid_winst_pvdf_df['EGID'].to_list()
 
                         egid_winst_alloc_df = Map_pvinfo_topo_egid.filter(
@@ -4052,17 +4085,27 @@ class Visualization:
                             (pl.col('info_source') == 'alloc_algorithm') &
                             (pl.col('df_uid_count') >= npartion_minmax[0]) &
                             (pl.col('df_uid_count') <= npartion_minmax[1])
-                        ).head(plot_mapline_specs['n_rndm_egid_winst_alloc'])
+                        )
+                        egid_winst_alloc_df = egid_winst_alloc_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_alloc'], with_replacement=False,).clone()
                         egid_winst_alloc = egid_winst_alloc_df['EGID'].to_list()
 
                         egid_woinst_df = Map_pvinfo_topo_egid.filter(
                             (pl.col('inst_TF') == False) & 
                             (pl.col('df_uid_count') >= npartion_minmax[0]) &
                             (pl.col('df_uid_count') <= npartion_minmax[1])
-                        ).head(plot_mapline_specs['n_rndm_egid_woinst'])
+                        )
+                        egid_woinst_df = egid_woinst_df.sample(n=plot_mapline_specs['n_rndm_egid_woinst'], with_replacement=False,).clone()
                         egid_woinst = egid_woinst_df['EGID'].to_list()
 
-                        selected_egid = selected_egid + egid_winst_pvdf + egid_winst_alloc + egid_woinst
+                        outtopo_egid_list = []
+                        for i_path, path in enumerate(outtopo_subdf_paths):
+                            outtopo_subdf = pl.read_parquet(path)
+                            unique_egids_in_subdf = outtopo_subdf.select(pl.col("EGID").unique()).to_series().to_list()
+                            outtopo_egid_list.extend(unique_egids_in_subdf)
+                        egid_outsample = outtopo_egid_list.sample(n=plot_mapline_specs['n_rndm_egid_outsample'], with_replacement=False,).copy()
+
+
+                        selected_egid = selected_egid + egid_winst_pvdf + egid_winst_alloc + egid_woinst + egid_outsample
 
 
                     # build topo_partitions_df --------------
@@ -4097,16 +4140,17 @@ class Visualization:
                     topo_partitions_gdf['geometry'] = topo_partitions_gdf['geometry'].apply(self.flatten_geometry)
                     topo_partitions_gdf['roofpartition_color'] = topo_partitions_gdf['EGID'].apply(lambda x: plot_mapline_specs['roofpartition_color'] if x in selected_egid else 'rgba(0,0,0,0)')
 
+
                     egid = '101227714'
-                    for egid in topo_partitions_gdf['EGID'].unique():
+                    for egid in selected_egid:  # ['EGID'].unique():
 
                         # plot partition map ---------------
                         fig_rfpart_map = go.Figure()
                         if True:
                             sub_partitions_gdf = topo_partitions_gdf.loc[topo_partitions_gdf['EGID'] == egid].copy()
 
-                            center_lat = sub_partitions_gdf.geometry.unary_union.centroid.y # sub_partitions_gdf.geometry.centroid.y.mean()
-                            center_lon = sub_partitions_gdf.geometry.unary_union.centroid.x # sub_partitions_gdf.geometry.centroid.x.mean()
+                            center_lat = sub_partitions_gdf.geometry.union_all().centroid.y    # center_lat = sub_partitions_gdf.geometry.unary_union.centroid.y
+                            center_lon = sub_partitions_gdf.geometry.union_all().centroid.x    # center_lon = sub_partitions_gdf.geometry.unary_union.centroid.x
                             
                             # Add each polygon as a separate trace
                             for idx, row in sub_partitions_gdf.iterrows():
@@ -4144,8 +4188,11 @@ class Visualization:
                                     ))
                             
                             # Update layout
+                            fig_rfpart_map = self.add_scen_name_to_plot(fig_rfpart_map, scen, self.pvalloc_scen)
+                            info_source_pd = Map_pvinfo_topo_egid.to_pandas()
+                            info_source_str = info_source_pd.loc[info_source_pd["EGID"] == egid, "info_source"].iloc[0]
                             fig_rfpart_map.update_layout(
-                                title=f'Roof Partitions Map for EGID: {egid} (scen: {scen})',
+                                title=f'Roof Partitions Map for EGID: {egid} (info_source: {info_source_str})',
                                 mapbox=dict(
                                     style="carto-positron",
                                     zoom=18,
@@ -4179,7 +4226,7 @@ class Visualization:
                                 for combo in itertools.combinations(df_uid_list,r):
                                     combo_list.append(combo)
 
-                            idx = 1
+                            idx = 0
                             i_path, path = idx, topo_subdf_paths[idx]
                             # extract value for df_uid combinations from topo_time_subdf
                             for df_uid_combo in combo_list:
@@ -4337,7 +4384,7 @@ class Visualization:
                                             .alias('demand_kW')
                                     ])
                                        
-                                       
+
                                     Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('inst_TF'))  # indifferetn => should give same result, Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
                                     subdf_no_inst = subdf_updated.join(
                                         Map_pvinst_topo_egid[['EGID', 'df_uid']], 
@@ -4362,7 +4409,7 @@ class Visualization:
                                     # necessary, not too exagerate demand per gridnode
                                     agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
                                         pl.col('grid_node').first().alias('grid_node'),
-                                        pl.col('demand_kW').first().alias('demand_kW'), 
+                                        pl.col('demand_kW').sum().alias('demand_kW'), 
                                         pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                                         pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                                         pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
@@ -4399,20 +4446,48 @@ class Visualization:
                                             ),
                                             name=f"{col}",
                                             line=dict(width=3),
-                                            opacity = 0.8,
+                                            opacity = 0.4,
                                         ))
+
+                            info_source_pd = Map_pvinfo_topo_egid.to_pandas()
+                            info_source_str = info_source_pd.loc[info_source_pd["EGID"] == egid, "info_source"].iloc[0]
+
+
+                        # outsample time series
+                        if True:
+                            if egid in outtopo_egid_list:
+
+                                for i_path, path in enumerate(outtopo_subdf_paths):
+                                    outtopo_subdf = pl.read_parquet(path)
+
+                                    if egid in outtopo_subdf['EGID'].to_list():
+                                        # filter for egid
+                                        outtopo_egid = outtopo_subdf.filter(pl.col('EGID') == egid).clone()
+                                        
+                                        fig_rfpart_ts.add_trace(go.Scatter(
+                                            x = outtopo_egid['t_int'],
+                                            y = outtopo_egid['demand_proxy_out_kW'],
+                                            mode = 'lines',
+                                            name = 'demand_proxy_out_kW - outsample EGIDs',
+                                            line = dict(widht = 1.5)
+                                            ))
+
+                                        combo_list = []
+                                        df_uid_list = []
+                                        info_source_str = 'out_sample'
+
 
 
                         # Update layout
                         fig_rfpart_ts = self.set_default_fig_zoom_hour(fig_rfpart_ts, self.visual_sett.default_zoom_hour)
-
+                        fig_rfpart_ts = self.add_scen_name_to_plot(fig_rfpart_ts, scen, self.pvalloc_scen)
                         fig_rfpart_ts.update_layout(
                             xaxis_title = 't - Hours', 
                             yaxis_title = 'kW', 
-                            title = f'Roof Partitions Time Series for EGID: {egid}, n_combos: {len(combo_list)}, n_partitions: {len(df_uid_list)}, scen: {scen}',
+                            title = f'Roof Partitions Time Series for EGID: {egid}, n_combos: {len(combo_list)}, n_partitions: {len(df_uid_list)}, info_source: {info_source_str}',
                             template = 'plotly_white',
                             )
-                        
+                            
                         # export plot
                         if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
                             if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
@@ -4428,7 +4503,6 @@ class Visualization:
 
         # def plot_ind_map_omitted_egids(self, ): 
 
-        # def plot_ind_lineband_contcharact_newinst(self, ): 
 
 
 
@@ -4448,9 +4522,12 @@ if __name__ == '__main__':
                 '*old_vers*',
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_RUR_test2c_default*',
-                # 'pvalloc_RUR_test2c_default_max', 
+                # 'pvalloc_RUR_test2c*',
+                # 'pvalloc_mini_aggr_RUR*',
+                'pvalloc_mini_rnd',
+
           ],
+            plot_show                          = True,
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  
             remove_old_plots_in_visualization  = True,  
@@ -4463,32 +4540,31 @@ if __name__ == '__main__':
 
         plot_method_names = [
 
-            # # -- def plot_ALL_init_sanitycheck(self, ): -------------
-            # "plot_ind_var_summary_stats",                     # runs as intended
-            # # "plot_ind_hist_pvcapaprod_sanitycheck",           # runs as intended
-            # # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
-            # "plot_ind_charac_omitted_gwr",                     # runs as intended
-            # # "plot_ind_line_meteo_radiation",                   # runs as intended
-
+            # # # -- def plot_ALL_init_sanitycheck(self, ): -------------
+            # "plot_ind_var_summary_stats",               
+            # # # "plot_ind_hist_pvcapaprod_sanitycheck",     
+            # "plot_ind_charac_omitted_gwr",              
+            
             # # # -- def plot_ALL_mcalgorithm(self,): -------------
-            # # "plot_ind_line_installedCap",                     # runs as intended
-            # "plot_ind_line_productionHOY_per_node",           # runs as intended
-            # "plot_ind_line_productionHOY_per_EGID",           # runs as intended
+            # # "plot_ind_line_installedCap", 
+            # "plot_ind_mapline_prodHOY_EGIDrfcombo",
+            # "plot_ind_line_productionHOY_per_node",     
+            # "plot_ind_line_productionHOY_per_EGID",
+            # "plot_ind_line_PVproduction",               
             # "plot_ind_hist_cols_HOYagg_per_EGID", 
-            # "plot_ind_line_PVproduction",                   # runs — optional, uncomment if needed
-            # # "plot_ind_hist_NPV_freepartitions",               # runs as intended
-            # # # "plot_ind_line_gridPremiumHOY_per_node",          # runs
-            # # # "plot_ind_line_gridPremium_structure",            # runs
-            # # "plot_ind_lineband_contcharact_newinst",          # status not noted
-            # "plot_ind_map_topo_egid",                         # runs as intended
-            # # "plot_ind_map_topo_egid_incl_gridarea",         # runs as intended — optional
-            # # # "plot_ind_map_node_connections"                   # status not noted        
-
-            "plot_ind_mapline_prodHOY_EGIDrfcombo",
+            # # "plot_ind_hist_NPV_freepartitions",       
+            # # # "plot_ind_line_gridPremiumHOY_per_node",
+            # # # "plot_ind_line_gridPremium_structure",  
+            # "plot_ind_lineband_contcharact_newinst",  
+            "plot_ind_map_topo_egid",                   
+            # "plot_ind_map_topo_egid_incl_gridarea",   
+            # # # "plot_ind_map_node_connections"         
     
-            # # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
-            # # plot_ind_map_node_connections()
-            # # plot_ind_map_omitted_egids()
+
+            # # # # visual_class.plot_ind_boxp_radiation_rng_sanitycheck()
+            # # # # plot_ind_map_node_connections()
+            # # # # plot_ind_map_omitted_egids()
+
         ]
 
         for plot_method in plot_method_names:
