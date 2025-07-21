@@ -21,20 +21,20 @@ visualization_list = [
             remove_old_plots_in_visualization  = True,  
             remove_old_csvs_in_visualization   = True,
             ),   
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['*test2b*_selfcons1',],),  
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['*test2b*_selfcons1',],),  
         # Visual_Settings(
         #     pvalloc_include_pattern_list = ['*test2a*_selfcons1',],),   
             
             
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_default_rnd_selfcons1',],),         
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd_selfcons1',],),
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd_selfcons1',],),
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['pvalloc*_default_max_selfcons1',],),
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_default_rnd_selfcons1',],),         
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd_selfcons1',],),
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd_selfcons1',],),
+        Visual_Settings(
+            pvalloc_include_pattern_list = ['pvalloc*_default_max_selfcons1',],),
 
     ]    
 
@@ -52,8 +52,8 @@ if __name__ == '__main__':
         # visual_scen.plot_ind_line_meteo_radiation_TF                = [True,      True,       False]
 
         # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-        # visual_scen.plot_ind_line_installedCap_TF                   = [True,      True,       False]    
-        visual_scen.plot_ind_mapline_prodHOY_EGIDrfcombo_TF     
+        # visual_scen.plot_ind_line_installedCap_TF                 = [True,      True,       False]    
+        visual_scen.plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False]         
         visual_scen.plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False]         
         visual_scen.plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]         
         visual_scen.plot_ind_line_PVproduction_TF                   = [True,      True,       False]         

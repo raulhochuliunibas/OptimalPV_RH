@@ -3549,7 +3549,7 @@ class Visualization:
                         for i_path, path in enumerate(outtopo_subdf_paths):
                             outtopo_subdf = pl.read_parquet(path)
                             unique_egids_in_subdf = outtopo_subdf.select(pl.col("EGID").unique()).to_series().to_list()
-                            outtopo_egid_list.extend(unique_egids_in_subdf)
+                            outtopo_egid_list = outtopo_egid_list + unique_egids_in_subdf
 
                         outtopo_gdf = gwr_all_building_gdf.loc[gwr_all_building_gdf['EGID'].isin(outtopo_egid_list)].copy()
                         outtopo_gdf = outtopo_gdf.to_crs('EPSG:4326')
@@ -4104,8 +4104,9 @@ class Visualization:
                         for i_path, path in enumerate(outtopo_subdf_paths):
                             outtopo_subdf = pl.read_parquet(path)
                             unique_egids_in_subdf = outtopo_subdf.select(pl.col("EGID").unique()).to_series().to_list()
-                            outtopo_egid_list.extend(unique_egids_in_subdf)
-                        egid_outsample = outtopo_egid_list.sample(n=plot_mapline_specs['n_rndm_egid_outsample'], with_replacement=False,).copy()
+                            outtopo_egid_list = outtopo_egid_list + unique_egids_in_subdf
+                        # egid_outsample = outtopo_egid_list.sample(n=plot_mapline_specs['n_rndm_egid_outsample'], with_replacement=False,).copy()
+                        egid_outsample = pl.Series(outtopo_egid_list).sample(n=min(len(outtopo_egid_list), plot_mapline_specs['n_rndm_egid_outsample']), with_replacement=False).to_list()
 
 
                         selected_egid = selected_egid + egid_winst_pvdf + egid_winst_alloc + egid_woinst + egid_outsample
@@ -4150,19 +4151,37 @@ class Visualization:
                         # plot partition map ---------------
                         fig_rfpart_map = go.Figure()
                         if True:
-                            sub_partitions_gdf = topo_partitions_gdf.loc[topo_partitions_gdf['EGID'] == egid].copy()
 
-                            center_lat = sub_partitions_gdf.geometry.union_all().centroid.y    # center_lat = sub_partitions_gdf.geometry.unary_union.centroid.y
-                            center_lon = sub_partitions_gdf.geometry.union_all().centroid.x    # center_lon = sub_partitions_gdf.geometry.unary_union.centroid.x
-                            
-                            # Add each polygon as a separate trace
-                            for idx, row in sub_partitions_gdf.iterrows():
+                            if egid in list(topo_partitions_gdf['EGID'].unique()):
                                 
-                                # Extract coordinates
-                                if row.geometry.geom_type == 'MultiPolygon':
-                                    # Handle multiple polygons
-                                    for poly in row.geometry.geoms:
-                                        x, y = poly.exterior.xy
+                                sub_partitions_gdf = topo_partitions_gdf.loc[topo_partitions_gdf['EGID'] == egid].copy()
+
+                                center_lat = sub_partitions_gdf.geometry.union_all().centroid.y    # center_lat = sub_partitions_gdf.geometry.unary_union.centroid.y
+                                center_lon = sub_partitions_gdf.geometry.union_all().centroid.x    # center_lon = sub_partitions_gdf.geometry.unary_union.centroid.x
+                                
+                                # Add each polygon as a separate trace
+                                for idx, row in sub_partitions_gdf.iterrows():
+                                    
+                                    # Extract coordinates
+                                    if row.geometry.geom_type == 'MultiPolygon':
+                                        # Handle multiple polygons
+                                        for poly in row.geometry.geoms:
+                                            x, y = poly.exterior.xy
+                                            fig_rfpart_map.add_trace(go.Scattermapbox(
+                                                fill="toself",
+                                                fillcolor=plot_mapline_specs['roofpartition_color'],
+                                                mode="lines",
+                                                line=dict(width=1, color="black"),
+                                                lat=y.tolist(),
+                                                lon=x.tolist(),
+                                                name=f"EGID: {row['EGID']} - df_uid: {row['df_uid']}",
+                                                text=row['hover_text'],
+                                                hoverinfo="text", 
+                                                
+                                            ))
+                                    else:
+                                        # Handle single polygon
+                                        x, y = row.geometry.exterior.xy
                                         fig_rfpart_map.add_trace(go.Scattermapbox(
                                             fill="toself",
                                             fillcolor=plot_mapline_specs['roofpartition_color'],
@@ -4172,49 +4191,34 @@ class Visualization:
                                             lon=x.tolist(),
                                             name=f"EGID: {row['EGID']} - df_uid: {row['df_uid']}",
                                             text=row['hover_text'],
-                                            hoverinfo="text", 
-                                            
+                                            hoverinfo="text"
                                         ))
-                                else:
-                                    # Handle single polygon
-                                    x, y = row.geometry.exterior.xy
-                                    fig_rfpart_map.add_trace(go.Scattermapbox(
-                                        fill="toself",
-                                        fillcolor=plot_mapline_specs['roofpartition_color'],
-                                        mode="lines",
-                                        line=dict(width=1, color="black"),
-                                        lat=y.tolist(),
-                                        lon=x.tolist(),
-                                        name=f"EGID: {row['EGID']} - df_uid: {row['df_uid']}",
-                                        text=row['hover_text'],
-                                        hoverinfo="text"
-                                    ))
-                            
-                            # Update layout
-                            fig_rfpart_map = self.add_scen_name_to_plot(fig_rfpart_map, scen, self.pvalloc_scen)
-                            info_source_pd = Map_pvinfo_topo_egid.to_pandas()
-                            info_source_str = info_source_pd.loc[info_source_pd["EGID"] == egid, "info_source"].iloc[0]
-                            fig_rfpart_map.update_layout(
-                                title=f'Roof Partitions Map for EGID: {egid} (info_source: {info_source_str})',
-                                mapbox=dict(
-                                    style="carto-positron",
-                                    zoom=18,
-                                    center={"lat": center_lat, "lon": center_lon},
-                                ),
-                                margin={"r":0, "t":50, "l":0, "b":0},
-                            )
+                                
+                                # Update layout
+                                fig_rfpart_map = self.add_scen_name_to_plot(fig_rfpart_map, scen, self.pvalloc_scen)
+                                info_source_pd = Map_pvinfo_topo_egid.to_pandas()
+                                info_source_str = info_source_pd.loc[info_source_pd["EGID"] == egid, "info_source"].iloc[0]
+                                fig_rfpart_map.update_layout(
+                                    title=f'Roof Partitions Map for EGID: {egid} (info_source: {info_source_str})',
+                                    mapbox=dict(
+                                        style="carto-positron",
+                                        zoom=18,
+                                        center={"lat": center_lat, "lon": center_lon},
+                                    ),
+                                    margin={"r":0, "t":50, "l":0, "b":0},
+                                )
 
-                            # export plot
-                            if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
-                                if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
-                                    fig_rfpart_map.show()
-                                elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
-                                    fig_rfpart_map.show() if i_scen == 0 else None
-                            if self.visual_sett.save_plot_by_scen_directory:
-                                fig_rfpart_map.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_maprfcombo.html')
-                            else:
-                                fig_rfpart_map.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_maprfcombo.html')    
-                            
+                                # export plot
+                                if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
+                                    if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                        fig_rfpart_map.show()
+                                    elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                        fig_rfpart_map.show() if i_scen == 0 else None
+                                if self.visual_sett.save_plot_by_scen_directory:
+                                    fig_rfpart_map.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_maprfcombo.html')
+                                else:
+                                    fig_rfpart_map.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_maprfcombo.html')    
+                                
 
 
                         # plot partition time series ---------------
@@ -4472,7 +4476,7 @@ class Visualization:
                                             y = outtopo_egid['demand_proxy_out_kW'],
                                             mode = 'lines',
                                             name = 'demand_proxy_out_kW - outsample EGIDs',
-                                            line = dict(widht = 1.5)
+                                            line = dict(width = 1.5)
                                             ))
 
                                         combo_list = []
