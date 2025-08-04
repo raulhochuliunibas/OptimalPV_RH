@@ -3167,6 +3167,12 @@ class PVAllocScenario:
                 # EDIT 3: Because demand is per unit of EGID but the subdf data frame is by df_uid, demand_kW will be double counted when simply sumed up like other pvproduction relevant columns.
                 # So I need to devide the demand on a house level by n_dfuid (with and / or without installations) so the actuall amount of feedin is calculated and not distorted by double counting. 
                 # Two cases should solve all possible applications for this transformation
+                # EDIT 4: Division as described in edit3 is working, problems persist with EGIDs with partial pv installations (only 1/2 df_uid installed). Then selfconsumption is only applied to 
+                # 1/n-inst_share per EGID, which is too low. Another probably essential problem is, that demand is uniformly distributed over all df_uid, but pvprod is not. So even if a southfacing
+                # partition could cover all demand, and another east/west facing partition could do feedin, the total self consumption would be underestimated ) 
+                #       -> move selfconsumption part to a later stage of the compuation! agg production by [EGID,t] and only then apply selfconsumption. "demand-splitting" per partition no longer 
+                #          needed, use demand.first() in aggregation
+
 
                 # add number of df_uid (total + with installation)
                 subdf_updated = subdf_updated.with_columns([
@@ -3192,7 +3198,7 @@ class PVAllocScenario:
                 subdf_updated = subdf_updated.with_columns([
                     pl.when(pl.col('n_inst_pEGID') == 0)
                         .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
-                        .otherwise(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
+                        .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
                         .alias('demand_kW')
                 ])
                 
@@ -3650,7 +3656,7 @@ class PVAllocScenario:
                     subdf = subdf.with_columns([
                         pl.when(pl.col('n_inst_pEGID') == 0)
                             .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
-                            .otherwise(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
+                            .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
                             .alias('demand_kW')
                     ])
 
