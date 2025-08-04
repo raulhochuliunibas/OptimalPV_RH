@@ -3192,7 +3192,7 @@ class PVAllocScenario:
                 subdf_updated = subdf_updated.with_columns([
                     pl.when(pl.col('n_inst_pEGID') == 0)
                         .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
-                        .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
+                        .otherwise(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
                         .alias('demand_kW')
                 ])
                 
@@ -3650,7 +3650,7 @@ class PVAllocScenario:
                     subdf = subdf.with_columns([
                         pl.when(pl.col('n_inst_pEGID') == 0)
                             .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
-                            .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
+                            .otherwise(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
                             .alias('demand_kW')
                     ])
 
