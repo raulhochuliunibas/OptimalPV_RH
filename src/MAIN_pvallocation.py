@@ -25,6 +25,9 @@ from scipy.optimize import curve_fit
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
 
+# settings
+pl.Config.set_tbl_rows(30)  # Adjust 50 to whatever number of rows you want
+pd.set_option('display.max_rows', 30) 
 
 
 @dataclass
@@ -136,7 +139,7 @@ class PVAllocScenario_Settings:
     TECspec_pvtarif_col: List[str]                          = field(default_factory=lambda: ['energy1', 'eco1'])
     TECspec_pvprod_calc_method: str                         = 'method2.2'
     TECspec_panel_efficiency: float                         = 0.21
-    TECspec_inverter_efficiency: int                        = 0.95
+    TECspec_inverter_efficiency: int                        = 0.8
     TECspec_elecpri_year: int                               = 2022
     TECspec_elecpri_category: str                           = 'H4'
     TECspec_invst_maturity: int                             = 25
@@ -201,7 +204,7 @@ class PVAllocScenario_Settings:
     ALGOspec_tweak_npv_excl_elec_demand: bool                   = True
     ALGOspec_tweak_gridnode_df_prod_demand_fact: float          = 1
     ALGOspec_constr_capa_overshoot_fact: float                  = 1
-    ALGOspec_subselec_filter_criteria: str                      = None  #'eastwestfacing_3spec':'southfacing_1spec'
+    ALGOspec_subselec_filter_criteria: str                      = None  # 'southfacing_1spec' / 'eastwestfacing_3spec' / 'southwestfacing_2spec'
 
 
     # dsonodes_ts_specs
@@ -1524,8 +1527,8 @@ class PVAllocScenario:
                 if egid in solkat['EGID'].unique():
                     solkat_sub = solkat.loc[solkat['EGID'] == egid]
                     if solkat.duplicated(subset=['DF_UID', 'EGID']).any():
+                        solkat_sub = solkat_sub.drop_duplicates(subset=['DF_UID', 'EGID'])
                     solkat_partitions = solkat_sub.set_index('DF_UID')[['FLAECHE', 'STROMERTRAG', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG']].to_dict(orient='index')                   
-                    solkat_partitions = solkat_sub.set_index('DF_UID')[['FLAECHE', 'STROMERTRAG', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG']].to_dict(orient='index')                   
                 
                 elif egid not in solkat['EGID'].unique():
                     solkat_partitions = {}
@@ -1906,7 +1909,11 @@ class PVAllocScenario:
 
 
             elif self.sett.CSTRspec_iter_time_unit == 'year':
-                trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='YE')
+                prediction_year_diff = end_prediction.year - T0.year
+                if prediction_year_diff > 0:
+                    trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='YE')
+                elif prediction_year_diff == 0:
+                    trange_prediction = pd.date_range(start=T0, end=end_prediction + pd.DateOffset(years=1), freq='YE')
                 constrcapa = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
 
                 years_prediction = trange_prediction.year.unique()
@@ -2670,7 +2677,6 @@ class PVAllocScenario:
 
                 # II ADJUST INST SETTINGS FOR EXISITN PV (INST_TF / SOURCE) =========================================================== 
                 if self.sett.ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF: 
-                    roundup_pvdf_capa_topartition_TF = self.sett.ALGOspec_roundup_existing_pvdf_capa_topartition_TF
 
                     # loop through all egids with existing pv ----------
                     egid_w_pvdf_inst = subdf.filter(pl.col('info_source') == 'pv_df')['EGID'].unique()
@@ -4318,9 +4324,9 @@ if __name__ == '__main__':
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
         
-        sleep_range = list(range(10, 61, 5))
-        sleep_time = np.random.choice(sleep_range)
-        time.sleep(sleep_time)
+        # sleep_range = list(range(10, 61, 5))
+        # sleep_time = np.random.choice(sleep_range)
+        # time.sleep(sleep_time)
         if (pvalloc_class.sett.overwrite_scen_init) or (not os.path.exists(pvalloc_class.sett.name_dir_export_path)): 
             pvalloc_class.run_pvalloc_initalization()
 
