@@ -54,6 +54,8 @@ class Visual_Settings:
     remove_old_csvs_in_visualization: bool       = False
     MC_subdir_for_plot: str                      = '*MC*1'
     mc_plots_individual_traces: bool             = True
+    cut_timeseries_to_zoom_hour: bool            = False
+
 
     default_zoom_year: List[int]                 = field(default_factory=lambda: [2002, 2030]) # field(default_factory=lambda: [2002, 2030]),
     default_zoom_hour: List[int]                 = field(default_factory=lambda: [2400, 2400+(24*7)]) # field(default_factory=lambda: [2400, 2400+(24*7)]),
@@ -202,11 +204,12 @@ class Visual_Settings:
     })
     plot_ind_mapline_prodHOY_EGIDrfcombo_specs:Dict        = field(default_factory=lambda: {
         'specific_selected_EGIDs': [], 
+        'rndm_sample_seed': None,
         'n_rndm_egid_winst_pvdf': 2, 
         'n_rndm_egid_winst_alloc': 2,
         'n_rndm_egid_woinst': 1,
         'n_rndm_egid_outsample': 4, 
-        'n_partition_pegid_minmax': (1,2), 
+        'n_partition_pegid_minmax': (1,4), 
         'roofpartition_color': '#fff2ae',
         'actual_ts_trace_marker': 'cross'
         })
@@ -2150,6 +2153,14 @@ class Visualization:
                         fig_egid_traces.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'{20*"-"}', opacity=0)) 
 
 
+                    # gridnode_pick_df for comparison ----------
+                    for col in egid_col_to_plot:
+                        fig_sub = fig_dict[f'fig_{col}']
+
+                        for node in gridnode_pick_df['grid_node'].unique():
+                            grid_col_agg_tuples = [t[0] for t in grid_col_to_plot_tuples]
+                            node_subdf = gridnode_pick_df.loc[gridnode_pick_df['grid_node'] == node]
+                            node_subdf = node_subdf.sort_values(by=['t_int'])   
 
                             # reduce t_hours to have more "handable - plots" in plotly
                             if self.visual_sett.cut_timeseries_to_zoom_hour: 
@@ -2158,14 +2169,6 @@ class Visualization:
                                     (node_subdf['t_int'] <= self.visual_sett.default_zoom_hour[1] + (24 * 7))
                                 ].copy()
 
-                    for col in egid_col_to_plot:
-                        fig_sub = fig_dict[f'fig_{col}']
-
-                        for node in gridnode_pick_df['grid_node'].unique():
-                            grid_col_agg_tuples = [t[0] for t in grid_col_to_plot_tuples]
-                            node_subdf = gridnode_pick_df.loc[gridnode_pick_df['grid_node'] == node]
-                            node_subdf = node_subdf.sort_values(by=['t_int'])   
-                            
                             # add aggregated traces 
                             if col in grid_col_agg_tuples:
                                 agg_columns = [t[1] for t in grid_col_to_plot_tuples if t[0] == col]
@@ -2196,6 +2199,14 @@ class Visualization:
                             grid_col_agg_tuples = [t[0] for t in grid_col_to_plot_tuples]
                             gridnode_subdf = gridnode_df_import.filter(pl.col('grid_node') == node)
                             gridnode_subdf = gridnode_subdf.sort("t_int", descending=False)
+                            
+                            # reduce t_hours to have more "handable - plots" in plotly
+                            if self.visual_sett.cut_timeseries_to_zoom_hour: 
+                                gridnode_subdf = gridnode_subdf.filter(
+                                    (pl.col('t_int') >= self.visual_sett.default_zoom_hour[0]-(24*7)) &
+                                    (pl.col('t_int') <= self.visual_sett.default_zoom_hour[1]+(24*7))
+                                ).clone()  
+                            
                             gridnode_subdf = gridnode_subdf.to_pandas()
 
                             if col in grid_col_agg_tuples:
@@ -2225,6 +2236,13 @@ class Visualization:
                         node_subdf = gridnode_pick_df.loc[gridnode_pick_df['grid_node'] == node]
                         node_subdf = node_subdf.sort_values(by=['t_int'])   
 
+                        # reduce t_hours to have more "handable - plots" in plotly
+                        if self.visual_sett.cut_timeseries_to_zoom_hour: 
+                            node_subdf = node_subdf[
+                                (node_subdf['t_int'] >= self.visual_sett.default_zoom_hour[0] - (24 * 7)) &
+                                (node_subdf['t_int'] <= self.visual_sett.default_zoom_hour[1] + (24 * 7))
+                            ].copy()
+
                         fig_netfeedin_all.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'gridnode_pick_df from subdf {20*"-"}', opacity=0))
                         for agg_col in gridnode_pick_col_to_agg:    
                             fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf[agg_col],           
@@ -2232,14 +2250,6 @@ class Visualization:
                                                                    mode = 'lines+markers', 
                                                                    hoverinfo = 'skip', 
                                                                    opacity= grid_trace_opacity))
-                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_kW'],           name= f'grid_node: {node} - netfeedin_kW (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
-                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_kW'],       name= f'grid_node: {node} - netfeedin_all_kW (agg subdf)',         mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity, stackgroup='netfeedin_all_kW'))
-                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['demand_proxy_out_kW' ],   name= f'grid_node: {node} - demand_proxy_out_kW (agg subdf)',      mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity, stackgroup='netfeedin_all_kW'))
-                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_taken_kW'], name= f'grid_node: {node} - netfeedin_all_taken_kW (agg subdf)',   mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
-                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_loss_kW'],  name= f'grid_node: {node} - netfeedin_all_loss_kW (agg subdf)',    mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
-                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['kW_threshold'],           name= f'grid_node: {node} - kW_threshold (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
-                        # fig_netfeedin_all.add_trace(go.Scatter(x=node_subdf['t_int'], y=node_subdf['netfeedin_all_kW+demand_proxy_out_kW'],           name= f'grid_node: {node} - netfeedin_all_kW+demand_proxy_out_kW (agg subdf)',             mode = 'lines+markers', hoverinfo = 'skip', opacity= grid_trace_opacity))
-                        
                         
                         gridnode_subdf = gridnode_df_import.filter(pl.col('grid_node') == node)
                         gridnode_subdf = gridnode_subdf.sort("t_int", descending=False)
@@ -2319,7 +2329,7 @@ class Visualization:
                     'Bluered': pc.sequential.Bluered, 'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
                     'Rainbow': pc.sequential.Rainbow, 
                 }     
-                fig_agg_color_palettes = ['Oranges', 'Purples', 'Mint', 'Greys', 'Blues', 'Greens', 'Reds',  ]
+                fig_agg_color_palettes = ['Mint', 'Oranges', 'Greys', 'Blugrn', 'Burg',  'Blues', 'Greens', 'Reds',  ]
 
                 grid_nodes_counts_minmax    = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['grid_nodes_counts_minmax']
                 specific_gridnodes_egid_HOY = self.visual_sett.plot_ind_line_productionHOY_per_EGID_specs['specific_gridnodes_egid_HOY']
@@ -2449,11 +2459,14 @@ class Visualization:
                             agg_egids = agg_egids.with_columns([        
                                 selfconsum_expr.alias("selfconsum_kW"),
                                 (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
+                                (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                             ])           
 
                             # (change to pvalloc) -----
                             # only select egids for grid_node mentioned above
-                            # agg_egids = agg_egids.filter(pl.col('EGID').is_in(Map_pvinfo_gridnode['EGID'].to_list()))
+                            agg_egids_all_list.append(agg_egids)
+
+                            agg_egids = agg_egids.filter(pl.col('EGID').is_in(Map_pvinfo_gridnode['EGID'].to_list()))
                             agg_egids_list.append(agg_egids)
                             # -----
 
@@ -2656,8 +2669,9 @@ class Visualization:
                         fig_hist = go.Figure()
 
                         # subset topo_agg_egids_df for line plot
-                        topo_agg_egids_df
-                        topo_agg_egids_winst_df = topo_agg_egids_df.loc[topo_agg_egids_df['inst_TF'] == True].copy()
+                        # topo_agg_egids_df = topo_agg_egids_df.sort_values(by=['EGID', 't_int'], ascending=[True, True])
+                        topo_agg_egids_all_df = topo_agg_egids_all_df.sort_values(by=['EGID', 't_int'], ascending=[True, True]).copy()
+                        topo_agg_egids_winst_df = topo_agg_egids_all_df.loc[topo_agg_egids_all_df['inst_TF'] == True].copy()
                         # topo_agg_egids_gridnode_pick_df = topo_agg_egids_df.loc[topo_agg_egids_df['grid_node'] == gridnode_pick]
 
                         # aggregate subset + all cols by EGID over year
@@ -2684,21 +2698,6 @@ class Visualization:
                         }).reset_index()
                         topo_agg_egids_winst_hist['selfconsum_feedin_ratio'] = topo_agg_egids_winst_hist['selfconsum_kW'] / topo_agg_egids_winst_hist['netfeedin_kW']
 
-                        # adjust binsize in standardized way
-                        col_xbins_config = {}
-                        for col in hist_cols_to_plot:
-                            hist_n_bins = n_hist_bins_bycol[col] if col in n_hist_bins_bycol else 10
-                            global_min = min(topo_agg_egids_winst_hist[col].min(), topo_agg_egids_hist[col].min())
-                            global_max = max(topo_agg_egids_winst_hist[col].max(), topo_agg_egids_hist[col].max())
-                            bin_size = (global_max - global_min) / hist_n_bins
-                            
-                            xbins_config = dict(
-                                start=global_min,
-                                end=global_max,
-                                size=bin_size
-                            )
-                            col_xbins_config[col] = xbins_config
-
                         # set coloring         
                         subset_trace_color_palette      = trace_color_dict[self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['subset_trace_color_palette']]
                         agg_subset_color_palette        = trace_color_dict[fig_agg_color_palettes[i_scen]]
@@ -2711,83 +2710,80 @@ class Visualization:
                         # add trace func 
                         def add_hist_cols_trace(figfunc, hist_df, col_func, col_NAME, mean_line_dash, color_func, ):
 
-                            xbins = col_xbins_config[col_func]
-                            bin_start = xbins['start']
-                            bin_end = xbins['end']
-                            bin_size = xbins['size']
-                            
                             # Clean data to avoid inf/nan issues
                             clean_data = hist_df[col_func].replace([np.inf, -np.inf], np.nan).dropna()
 
-                            # check if xbins are valid - otherwise update
-                            checkpoint_to_logfile(f'check: bin_start: {bin_start}, bin_end: {bin_end}, bin_size: {bin_size}', self.visual_sett.log_name)
-                            if (pd.isna(bin_start) or pd.isna(bin_end) or pd.isna(bin_size) or 
-                                bin_size <= 0 or bin_start >= bin_end or len(clean_data) == 0):
-
-                                if len(clean_data) > 0:
-                                    bin_start = float(clean_data.min())
-                                    bin_end = float(clean_data.max())
-                                    if bin_start == bin_end:
-                                        bin_start -= 0.5
-                                        bin_end += 0.5
-                                    bin_size = (bin_end - bin_start) / 10
-                                else:
-                                    # If no valid data, use dummy values
-                                    bin_start = 0
-                                    bin_end = 1
-                                    bin_size = 0.1
-
-                            bin_edges = np.arange(bin_start, bin_end + bin_size, bin_size)
-                            counts, _ = np.histogram(hist_df[col_func], bins=bin_edges)
-                            total = counts.sum()
-                            max_freq = max(counts / total * 100) + 7
-
-                            mean_y_height = [0, max_freq]
-
+                            # adjust binsize
+                            bin_edges = np.linspace(clean_data.min(), clean_data.max(), 100 + 1)
 
                             figfunc.add_trace(go.Histogram(
                                 x=hist_df[col_func],
-                                name=f'{col_func} {col_NAME}',
+                                name=f'hist: {col_func} {col_NAME}',
                                 histnorm='percent',
-                                opacity=hist_opacity,
+                                opacity=hist_opacity-0.2,
                                 marker_color= color_func, 
-                                xbins=col_xbins_config[col_func], 
-                            ))
+                                xbins=dict(
+                                    start=bin_edges[0],
+                                    end=bin_edges[-1],
+                                    size=bin_edges[1] - bin_edges[0]  # Calculate the bin size from the edges
+                                    )
+                                ))
 
-                            col_mean_func = hist_df[col_func].mean()
-                            # mean line props for dash / solid
-                            if mean_line_dash == 'dash':
-                                line_props = dict(color=color_func, width=2, dash = 'dash')
-                            else:   
-                                line_props = dict(color=color_func, width=2)
-                                
+                            return figfunc
 
+                        def add_kde_cols_trace(figfunc, hist_df, col_func, col_NAME, mean_line_dash, color_func):
+                            # Clean data to avoid inf/nan issues
+                            clean_data = hist_df[col_func].replace([np.inf, -np.inf], np.nan).dropna()
+
+                            kde = gaussian_kde(clean_data)
+                            x_range = np.linspace(clean_data.min(), clean_data.max(), 100)
+
+                            # add mean trace
+                            col_mean_func = clean_data.mean()
                             figfunc.add_trace(go.Scatter(
                                 x=[col_mean_func, col_mean_func],  # Constant line at the mean value
-                                y=mean_y_height,
+                                y=[0, max(kde(x_range))],
                                 mode='lines+text',
-                                name=f'Mean {col_func} {col_NAME}',
+                                name=f'mean: {col_func} {col_NAME}',
                                 opacity=1.0,
-                                line=line_props, 
+                                line=dict(color=color_func, width=2, dash = 'dash'), 
                                 text=[None, f'{col_mean_func:.2f}'],  # Show label only at the top
                                 textposition='top center',
                                 textfont=dict(color=color_func),
+                                yaxis='y2',
                             ))
-                            del line_props
+
+                            # add kde trace
+                            figfunc.add_trace(go.Scatter(
+                                x=x_range,
+                                y=kde(x_range),
+                                mode='lines',
+                                name=f'kde : {col_func} {col_NAME}',
+                                opacity=hist_opacity,
+                                line=dict(color=color_func, width=2),
+                                yaxis='y2',
+                            ))
+
                             return figfunc
 
-
                         # hist traces - SUBSET EGID W INST ---------------
+                        nunique_egid_winst = topo_agg_egids_winst_hist['EGID'].nunique()
                         fig_hist.add_trace(go.Histogram(
                             x=[None, ],
-                            name=f'EGIDs with pvinst {20*"-"}',
+                            name=f'EGIDs with pvinst, {nunique_egid_winst} nunique {20*"-"}',
                             opacity=0,
                         ))
                         fig_hist_agg.add_trace(go.Histogram(
                             x=[None, ],
-                            name=f'{scen} {30*"-"}',
+                            name=f'===== {scen} =====',
                             opacity=0,
                         ))
+                        fig_hist_agg.add_trace(go.Histogram(
+                            x=[None, ],
+                            name=f'EGIDs with pvinst, {nunique_egid_winst} nunique {15*"-"}',
+                            opacity=0,
+                        ))
+
                         subset_color_pal_idx    = len(subset_trace_color_palette)
                         agg_subset_color_pal_idx = len(agg_subset_color_palette)
 
@@ -2796,7 +2792,10 @@ class Visualization:
                             agg_color  = agg_subset_color_palette[agg_subset_color_pal_idx-(i_col+1) ]
 
                             try:
+                                fig_hist     = add_kde_cols_trace(fig_hist,     topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'solid', color)
                                 fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'solid', color)
+
+                                fig_hist_agg = add_kde_cols_trace(fig_hist_agg, topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'dash',  agg_color)
                                 fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'dash',  agg_color)
                             except Exception as e:
                                 print_to_logfile(f'Error in add_hist_cols_trace for col {col}: {e}', self.visual_sett.log_name)
@@ -2804,11 +2803,18 @@ class Visualization:
 
 
                         # hist traces - ALL EGID in topo ---------------  
+                        nunique_egid = topo_agg_egids_hist['EGID'].nunique()
                         fig_hist.add_trace(go.Histogram(
                             x=[None, ],
-                            name=f'All EGIDs in topo  {20*"-"}',
+                            name=f'All EGIDs in topo , {nunique_egid} nunique {20*"-"}',
                             opacity=0,
                         ))         
+                        fig_hist_agg.add_trace(go.Histogram(
+                            x=[None, ],
+                            name=f'All EGIDs in topo , {nunique_egid} nunique {15*"-"}',
+                            opacity=0,
+                        ))
+
                         all_color_pal_idx    = len(all_egid_trace_color_palette)
                         agg_all_color_pal_idx = len(agg_allegid_color_palette)             
 
@@ -2817,7 +2823,10 @@ class Visualization:
                             agg_color  = agg_allegid_color_palette[agg_all_color_pal_idx-(i_col+1) ]
 
                             try:
-                                fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_hist, col, 'all egids in topo', 'solid', color)  
+                                fig_hist     = add_kde_cols_trace(fig_hist,     topo_agg_egids_hist, col, 'all egids in topo', 'solid', color)  
+                                fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_hist, col, 'all egids in topo', 'solid', color)
+
+                                fig_hist_agg = add_kde_cols_trace(fig_hist_agg, topo_agg_egids_hist, col, 'all egids in topo', 'dash',  agg_color)
                                 fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_hist, col, 'all egids in topo', 'dash',  agg_color)
                             except Exception as e:
                                 print_to_logfile(f'Error in add_hist_cols_trace for col {col}: {e}', self.visual_sett.log_name)
@@ -2825,11 +2834,19 @@ class Visualization:
 
 
                         fig_hist.update_layout(
-                            title='Histogramm Annual Numbers per EGID', 
+                            title=f'Histogramm Annual Numbers per EGID ({scen})', 
                             xaxis_title='Total (sum kWh per year)',
                             yaxis_title='Frequency',
                             barmode='overlay',
                             template='plotly_white',
+                            yaxis2=dict(
+                                title='Density',
+                                overlaying='y',
+                                side='right',
+                                showgrid=False,
+                                zeroline=False,
+                                ticks='',
+                            ),
                         )
 
                     # export plot --------------------------
@@ -2844,6 +2861,16 @@ class Visualization:
                         fig_hist.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_hist_cols_HOYagg_per_EGID.html')
 
                     
+                    # for debugging: export csv
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        topo_agg_egids_hist.to_csv(f'{self.visual_sett.visual_path}/{scen}__topo_agg_egids_hist.csv', index=False)
+                        topo_agg_egids_winst_hist.to_csv(f'{self.visual_sett.visual_path}/{scen}__topo_agg_egids_winst_hist.csv', index=False)
+                    else:
+                        topo_agg_egids_hist.to_csv(f'{self.visual_sett.visual_path}/{scen}__topo_agg_egids_hist.csv', index=False)
+                        topo_agg_egids_winst_hist.to_csv(f'{self.visual_sett.visual_path}/{scen}__topo_agg_egids_winst_hist.csv', index=False)
+                    
+
+                    
                 # export agg plot --------------------------
                 fig_hist_agg.update_layout(
                     title='Histogramm Annual Numbers per EGID', 
@@ -2851,6 +2878,14 @@ class Visualization:
                     yaxis_title='Frequency',
                     barmode='overlay',
                     template='plotly_white',
+                    yaxis2=dict(
+                        title='Density',
+                        overlaying='y',
+                        side='right',
+                        showgrid=False,
+                        zeroline=False,
+                        ticks='',
+                    ),
                 )
 
                 if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_TF[1]:
@@ -4082,7 +4117,10 @@ class Visualization:
                             (pl.col('df_uid_count') >= npartion_minmax[0]) &
                             (pl.col('df_uid_count') <= npartion_minmax[1])
                         )
-                        egid_winst_pvdf_df = egid_winst_pvdf_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_pvdf'], with_replacement=False,).clone()
+                        if plot_mapline_specs['rndm_sample_seed'] == None:
+                            egid_winst_pvdf_df = egid_winst_pvdf_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_pvdf'], with_replacement=False,).clone()
+                        else: 
+                            egid_winst_pvdf_df = egid_winst_pvdf_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_pvdf'], with_replacement=False, seed = plot_mapline_specs['rndm_sample_seed']).clone()
                         egid_winst_pvdf = egid_winst_pvdf_df['EGID'].to_list()
 
                         egid_winst_alloc_df = Map_pvinfo_topo_egid.filter(
@@ -4091,7 +4129,23 @@ class Visualization:
                             (pl.col('df_uid_count') >= npartion_minmax[0]) &
                             (pl.col('df_uid_count') <= npartion_minmax[1])
                         )
-                        egid_winst_alloc_df = egid_winst_alloc_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_alloc'], with_replacement=False,).clone()
+                        # make selection for alloc_algo case dynamic to avoid unnecessary code break
+                        if egid_winst_alloc_df.shape[0] < plot_mapline_specs['n_rndm_egid_winst_alloc']:
+                            min_df_uid_count = Map_pvinfo_topo_egid.filter(
+                                    pl.col("info_source") == "alloc_algorithm"
+                                ).select(
+                                    pl.col("df_uid_count").min()
+                                ).item()
+                            egid_winst_alloc_df = Map_pvinfo_topo_egid.filter(
+                                (pl.col('inst_TF') == True) & 
+                                (pl.col('info_source') == 'alloc_algorithm') &
+                                (pl.col('df_uid_count') >= 1) &
+                                (pl.col('df_uid_count') <= min_df_uid_count)
+                            )   
+                        if plot_mapline_specs['rndm_sample_seed'] == None:
+                            egid_winst_alloc_df = egid_winst_alloc_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_alloc'], with_replacement=False,).clone()
+                        else:
+                            egid_winst_alloc_df = egid_winst_alloc_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_alloc'], with_replacement=False, seed = plot_mapline_specs['rndm_sample_seed']).clone()
                         egid_winst_alloc = egid_winst_alloc_df['EGID'].to_list()
 
                         egid_woinst_df = Map_pvinfo_topo_egid.filter(
@@ -4099,7 +4153,10 @@ class Visualization:
                             (pl.col('df_uid_count') >= npartion_minmax[0]) &
                             (pl.col('df_uid_count') <= npartion_minmax[1])
                         )
-                        egid_woinst_df = egid_woinst_df.sample(n=plot_mapline_specs['n_rndm_egid_woinst'], with_replacement=False,).clone()
+                        if plot_mapline_specs['rndm_sample_seed'] == None:
+                            egid_woinst_df = egid_woinst_df.sample(n=plot_mapline_specs['n_rndm_egid_woinst'], with_replacement=False,).clone()
+                        else:
+                            egid_woinst_df = egid_woinst_df.sample(n=plot_mapline_specs['n_rndm_egid_woinst'], with_replacement=False, seed = plot_mapline_specs['rndm_sample_seed']).clone()
                         egid_woinst = egid_woinst_df['EGID'].to_list()
 
                         outtopo_egid_list = []
@@ -4111,11 +4168,12 @@ class Visualization:
                         egid_outsample = pl.Series(outtopo_egid_list).sample(n=min(len(outtopo_egid_list), plot_mapline_specs['n_rndm_egid_outsample']), with_replacement=False).to_list()
 
 
-                        selected_egid = selected_egid + egid_winst_pvdf + egid_winst_alloc + egid_woinst + egid_outsample
+                        selected_egid = list(set(selected_egid + egid_winst_pvdf + egid_winst_alloc + egid_woinst + egid_outsample))
 
 
                     # build topo_partitions_df --------------
                     egid_list, dfuid_list, flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, mstrahlung_list = [], [], [], [], [], [], []
+                    garea_list, are_typ_list, sfhmfh_typ_list, info_source_list = [], [], [], []
                     for k,v in topo.items():
                         if k in selected_egid:
                             for dfuid, partition in v['solkat_partitions'].items():
@@ -4126,6 +4184,12 @@ class Visualization:
                                 ausrichtung_list.append(partition['AUSRICHTUNG'])
                                 neigung_list.append(partition['NEIGUNG'])
                                 mstrahlung_list.append(partition['MSTRAHLUNG'])
+                                
+                                garea_list.append(v['gwr_info']['garea'])
+                                are_typ_list.append(v['gwr_info']['are_typ'])
+                                sfhmfh_typ_list.append(v['gwr_info']['sfhmfh_typ'])
+
+                                info_source_list.append(v['pv_inst']['info_source'])
 
                     topo_partitions_df = pd.DataFrame({
                         'EGID': egid_list, 
@@ -4134,7 +4198,11 @@ class Visualization:
                         'STROMERTRAG': stromertrag_list,
                         'AUSRICHTUNG': ausrichtung_list,
                         'NEIGUNG': neigung_list,
-                        'MSTRAHLUNG': mstrahlung_list
+                        'MSTRAHLUNG': mstrahlung_list, 
+                        'GAREA': garea_list, 
+                        'are_typ': are_typ_list, 
+                        'sfhmfh_typ': sfhmfh_typ_list,
+                        'info_source': info_source_list,
                     })
 
                     topo_partitions_gdf = topo_partitions_df.copy()
@@ -4147,7 +4215,7 @@ class Visualization:
                     topo_partitions_gdf['roofpartition_color'] = topo_partitions_gdf['EGID'].apply(lambda x: plot_mapline_specs['roofpartition_color'] if x in selected_egid else 'rgba(0,0,0,0)')
 
 
-                    egid = '101227714'
+                    egid = '190296588'
                     for egid in selected_egid:  # ['EGID'].unique():
 
                         # plot partition map ---------------
@@ -4299,21 +4367,48 @@ class Visualization:
                                             'are_typ': 'first',
                                             'sfhmfh_typ': 'first',
                                             'info_source': 'first',
+                                        })
+
                                         # add fig traces
-                                        df_uid_combo_str = '-'.join(df_uid_combo)
-                                        name_str = f"---- Possible PV p_combo: EGID: {egid}<br>df_uid_combo: {df_uid_combo_str}<br>FLAECHE: {topo_agg_egid['FLAECHE'].values[0]:3}, STROMERTRAG: {topo_agg_egid['STROMERTRAG'].values[0]:3}, AUSRICHTUNG: {topo_agg_egid['AUSRICHTUNG'].values[0]:3}"
-                                        fig_rfpart_ts.add_trace(go.Scatter(x= [None, ], y = [None,] , mode = 'lines', 
-                                                                    name = name_str, 
-                                                                    line = dict(color=plot_mapline_specs['roofpartition_color'], width=1.5),
-                                                                    opacity = 0,
-                                                                ))
+                                        df_uid_combo_str = '-'.join(df_uid_combo) if len(df_uid_combo) > 1 else df_uid_combo[0]
+                                        legend_str1 = f"---- Possible PV p_combo - EGID: {egid}, df_uid_combo: {df_uid_combo_str} ------------"
+                                        legend_str2 = f"     FLAECHE: {round(topo_agg_egid['FLAECHE'].values[0],3)}, STROMERTRAG: {round(topo_agg_egid['STROMERTRAG'].values[0],3)}, AUSRICHTUNG: {round(topo_agg_egid['AUSRICHTUNG'].values[0],3)}" 
+                                        legend_str3 = f"     GAREA: {topo_agg_egid['GAREA'].values[0]}, are_typ: {topo_agg_egid['are_typ'].values[0]}, sfhmfh_typ: {topo_agg_egid['sfhmfh_typ'].values[0]}"
+                                        legend_str4 = f"     info_source: {topo_agg_egid['info_source'].values[0]} "
+                                        legend_list = [legend_str1, legend_str2, legend_str3, legend_str4, ]
+
+                                        for legend_str in legend_list:
+                                            fig_rfpart_ts.add_trace(go.Scatter(x= [None, ], y = [None,] , mode = 'lines', 
+                                                                        name = legend_str, 
+                                                                        line = dict(color=plot_mapline_specs['roofpartition_color'], width=1.5),
+                                                                        opacity = 0,
+                                                                    ))
                                         
-                                        for col in ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', ]:
+                                        for col in ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', 'selfconsum_pvprod_ratio']:
+                                            if col == 'selfconsum_pvprod_ratio':
+                                                agg_value = agg_egids[col].mean()
+                                                agg_method = 'mean'
+                                            else:
+                                                agg_value = sum(agg_egids[col])
+                                                agg_method = 'sum'
+
+                                            if agg_value < 2: 
+                                                agg_round_value = round(agg_value,5)
+                                            else:
+                                                agg_round_value = round(agg_value,2)
+
+                                            # reduce t_hours to have more "handable - plots" in plotly
+                                            if self.visual_sett.cut_timeseries_to_zoom_hour: 
+                                                agg_egids = agg_egids.filter(
+                                                    (pl.col('t_int') >= self.visual_sett.default_zoom_hour[0]-(24*7)) &
+                                                    (pl.col('t_int') <= self.visual_sett.default_zoom_hour[1]+(24*7))
+                                                ).clone()
+
                                             fig_rfpart_ts.add_trace(go.Scatter(
-                                                x=subdf_agg_egid['t_int'], 
-                                                y=subdf_agg_egid[col],
+                                                x=agg_egids['t_int'], 
+                                                y=agg_egids[col],
                                                 mode='lines',
-                                                name=f"{col} - {df_uid_combo_str}",
+                                                name=f"{col:<25} - {df_uid_combo_str:<20}, {agg_method}: {agg_round_value}",
                                                 line=dict(width=1.5),
                                                 # hovertemplate=f"EGID: {egid}<br>df_uid_combo: {df_uid_combo_str}<br>FLAECHE: {topo_agg_egid['FLAECHE'].values[0]:3}, STROMERTRAG: {topo_agg_egid['STROMERTRAG'].values[0]:3}, AUSRICHTUNG: {topo_agg_egid['AUSRICHTUNG'].values[0]:3}<br> {col}: %{{y:.2f}}<extra></extra>"
                                             ))
@@ -4422,9 +4517,17 @@ class Visualization:
                                                             ))
                                     
                                     for col in ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', ]:
+
+                                        # reduce t_hours to have more "handable - plots" in plotly
+                                        if self.visual_sett.cut_timeseries_to_zoom_hour: 
+                                            agg_egids = agg_egids.filter(
+                                                (pl.col('t_int') >= self.visual_sett.default_zoom_hour[0]-(24*7)) &
+                                                (pl.col('t_int') <= self.visual_sett.default_zoom_hour[1]+(24*7))
+                                            ).clone()
+
                                         fig_rfpart_ts.add_trace(go.Scatter(
-                                            x=subdf_agg_egid['t_int'], 
-                                            y=subdf_agg_egid[col],
+                                            x=agg_egids['t_int'], 
+                                            y=agg_egids[col],
                                             mode='lines+markers', 
                                             marker = dict(
                                                 symbol = plot_mapline_specs['actual_ts_trace_marker'], 
@@ -4449,7 +4552,14 @@ class Visualization:
                                     if egid in outtopo_subdf['EGID'].to_list():
                                         # filter for egid
                                         outtopo_egid = outtopo_subdf.filter(pl.col('EGID') == egid).clone()
-                                        
+                                
+                                        # reduce t_hours to have more "handable - plots" in plotly
+                                        if self.visual_sett.cut_timeseries_to_zoom_hour: 
+                                            outtopo_egid = outtopo_egid.filter(
+                                                (pl.col('t_int') >= self.visual_sett.default_zoom_hour[0]-(24*7)) &
+                                                (pl.col('t_int') <= self.visual_sett.default_zoom_hour[1]+(24*7))
+                                            ).clone()
+
                                         fig_rfpart_ts.add_trace(go.Scatter(
                                             x = outtopo_egid['t_int'],
                                             y = outtopo_egid['demand_proxy_out_kW'],
@@ -4508,7 +4618,8 @@ if __name__ == '__main__':
                 '*old_vers*',
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_mini_rnd',
+                # 'pvalloc_mini_rnd',
+                'pvalloc_RUR_test2c_default_rnd_selfcons1',
           ],
             plot_show                          = True,
             save_plot_by_scen_directory        = True, 
@@ -4516,27 +4627,42 @@ if __name__ == '__main__':
             remove_old_plots_in_visualization  = True,  
             remove_old_csvs_in_visualization   = False, 
 
-            # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
-            plot_ind_var_summary_stats_TF                   = [True,      True,       False],
-            # plot_ind_hist_pvcapaprod_sanitycheck_TF         = [True,      True,       False],
-            # plot_ind_hist_pvprod_deviation_TF               = [True,      True,       False],
-            plot_ind_charac_omitted_gwr_TF                  = [True,      True,       False],
-            # plot_ind_line_meteo_radiation_TF                = [True,      True,       False],
 
-            # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-            # plot_ind_line_installedCap_TF                   = [True,      True,       False],
-            plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],
-            plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],           
-            plot_ind_line_PVproduction_TF                   = [True,      True,       False],
-            plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],
-            # plot_ind_line_gridPremiumHOY_per_node_TF        = [True,      True,       False],
-            # plot_ind_line_gridPremiumHOY_per_EGID_TF        = [True,      True,       False],
-            # plot_ind_line_gridPremium_structure_TF          = [True,      True,       False],
-            # plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
-            # plot_ind_hist_pvcapaprod_TF                     = [True,      True,       False],
-            plot_ind_map_topo_egid_TF                       = [True,      True,       False],
-            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
-            # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
+            # # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
+            # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
+            # # plot_ind_hist_pvcapaprod_sanitycheck_TF         = [True,      True,       False],
+            # # plot_ind_hist_pvprod_deviation_TF               = [True,      True,       False],
+            # plot_ind_charac_omitted_gwr_TF                  = [True,      True,       False],
+            # # plot_ind_line_meteo_radiation_TF                = [True,      True,       False],
+
+            # # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
+            # # plot_ind_line_installedCap_TF                   = [True,      True,       False],
+            plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
+            # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                   
+            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
+            # plot_ind_line_PVproduction_TF                   = [True,      True,       False],                   
+            # plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],                   
+            # # plot_ind_line_gridPremiumHOY_per_node_TF        = [True,      True,       False],
+            # # plot_ind_line_gridPremiumHOY_per_EGID_TF        = [True,      True,       False],
+            # # plot_ind_line_gridPremium_structure_TF          = [True,      True,       False],
+            # # plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
+            # # plot_ind_hist_pvcapaprod_TF                     = [True,      True,       False],
+            # plot_ind_map_topo_egid_TF                       = [True,      True,       False],
+            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
+            # # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
+            plot_ind_mapline_prodHOY_EGIDrfcombo_specs = {
+                'specific_selected_EGIDs': [
+                    '190145779', 
+                    # '190178022', 
+                                            ], 
+                'n_rndm_egid_winst_pvdf': 2, 
+                'n_rndm_egid_winst_alloc': 0,
+                'n_rndm_egid_woinst': 0,
+                'n_rndm_egid_outsample': 0, 
+                'n_partition_pegid_minmax': (1,2), 
+                'roofpartition_color': '#fff2ae',
+                'actual_ts_trace_marker': 'cross'
+            },
         )]
 
     for visual_scen in visualization_list:
