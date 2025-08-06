@@ -191,7 +191,10 @@ class PVAllocScenario_Settings:
                                                                     'netfeedin_kW': 'sum', 'econ_inc_chf': 'sum', 'econ_spend_chf': 'sum'
                                                                 })
     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF: bool   = False
-    ALGOspec_roundup_existing_pvdf_capa_topartition_TF: bool    = False
+    ALGOspec_adjust_existing_pvdf_capa_topartition: str         = 'capa_roundup_pvprod_no_adj'     
+                                                                    # 'capa_roundup_pvprod_no_adj'              : assigns df_uid_w_inst to topo, based on pv_df TotalPower value (rounded up), pvprod_kW remains "untouched" and is still equivalent to production potential per roof partition
+                                                                    # 'capa_roundup_pvprod_adjusted' - ATTENTION: will activate an if statement which will adjust pvprod_kW in topo_time_subdfs, so no longer pure production potential per roof partition
+                                                                    # 'capa_no_adj_pvprod_adjusted' - ATTENTION: will activate an if statement which will adjust pvprod_kW in topo_time_subdfs, so no longer pure production potential per roof partition
 
     ALGOspec_tweak_constr_capacity_fact: float                  = 1
     ALGOspec_tweak_npv_calc: float                              = 1
@@ -1263,6 +1266,7 @@ class PVAllocScenario:
                 solkat['FLAECHE'] = solkat['FLAECHE'].fillna(0).astype(float)
                 solkat['STROMERTRAG'] = solkat['STROMERTRAG'].fillna(0).astype(float)
                 solkat['MSTRAHLUNG'] = solkat['MSTRAHLUNG'].fillna(0).astype(float)
+                solkat['GSTRAHLUNG'] = solkat['GSTRAHLUNG'].fillna(0).astype(float)
                 solkat['AUSRICHTUNG'] = solkat['AUSRICHTUNG'].astype(int)
                 solkat['NEIGUNG'] = solkat['NEIGUNG'].astype(int)
 
@@ -1520,7 +1524,7 @@ class PVAllocScenario:
                 if egid in solkat['EGID'].unique():
                     solkat_sub = solkat.loc[solkat['EGID'] == egid]
                     if solkat.duplicated(subset=['DF_UID', 'EGID']).any():
-                        solkat_sub = solkat_sub.drop_duplicates(subset=['DF_UID', 'EGID'])
+                    solkat_partitions = solkat_sub.set_index('DF_UID')[['FLAECHE', 'STROMERTRAG', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG']].to_dict(orient='index')                   
                     solkat_partitions = solkat_sub.set_index('DF_UID')[['FLAECHE', 'STROMERTRAG', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG']].to_dict(orient='index')                   
                 
                 elif egid not in solkat['EGID'].unique():
@@ -2410,6 +2414,7 @@ class PVAllocScenario:
                         'STROMERTRAG': v_p.get('STROMERTRAG'),
                         'NEIGUNG': v_p.get('NEIGUNG'),
                         'MSTRAHLUNG': v_p.get('MSTRAHLUNG'),
+                        'GSTRAHLUNG': v_p.get('GSTRAHLUNG'),
                         'elecpri_Rp_kWh': v.get('elecpri_Rp_kWh'),
                     }
                     rows.append(row)
@@ -2686,6 +2691,7 @@ class PVAllocScenario:
                                 # pl.col('TotalPower').first().alias('TotalPower'), 
                                 pl.col('FLAECHE').first().alias('FLAECHE'), 
                                 pl.col('MSTRAHLUNG').first().alias('MSTRAHLUNG'), 
+                                pl.col('STROMERTRAG').first().alias('STROMERTRAG'), 
 
                                 pl.col('timestamp').len().alias('n_timestamp'), 
                                 pl.col('t').len().alias('n_t'),
@@ -2700,7 +2706,7 @@ class PVAllocScenario:
                             subdf_egid_pvdf = subdf_egid_pvdf.with_columns([
                                 (kWpeak_per_m2 * share_roof_area_available * pl.col('FLAECHE')).alias('poss_prod_capa_kW_peak')
                             ])
-                            subdf_egid_pvdf = subdf_egid_pvdf.sort('MSTRAHLUNG'  , descending=True)
+                            subdf_egid_pvdf = subdf_egid_pvdf.sort('STROMERTRAG'  , descending=True)
                             # print(subdf_egid_pvdf[['df_uid', 'EGID', 'inst_TF', 'info_source', 'MSTRAHLUNG', 'sum_pvprod_kW', 'TotalPower', 'poss_prod_capa_kW_peak']])
                             return subdf_egid_pvdf
                         
@@ -2711,7 +2717,6 @@ class PVAllocScenario:
                         for df_uid_inst in subdf_egid_pvdf['df_uid']:
 
                             subdf_dfuid_pvdf = subdf_egid_pvdf.filter(pl.col('df_uid') == df_uid_inst).clone()
-                            
 
                             # adjust pvprod, actual / partition kWpeak-ratio ----------
                             if subdf_dfuid_pvdf.shape[0] > 1:
@@ -2719,26 +2724,38 @@ class PVAllocScenario:
                             
                             # elif subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0] > subdf_dfuid_pvdf['TotalPower'][0]:                            
                             # roundup_pvdf_capa_topartition_TF: round up kWpeak to full partition size or not.
-                            if roundup_pvdf_capa_topartition_TF:
-                                kWpeak_ratio_dfuidcalc_to_pvdf_decimal = egid_capa_kW_pvdf / subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0]
-                                kWpeak_ratio_dfuidcalc_to_pvdf =  1 if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 0.0 else 0.0
-                                adjust_TotalPower = subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0] if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 0.0 else 0.0
+                            if self.sett.ALGOspec_adjust_existing_pvdf_capa_topartition == 'capa_roundup_pvprod_no_adj':
+                                kWpeak_ratio_dfuidcalc_to_pvdf_decimal = egid_capa_kW_pvdf / subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0]    
+                                
+                                kWpeak_ratio_dfuidcalc_to_pvdf = 1
+                                # DEBATABLE: to take the original TotalPower value from pv_df or the adjusted TotalPower value, based on the possible production potential of the roof partition. 
+                                # for now it is kept at egid_capa_kW_pvdf, to keep consistency with the topo_egid dictionary
+                                adjust_TotalPower = egid_capa_kW_pvdf                             if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 0.0 else False
+                                # adjust_TotalPower = subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0] if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 0.0 else False
+                                inst_TF = True                                                    if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 0.0 else False
 
-                            elif not roundup_pvdf_capa_topartition_TF:
+                            elif self.sett.ALGOspec_adjust_existing_pvdf_capa_topartition == 'capa_roundup_pvprod_adjusted':
+                                kWpeak_ratio_dfuidcalc_to_pvdf_decimal = egid_capa_kW_pvdf / subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0]    
+
+                                kWpeak_ratio_dfuidcalc_to_pvdf = 1                                if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 0.0 else 0.0
+                                adjust_TotalPower = subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0] if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 0.0 else 0.0
+                                inst_TF = True                                                    if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 0.0 else False
+
+                            elif self.sett.ALGOspec_adjust_existing_pvdf_capa_topartition == 'capa_no_adj_pvprod_adjusted':
                                 kWpeak_ratio_dfuidcalc_to_pvdf_decimal = egid_capa_kW_pvdf / subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0]
-                                kWpeak_ratio_dfuidcalc_to_pvdf =  1 if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 1.0 else kWpeak_ratio_dfuidcalc_to_pvdf_decimal
+
+                                kWpeak_ratio_dfuidcalc_to_pvdf =  1     if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 1.0 else kWpeak_ratio_dfuidcalc_to_pvdf_decimal
                                 adjust_TotalPower = egid_capa_kW_pvdf
+                                inst_TF = True                          if kWpeak_ratio_dfuidcalc_to_pvdf_decimal > 0.0 else False
+
 
                             # adjust inst_TF
-                            inst_TF = True if kWpeak_ratio_dfuidcalc_to_pvdf > 0.0 else False
                             subdf = subdf.with_columns([
                                 pl.when((pl.col('EGID') == egid_inst) & (pl.col('df_uid') == df_uid_inst))
                                 .then(inst_TF) 
                                 .otherwise(pl.col('inst_TF'))
                                 .alias('inst_TF')
-                            ])
-
-                            #  adjust TotalPower value
+                            ])                            #  adjust TotalPower value
                             subdf = subdf.with_columns([
                                 pl.when((pl.col('EGID') == egid_inst) & (pl.col('df_uid') == df_uid_inst))
                                 .then(adjust_TotalPower)
@@ -2753,6 +2770,7 @@ class PVAllocScenario:
                                 .otherwise(pl.col('pvprod_kW'))
                                 .alias('pvprod_kW')
                             ])
+
                             egid_capa_kW_pvdf = max(egid_capa_kW_pvdf - subdf_dfuid_pvdf['TotalPower'][0], 0.0)
 
 
@@ -2768,11 +2786,9 @@ class PVAllocScenario:
                         )
                         topo[egid_inst]['pv_inst']['df_uid_w_inst'] = df_uid_w_inst
 
-
+                        #sanity check
                         subdf_pvdf_agg_before_list.append(subdf_egid_pvdf)
                         subdf_pvdf_agg_after_list.append(subdf_egid_pvdf_AFTER)
-
-                        #sanity check
                         subdf_egid_pvdf[['df_uid', 'EGID', 'inst_TF', 'info_source', 'MSTRAHLUNG', 'sum_pvprod_kW', 'TotalPower', 'poss_prod_capa_kW_peak']]
                         subdf_egid_pvdf_AFTER[['df_uid', 'EGID', 'inst_TF', 'info_source', 'MSTRAHLUNG', 'sum_pvprod_kW', 'TotalPower', 'poss_prod_capa_kW_peak']]                          
 
