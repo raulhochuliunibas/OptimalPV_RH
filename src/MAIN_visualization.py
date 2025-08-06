@@ -1962,29 +1962,8 @@ class Visualization:
                                 .then(pl.lit("")).otherwise(pl.col('info_source')).alias('info_source'),
                         ])
 
-                        # add number of df_uid (total + with installation)
-                        subdf_updated = subdf_updated.with_columns([
-                            pl.n_unique('df_uid').over('EGID').alias('n_dfuid_pEGID')
-                        ])
-                        subdf_updated = subdf_updated.with_columns([
-                            pl.when(pl.col('inst_TF'))
-                                .then(pl.lit(1))
-                                .otherwise(pl.lit(0))
-                                .alias('d_inst_dfuid')
-                        ])
-                        subdf_updated = subdf_updated.with_columns([
-                            pl.sum('d_inst_dfuid').over('EGID').alias('n_inst_pEGID')
-                        ])
-                        # two cases
-                        subdf_updated = subdf_updated.with_columns([
-                            pl.when(pl.col('n_inst_pEGID') == 0)
-                                .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
-                                .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
-                                .alias('demand_kW')
-                        ])
-
-
-                        Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('inst_TF'))  # indifferetn => should give same result, Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
+                        # force pvprod == 0 for EGID-df_uid without inst
+                        Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
                         subdf_no_inst = subdf_updated.join(
                             Map_pvinst_topo_egid[['EGID', 'df_uid']], 
                             on=['EGID', 'df_uid'], 
@@ -1997,36 +1976,43 @@ class Visualization:
                             ).then(pl.lit(0.0)).otherwise(pl.col('pvprod_kW')).alias('pvprod_kW'),
                         ])
 
+                        # sorting necessary so that .first() statement captures inst_TF and info_source for EGIDS with partial installations
+                        subdf_updated = subdf_updated.sort(['EGID','inst_TF', 'df_uid', 't_int'], descending=[False, True, False, False])
+
+                        # agg per EGID to apply selfconsumption 
+                        agg_egids = subdf_updated.group_by(['EGID', 't', 't_int']).agg([
+                            pl.col('inst_TF').first().alias('inst_TF'),
+                            pl.col('info_source').first().alias('info_source'),
+                            pl.col('grid_node').first().alias('grid_node'),
+                            pl.col('demand_kW').first().alias('demand_kW'),
+                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                        ])
+
+                        # calc selfconsumption
+                        agg_egids = agg_egids.sort(['EGID', 't_int'], descending = [False, False])
 
                         selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.pvalloc_scen.TECspec_self_consumption_ifapplicable
 
-                        subdf_updated = subdf_updated.with_columns([        
+                        agg_egids = agg_egids.with_columns([        
                             selfconsum_expr.alias("selfconsum_kW"),
                             (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
                             (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                         ])
-                        
-                        # necessary, not too exagerate demand per gridnode
-                        agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
-                            pl.col('grid_node').first().alias('grid_node'),
-                            pl.col('demand_kW').sum().alias('demand_kW'),
-                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
-                            pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
-                            pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
-                            pl.col('netdemand_kW').sum().alias('netdemand_kW')
-                        ])
 
+                        # (change to pvalloc) -----
                         # only select egids for grid_node mentioned above
                         agg_egids = agg_egids.filter(pl.col('EGID').is_in(Map_pvinfo_gridnode['EGID'].to_list()))
                         agg_egids_list.append(agg_egids)
                         # -----
 
-                        agg_subdf = agg_egids.group_by(["grid_node", "t"]).agg([
-                            pl.col('demand_kW').sum().alias('demand_kW'),
-                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
-                            pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
-                            pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
-                            pl.col('netdemand_kW').sum().alias('netdemand_kW')
+                        # agg per gridnode
+                        agg_subdf = agg_egids.group_by(['grid_node', 't', 't_int']).agg([
+                        pl.col('demand_kW').sum().alias('demand_kW'),
+                        pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                        pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                        pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                        pl.col('netdemand_kW').sum().alias('netdemand_kW'), 
+                        pl.col('inst_TF').first().alias('inst_TF'),
                         ])
 
                         agg_subdf_df_list.append(agg_subdf)
@@ -2041,7 +2027,8 @@ class Visualization:
                         pl.col('netdemand_kW').sum().alias('netdemand_kW'),
                     ])
 
-                    # MAIN DF of this plot, all feedin TS by EGID ------------
+                    # (change to pvalloc) -----
+                    # MAIN DF of this plot, all feedin TS by EGID
                     topo_agg_egids_df = pl.concat(agg_egids_list)
                     topo_agg_egids_df = topo_agg_egids_df.with_columns([
                         pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
@@ -2097,7 +2084,7 @@ class Visualization:
                         ])
                     gridnode_df = gridnode_df.with_columns([
                         pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
-                        .then(pl.col("kW_threshold"))
+                        .then(pl.col("kW_threshold"))   
                         .otherwise(pl.col("netfeedin_all_kW"))
                         .alias("netfeedin_all_taken_kW"),
                         ])
@@ -2135,6 +2122,14 @@ class Visualization:
                         for egid in topo_agg_egids_df['EGID'].unique():
                             stack_subdf = topo_agg_egids_df.loc[topo_agg_egids_df['EGID'] == egid]
                             stack_subdf = stack_subdf.sort_values(by=['t_int'])
+
+                            # reduce t_hours to have more "handable - plots" in plotly
+                            if self.visual_sett.cut_timeseries_to_zoom_hour: 
+                                stack_subdf = stack_subdf[
+                                    (stack_subdf['t_int'] >= self.visual_sett.default_zoom_hour[0] - (24 * 7)) &
+                                    (stack_subdf['t_int'] <= self.visual_sett.default_zoom_hour[1] + (24 * 7))
+                                ].copy()                              
+
                             fig_sub.add_trace(go.Scatter(x=stack_subdf['t_int'], y=stack_subdf[col],
                                                         mode='lines', 
                                                         stackgroup= col, 
@@ -2155,7 +2150,14 @@ class Visualization:
                         fig_egid_traces.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'{20*"-"}', opacity=0)) 
 
 
-                    # gridnode_pick_df for comparison ----------
+
+                            # reduce t_hours to have more "handable - plots" in plotly
+                            if self.visual_sett.cut_timeseries_to_zoom_hour: 
+                                node_subdf = node_subdf[
+                                    (node_subdf['t_int'] >= self.visual_sett.default_zoom_hour[0] - (24 * 7)) &
+                                    (node_subdf['t_int'] <= self.visual_sett.default_zoom_hour[1] + (24 * 7))
+                                ].copy()
+
                     for col in egid_col_to_plot:
                         fig_sub = fig_dict[f'fig_{col}']
 
@@ -2386,17 +2388,16 @@ class Visualization:
                                 gridnode_selec.sort_values(ascending=True, inplace=True)
                                 gridnode_pick = gridnode_selec.index[0]
 
-
                         Map_pvinfo_gridnode = gridnode_freq.loc[gridnode_freq['grid_node'] == gridnode_pick].copy()
 
 
 
-                        agg_subdf_df_list, agg_egids_list = [], []
+                        agg_subdf_df_list, agg_egids_list, agg_egids_all_list = [], [], []
                         for i_path, path in enumerate(topo_subdf_paths):
                             subdf = pl.read_parquet(path)
 
                             # Only plot EGIDs for 1 node: 
-                            # subdf = subdf.filter(pl.col('grid_node') == gridnode_pick)  
+                            # subdf f= subdf.filter(pl.col('grid_node') == gridnode_pick)  
 
 
                             # taken 1:1 from algo_update_gridnode_AND_gridprem_POLARS() =============================================
@@ -2404,6 +2405,7 @@ class Visualization:
                             subdf_updated = subdf_updated.drop(['info_source', 'inst_TF'])                      
 
                             subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid', 'info_source', 'inst_TF']], on=['EGID', 'df_uid'], how='left')         
+
                             # remove the nulls from the merged columns
                             subdf_updated = subdf_updated.with_columns([
                                 pl.when(pl.col('inst_TF').is_null())
@@ -2412,34 +2414,14 @@ class Visualization:
                                     .then(pl.lit("")).otherwise(pl.col('info_source')).alias('info_source'),
                             ])
 
-                            # add number of df_uid (total + with installation)
-                            subdf_updated = subdf_updated.with_columns([
-                                pl.n_unique('df_uid').over('EGID').alias('n_dfuid_pEGID')
-                            ])
-                            subdf_updated = subdf_updated.with_columns([
-                                pl.when(pl.col('inst_TF'))
-                                    .then(pl.lit(1))
-                                    .otherwise(pl.lit(0))
-                                    .alias('d_inst_dfuid')
-                            ])
-                            subdf_updated = subdf_updated.with_columns([
-                                pl.sum('d_inst_dfuid').over('EGID').alias('n_inst_pEGID')
-                            ])
-                            # two cases
-                            subdf_updated = subdf_updated.with_columns([
-                                pl.when(pl.col('n_inst_pEGID') == 0)
-                                    .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
-                                    .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
-                                    .alias('demand_kW')
-                            ])
-
-
-                            Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('inst_TF'))  # indifferetn => should give same result, Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
+                            # force pvprod == 0 for EGID-df_uid without inst
+                            Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
                             subdf_no_inst = subdf_updated.join(
                                 Map_pvinst_topo_egid[['EGID', 'df_uid']], 
                                 on=['EGID', 'df_uid'], 
                                 how='anti'
                             )
+
                             subdf_updated = subdf_updated.with_columns([
                                 pl.when(
                                     (pl.col('EGID').is_in(subdf_no_inst['EGID'])) &
@@ -2447,43 +2429,46 @@ class Visualization:
                                 ).then(pl.lit(0.0)).otherwise(pl.col('pvprod_kW')).alias('pvprod_kW'),
                             ])
 
+                            # sorting necessary so that .first() statement captures inst_TF and info_source for EGIDS with partial installations
+                            subdf_updated = subdf_updated.sort(['EGID','inst_TF', 'df_uid', 't_int'], descending=[False, True, False, False])
+
+                            # agg per EGID to apply selfconsumption 
+                            agg_egids = subdf_updated.group_by(['EGID', 't', 't_int']).agg([
+                                pl.col('inst_TF').first().alias('inst_TF'),
+                                pl.col('info_source').first().alias('info_source'),
+                                pl.col('grid_node').first().alias('grid_node'),
+                                pl.col('demand_kW').first().alias('demand_kW'),
+                                pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                            ])
+
+                            # calc selfconsumption
+                            agg_egids = agg_egids.sort(['EGID', 't_int'], descending = [False, False])
 
                             selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.pvalloc_scen.TECspec_self_consumption_ifapplicable
 
-                            subdf_updated = subdf_updated.with_columns([        
+                            agg_egids = agg_egids.with_columns([        
                                 selfconsum_expr.alias("selfconsum_kW"),
                                 (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
-                                (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
-                            ])
-                            
-                            # necessary, not too exagerate demand per gridnode
-                            agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
-                                pl.col('grid_node').first().alias('grid_node'),
-                                pl.col('demand_kW').sum().alias('demand_kW'),
-                                pl.col('pvprod_kW').sum().alias('pvprod_kW'),
-                                pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
-                                pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
-                                pl.col('netdemand_kW').sum().alias('netdemand_kW'),
-                                pl.col('inst_TF').first().alias('inst_TF'),
-                            ])
+                            ])           
 
+                            # (change to pvalloc) -----
                             # only select egids for grid_node mentioned above
                             # agg_egids = agg_egids.filter(pl.col('EGID').is_in(Map_pvinfo_gridnode['EGID'].to_list()))
                             agg_egids_list.append(agg_egids)
                             # -----
 
-                            agg_subdf = agg_egids.group_by(["grid_node", "t"]).agg([
-                                pl.col('demand_kW').sum().alias('demand_kW'),
-                                pl.col('pvprod_kW').sum().alias('pvprod_kW'),
-                                pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
-                                pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
-                                pl.col('netdemand_kW').sum().alias('netdemand_kW'),
-                                pl.col('inst_TF').first().alias('inst_TF'),
+                            # agg per gridnode
+                            agg_subdf = agg_egids.group_by(['grid_node', 't', 't_int']).agg([
+                            pl.col('demand_kW').sum().alias('demand_kW'),
+                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                            pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                            pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                            pl.col('netdemand_kW').sum().alias('netdemand_kW'), 
+                            pl.col('inst_TF').first().alias('inst_TF'),
                             ])
-                            
-                            # ... in pvalloc there is another df aggregation for checking pvdf
 
                             agg_subdf_df_list.append(agg_subdf)
+
 
                         
                         agg_subdf_df = pl.concat(agg_subdf_df_list)
@@ -2495,14 +2480,6 @@ class Visualization:
                             pl.col('netdemand_kW').sum().alias('netdemand_kW'),
                             pl.col('inst_TF').first().alias('inst_TF'),
                         ])
-
-                        # MAIN DF of this plot, all feedin TS by EGID ------------
-                        topo_agg_egids_df = pl.concat(agg_egids_list)
-                        topo_agg_egids_df = topo_agg_egids_df.with_columns([
-                            pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
-                        ])
-                        topo_agg_egids_df = topo_agg_egids_df.sort(["EGID", "t_int", ], descending=[False, False])
-                        # -----
 
 
                         # import outtopo_time_subfs -----------------------------------------------------
@@ -2566,16 +2543,26 @@ class Visualization:
                         # end 1:1 copy from pvallocation =============================================
                         gridnode_pick_df = gridnode_df.clone()
 
+                        # MAIN DF of this plot, all feedin TS by EGID
+                        topo_agg_egids_all_df = pl.concat(agg_egids_all_list)
+                        topo_agg_egids_all_df = topo_agg_egids_all_df.sort(['EGID', 't_int'], descending = [False, False])
+
 
                         gridnode_pick_df = gridnode_pick_df.to_pandas()
-                        topo_agg_egids_df = topo_agg_egids_df.to_pandas()
+                        topo_agg_egids_all_df = topo_agg_egids_all_df.to_pandas()
+
+
 
 
                     # plot line ----------------------------------------
-                    if True:
+                    if False:
                         fig = go.Figure()
 
                         # subset topo_agg_egids_df for line plot
+                        topo_agg_egids_df = pl.concat(agg_egids_list)
+                        topo_agg_egids_df = topo_agg_egids_df.with_columns(['EGID', 't_int'], descending = [False, False])
+
+                        topo_agg_egids_df = topo_agg_egids_df.to_pandas()
                         topo_agg_egids_gridnode_pick_df = topo_agg_egids_df.loc[topo_agg_egids_df['grid_node'] == gridnode_pick]
 
 
@@ -2640,7 +2627,18 @@ class Visualization:
                                                             opacity=hist_opacity
                                                             ))
                             fig.add_trace(go.Scatter(x=[None, ], y=[None, ], mode='lines', name=f'agg month from subdf {20*"-"}', opacity=0))
-                                        
+
+                        fig.update_layout(
+                            title = f'Aggregation Over Time (hour, month, year)', 
+                            xaxis_title='t - Hour of Year', 
+                            yaxis_title='Production / Feedin (kW)',
+                            template='plotly_white',
+                            showlegend=True,
+                        )
+                        fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
+                        # fig = self.set_default_fig_zoom_hour(fig, self.visual_sett.default_zoom_hour)
+                        
+
                         # export plot 
                         if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_TF[1]:
                             if self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_TF[2]:
@@ -2663,7 +2661,9 @@ class Visualization:
                         # topo_agg_egids_gridnode_pick_df = topo_agg_egids_df.loc[topo_agg_egids_df['grid_node'] == gridnode_pick]
 
                         # aggregate subset + all cols by EGID over year
-                        topo_agg_egids_hist = topo_agg_egids_df.groupby(['EGID', 'grid_node']).agg({
+                        topo_agg_egids_hist = topo_agg_egids_all_df.groupby(['EGID', 'grid_node']).agg({
+                            'inst_TF'       : 'first',
+                            'info_source'   : 'first',
                             'demand_kW'     : 'sum' ,
                             'pvprod_kW'     : 'sum' ,
                             'selfconsum_kW' : 'sum' ,
@@ -2674,6 +2674,8 @@ class Visualization:
 
                         # topo_agg_egids_gridnode_pick_df_hist = topo_agg_egids_gridnode_pick_df.groupby(['EGID', 'grid_node']).agg({
                         topo_agg_egids_winst_hist = topo_agg_egids_winst_df.groupby(['EGID', 'grid_node']).agg({
+                            'inst_TF'       : 'first',
+                            'info_source'   : 'first',
                             'demand_kW'     : 'sum' ,
                             'pvprod_kW'     : 'sum' ,
                             'selfconsum_kW' : 'sum' ,
@@ -4248,54 +4250,42 @@ class Visualization:
                                             (pl.col('EGID') == egid) & 
                                             (pl.col('df_uid').is_in(df_uid_combo))
                                             )
-                                        
-                                        # add number of df_uid (total + with installation)
+                                        # set inst_TF to True to select all partitions in combo
                                         subdf_combo = subdf_combo.with_columns([
-                                            pl.n_unique('df_uid').over('EGID').alias('n_dfuid_pEGID')
-                                        ])
-                                        subdf_combo = subdf_combo.with_columns([
-                                            pl.when(pl.col('inst_TF'))
-                                                .then(pl.lit(1))
-                                                .otherwise(pl.lit(0))
-                                                .alias('d_inst_dfuid')
-                                        ])
-                                        subdf_combo = subdf_combo.with_columns([
-                                            pl.sum('d_inst_dfuid').over('EGID').alias('n_inst_pEGID')
-                                        ])
-                                        # two cases
-                                        # 1: n_inst_pEGID == 0 -> no installations. demand is devided by n_dfuid per EGID, which later sums up to actual demand per EGID again. 
-                                        #   1a: n_dfuid =1 -> demand / 1
-                                        #   1b: n_dfuid >1 -> demand / n
-                                        # 2: n_inst_pEGID > 0 -> demand is devided by n_inst_pEGID per EGID, the number of partitions actually producing pv
-                                        #   2a: n_dfuid =1 -> all installed, 1 roof house -> demand / n_inst = n_dfuid = 1
-                                        #   2b: n_dfuid >1 -> all installed, n roof house -> demand / n_inst = n_dfuid = n
-                                        #   2c: n_dfuid >1 -> only part installed -> demand / n_inst != n_dfuid
-                                        subdf_combo = subdf_combo.with_columns([
-                                            pl.when(pl.col('n_inst_pEGID') == 0)
-                                                .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
-                                                .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
-                                                .alias('demand_kW')
-                                        ])
+                                            # pl.col('inst_TF')
+                                            pl.lit(True).alias('inst_TF')
+                                        ])        
 
-                                        # recalculate selfconsum & aggregate
+                                        # sorting necessary so that .first() statement captures inst_TF and info_source for EGIDS with partial installations
+                                        subdf_combo = subdf_combo.sort(['EGID','inst_TF', 'df_uid', 't_int'], descending=[False, True, False, False])
+                                                             
+                                        # agg per EGID to apply selfconsumption 
+                                        agg_egids = subdf_combo.group_by(['EGID', 't', 't_int']).agg([
+                                            pl.col('inst_TF').first().alias('inst_TF'),
+                                            pl.col('info_source').first().alias('info_source'),
+                                            pl.col('grid_node').first().alias('grid_node'),
+                                            pl.col('demand_kW').first().alias('demand_kW'),
+                                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                                        ])
+                                        
+                                        # calc selfconsumption
+                                        agg_egids = agg_egids.sort(['EGID', 't_int'], descending = [False, False])
+
                                         selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.pvalloc_scen.TECspec_self_consumption_ifapplicable
-                                        subdf_combo = subdf_combo.with_columns([        
+
+                                        agg_egids = agg_egids.with_columns([        
                                             selfconsum_expr.alias("selfconsum_kW"),
                                             (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
                                             (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                                         ])
 
-                                        subdf_agg_egid = subdf_combo.group_by(['EGID', 't']).agg([
-                                            pl.col('demand_kW').sum().alias('demand_kW'),
-                                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
-                                            pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
-                                            pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
-                                            pl.col('netdemand_kW').sum().alias('netdemand_kW'),
-                                            ])
-                                        subdf_agg_egid = subdf_agg_egid.with_columns([
-                                            pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
-                                            ])
-                                        subdf_agg_egid = subdf_agg_egid.sort(['EGID', 't_int'], descending=[False, False])
+                                        agg_egids = agg_egids.with_columns([
+                                            pl.when(pl.col('netfeedin_kW') > 0)
+                                            .then(pl.col('selfconsum_kW') / pl.col('pvprod_kW'))
+                                            .otherwise(0)  # or any other value that makes sense
+                                            .alias('selfconsum_pvprod_ratio')
+                                        ])
+
 
                                         # topo_partition_df aggregation
                                         topo_part_egid = topo_partitions_df.loc[(topo_partitions_df['EGID'] == egid) & 
@@ -4305,8 +4295,10 @@ class Visualization:
                                             'STROMERTRAG': 'sum',
                                             'NEIGUNG': 'mean', 
                                             'AUSRICHTUNG': 'mean',
-                                        })
-
+                                            'GAREA': 'first',
+                                            'are_typ': 'first',
+                                            'sfhmfh_typ': 'first',
+                                            'info_source': 'first',
                                         # add fig traces
                                         df_uid_combo_str = '-'.join(df_uid_combo)
                                         name_str = f"---- Possible PV p_combo: EGID: {egid}<br>df_uid_combo: {df_uid_combo_str}<br>FLAECHE: {topo_agg_egid['FLAECHE'].values[0]:3}, STROMERTRAG: {topo_agg_egid['STROMERTRAG'].values[0]:3}, AUSRICHTUNG: {topo_agg_egid['AUSRICHTUNG'].values[0]:3}"
@@ -4361,7 +4353,8 @@ class Visualization:
                                     # subdf_updated = subdf.clone()                                      
                                     subdf_updated = subdf.drop(['info_source', 'inst_TF']).clone()  
 
-                                    subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid', 'info_source', 'inst_TF']], on=['EGID', 'df_uid'], how='left')         
+                                    subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid', 'info_source', 'inst_TF']], 
+                                                                       on=['EGID', 'df_uid'], how='left').clone()         
                                     # remove the nulls from the merged columns
                                     subdf_updated = subdf_updated.with_columns([
                                         pl.when(pl.col('inst_TF').is_null())
@@ -4370,29 +4363,8 @@ class Visualization:
                                             .then(pl.lit("")).otherwise(pl.col('info_source')).alias('info_source'),
                                     ])
 
-                                    # add number of df_uid (total + with installation)
-                                    subdf_updated = subdf_updated.with_columns([
-                                        pl.n_unique('df_uid').over('EGID').alias('n_dfuid_pEGID')
-                                    ])
-                                    subdf_updated = subdf_updated.with_columns([
-                                        pl.when(pl.col('inst_TF'))
-                                            .then(pl.lit(1))
-                                            .otherwise(pl.lit(0))
-                                            .alias('d_inst_dfuid')
-                                    ])
-                                    subdf_updated = subdf_updated.with_columns([
-                                        pl.sum('d_inst_dfuid').over('EGID').alias('n_inst_pEGID')
-                                    ])
-                                    # two cases
-                                    subdf_updated = subdf_updated.with_columns([
-                                        pl.when(pl.col('n_inst_pEGID') == 0)
-                                            .then(pl.col('demand_kW') / pl.col('n_dfuid_pEGID'))
-                                            .otherwise(pl.col('demand_kW') / pl.col('n_inst_pEGID'))
-                                            .alias('demand_kW')
-                                    ])
-                                       
-
-                                    Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('inst_TF'))  # indifferetn => should give same result, Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
+                                    # force pvprod == 0 for EGID-df_uid without inst
+                                    Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
                                     subdf_no_inst = subdf_updated.join(
                                         Map_pvinst_topo_egid[['EGID', 'df_uid']], 
                                         on=['EGID', 'df_uid'], 
@@ -4405,36 +4377,43 @@ class Visualization:
                                         ).then(pl.lit(0.0)).otherwise(pl.col('pvprod_kW')).alias('pvprod_kW'),
                                     ])
 
+                                    # sorting necessary so that .first() statement captures inst_TF and info_source for EGIDS with partial installations
+                                    subdf_updated = subdf_updated.sort(['EGID','inst_TF', 'df_uid', 't_int'], descending=[False, True, False, False])
+
+                                    # agg per EGID to apply selfconsumption 
+                                    agg_egids = subdf_updated.group_by(['EGID', 't', 't_int']).agg([
+                                        pl.col('inst_TF').first().alias('inst_TF'),
+                                        pl.col('info_source').first().alias('info_source'),
+                                        pl.col('grid_node').first().alias('grid_node'),
+                                        pl.col('demand_kW').first().alias('demand_kW'),
+                                        pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                                    ])
+
+                                    # calc selfconsumption
+                                    agg_egids = agg_egids.sort(['EGID', 't_int'], descending = [False, False])
+
                                     selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.pvalloc_scen.TECspec_self_consumption_ifapplicable
 
-                                    subdf_updated = subdf_updated.with_columns([        
+                                    agg_egids = agg_egids.with_columns([        
                                         selfconsum_expr.alias("selfconsum_kW"),
                                         (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
                                         (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                                     ])
-                                    
-                                    # necessary, not too exagerate demand per gridnode
-                                    agg_egids = subdf_updated.group_by(['EGID', 't']).agg([
-                                        pl.col('grid_node').first().alias('grid_node'),
-                                        pl.col('demand_kW').sum().alias('demand_kW'), 
-                                        pl.col('pvprod_kW').sum().alias('pvprod_kW'),
-                                        pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
-                                        pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
-                                        pl.col('netdemand_kW').sum().alias('netdemand_kW'),
-                                        pl.col('inst_TF').first().alias('inst_TF'),
-                                    ])
+
 
                                     agg_egids_list.append(agg_egids)
                             
                                     topo_agg_egids_df = pl.concat(agg_egids_list)
-                                    topo_agg_egids_df = topo_agg_egids_df.with_columns([
-                                        pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
-                                    ])
-                                    topo_agg_egids_df = topo_agg_egids_df.sort(["EGID", "t_int", ], descending=[False, False])
+                                    # topo_agg_egids_df = topo_agg_egids_df.with_columns([
+                                    #     pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
+                                    # ])
+                                    # topo_agg_egids_df = topo_agg_egids_df.sort(["EGID", "t_int", ], descending=[False, False])
 
 
                                     # add fig traces
-                                    name_str = f"---- Actual PV: EGID: {egid} {20*'-'}"
+                                    name_str = f"---- Actual PV: EGID: {egid}, info_source: {topo_agg_egids_df['info_source'][0]} {20*'-'}, "
+                                    legend_str4 = f"     info_source: {topo_agg_egid['info_source'].values[0]} "
+
                                     fig_rfpart_ts.add_trace(go.Scatter(x= [None, ], y = [None,] , mode = 'lines', 
                                                                 name = name_str, 
                                                                 line = dict(color=plot_mapline_specs['roofpartition_color'], width=1.5),
