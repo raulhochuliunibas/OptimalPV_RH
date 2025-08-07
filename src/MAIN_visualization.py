@@ -2684,7 +2684,8 @@ class Visualization:
                             'netdemand_kW'  : 'sum' ,
                             'netfeedin_kW'  : 'sum' ,
                         }).reset_index()
-                        topo_agg_egids_hist['selfconsum_feedin_ratio'] = topo_agg_egids_hist['selfconsum_kW'] / topo_agg_egids_hist['netfeedin_kW']
+                        topo_agg_egids_hist['selfconsum_feedin_ratio'] = 0
+                        topo_agg_egids_hist.loc[topo_agg_egids_hist['inst_TF'] == True, 'selfconsum_feedin_ratio'] = topo_agg_egids_hist['selfconsum_kW'] / topo_agg_egids_hist['pvprod_kW']
 
                         # topo_agg_egids_gridnode_pick_df_hist = topo_agg_egids_gridnode_pick_df.groupby(['EGID', 'grid_node']).agg({
                         topo_agg_egids_winst_hist = topo_agg_egids_winst_df.groupby(['EGID', 'grid_node']).agg({
@@ -2696,7 +2697,8 @@ class Visualization:
                             'netdemand_kW'  : 'sum' ,
                             'netfeedin_kW'  : 'sum' ,
                         }).reset_index()
-                        topo_agg_egids_winst_hist['selfconsum_feedin_ratio'] = topo_agg_egids_winst_hist['selfconsum_kW'] / topo_agg_egids_winst_hist['netfeedin_kW']
+                        topo_agg_egids_winst_hist['selfconsum_feedin_ratio'] = 0
+                        topo_agg_egids_winst_hist.loc[topo_agg_egids_winst_hist['inst_TF'] == True, 'selfconsum_feedin_ratio'] = topo_agg_egids_winst_hist['selfconsum_kW'] / topo_agg_egids_winst_hist['pvprod_kW']
 
                         # set coloring         
                         subset_trace_color_palette      = trace_color_dict[self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['subset_trace_color_palette']]
