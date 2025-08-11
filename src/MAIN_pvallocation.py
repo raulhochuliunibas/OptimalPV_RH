@@ -61,6 +61,7 @@ class PVAllocScenario_Settings:
                                                                                  ]) 
     mini_sub_model_ngridnodes: int              = 20
     mini_sub_model_nEGIDs: int                  = 100
+    mini_sub_model_select_EGIDs: List[str]      = field(default_factory=lambda: [])
     T0_year_prediction: int                     = 2022                          # year for the prediction of the future construction capacity
     # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
     months_lookback: int                        = 12                           # number of months to look back for the prediction of the future construction capacity
@@ -198,6 +199,7 @@ class PVAllocScenario_Settings:
                                                                     # 'capa_roundup_pvprod_no_adj'              : assigns df_uid_w_inst to topo, based on pv_df TotalPower value (rounded up), pvprod_kW remains "untouched" and is still equivalent to production potential per roof partition
                                                                     # 'capa_roundup_pvprod_adjusted' - ATTENTION: will activate an if statement which will adjust pvprod_kW in topo_time_subdfs, so no longer pure production potential per roof partition
                                                                     # 'capa_no_adj_pvprod_adjusted' - ATTENTION: will activate an if statement which will adjust pvprod_kW in topo_time_subdfs, so no longer pure production potential per roof partition
+    ALGOspec_pvinst_option_to_EGID: str                         = 'max_dfuid_EGIDcombos'    # 'EGIDitercombos_maxdfuid' / 'EGIDoptimal__partial_dfuid'
 
     ALGOspec_tweak_constr_capacity_fact: float                  = 1
     ALGOspec_tweak_npv_calc: float                              = 1
@@ -346,10 +348,7 @@ class PVAllocScenario:
         self.mark_to_timing_csv('init', 'start_calc_economics', start_calc_economics, np.nan, '-')
         
         # algo.calc_economics_in_topo_df(self, topo, df_list, df_names, ts_list, ts_names)
-        if not self.sett.test_faster_array_computation:
-            self.algo_calc_economics_in_topo_df(topo, df_list, df_names, ts_list, ts_names)
-        elif self.sett.test_faster_array_computation:
-            self.algo_calc_production_in_topo_df_AND_topo_time_subdf(topo, df_list, df_names, ts_list, ts_names)
+        self.algo_calc_production_in_topo_df_AND_topo_time_subdf(topo, df_list, df_names, ts_list, ts_names)
         shutil.copy(f'{self.sett.name_dir_export_path}/topo_egid.json', f'{self.sett.name_dir_export_path}/topo_egid_before_alloc.json')
 
         end_calc_economics = datetime.datetime.now()
@@ -512,10 +511,7 @@ class PVAllocScenario:
                     # GRIDPREM + NPV_DF UPDATE ==========
                     start_time_update_gridprem = datetime.datetime.now()
                     print_to_logfile('- START update gridprem', self.sett.log_name)
-                    if not self.sett.test_faster_array_computation:
-                        self.algo_update_gridprem(self.sett.mc_iter_path, i_m, m)
-                    elif self.sett.test_faster_array_computation:
-                        self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
                     end_time_update_gridprem = datetime.datetime.now()
                     
                     print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
@@ -523,10 +519,7 @@ class PVAllocScenario:
                                                                                                                             
                     start_time_update_npv = datetime.datetime.now()
                     print_to_logfile('- START update npv', self.sett.log_name)
-                    if not self.sett.test_faster_array_computation:
-                        self.algo_update_npv_df(self.sett.mc_iter_path, i_m, m)
-                    elif self.sett.test_faster_array_computation:
-                        self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
+                    self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
                     end_time_update_npv = datetime.datetime.now()
                     print_to_logfile(f'- END update npv: {self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv)} (hh:mm:ss.s)', self.sett.log_name)
                     self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  #if i_m < 7 else None
@@ -1420,21 +1413,42 @@ class PVAllocScenario:
 
             # mini model for exploratory work ----------
             if self.sett.mini_sub_model_TF:
-                gridnodes_in_gwr = Map_egid_dsonode.loc[Map_egid_dsonode['EGID'].isin(gwr['EGID'])]['grid_node'].unique()
-                if any([node in gridnodes_in_gwr for node in self.sett.mini_sub_model_grid_nodes]):
-                    mini_sub_model_nodes = self.sett.mini_sub_model_grid_nodes
-                else:
-                    mini_sub_model_nodes = gridnodes_in_gwr[0:self.sett.mini_sub_model_ngridnodes]
+
+                if self.sett.mini_sub_model_by_X == 'by_gridnode':
+                    gridnodes_in_gwr = Map_egid_dsonode.loc[Map_egid_dsonode['EGID'].isin(gwr['EGID'])]['grid_node'].unique()
+                    if any([node in gridnodes_in_gwr for node in self.sett.mini_sub_model_grid_nodes]):
+                        mini_sub_model_nodes = self.sett.mini_sub_model_grid_nodes
+                    else:
+                        mini_sub_model_nodes = gridnodes_in_gwr[0:self.sett.mini_sub_model_ngridnodes]
+                        
+                    mini_submodel_EGIDs = Map_egid_dsonode.loc[Map_egid_dsonode['grid_node'].isin(mini_sub_model_nodes)]['EGID'].unique()
+                    gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(mini_submodel_EGIDs)])
+
+                    if (self.sett.mini_sub_model_nEGIDs is not None) & (self.sett.mini_sub_model_nEGIDs < gwr['EGID'].nunique()): 
+                        # gwr = copy.deepcopy(gwr.head(self.sett.mini_sub_model_nEGIDs))
+                        gwr = copy.deepcopy(gwr.sample(n=self.sett.mini_sub_model_nEGIDs, random_state=self.sett.ALGOspec_rand_seed))
+                    elif (self.sett.mini_sub_model_nEGIDs is not None) & (self.sett.mini_sub_model_nEGIDs >= gwr['EGID'].nunique()):
+                        gwr = copy.deepcopy(gwr)  
+
+
+                elif self.sett.mini_sub_model_by_X == 'by_EGID':
+                    gwr_selected = []
+
+                    egid_in_gwr = [egid for egid in self.sett.mini_sub_model_select_EGIDs if egid in gwr['EGID'].unique()]
+                    if len(egid_in_gwr) > 0:
+                        gwr_select_EGID = copy.deepcopy(gwr.loc[gwr['EGID'].isin(egid_in_gwr)])
+                        rest_to_sample = self.sett.mini_sub_model_nEGIDs - len(egid_in_gwr)
+                        gwr_selected.append(gwr_select_EGID)
+
+                        if (rest_to_sample > 0) & (rest_to_sample < gwr['EGID'].nunique()):
+                            gwr = copy.deepcopy(gwr.loc[~gwr['EGID'].isin(egid_in_gwr)])
+                            gwr_rest = copy.deepcopy(gwr.sample(n=rest_to_sample, random_state=self.sett.ALGOspec_rand_seed))
+                        elif (rest_to_sample > 0) & (rest_to_sample >= gwr['EGID'].nunique()):
+                            gwr_rest = copy.deepcopy(gwr)
+                        gwr_selected.append(gwr_rest)
+                        gwr = pd.concat(gwr_selected, axis=0)
                     
-                mini_submodel_EGIDs = Map_egid_dsonode.loc[Map_egid_dsonode['grid_node'].isin(mini_sub_model_nodes)]['EGID'].unique()
-                gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(mini_submodel_EGIDs)])
-
-                if (self.sett.mini_sub_model_nEGIDs is not None) & (self.sett.mini_sub_model_nEGIDs < gwr['EGID'].nunique()): 
-                    # gwr = copy.deepcopy(gwr.head(self.sett.mini_sub_model_nEGIDs))
-                    gwr = copy.deepcopy(gwr.sample(n=self.sett.mini_sub_model_nEGIDs, random_state=self.sett.ALGOspec_rand_seed))
-                elif (self.sett.mini_sub_model_nEGIDs is not None) & (self.sett.mini_sub_model_nEGIDs >= gwr['EGID'].nunique()):
-                    gwr = copy.deepcopy(gwr)  
-
+                    gwr = copy.deepcopy(gwr)
                     
 
                 # solkat = copy.deepcopy(solkat.loc[solkat['EGID'].isin(mini_submodel_EGIDs)])
@@ -1490,6 +1504,7 @@ class PVAllocScenario:
                     'BeginOp': '',
                     'InitialPower': 0.0,
                     'TotalPower': 0.0,
+                    'TotalPower_pv_df': 0.0,
                     'df_uid_w_inst': '',
                 }
                 egid_without_pv = []
@@ -1514,7 +1529,8 @@ class PVAllocScenario:
                         pv_inst['BeginOp'] = pv_npry[mask_xtfid, pv.columns.get_loc('BeginningOfOperation')][0]
                         pv_inst['InitialPower'] = pv_npry[mask_xtfid, pv.columns.get_loc('InitialPower')][0]
                         pv_inst['TotalPower'] = pv_npry[mask_xtfid, pv.columns.get_loc('TotalPower')][0]
-                    
+                        pv_inst['TotalPower_pv_df'] = pv_npry[mask_xtfid, pv.columns.get_loc('TotalPower_pv_df')][0]
+
                         # pv_inst['BeginOp'] = pv.loc[pv['xtf_id'] == xtfid, 'BeginningOfOperation'].iloc[0]
                         # pv_inst['InitialPower'] = pv.loc[pv['xtf_id'] == xtfid, 'InitialPower'].iloc[0]
                         # pv_inst['TotalPower'] = pv.loc[pv['xtf_id'] == xtfid, 'TotalPower'].iloc[0]
@@ -2732,7 +2748,7 @@ class PVAllocScenario:
                             
                             # elif subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0] > subdf_dfuid_pvdf['TotalPower'][0]:                            
                             # roundup_pvdf_capa_topartition_TF: round up kWpeak to full partition size or not.
-                            if self.sett.ALGOspec_adjust_existing_pvdf_capa_topartition == 'capa_roundup_pvprod_no_adj':
+                            if self.sett.ALGOspec_adjust_existing_pvdf_capa_topartition == 'capa__rounduppvprod_no_adj':
                                 kWpeak_ratio_dfuidcalc_to_pvdf_decimal = egid_capa_kW_pvdf / subdf_dfuid_pvdf['poss_prod_capa_kW_peak'][0]    
                                 
                                 kWpeak_ratio_dfuidcalc_to_pvdf = 1
