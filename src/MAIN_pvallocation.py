@@ -203,6 +203,7 @@ class PVAllocScenario_Settings:
     ALGOspec_tweak_npv_calc: float                              = 1
     ALGOspec_tweak_npv_excl_elec_demand: bool                   = True
     ALGOspec_tweak_gridnode_df_prod_demand_fact: float          = 1
+    ALGOspec_tweak_demand_profile: float                        = 1.8
     ALGOspec_constr_capa_overshoot_fact: float                  = 1
     ALGOspec_subselec_filter_criteria: str                      = None  # 'southfacing_1spec' / 'eastwestfacing_3spec' / 'southwestfacing_2spec'
 
@@ -2607,7 +2608,8 @@ class PVAllocScenario:
                         ])
                         
 
-                    # attach / calculatedemand profiles ----------
+                    # attach / calculate demand profiles ----------
+
                     demandtypes_unpivot = demandtypes_ts.unpivot(
                         on = ['SFH', 'MFH', ],
                         index=['t', 't_int'],  # col that stays unchanged
@@ -2616,7 +2618,7 @@ class PVAllocScenario:
                     )
                     subdf = subdf.join(demandtypes_unpivot, on=['t', 'sfhmfh_typ'], how="left")
                     subdf = subdf.with_columns([
-                        (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") ).alias("demand_kW")  # convert to kW
+                        (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") * self.sett.ALGOspec_tweak_demand_profile ).alias("demand_kW")  # convert to kW
                     ])
 
 
