@@ -87,7 +87,7 @@ class DataAggScenario_Settings:
     SOLKAT_col_partition_union: str = 'SB_UUID'                   # column name used for the union of partitions
     SOLKAT_GWR_EGID_buffer_size: int = 10                          # buffer size in meters for the GWR selection
     SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique: bool = False
-    SOLKAT_cols_adjust_for_missEGIDs_to_solkat: List[str] = field(default_factory=lambda: ['FLAECHE', 'STROMERTRAG', ])
+    SOLKAT_cols_adjust_for_missEGIDs_to_solkat: List[str] = field(default_factory=lambda: ['FLAECHE', 'STROMERTRAG', 'GSTRAHLUNG', 'MSTRAHLUNG' ])
     SOLKAT_test_loop_optim_buff_size_TF: bool = False
     SOLKAT_test_loop_optim_buff_arang: List[float] = field(default_factory=lambda: [0, 10, 0.1])
 
@@ -798,7 +798,7 @@ class DataAggScenario:
                 solkat_v1_gdf = gpd.GeoDataFrame(solkat_v1_wgeo, geometry='geometry')
                 solkat, solkat_gdf = copy.deepcopy(solkat_v1), copy.deepcopy(solkat_v1_gdf)
             elif self.sett.SOLKAT_match_missing_EGIDs_to_solkat_TF:
-        """
+            """
             
             # the solkat df has missing EGIDs, for example row houses where the entire roof is attributed to one EGID. Attempt to 
             # 1 - add roof (perfectly overlapping roofpartitions) to solkat for all the EGIDs within the unions shape
