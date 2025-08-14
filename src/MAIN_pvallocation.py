@@ -1434,6 +1434,8 @@ class PVAllocScenario:
 
             gwr_before_dsonode_selection = copy.deepcopy(gwr)
             gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(Map_egid_dsonode['EGID'].unique())])
+            check_egids = [egid for egid in self.sett.mini_sub_model_select_EGIDs if egid in gwr['EGID'].unique()]
+            check_egids
 
 
             # mini model for exploratory work ----------
@@ -3021,6 +3023,8 @@ class PVAllocScenario:
                     (pl.col('poss_pvprod_kW') * pl.col('share_pvprod_used')).alias('pvprod_kW'),
                 ])
 
+                # --------------------
+                # BOOKMARK
                 subdf_sanity_check = subdf_updated.filter(
                     (pl.col('t').is_in([
                     # 't_1', 't_2', 't_3', 't_4', 't_5', 't_6', 
@@ -3037,7 +3041,7 @@ class PVAllocScenario:
                         ]).head(50)
                 subdf_sanity_check
                 # BOOKMARK
-                
+                # --------------------
 
                 # force pvprod == 0 for EGID-df_uid without inst
                 Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
@@ -3062,6 +3066,7 @@ class PVAllocScenario:
                     pl.col('info_source').first().alias('info_source'),
                     pl.col('grid_node').first().alias('grid_node'),
                     pl.col('demand_kW').first().alias('demand_kW'),
+                    pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
                     pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                 ])
 
@@ -4228,26 +4233,32 @@ class PVAllocScenario:
 # ======================================================================================================
 if __name__ == '__main__':
     pvalloc_scen_list = [
+
     PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID',
         bfs_numbers                                          = [
-                                                    2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-                                                    # 2883, 
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
+                                                    # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
+                                                    # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    2883,
 
                                                                 ],          
         mini_sub_model_TF                                    = True,
         mini_sub_model_by_X                                  = 'by_EGID',
-        mini_sub_model_nEGIDs                                = 10,
+        mini_sub_model_nEGIDs                                = 50,
         mini_sub_model_select_EGIDs                          = [
                                                                 # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
-                                                                '385709', '386872', '9081064', '190487689', '2126328', 
-                                                                '432634', '2129384', '2129384', '387342',         # houses in RUR area, with 0 NEiGUNG and littie deviation from south
+                                                               # houses in RUR area, with 0 NEiGUNG and littie deviation from south
+                                                                # '190487689',    
                                                                 ],
         create_gdf_export_of_topology                        = True,
         export_csvs                                          = True,
         T0_year_prediction                                   = 2021,
         months_prediction                                    = 120,
+        TECspec_share_roof_area_available                    = 0.8,
         TECspec_self_consumption_ifapplicable                = 1.0,
-        TECspec_generic_pvtarif_Rp_kWh                       = 5.0,
+        TECspec_generic_pvtarif_Rp_kWh                       = 2.5,
         CSTRspec_iter_time_unit                              = 'year',
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
@@ -4257,7 +4268,7 @@ if __name__ == '__main__':
         ALGOspec_rand_seed                                   = 123,
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
-
+    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_SouthFacing',
         ]
 
     for pvalloc_scen in pvalloc_scen_list:
