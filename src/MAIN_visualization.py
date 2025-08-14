@@ -15,6 +15,7 @@ import copy
 from shapely import union_all, Polygon, MultiPolygon, MultiPoint
 from scipy.stats import gaussian_kde
 from scipy.stats import skewnorm
+from scipy import optimize
 from itertools import chain
 from dataclasses import dataclass, field
 
@@ -58,7 +59,7 @@ class Visual_Settings:
 
 
     default_zoom_year: List[int]                 = field(default_factory=lambda: [2002, 2030]) # field(default_factory=lambda: [2002, 2030]),
-    default_zoom_hour: List[int]                 = field(default_factory=lambda: [212*24, (212*24)+(24*14)]) # field(default_factory=lambda: [2400, 2400+(24*7)]),
+    default_zoom_hour: List[int]                 = field(default_factory=lambda: [212*24, (212*24)+(24*7)]) # field(default_factory=lambda: [2400, 2400+(24*7)]),
     default_map_zoom: int                        = 13
     default_map_center: List[float]              = field(default_factory=lambda: [47.38, 7.65])
     node_selection_for_plots: List[str]          = field(default_factory=lambda: ['1', '3', '5'])
@@ -162,8 +163,8 @@ class Visual_Settings:
                             'netfeedin_kW':             50,            
                             'selfconsum_pvprod_ratio':  20, 
                         }, 
+        'show_hist_traces_TF': False, 
         'hist_opacity': 0.85,
-        'mean_y_height': [0, 60], 
         'subset_trace_color_palette': 'Turbo',
         'all_egid_trace_color_palette': 'Viridis',
     })
@@ -203,7 +204,7 @@ class Visual_Settings:
         'point_opacity_dsonode_loc': 1
     })
     plot_ind_mapline_prodHOY_EGIDrfcombo_specs:Dict        = field(default_factory=lambda: {
-        'splot_mapORtimeseries': ['map', 'timeseries'],
+        'splot_mapORtimeseries': ['map', 'timeseries', 'summary', 'recalc_pvdf'],
         'specific_selected_EGIDs': [], 
         'rndm_sample_seed': None,
         'n_rndm_egid_winst_pvdf': 1, 
@@ -2339,7 +2340,6 @@ class Visualization:
                 hist_cols_to_plot           = self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs ['hist_cols_to_plot']
                 n_hist_bins_bycol           = self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs ['n_hist_bins_bycol']
                 hist_opacity                = self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs ['hist_opacity']
-                mean_y_height               = self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs ['mean_y_height']
 
                 fig_hist_agg = go.Figure()
 
@@ -2672,10 +2672,11 @@ class Visualization:
                         # subset topo_agg_egids_df for line plot
                         # topo_agg_egids_df = topo_agg_egids_df.sort_values(by=['EGID', 't_int'], ascending=[True, True])
                         topo_agg_egids_all_df = topo_agg_egids_all_df.sort_values(by=['EGID', 't_int'], ascending=[True, True]).copy()
-                        topo_agg_egids_winst_df = topo_agg_egids_all_df.loc[topo_agg_egids_all_df['inst_TF'] == True].copy()
+
+                        # topo_agg_egids_winst_df = topo_agg_egids_all_df.loc[topo_agg_egids_all_df['inst_TF'] == True].copy()
                         # topo_agg_egids_gridnode_pick_df = topo_agg_egids_df.loc[topo_agg_egids_df['grid_node'] == gridnode_pick]
 
-                        # aggregate subset + all cols by EGID over year
+                        # aggregate cols ALL EGID over year
                         topo_agg_egids_hist = topo_agg_egids_all_df.groupby(['EGID', 'grid_node']).agg({
                             'inst_TF'       : 'first',
                             'info_source'   : 'first',
@@ -2689,17 +2690,28 @@ class Visualization:
                         topo_agg_egids_hist.loc[topo_agg_egids_hist['inst_TF'] == True, 'selfconsum_pvprod_ratio'] = topo_agg_egids_hist['selfconsum_kW'] / topo_agg_egids_hist['pvprod_kW']
 
                         # topo_agg_egids_gridnode_pick_df_hist = topo_agg_egids_gridnode_pick_df.groupby(['EGID', 'grid_node']).agg({
-                        topo_agg_egids_winst_hist = topo_agg_egids_winst_df.groupby(['EGID', 'grid_node']).agg({
-                            'inst_TF'       : 'first',
-                            'info_source'   : 'first',
-                            'demand_kW'     : 'sum' ,
-                            'pvprod_kW'     : 'sum' ,
-                            'selfconsum_kW' : 'sum' ,
-                            'netdemand_kW'  : 'sum' ,
-                            'netfeedin_kW'  : 'sum' ,
-                        }).reset_index()
-                        topo_agg_egids_winst_hist['selfconsum_pvprod_ratio'] = np.zeros(len(topo_agg_egids_winst_hist), dtype=float)
-                        topo_agg_egids_winst_hist.loc[topo_agg_egids_winst_hist['inst_TF'] == True, 'selfconsum_pvprod_ratio'] = topo_agg_egids_winst_hist['selfconsum_kW'] / topo_agg_egids_winst_hist['pvprod_kW']
+                        # topo_agg_egids_winst_hist = topo_agg_egids_winst_df.groupby(['EGID', 'grid_node']).agg({
+                        #     'inst_TF'       : 'first',
+                        #     'info_source'   : 'first',
+                        #     'demand_kW'     : 'sum' ,
+                        #     'pvprod_kW'     : 'sum' ,
+                        #     'selfconsum_kW' : 'sum' ,
+                        #     'netdemand_kW'  : 'sum' ,
+                        #     'netfeedin_kW'  : 'sum' ,
+                        # }).reset_index()
+                        # topo_agg_egids_winst_hist['selfconsum_pvprod_ratio'] = np.zeros(len(topo_agg_egids_winst_hist), dtype=float)
+                        # topo_agg_egids_winst_hist.loc[topo_agg_egids_winst_hist['inst_TF'] == True, 'selfconsum_pvprod_ratio'] = topo_agg_egids_winst_hist['selfconsum_kW'] / topo_agg_egids_winst_hist['pvprod_kW']
+
+                        # subset all pv_df EGIDs
+                        topo_agg_egids_pvdf_hist = topo_agg_egids_hist.loc[topo_agg_egids_hist['info_source'] == 'pv_df'].copy()
+                        
+                        # subset all alloc_algorithm EGIDs
+                        topo_agg_egids_alloc_hist = topo_agg_egids_hist.loc[topo_agg_egids_hist['info_source'] == 'alloc_algorithm'].copy()
+
+                        # subset all w_inst EGIDs
+                        topo_agg_egids_winst_hist = topo_agg_egids_hist.loc[topo_agg_egids_hist['inst_TF'] == True].copy()
+
+
 
                         # set coloring         
                         subset_trace_color_palette      = trace_color_dict[self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['subset_trace_color_palette']]
@@ -2796,10 +2808,10 @@ class Visualization:
 
                             try:
                                 fig_hist     = add_kde_cols_trace(fig_hist,     topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'solid', color)
-                                fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'solid', color)
+                                fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'solid', color) if self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['show_hist_traces_TF'] else None
 
                                 fig_hist_agg = add_kde_cols_trace(fig_hist_agg, topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'dash',  agg_color)
-                                fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'dash',  agg_color)
+                                fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_winst_hist, col, 'subset egid w/inst', 'dash',  agg_color) if self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['show_hist_traces_TF'] else None
                             except Exception as e:
                                 print_to_logfile(f'Error in add_hist_cols_trace for col {col}: {e}', self.visual_sett.log_name)
                                 continue
@@ -2827,10 +2839,10 @@ class Visualization:
 
                             try:
                                 fig_hist     = add_kde_cols_trace(fig_hist,     topo_agg_egids_hist, col, 'all egids in topo', 'solid', color)  
-                                fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_hist, col, 'all egids in topo', 'solid', color)
+                                fig_hist     = add_hist_cols_trace(fig_hist,     topo_agg_egids_hist, col, 'all egids in topo', 'solid', color) if self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['show_hist_traces_TF'] else None
 
                                 fig_hist_agg = add_kde_cols_trace(fig_hist_agg, topo_agg_egids_hist, col, 'all egids in topo', 'dash',  agg_color)
-                                fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_hist, col, 'all egids in topo', 'dash',  agg_color)
+                                fig_hist_agg = add_hist_cols_trace(fig_hist_agg, topo_agg_egids_hist, col, 'all egids in topo', 'dash',  agg_color) if self.visual_sett.plot_ind_hist_cols_HOYagg_per_EGID_specs['show_hist_traces_TF'] else None
                             except Exception as e:
                                 print_to_logfile(f'Error in add_hist_cols_trace for col {col}: {e}', self.visual_sett.log_name)
                                 continue
@@ -4074,8 +4086,11 @@ class Visualization:
 
                     # import
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+                    gridprem_ts = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridprem_ts.parquet')    
                     topo_subdf_paths    = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/topo_time_subdf/topo_subdf_*.parquet')
                     outtopo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/outtopo_time_subdf/outtopo_subdf_*.parquet') 
+
+
 
                     # solkat_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/solkat_gdf.geojson')
                     solkat_gdf = gpd.read_file(f'{self.visual_sett.data_path}/pvalloc/{self.pvalloc_scen.name_dir_export}/topo_spatial_data/solkat_gdf_in_topo.geojson')
@@ -4086,36 +4101,41 @@ class Visualization:
                         egid_list, dfuid_list, info_source_list, TotalPower_list, inst_TF_list, grid_node_list, share_pvprod_used_list, dfuidPower_list = [], [], [], [], [], [], [], []
                         for k,v in topo.items():
                             if v['pv_inst']['inst_TF']:
-                                for tpl in v['pv_inst']['dfuid_w_inst_tuples']:
-                                    egid_list.append(k)
-                                    info_source_list.append(v['pv_inst']['info_source'])
-                                    inst_TF_list.append(True if tpl[3] > 0.0 else False)   
-                                    dfuid_list.append(tpl[1])
-                                    share_pvprod_used_list.append(tpl[2])
-                                    dfuidPower_list.append(tpl[3])
-                                    grid_node_list.append(v['grid_node']) 
-                                    TotalPower_list.append(v['pv_inst']['TotalPower'])
-
-                            else: 
-                                egid_list.append(k)
-                                dfuid_list.append('')
-                                share_pvprod_used_list.append(0.0)
-                                dfuidPower_list.append(0.0)
-                                info_source_list.append('')
-                                inst_TF_list.append(False)
-                                grid_node_list.append(v['grid_node'])  
-                                TotalPower_list.append(0.0)          
+                                dfuid_tupls = [tpl[1] for tpl in v['pv_inst']['dfuid_w_inst_tuples'] if tpl[3] > 0.0]
+                                for k_s, v_s in v['solkat_partitions'].items():
+                                    if k_s in dfuid_tupls:
+                                        # for tpl in v['pv_inst']['dfuid_w_inst_tuples']:
+                                        for tpl in v['pv_inst']['dfuid_w_inst_tuples']:
+                                            if tpl[1] == k_s:       
+                                                egid_list.append(k)
+                                                info_source_list.append(v['pv_inst']['info_source'])
+                                                inst_TF_list.append(True if tpl[3] > 0.0 else False)   
+                                                dfuid_list.append(tpl[1])
+                                                share_pvprod_used_list.append(tpl[2])
+                                                dfuidPower_list.append(tpl[3])
+                                                grid_node_list.append(v['grid_node']) 
+                                                TotalPower_list.append(v['pv_inst']['TotalPower'])
+                                    else: 
+                                        egid_list.append(k)
+                                        dfuid_list.append(k_s)
+                                        share_pvprod_used_list.append(0.0)
+                                        dfuidPower_list.append(0.0)
+                                        info_source_list.append('')
+                                        inst_TF_list.append(False)
+                                        grid_node_list.append(v['grid_node'])  
+                                        TotalPower_list.append(0.0)          
 
                         Map_pvinfo_topo_egid = pl.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'info_source': info_source_list, 'TotalPower': TotalPower_list,
                                                             'inst_TF': inst_TF_list, 'share_pvprod_used': share_pvprod_used_list, 'dfuidPower': dfuidPower_list, 
                                                             'grid_node': grid_node_list
                                                             })
-
+                        # asdf = Map_pvinfo_topo_egid.filter(pl.col('EGID') == egid)
 
                         # select EGIDs for visualization
                         selected_egid = []
-                        if True:
-                            selected_egid = selected_egid + plot_mapline_specs['specific_selected_EGIDs']
+                        if True: 
+                            selected_in_sample = [egid for egid in plot_mapline_specs['specific_selected_EGIDs'] if egid in topo.keys()]
+                            selected_egid = selected_egid + selected_in_sample
 
                             # add random EGIDs
                             npartion_minmax = plot_mapline_specs['n_partition_pegid_minmax']
@@ -4123,6 +4143,11 @@ class Visualization:
                                 pl.col("df_uid").n_unique().alias("df_uid_count")
                             )
                             Map_pvinfo_topo_egid = Map_pvinfo_topo_egid.join(egid_counts, on="EGID", how="left")
+                            def sample_egids_of_df(df, n, seed = None):
+                                if seed is None: 
+                                    return df.sample(n=n, with_replacement=False).clone()
+                                else: 
+                                    return df.sample(n=n, with_replacement=False, seed=seed).clone()
 
                             egid_winst_pvdf_df = Map_pvinfo_topo_egid.filter(
                                 (pl.col('inst_TF') == True) & 
@@ -4130,11 +4155,20 @@ class Visualization:
                                 (pl.col('df_uid_count') >= npartion_minmax[0]) &
                                 (pl.col('df_uid_count') <= npartion_minmax[1])
                             )
-                            if plot_mapline_specs['rndm_sample_seed'] == None:
-                                egid_winst_pvdf_df = egid_winst_pvdf_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_pvdf'], with_replacement=False,).clone()
-                            else: 
-                                egid_winst_pvdf_df = egid_winst_pvdf_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_pvdf'], with_replacement=False, seed = plot_mapline_specs['rndm_sample_seed']).clone()
+                            # make selection for pv_df case dynamic to avoid unnecessary code break
+                            max_n_dfuid = 10
+                            dfuid_iter= 0
+                            while  (egid_winst_pvdf_df.shape[0] < plot_mapline_specs['n_rndm_egid_winst_pvdf']) & (dfuid_iter < max_n_dfuid)  :
+                                dfuid_iter += 1
+                                egid_winst_pvdf_df = Map_pvinfo_topo_egid.filter(
+                                    (pl.col('inst_TF') == True) & 
+                                    (pl.col('info_source') == 'pv_df') &
+                                    (pl.col('df_uid_count') >= 1) &
+                                    (pl.col('df_uid_count') <= dfuid_iter)
+                                )   
+                            egid_winst_pvdf_df = sample_egids_of_df(egid_winst_pvdf_df, plot_mapline_specs['n_rndm_egid_winst_pvdf'], plot_mapline_specs['rndm_sample_seed'])
                             egid_winst_pvdf = egid_winst_pvdf_df['EGID'].to_list()
+
 
                             egid_winst_alloc_df = Map_pvinfo_topo_egid.filter(
                                 (pl.col('inst_TF') == True) & 
@@ -4143,24 +4177,19 @@ class Visualization:
                                 (pl.col('df_uid_count') <= npartion_minmax[1])
                             )
                             # make selection for alloc_algo case dynamic to avoid unnecessary code break
-                            if egid_winst_alloc_df.shape[0] < plot_mapline_specs['n_rndm_egid_winst_alloc']:
-
-                                min_df_uid_count = Map_pvinfo_topo_egid.filter(
-                                        pl.col("info_source") == "alloc_algorithm"
-                                    ).select(
-                                        pl.col("df_uid_count").min()
-                                    ).item()
+                            max_n_dfuid = 10
+                            dfuid_iter= 0
+                            while  (egid_winst_alloc_df.shape[0] < plot_mapline_specs['n_rndm_egid_winst_alloc']) & (dfuid_iter < max_n_dfuid)  :
+                                dfuid_iter += 1
                                 egid_winst_alloc_df = Map_pvinfo_topo_egid.filter(
                                     (pl.col('inst_TF') == True) & 
                                     (pl.col('info_source') == 'alloc_algorithm') &
                                     (pl.col('df_uid_count') >= 1) &
-                                    (pl.col('df_uid_count') <= min_df_uid_count)
-                                )   
-                            if plot_mapline_specs['rndm_sample_seed'] == None:
-                                egid_winst_alloc_df = egid_winst_alloc_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_alloc'], with_replacement=False,).clone()
-                            else:
-                                egid_winst_alloc_df = egid_winst_alloc_df.sample(n=plot_mapline_specs['n_rndm_egid_winst_alloc'], with_replacement=False, seed = plot_mapline_specs['rndm_sample_seed']).clone()
+                                    (pl.col('df_uid_count') <= dfuid_iter)
+                                )
+                            egid_winst_alloc_df = sample_egids_of_df(egid_winst_alloc_df, plot_mapline_specs['n_rndm_egid_winst_alloc'], plot_mapline_specs['rndm_sample_seed'])
                             egid_winst_alloc = egid_winst_alloc_df['EGID'].to_list()
+
 
                             egid_woinst_df = Map_pvinfo_topo_egid.filter(
                                 (pl.col('inst_TF') == False) & 
@@ -4308,7 +4337,9 @@ class Visualization:
 
                         # plot partition time series ==============================
                         fig_rfpart_ts = go.Figure()
-                        if 'timeseries' in plot_mapline_specs['splot_mapORtimeseries']:
+                        summary_agg_egids_list = []
+                        if ('timeseries' in plot_mapline_specs['splot_mapORtimeseries']) or ('summary' in plot_mapline_specs['splot_mapORtimeseries']):
+
                             # all possible combinations
                             if True:
                                 # create list of df_uid combinations
@@ -4336,8 +4367,12 @@ class Visualization:
                                             # set inst_TF to True to select all partitions in combo
                                             subdf_combo = subdf_combo.with_columns([
                                                 # pl.col('inst_TF')
-                                                pl.lit(True).alias('inst_TF')
+                                                pl.lit(True).alias('inst_TF'), 
+                                                pl.lit(1.0).alias('share_pvprod_used'),
                                             ])        
+                                            subdf_combo = subdf_combo.with_columns([
+                                                (pl.col('poss_pvprod_kW') * pl.col('share_pvprod_used')).alias('pvprod_kW'),
+                                                ])
 
                                             # sorting necessary so that .first() statement captures inst_TF and info_source for EGIDS with partial installations
                                             subdf_combo = subdf_combo.sort(['EGID','inst_TF', 'df_uid', 't_int'], descending=[False, True, False, False])
@@ -4385,10 +4420,10 @@ class Visualization:
                                             })
 
                                             # add fig traces
-                                            df_uid_combo_str = '-'.join(df_uid_combo) if len(df_uid_combo) > 1 else df_uid_combo[0]
+                                            df_uid_combo_str = '-'.join(df_uid_combo) if len(df_uid_combo) > 2 else df_uid_combo[0]
                                             legend_str1 = f"---- Possible PV p_combo - EGID: {egid}, df_uid_combo: {df_uid_combo_str} ------------"
                                             legend_str2 = f"     FLAECHE: {round(topo_agg_egid['FLAECHE'].values[0],3)}, STROMERTRAG: {round(topo_agg_egid['STROMERTRAG'].values[0],3)}, AUSRICHTUNG: {round(topo_agg_egid['AUSRICHTUNG'].values[0],3)}" 
-                                            legend_str3 = f"     GAREA: {topo_agg_egid['GAREA'].values[0]}, are_typ: {topo_agg_egid['are_typ'].values[0]}, sfhmfh_typ: {topo_agg_egid['sfhmfh_typ'].values[0]}"
+                                            legend_str3 = f"     NEIGUNG: {topo_agg_egid['NEIGUNG'].values[0]}, GAREA: {topo_agg_egid['GAREA'].values[0]}, are_typ: {topo_agg_egid['are_typ'].values[0]}, sfhmfh_typ: {topo_agg_egid['sfhmfh_typ'].values[0]}"
                                             legend_str4 = f"     info_source: {topo_agg_egid['info_source'].values[0]} "
                                             legend_list = [legend_str1, legend_str2, legend_str3, legend_str4, ]
 
@@ -4431,25 +4466,34 @@ class Visualization:
 
                             # actual installation time series
                             if True:
-                                egid_list, dfuid_list, info_source_list, inst_TF_list, grid_node_list = [], [], [], [], []
+                                egid_list, dfuid_list, info_source_list, TotalPower_list, inst_TF_list, grid_node_list, share_pvprod_used_list, dfuidPower_list = [], [], [], [], [], [], [], []
                                 for k,v in topo.items():
-                                    if k in selected_egid:
-                                        if v['pv_inst']['inst_TF']:
-                                            for dfuid_w_inst in v['pv_inst']['df_uid_w_inst']:
-                                                egid_list.append(k)
-                                                dfuid_list.append(dfuid_w_inst)
-                                                info_source_list.append(v['pv_inst']['info_source'])
-                                                inst_TF_list.append(v['pv_inst']['inst_TF'])   
-                                                grid_node_list.append(v['grid_node']) 
-                                        else: 
+                                    if v['pv_inst']['inst_TF']:
+                                        for tpl in v['pv_inst']['dfuid_w_inst_tuples']:
                                             egid_list.append(k)
-                                            dfuid_list.append('')
-                                            info_source_list.append('')
-                                            inst_TF_list.append(False)
-                                            grid_node_list.append(v['grid_node'])
+                                            info_source_list.append(v['pv_inst']['info_source'])
+                                            inst_TF_list.append(True if tpl[3] > 0.0 else False)   
+                                            dfuid_list.append(tpl[1])
+                                            share_pvprod_used_list.append(tpl[2])
+                                            dfuidPower_list.append(tpl[3])
+                                            grid_node_list.append(v['grid_node']) 
+                                            TotalPower_list.append(v['pv_inst']['TotalPower'])
 
-                                gridnode_freq         = pd.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,  'grid_node': grid_node_list})
-                                Map_pvinfo_topo_egid  = pl.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,  'grid_node': grid_node_list})
+                                    else: 
+                                        egid_list.append(k)
+                                        dfuid_list.append('')
+                                        share_pvprod_used_list.append(0.0)
+                                        dfuidPower_list.append(0.0)
+                                        info_source_list.append('')
+                                        inst_TF_list.append(False)
+                                        grid_node_list.append(v['grid_node'])  
+                                        TotalPower_list.append(0.0)          
+
+                                Map_pvinfo_topo_egid = pl.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'info_source': info_source_list, 'TotalPower': TotalPower_list,
+                                                                    'inst_TF': inst_TF_list, 'share_pvprod_used': share_pvprod_used_list, 'dfuidPower': dfuidPower_list, 
+                                                                    'grid_node': grid_node_list
+                                                                    })
+                                # gridnode_freq         = pd.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,  'grid_node': grid_node_list})
 
 
                                 agg_subdf_df_list, agg_egids_list = [], []
@@ -4459,18 +4503,22 @@ class Visualization:
 
                                     if egid in subdf['EGID'].to_list():
                                         # filter for egid
-                                        subdf = subdf.filter(pl.col('EGID') == egid).clone()
+                                        subdf_updated = subdf.filter(pl.col('EGID') == egid).clone()
                                         # subdf_updated = subdf.clone()                                      
-                                        subdf_updated = subdf.drop(['info_source', 'inst_TF']).clone()  
+                                        cols_to_update = [ 'info_source', 'inst_TF', 'share_pvprod_used', 'dfuidPower' ]                                      
+                                        subdf_updated = subdf_updated.drop(cols_to_update)                      
 
-                                        subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid', 'info_source', 'inst_TF']], 
-                                                                        on=['EGID', 'df_uid'], how='left').clone()         
+                                        subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid',] + cols_to_update], on=['EGID', 'df_uid'], how='left')         
                                         # remove the nulls from the merged columns
                                         subdf_updated = subdf_updated.with_columns([
                                             pl.when(pl.col('inst_TF').is_null())
                                                 .then(False).otherwise(pl.col('inst_TF')).alias('inst_TF'),
                                             pl.when(pl.col('info_source').is_null())
                                                 .then(pl.lit("")).otherwise(pl.col('info_source')).alias('info_source'),
+                                        ])
+
+                                        subdf_updated = subdf_updated.with_columns([
+                                            (pl.col('poss_pvprod_kW') * pl.col('share_pvprod_used')).alias('pvprod_kW'),
                                         ])
 
                                         # force pvprod == 0 for EGID-df_uid without inst
@@ -4496,6 +4544,7 @@ class Visualization:
                                             pl.col('info_source').first().alias('info_source'),
                                             pl.col('grid_node').first().alias('grid_node'),
                                             pl.col('demand_kW').first().alias('demand_kW'),
+                                            pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
                                             pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                                         ])
 
@@ -4510,8 +4559,15 @@ class Visualization:
                                             (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                                         ])
 
+                                        agg_egids = agg_egids.with_columns([
+                                            pl.when(pl.col('netfeedin_kW') > 0)
+                                            .then(pl.col('selfconsum_kW') / pl.col('pvprod_kW'))
+                                            .otherwise(0)  # or any other value that makes sense
+                                            .alias('selfconsum_pvprod_ratio')
+                                        ])
 
                                         agg_egids_list.append(agg_egids)
+                                        summary_agg_egids_list.append(agg_egids)
                                 
                                         topo_agg_egids_df = pl.concat(agg_egids_list)
                                         # topo_agg_egids_df = topo_agg_egids_df.with_columns([
@@ -4531,7 +4587,18 @@ class Visualization:
                                                                     opacity = 0,
                                                                 ))
                                         
-                                        for col in ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', ]:
+                                        for col in ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', 'selfconsum_pvprod_ratio']:
+                                            if col == 'selfconsum_pvprod_ratio':
+                                                agg_value = agg_egids[col].mean()
+                                                agg_method = 'mean'
+                                            else:
+                                                agg_value = sum(agg_egids[col])
+                                                agg_method = 'sum'
+
+                                            if agg_value < 2: 
+                                                agg_round_value = round(agg_value,5)
+                                            else:
+                                                agg_round_value = round(agg_value,2)
 
                                             # reduce t_hours to have more "handable - plots" in plotly
                                             if self.visual_sett.cut_timeseries_to_zoom_hour: 
@@ -4548,7 +4615,7 @@ class Visualization:
                                                     symbol = plot_mapline_specs['actual_ts_trace_marker'], 
                                                     # size = 5,
                                                 ),
-                                                name=f"{col}",
+                                                name=f"{col:<25} - {agg_method}: {agg_round_value}",
                                                 line=dict(width=3),
                                                 opacity = 0.4,
                                             ))
@@ -4612,9 +4679,457 @@ class Visualization:
                             
 
 
-        # def plot_ind_map_omitted_egids(self, ): 
+                        # recalc kWp pvdf ==============================
+                        if 'recalc_pvdf' in plot_mapline_specs['splot_mapORtimeseries']:
+                            
+                            # all necessary functions from pvalloc
+                            if True:
+
+                                def initial_sml_get_instcost_interpolate_function(): 
+                                    # setup --------
+                                    # print_to_logfile('run function: get_estim_instcost_function', self.pvalloc_scen.log_name) if i_m < 5 else None
+
+                                    with open(f'{self.visual_sett.data_path}/pvalloc/{scen}/pvinstcost_coefficients.json', 'r') as file:
+                                        pvinstcost_coefficients = json.load(file)
+                                    params_pkW = pvinstcost_coefficients['params_pkW']
+                                    # coefs_total = pvinstcost_coefficients['coefs_total']
+                                    params_total = pvinstcost_coefficients['params_total']
+
+                                    # PV Cost functions --------
+                                    # Define the interpolation functions using the imported coefficients
+                                    def func_chf_pkW(x, a, b, c, d):
+                                        return a +  d*((x ** b) /  (x ** c))
+                                    def estim_instcost_chfpkW(x):
+                                        return func_chf_pkW(x, *params_pkW)
+
+                                    def func_chf_total(x, a, b, c):
+                                        return a +  b*(x**c) 
+                                    def estim_instcost_chftotal(x):
+                                        return func_chf_total(x, *params_total)
+                                    
+                                    return estim_instcost_chfpkW, estim_instcost_chftotal            
 
 
+                                def calculate_npv(flaeche, max_dfuid_df, estim_instcost_chftotal, tweak_denominator=1.0
+                                                ):
+                                    """
+                                    Calculate NPV for a given FLAECHE value
+                                    
+                                    Returns:
+                                    -------
+                                    float
+                                        Net Present Value (NPV) of the installation
+                                    """
+                                    # Copy the dataframe to avoid modifying the original
+                                    df = max_dfuid_df.clone()
+
+                                    if self.pvalloc_scen.TECspec_pvprod_calc_method == 'method2.2':
+                                        # Calculate production with the given FLAECHE
+                                        df = df.with_columns([
+                                            ((pl.col("radiation") / 1000) * 
+                                            pl.col("panel_efficiency") * 
+                                            self.pvalloc_scen.TECspec_inverter_efficiency * 
+                                            self.pvalloc_scen.TECspec_share_roof_area_available * 
+                                            flaeche).alias("pvprod_kW")
+                                        ])
+
+                                        # calc selfconsumption
+                                        selfconsum_expr = pl.min_horizontal([ pl.col("pvprod_kW"), pl.col("demand_kW") ]) * self.pvalloc_scen.TECspec_self_consumption_ifapplicable
+
+                                        df = df.with_columns([  
+                                            selfconsum_expr.alias("selfconsum_kW"),
+                                            (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
+                                            (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
+                                            ])
+                                        
+
+                                        df = df.with_columns([
+                                            (pl.col("pv_tarif_Rp_kWh") / tweak_denominator).alias("pv_tarif_Rp_kWh"),
+                                        ])
+                                        # calc economic income and spending
+                                        if not self.pvalloc_scen.ALGOspec_tweak_npv_excl_elec_demand:
+
+                                            df = df.with_columns([
+                                                ((pl.col("netfeedin_kW") * pl.col("pv_tarif_Rp_kWh")) / 100 + 
+                                                (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf"),
+
+                                                ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100 + 
+                                                (pl.col('demand_kW') * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_spend_chf")
+                                                ])
+                                            
+                                        else:
+                                            df = df.with_columns([
+                                                ((pl.col("netfeedin_kW") * pl.col("pv_tarif_Rp_kWh")) / 100 + 
+                                                (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf"),
+                                                ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100).alias("econ_spend_chf")
+                                                ])
+
+                                        annual_cashflow = (df["econ_inc_chf"].sum() - df["econ_spend_chf"].sum())
+
+                                        # calc inst cost 
+                                        kWp = flaeche * self.pvalloc_scen.TECspec_kWpeak_per_m2 * self.pvalloc_scen.TECspec_share_roof_area_available
+                                        installation_cost = estim_instcost_chftotal(kWp)
+
+                                        # calc NPV
+                                        discount_factor = np.array([(1 + self.pvalloc_scen.TECspec_interest_rate)**-i for i in range(1, self.pvalloc_scen.TECspec_invst_maturity + 1)])
+                                        disc_cashflow = annual_cashflow * np.sum(discount_factor)
+                                        npv = -installation_cost + disc_cashflow
+                                        
+                                        pvprod_kW_sum = df['pvprod_kW'].sum()
+                                        demand_kW_sum = df['demand_kW'].sum()
+                                        selfconsum_kW_sum= df['selfconsum_kW'].sum()
+                                        rest = (installation_cost, disc_cashflow, pvprod_kW_sum, demand_kW_sum, selfconsum_kW_sum)
+                                        
+                                        # return npv, installation_cost, disc_cashflow, pvprod_kW_sum, demand_kW_sum, selfconsum_kW_sum
+                                        return npv, rest
+
+
+                                def optimize_pv_size(max_dfuid_df, estim_instcost_chftotal, max_flaeche=None):
+                                    """
+                                    Find the optimal PV installation size (FLAECHE) that maximizes NPV
+                                    
+                                    """
+                                    def obj_func(flaeche):
+                                        npv, rest = calculate_npv(flaeche, max_dfuid_df, estim_instcost_chftotal)
+                                        return -npv  
+
+                                    
+                                    # Set bounds - minimum FLAECHE is 0, maximum is either specified or from the data
+                                    if max_flaeche is None:
+                                        # max_flaeche = float(max_dfuid_df.select(pl.col("FLAECHE").unique()).item())
+                                        max_flaeche = max(max_dfuid_df['FLAECHE']) * 2
+                                        
+                                    
+                                    # Run the optimization
+                                    result = optimize.minimize_scalar(
+                                        obj_func,
+                                        bounds=(0, max_flaeche),
+                                        method='bounded'
+                                    )
+                                    
+                                    # optimal values
+                                    optimal_flaeche = result.x
+                                    optimal_npv = -result.fun
+                                                                
+                                    return optimal_flaeche, optimal_npv
+                                                                
+
+                            pvdf_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('info_source') == 'pv_df').clone()
+                            
+                            if egid in pvdf_topo_egid['EGID'].to_list():
+                                
+                                for i_path, path in enumerate(topo_subdf_paths):
+                                    subdf = pl.read_parquet(path)
+
+                                    if egid in subdf['EGID'].to_list():
+                                        subdf = subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
+                                        egid_subdf = subdf.filter(pl.col('EGID') == egid).clone()
+
+
+                                        # compute npv of optimized installtion size ----------------------------------------------
+                                        max_stromertrag = egid_subdf['STROMERTRAG'].max()
+                                        max_dfuid_df = egid_subdf.filter(pl.col('STROMERTRAG') == max_stromertrag).sort(['t_int'], descending=[False,])
+                                        max_dfuid_df.select(['EGID', 'df_uid', 't_int', 'STROMERTRAG', ])
+
+                                        # find optimal installation size
+                                        estim_instcost_chfpkW, estim_instcost_chftotal =initial_sml_get_instcost_interpolate_function()
+
+                                        opt_flaeche, opt_npv = optimize_pv_size(max_dfuid_df, estim_instcost_chftotal)
+                                        opt_kWpeak = opt_flaeche * self.pvalloc_scen.TECspec_kWpeak_per_m2 * self.pvalloc_scen.TECspec_share_roof_area_available
+
+
+                                        # calculate df for optim inst per egid ----------------------------------------------
+                                        # optimal production
+                                        flaeche = opt_flaeche
+                                        npv, rest = calculate_npv(opt_flaeche, max_dfuid_df, estim_instcost_chftotal, tweak_denominator=1.0)
+                                        installation_cost, disc_cashflow, pvprod_kW_sum, demand_kW_sum, selfconsum_kW_sum = rest[0], rest[1], rest[2], rest[3], rest[4]
+                                        
+                                        max_dfuid_df = max_dfuid_df.with_columns([
+                                            pl.lit(opt_flaeche).alias("opt_FLAECHE"),
+
+                                            pl.lit(opt_npv).alias("NPV_uid"),
+                                            pl.lit(opt_kWpeak).alias("dfuidPower"),
+                                            pl.lit(installation_cost).alias("estim_pvinstcost_chf"),
+                                            pl.lit(disc_cashflow).alias("disc_cashflow"),
+                                            ])
+                                        
+                                        # if self.pvalloc_scen.TECspec_pvprod_calc_method == 'method2.2':
+                                        max_dfuid_df = max_dfuid_df.with_columns([
+                                            ((pl.col("radiation") / 1000) * 
+                                            pl.col("panel_efficiency") * 
+                                            self.pvalloc_scen.TECspec_inverter_efficiency * 
+                                            self.pvalloc_scen.TECspec_share_roof_area_available * 
+                                            pl.col("opt_FLAECHE")).alias("pvprod_kW")
+                                        ])
+
+                                        selfconsum_expr = pl.min_horizontal([ pl.col("pvprod_kW"), pl.col("demand_kW") ]) * self.pvalloc_scen.TECspec_self_consumption_ifapplicable
+                                        
+                                        max_dfuid_df = max_dfuid_df.with_columns([  
+                                            selfconsum_expr.alias("selfconsum_kW"),
+                                            (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
+                                            (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
+                                            ])                        
+                                        
+                                        max_dfuid_df = max_dfuid_df.with_columns([
+                                            pl.when(pl.col('netfeedin_kW') > 0)
+                                            .then(pl.col('selfconsum_kW') / pl.col('pvprod_kW'))
+                                            .otherwise(0)  # or any other value that makes sense
+                                            .alias('selfconsum_pvprod_ratio')
+                                        ])
+
+
+                                        # add trace to timeseries plot ----------------------------------------------
+                                        name_str = f"---- RECALCULATED PV: EGID: {egid}, info_source: {topo_agg_egids_df['info_source'][0]} {20*'-'}, "
+                                        legend_str4 = f"     info_source: {topo_agg_egid['info_source'].values[0]} "
+                                        fig_rfpart_ts.add_trace(go.Scatter(x= [None, ], y = [None,] , mode = 'lines', 
+                                                                    name = name_str, 
+                                                                    line = dict(color=plot_mapline_specs['roofpartition_color'], width=1.5),
+                                                                    # hovertemplate = f"EGID: {egid}<br>df_uid_combo: {df_uid_combo_str}<br>FLAECHE_sum: {topo_agg_egid['FLAECHE'].values[0]}<br>STROMERTRAG_sum: {topo_agg_egid['STROMERTRAG'].values[0]}<br>AUSRICHTUNG_mean: {topo_agg_egid['AUSRICHTUNG'].values[0]}<extra></extra>",
+                                                                    opacity = 0,
+                                                                ))
+                                        for col in ['demand_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', 'selfconsum_pvprod_ratio']:
+                                            if col == 'selfconsum_pvprod_ratio':
+                                                agg_value = agg_egids[col].mean()
+                                                agg_method = 'mean'
+                                            else:
+                                                agg_value = sum(agg_egids[col])
+                                                agg_method = 'sum'
+
+                                            if agg_value < 2: 
+                                                agg_round_value = round(agg_value,5)
+                                            else:
+                                                agg_round_value = round(agg_value,2)
+
+                                            # reduce t_hours to have more "handable - plots" in plotly
+                                            if self.visual_sett.cut_timeseries_to_zoom_hour: 
+                                                agg_egids = agg_egids.filter(
+                                                    (pl.col('t_int') >= self.visual_sett.default_zoom_hour[0]-(24*7)) &
+                                                    (pl.col('t_int') <= self.visual_sett.default_zoom_hour[1]+(24*7))
+                                                ).clone()
+
+                                            fig_rfpart_ts.add_trace(go.Scatter(
+                                                x=agg_egids['t_int'], 
+                                                y=agg_egids[col],
+                                                mode='lines+markers', 
+                                                marker = dict(
+                                                    symbol = 'diamond',
+                                                    # size = 5,
+                                                ),
+                                                name=f"{col:<25} - {agg_method}: {agg_round_value}",
+                                                line=dict(
+                                                    width=3,
+                                                    dash = 'dash'
+                                                    ),
+                                                opacity = 0.4,
+                                            ))
+                                            
+                                        # export and overwrite plot
+                                        fig_rfpart_ts = self.set_default_fig_zoom_hour(fig_rfpart_ts, self.visual_sett.default_zoom_hour)
+                                        fig_rfpart_ts = self.add_scen_name_to_plot(fig_rfpart_ts, scen, self.pvalloc_scen)
+                                        fig_rfpart_ts.update_layout(
+                                            xaxis_title = 't - Hours', 
+                                            yaxis_title = 'kW', 
+                                            title = f'Roof Partitions Time Series for EGID: {egid}, n_combos: {len(combo_list)}, n_partitions: {len(df_uid_list)}, info_source: {info_source_str}',
+                                            template = 'plotly_white',
+                                            )
+                                            
+                                        # export plot
+                                        if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
+                                            if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                                fig_rfpart_ts.show()
+                                            elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                                fig_rfpart_ts.show() if i_scen == 0 else None
+                                        if self.visual_sett.save_plot_by_scen_directory:
+                                            fig_rfpart_ts.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_timeseries.html')
+                                        else:
+                                            fig_rfpart_ts.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_timeseries.html')
+                            
+
+                                        # plot economic functions  ----------------------------------------------
+
+                                        # plot economic functions
+                                        fig_econ_comp =  go.Figure()
+                                        for tweak_denominator in [0.5, 1.0, 1.5, 2.0, 2.5, ]:
+                                            # fig_econ_comp =  go.Figure()
+                                            flaeche_range = np.linspace(0, int(max_dfuid_df['FLAECHE'].max()) , 200)
+                                            kWpeak_range = self.pvalloc_scen.TECspec_kWpeak_per_m2 * self.pvalloc_scen.TECspec_share_roof_area_available * flaeche_range
+                                            # cost_kWp = estim_instcost_chftotal(kWpeak_range)
+                                            npv_list, cost_list, cashflow_list, pvprod_kW_list, demand_kW_list, selfconsum_kW_list = [], [], [], [], [], []
+                                            for flaeche in flaeche_range:
+                                                npv, rest = calculate_npv(flaeche, max_dfuid_df, estim_instcost_chftotal, tweak_denominator)
+                                                npv_list.append(npv)
+
+                                                cost_list.append(         rest[0]) 
+                                                cashflow_list.append(     rest[1]) 
+                                                pvprod_kW_list.append(    rest[2]) 
+                                                demand_kW_list.append(    rest[3]) 
+                                                selfconsum_kW_list.append(rest[4]) 
+                                                
+                                            npv = np.array(npv_list)
+                                            cost_kWp = np.array(cost_list)
+                                            cashflow = np.array(cashflow_list)
+                                            pvprod_kW_sum = np.array(pvprod_kW_list)
+                                            demand_kW_sum = np.array(demand_kW_list)
+                                            selfconsum_kW_sum = np.array(selfconsum_kW_list)
+
+                                            pvtarif = max_dfuid_df['pv_tarif_Rp_kWh'][0] / tweak_denominator
+                                            elecpri = max_dfuid_df['elecpri_Rp_kWh'][0]
+
+                                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=cost_kWp,           mode='lines',  name=f'Installation Cost (CHF)   - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)', )) # line=dict(color='blue')))
+                                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=cashflow,           mode='lines',  name=f'Cash Flow (CHF)           - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',         )) # line=dict(color='magenta')))
+                                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=npv,                mode='lines',  name=f'Net Present Value (CHF)   - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)', )) # line=dict(color='green')))
+                                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=pvprod_kW_sum,      mode='lines',  name=f'PV Production (kWh)       - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',     )) # line=dict(color='orange')))
+                                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=demand_kW_sum,      mode='lines',  name=f'Demand (kWh)              - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',            )) # line=dict(color='red')))
+                                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=selfconsum_kW_sum,  mode='lines',  name=f'Self-consumption (kWh)    - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',  )) # line=dict(color='purple')))
+                                            fig_econ_comp.add_trace(go.Scatter( x=[None,],        y=[None,],            mode='lines',  name='',  opacity = 0    ))
+                                        
+                                        fig_econ_comp.update_layout(
+                                            title=f'Economic Comparison for EGID: {max_dfuid_df["EGID"][0]} (Tweak Denominator: {tweak_denominator})',
+                                            xaxis_title='System Size (kWp)',
+                                            yaxis_title='Value (CHF/kWh)',
+                                            legend=dict(x=0.99, y=0.99),
+                                            template='plotly_white'
+                                        )
+
+                                        # export plot
+                                        if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
+                                            if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                                fig_econ_comp.show()
+                                            elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                                fig_econ_comp.show() if i_scen == 0 else None
+                                        if self.visual_sett.save_plot_by_scen_directory:
+                                            fig_econ_comp.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_fig_econ_comp.html')
+                                        else:
+                                            fig_econ_comp.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_fig_econ_comp.html')
+
+
+
+                        # plot summary ==============================
+                        fig_rf_part_summary = go.Figure()
+                        if 'summary' in plot_mapline_specs['splot_mapORtimeseries']:
+                            summary_agg_egids = pl.concat(summary_agg_egids_list)
+
+                            # aggregate to yearly values
+                            summary_agg_egids = summary_agg_egids.group_by(['EGID']).agg([
+                                pl.col('inst_TF').first().alias('inst_TF'),
+                                pl.col('info_source').first().alias('info_source'),
+                                pl.col('grid_node').first().alias('grid_node'),
+
+                                pl.col('demand_kW').sum().alias('demand_kW'),
+                                pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
+                                pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                                pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                                pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                                pl.col('netdemand_kW').sum().alias('netdemand_kW'),
+                                pl.col('selfconsum_pvprod_ratio').mean().alias('selfconsum_pvprod_ratio')
+                            ])
+
+                            # extend with useful information
+                            summary_agg_egids = summary_agg_egids.with_columns([
+                                pl.lit(topo[egid]['gwr_info']['gklas']).alias('GKLAS'),
+                                pl.lit(topo[egid]['gwr_info']['garea']).alias('GAREA'),
+                                pl.lit(topo[egid]['gwr_info']['are_typ']).alias('are_typ'),
+                                pl.lit(topo[egid]['gwr_info']['sfhmfh_typ']).alias('sfhmfh_typ'),
+                                pl.lit(topo[egid]['pv_inst']['TotalPower']).alias('TotalPower'),
+                                pl.lit(topo[egid]['demand_elec_pGAREA']).alias('demand_elec_pGAREA'),
+                                pl.lit(topo[egid]['pvtarif_Rp_kWh']).alias('pvtarif_Rp_kWh'),
+                                pl.lit(topo[egid]['elecpri_Rp_kWh']).alias('elecpri_Rp_kWh'),
+                            ])
+
+
+                            # add Bar traces
+                            fig_rf_part_summary = go.Figure()
+                            for col in summary_agg_egids.columns:
+                                if col in self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_specs['summary_cols_only_in_legend']:
+                                    fig_rf_part_summary.add_trace(go.Bar(
+                                        x=[col],
+                                        y=[None], 
+                                        name=f'{col:15} - {summary_agg_egids[col].to_list()[0]}',
+                                        marker=dict(color='rgba(0,0,0,0)'), 
+                                        showlegend=True  ,
+                                        xaxis='x2',  # Assign to a secondary x-axis (we can hide this x-axis later)
+                                    ))
+                                else:
+                                    y_val = round(summary_agg_egids[col][0],4)
+                                    fig_rf_part_summary.add_trace(go.Bar(
+                                        x = [col],
+                                        y = [y_val],
+                                        name = col,
+                                        showlegend = True,
+                                        text= y_val,
+                                        textposition='outside', 
+                                    ))
+                                
+                                # add STROMERTRAG
+                                for dfuid, partition in topo[egid]['solkat_partitions'].items():
+                                    y_val = round(partition['STROMERTRAG'],4)
+                                    fig_rf_part_summary.add_trace(go.Bar(
+                                        x = [f'dfuid-{dfuid}',],
+                                        y = [y_val],
+                                        name = col,
+                                        showlegend = True,
+                                        text= y_val,
+                                        textposition='outside', 
+                                    ))
+                                                                
+                                                                
+                                # add pvdf recalculated
+                                if 'recalc_pvdf' in plot_mapline_specs['splot_mapORtimeseries']:
+                                    
+                                    if egid in pvdf_topo_egid['EGID'].to_list(): 
+                                        
+                                        max_dfuid_df = max_dfuid_df.group_by(['EGID']).agg([
+                                            pl.col('inst_TF').first().alias('inst_TF'),
+                                            pl.col('info_source').first().alias('info_source'),
+                                            pl.col('grid_node').first().alias('grid_node'),
+
+                                            pl.col('demand_kW').sum().alias('demand_kW'),
+                                            pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
+                                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                                            pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                                            pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                                            pl.col('netdemand_kW').sum().alias('netdemand_kW'),
+                                            pl.col('selfconsum_pvprod_ratio').mean().alias('selfconsum_pvprod_ratio')
+                                        ])
+
+                                        # BOOKMARK!
+
+                                        for col in ['demand_kW', 'poss_pvprod_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', 'selfconsum_pvprod_ratio', ]:
+                                            y_val = round(max_dfuid_df[col][0],4)
+                                            fig_rf_part_summary.add_trace(go.Bar(
+                                                x = [f'recalc-{col}',],
+                                                y = [y_val],
+                                                name = col,
+                                                showlegend = True,
+                                                text= y_val,
+                                                textposition='outside', 
+                                            ))
+
+
+                            fig_rf_part_summary = self.add_scen_name_to_plot(fig_rf_part_summary, scen, self.pvalloc_scen)
+                            fig_rf_part_summary.update_layout(
+                                title = f'Roof Partitions Summary for EGID: {egid}',
+                                xaxis_title = 'Columns',
+                                yaxis_title = 'kWh / (other)',
+                                template = 'plotly_white',
+                                barmode = 'group',
+                                xaxis2=dict(
+                                    showticklabels=False,  # Hide ticks and labels for the secondary x-axis
+                                    overlaying='x',  # Overlay on the main x-axis
+                                ),
+                            )
+
+                            # export plot
+                            if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
+                                if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                    fig_rf_part_summary.show()
+                                elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                    fig_rf_part_summary.show() if i_scen == 0 else None
+                            if self.visual_sett.save_plot_by_scen_directory:
+                                fig_rf_part_summary.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_summary.html')
+                            else:
+                                fig_rf_part_summary.write_html(f'{self.visual_sett.visual_path}/{scen}__plot_ind_mapline_prodHOY_EGID{egid}_summary.html')
+                                                        
 
 
 
@@ -4643,7 +5158,7 @@ if __name__ == '__main__':
             remove_old_csvs_in_visualization   = False, 
             cut_timeseries_to_zoom_hour        = True,
 
-
+            
             # # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
             # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
             # # plot_ind_hist_pvcapaprod_sanitycheck_TF         = [True,      True,       False],
@@ -4668,28 +5183,33 @@ if __name__ == '__main__':
             # # # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
         
             plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
-            # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                   
-            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
-            # plot_ind_line_PVproduction_TF                   = [True,      True,       False],                   
-            # plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],                   
-            # plot_ind_map_topo_egid_TF                       = [True,      True,       False],
-            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
+            plot_ind_line_productionHOY_per_EGID_TF         = [False,      True,       False],                   
+            plot_ind_line_productionHOY_per_node_TF         = [False,      True,       False],                   
+            plot_ind_line_PVproduction_TF                   = [False,      True,       False],                   
+            plot_ind_hist_cols_HOYagg_per_EGID_TF           = [False,      True,       False],                   
+            plot_ind_map_topo_egid_TF                       = [False,      True,       False],
+            plot_ind_map_topo_egid_incl_gridarea_TF         = [False,      True,       False],
+            
 
             plot_ind_mapline_prodHOY_EGIDrfcombo_specs = {
                     'specific_selected_EGIDs': [
-                        # '190145779', 
-                        # '190178022', 
-                        # '190296588', 
+                        '3030694',  # pv_df
+                        # '432729', # pv_df
+                        # '432680' ,  # alloc_algo0
                                                 ], 
-                    'splot_mapORtimeseries': ['map', ], # 'timeseries'],
+                    'splot_mapORtimeseries': ['map', 'timeseries', 'summary', 'recalc_pvdf'],
                     'rndm_sample_seed': 123,
-                    'n_rndm_egid_winst_pvdf': 99, 
-                    'n_rndm_egid_winst_alloc': 99,
+                    'n_rndm_egid_winst_pvdf': 1, 
+                    'n_rndm_egid_winst_alloc': 0,
                     'n_rndm_egid_woinst': 0,
                     'n_rndm_egid_outsample': 0, 
                     'n_partition_pegid_minmax': (1,2), 
                     'roofpartition_color': '#fff2ae',
-                    'actual_ts_trace_marker': 'cross'
+                    'actual_ts_trace_marker': 'cross',
+                    'summary_cols_only_in_legend': ['EGID', 'inst_TF', 'info_source', 'grid_node',
+                                                    'GKLAS', 'GAREA', 'are_typ', 'sfhmfh_typ', 
+                                                    'TotalPower', 'demand_elec_pGAREA', 
+                                                    'pvtarif_Rp_kWh', 'elecpri_Rp_kWh', ],
                 },
         )]
 
