@@ -3000,6 +3000,11 @@ class PVAllocScenario:
                         .then(False).otherwise(pl.col('inst_TF')).alias('inst_TF'),
                     pl.when(pl.col('info_source').is_null())
                         .then(pl.lit("")).otherwise(pl.col('info_source')).alias('info_source'),
+                    pl.when(pl.col('share_pvprod_used').is_null())
+                        .then(pl.lit(0.0)).otherwise(pl.col('share_pvprod_used')).alias('share_pvprod_used'),
+                    pl.when(pl.col('dfuidPower').is_null())
+                        .then(pl.lit(0.0)).otherwise(pl.col('dfuidPower')).alias('dfuidPower'),
+
                 ])
                 checkpoint_to_logfile('gridprem > subdf: end pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
@@ -3624,47 +3629,47 @@ class PVAllocScenario:
                         # plot economic functions
                         if (i_m < 2) & (n_egid_econ_functions_counter < 3):
                             fig_econ_comp =  go.Figure()
-                            for tweak_denominator in [0.5, 1.0, 1.5, 2.0, 2.5, ]:
-                                # fig_econ_comp =  go.Figure()
-                                flaeche_range = np.linspace(0, int(max_dfuid_df['FLAECHE'].max()) , 200)
-                                kWpeak_range = self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available * flaeche_range
-                                # cost_kWp = estim_instcost_chftotal(kWpeak_range)
-                                npv_list, cost_list, cashflow_list, pvprod_kW_list, demand_kW_list, selfconsum_kW_list = [], [], [], [], [], []
-                                for flaeche in flaeche_range:
-                                    npv, rest = calculate_npv(flaeche, max_dfuid_df, estim_instcost_chftotal, tweak_denominator)
-                                    npv_list.append(npv)
+                            # for tweak_denominator in [0.5, 1.0, 1.5, 2.0, 2.5, ]:
+                            tweak_denominator = 1.0
+                            # fig_econ_comp =  go.Figure()
+                            flaeche_range = np.linspace(0, int(max_dfuid_df['FLAECHE'].max()) , 200)
+                            kWpeak_range = self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available * flaeche_range
+                            # cost_kWp = estim_instcost_chftotal(kWpeak_range)
+                            npv_list, cost_list, cashflow_list, pvprod_kW_list, demand_kW_list, selfconsum_kW_list = [], [], [], [], [], []
+                            for flaeche in flaeche_range:
+                                npv, rest = calculate_npv(flaeche, max_dfuid_df, estim_instcost_chftotal, tweak_denominator)
+                                npv_list.append(npv)
 
-                                    cost_list.append(         rest[0]) 
-                                    cashflow_list.append(     rest[1]) 
-                                    pvprod_kW_list.append(    rest[2]) 
-                                    demand_kW_list.append(    rest[3]) 
-                                    selfconsum_kW_list.append(rest[4]) 
+                                cost_list.append(         rest[0]) 
+                                cashflow_list.append(     rest[1]) 
+                                pvprod_kW_list.append(    rest[2]) 
+                                demand_kW_list.append(    rest[3]) 
+                                selfconsum_kW_list.append(rest[4]) 
                                     
-                                npv = np.array(npv_list)
-                                cost_kWp = np.array(cost_list)
-                                cashflow = np.array(cashflow_list)
-                                pvprod_kW_sum = np.array(pvprod_kW_list)
-                                demand_kW_sum = np.array(demand_kW_list)
-                                selfconsum_kW_sum = np.array(selfconsum_kW_list)
+                            npv = np.array(npv_list)
+                            cost_kWp = np.array(cost_list)
+                            cashflow = np.array(cashflow_list)
+                            pvprod_kW_sum = np.array(pvprod_kW_list)
+                            demand_kW_sum = np.array(demand_kW_list)
+                            selfconsum_kW_sum = np.array(selfconsum_kW_list)
 
-                                pvtarif = max_dfuid_df['pv_tarif_Rp_kWh'][0] / tweak_denominator
-                                elecpri = max_dfuid_df['elecpri_Rp_kWh'][0]
+                            pvtarif = max_dfuid_df['pv_tarif_Rp_kWh'][0] / tweak_denominator
+                            elecpri = max_dfuid_df['elecpri_Rp_kWh'][0]
 
-                                fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=cost_kWp,           mode='lines',  name=f'Installation Cost (CHF)   - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)', )) # line=dict(color='blue')))
-                                fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=cashflow,           mode='lines',  name=f'Cash Flow (CHF)           - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',         )) # line=dict(color='magenta')))
-                                fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=npv,                mode='lines',  name=f'Net Present Value (CHF)   - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)', )) # line=dict(color='green')))
-                                fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=pvprod_kW_sum,      mode='lines',  name=f'PV Production (kWh)       - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',     )) # line=dict(color='orange')))
-                                fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=demand_kW_sum,      mode='lines',  name=f'Demand (kWh)              - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',            )) # line=dict(color='red')))
-                                fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=selfconsum_kW_sum,  mode='lines',  name=f'Self-consumption (kWh)    - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',  )) # line=dict(color='purple')))
-                                fig_econ_comp.add_trace(go.Scatter( x=[None,],        y=[None,],            mode='lines',  name='',  opacity = 0    ))
-                                fig_econ_comp.update_layout(
-                                    title=f'Economic Comparison for EGID: {max_dfuid_df["EGID"][0]} (Tweak Denominator: {tweak_denominator})',
-                                    xaxis_title='System Size (kWp)',
-                                    yaxis_title='Value (CHF/kWh)',
-                                    legend=dict(x=0.99, y=0.99),
-                                    template='plotly_white'
-                                )
-                                # fig_econ_comp.write
+                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=cost_kWp,           mode='lines',  name=f'Installation Cost (CHF)   - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)', )) # line=dict(color='blue')))
+                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=cashflow,           mode='lines',  name=f'Cash Flow (CHF)           - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',         )) # line=dict(color='magenta')))
+                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=npv,                mode='lines',  name=f'Net Present Value (CHF)   - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)', )) # line=dict(color='green')))
+                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=pvprod_kW_sum,      mode='lines',  name=f'PV Production (kWh)       - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',     )) # line=dict(color='orange')))
+                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=demand_kW_sum,      mode='lines',  name=f'Demand (kWh)              - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',            )) # line=dict(color='red')))
+                            fig_econ_comp.add_trace(go.Scatter( x=kWpeak_range,   y=selfconsum_kW_sum,  mode='lines',  name=f'Self-consumption (kWh)    - pvtarif:{pvtarif}, elecpri:{elecpri} (Rp/kWh)',  )) # line=dict(color='purple')))
+                            fig_econ_comp.add_trace(go.Scatter( x=[None,],        y=[None,],            mode='lines',  name='',  opacity = 0    ))
+                            fig_econ_comp.update_layout(
+                                title=f'Economic Comparison for EGID: {max_dfuid_df["EGID"][0]} (Tweak Denominator: {tweak_denominator})',
+                                xaxis_title='System Size (kWp)',
+                                yaxis_title='Value (CHF/kWh)',
+                                legend=dict(x=0.99, y=0.99),
+                                template='plotly_white'
+                            )
                             fig_econ_comp.write_html(f'{subdir_path}/npv_kWp_optim_factors{egid}.html', auto_open=False)
                             n_egid_econ_functions_counter += 1
                             # fig_econ_comp.show()
@@ -4248,6 +4253,7 @@ if __name__ == '__main__':
         mini_sub_model_by_X                                  = 'by_EGID',
         mini_sub_model_nEGIDs                                = 50,
         mini_sub_model_select_EGIDs                          = [
+                                                                '3030694', 
                                                                 # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
                                                                # houses in RUR area, with 0 NEiGUNG and littie deviation from south
                                                                 # '190487689',    
@@ -4258,7 +4264,7 @@ if __name__ == '__main__':
         months_prediction                                    = 120,
         TECspec_share_roof_area_available                    = 0.8,
         TECspec_self_consumption_ifapplicable                = 1.0,
-        TECspec_generic_pvtarif_Rp_kWh                       = 2.5,
+        # TECspec_generic_pvtarif_Rp_kWh                       = None, 
         CSTRspec_iter_time_unit                              = 'year',
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
