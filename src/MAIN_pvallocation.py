@@ -4269,6 +4269,7 @@ if __name__ == '__main__':
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
         ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_pvinst_size_calculation                     = 'npv_optimized',   # 'inst_full_partition' / 'npv_optimized'
         ALGOspec_inst_selection_method                       = 'max_npv', 
         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
         ALGOspec_rand_seed                                   = 123,
