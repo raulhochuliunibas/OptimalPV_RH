@@ -2705,10 +2705,6 @@ class PVAllocScenario:
 
 
 
-
-
-
-
                     # attach FLAECH_angletilt, might be usefull for later calculations
                     subdf = subdf.with_columns([
                         (pl.col("FLAECHE") * pl.col("efficiency_factor")).alias("FLAECH_angletilt")
@@ -3204,11 +3200,18 @@ class PVAllocScenario:
                 pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
             ])
             
-            demand_proxy_out_kW = gridnode_df['demand_proxy_out_kW'].fill_null(0)
+            # demand_proxy_out_kW = gridnode_df['demand_proxy_out_kW'].fill_null(0)
             # netdemand_kW = gridnode_df['netdemand_kW'].fill_null(0)
-            netfeedin_kW = gridnode_df['netfeedin_kW'].fill_null(0)
+            # netfeedin_kW = gridnode_df['netfeedin_kW'].fill_null(0)
+            # gridnode_df = gridnode_df.with_columns([
+            #     (netfeedin_kW - demand_proxy_out_kW).alias('netfeedin_all_kW'),
+            # ])
             gridnode_df = gridnode_df.with_columns([
-                (netfeedin_kW - demand_proxy_out_kW).alias('netfeedin_all_kW'),
+                pl.col('netfeedin_kW').alias('feedin_atnode_kW'), 
+                (pl.col('netdemand_kW') + pl.col('demand_proxy_out_kW')).alias('demand_atnode_kW'),
+            ])
+            gridnode_df = gridnode_df.with_columns([
+                pl.max_horizontal(['feedin_atnode_kW', 'demand_atnode_kW']).alias('max_demand_feedin_atnode_kW')
             ])
 
             # sanity check
@@ -3221,32 +3224,32 @@ class PVAllocScenario:
             gridnode_df = gridnode_df.with_columns((pl.col("kVA_threshold") * self.sett.GRIDspec_perf_factor_1kVA_to_XkW).alias("kW_threshold"))
             
             gridnode_df = gridnode_df.with_columns([
-                pl.when(pl.col("netfeedin_all_kW") < 0)
+                pl.when(pl.col("max_demand_feedin_atnode_kW") < 0)
                 .then(0.0)
-                .otherwise(pl.col("netfeedin_all_kW"))
-                .alias("netfeedin_all_kW"),
+                .otherwise(pl.col("max_demand_feedin_atnode_kW"))
+                .alias("max_demand_feedin_atnode_kW"),
                 ])
             gridnode_df = gridnode_df.with_columns([
-                pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
+                pl.when(pl.col("max_demand_feedin_atnode_kW") > pl.col("kW_threshold"))
                 .then(pl.col("kW_threshold"))
-                .otherwise(pl.col("netfeedin_all_kW"))
-                .alias("netfeedin_all_taken_kW"),
+                .otherwise(pl.col("max_demand_feedin_atnode_kW"))
+                .alias("feedin_atnode_taken_kW"),
                 ])
             gridnode_df = gridnode_df.with_columns([
-                pl.when(pl.col("netfeedin_all_kW") > pl.col("kW_threshold"))
-                .then(pl.col("netfeedin_all_kW") - pl.col("kW_threshold"))
+                pl.when(pl.col("max_demand_feedin_atnode_kW") > pl.col("kW_threshold"))
+                .then(pl.col("max_demand_feedin_atnode_kW") - pl.col("kW_threshold"))
                 .otherwise(0.0)
-                .alias("netfeedin_all_loss_kW")
+                .alias("feedin_atnode_loss_kW")
             ])
             checkpoint_to_logfile('gridprem: end merge with gridnode_df + pl.when()', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
 
 
             # update gridprem_ts -----------------------------------------------------
             checkpoint_to_logfile('gridprem: start update gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
-            gridnode_df = gridnode_df.sort("netfeedin_all_taken_kW", descending=True)            
+            gridnode_df = gridnode_df.sort("feedin_atnode_taken_kW", descending=True)            
             gridnode_df_for_prem = gridnode_df.group_by(['grid_node', 'kW_threshold', 't']).agg(
-                pl.col('netfeedin_all_taken_kW').sum().alias('netfeedin_all_taken_kW'), 
-                pl.col('netfeedin_all_loss_kW').sum().alias('netfeedin_all_loss_kW'),
+                pl.col('feedin_atnode_taken_kW').sum().alias('feedin_atnode_taken_kW'), 
+                pl.col('feedin_atnode_loss_kW').sum().alias('feedin_atnode_loss_kW'),
                 pl.col('kW_threshold').first().alias('kW_threshold_first'),
             ).clone()
             gridnode_df_for_prem = (
@@ -3265,8 +3268,8 @@ class PVAllocScenario:
                 prem = gridtiers_df.loc[i, 'gridprem_Rp_kWh']
 
                 condition = (
-                    ((pl.col("netfeedin_all_taken_kW") / pl.col("kW_threshold")) >= capa_tier_rate_lo) &
-                    ((pl.col("netfeedin_all_taken_kW") / pl.col("kW_threshold")) < capa_tier_rate_up)
+                    ((pl.col("feedin_atnode_taken_kW") / pl.col("kW_threshold")) >= capa_tier_rate_lo) &
+                    ((pl.col("feedin_atnode_taken_kW") / pl.col("kW_threshold")) < capa_tier_rate_up)
                 )
 
                 gridnode_df_for_prem = gridnode_df_for_prem.with_columns(
@@ -3281,7 +3284,7 @@ class PVAllocScenario:
             # sanity check
             gridnode_df_for_prem.filter(pl.col('prem_Rp_kWh') > 0)
 
-            gridprem_ts = gridnode_df_for_prem.drop(['netfeedin_all_taken_kW', 'netfeedin_all_loss_kW', 'kW_threshold']).clone()   
+            gridprem_ts = gridnode_df_for_prem.drop(['feedin_atnode_taken_kW', 'feedin_atnode_loss_kW', 'kW_threshold']).clone()   
     
 
             # EXPORT -----------------------------------------------------
@@ -4216,22 +4219,39 @@ class PVAllocScenario:
                 total_ratio = remaning_flaeche / topo_pick_df['FLAECHE'].iloc[i]
                 flaeche_ratio = 1       if total_ratio >= 1 else total_ratio
                 remaning_flaeche -= topo_pick_df['FLAECHE'].iloc[i]
-            
-                topo_pick_df['inst_TF'].iloc[i] = True                      if flaeche_ratio > 0.0 else False
-                topo_pick_df['share_pvprod_used'].iloc[i] = flaeche_ratio   if flaeche_ratio > 0.0 else 0.0 
-                
-                topo_pick_df['info_source'].iloc[i] = 'alloc_algorithm'     if flaeche_ratio > 0.0 else ''
-                topo_pick_df['BeginOp'].iloc[i] = str(m)                    if flaeche_ratio > 0.0 else ''
-                topo_pick_df['xtf_id'].iloc[i] = picked_dfuid               if flaeche_ratio > 0.0 else ''
 
-                topo_pick_df['dfuidPower'].iloc[i] =        flaeche_ratio * picked_dfuidPower         if flaeche_ratio > 0.0 else 0.0 
+                idx = topo_pick_df.index[i]
+
+                topo_pick_df.loc[idx, 'inst_TF'] =             True                                   if flaeche_ratio > 0.0 else False
+                topo_pick_df.loc[idx, 'share_pvprod_used'] =   flaeche_ratio                          if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'info_source'] = '       alloc_algorithm'                       if flaeche_ratio > 0.0 else ''
+                topo_pick_df.loc[idx, 'BeginOp'] =             str(m)                                 if flaeche_ratio > 0.0 else ''
+                topo_pick_df.loc[idx, 'xtf_id'] =              picked_dfuid                           if flaeche_ratio > 0.0 else ''
+                topo_pick_df.loc[idx, 'dfuidPower'] =          flaeche_ratio * picked_dfuidPower      if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'demand_kW'] =           flaeche_ratio * picked_demand_kW       if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'poss_pvprod'] =         flaeche_ratio * picked_poss_pvprod     if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'pvprod_kW'] =           flaeche_ratio * picked_pvprod_kW       if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'selfconsum_kW'] =       flaeche_ratio * picked_selfconsum_kW   if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'netfeedin_kW'] =        flaeche_ratio * picked_netfeedin_kW    if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'netdemand_kW'] =        flaeche_ratio * picked_netdemand_kW    if flaeche_ratio > 0.0 else 0.0
+            
+                # BOOKMARK -> 
+
+                # topo_pick_df['inst_TF'].iloc[i] = True                      if flaeche_ratio > 0.0 else False
+                # topo_pick_df['share_pvprod_used'].iloc[i] = flaeche_ratio   if flaeche_ratio > 0.0 else 0.0 
                 
-                topo_pick_df['demand_kW'].iloc[i] =         flaeche_ratio * picked_demand_kW          if flaeche_ratio > 0.0 else 0.0 
-                topo_pick_df['poss_pvprod'].iloc[i] =       flaeche_ratio * picked_poss_pvprod        if flaeche_ratio > 0.0 else 0.0 
-                topo_pick_df['pvprod_kW'].iloc[i] =         flaeche_ratio * picked_pvprod_kW          if flaeche_ratio > 0.0 else 0.0 
-                topo_pick_df['selfconsum_kW'].iloc[i] =     flaeche_ratio * picked_selfconsum_kW      if flaeche_ratio > 0.0 else 0.0 
-                topo_pick_df['netfeedin_kW'].iloc[i] =      flaeche_ratio * picked_netfeedin_kW       if flaeche_ratio > 0.0 else 0.0 
-                topo_pick_df['netdemand_kW'].iloc[i] =      flaeche_ratio * picked_netdemand_kW       if flaeche_ratio > 0.0 else 0.0 
+                # topo_pick_df['info_source'].iloc[i] = 'alloc_algorithm'     if flaeche_ratio > 0.0 else ''
+                # topo_pick_df['BeginOp'].iloc[i] = str(m)                    if flaeche_ratio > 0.0 else ''
+                # topo_pick_df['xtf_id'].iloc[i] = picked_dfuid               if flaeche_ratio > 0.0 else ''
+
+                # topo_pick_df['dfuidPower'].iloc[i] =        flaeche_ratio * picked_dfuidPower         if flaeche_ratio > 0.0 else 0.0 
+                
+                # topo_pick_df['demand_kW'].iloc[i] =         flaeche_ratio * picked_demand_kW          if flaeche_ratio > 0.0 else 0.0 
+                # topo_pick_df['poss_pvprod'].iloc[i] =       flaeche_ratio * picked_poss_pvprod        if flaeche_ratio > 0.0 else 0.0 
+                # topo_pick_df['pvprod_kW'].iloc[i] =         flaeche_ratio * picked_pvprod_kW          if flaeche_ratio > 0.0 else 0.0 
+                # topo_pick_df['selfconsum_kW'].iloc[i] =     flaeche_ratio * picked_selfconsum_kW      if flaeche_ratio > 0.0 else 0.0 
+                # topo_pick_df['netfeedin_kW'].iloc[i] =      flaeche_ratio * picked_netfeedin_kW       if flaeche_ratio > 0.0 else 0.0 
+                # topo_pick_df['netdemand_kW'].iloc[i] =      flaeche_ratio * picked_netdemand_kW       if flaeche_ratio > 0.0 else 0.0 
                 
             topo_pick_df = topo_pick_df.loc[topo_pick_df['inst_TF'] == True].copy()
             pred_inst_df = pd.concat([pred_inst_df, topo_pick_df], ignore_index=True)
@@ -4334,7 +4354,7 @@ if __name__ == '__main__':
         ALGOspec_rand_seed                                   = 123,
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_0.07r',
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_0.1r',
         bfs_numbers                                          = [
                                                     # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
                                                     # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
@@ -4357,7 +4377,7 @@ if __name__ == '__main__':
         export_csvs                                          = True,
         T0_year_prediction                                   = 2021,
         months_prediction                                    = 120,
-        TECspec_interest_rate                                = 0.07,  
+        TECspec_interest_rate                                = 0.1,  
         TECspec_share_roof_area_available                    = 0.8,
         TECspec_self_consumption_ifapplicable                = 1.0,
         # TECspec_generic_pvtarif_Rp_kWh                       = None, 
