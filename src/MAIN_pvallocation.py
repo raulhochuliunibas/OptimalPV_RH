@@ -152,7 +152,21 @@ class PVAllocScenario_Settings:
     TECspec_max_distance_m_for_EGID_node_matching: float    = 0
     TECspec_kW_range_for_pvinst_cost_estim: List[int]       = field(default_factory=lambda: [0, 61])
     TECspec_estim_pvinst_cost_correctionfactor: float       = 1
-
+    TECspec_add_heatpump_demand_TF: bool                    = False   
+    TECspec_heatpump_months_factor: List[tuple]             = field(default_factory=lambda: [
+                                                            (10, 1.0 ),
+                                                            (11, 1.0 ), 
+                                                            (12, 1.0 ), 
+                                                            (1 , 1.0 ), 
+                                                            (2 , 1.0 ), 
+                                                            (3 , 1.0 ), 
+                                                            (4 , 1.0 ), 
+                                                            (5 , 1.0 ), 
+                                                            (6 , 1.0 ), 
+                                                            (7 , 1.0 ), 
+                                                            (8 , 1.0 ), 
+                                                            (9 , 1.0 )  
+                                                            ])
     # panel_efficiency_specs
     PEFspec_variable_panel_efficiency_TF: bool              = True
     PEFspec_summer_months: List[int]                        = field(default_factory=lambda: [6, 7, 8, 9])
@@ -2535,15 +2549,21 @@ class PVAllocScenario:
 
                 # I  MERGE WEATHER DATA - CALC PRODUCTION PER PARTITION ===========================================================
                 if True: 
-                    # merge production, grid prem + demand to partitions ----------
+                    # merge production, grid prem + demand to partitions --------------------
                     subdf = subdf.with_columns(pl.lit("Basel").alias("meteo_loc"))          
                     meteo_ts = meteo_ts.with_columns(pl.lit("Basel").alias("meteo_loc"))    
                     
                     # subdf = subdf.merge(meteo_ts[['rad_direct', 'rad_diffuse', 'temperature', 't', 'meteo_loc']], how='left', on='meteo_loc')
                     subdf = subdf.join(meteo_ts, on="meteo_loc", how="left")  
+
+                    # add date specific columns
+                    subdf = subdf.with_columns([
+                        pl.col("timestamp").dt.month().cast(pl.Int32).alias("month")
+                    ])
+                        
                     
 
-                    # add radiation per h to subdf, "flat" OR "dfuid_ind" ----------
+                    # add radiation per h to subdf, "flat" OR "dfuid_ind" --------------------
                     if self.sett.WEAspec_radiation_to_pvprod_method == 'flat':
                         subdf = subdf.with_columns(
                         (pl.col("rad_direct") * flat_direct_rad_factor + pl.col("rad_diffuse") * flat_diffuse_rad_factor)
@@ -2567,10 +2587,7 @@ class PVAllocScenario:
                             solkat_month = solkat_month.rename({"DF_UID": "df_uid"})
                         if 'MONAT' in solkat_month.columns:
                             solkat_month = solkat_month.rename({"MONAT": "month"})
-                        subdf = subdf.with_columns([
-                            pl.col("timestamp").dt.month().cast(pl.Int32).alias("month")
-                        ])
-                        
+
                         checkpoint_to_logfile(f'  start merge solkat_month to subdf {i} to {i+stepsize-1}', self.sett.log_name, 0) if i < 2 else None
                         subdf = subdf.join(
                             solkat_month.select(["df_uid", "month", "A_PARAM", "B_PARAM", "C_PARAM"]),
@@ -2627,7 +2644,7 @@ class PVAllocScenario:
                             ])
                     
 
-                    # add panel_efficiency by time ----------
+                    # add panel_efficiency by time --------------------
                     if self.sett.PEFspec_variable_panel_efficiency_TF:
                         summer_months      = self.sett.PEFspec_summer_months
                         hotsummer_hours    = self.sett.PEFspec_hotsummer_hours
@@ -2651,8 +2668,7 @@ class PVAllocScenario:
                         ])
                         
 
-                    # attach / calculate demand profiles ----------
-
+                    # attach / calculate demand profiles --------------------
                     demandtypes_unpivot = demandtypes_ts.unpivot(
                         on = ['SFH', 'MFH', ],
                         index=['t', 't_int'],  # col that stays unchanged
@@ -2663,6 +2679,34 @@ class PVAllocScenario:
                     subdf = subdf.with_columns([
                         (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") * self.sett.ALGOspec_tweak_demand_profile ).alias("demand_kW")  # convert to kW
                     ])
+
+
+                    # add heatpump to demand profiles --------------------
+                    if self.sett.TECspec_add_heatpump_demand_TF:
+                        subdf = subdf.with_columns([
+                            pl.col('demand_kW').alias('demand_sfhmfh_kW'), 
+                            pl.col('demand_kW').alias('demand_appliances_kW'), 
+                        ])
+                        
+                        month_list, factor_list = [], []
+                        for tupl in self.sett.TECspec_heatpump_months_factor:
+                            month_list.append(tupl[0])
+                            factor_list.append(tupl[1])
+                        heatpump_months_factor = pl.DataFrame({'month': month_list, 'heatpump_factor': factor_list})
+                        
+                        subdf = subdf.join(heatpump_months_factor, on='month', how='left')
+                        subdf = subdf.with_columns([
+                            (pl.col('demand_sfhmfh_kW') * pl.col('heatpump_factor')).alias('demand_heatpump_kW'),
+                        ])
+                        subdf = subdf.with_columns([
+                            (pl.col('demand_sfhmfh_kW') + pl.col('demand_heatpump_kW')).alias('demand_kW'),
+                        ])
+                        subdf = subdf.drop('heatpump_factor')
+
+
+
+
+
 
 
                     # attach FLAECH_angletilt, might be usefull for later calculations
@@ -4265,6 +4309,21 @@ if __name__ == '__main__':
         TECspec_share_roof_area_available                    = 0.8,
         TECspec_self_consumption_ifapplicable                = 1.0,
         # TECspec_generic_pvtarif_Rp_kWh                       = None, 
+        TECspec_add_heatpump_demand_TF                       = True,   
+        TECspec_heatpump_months_factor                       = [
+                                                                (10, 7.0),
+                                                                (11, 7.0), 
+                                                                (12, 7.0), 
+                                                                (1 , 7.0), 
+                                                                (2 , 7.0), 
+                                                                (3 , 7.0), 
+                                                                (4 , 7.0), 
+                                                                (5 , 7.0),     
+                                                                (6 , 1.0), 
+                                                                (7 , 1.0), 
+                                                                (8 , 1.0), 
+                                                                (9 , 1.0),
+                                                                ], 
         CSTRspec_iter_time_unit                              = 'year',
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
@@ -4275,7 +4334,59 @@ if __name__ == '__main__':
         ALGOspec_rand_seed                                   = 123,
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
-    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_SouthFacing',
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_0.07r',
+        bfs_numbers                                          = [
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
+                                                    # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
+                                                    # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    2883,
+
+                                                                ],          
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_by_X                                  = 'by_EGID',
+        mini_sub_model_nEGIDs                                = 50,
+        mini_sub_model_select_EGIDs                          = [
+                                                                '3030694', 
+                                                                # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
+                                                               # houses in RUR area, with 0 NEiGUNG and littie deviation from south
+                                                                # '190487689',    
+                                                                ],
+        create_gdf_export_of_topology                        = True,
+        export_csvs                                          = True,
+        T0_year_prediction                                   = 2021,
+        months_prediction                                    = 120,
+        TECspec_interest_rate                                = 0.07,  
+        TECspec_share_roof_area_available                    = 0.8,
+        TECspec_self_consumption_ifapplicable                = 1.0,
+        # TECspec_generic_pvtarif_Rp_kWh                       = None, 
+        TECspec_add_heatpump_demand_TF                       = True,   
+        TECspec_heatpump_months_factor                       = [
+                                                                (10, 7.0),
+                                                                (11, 7.0), 
+                                                                (12, 7.0), 
+                                                                (1 , 7.0), 
+                                                                (2 , 7.0), 
+                                                                (3 , 7.0), 
+                                                                (4 , 7.0), 
+                                                                (5 , 7.0),     
+                                                                (6 , 1.0), 
+                                                                (7 , 1.0), 
+                                                                (8 , 1.0), 
+                                                                (9 , 1.0),
+                                                                ], 
+        CSTRspec_iter_time_unit                              = 'year',
+        CSTRspec_ann_capacity_growth                         = 0.2,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_pvinst_size_calculation                     = 'npv_optimized',   # 'inst_full_partition' / 'npv_optimized'
+        ALGOspec_inst_selection_method                       = 'max_npv', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ), 
+
         ]
 
     for pvalloc_scen in pvalloc_scen_list:
