@@ -2985,31 +2985,35 @@ class PVAllocScenario:
             k,v = list(topo.items())[0]
             egid_list, dfuid_list, info_source_list, TotalPower_list, inst_TF_list, grid_node_list, share_pvprod_used_list, dfuidPower_list = [], [], [], [], [], [], [], []
             for k,v in topo.items():
-                if v['pv_inst']['inst_TF']:
-                    for tpl in v['pv_inst']['dfuid_w_inst_tuples']:
+                dfuid_tupls = [tpl[1] for tpl in v['pv_inst']['dfuid_w_inst_tuples'] if tpl[3] > 0.0]
+                for k_s, v_s in v['solkat_partitions'].items():
+                    if k_s in dfuid_tupls:
+                        # for tpl in v['pv_inst']['dfuid_w_inst_tuples']:
+                        for tpl in v['pv_inst']['dfuid_w_inst_tuples']:
+                            if tpl[1] == k_s:       
+                                egid_list.append(k)
+                                info_source_list.append(v['pv_inst']['info_source'])
+                                inst_TF_list.append(True if tpl[3] > 0.0 else False)   
+                                dfuid_list.append(tpl[1])
+                                share_pvprod_used_list.append(tpl[2])
+                                dfuidPower_list.append(tpl[3])
+                                grid_node_list.append(v['grid_node']) 
+                                TotalPower_list.append(v['pv_inst']['TotalPower'])
+                    else: 
                         egid_list.append(k)
-                        info_source_list.append(v['pv_inst']['info_source'])
-                        inst_TF_list.append(True if tpl[3] > 0.0 else False)   
-                        dfuid_list.append(tpl[1])
-                        share_pvprod_used_list.append(tpl[2])
-                        dfuidPower_list.append(tpl[3])
-                        grid_node_list.append(v['grid_node']) 
-                        TotalPower_list.append(v['pv_inst']['TotalPower'])
-
-                else: 
-                    egid_list.append(k)
-                    dfuid_list.append('')
-                    share_pvprod_used_list.append(0.0)
-                    dfuidPower_list.append(0.0)
-                    info_source_list.append('')
-                    inst_TF_list.append(False)
-                    grid_node_list.append(v['grid_node'])  
-                    TotalPower_list.append(0.0)          
+                        dfuid_list.append(k_s)
+                        share_pvprod_used_list.append(0.0)
+                        dfuidPower_list.append(0.0)
+                        info_source_list.append('')
+                        inst_TF_list.append(False)
+                        grid_node_list.append(v['grid_node'])  
+                        TotalPower_list.append(0.0)          
 
             Map_pvinfo_topo_egid = pl.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'info_source': info_source_list, 'TotalPower': TotalPower_list,
                                                  'inst_TF': inst_TF_list, 'share_pvprod_used': share_pvprod_used_list, 'dfuidPower': dfuidPower_list, 
                                                  'grid_node': grid_node_list
                                                  })
+            Map_pvinfo_gridnode = Map_pvinfo_topo_egid.to_pandas()
 
             checkpoint_to_logfile('gridprem: end loop Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints)
             
@@ -3018,7 +3022,8 @@ class PVAllocScenario:
             checkpoint_to_logfile('gridprem: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
             agg_subdf_updated_pvdf_list = []
-            agg_subdf_df_list = []
+            agg_subdf_df_list, agg_egids_list = [], []
+
 
             i, path = 0, topo_subdf_paths[0]
             for i, path in enumerate(topo_subdf_paths):
@@ -3113,6 +3118,7 @@ class PVAllocScenario:
                     pl.col('demand_kW').first().alias('demand_kW'),
                     pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
                     pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+                    pl.col('radiation').sum().alias('radiation'),
                 ])
 
                 # calc selfconsumption
@@ -3126,14 +3132,21 @@ class PVAllocScenario:
                     (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                 ])
 
+                # (for visualization later) -----
+                # only select egids for grid_node mentioned above
+                agg_egids = agg_egids.filter(pl.col('EGID').is_in(Map_pvinfo_gridnode['EGID'].to_list()))
+                agg_egids_list.append(agg_egids)
+                # -----
+
                 # agg per gridnode
                 agg_subdf = agg_egids.group_by(['grid_node', 't', 't_int']).agg([
+                pl.col('inst_TF').first().alias('inst_TF'),
                 pl.col('demand_kW').sum().alias('demand_kW'),
                 pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                 pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                 pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
                 pl.col('netdemand_kW').sum().alias('netdemand_kW'), 
-                pl.col('inst_TF').first().alias('inst_TF'),
+                pl.col('radiation').sum().alias('radiation'),
                 ])
 
                 # agg subdf_updated_dfuid_pvdf for later export
@@ -3165,13 +3178,24 @@ class PVAllocScenario:
 
             agg_subdf_df = pl.concat(agg_subdf_df_list)
             topo_gridnode_df = agg_subdf_df.group_by(['grid_node', 't', 't_int']).agg([
+                pl.col('inst_TF').first().alias('inst_TF'),
                 pl.col('demand_kW').sum().alias('demand_kW'),
                 pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                 pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
                 pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
                 pl.col('netdemand_kW').sum().alias('netdemand_kW'),
-                pl.col('inst_TF').first().alias('inst_TF'),
+                pl.col('radiation').sum().alias('radiation'),
             ])
+            
+            # (for visualization later) -----
+            # MAIN DF of this plot, all feedin TS by EGID
+            topo_agg_egids_df = pl.concat(agg_egids_list)
+            topo_agg_egids_df = topo_agg_egids_df.with_columns([
+                pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
+            ])
+            topo_agg_egids_df = topo_agg_egids_df.sort("t_int", descending=False)
+            # -----
+
             agg_subdf_updated_pvdf = pl.concat(agg_subdf_updated_pvdf_list)
 
 
@@ -3217,7 +3241,6 @@ class PVAllocScenario:
             # sanity check
             gridnode_df.group_by(['grid_node',]).agg([pl.len()])
             gridnode_df.group_by(['t',]).agg([pl.len()])
-
 
             # attach node thresholds 
             gridnode_df = gridnode_df.join(dsonodes_df[['grid_node', 'kVA_threshold']], on='grid_node', how='left')
@@ -4213,7 +4236,12 @@ class PVAllocScenario:
                            ]
             for col in cols_to_add:  # add empty cols to fill in later
                 if col not in topo_pick_df.columns:
-                    topo_pick_df[col] = np.nan
+                    if col in ['inst_TF']:  # boolean
+                        topo_pick_df[col] = False
+                    elif col in ['info_source', 'xtf_id', 'BeginOp']:  # string
+                        topo_pick_df[col] = ''
+                    else:   # numeric                    
+                        topo_pick_df[col] = np.nan
 
             for i in range(0, topo_pick_df.shape[0]):
                 total_ratio = remaning_flaeche / topo_pick_df['FLAECHE'].iloc[i]
@@ -4354,58 +4382,58 @@ if __name__ == '__main__':
         ALGOspec_rand_seed                                   = 123,
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_0.1r',
-        bfs_numbers                                          = [
-                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-                                                    # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
-                                                    # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
-                                                    # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
-                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-                                                    2883,
+    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_0.1r',
+    #     bfs_numbers                                          = [
+    #                                                 # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+    #                                                 # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
+    #                                                 # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
+    #                                                 # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+    #                                                 # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+    #                                                 2883,
 
-                                                                ],          
-        mini_sub_model_TF                                    = True,
-        mini_sub_model_by_X                                  = 'by_EGID',
-        mini_sub_model_nEGIDs                                = 50,
-        mini_sub_model_select_EGIDs                          = [
-                                                                '3030694', 
-                                                                # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
-                                                               # houses in RUR area, with 0 NEiGUNG and littie deviation from south
-                                                                # '190487689',    
-                                                                ],
-        create_gdf_export_of_topology                        = True,
-        export_csvs                                          = True,
-        T0_year_prediction                                   = 2021,
-        months_prediction                                    = 120,
-        TECspec_interest_rate                                = 0.1,  
-        TECspec_share_roof_area_available                    = 0.8,
-        TECspec_self_consumption_ifapplicable                = 1.0,
-        # TECspec_generic_pvtarif_Rp_kWh                       = None, 
-        TECspec_add_heatpump_demand_TF                       = True,   
-        TECspec_heatpump_months_factor                       = [
-                                                                (10, 7.0),
-                                                                (11, 7.0), 
-                                                                (12, 7.0), 
-                                                                (1 , 7.0), 
-                                                                (2 , 7.0), 
-                                                                (3 , 7.0), 
-                                                                (4 , 7.0), 
-                                                                (5 , 7.0),     
-                                                                (6 , 1.0), 
-                                                                (7 , 1.0), 
-                                                                (8 , 1.0), 
-                                                                (9 , 1.0),
-                                                                ], 
-        CSTRspec_iter_time_unit                              = 'year',
-        CSTRspec_ann_capacity_growth                         = 0.2,
-        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-        ALGOspec_topo_subdf_partitioner                      = 250, 
-        ALGOspec_pvinst_size_calculation                     = 'npv_optimized',   # 'inst_full_partition' / 'npv_optimized'
-        ALGOspec_inst_selection_method                       = 'max_npv', 
-        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-        ALGOspec_rand_seed                                   = 123,
-        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-    ), 
+    #                                                             ],          
+    #     mini_sub_model_TF                                    = True,
+    #     mini_sub_model_by_X                                  = 'by_EGID',
+    #     mini_sub_model_nEGIDs                                = 50,
+    #     mini_sub_model_select_EGIDs                          = [
+    #                                                             '3030694', 
+    #                                                             # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
+    #                                                            # houses in RUR area, with 0 NEiGUNG and littie deviation from south
+    #                                                             # '190487689',    
+    #                                                             ],
+    #     create_gdf_export_of_topology                        = True,
+    #     export_csvs                                          = True,
+    #     T0_year_prediction                                   = 2021,
+    #     months_prediction                                    = 120,
+    #     TECspec_interest_rate                                = 0.1,  
+    #     TECspec_share_roof_area_available                    = 0.8,
+    #     TECspec_self_consumption_ifapplicable                = 1.0,
+    #     # TECspec_generic_pvtarif_Rp_kWh                       = None, 
+    #     TECspec_add_heatpump_demand_TF                       = True,   
+    #     TECspec_heatpump_months_factor                       = [
+    #                                                             (10, 7.0),
+    #                                                             (11, 7.0), 
+    #                                                             (12, 7.0), 
+    #                                                             (1 , 7.0), 
+    #                                                             (2 , 7.0), 
+    #                                                             (3 , 7.0), 
+    #                                                             (4 , 7.0), 
+    #                                                             (5 , 7.0),     
+    #                                                             (6 , 1.0), 
+    #                                                             (7 , 1.0), 
+    #                                                             (8 , 1.0), 
+    #                                                             (9 , 1.0),
+    #                                                             ], 
+    #     CSTRspec_iter_time_unit                              = 'year',
+    #     CSTRspec_ann_capacity_growth                         = 0.2,
+    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+    #     ALGOspec_topo_subdf_partitioner                      = 250, 
+    #     ALGOspec_pvinst_size_calculation                     = 'npv_optimized',   # 'inst_full_partition' / 'npv_optimized'
+    #     ALGOspec_inst_selection_method                       = 'max_npv', 
+    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+    #     ALGOspec_rand_seed                                   = 123,
+    #     # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    # ), 
 
         ]
 
