@@ -2544,7 +2544,7 @@ class PVAllocScenario:
 
                 tranche_counter += 1
                 # print_to_logfile(f'-- merges to topo_time_subdf {tranche_counter}/{len(range(0, len(egids), stepsize))} tranches ({i} to {i+stepsize-1} egids.iloc) ,  {7*"-"}  (stamp: {datetime.now()})', self.sett.log_name)
-                subdf = topo_df.filter(pl.col("EGID").is_in(egids[i:i+stepsize])).clone()
+                subdf = topo_df.filter(pl.col("EGID").is_in(list(egids[i:i+stepsize]))).clone()
         
 
                 # I  MERGE WEATHER DATA - CALC PRODUCTION PER PARTITION ===========================================================
@@ -3097,8 +3097,8 @@ class PVAllocScenario:
                 )
                 subdf_updated = subdf_updated.with_columns([
                     pl.when(
-                        (pl.col('EGID').is_in(subdf_no_inst['EGID'])) &
-                        (pl.col('df_uid').is_in(subdf_no_inst['df_uid']))
+                        (pl.col('EGID').is_in(subdf_no_inst['EGID'].implode())) &
+                        (pl.col('df_uid').is_in(subdf_no_inst['df_uid'].implode()))
                     ).then(pl.lit(0.0)).otherwise(pl.col('pvprod_kW')).alias('pvprod_kW'),
                 ])
 
