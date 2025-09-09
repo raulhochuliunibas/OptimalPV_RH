@@ -3094,17 +3094,24 @@ class PVAllocScenario:
                 # --------------------
 
                 # force pvprod == 0 for EGID-df_uid without inst
-                Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('df_uid') != '')
+                Map_pvinst_topo_egid = Map_pvinfo_topo_egid.filter(pl.col('inst_TF') == True)
                 subdf_no_inst = subdf_updated.join(
                     Map_pvinst_topo_egid[['EGID', 'df_uid']], 
                     on=['EGID', 'df_uid'], 
                     how='anti'
                 )
+
                 subdf_updated = subdf_updated.with_columns([
                     pl.when(
                         (pl.col('EGID').is_in(subdf_no_inst['EGID'].implode())) &
                         (pl.col('df_uid').is_in(subdf_no_inst['df_uid'].implode()))
                     ).then(pl.lit(0.0)).otherwise(pl.col('pvprod_kW')).alias('pvprod_kW'),
+                ])
+                subdf_updated = subdf_updated.with_columns([
+                    pl.when(
+                        (pl.col('EGID').is_in(subdf_no_inst['EGID'].implode())) &
+                        (pl.col('df_uid').is_in(subdf_no_inst['df_uid'].implode()))
+                    ).then(pl.lit(0.0)).otherwise(pl.col('radiation')).alias('radiation'),
                 ])
 
                 # sorting necessary so that .first() statement captures inst_TF and info_source for EGIDS with partial installations
