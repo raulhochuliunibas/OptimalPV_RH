@@ -8,20 +8,24 @@ pvalloc_scen_list = [
 
 
 
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_aggr_RUR_max',
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-001_max',
         bfs_numbers                                          = [
                                                     # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
                                                     2889, 
 
                                                                 ],          
-        mini_sub_model_TF                                    = True,
-        mini_sub_model_nEGIDs                                = 50,
-        test_faster_array_computation                        = True,
-        create_gdf_export_of_topology                        = True,
+        mini_sub_model_TF                                    = False,
+        # mini_sub_model_by_X                                    = 'by_EGID',
+        # mini_sub_model_nEGIDs                                = 50,
+        # mini_sub_model_select_EGIDs                          = [
+        #                                                         '3032150', '2362100', 
+        #                                                         '245044984', '2362101',
+        #                                                         '2362103', '2362102'
+        #                                                         ],
         T0_year_prediction                                   = 2021,
-        months_prediction                                    = 120,
+        months_prediction                                    = 360,
         TECspec_self_consumption_ifapplicable                = 1.0,
-        CSTRspec_iter_time_unit                              = 'year',
+        TECspec_interest_rate                                = 0.01,
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
         ALGOspec_topo_subdf_partitioner                      = 250, 
@@ -30,6 +34,33 @@ pvalloc_scen_list = [
         ALGOspec_rand_seed                                   = 123,
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-15_max',
+        bfs_numbers                                          = [
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    2889, 
+
+                                                                ],          
+        mini_sub_model_TF                                    = False,
+        # mini_sub_model_by_X                                    = 'by_EGID',
+        # mini_sub_model_nEGIDs                                = 50,
+        # mini_sub_model_select_EGIDs                          = [
+        #                                                         '3032150', '2362100', 
+        #                                                         '245044984', '2362101',
+        #                                                         '2362103', '2362102'
+        #                                                         ],
+        T0_year_prediction                                   = 2021,
+        months_prediction                                    = 360,
+        TECspec_self_consumption_ifapplicable                = 1.0,
+        TECspec_interest_rate                                = 0.15,
+        CSTRspec_ann_capacity_growth                         = 0.2,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'max_npv', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ), 
+
     """
     PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_aggr_RUR_max_origSFMFHdemand',
         bfs_numbers                                          = [
@@ -116,7 +147,7 @@ visualization_list = [
             # 'pvalloc_mini_aggr_RUR_default_rnd_selfconsum1',
             # 'pvalloc_mini_aggr_RUR_southf_rnd_selfconsum1', 
             # 'pvalloc_mini_aggr_RUR*', 
-            'pvalloc_longXmini_aggr_*',  
+            'pvalloc_1bfs_RUR_*',  
         ],
         plot_show                          = False,
         save_plot_by_scen_directory        = True, 
@@ -150,9 +181,9 @@ visualization_list = [
         # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
         # # # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
 
-        # plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
-        # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                   
-        # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
+        plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
+        plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                   
+        plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
         # plot_ind_line_PVproduction_TF                   = [True,      True,       False],                   
         plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],                   
         plot_ind_map_topo_egid_TF                       = [True,      True,       False],
@@ -188,8 +219,8 @@ if __name__ == '__main__':
     # visualization ---------------------
     for visual_scen in visualization_list:
         visual_class = Visualization(visual_scen)
-        # visual_class.plot_ALL_init_sanitycheck()
-        # visual_class.plot_ALL_mcalgorithm()
+        visual_class.plot_ALL_init_sanitycheck()
+        visual_class.plot_ALL_mcalgorithm()
 
 print('done')
 

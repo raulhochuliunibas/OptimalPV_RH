@@ -5620,22 +5620,16 @@ if __name__ == '__main__':
             
             # # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
             # plot_ind_var_summary_stats_TF                   = [True,      False,       False],
-            # # plot_ind_hist_pvcapaprod_sanitycheck_TF         = [True,      True,       False],
-            # # plot_ind_hist_pvprod_deviation_TF               = [True,      True,       False],
-            # # plot_ind_charac_omitted_gwr_TF                  = [True,      True,       False],
             # plot_ind_line_meteo_radiation_TF                = [True,      True,       False],
 
             # # # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-            # # # plot_ind_line_installedCap_TF                   = [True,      True,       False],
             # plot_ind_hist_pvcapaprod_TF                     = [True,      True,       False],
             # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
-
-
         
-            plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
+            # plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
             # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                
             # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
-            # plot_ind_line_PVproduction_TF                   = [True,      True,       False],                   
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False],      #TO BE ADJUSTED!!             
             # plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],                   
             # plot_ind_map_topo_egid_TF                       = [True,      True,       False],
             # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],

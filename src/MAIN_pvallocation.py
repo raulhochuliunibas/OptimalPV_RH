@@ -152,7 +152,7 @@ class PVAllocScenario_Settings:
     TECspec_max_distance_m_for_EGID_node_matching: float    = 0
     TECspec_kW_range_for_pvinst_cost_estim: List[int]       = field(default_factory=lambda: [0, 61])
     TECspec_estim_pvinst_cost_correctionfactor: float       = 1
-    TECspec_add_heatpump_demand_TF: bool                    = False   
+    TECspec_add_heatpump_demand_TF: bool                    = True   
     TECspec_heatpump_months_factor: List[tuple]             = field(default_factory=lambda: [
                                                             (10, 1.0 ),
                                                             (11, 1.0 ), 
@@ -4389,6 +4389,8 @@ if __name__ == '__main__':
         ALGOspec_rand_seed                                   = 123,
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
+    
+    
     # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_0.1r',
     #     bfs_numbers                                          = [
     #                                                 # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
