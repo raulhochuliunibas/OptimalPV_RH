@@ -2495,25 +2495,36 @@ class Visualization:
                     # data calculation from plot_ind_line_productionHOY_per_EGID ----------------------------------------
                     if True:
                         # select EGIDs by EGID - DF_UID combo --------------------------
-                        egid_list, dfuid_list, info_source_list, inst_TF_list, grid_node_list = [], [], [], [], []
-                        for k,v in topo.items():
-                            if v['pv_inst']['inst_TF']:
-                                for dfuid_w_inst in v['pv_inst']['df_uid_w_inst']:
+                        egid_list, dfuid_list, info_source_list, TotalPower_list, inst_TF_list, grid_node_list, share_pvprod_used_list, dfuidPower_list = [], [], [], [], [], [], [], []
+                        for k,v in topo.items():                
+                            dfuid_tupls = [tpl[1] for tpl in v['pv_inst']['dfuid_w_inst_tuples'] if tpl[3] > 0.0]
+                            for k_s, v_s in v['solkat_partitions'].items():
+                                if k_s in dfuid_tupls:
+                                    for tpl in v['pv_inst']['dfuid_w_inst_tuples']:
+                                        if tpl[1] == k_s:       
+                                            egid_list.append(k)
+                                            info_source_list.append(v['pv_inst']['info_source'])
+                                            inst_TF_list.append(True if tpl[3] > 0.0 else False)   
+                                            dfuid_list.append(tpl[1])
+                                            share_pvprod_used_list.append(tpl[2])
+                                            dfuidPower_list.append(tpl[3])
+                                            grid_node_list.append(v['grid_node']) 
+                                            TotalPower_list.append(v['pv_inst']['TotalPower'])
+                                else: 
                                     egid_list.append(k)
-                                    dfuid_list.append(dfuid_w_inst)
-                                    info_source_list.append(v['pv_inst']['info_source'])
-                                    inst_TF_list.append(v['pv_inst']['inst_TF'])   
-                                    grid_node_list.append(v['grid_node']) 
-                            else: 
-                                egid_list.append(k)
-                                dfuid_list.append('')
-                                info_source_list.append('')
-                                inst_TF_list.append(False)
-                                grid_node_list.append(v['grid_node'])
+                                    dfuid_list.append(k_s)
+                                    share_pvprod_used_list.append(0.0)
+                                    dfuidPower_list.append(0.0)
+                                    info_source_list.append('')
+                                    inst_TF_list.append(False)
+                                    grid_node_list.append(v['grid_node'])  
+                                    TotalPower_list.append(0.0)          
 
-                        gridnode_freq         = pd.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,  'grid_node': grid_node_list})
-                        Map_pvinfo_topo_egid  = pl.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,  'grid_node': grid_node_list})
 
+                        Map_pvinfo_topo_egid  = pl.DataFrame({'EGID': egid_list, 'df_uid': dfuid_list, 'info_source': info_source_list, 'TotalPower': TotalPower_list, 
+                                                            'inst_TF': inst_TF_list, 'share_pvprod_used': share_pvprod_used_list, 'dfuidPower': dfuidPower_list, 
+                                                            'grid_node': grid_node_list})
+                        gridnode_freq = Map_pvinfo_topo_egid.to_pandas()
 
                         # select gridnodes / EGIDs to plot ----------
                         if specific_gridnodes_egid_HOY != None: 
@@ -2620,6 +2631,8 @@ class Visualization:
 
                             # (for visualization later) -----
                             # only select egids for grid_node mentioned above
+                            agg_egids_all_list.append(agg_egids)
+                            
                             agg_egids = agg_egids.filter(pl.col('EGID').is_in(Map_pvinfo_gridnode['EGID'].to_list()))
                             agg_egids_list.append(agg_egids)
                             # -----

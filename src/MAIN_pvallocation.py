@@ -3022,7 +3022,8 @@ class PVAllocScenario:
             checkpoint_to_logfile('gridprem: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
             agg_subdf_updated_pvdf_list = []
-            agg_subdf_df_list, agg_egids_list = [], []
+            agg_subdf_df_list, agg_egids_list, agg_egids_all_list = [], [], []
+
 
 
             i, path = 0, topo_subdf_paths[0]
@@ -3141,6 +3142,8 @@ class PVAllocScenario:
 
                 # (for visualization later) -----
                 # only select egids for grid_node mentioned above
+                agg_egids_all_list.append(agg_egids)
+
                 agg_egids = agg_egids.filter(pl.col('EGID').is_in(Map_pvinfo_gridnode['EGID'].to_list()))
                 agg_egids_list.append(agg_egids)
                 # -----
