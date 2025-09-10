@@ -8,20 +8,33 @@ pvalloc_scen_list = [
 
 
 
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-001_max',
+    # PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-001_max',
+    #     bfs_numbers                                          = [
+    #                                                 # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+    #                                                 2889, 
+    #                                                             ],          
+    #     mini_sub_model_TF                                    = False,
+    #     mini_sub_model_nEGIDs                                = 999999,
+
+    #     T0_year_prediction                                   = 2021,
+    #     months_prediction                                    = 360,
+    #     TECspec_self_consumption_ifapplicable                = 1.0,
+    #     TECspec_interest_rate                                = 0.01,
+    #     CSTRspec_ann_capacity_growth                         = 0.2,
+    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+    #     ALGOspec_topo_subdf_partitioner                      = 250, 
+    #     ALGOspec_inst_selection_method                       = 'max_npv', 
+    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+    #     ALGOspec_rand_seed                                   = 123,
+    #     # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    # ), 
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-001_max_MINI',
         bfs_numbers                                          = [
                                                     # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
                                                     2889, 
-
                                                                 ],          
-        mini_sub_model_TF                                    = False,
-        # mini_sub_model_by_X                                    = 'by_EGID',
-        # mini_sub_model_nEGIDs                                = 50,
-        # mini_sub_model_select_EGIDs                          = [
-        #                                                         '3032150', '2362100', 
-        #                                                         '245044984', '2362101',
-        #                                                         '2362103', '2362102'
-        #                                                         ],
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_nEGIDs                                = 15,
         T0_year_prediction                                   = 2021,
         months_prediction                                    = 360,
         TECspec_self_consumption_ifapplicable                = 1.0,
@@ -34,24 +47,37 @@ pvalloc_scen_list = [
         ALGOspec_rand_seed                                   = 123,
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-15_max',
+
+    # PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-15_max',
+    #     bfs_numbers                                          = [
+    #                                                 # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+    #                                                 2889, 
+    #                                                             ],          
+    #     mini_sub_model_TF                                    = False,
+    #     mini_sub_model_nEGIDs                                = 999999,
+    #     T0_year_prediction                                   = 2021,
+    #     months_prediction                                    = 360,
+    #     TECspec_self_consumption_ifapplicable                = 1.0,
+    #     TECspec_interest_rate                                = 0.15,
+    #     CSTRspec_ann_capacity_growth                         = 0.2,
+    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+    #     ALGOspec_topo_subdf_partitioner                      = 250, 
+    #     ALGOspec_inst_selection_method                       = 'max_npv', 
+    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+    #     ALGOspec_rand_seed                                   = 123,
+    #     # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    # ), 
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-02_max_MINI',
         bfs_numbers                                          = [
                                                     # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
                                                     2889, 
-
                                                                 ],          
-        mini_sub_model_TF                                    = False,
-        # mini_sub_model_by_X                                    = 'by_EGID',
-        # mini_sub_model_nEGIDs                                = 50,
-        # mini_sub_model_select_EGIDs                          = [
-        #                                                         '3032150', '2362100', 
-        #                                                         '245044984', '2362101',
-        #                                                         '2362103', '2362102'
-        #                                                         ],
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_nEGIDs                                = 15,
         T0_year_prediction                                   = 2021,
         months_prediction                                    = 360,
         TECspec_self_consumption_ifapplicable                = 1.0,
-        TECspec_interest_rate                                = 0.15,
+        TECspec_interest_rate                                = 0.02,
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
         ALGOspec_topo_subdf_partitioner                      = 250, 
@@ -61,78 +87,159 @@ pvalloc_scen_list = [
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
 
-    """
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_aggr_RUR_max_origSFMFHdemand',
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-03_max_MINI',
         bfs_numbers                                          = [
                                                     # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
                                                     2889, 
                                                                 ],          
         mini_sub_model_TF                                    = True,
-        mini_sub_model_nEGIDs                                = 50,
-        test_faster_array_computation                        = True,
-        create_gdf_export_of_topology                        = True,
+        mini_sub_model_nEGIDs                                = 15,
         T0_year_prediction                                   = 2021,
-        months_prediction                                    = 120,
+        months_prediction                                    = 360,
         TECspec_self_consumption_ifapplicable                = 1.0,
-        CSTRspec_iter_time_unit                              = 'year',
+        TECspec_interest_rate                                = 0.03,
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-        ALGOspec_tweak_demand_profile                        = 1,
         ALGOspec_topo_subdf_partitioner                      = 250, 
         ALGOspec_inst_selection_method                       = 'max_npv', 
         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
         ALGOspec_rand_seed                                   = 123,
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
-
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_aggr_RUR_default_rnd',
-        bfs_numbers                                          = [
-                                                    # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
-                                                    # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
-                                                    2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-                                                                ],          
-        mini_sub_model_TF                                    = True,
-        mini_sub_model_nEGIDs                                = 50,
-        # export_csvs                                          = True,   
-        test_faster_array_computation                        = True,
-        create_gdf_export_of_topology                        = True,
-        T0_year_prediction                                   = 2021,
-        months_prediction                                    = 120,
-        TECspec_self_consumption_ifapplicable                = 1.0,
-        # GWRspec_solkat_max_n_partitions                      = 3,
-        CSTRspec_iter_time_unit                              = 'year',
-        CSTRspec_ann_capacity_growth                         = 0.2,
-        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-        ALGOspec_topo_subdf_partitioner                      = 250, 
-        ALGOspec_inst_selection_method                       = 'random', 
-        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-        ALGOspec_rand_seed                                   = 123,
-        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-    ), 
-
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_aggr_RUR_southf_rnd',
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-04_max_MINI',
         bfs_numbers                                          = [
                                                     # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
                                                     2889, 
                                                                 ],          
         mini_sub_model_TF                                    = True,
-        mini_sub_model_nEGIDs                                = 50,
-        test_faster_array_computation                        = True,
-        create_gdf_export_of_topology                        = True,
+        mini_sub_model_nEGIDs                                = 15,
         T0_year_prediction                                   = 2021,
-        months_prediction                                    = 120,
+        months_prediction                                    = 360,
         TECspec_self_consumption_ifapplicable                = 1.0,
-        CSTRspec_iter_time_unit                              = 'year',
+        TECspec_interest_rate                                = 0.04,
         CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
         ALGOspec_topo_subdf_partitioner                      = 250, 
         ALGOspec_inst_selection_method                       = 'max_npv', 
         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
         ALGOspec_rand_seed                                   = 123,
-        ALGOspec_subselec_filter_criteria = 'southfacing_1spec', 
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ), 
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-05_max_MINI',
+        bfs_numbers                                          = [
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    2889, 
+                                                                ],          
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_nEGIDs                                = 15,
+        T0_year_prediction                                   = 2021,
+        months_prediction                                    = 360,
+        TECspec_self_consumption_ifapplicable                = 1.0,
+        TECspec_interest_rate                                = 0.05,
+        CSTRspec_ann_capacity_growth                         = 0.2,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'max_npv', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ), 
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-06_max_MINI',
+        bfs_numbers                                          = [
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    2889, 
+                                                                ],          
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_nEGIDs                                = 15,
+        T0_year_prediction                                   = 2021,
+        months_prediction                                    = 360,
+        TECspec_self_consumption_ifapplicable                = 1.0,
+        TECspec_interest_rate                                = 0.06,
+        CSTRspec_ann_capacity_growth                         = 0.2,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'max_npv', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ), 
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-07_max_MINI',
+        bfs_numbers                                          = [
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    2889, 
+                                                                ],          
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_nEGIDs                                = 15,
+        T0_year_prediction                                   = 2021,
+        months_prediction                                    = 360,
+        TECspec_self_consumption_ifapplicable                = 1.0,
+        TECspec_interest_rate                                = 0.07,
+        CSTRspec_ann_capacity_growth                         = 0.2,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'max_npv', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ), 
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-08_max_MINI',
+        bfs_numbers                                          = [
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    2889, 
+                                                                ],          
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_nEGIDs                                = 15,
+        T0_year_prediction                                   = 2021,
+        months_prediction                                    = 360,
+        TECspec_self_consumption_ifapplicable                = 1.0,
+        TECspec_interest_rate                                = 0.08,
+        CSTRspec_ann_capacity_growth                         = 0.2,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'max_npv', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ), 
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-09_max_MINI',
+        bfs_numbers                                          = [
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    2889, 
+                                                                ],          
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_nEGIDs                                = 15,
+        T0_year_prediction                                   = 2021,
+        months_prediction                                    = 360,
+        TECspec_self_consumption_ifapplicable                = 1.0,
+        TECspec_interest_rate                                = 0.09,
+        CSTRspec_ann_capacity_growth                         = 0.2,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'max_npv', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ), 
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-10_max_MINI',
+        bfs_numbers                                          = [
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    2889, 
+                                                                ],          
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_nEGIDs                                = 15,
+        T0_year_prediction                                   = 2021,
+        months_prediction                                    = 360,
+        TECspec_self_consumption_ifapplicable                = 1.0,
+        TECspec_interest_rate                                = 0.10,
+        CSTRspec_ann_capacity_growth                         = 0.2,
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'max_npv', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ), 
 
-    """
 ]
 
 
@@ -142,6 +249,7 @@ visualization_list = [
         pvalloc_exclude_pattern_list = [
             '*.txt','*.xlsx','*.csv','*.parquet',
             '*old_vers*',
+            '*DEBUG*'
             ], 
         pvalloc_include_pattern_list = [
             # 'pvalloc_mini_aggr_RUR_default_rnd_selfconsum1',
@@ -149,61 +257,78 @@ visualization_list = [
             # 'pvalloc_mini_aggr_RUR*', 
             'pvalloc_1bfs_RUR_*',  
         ],
-        plot_show                          = False,
+        plot_show                          = True,
         save_plot_by_scen_directory        = True, 
-        remove_old_plot_scen_directories   = True,  
-        remove_old_plots_in_visualization  = True,  
-        remove_old_csvs_in_visualization   = True, 
+        remove_old_plot_scen_directories   = False,  
+        remove_old_plots_in_visualization  = False,  
+        remove_old_csvs_in_visualization   = False, 
+        
         cut_timeseries_to_zoom_hour        = True,
+        add_day_night_HOY_bands            = False,
 
         default_zoom_hour                  = [212*24, (212*24)+(24*14)], 
 
         # # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
         # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
-        # # plot_ind_hist_pvcapaprod_sanitycheck_TF         = [True,      True,       False],
-        # # plot_ind_hist_pvprod_deviation_TF               = [True,      True,       False],
         # plot_ind_charac_omitted_gwr_TF                  = [True,      True,       False],
-        # # plot_ind_line_meteo_radiation_TF                = [True,      True,       False],
-
-        # # # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-        # # # plot_ind_line_installedCap_TF                   = [True,      True,       False],
-        # plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
-        # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                   
-        # # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
-        # # plot_ind_line_PVproduction_TF                   = [True,      True,       False],                   
-        # plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],                   
-        # # # plot_ind_line_gridPremiumHOY_per_node_TF        = [True,      True,       False],
-        # # # plot_ind_line_gridPremiumHOY_per_EGID_TF        = [True,      True,       False],
-        # # # plot_ind_line_gridPremium_structure_TF          = [True,      True,       False],
-        # # # plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
-        # # # plot_ind_hist_pvcapaprod_TF                     = [True,      True,       False],
-        # plot_ind_map_topo_egid_TF                       = [True,      True,       False],
-        # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
-        # # # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
+        # plot_ind_line_meteo_radiation_TF                = [True,      True,       False],
 
         plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
-        plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                   
-        plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
+        # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                   
+        # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
         # plot_ind_line_PVproduction_TF                   = [True,      True,       False],                   
-        plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],                   
-        plot_ind_map_topo_egid_TF                       = [True,      True,       False],
+        # plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],                   
+        # plot_ind_map_topo_egid_TF                       = [True,      True,       True],
         # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
 
         plot_ind_mapline_prodHOY_EGIDrfcombo_specs = {
                 'specific_selected_EGIDs': [
-                    # '190145779', 
-                    # '190178022', 
-                    # '190296588', 
+                    # bfs: 2883 - Bretzwil
+                    '3030694',      # pv_df
+                    '2362100',    # pv_df  2 part
+                    '245052560',    # pv_df 2 part
+                    # '3032150',    # pv_df  3 part
+                    # '11513725',
                                             ], 
+                'plot_mapORtimeseries': [
+                                            'map',  
+                                            'timeseries', 
+                                            'recalc_pvdf', 
+                                            'summary',  
+                                            ],
+                'traces_in_timeseries_plot': [
+                                            'full_partition_combo', 
+                                            'actual_pv_inst', 
+                                            'recalc_pv_inst',
+                ], 
                 'rndm_sample_seed': 123,
-                'n_rndm_egid_winst_pvdf': 7 , 
-                'n_rndm_egid_winst_alloc': 20,
+                'n_rndm_egid_winst_pvdf': 2, 
+                'n_rndm_egid_winst_alloc': 2,
                 'n_rndm_egid_woinst': 0,
                 'n_rndm_egid_outsample': 0, 
                 'n_partition_pegid_minmax': (1,2), 
                 'roofpartition_color': '#fff2ae',
-                'actual_ts_trace_marker': 'cross'
-            },
+                'actual_ts_trace_marker': 'cross',
+                'tweak_denominator_list': [
+                                            1.0, 
+                                        ], 
+                'summary_cols_only_in_legend': ['EGID', 'inst_TF', 'info_source', 'grid_node',
+                                                'GKLAS', 'GAREA', 'are_typ', 'sfhmfh_typ', 
+                                                'TotalPower', 'demand_elec_pGAREA', 
+                                                'pvtarif_Rp_kWh', 'elecpri_Rp_kWh', ],
+                'max_flaeche_pvinst_area_m2': 185,  
+                # 'tryout_generic_pvtariff_elecpri_Rp_kWh': (5.0, 25.0),
+                'tryout_generic_pvtariff_elecpri_Rp_kWh': (None, None),
+                'generic_pvinstcost_coeff_total': {
+                                                    'use_generic_instcost_coeff_total_TF': False, 
+                                                    'a': 1193, 
+                                                    'b': 9340, 
+                                                    'c': 0.45,
+                }, 
+                'noisy_demand_TF': False, 
+                'noisy_demand_factor': 0.5
+                },
+
     )
     ]
 
@@ -213,8 +338,8 @@ if __name__ == '__main__':
     # pv alloctaion ---------------------
     for pvalloc_scen in pvalloc_scen_list:
         scen_class = PVAllocScenario(pvalloc_scen)
-        scen_class.run_pvalloc_initalization()
-        scen_class.run_pvalloc_mcalgorithm()
+        # scen_class.run_pvalloc_initalization()
+        # scen_class.run_pvalloc_mcalgorithm()
 
     # visualization ---------------------
     for visual_scen in visualization_list:

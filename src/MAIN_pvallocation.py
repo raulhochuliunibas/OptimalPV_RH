@@ -63,8 +63,11 @@ class PVAllocScenario_Settings:
                                                                                  ]) 
     mini_sub_model_ngridnodes: int              = 20
     mini_sub_model_nEGIDs: int                  = 100
-    mini_sub_model_by_X: str                    = 'by_gridnode'       # 'by_gridnode' / 'by_EGID' 
-    mini_sub_model_select_EGIDs: List[str]      = field(default_factory=lambda: [])
+    mini_sub_model_by_X: str                    = 'by_EGID'       # 'by_gridnode' / 'by_EGID' 
+    mini_sub_model_select_EGIDs: List[str]      = field(default_factory=lambda: [
+                                                    # pv_df EGIDs in BFS 2889 - Lauwil
+                                                    '3032150', '2362100', '245052560', '245048760', '434178', '245057989', '245044986', 
+                                                    ])
     T0_year_prediction: int                     = 2022                          # year for the prediction of the future construction capacity
     # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
     months_lookback: int                        = 12                           # number of months to look back for the prediction of the future construction capacity
@@ -1474,22 +1477,20 @@ class PVAllocScenario:
 
                 elif self.sett.mini_sub_model_by_X == 'by_EGID':
                     gwr_selected = []
-
                     egid_in_gwr = [egid for egid in self.sett.mini_sub_model_select_EGIDs if egid in gwr['EGID'].unique()]
-                    if len(egid_in_gwr) > 0:
-                        gwr_select_EGID = copy.deepcopy(gwr.loc[gwr['EGID'].isin(egid_in_gwr)])
-                        rest_to_sample = self.sett.mini_sub_model_nEGIDs - len(egid_in_gwr)
-                        gwr_selected.append(gwr_select_EGID)
+                    gwr_select_EGID = copy.deepcopy(gwr.loc[gwr['EGID'].isin(egid_in_gwr)])
+                    rest_to_sample = self.sett.mini_sub_model_nEGIDs - len(egid_in_gwr)
+                    gwr_selected.append(gwr_select_EGID)
 
-                        if (rest_to_sample > 0) & (rest_to_sample < gwr['EGID'].nunique()):
-                            gwr = copy.deepcopy(gwr.loc[~gwr['EGID'].isin(egid_in_gwr)])
-                            gwr_rest = copy.deepcopy(gwr.sample(n=rest_to_sample, random_state=self.sett.ALGOspec_rand_seed))
-                            
-                        elif (rest_to_sample > 0) & (rest_to_sample >= gwr['EGID'].nunique()):
-                            gwr_rest = copy.deepcopy(gwr)
+                    if (rest_to_sample > 0) & (rest_to_sample < gwr['EGID'].nunique()):
+                        gwr = copy.deepcopy(gwr.loc[~gwr['EGID'].isin(egid_in_gwr)])
+                        gwr_rest = copy.deepcopy(gwr.sample(n=rest_to_sample, random_state=self.sett.ALGOspec_rand_seed))
+                        
+                    elif (rest_to_sample > 0) & (rest_to_sample >= gwr['EGID'].nunique()):
+                        gwr_rest = copy.deepcopy(gwr)
 
-                        gwr_selected.append(gwr_rest)
-                        gwr = pd.concat(gwr_selected, axis=0)
+                    gwr_selected.append(gwr_rest)
+                    gwr = pd.concat(gwr_selected, axis=0)
                     
                     gwr = copy.deepcopy(gwr)
                 
@@ -3686,7 +3687,7 @@ class PVAllocScenario:
                             # Set bounds - minimum FLAECHE is 0, maximum is either specified or from the data
                             if max_flaeche is None:
                                 # max_flaeche = float(max_dfuid_df.select(pl.col("FLAECHE").unique()).item())
-                                max_flaeche = max(max_dfuid_df['FLAECHE']) * 2
+                                max_flaeche = max(max_dfuid_df['FLAECHE']) * 1.5
                                 
                             
                             # Run the optimization
@@ -4199,7 +4200,7 @@ class PVAllocScenario:
             if isinstance(npv_pick, pd.DataFrame):
                 picked_egid              = npv_pick['EGID'].values[0]
                 picked_dfuid             = npv_pick['df_uid'].values[0]
-                picked_flaeche           = npv_pick['FLAECHE'].values[0]
+                picked_flaeche           = npv_pick['opt_FLAECHE'].values[0]
                 picked_dfuidPower        = npv_pick['dfuidPower'].values[0]
                 # picked_share_pvprod_used = npv_pick['share_pvprod_used'].values[0]
                 picked_demand_kW         = npv_pick['demand_kW'].values[0]
@@ -4246,11 +4247,11 @@ class PVAllocScenario:
                            ]
             for col in cols_to_add:  # add empty cols to fill in later
                 if col not in topo_pick_df.columns:
-                    if col in ['inst_TF']:  # boolean
+                    if col in ['inst_TF']:                              # boolean
                         topo_pick_df[col] = False
-                    elif col in ['info_source', 'xtf_id', 'BeginOp']:  # string
+                    elif col in ['info_source', 'xtf_id', 'BeginOp']:   # string
                         topo_pick_df[col] = ''
-                    else:   # numeric                    
+                    else:                                               # numeric                    
                         topo_pick_df[col] = np.nan
 
             for i in range(0, topo_pick_df.shape[0]):
@@ -4353,7 +4354,7 @@ if __name__ == '__main__':
                                                                 ],          
         mini_sub_model_TF                                    = True,
         mini_sub_model_by_X                                  = 'by_EGID',
-        mini_sub_model_nEGIDs                                = 50,
+        mini_sub_model_nEGIDs                                = 10,
         mini_sub_model_select_EGIDs                          = [
                                                                 '3030694', 
                                                                 # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 

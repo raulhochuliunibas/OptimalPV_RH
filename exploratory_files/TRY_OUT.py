@@ -7,6 +7,10 @@ import winsound
 import glob
 import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon
+import polars as pl
+from scipy import optimize
+import xlsxwriter
+
 
 import copy
 import plotly.graph_objects as go
@@ -16,17 +20,49 @@ import plotly.express as px
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
-wd_path = 'C:/Models/OptimalPV_RH'
-data_path     = f'{wd_path}/data'
-# data_path_def = f'{wd_path}_data'
-scen = "pvalloc_BLsml_1roof_extSolkatEGID_12m_meth2.2_rad_dfuid_ind"
-name_dir_import = 'preprep_BLSO_22to23_1and2homes'
+bfs_sample = [                                                    2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
+                                                    2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
+                                                    # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                                    2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+]
+bfs_str = [str(bfs) for bfs in bfs_sample ]
 
+solkat = pl.read_parquet(r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_22to23_extSolkatEGID_aggrfarms\solkat.parquet")
+gwr_all_buildings = pl.read_parquet(r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_22to23_extSolkatEGID_aggrfarms\gwr_all_building_df.parquet")
+
+solkat.shape
+solkat.columns
+solkat.dtypes
+gwr_all_buildings.shape
+
+solkat_gwr = solkat.join(gwr_all_buildings, on='EGID', how='left')
+solkat_gwr = solkat_gwr.with_columns([
+    pl.col('GBAUJ').replace('', '0').cast(pl.Int64).alias('GBAUJ'),
+])
+
+
+solkat_gwr = solkat_gwr.filter(
+    (pl.col('BFS_NUMMER').is_in(bfs_str)) & 
+    (pl.col('GSTAT').is_in(['1001', '1002', '1003', '1004'])) &
+    (pl.col('GKLAS').is_in(['1110', '1121', '1122',])) &
+    (pl.col('GBAUJ') < 2021) &
+    (pl.col('GBAUJ') > 1950) 
+)
+
+
+solkat_gwr = solkat_gwr.with_columns([
+    pl.col('AUSRICHTUNG').abs().alias('AUSRICHTUNG_abs'),
+])
+
+solkat_gwr.sort(by=['NEIGUNG', 'AUSRICHTUNG_abs', ], descending=[False, False, ]).write_csv(r"C:\Models\OptimalPV_RH\data\solkat_bfs_sample_FILTERED.csv")
+# solkat_rur.sort(by=['NEIGUNG', 'AUSRICHTUNG_abs', ], descending=[False, False, ]).write_excel(r"C:\Models\OptimalPV_RH\solkat_bfs_sample_FILTERED.xlsx")
+
+# ------------------------------------------------------------------------------------------------------
 
 # CONVERT parquet to csv
-if False:
+if True:
 
-    pq_path = r"C:\Users\hocrau00\Downloads\npv_df_13.parquet"
+    pq_path = r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_mini_aggr_RUR_max_2_old_vers\zMC1\npv_df.parquet"
     file_name = pq_path.split('\\')[-1].split('.parquet')[0]
     csv_path = "\\".join(pq_path.split('\\')[0:-1])
 
@@ -37,32 +73,6 @@ if False:
     # df = df.head(8760 * 40)
     df.to_csv(f'{csv_path}/{file_name}.csv')
     print(f'exported {file_name}.csv')
-
-
-# ------------------------------------------------------------------------------------------------------
-if True:
-    gwr_all_building_df = pd.read_parquet("C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_22to23_extSolkatEGID_aggrfarms\gwr_all_building_df.parquet")
-    gwr_all_building_df.dtypes
-
-    no_GAREA = gwr_all_building_df.loc[gwr_all_building_df['GAREA'] == '']
-    no_GEBF = gwr_all_building_df.loc[gwr_all_building_df['GEBF'] == '']
-
-    gwr_all_building_df.loc[gwr_all_building_df['GAREA'] == '', 'GAREA'] = 0
-    gwr_all_building_df['GAREA'] = gwr_all_building_df['GAREA'].astype(float)
-
-    gwr_all_building_df['GEBF'].value_counts()
-    no_GAREA['GKLAS'].value_counts()
-    no_GAREA['GSTAT'].value_counts()
-    no_GEBF['GKLAS'].value_counts()
-    no_GEBF['GSTAT'].value_counts()
-
-    gwr_agg = gwr_all_building_df.groupby('arch_typ')['GAREA'].agg(
-        mean_GAREA='mean',   # Calculate the mean
-        median_GAREA='median',  # Calculate the median
-        sum_GAREA='sum'      # Calculate the sum
-    ).reset_index()    
-    gwr_agg.to_csv(f'{data_path}/preprep_BLSO_22to23_extSolkatEGID_aggrfarms__gwr_all_building_df_GAREA_mean.csv', index=False)
-
 
 
 # ------------------------------------------------------------------------------------------------------

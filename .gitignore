@@ -82,17 +82,18 @@ data/input/swissboundaries3d_2023-01_2056_5728.shp/*
 data/input/SwissStore_DemandData/*
 !data/input/SwissStore_DemandData/empty_txt_file_for_folder_structure_in_github.txt
 
-
+data/**
 
 
 # ignore all files api_keys_directory, except empty textfiles
 code/api_keys/*
 src/api_keys/*
 !code/api_keys/empty_txt_file_for_folder_structure_in_github.txt
-
-
-data/**
 **api_keys.py
+
+# ignore certain docs files
+docs/**
+
 
 
 # --------------------------------------------------------------------------------------------
