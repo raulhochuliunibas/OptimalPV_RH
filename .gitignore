@@ -83,6 +83,7 @@ data/input/SwissStore_DemandData/*
 !data/input/SwissStore_DemandData/empty_txt_file_for_folder_structure_in_github.txt
 
 data/**
+archive_not_on_github/**
 
 
 # ignore all files api_keys_directory, except empty textfiles
