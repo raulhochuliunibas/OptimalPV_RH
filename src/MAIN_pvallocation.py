@@ -155,6 +155,7 @@ class PVAllocScenario_Settings:
     TECspec_max_distance_m_for_EGID_node_matching: float    = 0
     TECspec_kW_range_for_pvinst_cost_estim: List[int]       = field(default_factory=lambda: [0, 61])
     TECspec_estim_pvinst_cost_correctionfactor: float       = 1
+    TECspec_opt_max_flaeche_factor: float                   = 1.5
     TECspec_add_heatpump_demand_TF: bool                    = True   
     TECspec_heatpump_months_factor: List[tuple]             = field(default_factory=lambda: [
                                                             (10, 1.0 ),
@@ -3674,7 +3675,7 @@ class PVAllocScenario:
                                 # return npv, installation_cost, disc_cashflow, pvprod_kW_sum, demand_kW_sum, selfconsum_kW_sum
                                 return npv, rest
 
-                        def optimize_pv_size(max_dfuid_df, estim_instcost_chftotal, max_flaeche=None):
+                        def optimize_pv_size(max_dfuid_df, estim_instcost_chftotal, max_flaeche_factor=None):
                             """
                             Find the optimal PV installation size (FLAECHE) that maximizes NPV
                             
@@ -3685,9 +3686,11 @@ class PVAllocScenario:
 
                             
                             # Set bounds - minimum FLAECHE is 0, maximum is either specified or from the data
-                            if max_flaeche is None:
-                                # max_flaeche = float(max_dfuid_df.select(pl.col("FLAECHE").unique()).item())
-                                max_flaeche = max(max_dfuid_df['FLAECHE']) * 1.5
+                            if max_flaeche_factor is not None:
+                                max_flaeche = max(max_dfuid_df['FLAECHE']) * max_flaeche_factor
+                            else:
+                                max_flaeche = max(max_dfuid_df['FLAECHE'])
+
                                 
                             
                             # Run the optimization
@@ -3703,7 +3706,7 @@ class PVAllocScenario:
                                                         
                             return optimal_flaeche, optimal_npv
                                                         
-                        opt_flaeche, opt_npv = optimize_pv_size(max_dfuid_df, estim_instcost_chftotal)
+                        opt_flaeche, opt_npv = optimize_pv_size(max_dfuid_df, estim_instcost_chftotal, self.sett.TECspec_opt_max_flaeche_factor)
                         opt_kWpeak = opt_flaeche * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available
 
 
@@ -4201,7 +4204,7 @@ class PVAllocScenario:
                 picked_egid              = npv_pick['EGID'].values[0]
                 picked_dfuid             = npv_pick['df_uid'].values[0]
                 picked_flaeche           = npv_pick['opt_FLAECHE'].values[0]
-                picked_dfuidPower        = npv_pick['dfuidPower'].values[0]
+                # picked_dfuidPower        = npv_pick['dfuidPower'].values[0]
                 # picked_share_pvprod_used = npv_pick['share_pvprod_used'].values[0]
                 picked_demand_kW         = npv_pick['demand_kW'].values[0]
                 picked_poss_pvprod       = npv_pick['poss_pvprod'].values[0]
@@ -4241,6 +4244,7 @@ class PVAllocScenario:
             inst_power = picked_flaeche * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available
             remaning_flaeche = picked_flaeche
 
+
             cols_to_add = ['inst_TF', 'info_source', 'xtf_id', 'BeginOp', 'dfuidPower', 
                            'share_pvprod_used', 'demand_kW', 'poss_pvprod', 'pvprod_kW', 
                            'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', 
@@ -4255,7 +4259,10 @@ class PVAllocScenario:
                         topo_pick_df[col] = np.nan
 
             for i in range(0, topo_pick_df.shape[0]):
-                total_ratio = remaning_flaeche / topo_pick_df['FLAECHE'].iloc[i]
+                dfuid_flaeche = topo_pick_df['FLAECHE'].iloc[i]
+                dfuid_inst_power = dfuid_flaeche * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available
+
+                total_ratio = remaning_flaeche / dfuid_flaeche
                 flaeche_ratio = 1       if total_ratio >= 1 else total_ratio
                 remaning_flaeche -= topo_pick_df['FLAECHE'].iloc[i]
 
@@ -4266,7 +4273,7 @@ class PVAllocScenario:
                 topo_pick_df.loc[idx, 'info_source'] = '       alloc_algorithm'                       if flaeche_ratio > 0.0 else ''
                 topo_pick_df.loc[idx, 'BeginOp'] =             str(m)                                 if flaeche_ratio > 0.0 else ''
                 topo_pick_df.loc[idx, 'xtf_id'] =              picked_dfuid                           if flaeche_ratio > 0.0 else ''
-                topo_pick_df.loc[idx, 'dfuidPower'] =          flaeche_ratio * picked_dfuidPower      if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'dfuidPower'] =          flaeche_ratio * dfuid_inst_power       if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'demand_kW'] =           flaeche_ratio * picked_demand_kW       if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'poss_pvprod'] =         flaeche_ratio * picked_poss_pvprod     if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'pvprod_kW'] =           flaeche_ratio * picked_pvprod_kW       if flaeche_ratio > 0.0 else 0.0
@@ -4274,24 +4281,7 @@ class PVAllocScenario:
                 topo_pick_df.loc[idx, 'netfeedin_kW'] =        flaeche_ratio * picked_netfeedin_kW    if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'netdemand_kW'] =        flaeche_ratio * picked_netdemand_kW    if flaeche_ratio > 0.0 else 0.0
             
-                # BOOKMARK -> 
-
-                # topo_pick_df['inst_TF'].iloc[i] = True                      if flaeche_ratio > 0.0 else False
-                # topo_pick_df['share_pvprod_used'].iloc[i] = flaeche_ratio   if flaeche_ratio > 0.0 else 0.0 
-                
-                # topo_pick_df['info_source'].iloc[i] = 'alloc_algorithm'     if flaeche_ratio > 0.0 else ''
-                # topo_pick_df['BeginOp'].iloc[i] = str(m)                    if flaeche_ratio > 0.0 else ''
-                # topo_pick_df['xtf_id'].iloc[i] = picked_dfuid               if flaeche_ratio > 0.0 else ''
-
-                # topo_pick_df['dfuidPower'].iloc[i] =        flaeche_ratio * picked_dfuidPower         if flaeche_ratio > 0.0 else 0.0 
-                
-                # topo_pick_df['demand_kW'].iloc[i] =         flaeche_ratio * picked_demand_kW          if flaeche_ratio > 0.0 else 0.0 
-                # topo_pick_df['poss_pvprod'].iloc[i] =       flaeche_ratio * picked_poss_pvprod        if flaeche_ratio > 0.0 else 0.0 
-                # topo_pick_df['pvprod_kW'].iloc[i] =         flaeche_ratio * picked_pvprod_kW          if flaeche_ratio > 0.0 else 0.0 
-                # topo_pick_df['selfconsum_kW'].iloc[i] =     flaeche_ratio * picked_selfconsum_kW      if flaeche_ratio > 0.0 else 0.0 
-                # topo_pick_df['netfeedin_kW'].iloc[i] =      flaeche_ratio * picked_netfeedin_kW       if flaeche_ratio > 0.0 else 0.0 
-                # topo_pick_df['netdemand_kW'].iloc[i] =      flaeche_ratio * picked_netdemand_kW       if flaeche_ratio > 0.0 else 0.0 
-                
+               
             topo_pick_df = topo_pick_df.loc[topo_pick_df['inst_TF'] == True].copy()
             pred_inst_df = pd.concat([pred_inst_df, topo_pick_df], ignore_index=True)
 
@@ -4354,7 +4344,7 @@ if __name__ == '__main__':
                                                                 ],          
         mini_sub_model_TF                                    = True,
         mini_sub_model_by_X                                  = 'by_EGID',
-        mini_sub_model_nEGIDs                                = 10,
+        mini_sub_model_nEGIDs                                = 12,
         mini_sub_model_select_EGIDs                          = [
                                                                 '3030694', 
                                                                 # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
@@ -4392,63 +4382,9 @@ if __name__ == '__main__':
         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
         ALGOspec_rand_seed                                   = 123,
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-    ), 
+    ),
     
-    
-    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_0.1r',
-    #     bfs_numbers                                          = [
-    #                                                 # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-    #                                                 # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
-    #                                                 # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
-    #                                                 # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
-    #                                                 # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-    #                                                 2883,
-
-    #                                                             ],          
-    #     mini_sub_model_TF                                    = True,
-    #     mini_sub_model_by_X                                  = 'by_EGID',
-    #     mini_sub_model_nEGIDs                                = 50,
-    #     mini_sub_model_select_EGIDs                          = [
-    #                                                             '3030694', 
-    #                                                             # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
-    #                                                            # houses in RUR area, with 0 NEiGUNG and littie deviation from south
-    #                                                             # '190487689',    
-    #                                                             ],
-    #     create_gdf_export_of_topology                        = True,
-    #     export_csvs                                          = True,
-    #     T0_year_prediction                                   = 2021,
-    #     months_prediction                                    = 120,
-    #     TECspec_interest_rate                                = 0.1,  
-    #     TECspec_share_roof_area_available                    = 0.8,
-    #     TECspec_self_consumption_ifapplicable                = 1.0,
-    #     # TECspec_generic_pvtarif_Rp_kWh                       = None, 
-    #     TECspec_add_heatpump_demand_TF                       = True,   
-    #     TECspec_heatpump_months_factor                       = [
-    #                                                             (10, 7.0),
-    #                                                             (11, 7.0), 
-    #                                                             (12, 7.0), 
-    #                                                             (1 , 7.0), 
-    #                                                             (2 , 7.0), 
-    #                                                             (3 , 7.0), 
-    #                                                             (4 , 7.0), 
-    #                                                             (5 , 7.0),     
-    #                                                             (6 , 1.0), 
-    #                                                             (7 , 1.0), 
-    #                                                             (8 , 1.0), 
-    #                                                             (9 , 1.0),
-    #                                                             ], 
-    #     CSTRspec_iter_time_unit                              = 'year',
-    #     CSTRspec_ann_capacity_growth                         = 0.2,
-    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-    #     ALGOspec_topo_subdf_partitioner                      = 250, 
-    #     ALGOspec_pvinst_size_calculation                     = 'npv_optimized',   # 'inst_full_partition' / 'npv_optimized'
-    #     ALGOspec_inst_selection_method                       = 'max_npv', 
-    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-    #     ALGOspec_rand_seed                                   = 123,
-    #     # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-    # ), 
-
-        ]
+    ]
 
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
