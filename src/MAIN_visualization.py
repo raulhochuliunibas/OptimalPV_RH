@@ -5675,8 +5675,13 @@ class Visualization:
                 fig_econfunc_comp_scen.write_html(f'{self.visual_sett.visual_path}/__plot_ind_mapline_prodHOY_EGID{egid}_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen.html')  
 
                 # agg joint scatter plot Power installation
-                
-
+                min_totalpower, max_totalpower = min(jsctr_scen_df['TotalPower'])-1, max(jsctr_scen_df['TotalPower'])+1
+                fig_instpwr_jsctr.add_trace(go.Scatter(
+                    x=[min_totalpower, max_totalpower],
+                    y=[min_totalpower, max_totalpower],
+                    mode='lines',
+                    line=dict(color='Red', dash='dash'),
+                  ))               
                 fig_instpwr_jsctr.update_layout(
                     title=f'Joint Scatter Plot of Installed Power vs Recalculated Power for EGIDs of pv_df ({len(self.pvalloc_scen_list)} n_scen)',
                     xaxis_title='Total Power (kWp, real inst)', 

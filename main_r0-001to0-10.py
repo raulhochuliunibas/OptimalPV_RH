@@ -461,8 +461,8 @@ if __name__ == '__main__':
     # visualization ---------------------
     for visual_scen in visualization_list:
         visual_class = Visualization(visual_scen)
-        # visual_class.plot_ALL_init_sanitycheck()
-        # visual_class.plot_ALL_mcalgorithm()
+        visual_class.plot_ALL_init_sanitycheck()
+        visual_class.plot_ALL_mcalgorithm()
 
 print('done')
 
