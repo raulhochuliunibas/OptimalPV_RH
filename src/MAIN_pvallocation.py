@@ -2976,14 +2976,16 @@ class PVAllocScenario:
     
             # setup -----------------------------------------------------
             print_to_logfile('run function: update_gridprem', self.sett.log_name)
-            gridtiers_power_factor  = self.sett.GRIDspec_power_factor
-            share_roof_area_available = self.sett.TECspec_share_roof_area_available
-            kWpeak_per_m2             = self.sett.TECspec_kWpeak_per_m2
+            gridtiers_power_factor                = self.sett.GRIDspec_power_factor
+            share_roof_area_available             = self.sett.TECspec_share_roof_area_available
+            kWpeak_per_m2                         = self.sett.TECspec_kWpeak_per_m2
+            TECspec_self_consumption_ifapplicable = self.sett.TECspec_self_consumption_ifapplicable
 
 
             # import  -----------------------------------------------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
             topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
+            outtopo_subdf_paths = glob.glob(f'{self.sett.name_dir_export_path}/outtopo_time_subdf/*.parquet')
             dsonodes_df = pl.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
@@ -3034,9 +3036,6 @@ class PVAllocScenario:
             agg_subdf_updated_pvdf_list = []
             agg_subdf_df_list, agg_egids_list, agg_egids_all_list = [], [], []
 
-
-
-            i, path = 0, topo_subdf_paths[0]
             for i, path in enumerate(topo_subdf_paths):
                 checkpoint_to_logfile('gridprem > subdf: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                 subdf = pl.read_parquet(path)          
@@ -3142,7 +3141,7 @@ class PVAllocScenario:
                 # calc selfconsumption
                 agg_egids = agg_egids.sort(['EGID', 't_int'], descending = [False, False])
 
-                selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.sett.TECspec_self_consumption_ifapplicable
+                selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * TECspec_self_consumption_ifapplicable
 
                 agg_egids = agg_egids.with_columns([        
                     selfconsum_expr.alias("selfconsum_kW"),
@@ -3220,8 +3219,6 @@ class PVAllocScenario:
 
 
             # import outtopo_time_subfs -----------------------------------------------------
-            outtopo_subdf_paths = glob.glob(f'{self.sett.name_dir_export_path}/outtopo_time_subdf/*.parquet')
-
             agg_subdf_df_list = []
             for i, path in enumerate(outtopo_subdf_paths):
                 outsubdf = pl.read_parquet(path)  
@@ -3244,12 +3241,6 @@ class PVAllocScenario:
                 pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
             ])
             
-            # demand_proxy_out_kW = gridnode_df['demand_proxy_out_kW'].fill_null(0)
-            # netdemand_kW = gridnode_df['netdemand_kW'].fill_null(0)
-            # netfeedin_kW = gridnode_df['netfeedin_kW'].fill_null(0)
-            # gridnode_df = gridnode_df.with_columns([
-            #     (netfeedin_kW - demand_proxy_out_kW).alias('netfeedin_all_kW'),
-            # ])
             gridnode_df = gridnode_df.with_columns([
                 pl.col('netfeedin_kW').alias('feedin_atnode_kW'), 
                 (pl.col('netdemand_kW') + pl.col('demand_proxy_out_kW')).alias('demand_atnode_kW'),
@@ -3273,14 +3264,14 @@ class PVAllocScenario:
                 .alias("max_demand_feedin_atnode_kW"),
                 ])
             gridnode_df = gridnode_df.with_columns([
-                pl.when(pl.col("max_demand_feedin_atnode_kW") > pl.col("kW_threshold"))
+                pl.when(pl.col("feedin_atnode_kW") > pl.col("kW_threshold"))
                 .then(pl.col("kW_threshold"))
-                .otherwise(pl.col("max_demand_feedin_atnode_kW"))
+                .otherwise(pl.col("feedin_atnode_kW"))
                 .alias("feedin_atnode_taken_kW"),
                 ])
             gridnode_df = gridnode_df.with_columns([
-                pl.when(pl.col("max_demand_feedin_atnode_kW") > pl.col("kW_threshold"))
-                .then(pl.col("max_demand_feedin_atnode_kW") - pl.col("kW_threshold"))
+                pl.when(pl.col("feedin_atnode_kW") > pl.col("kW_threshold"))
+                .then(pl.col("feedin_atnode_kW") - pl.col("kW_threshold"))
                 .otherwise(0.0)
                 .alias("feedin_atnode_loss_kW")
             ])
