@@ -94,6 +94,7 @@ src/api_keys/*
 
 # ignore certain docs files
 docs/**
+progress_notes/**
 
 
 

@@ -153,29 +153,47 @@ visualization_list = [
         # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
         # # # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
 
-        plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
-        plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                   
-        plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
-        plot_ind_line_PVproduction_TF                   = [True,      True,       False],                   
-        plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],                   
-        plot_ind_map_topo_egid_TF                       = [True,      True,       False],
-        plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
-
         plot_ind_mapline_prodHOY_EGIDrfcombo_specs = {
                 'specific_selected_EGIDs': [
-                    # '190145779', 
-                    # '190178022', 
-                    # '190296588', 
+                    # bfs: 2883 - Bretzwil
+                    '3030694',      # pv_df
+                    # '245060059',    # pv_df
+                    # '3030905', 
                                             ], 
+                'plot_mapORtimeseries': [
+                                            'map',  
+                                            'timeseries', 
+                                            'recalc_pvdf', 
+                                            'summary',  
+                                            ],
                 'rndm_sample_seed': 123,
-                'n_rndm_egid_winst_pvdf': 2, 
-                'n_rndm_egid_winst_alloc': 2,
+                'n_rndm_egid_winst_pvdf': 8, 
+                'n_rndm_egid_winst_alloc': 0,
                 'n_rndm_egid_woinst': 0,
                 'n_rndm_egid_outsample': 0, 
                 'n_partition_pegid_minmax': (1,2), 
                 'roofpartition_color': '#fff2ae',
-                'actual_ts_trace_marker': 'cross'
-            },
+                'actual_ts_trace_marker': 'cross',
+                'tweak_denominator_list': [
+                                            1.0, 
+                                            # 1.5, 
+                                            # 2, 
+                                        ], 
+                'summary_cols_only_in_legend': ['EGID', 'inst_TF', 'info_source', 'grid_node',
+                                                'GKLAS', 'GAREA', 'are_typ', 'sfhmfh_typ', 
+                                                'TotalPower', 'demand_elec_pGAREA', 
+                                                'pvtarif_Rp_kWh', 'elecpri_Rp_kWh', ],
+                'max_flaeche_pvinst_area_m2': 185,  
+                # 'tryout_generic_pvtariff_elecpri_Rp_kWh': (5.0, 25.0),
+                'tryout_generic_pvtariff_elecpri_Rp_kWh': (None, None),
+                'generic_pvinstcost_coeff_total': {
+                                                    'use_generic_instcost_coeff_total_TF': False, 
+                                                    'a': 1193, 
+                                                    'b': 9340, 
+                                                    'c': 0.45,
+                }, 
+                },
+
     )
     ]
 
@@ -185,8 +203,8 @@ if __name__ == '__main__':
     # pv alloctaion ---------------------
     for pvalloc_scen in pvalloc_scen_list:
         scen_class = PVAllocScenario(pvalloc_scen)
-        # scen_class.run_pvalloc_initalization()
-        # scen_class.run_pvalloc_mcalgorithm()
+        scen_class.run_pvalloc_initalization()
+        scen_class.run_pvalloc_mcalgorithm()
 
     # visualization ---------------------
     for visual_scen in visualization_list:

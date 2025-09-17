@@ -611,7 +611,8 @@ class PVAllocScenario:
                     constr_m_TF, constr_y_TF, safety_TF = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y, safety_counter > safety_counter_max
 
                     if any([constr_m_TF, constr_y_TF, safety_TF]):
-                        print_to_logfile('exit While Loop', self.sett.log_name)
+                        print_to_logfile('exit While Loop, run last gridnode_update', self.sett.log_name)
+                        self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
                         if constr_m_TF:
                             checkpoint_to_logfile(f'exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built', self.sett.log_name, 0, self.sett.show_debug_prints)                    
                         if constr_y_TF:
@@ -2980,6 +2981,8 @@ class PVAllocScenario:
             share_roof_area_available             = self.sett.TECspec_share_roof_area_available
             kWpeak_per_m2                         = self.sett.TECspec_kWpeak_per_m2
             TECspec_self_consumption_ifapplicable = self.sett.TECspec_self_consumption_ifapplicable
+            GRIDspec_perf_factor_1kVA_to_XkW      = self.sett.GRIDspec_perf_factor_1kVA_to_XkW
+            print_checkpoint_statements           = True if i_m < 3 else False
 
 
             # import  -----------------------------------------------------
@@ -3031,22 +3034,23 @@ class PVAllocScenario:
             
 
             # import topo_time_subdfs -----------------------------------------------------
-            checkpoint_to_logfile('gridprem: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+            checkpoint_to_logfile('gridprem: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None
 
             agg_subdf_updated_pvdf_list = []
             agg_subdf_df_list, agg_egids_list, agg_egids_all_list = [], [], []
 
             for i, path in enumerate(topo_subdf_paths):
-                checkpoint_to_logfile('gridprem > subdf: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('gridprem > subdf: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None
                 subdf = pl.read_parquet(path)          
                 
-                checkpoint_to_logfile('gridprem > subdf: end read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('gridprem > subdf: end read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None
 
+                # start for 1:1 copy for visualization
                 subdf_updated = subdf.clone()
                 cols_to_update = [ 'info_source', 'inst_TF', 'share_pvprod_used', 'dfuidPower' ]                                      
                 subdf_updated = subdf_updated.drop(cols_to_update)                      
 
-                checkpoint_to_logfile('gridprem > subdf: start pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('gridprem > subdf: start pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None
                 subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid',] + cols_to_update], on=['EGID', 'df_uid'], how='left')         
                 
                 # remove the nulls from the merged columns
@@ -3061,7 +3065,7 @@ class PVAllocScenario:
                         .then(pl.lit(0.0)).otherwise(pl.col('dfuidPower')).alias('dfuidPower'),
 
                 ])
-                checkpoint_to_logfile('gridprem > subdf: end pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+                checkpoint_to_logfile('gridprem > subdf: end pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None
 
                 # pvprod_kW for non_inst EGIDs to 0 --------------------
                 # Only consider production for houses that have built a pv installation and substract selfconsumption from the production
@@ -3100,6 +3104,8 @@ class PVAllocScenario:
                         'EGID', 'df_uid', 't', 'inst_TF', 'TotalPower', 'info_source', 'dfuidPower', 'poss_pvprod_kW', 'pvprod_kW'
                         ]).head(50)
                 subdf_sanity_check
+                # topo['434234']['pv_inst']['inst_TF']
+                # topo['434234']['pv_inst']['info_source']
                 # BOOKMARK
                 # --------------------
 
@@ -3169,6 +3175,7 @@ class PVAllocScenario:
                 ])
 
                 # agg subdf_updated_dfuid_pvdf for later export
+                # (for pvallocation only)
                 subdf_updated_dfuid_pvdf = subdf_updated.filter(pl.col('info_source') != '').clone()
                 subdf_updated_dfuid_pvdf = subdf_updated_dfuid_pvdf.group_by(['EGID', 'df_uid',]).agg([
                     pl.col('inst_TF').first().alias('inst_TF'), 
@@ -3190,6 +3197,7 @@ class PVAllocScenario:
                 subdf_updated_dfuid_pvdf = subdf_updated_dfuid_pvdf.with_columns([
                     (kWpeak_per_m2 * share_roof_area_available * pl.col('FLAECHE')).alias('poss_prod_capa_kW_peak')
                 ])
+                # -----
                 
                 agg_subdf_df_list.append(agg_subdf)
                 agg_subdf_updated_pvdf_list.append(subdf_updated_dfuid_pvdf)
@@ -3235,7 +3243,7 @@ class PVAllocScenario:
 
 
             # build gridnode_df -----------------------------------------------------
-            checkpoint_to_logfile('gridprem: start merge to (out)topo_gridnode_df to gridnode_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
+            checkpoint_to_logfile('gridprem: start merge to (out)topo_gridnode_df to gridnode_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None   
             gridnode_df = topo_gridnode_df.join(outtopo_gridnode_df, on=['grid_node', 't'], how='left')
             gridnode_df = gridnode_df.with_columns([
                 pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
@@ -3255,7 +3263,7 @@ class PVAllocScenario:
 
             # attach node thresholds 
             gridnode_df = gridnode_df.join(dsonodes_df[['grid_node', 'kVA_threshold']], on='grid_node', how='left')
-            gridnode_df = gridnode_df.with_columns((pl.col("kVA_threshold") * self.sett.GRIDspec_perf_factor_1kVA_to_XkW).alias("kW_threshold"))
+            gridnode_df = gridnode_df.with_columns((pl.col("kVA_threshold") * GRIDspec_perf_factor_1kVA_to_XkW).alias("kW_threshold"))
             
             gridnode_df = gridnode_df.with_columns([
                 pl.when(pl.col("max_demand_feedin_atnode_kW") < 0)
@@ -3275,11 +3283,11 @@ class PVAllocScenario:
                 .otherwise(0.0)
                 .alias("feedin_atnode_loss_kW")
             ])
-            checkpoint_to_logfile('gridprem: end merge with gridnode_df + pl.when()', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
+            checkpoint_to_logfile('gridprem: end merge with gridnode_df + pl.when()', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None   
 
 
             # update gridprem_ts -----------------------------------------------------
-            checkpoint_to_logfile('gridprem: start update gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
+            checkpoint_to_logfile('gridprem: start update gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None   
             gridnode_df = gridnode_df.sort("feedin_atnode_taken_kW", descending=True)            
             gridnode_df_for_prem = gridnode_df.group_by(['grid_node', 'kW_threshold', 't']).agg(
                 pl.col('feedin_atnode_taken_kW').sum().alias('feedin_atnode_taken_kW'), 
@@ -3313,7 +3321,7 @@ class PVAllocScenario:
                     .alias("prem_Rp_kWh")
                 )
 
-            checkpoint_to_logfile('gridprem: end update gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None   
+            checkpoint_to_logfile('gridprem: end update gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None   
             
             # sanity check
             gridnode_df_for_prem.filter(pl.col('prem_Rp_kWh') > 0)
@@ -3350,7 +3358,7 @@ class PVAllocScenario:
                         gridnode_df.write_csv(f'{gridprem_node_by_M_path}/gridnode_df_{i_m}.csv')           
                         gridprem_ts.write_csv(f'{gridprem_node_by_M_path}/gridprem_ts_{i_m}.csv')           
         
-            checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, 0) if i_m < 3 else None
+            checkpoint_to_logfile('exported gridprem_ts and gridnode_df', self.sett.log_name, self.sett.show_debug_prints) if print_checkpoint_statements else None
             
 
         def algo_update_npv_df_POLARS(self, subdir_path: str, i_m: int, m):
