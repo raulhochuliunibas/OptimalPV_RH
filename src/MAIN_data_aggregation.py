@@ -1090,7 +1090,8 @@ class DataAggScenario:
             xtf_duplicates =      copy.deepcopy(gwregid_pvid_all.loc[ gwregid_pvid_all.duplicated(subset='xtf_id', keep=False)])
             checkpoint_to_logfile(f'sum n_unique xtf_ids: {gwregid_pvid_unique["xtf_id"].nunique()} (unique df) +{xtf_duplicates["xtf_id"].nunique()} (duplicates df) = {gwregid_pvid_unique["xtf_id"].nunique()+xtf_duplicates["xtf_id"].nunique() }; n_unique in pv_gdf: {pv_gdf["xtf_id"].nunique()}', self.sett.log_name, 6, self.sett.show_debug_prints)
         
-        # match duplicates with nearest neighbour
+        
+            # match duplicates with nearest neighbour
             xtf_nearestmatch_list = []
             xtf_id = xtf_duplicates['xtf_id'].unique()[0]
             for xtf_id in xtf_duplicates['xtf_id'].unique():
@@ -1612,14 +1613,7 @@ class DataAggScenario:
 # ======================================================================================================
 if __name__ == '__main__':
     dataagg_scen_list = [
-        # DataAggScenario(
-        #     name_dir_export = 'preprep_BLSOBS_18to23_1and2homes_API_reimport',
-        #     kt_numbers = [11, 12, 13],
-        #     year_range = [2018, 2023],
-        #     split_data_geometry_AND_slow_api = True,
-        #     GWR_GKLAS = ['1110', '1121', '1276'],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
+
         
         DataAggScenario_Settings(
             name_dir_export = 'preprep_debug',
@@ -1634,17 +1628,13 @@ if __name__ == '__main__':
         ),
 
 
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
-        #     kt_numbers = [13,],
-        #     year_range = [2022, 2023],
-        #     GWR_GKLAS = [
-        #         '1110', 
-        #         '1121', '1122', 
-        #         '1276', '1278'
-        #                  ],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
+            kt_numbers = [13,],
+            year_range = [2022, 2023],
+            GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),
         # DataAggScenario_Settings(
         #     name_dir_export = 'preprep_BL_22to23_extSolkatEGID_singlehouse',
         #     kt_numbers = [13,],
@@ -1654,21 +1644,20 @@ if __name__ == '__main__':
         # ),
 
 
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
-            kt_numbers = [13, 11],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278', ],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),
-
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_singlehouse',
-            kt_numbers = [13, 11],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', ],  # '1121'],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
+        #     kt_numbers = [13, 11],
+        #     year_range = [2022, 2023],
+        #     GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278', ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        # ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_singlehouse',
+        #     kt_numbers = [13, 11],
+        #     year_range = [2022, 2023],
+        #     GWR_GKLAS = ['1110', ],  # '1121'],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        # ),
 
         ]
 
