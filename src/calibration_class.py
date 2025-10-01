@@ -3,61 +3,62 @@ import numpy as np
 import polars as pl
 import pandas as pd
 import geopandas as gpd
-import  sqlite3
+import sqlite3
 import copy
 import itertools
+import time 
+import datetime
+import seaborn as sns
+import glob
+
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+
 from shapely.geometry import Point
 from shapely.ops import unary_union
-
-
 from dataclasses import dataclass, field
 from typing_extensions import List, Dict, Tuple
-
 
 
 @dataclass
 class Calibration_Settings:
     # DEFAULT SETTINGS --------------------------------------------------- 
     name_dir_export: str                    = 'calibration_debug_MINI'
+    name_preprep_subsen: str                = 'preprep_default_sett'
     name_calib_subscen: str                 = 'test param settings 1'
-    name_dir_preprep_import: str            = 'preprep_debug'  # name of the directory in 'data/calibration' where the pre-prepared data is stored
 
     kt_numbers: List[int]                    = field(default_factory=lambda: [
-        # 13,
+        # 1, 2, 3, 4, 5, 6, 7, 89, 10, 11, 12, 13, 
+        # 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 
         ]
         )                               # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
     bfs_numbers: List[int]                   = field(default_factory=lambda: [
         # 2883,
         # 2546,  # Grenchen
-        96, 1033, 4237, 4239, 1201, 1205 # subest in n_rows solkat subset 
+
+        # subest in n_rows solkat subset 
+        1201, 1205, 96, 1033, 4237, 4239, 
+        # 96, 1033, 4237, 4239, 1201, 1205, 1218, 1207
         ])                                      
     
     rerun_import_and_preprp_data_TF: bool           = True 
-    rerun_alloc_initalization_TF: bool              = True  
+    export_gwr_ALL_building_gdf_TF: bool            = False  
+
     run_approach1_fit_optim_costfunction_TF: bool   = True  
     run_approach2_regression_instsize_TF: bool      = True
 
-    PVINST_year_range_minmax:Tuple[int,int]  = (1920, 2023)                             # min and max year of PV installation to be considered 
-    PVINST_capacity_minmax:Tuple[float,float]= (0.5, 40)                             # min and max capacity (in kWp) of PV installation to be considered
-    GWR_GSTAT_fitcalc: List[str]     = field(default_factory=lambda: [
-                                            '1001', # GSTAT - 1001: in planing
-                                            '1002', # GSTAT - 1002: construction right granted 
-                                            '1003', # GSTAT - 1003: in construction
-                                            '1004', # GSTAT - 1004: fully constructed, existing buildings
-                                            ])                      
-    GWR_GKLAS_fitcalc: List[str]     = field(default_factory=lambda: [
-                                            '1110', # GKLAS - 1110: only 1 living space per building
-                                            '1121', # GKLAS - 1121: Double-, row houses with each appartment (living unit) having it's own roof;
-                                            '1122', # GKLAS - 1122: Buildings with three or more appartments
-                                            '1276', # GKLAS - 1276: structure for animal keeping (most likely still one owner)
-                                            '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos), 
-                                            ])
-    GWR_GBAUJ_minmax_fitcalc: List[int] = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
+    train_test_split_ratio: float            = 1/4
+    pvinst_pvtrif_elecpri_range_minmax:Tuple[int,int]  = (2015, 2023)                             # min and max year of PV installation to be considered 
+    pvinst_capacity_minmax:Tuple[float,float]= (0.5, 40)                             # min and max capacity (in kWp) of PV installation to be considered
+
 
 
     # settings from DATA_AGGREGATION ---------------------------------------------------
     # new ones
-    n_rows_import: int                       = 50
+    n_rows_import: int                       = 1000
     SOLKAT_PV_buffer_size: int               = 20                          # buffer size in meters for the GWR selection   
     
     # existing ones
@@ -117,16 +118,16 @@ class Calibration_Settings:
     # settings from PVALLOCATION --------------------------------------------------- 
     # new ones
     topo_df_excl_gwr_cols: List[str] = field(default_factory=lambda: [
-        # 'GKSCE', 'GKODE', 'GKODN', 
+        'GKSCE', 'GKODE', 'GKODN', 
         ])
     topo_df_excl_solkat_cols: List[str] = field(default_factory=lambda: [
-        # 'SB_UUID', 'SB_OBJEKTART', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG', 'KLASSE', 
-        # 'WAERMEERTRAG', 'DUSCHGAENGE', 'DG_HEIZUNG', 'DG_WAERMEBEDARF', 'BEDARF_WARMWASSER', 
-        # 'BEDARF_HEIZUNG', 'FLAECHE_KOLLEKTOREN', 'VOLUMEN_SPEICHER',
+        'SB_UUID', 'SB_OBJEKTART', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG', 'KLASSE', 
+        'WAERMEERTRAG', 'DUSCHGAENGE', 'DG_HEIZUNG', 'DG_WAERMEBEDARF', 'BEDARF_WARMWASSER', 
+        'BEDARF_HEIZUNG', 'FLAECHE_KOLLEKTOREN', 'VOLUMEN_SPEICHER',
     ])
     topo_df_excl_pv_cols: List[str] = field(default_factory=lambda: [
-        # 'Address', 'PostCode', 'Municipality', 'Canton', 'MainCategory',
-        # 'SubCategory', 'PlantCategory',
+        'Address', 'PostCode', 'Municipality', 'Canton', 'MainCategory',
+        'SubCategory', 'PlantCategory',
     ])
 
 
@@ -193,13 +194,13 @@ class Calibration_Settings:
         # tech_economic_specs
         TECspec_self_consumption_ifapplicable: float            = 1.0
         TECspec_interest_rate: float                            = 0.01
-        TECspec_pvtarif_year: int                               = 2022
+        # TECspec_pvtarif_year: int                               = 2022
         TECspec_pvtarif_col: List[str]                          = field(default_factory=lambda: ['energy1', ])  # 'energy1', 'eco1'
         TECspec_generic_pvtarif_Rp_kWh: float                   = None 
         TECspec_pvprod_calc_method: str                         = 'method2.2'
         TECspec_panel_efficiency: float                         = 0.21
         TECspec_inverter_efficiency: int                        = 0.8
-        TECspec_elecpri_year: int                               = 2022
+        # TECspec_elecpri_year: int                               = 2022
         TECspec_elecpri_category: str                           = 'H4'
         TECspec_invst_maturity: int                             = 25
         TECspec_kWpeak_per_m2: float                            = 0.2
@@ -318,15 +319,19 @@ class Calibration:
         self.sett.wd_path = os.getcwd()
         self.sett.data_path = os.path.join(self.sett.wd_path, 'data')
         self.sett.split_data_path = os.path.join(self.sett.data_path, 'input_split_data_geometry')
-        self.sett.preprep_import_path = os.path.join(self.sett.data_path, 'preprep', self.sett.name_dir_preprep_import)
+        # self.sett.preprep_import_path = os.path.join(self.sett.data_path, 'preprep', self.sett.name_dir_preprep_import)
         self.sett.calib_path = os.path.join(self.sett.data_path, 'calibration')
         self.sett.calib_scen_path = os.path.join(self.sett.calib_path, self.sett.name_dir_export)
         self.sett.calib_scen_preprep_path = os.path.join(self.sett.calib_scen_path, 'preprep_data')
+        self.sett.subscen_time_log_path = f'{self.sett.calib_scen_preprep_path}/{self.sett.name_preprep_subsen}_preprep_time_log.txt'
+
         
         os.makedirs(self.sett.calib_path, exist_ok=True)
         os.makedirs(self.sett.calib_scen_path, exist_ok=True)
         os.makedirs(self.sett.calib_scen_preprep_path, exist_ok=True)
 
+        print(f'{30*"="}\n  START CALIBRATION: {self.sett.name_dir_export}\n  > name_preprep_subsen: {self.sett.name_preprep_subsen}\n  > name_calib_subscen: {self.sett.name_calib_subscen}\n{30*"="}\n')
+
 
         # bfs numbers selection
         gm_shp_gdf = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
@@ -343,10 +348,29 @@ class Calibration:
         else:
             self.sett.bfs_numbers = [str(bfs) for bfs in self.sett.bfs_numbers]
 
+    def write_to_logfile(self, str_text, log_time, log_file_path = None):
+        if log_file_path is None:
+            log_file_path = self.sett.subscen_time_log_path
+        with open(self.sett.subscen_time_log_path, 'a') as f:
+            str_to_print = f'{str_text:50}, time: {time.ctime()}, to complete: {round((time.time()-log_time),2)} sec\n'
+            f.write(str_to_print)
+            print(str_to_print)
+            log_time = time.time()
+        return log_time
 
 
     def import_and_preprep_data(self,):
+        name_preprep_subsen = self.sett.name_preprep_subsen
+        
+        log_time = time.time()
+        log_time = self.write_to_logfile('\n * import_and_preprep_data()', log_time)
 
+
+        start_time = time.time()
+        with open(self.sett_subscen_time_log_path, 'w') as f:
+            f.write(f'calibration - prerep_data: {self.sett.name_dir_export}>{self.sett.name_preprep_subsen} \n')
+            f.write(f'start time: {time.ctime()} \n\n')
+            
         # bfs numbers selection
         gm_shp_gdf = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
         gm_shp_gdf = gm_shp_gdf.drop(columns = ['DATUM_AEND', 'DATUM_ERST'])
@@ -355,12 +379,7 @@ class Calibration:
         gm_shp_gdf['BFS_NUMMER'] = gm_shp_gdf['BFS_NUMMER'].astype(str)
         gm_shp_gdf.crs = 'EPSG:2056'
 
-
-        if self.sett.kt_numbers != []:
-            gm_select_kt = gm_shp_gdf.loc[gm_shp_gdf['KANTONSNUM'].isin(self.sett.kt_numbers),['KANTONSNUM', 'BFS_NUMMER', 'NAME',]]
-            self.sett.bfs_numbers = gm_select_kt['BFS_NUMMER'].unique().tolist()
-        else:
-            self.sett.bfs_numbers = [str(bfs) for bfs in self.sett.bfs_numbers]
+        gm_shp_gdf = gm_shp_gdf.loc[gm_shp_gdf['BFS_NUMMER'].isin(self.sett.bfs_numbers)].copy()
 
         # import aid functions + data files ====================
         def attach_bfs_to_spatial_data(gdf, gm_shp_df, keep_cols = ['BFS_NUMMER', 'geometry' ]):
@@ -393,25 +412,32 @@ class Calibration:
         # import local data ====================
         if True:
             # pv ----------
-            elec_prod_gdf = gpd.read_file(f'{self.sett.data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', layer ='ElectricityProductionPlant')
+            elec_prod_gdf = gpd.read_file(
+                f'{self.sett.data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', 
+                layer ='ElectricityProductionPlant', 
+                )
             pv_all_gdf = copy.deepcopy(elec_prod_gdf.loc[elec_prod_gdf['SubCategory'] == 'subcat_2'])
+            pv_all_gdf['xtf_id'] = pv_all_gdf['xtf_id'].astype(str)
 
             pv_all_gdf = attach_bfs_to_spatial_data(pv_all_gdf, gm_shp_gdf)
             pv_select_gdf = pv_all_gdf.loc[pv_all_gdf['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
 
             # pv_select_gdf.set_crs("EPSG:2056", allow_override=True, inplace=True)
             pv_select_gdf.crs = 'EPSG:2056'
-            pv_gdf = copy.deepcopy(pv_select_gdf)
-            pv_pq = copy.deepcopy(pv_select_gdf.loc[:,pv_select_gdf.columns !='geometry'])
-            pv_geo = copy.deepcopy(pv_select_gdf.loc[:,['xtf_id', 'BFS_NUMMER', 'geometry']])
+            pv_gdf = pv_select_gdf.copy()
+            pv_pq  = pv_select_gdf.loc[:,pv_select_gdf.columns !='geometry'].copy()
+            pv_geo = pv_select_gdf.loc[:,['xtf_id', 'BFS_NUMMER', 'geometry']].copy()
+    
+            log_time = self.write_to_logfile('local data imported - pv, finished', log_time)
 
 
 
             # solkat ----------
+            solkat_gpkg_path = os.path.join(self.sett.data_path, 'input', 'solarenergie-eignung-daecher_2056.gpkg', 'SOLKAT_DACH.gpkg')
             if self.sett.n_rows_import is not None:
-                solkat_all_gdf = gpd.read_file(f'{self.sett.data_path}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH', rows = self.sett.n_rows_import)
+                solkat_all_gdf = gpd.read_file(solkat_gpkg_path, layer ='SOLKAT_CH_DACH', rows = self.sett.n_rows_import)
             else:
-                solkat_all_gdf = gpd.read_file(f'{self.sett.data_path}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH')
+                solkat_all_gdf = gpd.read_file(solkat_gpkg_path, layer ='SOLKAT_CH_DACH')
 
             # solkat_all_gdf = solkat_all_gdf.drop(columns = ['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG',])
             for col in ['DATUM_ERSTELLUNG', 'DATUM_AENDERUNG', 'SB_DATUM_ERSTELLUNG', 'SB_DATUM_AENDERUNG',]:
@@ -423,7 +449,7 @@ class Calibration:
             solkat_all_gdf.loc[solkat_all_gdf['GWR_EGID'] == '0', 'GWR_EGID'] = 'NAN'
             solkat_all_gdf.rename(columns={'GWR_EGID': 'EGID'}, inplace=True)
             solkat_all_gdf = solkat_all_gdf.dropna(subset=['DF_UID'])
-            solkat_all_gdf['EGID_count'] = solkat_all_gdf.groupby('EGID')['EGID'].transform('count')
+            # solkat_all_gdf['EGID_count'] = solkat_all_gdf.groupby('EGID')['EGID'].transform('count')
 
             solkat_all_gdf = attach_bfs_to_spatial_data(solkat_all_gdf, gm_shp_gdf)
             solkat_select_gdf = solkat_all_gdf.loc[solkat_all_gdf['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
@@ -431,31 +457,32 @@ class Calibration:
             # select solkat with pv installations
             # solkat_select_gdf.set_crs("EPSG:2056", allow_override=True, inplace=True)
             solkat_select_gdf.crs = 'EPSG:2056'
-            pv_buffer_gdf = pv_gdf.copy()
-            pv_buffer_gdf['geometry'] = pv_buffer_gdf.geometry.buffer(self.sett.SOLKAT_PV_buffer_size)
-            solkat_pvinst = gpd.sjoin(solkat_select_gdf, pv_buffer_gdf, how='inner', predicate='intersects')
+            pv_buffer_gdf = pv_gdf.drop(columns=['BFS_NUMMER']).copy()
+            # pv_buffer_gdf['geometry'] = pv_buffer_gdf.geometry.buffer(self.sett.SOLKAT_PV_buffer_size)
+            # solkat_pvinst = gpd.sjoin(solkat_select_gdf, pv_buffer_gdf, how='inner', predicate='intersects')
             
-            solkat_gdf = copy.deepcopy(solkat_pvinst)
-            solkat_pq = copy.deepcopy(solkat_all_gdf.loc[:,solkat_all_gdf.columns !='geometry'])
-            solkat_geo = copy.deepcopy(solkat_all_gdf.loc[:,['DF_UID', 'BFS_NUMMER', 'geometry']])
+            solkat_export = solkat_select_gdf.copy()
+            solkat_gdf  = solkat_export.copy()
+            solkat_pq   = solkat_export.loc[:,solkat_export.columns !='geometry'].copy()
+            solkat_geo  = solkat_export.loc[:,['DF_UID', 'BFS_NUMMER', 'geometry']].copy()
+            log_time = self.write_to_logfile('local data imported - solkat, finished', log_time)
 
 
 
-            # solkat month ----------
+            # solkat month ----------pv_all_gdf
             # try to import only rows for selected solkats
             df_uid_sql_list = solkat_gdf['DF_UID'].unique().tolist()
             df_uid_sql_str = ','.join([f"'{dfuid}'" for dfuid in df_uid_sql_list])
             df_uid_sql_query = f"SELECT * FROM SOLKAT_CH_DACH_MONAT WHERE DF_UID IN ({df_uid_sql_str})"
 
-            solkat_month_pq = gpd.read_file(
-                f'{self.sett.data_path}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', 
-                sql=df_uid_sql_query,
-                )
+            solkat_month_gpkg_path = os.path.join(self.sett.data_path, 'input', 'solarenergie-eignung-daecher_2056_monthlydata.gpkg', 'SOLKAT_DACH_MONAT.gpkg')
+            solkat_month_pq = gpd.read_file(solkat_month_gpkg_path, sql=df_uid_sql_query)
             
             solkat_month_pq['SB_UUID'] = solkat_month_pq['SB_UUID'].astype(str)
             solkat_month_pq['DF_UID'] = solkat_month_pq['DF_UID'].astype(str)
             solkat_month_pq = solkat_month_pq.merge(solkat_pq[['DF_UID', 'BFS_NUMMER']], how = 'left', on = 'DF_UID')
             # solkat_month = solkat_month_pq[solkat_month_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
+            log_time = self.write_to_logfile('local data imported - solkat month, finished', log_time)
 
 
 
@@ -478,6 +505,7 @@ class Calibration:
             gwr_dwelling_df = pd.DataFrame(sqlrows, columns=query_columns)
             gwr_dwelling_df[['WAZIM', 'WAREA']] = gwr_dwelling_df[['WAZIM', 'WAREA']].replace('', 0).astype(float)
 
+            log_time = self.write_to_logfile('local data imported - gwr dwelling, finished', log_time)
 
             # get ALL BUILDING data
             # select cols
@@ -492,34 +520,48 @@ class Calibration:
             conn.close()
 
             gwr_all_building_df = pd.DataFrame(sqlrows, columns=query_columns)
+            log_time = self.write_to_logfile('local data imported - gwr all building, finished', log_time)
 
             # merger ------
-            gwr_mrg = gwr_all_building_df.merge(gwr_dwelling_df, on='EGID', how='left')
+            if False: 
+                gwr_mrg = gwr_all_building_df.merge(gwr_dwelling_df, on='EGID', how='left')
 
-            bldg_agg_cols = copy.deepcopy(self.sett.GWR_building_cols)
-            bldg_agg_cols.remove('EGID')
-            bldg_agg_meth = {col: 'first' for col in bldg_agg_cols}
+                bldg_agg_cols = copy.deepcopy(self.sett.GWR_building_cols)
+                bldg_agg_cols.remove('EGID')
+                bldg_agg_meth = {col: 'first' for col in bldg_agg_cols}
 
-            gwr_mrg['nEWID'] = gwr_mrg['EWID']
-            def concat_strings(x):
-                return '_'.join(x.dropna().astype(str))
-            dwel_agg_meth = {'EWID':concat_strings,'nEWID': 'count', 'WAZIM': 'sum', 'WAREA': 'sum'}
+                gwr_mrg['nEWID'] = gwr_mrg['EWID']
+                def concat_strings(x):
+                    return '_'.join(x.dropna().astype(str))
+                dwel_agg_meth = {'EWID':concat_strings,'nEWID': 'count', 'WAZIM': 'sum', 'WAREA': 'sum'}
 
-            agg_meth = {**bldg_agg_meth, **dwel_agg_meth}
-            gwr_mrg_after_agg =           gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
-            gwr_mrg_all_building_in_bfs = gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
-            gwr_mrg = copy.deepcopy(gwr_mrg_after_agg)
+                agg_meth = {**bldg_agg_meth, **dwel_agg_meth}
+                gwr_mrg_after_agg =           gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
+                gwr_mrg_all_building_in_bfs = gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
+                gwr_mrg = copy.deepcopy(gwr_mrg_after_agg)
+            else: 
+                gwr_mrg = gwr_all_building_df.copy()
+                
 
 
             # filter for spces ------
-            gwr_mrg0 = copy.deepcopy(gwr_mrg)
+            gwr_mrg0 = gwr_mrg.copy()  
             gwr_mrg0['GBAUJ'] = gwr_mrg0['GBAUJ'].replace('', 0).astype(int)
-            gwr_mrg1 = gwr_mrg0[(gwr_mrg0['GSTAT'].isin(self.sett.GWR_GSTAT))]
-            gwr_mrg2 = gwr_mrg1[(gwr_mrg1['GKLAS'].isin(self.sett.GWR_GKLAS))]
-            gwr_mrg3 = gwr_mrg2[(gwr_mrg2['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) & (gwr_mrg2['GBAUJ'] <= self.sett.GWR_GBAUJ_minmax[1])]
-            gwr_pq = copy.deepcopy(gwr_mrg3)
+
+            # gwr_mrg0['GBAUJ'] = gwr_mrg0['GBAUJ'].replace('', 0).astype(int)
+            # gwr_mrg1 = gwr_mrg0[(gwr_mrg0['GSTAT'].isin(self.sett.GWR_GSTAT))]
+            # gwr_mrg2 = gwr_mrg1[(gwr_mrg1['GKLAS'].isin(self.sett.GWR_GKLAS))]
+            # gwr_mrg3 = gwr_mrg2[(gwr_mrg2['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) & (gwr_mrg2['GBAUJ'] <= self.sett.GWR_GBAUJ_minmax[1])]
+            # gwr_pq = copy.deepcopy(gwr_mrg3)
+            gwr_pq = gwr_mrg0[
+                (gwr_mrg0['GSTAT'].isin(self.sett.GWR_GSTAT)) &
+                (gwr_mrg0['GKLAS'].isin(self.sett.GWR_GKLAS)) &
+                (gwr_mrg0['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) &
+                (gwr_mrg0['GBAUJ'] <= self.sett.GWR_GBAUJ_minmax[1])
+            ].copy()  # shallow copy for the final result
 
             def gwr_to_gdf(df):
+                df = copy.deepcopy(df)                
                 df = df.loc[(df['GKODE'] != '') & (df['GKODN'] != '')]
                 df[['GKODE', 'GKODN']] = df[['GKODE', 'GKODN']].astype(float)
                 df['geometry'] = df.apply(lambda row: Point(row['GKODE'], row['GKODN']), axis=1)
@@ -528,7 +570,11 @@ class Calibration:
                 return gdf
             
             gwr_gdf = gwr_to_gdf(gwr_pq)
-            gwr_all_building_gdf = gwr_to_gdf(gwr_all_building_df)
+            gwr_all_building_gdf = gwr_to_gdf(gwr_all_building_df) if self.sett.export_gwr_ALL_building_gdf_TF else None
+
+            log_time = self.write_to_logfile('local data imported - gwr merge + filter', log_time)
+        
+        log_time = self.write_to_logfile('local data imported - gwr, finished', log_time)
 
 
         # transformations + spatial mappings ====================
@@ -692,17 +738,18 @@ class Calibration:
 
 
             # MAP: egid > pv ---------------------------------------------------------------------------------
-            gwr_buff_gdf = copy.deepcopy(gwr_all_building_gdf)
+            # gwr_buff_gdf = copy.deepcopy(gwr_all_building_gdf)
+            gwr_buff_gdf = copy.deepcopy(gwr_gdf)
             gwr_buff_gdf.set_crs("EPSG:32632", allow_override=True, inplace=True)
             gwr_buff_gdf['geometry'] = gwr_buff_gdf['geometry'].buffer(self.sett.SOLKAT_GWR_EGID_buffer_size)
             gwr_buff_gdf, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, gwr_buff_gdf, pv_gdf)
 
-            gwregid_pvid_all = gpd.sjoin(pv_gdf,gwr_buff_gdf, how="left", predicate="within")
-            gwregid_pvid_all.drop(columns = ['index_right'] + [col for col in gwr_all_building_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
+            gwregid_pvid_join = gpd.sjoin(pv_gdf,gwr_buff_gdf, how="left", predicate="within")
+            gwregid_pvid_join.drop(columns = ['index_right'] + [col for col in gwr_buff_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
 
             # keep only unique xtf_ids 
-            gwregid_pvid_unique = copy.deepcopy(gwregid_pvid_all.loc[~gwregid_pvid_all.duplicated(subset='xtf_id', keep=False)])
-            xtf_duplicates =      copy.deepcopy(gwregid_pvid_all.loc[ gwregid_pvid_all.duplicated(subset='xtf_id', keep=False)])
+            gwregid_pvid_unique = copy.deepcopy(gwregid_pvid_join.loc[~gwregid_pvid_join.duplicated(subset='xtf_id', keep=False)])
+            xtf_duplicates =      copy.deepcopy(gwregid_pvid_join.loc[ gwregid_pvid_join.duplicated(subset='xtf_id', keep=False)])
         
         
             # match duplicates with nearest neighbour
@@ -727,7 +774,7 @@ class Calibration:
 
             # MAP: BFSGM > EWR ------------------------------
             Map_gm_ewr = pd.read_parquet(f'{self.sett.data_path}/input_api/Map_gm_ewr.parquet')
-            
+        log_time = self.write_to_logfile('\nadd omitted EGIDs to SOLKAT, finished', log_time) 
 
 
         # import ts data and match households ====================
@@ -744,28 +791,30 @@ class Calibration:
 
                 # classify EGIDs into SFH / MFH, Rural / Urban -------------
 
+                gwr_join_gdf = gwr_gdf.copy()
+
                 # get ARE type classification
-                gwr_all_building_gdf['ARE_typ'] = ''
-                gwr_all_building_gdf = gpd.sjoin(gwr_all_building_gdf, gemeinde_type_gdf[['NAME', 'TYP', 'BFS_NO', 'geometry']], 
+                gwr_join_gdf['ARE_typ'] = ''
+                gwr_join_gdf = gpd.sjoin(gwr_join_gdf, gemeinde_type_gdf[['NAME', 'TYP', 'BFS_NO', 'geometry']], 
                                                  how='left', predicate='intersects')
-                gwr_all_building_gdf.rename(columns={'NAME': 'ARE_NAME', 'TYP': 'ARE_TYP', }, inplace=True)
+                gwr_join_gdf.rename(columns={'NAME': 'ARE_NAME', 'TYP': 'ARE_TYP', }, inplace=True)
                 for k,v in self.sett.GWR_AREtypology.items():
-                    gwr_all_building_gdf.loc[gwr_all_building_gdf['ARE_TYP'].isin(v), 'ARE_typ'] = k
+                    gwr_join_gdf.loc[gwr_join_gdf['ARE_TYP'].isin(v), 'ARE_typ'] = k
 
                 # get SFH / MFH classification from GWR data
-                gwr_all_building_gdf['sfhmfh_typ'] = ''
+                gwr_join_gdf['sfhmfh_typ'] = ''
                 for k,v in self.sett.GWR_SFHMFHtypology.items():
-                    gwr_all_building_gdf.loc[gwr_all_building_gdf['GKLAS'].isin(v), 'sfhmfh_typ'] = k
-                gwr_all_building_gdf.loc[gwr_all_building_gdf['sfhmfh_typ'] == '', 'sfhmfh_typ'] = self.sett.GWR_SFHMFH_outsample_proxy
+                    gwr_join_gdf.loc[gwr_join_gdf['GKLAS'].isin(v), 'sfhmfh_typ'] = k
+                gwr_join_gdf.loc[gwr_join_gdf['sfhmfh_typ'] == '', 'sfhmfh_typ'] = self.sett.GWR_SFHMFH_outsample_proxy
 
                 # build swstore_type to attach swstore factors
-                gwr_all_building_gdf['arch_typ'] = gwr_all_building_gdf['sfhmfh_typ'].str.cat(gwr_all_building_gdf['ARE_typ'], sep='-')
-                gwr_all_building_gdf = gwr_all_building_gdf.merge(swstore_arch_typ_factors[['arch_typ', 'elec_dem_ind_cecb', ]])
-                gwr_all_building_gdf.rename(columns={'elec_dem_ind_cecb': 'demand_elec_pGAREA'}, inplace=True)
+                gwr_join_gdf['arch_typ'] = gwr_join_gdf['sfhmfh_typ'].str.cat(gwr_join_gdf['ARE_typ'], sep='-')
+                gwr_join_gdf = gwr_join_gdf.merge(swstore_arch_typ_factors[['arch_typ', 'elec_dem_ind_cecb', ]])
+                gwr_join_gdf.rename(columns={'elec_dem_ind_cecb': 'demand_elec_pGAREA'}, inplace=True)
 
                 # attach information to gwr and export
-                gwr_pq = gwr_pq.merge(gwr_all_building_gdf[['EGID', 'ARE_typ', 'sfhmfh_typ', 'arch_typ', 'demand_elec_pGAREA']], on='EGID', how='left')
-                gwr_all_building_df = gwr_all_building_gdf.drop(columns=['geometry', ]).copy()
+                gwr_pq = gwr_pq.merge(gwr_join_gdf[['EGID', 'ARE_typ', 'sfhmfh_typ', 'arch_typ', 'demand_elec_pGAREA']], on='EGID', how='left')
+                gwr_all_building_df = gwr_join_gdf.drop(columns=['geometry', ]).copy()
 
                 # transform demand profiles to TS 
                 swstore_sfhmfh_ts = swstore_sfhmfh_ts.dropna(subset=['MFH', 'SFH'], how='all')
@@ -893,7 +942,7 @@ class Calibration:
             # year_range_2int = [str(year % 100).zfill(2) for year in range(self.sett.year_range[0], self.sett.year_range[1]+1)]
             # pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_2int), :])
             pvtarif = copy.deepcopy(pvtarif_all)
-
+        log_time = self.write_to_logfile('import ts data and match households, finished', log_time)
 
 
         # export and store to class ====================
@@ -914,19 +963,66 @@ class Calibration:
             ('pvtarif', pvtarif),
         ]
         for name, df in export_pq_list:
-            df.to_parquet(f'{self.sett.calib_scen_preprep_path}/{name}.parquet', index=False)
+            df.to_parquet(f'{self.sett.calib_scen_preprep_path}/{name_preprep_subsen}_{name}.parquet', index=False)
 
         export_gdf_list = [
             ('gm_shp_gdf', gm_shp_gdf),
             ('pv_gdf', pv_gdf),
             ('solkat_gdf', solkat_gdf),
             ('gwr_gdf', gwr_gdf),
-            ('gwr_all_building_gdf', gwr_all_building_gdf),
             ('gemeinde_type_gdf', gemeinde_type_gdf),               
         ]
+        if self.sett.export_gwr_ALL_building_gdf_TF: 
+            export_gdf_list =  export_gdf_list + [('gwr_all_building_gdf', gwr_all_building_gdf),]
+
         for name, gdf in export_gdf_list:
-            with open(f'{self.sett.calib_scen_preprep_path}/{name}.geojson', 'w') as f:
+            with open(f'{self.sett.calib_scen_preprep_path}/{name_preprep_subsen}_{name}.geojson', 'w') as f:
                 f.write(gdf.to_json())
+
+        end_time = time.time()
+        with open(self.sett_subscen_time_log_path, 'a') as f:
+            f.write(f'\n\nend time: {time.ctime()}\n')
+            f.write(f'run time prep: {format(str(datetime.timedelta(seconds=end_time - start_time)))} hh:mm:ss\n')
+            print('end import_and_preprep_data()')
+
+
+    def concatenate_prerep_data(self,):
+        log_time = time.time()
+        log_time = self.write_to_logfile('\n * import_and_preprep_data()', log_time, self.sett.calib_scen_path )
+
+        # list of subfiles
+        preprep_subscen_paths_raw = glob.glob(f'{self.sett.calib_scen_preprep_path}/*log.txt')
+        preprep_subscen_names = [path.split(f'{self.sett.calib_scen_preprep_path}\\')[-1].split('_preprep_time_log.txt')[0] for path in preprep_subscen_paths_raw]
+
+        file_types_paths_raw = glob.glob(f'{self.sett.calib_scen_preprep_path}/{preprep_subscen_names[0]}*')
+        file_types_names = [path.split(f'{preprep_subscen_names[0]}_')[-1] for path in file_types_paths_raw if path.split(f'{preprep_subscen_names[0]}')[-1] not in ['_preprep_time_log.txt', '_log.txt']]
+
+        file_type = file_types_names[0]
+        for file_type in file_types_names:
+            df_agg_list = []
+            file_type_paths = glob.glob(glob.glob(f'{self.sett.calib_scen_preprep_path}/*{file_type}')[0])
+
+            for path in file_type_paths:
+                if '.parquet' in path: 
+                    df = pl.read_parquet(path) 
+                    df_agg_list.append(df)
+                    df_agg = pl.concat(df_agg_list, how='vertical')
+                    df_agg.to_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}.parquet')
+
+                elif '.geojson' in path: 
+                    df = gpd.read_file(path)
+                    df_agg_list.append(df)
+                    df_agg = gpd.GeoDataFrame(pd.concat(df_agg_list, ignore_index=True), crs=df.crs)
+                    with open(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}.geojson', 'w') as f:
+                        f.write(df_agg.to_json())
+
+
+
+
+
+
+
+    
 
 
 
@@ -934,9 +1030,10 @@ class Calibration:
         print('asdf')
 
 
-
-
     def approach2_regression_instsize(self,):
+        start_time = time.time()
+        with open(f'{self.sett.calib_scen_path}/approach2_time_log.txt', 'a') as f:
+            f.write(f'start time: {start_time}\n')
         
         # create topo_df =====================================
         if True:
@@ -1008,22 +1105,22 @@ class Calibration:
 
             # PV -------
             pv = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/pv_pq.parquet')
-            pv['xtf_id'] = pv['xtf_id'].fillna(0).astype(int).replace(0, '').astype(str)    
+            pv['xtf_id'] = pv['xtf_id'].fillna('NA').astype(str)
             pv['TotalPower'] = pv['TotalPower'].fillna(0).astype(float)
-
+            
             # date filter by GWR year range + extra PVINST year range
             pv['BeginningOfOperation'] = pd.to_datetime(pv['BeginningOfOperation'], format='%Y-%m-%d', errors='coerce')
             gbauj_range = [pd.to_datetime(f'{self.sett.GWRspec_GBAUJ_minmax[0]}-01-01'), 
                            pd.to_datetime(f'{self.sett.GWRspec_GBAUJ_minmax[1]}-12-31')]
             pv = pv.loc[(pv['BeginningOfOperation'] >= gbauj_range[0]) & (pv['BeginningOfOperation'] <= gbauj_range[1])]
             
-            pvinst_date_range = [pd.to_datetime(f'{self.sett.PVINST_year_range_minmax[0]}-01-01'),
-                            pd.to_datetime(f'{self.sett.PVINST_year_range_minmax[1]}-12-31')]
+            pvinst_date_range = [pd.to_datetime(f'{self.sett.pvinst_pvtrif_elecpri_range_minmax[0]}-01-01'),
+                            pd.to_datetime(f'{self.sett.pvinst_pvtrif_elecpri_range_minmax[1]}-12-31')]
             pv = pv.loc[(pv['BeginningOfOperation'] >= pvinst_date_range[0]) & (pv['BeginningOfOperation'] <= pvinst_date_range[1])]
             pv['BeginningOfOperation'] = pv['BeginningOfOperation'].dt.strftime('%Y-%m-%d')
 
             # filter by PVINST peak capacity
-            pv = pv.loc[(pv['TotalPower'] >= self.sett.PVINST_capacity_minmax[0]) & (pv['TotalPower'] <= self.sett.PVINST_capacity_minmax[1])]
+            pv = pv.loc[(pv['TotalPower'] >= self.sett.pvinst_capacity_minmax[0]) & (pv['TotalPower'] <= self.sett.pvinst_capacity_minmax[1])]
 
             pv = pv.loc[pv["BFS_NUMMER"].isin(self.sett.bfs_numbers)]
             pv = pv.copy()
@@ -1058,10 +1155,16 @@ class Calibration:
 
             
             # REST -------
-            Map_egid_pv = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/Map_egid_pv.parquet')
-            Map_egid_pv = Map_egid_pv.with_columns([pl.col('xtf_id').fill_null(0)])
-            Map_egid_pv = Map_egid_pv.with_columns([pl.col('xtf_id').cast(pl.Int64).cast(pl.Utf8)])
+            year_rng = [str(yr) for yr in range(self.sett.pvinst_pvtrif_elecpri_range_minmax[0], self.sett.pvinst_pvtrif_elecpri_range_minmax[1]+1)]
+            pvtarif_year_range_list = [yr_str[2:4] for yr_str in year_rng]
+            elecpri_year_range_list = [int(yr_str) for yr_str in year_rng]
 
+
+            Map_egid_pv = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/Map_egid_pv.parquet')
+            # Map_egid_pv = Map_egid_pv.with_columns([pl.col('xtf_id').fill_null(0)])
+            # Map_egid_pv = Map_egid_pv.with_columns([pl.col('xtf_id').cast(pl.Int64).cast(pl.Utf8)])
+            Map_egid_pv = Map_egid_pv.with_columns([pl.col('xtf_id').cast(pl.Utf8)])
+          
             Map_gm_ewr = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/Map_gm_ewr.parquet')
             Map_gm_ewr = Map_gm_ewr.with_columns([pl.col('bfs').fill_null(0)])
             Map_gm_ewr = Map_gm_ewr.with_columns([pl.col('bfs').cast(pl.Int64).cast(pl.Utf8)])
@@ -1069,15 +1172,24 @@ class Calibration:
             pvtarif = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/pvtarif.parquet')
             pvtarif = pvtarif.join(Map_gm_ewr, left_on='nrElcom', right_on='nrElcom', how='inner', suffix='_map_gmewr')
             pvtarif = pvtarif.with_columns([pl.col(self.sett.TECspec_pvtarif_col).replace('', 0).cast(pl.Float64)])
-            pvtarif = pvtarif.filter(pl.col('year') == str(self.sett.TECspec_pvtarif_year)[2:4])  
+            # pvtarif = pvtarif.filter(pl.col('year') == str(self.sett.TECspec_pvtarif_year)[2:4]) 
+            pvtarif = pvtarif.filter(pl.col('year').is_in(pvtarif_year_range_list))
+
             empty_cols = [col for col in pvtarif.columns if pvtarif[col].is_null().all()]
             pvtarif = pvtarif.select([col for col in pvtarif.columns if col not in empty_cols])
             select_cols = ['nrElcom', 'nomEw', 'year', 'bfs', 'idofs'] + self.sett.TECspec_pvtarif_col
             pvtarif = pvtarif.select(select_cols).clone()
+            pvtarif = pvtarif.rename({self.sett.TECspec_pvtarif_col[0]: 'pvtarif_Rp_kWh'})
+            pvtarif = pvtarif.select(['nrElcom', 'nomEw', 'year', 'bfs', 'pvtarif_Rp_kWh']).clone()
 
             elecpri = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/elecpri.parquet')
             elecpri = elecpri.filter( ( pl.col('category')== self.sett.TECspec_elecpri_category) &
-                                      ( pl.col('year') == self.sett.TECspec_elecpri_year) )
+                                      ( pl.col('year').is_in(elecpri_year_range_list)) )  
+                                    #   ( pl.col('year') == self.sett.TECspec_elecpri_year) )
+            elecpri = elecpri.with_columns([
+                (pl.col('energy') + pl.col('grid') + pl.col('aidfee') + pl.col('taxes') ).alias('elecpri_Rp_kWh')
+            ])
+            elecpri = elecpri.select(['bfs_number', 'elecpri_Rp_kWh']).clone()
 
 
             HOY_weatheryear_df  = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/HOY_weatheryear_df.parquet')
@@ -1085,12 +1197,17 @@ class Calibration:
             angle_tilt_df       = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/angle_tilt_df.parquet')
 
 
+                       
             # build topo_df --------------------------------
             gwr_pl      = pl.from_pandas(gwr.drop(columns=self.sett.topo_df_excl_gwr_cols))
             solkat_pl   = pl.from_pandas(solkat.drop(columns=self.sett.topo_df_excl_solkat_cols))
             pv_pl       = pl.from_pandas(pv.drop(columns=self.sett.topo_df_excl_pv_cols))
+            Map_egid_pv = Map_egid_pv.filter(pl.col('xtf_id').is_in(pv_pl['xtf_id'].implode()))
 
-            topo_df_join0 = gwr_pl.filter(pl.col('EGID').is_in(Map_egid_pv['EGID']))
+            # topo_df_join0 = gwr_pl.filter(pl.col('EGID').is_in(Map_egid_pv['EGID'].to_series().implode()))
+            topo_df_join0 = gwr_pl.filter(
+                pl.col('EGID').is_in(Map_egid_pv.select('EGID').to_series().implode())
+            )
             topo_df_join1 = topo_df_join0.join(solkat_pl, left_on='EGID', right_on='EGID', how='left', suffix='_solkat')
             topo_df_join2 = topo_df_join1.join(Map_egid_pv, left_on='EGID', right_on='EGID', how='left', suffix='_map_egidpv')
             topo_df_join3 = topo_df_join2.join(pv_pl, left_on='xtf_id', right_on='xtf_id', how='left', suffix='_pv')
@@ -1099,15 +1216,134 @@ class Calibration:
 
             topo_df = topo_df_join5.clone()
             del topo_df_join0, topo_df_join1, topo_df_join2, topo_df_join3, topo_df_join4, topo_df_join5
+
+            topo_df.select(['EGID', 'DF_UID', 'FLAECHE', 'NEIGUNG', 'AUSRICHTUNG'])
+            pd.Series(topo_df['DF_UID']).unique()
+
+
+        # add direction classification =====================================
+        if True:
+            topo_df_complete = topo_df.filter(pl.col('DF_UID').is_not_null())
+            topo_dir = topo_df_complete.with_columns([
+                pl.when((pl.col("AUSRICHTUNG") > 135) | (pl.col("AUSRICHTUNG") <= -135))
+                .then(pl.lit("north_max_flaeche"))
+                .when((pl.col("AUSRICHTUNG") > -135) & (pl.col("AUSRICHTUNG") <= -45))
+                .then(pl.lit("east_max_flaeche"))
+                .when((pl.col("AUSRICHTUNG") > -45) & (pl.col("AUSRICHTUNG") <= 45))
+                .then(pl.lit("south_max_flaeche"))
+                .when((pl.col("AUSRICHTUNG") > 45) & (pl.col("AUSRICHTUNG") <= 135))
+                .then(pl.lit("west_max_flaeche"))
+                .otherwise(pl.lit("Unkown"))
+                .alias("Direction")
+                ])
+            topo_dir = topo_dir.with_columns([
+                pl.col("Direction").fill_null(0).alias("Direction")
+                ])
+            # topo_dir.filter(pl.col('Direction').is_null()).select(['EGID', 'DF_UID', 'AUSRICHTUNG', 'Direction'])
+
+            topo_pivot = (
+                topo_dir
+                .group_by(['EGID', 'Direction'])
+                .agg(
+                    pl.col('FLAECHE').max().alias('max_flaeche'), 
+                    )
+                .pivot(
+                    values='max_flaeche',
+                    index='EGID', 
+                    on='Direction')
+                    .sort('EGID')
+                )
+            topo_rest = (
+                topo_dir
+                .group_by('EGID')
+                .agg(
+                    pl.col('BFS_NUMMER').first().alias('BFS_NUMMER'),
+                    pl.col('year').first().alias('year'),
+                    pl.col('xtf_id').first().alias('xtf_id'),
+                    pl.col('DF_UID').count().alias('n_DF_UID'), 
+                    pl.col('InitialPower').first().alias('InitialPower'),
+                    pl.col('TotalPower').first().alias('TotalPower'), 
+                    pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
+                    pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'),
+                                    )
+            )
+            topo_agg = topo_rest.join(topo_pivot, on='EGID', how='left', )
+
+            for direction in [
+                'north_max_flaeche',
+                'east_max_flaeche',
+                'south_max_flaeche',
+                'west_max_flaeche',
+                ]:
+                topo_agg = topo_agg.with_columns([
+                    pl.col(direction).fill_null(0).alias(direction)
+                    ])
+
+
+        # regression =====================================
+        if True:
+
+            # exploratory data analysis --------------------------------
+            cols_reg = ['TotalPower', 'n_DF_UID', 'elecpri_Rp_kWh', 'pvtarif_Rp_kWh', 'north_max_flaeche', 'east_max_flaeche', 'south_max_flaeche', 'west_max_flaeche']
+            df_sctr_plot = topo_agg.select(['EGID'] + cols_reg).to_pandas()
+
+            # joint_sctr = sns.pairplot(df_sctr_plot, kind = 'scatter', plot_kws={'alpha':0.5})
+            # joint_sctr.savefig(f'{self.sett.calib_scen_path}/regression_scatterplot_matrix.png', dpi=300)
+
+            # sctr1 = sns.jointplot(x='TotalPower', y='south_max_flaeche', data=df_sctr_plot, kind='scatter', alpha=0.5)
+            # sctr1.savefig(f'{self.sett.calib_scen_path}/sctr1_TotalPower_SouthMaxFlaeche.png', dpi=300)
+
+
+
+            # regressions --------------------------------
+            df_pd = topo_agg.to_pandas()
+
+            # missing values
+            for col in cols_reg:
+                n_miss = df_pd[col].isna().sum()
+                print(f'col {col} has {n_miss} missing values')
+            
+            cols_reg = ['TotalPower', 'n_DF_UID', 'elecpri_Rp_kWh', 'pvtarif_Rp_kWh', 'north_max_flaeche', 'east_max_flaeche', 'south_max_flaeche', 'west_max_flaeche']
+            df_pd = df_pd.dropna(subset=cols_reg)
+            
+            # train test split
+            numeric_features = [
+                'elecpri_Rp_kWh', 'pvtarif_Rp_kWh',
+                'north_max_flaeche', 'east_max_flaeche', 'south_max_flaeche', 'west_max_flaeche'
+            ]
+            categorical_features = ['year', 'BFS_NUMMER']
+
+            x = df_pd[numeric_features + categorical_features]
+            y = df_pd['TotalPower']
+
+
+            x_train, x_test, y_train, y_test = train_test_split(x, y,test_size=0.33, random_state=42)
+            
+            preprocessor = ColumnTransformer(
+                transformers=[
+                    ('cat', OneHotEncoder(drop='first'), categorical_features),  # drop='first' avoids dummy trap
+                    ('num', 'passthrough', numeric_features)
+                ]
+            )
+
+            model = Pipeline(steps=[
+                ('preprocessor', preprocessor),
+                ('regressor', LinearRegression())
+            ])
+            model.fit(x_train, y_train)
+
+            df_test = df_pd.sample(frac=0.33, random_state=1).copy()
+            df_train = df_pd.loc[~df_pd['EGID'].isin(df_test['EGID'])].copy()
             
 
-            # aggregate partition specs --------------------------------
-            topo_df
+
+            # split training + testing 
+
 
             # BOOKMARK - 
             # NEXT
+            # OK > aggregate FLEACHe for all 4 angle directions
             # > at very beginning, build a selection split to divide data into training and testing 1/4
-            # > aggregate FLEACHe for all 4 angle directions
             # > run regression and compare
             #   
 
@@ -1119,32 +1355,61 @@ class Calibration:
             print('asdf')
 
 
-
-
-
-
-
-
-
-
-
-
-
     
 
 if __name__ == '__main__':
 
     # preprep calibration --------------------------------
-    preprep_class = Calibration(Calibration_Settings())
-    preprep_class.import_and_preprep_data() if preprep_class.sett.rerun_import_and_preprp_data_TF else None
+    preprep_list = [
 
+        # Calibration(Calibration_Settings()), 
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs1201',
+            # kt_numbers=[15,], 
+            bfs_numbers=[1201,],
+            n_rows_import= 500,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = False
+        ), 
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs1205',
+            # kt_numbers=[16,], 
+            bfs_numbers=[1205,],
+            n_rows_import= 500,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = False
+        ), 
+    ]
+
+    for i_prep, prep_sett in enumerate(preprep_list):
+        print('')
+        preprep_class = Calibration(prep_sett)
+        # preprep_class.import_and_preprep_data() if preprep_class.sett.rerun_import_and_preprp_data_TF else None
+
+        if i_prep == len(preprep_list):
+            print('bulid method to aggregate dfs')
+
+# 
 
     # run calibration approaches --------------------------------
     calibration_list = [
-        Calibration_Settings(),       
+        # Calibration_Settings(),
+        Calibration_Settings(
+            name_dir_export= 'calib_mini_debug',
+            name_calib_subscen = 'test param settings 1',
+
+            kt_numbers= [
+                16,],
+            n_rows_import= None,
+            rerun_import_and_preprp_data_TF = False,
+            export_gwr_ALL_building_gdf_TF = True
+        ),        
     ]
     for calib_settings in calibration_list:
         calib_class = Calibration(calib_settings)
+        calib_class.concatenate_prerep_data()
         # calib_class.approach1_fit_optim_cost_function() if calib_settings.run_approach1_fit_optim_costfunction_TF else None
         calib_class.approach2_regression_instsize()     if calib_settings.run_approach2_regression_instsize_TF else None
 
