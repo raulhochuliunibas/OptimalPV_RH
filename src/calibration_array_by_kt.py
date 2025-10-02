@@ -1,5 +1,5 @@
 import sys
-from src.calibration_class import Calibration_Settings, Calibration
+from calibration_class import Calibration_Settings, Calibration
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
