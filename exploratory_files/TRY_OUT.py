@@ -9,7 +9,9 @@ import geopandas as gpd
 from shapely.geometry import Polygon, MultiPolygon
 import polars as pl
 from scipy import optimize
-import xlsxwriter
+# import xlsxwriter
+import sqlite3
+import time
 
 
 import copy
@@ -18,6 +20,175 @@ import plotly.express as px
 
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
+# ------------------------------------------------------------------------------------------------------
+# aggregation stats for GWR
+
+
+# kt selection
+kt_numbers = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,]
+
+wd_path = 'C:/Models/OptimalPV_RH'
+data_path     = f'{wd_path}/data'
+
+gm_shp = gpd.read_file(f'{data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET.shp')
+bfs_numbers = gm_shp.loc[gm_shp['KANTONSNUM'].isin(kt_numbers), 'BFS_NUMMER'].astype(int).tolist()
+
+
+# get ALL BUILDING data
+query_columns = [
+    'EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE',
+    'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
+    'GANZWHG','GWAERZH1', 'GWAERZH2', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
+    'GEBF', 'GAREA'
+    ]
+query_columns_str = ', '.join(query_columns)
+query_bfs_numbers = ', '.join([str(i) for i in bfs_numbers])
+
+conn = sqlite3.connect(f'{data_path}/input/GebWohnRegister.CH/data.sqlite')
+cur = conn.cursor()
+cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers})')
+# cur.execute(f'SELECT * FROM building WHERE GGDENR IN ({query_bfs_numbers})')
+sqlrows = cur.fetchall()
+conn.close()
+
+gwr_df = pl.DataFrame(sqlrows, schema=query_columns, orient="row")
+
+# transformations
+gwr_df.columns
+gwr_df.dtypes
+gwr_df = gwr_df.with_columns([
+    pl.when(pl.col('GEBF') == "").then(pl.lit('0')).otherwise(pl.col('GEBF')).cast(pl.Float64).alias('GEBF'),
+    pl.when(pl.col('GAREA') == "").then(pl.lit('0')).otherwise(pl.col('GAREA')).cast(pl.Float64).alias('GAREA'),
+])
+
+gwr_df = gwr_df.with_columns([
+    pl.lit(0).cast(pl.Int64).alias('HP1_tf'),
+    pl.lit(0).cast(pl.Int64).alias('HP2_tf'),
+    pl.lit(0).cast(pl.Int64).alias('HPjoint_tf')
+])
+gwr_df = gwr_df.with_columns([
+    pl.when((pl.col('GWAERZH1') == '7410') | (pl.col('GWAERZH1') == '7411'))
+      .then(1)
+      .otherwise(0)
+      .alias('HP1_tf'),
+
+    pl.when((pl.col('GWAERZH2') == '7410') | (pl.col('GWAERZH2') == '7411'))
+      .then(1)
+      .otherwise(0)
+      .alias('HP2_tf'),
+
+    pl.when(
+        (pl.col('GWAERZH1') == '7410') |
+        (pl.col('GWAERZH1') == '7411') |
+        (pl.col('GWAERZH2') == '7410') |
+        (pl.col('GWAERZH2') == '7411')
+    )
+    .then(1)
+    .otherwise(0)
+    .alias('HPjoint_tf'),
+])
+
+print(f'finisched gwr import - {time.time()}')
+
+
+# gwr_agg = gwr_df.groupby(['GSTAT', 'GKLAS', 'GBAUJ', 'HPjoint_TF' ]).agg(
+#     {
+#         'EGID': 'count',
+#         'GEBF': 'sum',
+#         'GAREA': 'sum',
+#         'HP1_tf': 'sum',
+#         'HP2_tf': 'sum',
+#     }
+# ).copy()
+# gwr_agg.rename(columns={'EGID': 'n_EGIDs', 'GEBF': 'GEBF_sum', 'GAREA': 'GAREA_sum', 'HP1_tf': 'n_HP1', 'HP2_tf': 'n_HP2', }, inplace=True)
+# gwr_agg.to_excel(r"C:\Models\Future_Markets\0_gwr_agg_allCH.xlsx")
+
+
+
+gwr_agg_gbauj = gwr_df.group_by(['GBAUJ', ]).agg(
+    [
+        pl.count('EGID').alias('n_EGIDs'),
+        pl.sum('GEBF').alias('GEBF_sum'),
+        pl.sum('GAREA').alias('GAREA_sum'),
+        pl.sum('HP1_tf').alias('n_HP1'),
+        pl.sum('HP2_tf').alias('n_HP2'),
+    ])
+gwr_agg_gbauj.write_csv(r"C:\Models\Future_Markets\0_gwr_agg_allCH_GBAUJ.csv")
+
+
+gwr_gstat_selec = gwr_df.filter(pl.col('GSTAT').is_in([
+    # '1001', '1002', '1003', 
+    '1004', 
+    ])).clone()
+gwr_agg_gklas = gwr_gstat_selec.group_by(['GKLAS', 'GSTAT']).agg(
+    [
+        pl.count('EGID').alias('n_EGIDs'),
+        pl.sum('GEBF').alias('GEBF_sum'),
+        pl.sum('GAREA').alias('GAREA_sum'),
+        pl.sum('HP1_tf').alias('n_HP1'),
+        pl.sum('HP2_tf').alias('n_HP2'),
+    ])
+# gwr_agg_gklas.to_excel(r"C:\Models\Future_Markets\0_gwr_agg_allCH_GSTAT.xlsx")
+gwr_agg_gklas.write_csv(r"C:\Models\Future_Markets\0_gwr_agg_allCH_GSTAT.csv")
+print(f'exported <0_gwr_agg_allCH_GSTAT.xlsx> - {time.time()}')
+
+
+# grid import
+grid_df = pd.read_excel(r"Q:\_shared\Projekt - Optimal PV Expantionspaths\Daten_Primeo_x_UniBasel_V2.0.xlsx", )
+grid_df = pl.DataFrame(grid_df)
+grid_df = grid_df.with_columns([
+    pl.col('EGID').cast(pl.Utf8),
+])
+grid_df = grid_df.unique(subset=['EGID'], keep='first')
+
+grid_join_df = grid_df.join(gwr_df, on = 'EGID', how='left')
+print(f'finished grid import and merge with gwr - {time.time()}')
+grid_join_df.write_csv(r"C:\Models\Future_Markets\0_grid_join_df.csv")
+
+
+# grid_agg = grid_df.groupby(['GSTAT', 'GKLAS', 'GBAUJ', 'HPjoint_TF' ]).agg(
+#     {
+#         'EGID': 'count',
+#         'GEBF': 'sum',
+#         'GAREA': 'sum',
+#         'HP1_tf': 'sum',
+#         'HP2_tf': 'sum',
+#         'ID_Trafostation': 'nunique',
+#         'Trafoleistung_kVA': 'sum',
+#     }
+# ).copy()
+# grid_agg.rename(columns={'EGID': 'n_EGIDs', 'GEBF': 'GEBF_sum', 'GAREA': 'GAREA_sum', 'HP1_tf': 'n_HP1', 'HP2_tf': 'n_HP2', 'ID_Travostation': 'n_Trafos', 'Trafleistung_kVA': 'Trafleistung_kVA_sum' }, inplace=True)
+# grid_agg.to_excel(r"C:\Models\Future_Markets\0_time.timemeo.xlsx")
+
+grid_join_gstat_df = grid_df.join(gwr_gstat_selec, on = 'EGID', how='left', )
+# grid_join_gstat_df = grid_df.join(gwr_df, on = 'EGID', how='left', )
+grid_groupby_trafoID = grid_join_gstat_df.group_by([ 'ID_Trafostation']).agg(
+    [   
+        pl.count('EGID').alias('n_EGIDs'),
+        pl.count('GKLAS').alias('n_GKLAS'),
+        pl.count('GSTAT').alias('n_GSTAT'),
+
+        pl.sum('GEBF').alias('GEBF_sum'),
+        pl.sum('GAREA').alias('GAREA_sum'),
+        pl.sum('HP1_tf').alias('n_HP1'),
+        pl.sum('HP2_tf').alias('n_HP2'),
+        pl.sum('HPjoint_tf').alias('n_HPjoint'),
+        pl.n_unique('ID_Trafostation').alias('nunique_Trafos'),
+        pl.sum('Trafoleistung_kVA').alias('Trafoleistung_kVA_sum'),
+    ])
+
+grid_groupby_trafoID.write_csv(r"C:\Models\Future_Markets\0_grid_groupby_trafoID.csv")
+print(f'exported <0_grid_agg_gklas.csv> - {time.time()}')
+
+
+
+
+
+
+
+# ------------------------------------------------------------------------------------------------------
 
 
 bfs_sample = [                                                    2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
@@ -60,7 +231,7 @@ solkat_gwr.sort(by=['NEIGUNG', 'AUSRICHTUNG_abs', ], descending=[False, False, ]
 # ------------------------------------------------------------------------------------------------------
 
 # CONVERT parquet to csv
-if True:
+if False:
 
     pq_path = r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_mini_aggr_RUR_max_2_old_vers\zMC1\npv_df.parquet"
     file_name = pq_path.split('\\')[-1].split('.parquet')[0]
