@@ -27,9 +27,11 @@ from typing_extensions import List, Dict, Tuple
 @dataclass
 class Calibration_Settings:
     # DEFAULT SETTINGS --------------------------------------------------- 
-    name_dir_export: str                    = 'calibration_debug_MINI'
-    name_preprep_subsen: str                = 'preprep_default_sett'
-    name_calib_subscen: str                 = 'test param settings 1'
+    name_dir_export: str                    = 'calib_mini_debug'
+    name_preprep_subsen: str                = 'preprep_class_default_sett'
+    name_calib_subscen: str                 = 'calib_class_default_sett'
+    scicore_concat_data_path: str           = None
+
 
     kt_numbers: List[int]                    = field(default_factory=lambda: [
         # 1, 2, 3, 4, 5, 6, 7, 89, 10, 11, 12, 13, 
@@ -49,17 +51,17 @@ class Calibration_Settings:
     export_gwr_ALL_building_gdf_TF: bool            = False  
 
     run_approach1_fit_optim_costfunction_TF: bool   = True  
-    run_approach2_regression_instsize_TF: bool      = True
+    run_estimdf2_regression_instsize_TF: bool      = True
 
     train_test_split_ratio: float            = 1/4
-    pvinst_pvtrif_elecpri_range_minmax:Tuple[int,int]  = (2015, 2023)                             # min and max year of PV installation to be considered 
+    pvinst_pvtrif_elecpri_range_minmax:Tuple[int,int]  = (2018, 2023)                             # min and max year of PV installation to be considered 
     pvinst_capacity_minmax:Tuple[float,float]= (0.5, 40)                             # min and max capacity (in kWp) of PV installation to be considered
 
 
 
     # settings from DATA_AGGREGATION ---------------------------------------------------
     # new ones
-    n_rows_import: int                       = 1000
+    n_rows_import: int                       = None
     SOLKAT_PV_buffer_size: int               = 20                          # buffer size in meters for the GWR selection   
     
     # existing ones
@@ -329,14 +331,13 @@ class Calibration:
         
         os.makedirs(self.sett.calib_path, exist_ok=True)
         os.makedirs(self.sett.calib_scen_path, exist_ok=True)
-        os.makedirs(self.sett.calib_scen_preprep_path, exist_ok=True)
 
         print(f'{30*"="}\n  START CALIBRATION: {self.sett.name_dir_export}\n  > name_preprep_subsen: {self.sett.name_preprep_subsen}\n  > name_calib_subscen: {self.sett.name_calib_subscen}\n{30*"="}\n')
 
 
         # bfs numbers selection
         gm_shp_gdf = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
-        gm_shp_gdf = gm_shp_gdf.drop(columns = ['DATUM_AEND', 'DATUM_ERST'])
+        gm_shp_gdf = gm_shp_gdf.drop(columns = ['UUID', 'DATUM_AEND', 'DATUM_ERST'])
         gm_shp_gdf = gm_shp_gdf.loc[gm_shp_gdf['KANTONSNUM'].notna()]
         gm_shp_gdf['KANTONSNUM'] = gm_shp_gdf['KANTONSNUM'].astype(int)
         gm_shp_gdf['BFS_NUMMER'] = gm_shp_gdf['BFS_NUMMER'].astype(str)
@@ -370,6 +371,7 @@ class Calibration:
 
 
     def import_and_preprep_data(self,):
+        os.makedirs(self.sett.calib_scen_preprep_path, exist_ok=True)
         name_preprep_subsen = self.sett.name_preprep_subsen
         
         log_time = time.time()
@@ -565,9 +567,9 @@ class Calibration:
             # gwr_pq = copy.deepcopy(gwr_mrg3)
             gwr_pq = gwr_mrg0[
                 (gwr_mrg0['GSTAT'].isin(self.sett.GWR_GSTAT)) &
-                (gwr_mrg0['GKLAS'].isin(self.sett.GWR_GKLAS)) &
-                (gwr_mrg0['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) &
-                (gwr_mrg0['GBAUJ'] <= self.sett.GWR_GBAUJ_minmax[1])
+                (gwr_mrg0['GKLAS'].isin(self.sett.GWR_GKLAS)) 
+                # (gwr_mrg0['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) &
+                # (gwr_mrg0['GBAUJ'] <= self.sett.GWR_GBAUJ_minmax[1])
             ].copy()  # shallow copy for the final result
 
             def gwr_to_gdf(df):
@@ -587,442 +589,497 @@ class Calibration:
         log_time = self.write_to_logfile('local data imported - gwr, finished', log_time)
 
 
-        # transformations + spatial mappings ====================
-        # add omitted EGIDs to SOLKAT ------------------------------
-        if True:
-            # the solkat df has missing EGIDs, for example row houses where the entire roof is attributed to one EGID. Attempt to 
-            # 1 - add roof (perfectly overlapping roofpartitions) to solkat for all the EGIDs within the unions shape
-            # 2- reduce the FLAECHE for all theses partitions by dividing it through the number of EGIDs in the union shape
-            cols_adjust_for_missEGIDs_to_solkat = self.sett.SOLKAT_cols_adjust_for_missEGIDs_to_solkat
+        # continue only if houses in BFS =-=-=-=
+        if ((gwr_gdf.shape[0] > 0) & (solkat_gdf.shape[0] > 0)):
 
-            # solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
-            # solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
-            # solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
-            solkat_v2_gdf = solkat_select_gdf.copy()
-            solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
+
+            # transformations + spatial mappings ====================
+            # add omitted EGIDs to SOLKAT ------------------------------
+            if True:
+                if solkat_select_gdf.shape[0] > 0:
+                    # the solkat df has missing EGIDs, for example row houses where the entire roof is attributed to one EGID. Attempt to 
+                    # 1 - add roof (perfectly overlapping roofpartitions) to solkat for all the EGIDs within the unions shape
+                    # 2- reduce the FLAECHE for all theses partitions by dividing it through the number of EGIDs in the union shape
+                    cols_adjust_for_missEGIDs_to_solkat = self.sett.SOLKAT_cols_adjust_for_missEGIDs_to_solkat
+
+                    # solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
+                    # solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
+                    # solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
+                    solkat_v2_gdf = solkat_select_gdf.copy()
+                    solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
+                        
+                    # create mapping of solkatEGIDs and missing gwrEGIDs 
+                    # union all shapes with the same EGID 
+                    solkat_union_v2EGID = solkat_v2_gdf.groupby('EGID').agg({
+                        'geometry': lambda x: unary_union(x),  # Combine all geometries into one MultiPolygon
+                        'DF_UID': lambda x: '_'.join(map(str, x))  # Concatenate DF_UID values as a single string
+                        }).reset_index()
+                    solkat_union_v2EGID = gpd.GeoDataFrame(solkat_union_v2EGID, geometry='geometry')
+
+                    solkat_union_v2EGID = solkat_union_v2EGID.rename(columns = {'EGID': 'EGID_old_solkat'})  # rename EGID colum because gwr_EGIDs are now matched to union_shapes
+                    solkat_union_v2EGID.set_crs(gwr_gdf.crs, allow_override=True, inplace=True)
+                    join_gwr_solkat_union = gpd.sjoin(solkat_union_v2EGID, gwr_gdf, how='left')
+                    join_gwr_solkat_union.rename(columns = {'EGID': 'EGID_gwradded'}, inplace = True)
+
+                    # check EGID mapping case by case, add missing gwrEGIDs to solkat -------------------
+                    EGID_old_solkat_list = join_gwr_solkat_union['EGID_old_solkat'].unique()
+                    new_solkat_append_list = []
+                    add_solkat_counter, add_solkat_partition = 1, 4
+                    print_counter_max, i_print = 5, 0
+
+                    # debug_idx = 274
+                    # n_egid, egid = debug_idx, EGID_old_solkat_list[debug_idx]
+                    for n_egid, egid in enumerate(EGID_old_solkat_list):
+                        egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
+                        egid_join_union = egid_join_union.reset_index(drop = True)
+
+                        # Shapes of building that will not be included given GWR filter settings
+                        if any(egid_join_union['EGID_gwradded'].isna()):  
+                            solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                            solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+
+                        elif all(egid_join_union['EGID_gwradded'] != np.nan): 
+
+                            # cases
+                            case1_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid)
+                            case2_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid)
+                            case3_TF = (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].isna())
+                            case4_TF = (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list())
+                            case5_TF = (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list())
+
+                            # "Best" case (unless step above applies): Shapes of building that only has 1 GWR EGID
+                            if case1_TF:        # (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid): 
+                                solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                                
+                            # Not best case but for consistency better to keep individual solkatEGIs matches (otherwise missmatch of newer buildings with old shape partitions possible)
+                            elif case2_TF:      # (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid): 
+                                solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+
+                            elif case3_TF:      # (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].isna()):
+                                print(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column')
+
+                            # Intended case: Shapes of building that has multiple GWR EGIDs within the shape boundaries
+                            elif case4_TF:      # (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list()):
+                                
+                                solkat_subdf_addedEGID_list = []
+                                n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                                for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+                                    
+                                    # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                                    solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                    solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                    solkat_addedEGID['EGID'] = egid_to_add
+                                    
+                                    #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                                    if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
+                                        str_suffix = str(n+1).zfill(5)
+                                        if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                        elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+
+                                    # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                                    for col in cols_adjust_for_missEGIDs_to_solkat:
+                                        solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                    
+                                    # shrink topology to see which partitions are affected by EGID extensions
+                                    # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
+
+                                    solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                                
+                                # concat all EGIDs within the same shape that were previously missing
+                                solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+                                
+                            # Error case: Shapes of building that has multiple gwrEGIDs but does not overlap with the assigned / identical solkatEGID. 
+                            # Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID being placed in another shape. 
+                            elif case5_TF:      # (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list()):
+
+                                # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
+                                gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
+                                # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                gwrEGID_row['EGID_gwradded'] = egid
+                                egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
+
+                                # next follow all steps as in "Intended Case" above (solkat_shape with solkatEGID and gwrEGIDs)
+                                solkat_subdf_addedEGID_list = []
+                                n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                                
+                                for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+
+                                    # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                                    solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                    solkat_addedEGID['EGID'] = egid_to_add
+                                    
+                                    #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                                    if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
+                                        str_suffix = str(n+1).zfill(3)
+                                        if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                        elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+
+                                    # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                                    for col in cols_adjust_for_missEGIDs_to_solkat:
+                                        solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                    
+                                    # shrink topology to see which partitions are affected by EGID extensions
+                                    # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
+
+                                    solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                                
+                                # concat all EGIDs within the same shape that were previously missing
+                                solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+
+                                if i_print < print_counter_max:
+                                    print(f'ERROR: EGID {egid}: multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them')
+                                    i_print += 1
+                                elif i_print == print_counter_max:
+                                    print(f'ERROR: EGID {egid}: {print_counter_max}+ ... more cases of multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them')
+                                    i_print += 1
+
+                        if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
+                            print(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition')
                 
-            # create mapping of solkatEGIDs and missing gwrEGIDs 
-            # union all shapes with the same EGID 
-            solkat_union_v2EGID = solkat_v2_gdf.groupby('EGID').agg({
-                'geometry': lambda x: unary_union(x),  # Combine all geometries into one MultiPolygon
-                'DF_UID': lambda x: '_'.join(map(str, x))  # Concatenate DF_UID values as a single string
-                }).reset_index()
-            solkat_union_v2EGID = gpd.GeoDataFrame(solkat_union_v2EGID, geometry='geometry')
+                        # merge all solkat partitions to new solkat df
+                        new_solkat_append_list.append(solkat_subdf) 
 
-            solkat_union_v2EGID = solkat_union_v2EGID.rename(columns = {'EGID': 'EGID_old_solkat'})  # rename EGID colum because gwr_EGIDs are now matched to union_shapes
-            solkat_union_v2EGID.set_crs(gwr_gdf.crs, allow_override=True, inplace=True)
-            join_gwr_solkat_union = gpd.sjoin(solkat_union_v2EGID, gwr_gdf, how='left')
-            join_gwr_solkat_union.rename(columns = {'EGID': 'EGID_gwradded'}, inplace = True)
+                    new_solkat_gdf = gpd.GeoDataFrame(pd.concat(new_solkat_append_list, ignore_index=True), geometry='geometry')
+                    new_solkat = new_solkat_gdf.drop(columns = ['geometry'])
 
-            # check EGID mapping case by case, add missing gwrEGIDs to solkat -------------------
-            EGID_old_solkat_list = join_gwr_solkat_union['EGID_old_solkat'].unique()
-            new_solkat_append_list = []
-            add_solkat_counter, add_solkat_partition = 1, 4
-            print_counter_max, i_print = 5, 0
-            # n_egid, egid = 0, EGID_old_solkat_list[0]
-            for n_egid, egid in enumerate(EGID_old_solkat_list):
-                egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
-                egid_join_union = egid_join_union.reset_index(drop = True)
+                    solkat_pq, solkat_gdf = copy.deepcopy(new_solkat), copy.deepcopy(new_solkat_gdf)
 
-                # Shapes of building that will not be included given GWR filter settings
-                if any(egid_join_union['EGID_gwradded'].isna()):  
-                    solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                    solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
 
-                elif all(egid_join_union['EGID_gwradded'] != np.nan): 
+                # other local data ------------------------------
+                gemeinde_type_gdf = gpd.read_file(f'{self.sett.data_path}/input/gemeindetypen_2056.gpkg/gemeindetypen_2056.gpkg', layer=None)
 
-                    # cases
-                    case1_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid)
-                    case2_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid)
-                    case3_TF = (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].isna())
-                    case4_TF = (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list())
-                    case5_TF = (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list())
 
-                    # "Best" case (unless step above applies): Shapes of building that only has 1 GWR EGID
-                    if case1_TF:        # (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid): 
-                        solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                        solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
-                        
-                    # Not best case but for consistency better to keep individual solkatEGIs matches (otherwise missmatch of newer buildings with old shape partitions possible)
-                    elif case2_TF:      # (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid): 
-                        solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                        solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
 
-                    elif case3_TF:      # (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].isna()):
-                        print(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column')
+                # MAP: egid > pv ---------------------------------------------------------------------------------
+                # gwr_buff_gdf = copy.deepcopy(gwr_all_building_gdf)
+                gwr_buff_gdf = copy.deepcopy(gwr_gdf)
+                gwr_buff_gdf.set_crs("EPSG:32632", allow_override=True, inplace=True)
+                gwr_buff_gdf['geometry'] = gwr_buff_gdf['geometry'].buffer(self.sett.SOLKAT_GWR_EGID_buffer_size)
+                gwr_buff_gdf, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, gwr_buff_gdf, pv_gdf)
 
-                    # Intended case: Shapes of building that has multiple GWR EGIDs within the shape boundaries
-                    elif case4_TF:      # (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list()):
-                        
-                        solkat_subdf_addedEGID_list = []
-                        n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
-                        for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
-                            
-                            # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
-                            solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                            solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
-                            solkat_addedEGID['EGID'] = egid_to_add
-                            
-                            #extend the DF_UID with some numbers to have truely unique DF_UIDs
-                            if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
-                                str_suffix = str(n+1).zfill(5)
-                                if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
-                                    solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
-                                elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
-                                    solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+                gwregid_pvid_join = gpd.sjoin(pv_gdf,gwr_buff_gdf, how="left", predicate="within")
+                gwregid_pvid_join.drop(columns = ['index_right'] + [col for col in gwr_buff_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
 
-                            # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
-                            for col in cols_adjust_for_missEGIDs_to_solkat:
-                                solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
-                            
-                            # shrink topology to see which partitions are affected by EGID extensions
-                            # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
-
-                            solkat_subdf_addedEGID_list.append(solkat_addedEGID)
-                        
-                        # concat all EGIDs within the same shape that were previously missing
-                        solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
-                        
-                    # Error case: Shapes of building that has multiple gwrEGIDs but does not overlap with the assigned / identical solkatEGID. 
-                    # Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID being placed in another shape. 
-                    elif case5_TF:      # (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list()):
-
-                        # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
-                        gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
-                        # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
-                        gwrEGID_row['EGID_gwradded'] = egid
-                        egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
-
-                        # next follow all steps as in "Intended Case" above (solkat_shape with solkatEGID and gwrEGIDs)
-                        solkat_subdf_addedEGID_list = []
-                        n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
-                        
-                        for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
-
-                            # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
-                            solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                            solkat_addedEGID['EGID'] = egid_to_add
-                            
-                            #extend the DF_UID with some numbers to have truely unique DF_UIDs
-                            if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
-                                str_suffix = str(n+1).zfill(3)
-                                if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
-                                    solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
-                                elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
-                                    solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
-
-                            # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
-                            for col in cols_adjust_for_missEGIDs_to_solkat:
-                                solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
-                            
-                            # shrink topology to see which partitions are affected by EGID extensions
-                            # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
-
-                            solkat_subdf_addedEGID_list.append(solkat_addedEGID)
-                        
-                        # concat all EGIDs within the same shape that were previously missing
-                        solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
-
-                        if i_print < print_counter_max:
-                            print(f'ERROR: EGID {egid}: multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them')
-                            i_print += 1
-                        elif i_print == print_counter_max:
-                            print(f'ERROR: EGID {egid}: {print_counter_max}+ ... more cases of multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them')
-                            i_print += 1
-
-                if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
-                    print(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition')
-        
-                # merge all solkat partitions to new solkat df
-                new_solkat_append_list.append(solkat_subdf) 
+                # keep only unique xtf_ids 
+                gwregid_pvid_unique = copy.deepcopy(gwregid_pvid_join.loc[~gwregid_pvid_join.duplicated(subset='xtf_id', keep=False)])
+                xtf_duplicates =      copy.deepcopy(gwregid_pvid_join.loc[ gwregid_pvid_join.duplicated(subset='xtf_id', keep=False)])
             
-            new_solkat_gdf = gpd.GeoDataFrame(pd.concat(new_solkat_append_list, ignore_index=True), geometry='geometry')
-            new_solkat = new_solkat_gdf.drop(columns = ['geometry'])
+                if xtf_duplicates.shape[0] > 0:
+                    # match duplicates with nearest neighbour
+                    xtf_nearestmatch_list = []
+                    # xtf_id = xtf_duplicates['xtf_id'].unique()[0]
+                    for xtf_id in xtf_duplicates['xtf_id'].unique():
+                        gwr_sub = copy.deepcopy(gwr_buff_gdf.loc[gwr_buff_gdf['EGID'].isin(xtf_duplicates.loc[xtf_duplicates['xtf_id'] == xtf_id, 'EGID'])])
+                        pv_sub = copy.deepcopy(pv_gdf.loc[pv_gdf['xtf_id'] == xtf_id])
+                        
+                        assert pv_sub.crs == gwr_sub.crs
+                        gwr_sub['distance_to_pv'] = gwr_sub['geometry'].centroid.distance(pv_sub['geometry'].values[0])
+                        pv_sub['EGID'] = gwr_sub.loc[gwr_sub['distance_to_pv'].idxmin()]['EGID']
 
-            solkat_pq, solkat_gdf = copy.deepcopy(new_solkat), copy.deepcopy(new_solkat_gdf)
+                        xtf_nearestmatch_list.append(pv_sub)
+                    
+                    xtf_nearestmatches_df = pd.concat(xtf_nearestmatch_list, ignore_index=True)
+                    gwregid_pvid = pd.concat([gwregid_pvid_unique, xtf_nearestmatches_df], ignore_index=True).drop_duplicates()
+
+                else: 
+                    gwregid_pvid = gwregid_pvid_unique
 
 
-            # other local data ------------------------------
-            gemeinde_type_gdf = gpd.read_file(f'{self.sett.data_path}/input/gemeindetypen_2056.gpkg/gemeindetypen_2056.gpkg', layer=None)
+                # Map_egid_pv = gwregid_pvid.loc[gwregid_pvid['EGID'].notna(), ['EGID', 'xtf_id']].copy()
+                Map_egid_pv = gwregid_pvid[['EGID', 'xtf_id', 'BFS_NUMMER']].copy()
+                Map_egid_pv = Map_egid_pv.dropna(subset=['EGID'])
 
 
-
-            # MAP: egid > pv ---------------------------------------------------------------------------------
-            # gwr_buff_gdf = copy.deepcopy(gwr_all_building_gdf)
-            gwr_buff_gdf = copy.deepcopy(gwr_gdf)
-            gwr_buff_gdf.set_crs("EPSG:32632", allow_override=True, inplace=True)
-            gwr_buff_gdf['geometry'] = gwr_buff_gdf['geometry'].buffer(self.sett.SOLKAT_GWR_EGID_buffer_size)
-            gwr_buff_gdf, pv_gdf = set_crs_to_gm_shp(gm_shp_gdf, gwr_buff_gdf, pv_gdf)
-
-            gwregid_pvid_join = gpd.sjoin(pv_gdf,gwr_buff_gdf, how="left", predicate="within")
-            gwregid_pvid_join.drop(columns = ['index_right'] + [col for col in gwr_buff_gdf.columns if col not in ['EGID', 'geometry']], inplace = True)
-
-            # keep only unique xtf_ids 
-            gwregid_pvid_unique = copy.deepcopy(gwregid_pvid_join.loc[~gwregid_pvid_join.duplicated(subset='xtf_id', keep=False)])
-            xtf_duplicates =      copy.deepcopy(gwregid_pvid_join.loc[ gwregid_pvid_join.duplicated(subset='xtf_id', keep=False)])
-        
-        
-            # match duplicates with nearest neighbour
-            xtf_nearestmatch_list = []
-            # xtf_id = xtf_duplicates['xtf_id'].unique()[0]
-            for xtf_id in xtf_duplicates['xtf_id'].unique():
-                gwr_sub = copy.deepcopy(gwr_buff_gdf.loc[gwr_buff_gdf['EGID'].isin(xtf_duplicates.loc[xtf_duplicates['xtf_id'] == xtf_id, 'EGID'])])
-                pv_sub = copy.deepcopy(pv_gdf.loc[pv_gdf['xtf_id'] == xtf_id])
-                
-                assert pv_sub.crs == gwr_sub.crs
-                gwr_sub['distance_to_pv'] = gwr_sub['geometry'].centroid.distance(pv_sub['geometry'].values[0])
-                pv_sub['EGID'] = gwr_sub.loc[gwr_sub['distance_to_pv'].idxmin()]['EGID']
-
-                xtf_nearestmatch_list.append(pv_sub)
+                # MAP: BFSGM > EWR ------------------------------
+                Map_gm_ewr = pd.read_parquet(f'{self.sett.data_path}/input_api/Map_gm_ewr.parquet')
             
-            xtf_nearestmatches_df = pd.concat(xtf_nearestmatch_list, ignore_index=True)
-            gwregid_pvid = pd.concat([gwregid_pvid_unique, xtf_nearestmatches_df], ignore_index=True).drop_duplicates()
-
-            # Map_egid_pv = gwregid_pvid.loc[gwregid_pvid['EGID'].notna(), ['EGID', 'xtf_id']].copy()
-            Map_egid_pv = gwregid_pvid[['EGID', 'xtf_id', 'BFS_NUMMER']].copy()
-            Map_egid_pv = Map_egid_pv.dropna(subset=['EGID'])
+                log_time = self.write_to_logfile('\nadd omitted EGIDs to SOLKAT, finished', log_time) 
 
 
-            # MAP: BFSGM > EWR ------------------------------
-            Map_gm_ewr = pd.read_parquet(f'{self.sett.data_path}/input_api/Map_gm_ewr.parquet')
-        
-            log_time = self.write_to_logfile('\nadd omitted EGIDs to SOLKAT, finished', log_time) 
-
-
-        # import ts data and match households ====================
-        if True: 
-            # demand data ------------------------------
-            if self.sett.DEMAND_input_data_source == "SwissStore" :
-                swstore_arch_typ_factors  = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/12.swisstore_table12_unige.xlsx', sheet_name='Feuil1')
-                swstore_arch_typ_master   = pd.read_csv(f'{self.sett.data_path}/input/SwissStore_DemandData/Master_table_archetype.csv', sep=';')
-                swstore_sfhmfh_ts         = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx', sheet_name='dmnd_prof_sfh_mfh_avg')
-                
-                # gwr                       = pd.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
-                # gwr_all_building_gdf      = gpd.read_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson')
-                # gemeinde_type_gdf         = gpd.read_file(f'{self.sett.preprep_path}/gemeinde_type_gdf.geojson')
-
-                # classify EGIDs into SFH / MFH, Rural / Urban -------------
-
-                gwr_join_gdf = gwr_gdf.copy()
-
-                # get ARE type classification
-                gwr_join_gdf['ARE_typ'] = ''
-                gwr_join_gdf = gpd.sjoin(gwr_join_gdf, gemeinde_type_gdf[['NAME', 'TYP', 'BFS_NO', 'geometry']],
-                                         how='left', predicate='intersects')
-                # gemeinde_type_gdf['BFS_NO'] = gemeinde_type_gdf['BFS_NO'].astype(str)
-                # gwr_join_gdf = gwr_join_gdf.merge(gemeinde_type_gdf[['NAME', 'TYP', 'BFS_NO']], left_on='GGDENR', right_on='BFS_NO', how='left')
-
-                gwr_join_gdf.rename(columns={'NAME': 'ARE_NAME', 'TYP': 'ARE_TYP', }, inplace=True)
-                for k,v in self.sett.GWR_AREtypology.items():
-                    gwr_join_gdf.loc[gwr_join_gdf['ARE_TYP'].isin(v), 'ARE_typ'] = k
-
-                # get SFH / MFH classification from GWR data
-                gwr_join_gdf['sfhmfh_typ'] = ''
-                for k,v in self.sett.GWR_SFHMFHtypology.items():
-                    gwr_join_gdf.loc[gwr_join_gdf['GKLAS'].isin(v), 'sfhmfh_typ'] = k
-                gwr_join_gdf.loc[gwr_join_gdf['sfhmfh_typ'] == '', 'sfhmfh_typ'] = self.sett.GWR_SFHMFH_outsample_proxy
-
-                # build swstore_type to attach swstore factors
-                gwr_join_gdf['arch_typ'] = gwr_join_gdf['sfhmfh_typ'].str.cat(gwr_join_gdf['ARE_typ'], sep='-')
-                gwr_join_gdf = gwr_join_gdf.merge(swstore_arch_typ_factors[['arch_typ', 'elec_dem_ind_cecb', ]])
-                gwr_join_gdf.rename(columns={'elec_dem_ind_cecb': 'demand_elec_pGAREA'}, inplace=True)
-
-                # attach information to gwr and export
-                # gwr_pq = gwr_pq.merge(gwr_join_gdf[['EGID', 'ARE_typ', 'sfhmfh_typ', 'arch_typ', 'demand_elec_pGAREA']], on='EGID', how='left')
-                # gwr_all_building_df = gwr_join_gdf.drop(columns=['geometry', ]).copy()
-                gwr_gdf = gwr_join_gdf.copy()
-                gwr_pq  = gwr_join_gdf.drop(columns=['geometry', ]).copy()
-
-                # transform demand profiles to TS 
-                swstore_sfhmfh_ts = swstore_sfhmfh_ts.dropna(subset=['MFH', 'SFH'], how='all')
-                swstore_sfhmfh_ts['t'] = [f't_{i+1}' for i in range(len(swstore_sfhmfh_ts))]
-                swstore_sfhmfh_ts['t_int'] = [i+1 for i in range(len(swstore_sfhmfh_ts))]
-                demandtypes_ts = copy.deepcopy(swstore_sfhmfh_ts)
-
-
-            # meteo data ------------------------------
+            # import ts data and match households ====================
             if True: 
-                meteo = pd.read_csv(f'{self.sett.data_path}/input/Meteoblue_BSBL/Meteodaten_Basel_2018_2024_reduziert_bereinigt.csv')
+                # demand data ------------------------------
+                if self.sett.DEMAND_input_data_source == "SwissStore" :
+                    swstore_arch_typ_factors  = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/12.swisstore_table12_unige.xlsx', sheet_name='Feuil1')
+                    swstore_arch_typ_master   = pd.read_csv(f'{self.sett.data_path}/input/SwissStore_DemandData/Master_table_archetype.csv', sep=';')
+                    swstore_sfhmfh_ts         = pd.read_excel(f'{self.sett.data_path}/input/SwissStore_DemandData/Electricity_demand_SFH_MFH.xlsx', sheet_name='dmnd_prof_sfh_mfh_avg')
+                    
+                    # gwr                       = pd.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
+                    # gwr_all_building_gdf      = gpd.read_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson')
+                    # gemeinde_type_gdf         = gpd.read_file(f'{self.sett.preprep_path}/gemeinde_type_gdf.geojson')
 
-                # transformations
-                meteo['timestamp'] = pd.to_datetime(meteo['timestamp'], format = '%d.%m.%Y %H:%M:%S')
+                    # classify EGIDs into SFH / MFH, Rural / Urban -------------
 
-                # select relevant time frame
-                # start_stamp = pd.to_datetime(f'01.01.{self.sett.year_range[0]}', format = '%d.%m.%Y')
-                # end_stamp = pd.to_datetime(f'31.12.{self.sett.year_range[1]}', format = '%d.%m.%Y')
-                # meteo = meteo[(meteo['timestamp'] >= start_stamp) & (meteo['timestamp'] <= end_stamp)]
-            
+                    gwr_join_gdf = gwr_gdf.copy()
 
-            # angle tilt reduction ------------------------------
-            if True:
-                index_angle = [-180, -170, -160, -150, -140, -130, -120, -110, -100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
-                index_tilt = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
-                tuples_iter = list(itertools.product(index_angle, index_tilt))
+                    # get ARE type classification
+                    gwr_join_gdf['ARE_typ'] = ''
+                    gwr_join_gdf = gpd.sjoin(gwr_join_gdf, gemeinde_type_gdf[['NAME', 'TYP', 'BFS_NO', 'geometry']],
+                                            how='left', predicate='intersects')
+                    # gemeinde_type_gdf['BFS_NO'] = gemeinde_type_gdf['BFS_NO'].astype(str)
+                    # gwr_join_gdf = gwr_join_gdf.merge(gemeinde_type_gdf[['NAME', 'TYP', 'BFS_NO']], left_on='GGDENR', right_on='BFS_NO', how='left')
 
-                tuples = [(-180, 0), (-180, 5), (-180, 10), (-180, 15), (-180, 20), (-180, 25), (-180, 30), (-180, 35), (-180, 40), (-180, 45), (-180, 50), (-180, 55), (-180, 60), (-180, 65), (-180, 70), (-180, 75), (-180, 80), (-180, 85), (-180, 90), 
-                        (-170, 0), (-170, 5), (-170, 10), (-170, 15), (-170, 20), (-170, 25), (-170, 30), (-170, 35), (-170, 40), (-170, 45), (-170, 50), (-170, 55), (-170, 60), (-170, 65), (-170, 70), (-170, 75), (-170, 80), (-170, 85), (-170, 90), 
-                        (-160, 0), (-160, 5), (-160, 10), (-160, 15), (-160, 20), (-160, 25), (-160, 30), (-160, 35), (-160, 40), (-160, 45), (-160, 50), (-160, 55), (-160, 60), (-160, 65), (-160, 70), (-160, 75), (-160, 80), (-160, 85), (-160, 90), 
-                        (-150, 0), (-150, 5), (-150, 10), (-150, 15), (-150, 20), (-150, 25), (-150, 30), (-150, 35), (-150, 40), (-150, 45), (-150, 50), (-150, 55), (-150, 60), (-150, 65), (-150, 70), (-150, 75), (-150, 80), (-150, 85), (-150, 90), 
-                        (-140, 0), (-140, 5), (-140, 10), (-140, 15), (-140, 20), (-140, 25), (-140, 30), (-140, 35), (-140, 40), (-140, 45), (-140, 50), (-140, 55), (-140, 60), (-140, 65), (-140, 70), (-140, 75), (-140, 80), (-140, 85), (-140, 90),
-                        (-130, 0), (-130, 5), (-130, 10), (-130, 15), (-130, 20), (-130, 25), (-130, 30), (-130, 35), (-130, 40), (-130, 45), (-130, 50), (-130, 55), (-130, 60), (-130, 65), (-130, 70), (-130, 75), (-130, 80), (-130, 85), (-130, 90),
-                        (-120, 0), (-120, 5), (-120, 10), (-120, 15), (-120, 20), (-120, 25), (-120, 30), (-120, 35), (-120, 40), (-120, 45), (-120, 50), (-120, 55), (-120, 60), (-120, 65), (-120, 70), (-120, 75), (-120, 80), (-120, 85), (-120, 90),
-                        (-110, 0), (-110, 5), (-110, 10), (-110, 15), (-110, 20), (-110, 25), (-110, 30), (-110, 35), (-110, 40), (-110, 45), (-110, 50), (-110, 55), (-110, 60), (-110, 65), (-110, 70), (-110, 75), (-110, 80), (-110, 85), (-110, 90),
-                        (-100, 0), (-100, 5), (-100, 10), (-100, 15), (-100, 20), (-100, 25), (-100, 30), (-100, 35), (-100, 40), (-100, 45), (-100, 50), (-100, 55), (-100, 60), (-100, 65), (-100, 70), (-100, 75), (-100, 80), (-100, 85), (-100, 90),
-                        (-90, 0), (-90, 5), (-90, 10), (-90, 15), (-90, 20), (-90, 25), (-90, 30), (-90, 35), (-90, 40), (-90, 45), (-90, 50), (-90, 55), (-90, 60), (-90, 65), (-90, 70), (-90, 75), (-90, 80), (-90, 85), (-90, 90),
-                        (-80, 0), (-80, 5), (-80, 10), (-80, 15), (-80, 20), (-80, 25), (-80, 30), (-80, 35), (-80, 40), (-80, 45), (-80, 50), (-80, 55), (-80, 60), (-80, 65), (-80, 70), (-80, 75), (-80, 80), (-80, 85), (-80, 90),
-                        (-70, 0), (-70, 5), (-70, 10), (-70, 15), (-70, 20), (-70, 25), (-70, 30), (-70, 35), (-70, 40), (-70, 45), (-70, 50), (-70, 55), (-70, 60), (-70, 65), (-70, 70), (-70, 75), (-70, 80), (-70, 85), (-70, 90),
-                        (-60, 0), (-60, 5), (-60, 10), (-60, 15), (-60, 20), (-60, 25), (-60, 30), (-60, 35), (-60, 40), (-60, 45), (-60, 50), (-60, 55), (-60, 60), (-60, 65), (-60, 70), (-60, 75), (-60, 80), (-60, 85), (-60, 90),
-                        (-50, 0), (-50, 5), (-50, 10), (-50, 15), (-50, 20), (-50, 25), (-50, 30), (-50, 35), (-50, 40), (-50, 45), (-50, 50), (-50, 55), (-50, 60), (-50, 65), (-50, 70), (-50, 75), (-50, 80), (-50, 85), (-50, 90),
-                        (-40, 0), (-40, 5), (-40, 10), (-40, 15), (-40, 20), (-40, 25), (-40, 30), (-40, 35), (-40, 40), (-40, 45), (-40, 50), (-40, 55), (-40, 60), (-40, 65), (-40, 70), (-40, 75), (-40, 80), (-40, 85), (-40, 90),
-                        (-30, 0), (-30, 5), (-30, 10), (-30, 15), (-30, 20), (-30, 25), (-30, 30), (-30, 35), (-30, 40), (-30, 45), (-30, 50), (-30, 55), (-30, 60), (-30, 65), (-30, 70), (-30, 75), (-30, 80), (-30, 85), (-30, 90),
-                        (-20, 0), (-20, 5), (-20, 10), (-20, 15), (-20, 20), (-20, 25), (-20, 30), (-20, 35), (-20, 40), (-20, 45), (-20, 50), (-20, 55), (-20, 60), (-20, 65), (-20, 70), (-20, 75), (-20, 80), (-20, 85), (-20, 90),
-                        (-10, 0), (-10, 5), (-10, 10), (-10, 15), (-10, 20), (-10, 25), (-10, 30), (-10, 35), (-10, 40), (-10, 45), (-10, 50), (-10, 55), (-10, 60), (-10, 65), (-10, 70), (-10, 75), (-10, 80), (-10, 85), (-10, 90),
-                        (0, 0), (0, 5), (0, 10), (0, 15), (0, 20), (0, 25), (0, 30), (0, 35), (0, 40), (0, 45), (0, 50), (0, 55), (0, 60), (0, 65), (0, 70), (0, 75), (0, 80), (0, 85), (0, 90),
-                        (10, 0), (10, 5), (10, 10), (10, 15), (10, 20), (10, 25), (10, 30), (10, 35), (10, 40), (10, 45), (10, 50), (10, 55), (10, 60), (10, 65), (10, 70), (10, 75), (10, 80), (10, 85), (10, 90),
-                        (20, 0), (20, 5), (20, 10), (20, 15), (20, 20), (20, 25), (20, 30), (20, 35), (20, 40), (20, 45), (20, 50), (20, 55), (20, 60), (20, 65), (20, 70), (20, 75), (20, 80), (20, 85), (20, 90),
-                        (30, 0), (30, 5), (30, 10), (30, 15), (30, 20), (30, 25), (30, 30), (30, 35), (30, 40), (30, 45), (30, 50), (30, 55), (30, 60), (30, 65), (30, 70), (30, 75), (30, 80), (30, 85), (30, 90),
-                        (40, 0), (40, 5), (40, 10), (40, 15), (40, 20), (40, 25), (40, 30), (40, 35), (40, 40), (40, 45), (40, 50), (40, 55), (40, 60), (40, 65), (40, 70), (40, 75), (40, 80), (40, 85), (40, 90),
-                        (50, 0), (50, 5), (50, 10), (50, 15), (50, 20), (50, 25), (50, 30), (50, 35), (50, 40), (50, 45), (50, 50), (50, 55), (50, 60), (50, 65), (50, 70), (50, 75), (50, 80), (50, 85), (50, 90),
-                        (60, 0), (60, 5), (60, 10), (60, 15), (60, 20), (60, 25), (60, 30), (60, 35), (60, 40), (60, 45), (60, 50), (60, 55), (60, 60), (60, 65), (60, 70), (60, 75), (60, 80), (60, 85), (60, 90),
-                        (70, 0), (70, 5), (70, 10), (70, 15), (70, 20), (70, 25), (70, 30), (70, 35), (70, 40), (70, 45), (70, 50), (70, 55), (70, 60), (70, 65), (70, 70), (70, 75), (70, 80), (70, 85), (70, 90),
-                        (80, 0), (80, 5), (80, 10), (80, 15), (80, 20), (80, 25), (80, 30), (80, 35), (80, 40), (80, 45), (80, 50), (80, 55), (80, 60), (80, 65), (80, 70), (80, 75), (80, 80), (80, 85), (80, 90),
-                        (90, 0), (90, 5), (90, 10), (90, 15), (90, 20), (90, 25), (90, 30), (90, 35), (90, 40), (90, 45), (90, 50), (90, 55), (90, 60), (90, 65), (90, 70), (90, 75), (90, 80), (90, 85), (90, 90),
-                        (100, 0), (100, 5), (100, 10), (100, 15), (100, 20), (100, 25), (100, 30), (100, 35), (100, 40), (100, 45), (100, 50), (100, 55), (100, 60), (100, 65), (100, 70), (100, 75), (100, 80), (100, 85), (100, 90),
-                        (110, 0), (110, 5), (110, 10), (110, 15), (110, 20), (110, 25), (110, 30), (110, 35), (110, 40), (110, 45), (110, 50), (110, 55), (110, 60), (110, 65), (110, 70), (110, 75), (110, 80), (110, 85), (110, 90),
-                        (120, 0), (120, 5), (120, 10), (120, 15), (120, 20), (120, 25), (120, 30), (120, 35), (120, 40), (120, 45), (120, 50), (120, 55), (120, 60), (120, 65), (120, 70), (120, 75), (120, 80), (120, 85), (120, 90),
-                        (130, 0), (130, 5), (130, 10), (130, 15), (130, 20), (130, 25), (130, 30), (130, 35), (130, 40), (130, 45), (130, 50), (130, 55), (130, 60), (130, 65), (130, 70), (130, 75), (130, 80), (130, 85), (130, 90),
-                        (140, 0), (140, 5), (140, 10), (140, 15), (140, 20), (140, 25), (140, 30), (140, 35), (140, 40), (140, 45), (140, 50), (140, 55), (140, 60), (140, 65), (140, 70), (140, 75), (140, 80), (140, 85), (140, 90),
-                        (150, 0), (150, 5), (150, 10), (150, 15), (150, 20), (150, 25), (150, 30), (150, 35), (150, 40), (150, 45), (150, 50), (150, 55), (150, 60), (150, 65), (150, 70), (150, 75), (150, 80), (150, 85), (150, 90),
-                        (160, 0), (160, 5), (160, 10), (160, 15), (160, 20), (160, 25), (160, 30), (160, 35), (160, 40), (160, 45), (160, 50), (160, 55), (160, 60), (160, 65), (160, 70), (160, 75), (160, 80), (160, 85), (160, 90),
-                        (170, 0), (170, 5), (170, 10), (170, 15), (170, 20), (170, 25), (170, 30), (170, 35), (170, 40), (170, 45), (170, 50), (170, 55), (170, 60), (170, 65), (170, 70), (170, 75), (170, 80), (170, 85), (170, 90),
-                        (180, 0), (180, 5), (180, 10), (180, 15), (180, 20), (180, 25), (180, 30), (180, 35), (180, 40), (180, 45), (180, 50), (180, 55), (180, 60), (180, 65), (180, 70), (180, 75), (180, 80), (180, 85), (180, 90)
-                        ]
-                index = pd.MultiIndex.from_tuples(tuples, names=['angle', 'tilt'])
+                    gwr_join_gdf.rename(columns={'NAME': 'ARE_NAME', 'TYP': 'ARE_TYP', }, inplace=True)
+                    for k,v in self.sett.GWR_AREtypology.items():
+                        gwr_join_gdf.loc[gwr_join_gdf['ARE_TYP'].isin(v), 'ARE_typ'] = k
 
-                values = [89.0, 85.5, 81.5, 77.3, 72.7, 68.3, 64.0, 59.8, 55.6, 51.5, 47.6, 44.1, 40.7, 37.9, 35.8, 34.1, 32.7, 31.4, 30.2, 
-                        89.0, 85.5, 81.6, 77.4, 72.9, 68.5, 64.2, 60.0, 55.9, 51.9, 48.1, 44.5, 41.2, 38.5, 36.4, 34.8, 33.3, 31.9, 30.7, 
-                        89.0, 85.7, 81.9, 77.8, 73.5, 69.2, 65.0, 60.9, 56.9, 53.0, 49.4, 46.0, 42.9, 40.6, 38.6, 36.8, 35.2, 33.7, 32.2, 
-                        89.0, 85.9, 82.4, 78.6, 74.6, 70.5, 66.4, 62.5, 58.7, 55.0, 51.6, 48.6, 46.1, 43.8, 41.7, 39.8, 38.0, 36.3, 34.6, 
-                        89.0, 86.3, 83.1, 79.6, 75.9, 72.2, 68.4, 64.8, 61.3, 58.1, 55.1, 52.4, 49.9, 47.6, 45.4, 43.3, 41.3, 39.4, 37.5, 
-                        89.0, 86.7, 84.0, 80.8, 77.7, 74.3, 71.1, 67.8, 64.8, 61.9, 59.1, 56.5, 54.1, 51.8, 49.4, 47.2, 45.0, 42.8, 40.7, 
-                        89.0, 87.1, 84.9, 82.4, 79.6, 76.8, 74.0, 71.3, 68.6, 66.0, 63.4, 61.0, 58.6, 56.2, 53.8, 51.4, 49.0, 46.6, 44.2, 
-                        89.0, 87.7, 85.9, 84.0, 81.8, 79.5, 77.2, 74.9, 72.5, 70.2, 67.9, 65.5, 63.1, 60.7, 58.8, 55.7, 53.1, 50.6, 48.0, 
-                        89.0, 88.3, 87.1, 85.6, 84.0, 82.2, 80.4, 78.5, 76.5, 74.4, 72.2, 69.9, 67.6, 65.2, 62.7, 60.1, 57.3, 54.5, 51.8, 
-                        89.0, 88.8, 88.2, 87.3, 86.2, 84.9, 83.6, 82.0, 80.3, 78.4, 76.4, 74.3, 71.9, 69.5, 66.8, 64.1, 61.3, 58.3, 55.2, 
-                        89.0, 89.4, 89.3, 89.0, 88.4, 87.6, 86.6, 85.4, 84.0, 82.3, 80.4, 78.3, 75.9, 73.4, 70.9, 67.9, 64.8, 61.8, 58.5, 
-                        89.0, 89.9, 90.5, 90.6, 90.5, 90.1, 89.5, 88.6, 87.3, 85.8, 84.0, 82.0, 79.7, 77.1, 74.3, 71.4, 68.2, 64.7, 61.3, 
-                        89.0, 90.5, 91.4, 92.1, 92.4, 92.4, 92.1, 91.4, 90.4, 89.0, 87.4, 85.2, 83.0, 80.5, 77.5, 74.3, 71.0, 67.4, 63.7, 
-                        89.0, 90.9, 92.4, 93.5, 94.2, 94.5, 94.4, 93.9, 93.0, 91.7, 90.2, 88.3, 85.8, 83.1, 80.2, 76.9, 73.3, 69.5, 65.6, 
-                        89.0, 91.4, 93.2, 94.6, 95.6, 96.2, 96.4, 96.1, 95.4, 94.2, 92.5, 90.6, 88.3, 85.5, 82.3, 78.9, 75.2, 71.2, 66.9, 
-                        89.0, 91.7, 93.9, 95.5, 96.8, 97.7, 98.0, 97.7, 97.1, 96.1, 94.5, 92.5, 90.0, 87.1, 84.0, 80.4, 76.4, 72.2, 67.8, 
-                        89.0, 91.9, 94.3, 96.3, 97.7, 98.6, 99.1, 99.0, 98.5, 97.4, 95.8, 93.8, 91.4, 88.4, 85.0, 81.3, 77.2, 72.8, 68.1, 
-                        89.0, 92.1, 94.6, 96.7, 98.2, 99.2, 99.8, 99.8, 99.3, 98.3, 96.7, 94.6, 92.0, 89.0, 85.5, 81.8, 77.5, 73.0, 68.2, 
-                        89.0, 92.1, 94.7, 96.8, 98.4, 99.5, 100,  100 , 99.5, 98.3, 96.8, 94.8, 92.3, 89.3, 85.8, 81.9, 77.6, 73.1, 68.1,
-                        89.0, 92.1, 94.6, 96.7, 98.2, 99.2, 99.8, 99.8, 99.3, 98.3, 96.7, 94.6, 92.0, 89.0, 85.5, 81.8, 77.5, 73.0, 68.2, 
-                        89.0, 91.9, 94.3, 96.3, 97.7, 98.6, 99.1, 99.0, 98.5, 97.4, 95.8, 93.8, 91.4, 88.4, 85.0, 81.3, 77.2, 72.8, 68.1, 
-                        89.0, 91.7, 93.9, 95.5, 96.8, 97.7, 98.0, 97.7, 97.1, 96.1, 94.5, 92.5, 90.0, 87.1, 84.0, 80.4, 76.4, 72.2, 67.8, 
-                        89.0, 91.4, 93.2, 94.6, 95.6, 96.2, 96.4, 96.1, 95.4, 94.2, 92.5, 90.6, 88.3, 85.5, 82.3, 78.9, 75.2, 71.2, 66.9, 
-                        89.0, 90.9, 92.4, 93.5, 94.2, 94.5, 94.4, 93.9, 93.0, 91.7, 90.2, 88.3, 85.8, 83.1, 80.2, 76.9, 73.3, 69.5, 65.6, 
-                        89.0, 90.5, 91.4, 92.1, 92.4, 92.4, 92.1, 91.4, 90.4, 89.0, 87.4, 85.2, 83.0, 80.5, 77.5, 74.3, 71.0, 67.4, 63.7, 
-                        89.0, 89.9, 90.5, 90.6, 90.5, 90.1, 89.5, 88.6, 87.3, 85.8, 84.0, 82.0, 79.7, 77.1, 74.3, 71.4, 68.2, 64.7, 61.3, 
-                        89.0, 89.4, 89.3, 89.0, 88.4, 87.6, 86.6, 85.4, 84.0, 82.3, 80.4, 78.3, 75.9, 73.4, 70.9, 67.9, 64.8, 61.8, 58.5, 
-                        89.0, 88.8, 88.2, 87.3, 86.2, 84.9, 83.6, 82.0, 80.3, 78.4, 76.4, 74.3, 71.9, 69.5, 66.8, 64.1, 61.3, 58.3, 55.2, 
-                        89.0, 88.3, 87.1, 85.6, 84.0, 82.2, 80.4, 78.5, 76.5, 74.4, 72.2, 69.9, 67.6, 65.2, 62.7, 60.1, 57.3, 54.5, 51.8, 
-                        89.0, 87.7, 85.9, 84.0, 81.8, 79.5, 77.2, 74.9, 72.5, 70.2, 67.9, 65.5, 63.1, 60.7, 58.8, 55.7, 53.1, 50.6, 48.0, 
-                        89.0, 87.1, 84.9, 82.4, 79.6, 76.8, 74.0, 71.3, 68.6, 66.0, 63.4, 61.0, 58.6, 56.2, 53.8, 51.4, 49.0, 46.6, 44.2, 
-                        89.0, 86.7, 84.0, 80.8, 77.7, 74.3, 71.1, 67.8, 64.8, 61.9, 59.1, 56.5, 54.1, 51.8, 49.4, 47.2, 45.0, 42.8, 40.7, 
-                        89.0, 86.3, 83.1, 79.6, 75.9, 72.2, 68.4, 64.8, 61.3, 58.1, 55.1, 52.4, 49.9, 47.6, 45.4, 43.3, 41.3, 39.4, 37.5, 
-                        89.0, 85.9, 82.4, 78.6, 74.6, 70.5, 66.4, 62.5, 58.7, 55.0, 51.6, 48.6, 46.1, 43.8, 41.7, 39.8, 38.0, 36.3, 34.6, 
-                        89.0, 85.7, 81.9, 77.8, 73.5, 69.2, 65.0, 60.9, 56.9, 53.0, 49.4, 46.0, 42.9, 40.6, 38.6, 36.8, 35.2, 33.7, 32.2, 
-                        89.0, 85.5, 81.6, 77.4, 72.9, 68.5, 64.2, 60.0, 55.9, 51.9, 48.1, 44.5, 41.2, 38.5, 36.4, 34.8, 33.3, 31.9, 30.7, 
-                        89.0, 85.5, 81.5, 77.3, 72.7, 68.3, 64.0, 59.8, 55.6, 51.5, 47.6, 44.1, 40.7, 37.9, 35.8, 34.1, 32.7, 31.4, 30.2
-                        ] 
+                    # get SFH / MFH classification from GWR data
+                    gwr_join_gdf['sfhmfh_typ'] = ''
+                    for k,v in self.sett.GWR_SFHMFHtypology.items():
+                        gwr_join_gdf.loc[gwr_join_gdf['GKLAS'].isin(v), 'sfhmfh_typ'] = k
+                    gwr_join_gdf.loc[gwr_join_gdf['sfhmfh_typ'] == '', 'sfhmfh_typ'] = self.sett.GWR_SFHMFH_outsample_proxy
+
+                    # build swstore_type to attach swstore factors
+                    gwr_join_gdf['arch_typ'] = gwr_join_gdf['sfhmfh_typ'].str.cat(gwr_join_gdf['ARE_typ'], sep='-')
+                    gwr_join_gdf = gwr_join_gdf.merge(swstore_arch_typ_factors[['arch_typ', 'elec_dem_ind_cecb', ]])
+                    gwr_join_gdf.rename(columns={'elec_dem_ind_cecb': 'demand_elec_pGAREA'}, inplace=True)
+
+                    # attach information to gwr and export
+                    # gwr_pq = gwr_pq.merge(gwr_join_gdf[['EGID', 'ARE_typ', 'sfhmfh_typ', 'arch_typ', 'demand_elec_pGAREA']], on='EGID', how='left')
+                    # gwr_all_building_df = gwr_join_gdf.drop(columns=['geometry', ]).copy()
+                    gwr_gdf = gwr_join_gdf.copy()
+                    gwr_pq  = gwr_join_gdf.drop(columns=['geometry', ]).copy()
+
+                    # transform demand profiles to TS 
+                    swstore_sfhmfh_ts = swstore_sfhmfh_ts.dropna(subset=['MFH', 'SFH'], how='all')
+                    swstore_sfhmfh_ts['t'] = [f't_{i+1}' for i in range(len(swstore_sfhmfh_ts))]
+                    swstore_sfhmfh_ts['t_int'] = [i+1 for i in range(len(swstore_sfhmfh_ts))]
+                    demandtypes_ts = copy.deepcopy(swstore_sfhmfh_ts)
+
+
+                # meteo data ------------------------------
+                if True: 
+                    meteo = pd.read_csv(f'{self.sett.data_path}/input/Meteoblue_BSBL/Meteodaten_Basel_2018_2024_reduziert_bereinigt.csv')
+
+                    # transformations
+                    meteo['timestamp'] = pd.to_datetime(meteo['timestamp'], format = '%d.%m.%Y %H:%M:%S')
+
+                    # select relevant time frame
+                    # start_stamp = pd.to_datetime(f'01.01.{self.sett.year_range[0]}', format = '%d.%m.%Y')
+                    # end_stamp = pd.to_datetime(f'31.12.{self.sett.year_range[1]}', format = '%d.%m.%Y')
+                    # meteo = meteo[(meteo['timestamp'] >= start_stamp) & (meteo['timestamp'] <= end_stamp)]
                 
-                angle_tilt_df = pd.DataFrame(data = values, index = index, columns = ['efficiency_factor'])
-                angle_tilt_df['efficiency_factor'] = angle_tilt_df['efficiency_factor'] / 100
-                angle_tilt_df = angle_tilt_df.reset_index()
+
+                # angle tilt reduction ------------------------------
+                if True:
+                    index_angle = [-180, -170, -160, -150, -140, -130, -120, -110, -100, -90, -80, -70, -60, -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
+                    index_tilt = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90]
+                    tuples_iter = list(itertools.product(index_angle, index_tilt))
+
+                    tuples = [(-180, 0), (-180, 5), (-180, 10), (-180, 15), (-180, 20), (-180, 25), (-180, 30), (-180, 35), (-180, 40), (-180, 45), (-180, 50), (-180, 55), (-180, 60), (-180, 65), (-180, 70), (-180, 75), (-180, 80), (-180, 85), (-180, 90), 
+                            (-170, 0), (-170, 5), (-170, 10), (-170, 15), (-170, 20), (-170, 25), (-170, 30), (-170, 35), (-170, 40), (-170, 45), (-170, 50), (-170, 55), (-170, 60), (-170, 65), (-170, 70), (-170, 75), (-170, 80), (-170, 85), (-170, 90), 
+                            (-160, 0), (-160, 5), (-160, 10), (-160, 15), (-160, 20), (-160, 25), (-160, 30), (-160, 35), (-160, 40), (-160, 45), (-160, 50), (-160, 55), (-160, 60), (-160, 65), (-160, 70), (-160, 75), (-160, 80), (-160, 85), (-160, 90), 
+                            (-150, 0), (-150, 5), (-150, 10), (-150, 15), (-150, 20), (-150, 25), (-150, 30), (-150, 35), (-150, 40), (-150, 45), (-150, 50), (-150, 55), (-150, 60), (-150, 65), (-150, 70), (-150, 75), (-150, 80), (-150, 85), (-150, 90), 
+                            (-140, 0), (-140, 5), (-140, 10), (-140, 15), (-140, 20), (-140, 25), (-140, 30), (-140, 35), (-140, 40), (-140, 45), (-140, 50), (-140, 55), (-140, 60), (-140, 65), (-140, 70), (-140, 75), (-140, 80), (-140, 85), (-140, 90),
+                            (-130, 0), (-130, 5), (-130, 10), (-130, 15), (-130, 20), (-130, 25), (-130, 30), (-130, 35), (-130, 40), (-130, 45), (-130, 50), (-130, 55), (-130, 60), (-130, 65), (-130, 70), (-130, 75), (-130, 80), (-130, 85), (-130, 90),
+                            (-120, 0), (-120, 5), (-120, 10), (-120, 15), (-120, 20), (-120, 25), (-120, 30), (-120, 35), (-120, 40), (-120, 45), (-120, 50), (-120, 55), (-120, 60), (-120, 65), (-120, 70), (-120, 75), (-120, 80), (-120, 85), (-120, 90),
+                            (-110, 0), (-110, 5), (-110, 10), (-110, 15), (-110, 20), (-110, 25), (-110, 30), (-110, 35), (-110, 40), (-110, 45), (-110, 50), (-110, 55), (-110, 60), (-110, 65), (-110, 70), (-110, 75), (-110, 80), (-110, 85), (-110, 90),
+                            (-100, 0), (-100, 5), (-100, 10), (-100, 15), (-100, 20), (-100, 25), (-100, 30), (-100, 35), (-100, 40), (-100, 45), (-100, 50), (-100, 55), (-100, 60), (-100, 65), (-100, 70), (-100, 75), (-100, 80), (-100, 85), (-100, 90),
+                            (-90, 0), (-90, 5), (-90, 10), (-90, 15), (-90, 20), (-90, 25), (-90, 30), (-90, 35), (-90, 40), (-90, 45), (-90, 50), (-90, 55), (-90, 60), (-90, 65), (-90, 70), (-90, 75), (-90, 80), (-90, 85), (-90, 90),
+                            (-80, 0), (-80, 5), (-80, 10), (-80, 15), (-80, 20), (-80, 25), (-80, 30), (-80, 35), (-80, 40), (-80, 45), (-80, 50), (-80, 55), (-80, 60), (-80, 65), (-80, 70), (-80, 75), (-80, 80), (-80, 85), (-80, 90),
+                            (-70, 0), (-70, 5), (-70, 10), (-70, 15), (-70, 20), (-70, 25), (-70, 30), (-70, 35), (-70, 40), (-70, 45), (-70, 50), (-70, 55), (-70, 60), (-70, 65), (-70, 70), (-70, 75), (-70, 80), (-70, 85), (-70, 90),
+                            (-60, 0), (-60, 5), (-60, 10), (-60, 15), (-60, 20), (-60, 25), (-60, 30), (-60, 35), (-60, 40), (-60, 45), (-60, 50), (-60, 55), (-60, 60), (-60, 65), (-60, 70), (-60, 75), (-60, 80), (-60, 85), (-60, 90),
+                            (-50, 0), (-50, 5), (-50, 10), (-50, 15), (-50, 20), (-50, 25), (-50, 30), (-50, 35), (-50, 40), (-50, 45), (-50, 50), (-50, 55), (-50, 60), (-50, 65), (-50, 70), (-50, 75), (-50, 80), (-50, 85), (-50, 90),
+                            (-40, 0), (-40, 5), (-40, 10), (-40, 15), (-40, 20), (-40, 25), (-40, 30), (-40, 35), (-40, 40), (-40, 45), (-40, 50), (-40, 55), (-40, 60), (-40, 65), (-40, 70), (-40, 75), (-40, 80), (-40, 85), (-40, 90),
+                            (-30, 0), (-30, 5), (-30, 10), (-30, 15), (-30, 20), (-30, 25), (-30, 30), (-30, 35), (-30, 40), (-30, 45), (-30, 50), (-30, 55), (-30, 60), (-30, 65), (-30, 70), (-30, 75), (-30, 80), (-30, 85), (-30, 90),
+                            (-20, 0), (-20, 5), (-20, 10), (-20, 15), (-20, 20), (-20, 25), (-20, 30), (-20, 35), (-20, 40), (-20, 45), (-20, 50), (-20, 55), (-20, 60), (-20, 65), (-20, 70), (-20, 75), (-20, 80), (-20, 85), (-20, 90),
+                            (-10, 0), (-10, 5), (-10, 10), (-10, 15), (-10, 20), (-10, 25), (-10, 30), (-10, 35), (-10, 40), (-10, 45), (-10, 50), (-10, 55), (-10, 60), (-10, 65), (-10, 70), (-10, 75), (-10, 80), (-10, 85), (-10, 90),
+                            (0, 0), (0, 5), (0, 10), (0, 15), (0, 20), (0, 25), (0, 30), (0, 35), (0, 40), (0, 45), (0, 50), (0, 55), (0, 60), (0, 65), (0, 70), (0, 75), (0, 80), (0, 85), (0, 90),
+                            (10, 0), (10, 5), (10, 10), (10, 15), (10, 20), (10, 25), (10, 30), (10, 35), (10, 40), (10, 45), (10, 50), (10, 55), (10, 60), (10, 65), (10, 70), (10, 75), (10, 80), (10, 85), (10, 90),
+                            (20, 0), (20, 5), (20, 10), (20, 15), (20, 20), (20, 25), (20, 30), (20, 35), (20, 40), (20, 45), (20, 50), (20, 55), (20, 60), (20, 65), (20, 70), (20, 75), (20, 80), (20, 85), (20, 90),
+                            (30, 0), (30, 5), (30, 10), (30, 15), (30, 20), (30, 25), (30, 30), (30, 35), (30, 40), (30, 45), (30, 50), (30, 55), (30, 60), (30, 65), (30, 70), (30, 75), (30, 80), (30, 85), (30, 90),
+                            (40, 0), (40, 5), (40, 10), (40, 15), (40, 20), (40, 25), (40, 30), (40, 35), (40, 40), (40, 45), (40, 50), (40, 55), (40, 60), (40, 65), (40, 70), (40, 75), (40, 80), (40, 85), (40, 90),
+                            (50, 0), (50, 5), (50, 10), (50, 15), (50, 20), (50, 25), (50, 30), (50, 35), (50, 40), (50, 45), (50, 50), (50, 55), (50, 60), (50, 65), (50, 70), (50, 75), (50, 80), (50, 85), (50, 90),
+                            (60, 0), (60, 5), (60, 10), (60, 15), (60, 20), (60, 25), (60, 30), (60, 35), (60, 40), (60, 45), (60, 50), (60, 55), (60, 60), (60, 65), (60, 70), (60, 75), (60, 80), (60, 85), (60, 90),
+                            (70, 0), (70, 5), (70, 10), (70, 15), (70, 20), (70, 25), (70, 30), (70, 35), (70, 40), (70, 45), (70, 50), (70, 55), (70, 60), (70, 65), (70, 70), (70, 75), (70, 80), (70, 85), (70, 90),
+                            (80, 0), (80, 5), (80, 10), (80, 15), (80, 20), (80, 25), (80, 30), (80, 35), (80, 40), (80, 45), (80, 50), (80, 55), (80, 60), (80, 65), (80, 70), (80, 75), (80, 80), (80, 85), (80, 90),
+                            (90, 0), (90, 5), (90, 10), (90, 15), (90, 20), (90, 25), (90, 30), (90, 35), (90, 40), (90, 45), (90, 50), (90, 55), (90, 60), (90, 65), (90, 70), (90, 75), (90, 80), (90, 85), (90, 90),
+                            (100, 0), (100, 5), (100, 10), (100, 15), (100, 20), (100, 25), (100, 30), (100, 35), (100, 40), (100, 45), (100, 50), (100, 55), (100, 60), (100, 65), (100, 70), (100, 75), (100, 80), (100, 85), (100, 90),
+                            (110, 0), (110, 5), (110, 10), (110, 15), (110, 20), (110, 25), (110, 30), (110, 35), (110, 40), (110, 45), (110, 50), (110, 55), (110, 60), (110, 65), (110, 70), (110, 75), (110, 80), (110, 85), (110, 90),
+                            (120, 0), (120, 5), (120, 10), (120, 15), (120, 20), (120, 25), (120, 30), (120, 35), (120, 40), (120, 45), (120, 50), (120, 55), (120, 60), (120, 65), (120, 70), (120, 75), (120, 80), (120, 85), (120, 90),
+                            (130, 0), (130, 5), (130, 10), (130, 15), (130, 20), (130, 25), (130, 30), (130, 35), (130, 40), (130, 45), (130, 50), (130, 55), (130, 60), (130, 65), (130, 70), (130, 75), (130, 80), (130, 85), (130, 90),
+                            (140, 0), (140, 5), (140, 10), (140, 15), (140, 20), (140, 25), (140, 30), (140, 35), (140, 40), (140, 45), (140, 50), (140, 55), (140, 60), (140, 65), (140, 70), (140, 75), (140, 80), (140, 85), (140, 90),
+                            (150, 0), (150, 5), (150, 10), (150, 15), (150, 20), (150, 25), (150, 30), (150, 35), (150, 40), (150, 45), (150, 50), (150, 55), (150, 60), (150, 65), (150, 70), (150, 75), (150, 80), (150, 85), (150, 90),
+                            (160, 0), (160, 5), (160, 10), (160, 15), (160, 20), (160, 25), (160, 30), (160, 35), (160, 40), (160, 45), (160, 50), (160, 55), (160, 60), (160, 65), (160, 70), (160, 75), (160, 80), (160, 85), (160, 90),
+                            (170, 0), (170, 5), (170, 10), (170, 15), (170, 20), (170, 25), (170, 30), (170, 35), (170, 40), (170, 45), (170, 50), (170, 55), (170, 60), (170, 65), (170, 70), (170, 75), (170, 80), (170, 85), (170, 90),
+                            (180, 0), (180, 5), (180, 10), (180, 15), (180, 20), (180, 25), (180, 30), (180, 35), (180, 40), (180, 45), (180, 50), (180, 55), (180, 60), (180, 65), (180, 70), (180, 75), (180, 80), (180, 85), (180, 90)
+                            ]
+                    index = pd.MultiIndex.from_tuples(tuples, names=['angle', 'tilt'])
+
+                    values = [89.0, 85.5, 81.5, 77.3, 72.7, 68.3, 64.0, 59.8, 55.6, 51.5, 47.6, 44.1, 40.7, 37.9, 35.8, 34.1, 32.7, 31.4, 30.2, 
+                            89.0, 85.5, 81.6, 77.4, 72.9, 68.5, 64.2, 60.0, 55.9, 51.9, 48.1, 44.5, 41.2, 38.5, 36.4, 34.8, 33.3, 31.9, 30.7, 
+                            89.0, 85.7, 81.9, 77.8, 73.5, 69.2, 65.0, 60.9, 56.9, 53.0, 49.4, 46.0, 42.9, 40.6, 38.6, 36.8, 35.2, 33.7, 32.2, 
+                            89.0, 85.9, 82.4, 78.6, 74.6, 70.5, 66.4, 62.5, 58.7, 55.0, 51.6, 48.6, 46.1, 43.8, 41.7, 39.8, 38.0, 36.3, 34.6, 
+                            89.0, 86.3, 83.1, 79.6, 75.9, 72.2, 68.4, 64.8, 61.3, 58.1, 55.1, 52.4, 49.9, 47.6, 45.4, 43.3, 41.3, 39.4, 37.5, 
+                            89.0, 86.7, 84.0, 80.8, 77.7, 74.3, 71.1, 67.8, 64.8, 61.9, 59.1, 56.5, 54.1, 51.8, 49.4, 47.2, 45.0, 42.8, 40.7, 
+                            89.0, 87.1, 84.9, 82.4, 79.6, 76.8, 74.0, 71.3, 68.6, 66.0, 63.4, 61.0, 58.6, 56.2, 53.8, 51.4, 49.0, 46.6, 44.2, 
+                            89.0, 87.7, 85.9, 84.0, 81.8, 79.5, 77.2, 74.9, 72.5, 70.2, 67.9, 65.5, 63.1, 60.7, 58.8, 55.7, 53.1, 50.6, 48.0, 
+                            89.0, 88.3, 87.1, 85.6, 84.0, 82.2, 80.4, 78.5, 76.5, 74.4, 72.2, 69.9, 67.6, 65.2, 62.7, 60.1, 57.3, 54.5, 51.8, 
+                            89.0, 88.8, 88.2, 87.3, 86.2, 84.9, 83.6, 82.0, 80.3, 78.4, 76.4, 74.3, 71.9, 69.5, 66.8, 64.1, 61.3, 58.3, 55.2, 
+                            89.0, 89.4, 89.3, 89.0, 88.4, 87.6, 86.6, 85.4, 84.0, 82.3, 80.4, 78.3, 75.9, 73.4, 70.9, 67.9, 64.8, 61.8, 58.5, 
+                            89.0, 89.9, 90.5, 90.6, 90.5, 90.1, 89.5, 88.6, 87.3, 85.8, 84.0, 82.0, 79.7, 77.1, 74.3, 71.4, 68.2, 64.7, 61.3, 
+                            89.0, 90.5, 91.4, 92.1, 92.4, 92.4, 92.1, 91.4, 90.4, 89.0, 87.4, 85.2, 83.0, 80.5, 77.5, 74.3, 71.0, 67.4, 63.7, 
+                            89.0, 90.9, 92.4, 93.5, 94.2, 94.5, 94.4, 93.9, 93.0, 91.7, 90.2, 88.3, 85.8, 83.1, 80.2, 76.9, 73.3, 69.5, 65.6, 
+                            89.0, 91.4, 93.2, 94.6, 95.6, 96.2, 96.4, 96.1, 95.4, 94.2, 92.5, 90.6, 88.3, 85.5, 82.3, 78.9, 75.2, 71.2, 66.9, 
+                            89.0, 91.7, 93.9, 95.5, 96.8, 97.7, 98.0, 97.7, 97.1, 96.1, 94.5, 92.5, 90.0, 87.1, 84.0, 80.4, 76.4, 72.2, 67.8, 
+                            89.0, 91.9, 94.3, 96.3, 97.7, 98.6, 99.1, 99.0, 98.5, 97.4, 95.8, 93.8, 91.4, 88.4, 85.0, 81.3, 77.2, 72.8, 68.1, 
+                            89.0, 92.1, 94.6, 96.7, 98.2, 99.2, 99.8, 99.8, 99.3, 98.3, 96.7, 94.6, 92.0, 89.0, 85.5, 81.8, 77.5, 73.0, 68.2, 
+                            89.0, 92.1, 94.7, 96.8, 98.4, 99.5, 100,  100 , 99.5, 98.3, 96.8, 94.8, 92.3, 89.3, 85.8, 81.9, 77.6, 73.1, 68.1,
+                            89.0, 92.1, 94.6, 96.7, 98.2, 99.2, 99.8, 99.8, 99.3, 98.3, 96.7, 94.6, 92.0, 89.0, 85.5, 81.8, 77.5, 73.0, 68.2, 
+                            89.0, 91.9, 94.3, 96.3, 97.7, 98.6, 99.1, 99.0, 98.5, 97.4, 95.8, 93.8, 91.4, 88.4, 85.0, 81.3, 77.2, 72.8, 68.1, 
+                            89.0, 91.7, 93.9, 95.5, 96.8, 97.7, 98.0, 97.7, 97.1, 96.1, 94.5, 92.5, 90.0, 87.1, 84.0, 80.4, 76.4, 72.2, 67.8, 
+                            89.0, 91.4, 93.2, 94.6, 95.6, 96.2, 96.4, 96.1, 95.4, 94.2, 92.5, 90.6, 88.3, 85.5, 82.3, 78.9, 75.2, 71.2, 66.9, 
+                            89.0, 90.9, 92.4, 93.5, 94.2, 94.5, 94.4, 93.9, 93.0, 91.7, 90.2, 88.3, 85.8, 83.1, 80.2, 76.9, 73.3, 69.5, 65.6, 
+                            89.0, 90.5, 91.4, 92.1, 92.4, 92.4, 92.1, 91.4, 90.4, 89.0, 87.4, 85.2, 83.0, 80.5, 77.5, 74.3, 71.0, 67.4, 63.7, 
+                            89.0, 89.9, 90.5, 90.6, 90.5, 90.1, 89.5, 88.6, 87.3, 85.8, 84.0, 82.0, 79.7, 77.1, 74.3, 71.4, 68.2, 64.7, 61.3, 
+                            89.0, 89.4, 89.3, 89.0, 88.4, 87.6, 86.6, 85.4, 84.0, 82.3, 80.4, 78.3, 75.9, 73.4, 70.9, 67.9, 64.8, 61.8, 58.5, 
+                            89.0, 88.8, 88.2, 87.3, 86.2, 84.9, 83.6, 82.0, 80.3, 78.4, 76.4, 74.3, 71.9, 69.5, 66.8, 64.1, 61.3, 58.3, 55.2, 
+                            89.0, 88.3, 87.1, 85.6, 84.0, 82.2, 80.4, 78.5, 76.5, 74.4, 72.2, 69.9, 67.6, 65.2, 62.7, 60.1, 57.3, 54.5, 51.8, 
+                            89.0, 87.7, 85.9, 84.0, 81.8, 79.5, 77.2, 74.9, 72.5, 70.2, 67.9, 65.5, 63.1, 60.7, 58.8, 55.7, 53.1, 50.6, 48.0, 
+                            89.0, 87.1, 84.9, 82.4, 79.6, 76.8, 74.0, 71.3, 68.6, 66.0, 63.4, 61.0, 58.6, 56.2, 53.8, 51.4, 49.0, 46.6, 44.2, 
+                            89.0, 86.7, 84.0, 80.8, 77.7, 74.3, 71.1, 67.8, 64.8, 61.9, 59.1, 56.5, 54.1, 51.8, 49.4, 47.2, 45.0, 42.8, 40.7, 
+                            89.0, 86.3, 83.1, 79.6, 75.9, 72.2, 68.4, 64.8, 61.3, 58.1, 55.1, 52.4, 49.9, 47.6, 45.4, 43.3, 41.3, 39.4, 37.5, 
+                            89.0, 85.9, 82.4, 78.6, 74.6, 70.5, 66.4, 62.5, 58.7, 55.0, 51.6, 48.6, 46.1, 43.8, 41.7, 39.8, 38.0, 36.3, 34.6, 
+                            89.0, 85.7, 81.9, 77.8, 73.5, 69.2, 65.0, 60.9, 56.9, 53.0, 49.4, 46.0, 42.9, 40.6, 38.6, 36.8, 35.2, 33.7, 32.2, 
+                            89.0, 85.5, 81.6, 77.4, 72.9, 68.5, 64.2, 60.0, 55.9, 51.9, 48.1, 44.5, 41.2, 38.5, 36.4, 34.8, 33.3, 31.9, 30.7, 
+                            89.0, 85.5, 81.5, 77.3, 72.7, 68.3, 64.0, 59.8, 55.6, 51.5, 47.6, 44.1, 40.7, 37.9, 35.8, 34.1, 32.7, 31.4, 30.2
+                            ] 
+                    
+                    angle_tilt_df = pd.DataFrame(data = values, index = index, columns = ['efficiency_factor'])
+                    angle_tilt_df['efficiency_factor'] = angle_tilt_df['efficiency_factor'] / 100
+                    angle_tilt_df = angle_tilt_df.reset_index()
 
 
-            # HOY weateryear --------------------------------
-            if True:
-                HOY_weatheryear_df = pd.DataFrame({'timestamp': pd.date_range(start=f'{self.sett.WEAspec_weather_year}-01-01 00:00:00',end=f'{self.sett.WEAspec_weather_year}-12-31 23:00:00', freq='h')})
-                HOY_weatheryear_df['t'] = HOY_weatheryear_df.index.to_series().apply(lambda idx: f't_{idx + 1}')        
-                HOY_weatheryear_df['month'] = HOY_weatheryear_df['timestamp'].dt.month
-                HOY_weatheryear_df['day'] = HOY_weatheryear_df['timestamp'].dt.day
-                HOY_weatheryear_df['hour'] = HOY_weatheryear_df['timestamp'].dt.hour
+                # HOY weateryear --------------------------------
+                if True:
+                    HOY_weatheryear_df = pd.DataFrame({'timestamp': pd.date_range(start=f'{self.sett.WEAspec_weather_year}-01-01 00:00:00',end=f'{self.sett.WEAspec_weather_year}-12-31 23:00:00', freq='h')})
+                    HOY_weatheryear_df['t'] = HOY_weatheryear_df.index.to_series().apply(lambda idx: f't_{idx + 1}')        
+                    HOY_weatheryear_df['month'] = HOY_weatheryear_df['timestamp'].dt.month
+                    HOY_weatheryear_df['day'] = HOY_weatheryear_df['timestamp'].dt.day
+                    HOY_weatheryear_df['hour'] = HOY_weatheryear_df['timestamp'].dt.hour
 
 
-            # elecpri + pvtarif --------------------------------
-            elecpri_all = pd.read_parquet(f'{self.sett.data_path}/input/ElCom_consum_price_api_data/elecpri.parquet')
-            elecpri = elecpri_all.loc[elecpri_all['bfs_number'].isin(self.sett.bfs_numbers)]
+                # elecpri + pvtarif --------------------------------
+                elecpri_all = pd.read_parquet(f'{self.sett.data_path}/input/ElCom_consum_price_api_data/elecpri.parquet')
+                elecpri = elecpri_all.loc[elecpri_all['bfs_number'].isin(self.sett.bfs_numbers)]
 
-            pvtarif_all = pd.read_parquet(f'{self.sett.data_path}/input_api/pvtarif.parquet')
-            # year_range_2int = [str(year % 100).zfill(2) for year in range(self.sett.year_range[0], self.sett.year_range[1]+1)]
-            # pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_2int), :])
-            pvtarif = copy.deepcopy(pvtarif_all)
-        log_time = self.write_to_logfile('import ts data and match households, finished', log_time)
+                pvtarif_all = pd.read_parquet(f'{self.sett.data_path}/input_api/pvtarif.parquet')
+                # year_range_2int = [str(year % 100).zfill(2) for year in range(self.sett.year_range[0], self.sett.year_range[1]+1)]
+                # pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_2int), :])
+                pvtarif = copy.deepcopy(pvtarif_all)
+            log_time = self.write_to_logfile('import ts data and match households, finished', log_time)
 
 
-        # export and store to class ====================
-        export_pq_list = [
-            ('pv_pq', pv_pq),
-            ('solkat_pq', solkat_pq),
-            ('solkat_month_pq', solkat_month_pq),
-            ('gwr_pq', gwr_pq),
-            ('Map_egid_pv', Map_egid_pv),
-            ('Map_gm_ewr', Map_gm_ewr),
-            ('demandtypes_ts', demandtypes_ts),
-            ('swstore_arch_typ_factors', swstore_arch_typ_factors),
-            ('swstore_arch_typ_master', swstore_arch_typ_master),
-            ('meteo', meteo),
-            ('angle_tilt_df', angle_tilt_df),
-            ('HOY_weatheryear_df', HOY_weatheryear_df),
-            ('elecpri', elecpri),
-            ('pvtarif', pvtarif),
-        ]
-        for name, df in export_pq_list:
-            df.to_parquet(f'{self.sett.calib_scen_preprep_path}/{name_preprep_subsen}_{name}.parquet', index=False)
-            df.to_csv(f'{self.sett.calib_scen_preprep_path}/{name_preprep_subsen}_{name}.csv', index=False)
+            # export and store to class ====================
+            export_pq_list = [
+                ('pv_pq', pv_pq),
+                ('solkat_pq', solkat_pq),
+                ('solkat_month_pq', solkat_month_pq),
+                ('gwr_pq', gwr_pq),
+                ('Map_egid_pv', Map_egid_pv),
+                ('Map_gm_ewr', Map_gm_ewr),
+                ('demandtypes_ts', demandtypes_ts),
+                ('swstore_arch_typ_factors', swstore_arch_typ_factors),
+                ('swstore_arch_typ_master', swstore_arch_typ_master),
+                ('meteo', meteo),
+                ('angle_tilt_df', angle_tilt_df),
+                ('HOY_weatheryear_df', HOY_weatheryear_df),
+                ('elecpri', elecpri),
+                ('pvtarif', pvtarif),
+            ]
+            for name, df in export_pq_list:
+                df.to_parquet(f'{self.sett.calib_scen_preprep_path}/{name_preprep_subsen}_{name}.parquet', index=False)
+                df.to_csv(f'{self.sett.calib_scen_preprep_path}/{name_preprep_subsen}_{name}.csv', index=False)
 
-        export_gdf_list = [
-            ('gm_shp_gdf', gm_shp_gdf),
-            ('pv_gdf', pv_gdf),
-            ('solkat_gdf', solkat_gdf),
-            ('gwr_gdf', gwr_gdf),
-            ('gemeinde_type_gdf', gemeinde_type_gdf),               
-        ]
-        if self.sett.export_gwr_ALL_building_gdf_TF: 
-            export_gdf_list =  export_gdf_list + [('gwr_all_building_gdf', gwr_all_building_gdf),]
+            export_gdf_list = [
+                ('gm_shp_gdf', gm_shp_gdf),
+                ('pv_gdf', pv_gdf),
+                ('solkat_gdf', solkat_gdf),
+                ('gwr_gdf', gwr_gdf),
+                ('gemeinde_type_gdf', gemeinde_type_gdf),               
+            ]
+            if self.sett.export_gwr_ALL_building_gdf_TF: 
+                export_gdf_list =  export_gdf_list + [('gwr_all_building_gdf', gwr_all_building_gdf),]
 
-        for name, gdf in export_gdf_list:
-            with open(f'{self.sett.calib_scen_preprep_path}/{name_preprep_subsen}_{name}.geojson', 'w') as f:
-                f.write(gdf.to_json())
+            for name, gdf in export_gdf_list:
+                with open(f'{self.sett.calib_scen_preprep_path}/{name_preprep_subsen}_{name}.geojson', 'w') as f:
+                    f.write(gdf.to_json())
 
-        end_time = time.time()
-        with open(self.sett.subscen_time_log_path, 'a') as f:
-            f.write(f'\n\nend time: {time.ctime()}\n')
-            f.write(f'run time prep: {format(str(datetime.timedelta(seconds=end_time - start_time)))} hh:mm:ss\n')
-            print('end import_and_preprep_data()')
+            end_time = time.time()
+            with open(self.sett.subscen_time_log_path, 'a') as f:
+                f.write(f'\n\nend time: {time.ctime()}\n')
+                f.write(f'run time prep: {format(str(datetime.timedelta(seconds=end_time - start_time)))} hh:mm:ss\n')
+                
+        print('end import_and_preprep_data()')
 
 
     def concatenate_prerep_data(self,):
         log_time = time.time()
         self.sett.concat_time_log_path = f'{self.sett.calib_scen_path}/{self.sett.name_dir_export}_concat_time_log.txt'
-        log_time = self.write_to_logfile('\n * concatenate_prerep_data()', log_time, self.sett.concat_time_log_path )
+        log_time = self.write_to_logfile('\n * concatenate_prerep_data()', log_time= log_time, log_file_path= self.sett.concat_time_log_path )
 
         # remove all old concatenated files
-        rm_old_files = glob.glob(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}*')
+        rm_old_files = glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}', f'*{self.sett.name_dir_export}*'))
         for path in rm_old_files:
             os.remove(path)
             
         # list of subfiles
-        preprep_subscen_paths_raw = glob.glob(f'{self.sett.calib_scen_preprep_path}/*log.txt')
-        preprep_subscen_names = [path.split(f'{self.sett.calib_scen_preprep_path}\\')[-1].split('_preprep_time_log.txt')[0] for path in preprep_subscen_paths_raw]
+        preprep_subscen_paths_raw = glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}','*log.txt'))
+        if 'scicore' in preprep_subscen_paths_raw[0]:
+            preprep_subscen_names = [path.split(f'{self.sett.calib_scen_preprep_path}/')[-1].split('_preprep_time_log.txt')[0] for path in preprep_subscen_paths_raw]
+        else:
+            preprep_subscen_names = [path.split(f'{self.sett.calib_scen_preprep_path}\\')[-1].split('_preprep_time_log.txt')[0] for path in preprep_subscen_paths_raw]
 
-        file_types_paths_raw = glob.glob(f'{self.sett.calib_scen_preprep_path}/{preprep_subscen_names[0]}*')
-        file_types_names = [path.split(f'{preprep_subscen_names[0]}_')[-1] for path in file_types_paths_raw if path.split(f'{preprep_subscen_names[0]}')[-1] not in ['_preprep_time_log.txt', '_log.txt',]]
+        name_list, n_file_list = [],[]
+        files_to_select_list = [
+            'angle_tilt_df.parquet', 
+            'demandtypes_ts.parquet', 
+            'elecpri.parquet', 
+            'gwr_pq.parquet', 
+            'HOY_weatheryear_df.parquet', 
+            'Map_egid_pv.parquet', 
+            'Map_gm_ewr.parquet', 
+            'meteo.parquet', 
+            'pvtarif.parquet', 
+            'pv_pq.parquet', 
+            'solkat_month_pq.parquet', 
+            'solkat_pq.parquet', 
+            'swstore_arch_typ_factors.parquet', 
+            'swstore_arch_typ_master.parquet', 
+            
+            'gemeinde_type_gdf.geojson', 
+            'gm_shp_gdf.geojson', 
+            'gwr_gdf.geojson', 
+            'pv_gdf.geojson', 
+            'solkat_gdf.geojson', 
+        ]
+        for i_name, subscen_name in enumerate(preprep_subscen_names):
+            file_list = []
+            for file_pattern in files_to_select_list:
+                if len(glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}',f'{subscen_name}_{file_pattern}'))) == 0:
+                    print(f'-> missing file: {subscen_name}_{file_pattern}')
+                else: 
+                    file_list.append(glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}',f'{subscen_name}_{file_pattern}')))
+            
+            name_list.append(subscen_name)
+            n_file_list.append(len(file_list))
+            print(f'{subscen_name:15} n_files:{len(file_list)}') if i_name < 50 else None
+
+        name_nfile_df = pd.DataFrame({'subscen_name': name_list, 'n_files': n_file_list})
+        name_for_file_pattern_pick = name_nfile_df.loc[name_nfile_df['n_files'] == name_nfile_df['n_files'].max(), 'subscen_name'].values[0]
+        print(f'-> picked: <{name_for_file_pattern_pick}>')
+
+        file_types_paths_raw = glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}',f'{name_for_file_pattern_pick}*'))
+        file_types_names = [path.split(f'{name_for_file_pattern_pick}_')[-1] for path in file_types_paths_raw if path.split(f'{name_for_file_pattern_pick}')[-1] not in ['_preprep_time_log.txt', '_log.txt',]]
         file_types_names = [ft for ft in file_types_names if ('.parquet' in ft) | ('.geojson' in ft) ]
-        # drop files not to be concatenated
+        
+        # skip files not to be concatenated
         single_file_types =  [
             'Map_gm_ewr.parquet',
 
@@ -1038,26 +1095,82 @@ class Calibration:
 
         # file_type = file_types_names[0]
         for i_ft, file_type in enumerate(file_types_names):
-            if 'solkat' in file_type:
-                print('break')
+            print(file_type)
             df_agg_list = []
-            file_type_paths = glob.glob(f'{self.sett.calib_scen_preprep_path}/*{file_type}')
+            file_type_paths = glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}',f'*{file_type}'))
 
             if file_type in single_file_types: 
                 path = file_type_paths[0]
-                shutil.copy(path, f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_{file_type}')
+                shutil.copy(path, f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_{file_type}')
 
             else:
                 if '.parquet' in file_type:
                     for path in file_type_paths:
                         df = pl.read_parquet(path) 
-                        # only append dfs, that contain no nulls
+
+                        if file_type == 'solkat_month_pq.parquet':
+                            if 'objectid' in df.columns:
+                                df = df.drop('objectid')
+                        
+                        if file_type == 'solkat_pq.parquet':
+                            float_cols = [
+                                'MSTRAHLUNG', 'GSTRAHLUNG', 'STROMERTRAG', 
+                                'STROMERTRAG_SOMMERHALBJAHR', 'STROMERTRAG_WINTERHALBJAHR', ]
+                            for col in float_cols:
+                                df = df.with_columns([
+                                    pl.col(col).cast(pl.Float64)
+                                ])
+
+                        if file_type == 'gwr_pq.parquet':
+                            drop_cols = [
+                                'index_right',
+                                'BFS_NO',
+                            ]
+                            int_cols = [
+                                'GBAUJ',
+                                'ARE_TYP',
+                            ]
+                            float_cols = [ 
+                                'GKODE','GKODN', 
+                                'GAREA',
+                                'demand_elec_pGAREA', 
+                            ]
+                            df = df.drop(drop_cols)
+                            str_cols = [col for col in df.columns if (col not in int_cols) & (col not in float_cols)]
+                            for col in str_cols:
+                                df = df.with_columns([
+                                    pl.col(col).cast(pl.Utf8)
+                                ])
+                            for col in float_cols:
+                                df = df.with_columns([
+                                    df[col]
+                                    .cast(pl.Utf8)
+                                    .str.strip_chars()
+                                    .fill_null('0.0')
+                                    .replace('', '0.0')
+                                    .cast(pl.Float64)
+                                    .alias(col)
+                                ])
+                            for col in int_cols:
+                                df = df.with_columns([
+                                    pl.when(pl.col(col).cast(pl.Utf8).str.strip_chars().is_in(['', None]))
+                                    .then(pl.lit(0))
+                                    .otherwise(pl.col(col).cast(pl.Int64))
+                                    .alias(col)
+                                ])
+                            
+                            # print(f'\n{path}')
+                            # for col in df.columns:
+                            #     print(f'{col:15}, {df[col].dtype}')
+ 
                         if (df.null_count().to_numpy().sum()== 0) & (
                            (df.shape[0] >= 1) ):
                             df_agg_list.append(df)
 
                     df_agg = pl.concat(df_agg_list)
-                    df_agg.write_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_{file_type}')
+                    df_agg.write_parquet(os.path.join(f'{self.sett.calib_scen_preprep_path}', f'0_{self.sett.name_dir_export}_{file_type}'))
+                    # file_type_to_csv = file_type.split('.parquet')[0] + '.csv'
+                    # df_agg.write_csv(os.path.join(f'{self.sett.calib_scen_preprep_path}', f'0_{self.sett.name_dir_export}_{file_type_to_csv}'))
 
                 elif '.geojson' in file_type:
                     for path in file_type_paths:
@@ -1069,10 +1182,12 @@ class Calibration:
                             df[date_cols] = df[date_cols].astype(str)
                         df_agg_list.append(df)
                     df_agg = gpd.GeoDataFrame(pd.concat(df_agg_list, ignore_index=True), crs=df.crs)
-                    with open(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_{file_type}', 'w') as f:
+                    # with open(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_{file_type}', 'w') as f:
+                    with open(os.path.join(f'{self.sett.calib_scen_preprep_path}', f'0_{self.sett.name_dir_export}_{file_type}'), 'w') as f:
                         f.write(df_agg.to_json())
                     
             log_time = self.write_to_logfile(f'exported: ./{self.sett.name_dir_export}_{file_type}', log_time, self.sett.concat_time_log_path )
+        print('\n')
 
 
   
@@ -1081,7 +1196,7 @@ class Calibration:
         print('asdf')
 
 
-    def approach2_regression_instsize(self,):
+    def estimdf2_regression_instsize(self,):
         start_time = time.time()
         with open(f'{self.sett.calib_scen_path}/approach2_time_log.txt', 'a') as f:
             f.write(f'start time: {start_time}\n')
@@ -1090,18 +1205,35 @@ class Calibration:
         if True:
             # import dfs and merge --------------------------------
 
-            gwr                = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_gwr_pq.parquet')
-            solkat             = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_solkat_pq.parquet')
-            solkat_month       = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_solkat_month_pq.parquet')
-            pv                 = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_pv_pq.parquet')
-            meteo              = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_meteo.parquet')
-            Map_egid_pv        = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_Map_egid_pv.parquet')
-            Map_gm_ewr         = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_Map_gm_ewr.parquet')
-            pvtarif            = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_pvtarif.parquet')
-            elecpri            = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_elecpri.parquet')
-            HOY_weatheryear_df = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_HOY_weatheryear_df.parquet')
-            demandtypes_ts     = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_demandtypes_ts.parquet')
-            angle_tilt_df      = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/{self.sett.name_dir_export}_angle_tilt_df.parquet')
+            if self.sett.scicore_concat_data_path == None: 
+                gwr                = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_gwr_pq.parquet')
+                solkat             = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_solkat_pq.parquet')
+                solkat_month       = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_solkat_month_pq.parquet')
+                pv                 = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_pv_pq.parquet')
+                meteo              = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_meteo.parquet')
+                Map_egid_pv        = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_Map_egid_pv.parquet')
+                Map_gm_ewr         = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_Map_gm_ewr.parquet')
+                pvtarif            = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_pvtarif.parquet')
+                elecpri            = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_elecpri.parquet')
+                HOY_weatheryear_df = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_HOY_weatheryear_df.parquet')
+                demandtypes_ts     = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_demandtypes_ts.parquet')
+                angle_tilt_df      = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_angle_tilt_df.parquet')
+
+            else: 
+                scicore_path = os.path.join(self.sett.scicore_concat_data_path, self.sett.name_dir_export, 'preprep_data')
+                gwr                = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_gwr_pq.parquet'))
+                solkat             = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_solkat_pq.parquet'))
+                solkat_month       = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_solkat_month_pq.parquet'))
+                pv                 = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_pv_pq.parquet'))
+                meteo              = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_meteo.parquet'))
+                Map_egid_pv        = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_Map_egid_pv.parquet'))
+                Map_gm_ewr         = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_Map_gm_ewr.parquet'))
+                pvtarif            = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_pvtarif.parquet'))
+                elecpri            = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_elecpri.parquet'))
+                HOY_weatheryear_df = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_HOY_weatheryear_df.parquet'))
+                demandtypes_ts     = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_demandtypes_ts.parquet'))
+                angle_tilt_df      = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_angle_tilt_df.parquet'))
+
 
 
 
@@ -1111,13 +1243,13 @@ class Calibration:
             gwr['EGID'] = gwr['EGID'].astype(str)
             gwr.loc[gwr['GBAUJ'] == '', 'GBAUJ'] = 0  # transform GBAUJ to apply filter and transform back
             gwr['GBAUJ'] = gwr['GBAUJ'].astype(int)
+            gwr.loc['GBAUJ'] = gwr['GBAUJ'].astype(str)
             # filtering for self.sett.GWR_specs
             gwr = gwr.loc[(gwr['GSTAT'].isin(self.sett.GWRspec_GSTAT)) &
-                        (gwr['GKLAS'].isin(self.sett.GWRspec_GKLAS)) &
-                        (gwr['GBAUJ'] >= self.sett.GWRspec_GBAUJ_minmax[0]) &
-                        (gwr['GBAUJ'] <= self.sett.GWRspec_GBAUJ_minmax[1])]
-            gwr['GBAUJ'] = gwr['GBAUJ'].astype(str)
-            gwr.loc[gwr['GBAUJ'] == '0', 'GBAUJ'] = ''
+                        (gwr['GKLAS'].isin(self.sett.GWRspec_GKLAS)) 
+                        # (gwr['GBAUJ'] >= self.sett.GWRspec_GBAUJ_minmax[0]) &
+                        # (gwr['GBAUJ'] <= self.sett.GWRspec_GBAUJ_minmax[1])
+                        ].copy()
             # because not all buldings have dwelling information, need to remove dwelling columns and rows again (remove duplicates where 1 building had multiple dwellings)
             gwr.loc[gwr['GAREA'] == '', 'GAREA'] = 0
             gwr['GAREA'] = gwr['GAREA'].astype(float)
@@ -1125,7 +1257,8 @@ class Calibration:
             if self.sett.GWRspec_dwelling_cols == []:
                 gwr = copy.deepcopy(gwr.loc[:, self.sett.GWRspec_building_cols + self.sett.GWRspec_swstore_demand_cols])
                 gwr = gwr.drop_duplicates(subset=['EGID'])
-            gwr = gwr.loc[gwr['GGDENR'].isin(self.sett.bfs_numbers)]
+            gwr.rename(columns={'GGDENR': 'BFS_NUMMER'}, inplace=True)  # rename for merge with other dfs
+            gwr = gwr.loc[gwr['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
             gwr = copy.deepcopy(gwr)
 
 
@@ -1221,7 +1354,7 @@ class Calibration:
             
             # REST -------
             year_rng = [str(yr) for yr in range(self.sett.pvinst_pvtrif_elecpri_range_minmax[0], self.sett.pvinst_pvtrif_elecpri_range_minmax[1]+1)]
-            pvtarif_year_range_list = [yr_str[2:4] for yr_str in year_rng]
+            pvtarif_year_range_list = [str(yr_str) for yr_str in year_rng]    
             elecpri_year_range_list = [int(yr_str) for yr_str in year_rng]
 
 
@@ -1235,10 +1368,21 @@ class Calibration:
             Map_gm_ewr = Map_gm_ewr.with_columns([pl.col('bfs').cast(pl.Int64).cast(pl.Utf8)])
 
             # pvtarif = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/pvtarif.parquet')
+            # transform 2 digit to 4 digit year
+            pvtarif = pvtarif.with_columns([
+                    pl.col('year').cast(pl.Int32).alias('year_int'),
+                    pl.lit('19').alias('year_prefix'),  # default 1900s                
+                 ])
+            pvtarif = pvtarif.with_columns([
+                pl.when((pl.col('year_int') < 50) | (pl.col('year_int') >= 0)).then(pl.lit('20')).otherwise(pl.lit('19')).alias('year_prefix')
+            ])
+            pvtarif = pvtarif.with_columns([
+                (pl.col('year_prefix') + pl.col('year')).alias('year')
+                ])
+            pvtarif = pvtarif.filter(pl.col('year').is_in(pvtarif_year_range_list))
+
             pvtarif = pvtarif.join(Map_gm_ewr, left_on='nrElcom', right_on='nrElcom', how='inner', suffix='_map_gmewr')
             pvtarif = pvtarif.with_columns([pl.col(self.sett.TECspec_pvtarif_col).replace('', 0).cast(pl.Float64)])
-            # pvtarif = pvtarif.filter(pl.col('year') == str(self.sett.TECspec_pvtarif_year)[2:4]) 
-            pvtarif = pvtarif.filter(pl.col('year').is_in(pvtarif_year_range_list))
 
             empty_cols = [col for col in pvtarif.columns if pvtarif[col].is_null().all()]
             pvtarif = pvtarif.select([col for col in pvtarif.columns if col not in empty_cols])
@@ -1252,9 +1396,10 @@ class Calibration:
                                       ( pl.col('year').is_in(elecpri_year_range_list)) )  
                                     #   ( pl.col('year') == self.sett.TECspec_elecpri_year) )
             elecpri = elecpri.with_columns([
-                (pl.col('energy') + pl.col('grid') + pl.col('aidfee') + pl.col('taxes') ).alias('elecpri_Rp_kWh')
+                (pl.col('energy') + pl.col('grid') + pl.col('aidfee') + pl.col('taxes') ).alias('elecpri_Rp_kWh'), 
+                pl.col('year').cast(pl.Utf8),
             ])
-            elecpri = elecpri.select(['bfs_number', 'elecpri_Rp_kWh']).clone()
+            elecpri = elecpri.select(['bfs_number', 'year', 'elecpri_Rp_kWh']).clone()
 
 
             # HOY_weatheryear_df  = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/HOY_weatheryear_df.parquet')
@@ -1276,14 +1421,14 @@ class Calibration:
             topo_df_join1 = topo_df_join0.join(solkat_pl, left_on='EGID', right_on='EGID', how='left', suffix='_solkat')
             topo_df_join2 = topo_df_join1.join(Map_egid_pv, left_on='EGID', right_on='EGID', how='left', suffix='_map_egidpv')
             topo_df_join3 = topo_df_join2.join(pv_pl, left_on='xtf_id', right_on='xtf_id', how='left', suffix='_pv')
-            topo_df_join4 = topo_df_join3.join(elecpri, left_on='GGDENR', right_on='bfs_number', how='left', suffix='_elecpri')
-            topo_df_join5 = topo_df_join4.join(pvtarif, left_on='GGDENR', right_on='bfs', how='left', suffix='_pvtarif')
+            topo_df_join4 = topo_df_join3.join(elecpri, left_on='BFS_NUMMER', right_on='bfs_number', how='left', suffix='_elecpri')
+            topo_df_join5 = topo_df_join4.join(pvtarif, left_on=['BFS_NUMMER', 'year'],  right_on=['bfs', 'year'], how='left', suffix='_pvtarif')
 
             topo_df = topo_df_join5.clone()
             del topo_df_join0, topo_df_join1, topo_df_join2, topo_df_join3, topo_df_join4, topo_df_join5
 
-            topo_df.select(['EGID', 'DF_UID', 'FLAECHE', 'NEIGUNG', 'AUSRICHTUNG'])
-            pd.Series(topo_df['DF_UID']).unique()
+            # topo_df.select(['EGID', 'DF_UID', 'FLAECHE', 'NEIGUNG', 'AUSRICHTUNG'])
+            # pd.Series(topo_df['GGDENR']).unique()
 
 
         # add direction classification =====================================
@@ -1304,7 +1449,14 @@ class Calibration:
             topo_dir = topo_dir.with_columns([
                 pl.col("Direction").fill_null(0).alias("Direction")
                 ])
-            # topo_dir.filter(pl.col('Direction').is_null()).select(['EGID', 'DF_UID', 'AUSRICHTUNG', 'Direction'])
+            # # topo_dir.filter(pl.col('Direction').is_null()).select(['EGID', 'DF_UID', 'AUSRICHTUNG', 'Direction'])
+            # egid = '1189158'
+            # dfuid = '4572534'
+            # topo_egid = topo_dir.filter(pl.col('EGID') == egid)
+            # # topo_egid = topo_egid.select([col for col in topo_egid.columns if col not in ['GDEKT','GGDENR','GSTAT','GKAT','GKLAS','GBAUJ','GBAUM','GBAUP','GABBJ','GANZWHG','GWAERZH1','GENH1','GWAERSCEH1','GWAERDATH1','GEBF','GAREA','ARE_typ','sfhmfh_typ','arch_typ','demand_elec_pGAREA']])
+            # topo_egid = topo_egid.filter((pl.col('DF_UID') == dfuid) & (pl.col('year') == '22'))
+            # topo_egid.write_csv(f'{self.sett.calib_scen_path}/topo_egid_{egid}_dfuid_{dfuid}.csv')
+
 
             topo_pivot = (
                 topo_dir
@@ -1320,10 +1472,9 @@ class Calibration:
                 )
             topo_rest = (
                 topo_dir
-                .group_by('EGID')
+                .group_by(['EGID', 'year'])
                 .agg(
                     pl.col('BFS_NUMMER').first().alias('BFS_NUMMER'),
-                    pl.col('year').first().alias('year'),
                     pl.col('xtf_id').first().alias('xtf_id'),
                     pl.col('DF_UID').count().alias('n_DF_UID'), 
                     pl.col('InitialPower').first().alias('InitialPower'),
@@ -1349,6 +1500,14 @@ class Calibration:
         df_approach2 = topo_agg.clone()
         df_approach2.write_parquet( f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_approach2.parquet')
         df_approach2.write_csv(     f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_approach2.csv')
+
+        # export gdf
+        pv_gdf = gpd.read_file(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_pv_gdf.geojson')
+        df_approach2_pd = df_approach2.to_pandas()
+        df_approach2_gdf = df_approach2_pd.merge(pv_gdf[['xtf_id', 'geometry']], how='left', on='xtf_id')
+        df_approach2_gdf = gpd.GeoDataFrame(df_approach2_gdf, geometry='geometry', crs=pv_gdf.crs)
+        df_approach2_gdf.to_file(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_approach2_gdf.geojson', driver='GeoJSON')
+
 
         # regression =====================================
         if False:
@@ -1407,37 +1566,19 @@ class Calibration:
             
 
 
-            # split training + testing 
 
-
-            # BOOKMARK - 
-            # NEXT
-            # OK > aggregate FLEACHe for all 4 angle directions
-            # > at very beginning, build a selection split to divide data into training and testing 1/4
-            # > run regression and compare
-            #   
-
-
-        
-
-        # regression instsize ~ egid_specs =====================================
-        if True:
-            print('asdf')
-
-
-    
 
 if __name__ == '__main__':
 
     # preprep calibration --------------------------------
     preprep_list = [
-        # Calibration_Settings(), 
+    #     # Calibration_Settings(), 
 
         Calibration_Settings(
             name_dir_export='calib_mini_debug',
             name_preprep_subsen='bfs1201',
             bfs_numbers=[1201,],
-            n_rows_import= 2000,
+            # n_rows_import= 2000,
             rerun_import_and_preprp_data_TF = True,
             export_gwr_ALL_building_gdf_TF = True
         ), 
@@ -1445,35 +1586,107 @@ if __name__ == '__main__':
             name_dir_export='calib_mini_debug',
             name_preprep_subsen='bfs1205',
             bfs_numbers=[1205,],
-            n_rows_import= 2000,
+            # n_rows_import= 2000,
             rerun_import_and_preprp_data_TF = True,
             export_gwr_ALL_building_gdf_TF = True
         ), 
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs96',
-        #     bfs_numbers=[96,],
-        #     n_rows_import= 500,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = False
-        # ), 
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs1033',
-        #     bfs_numbers=[1033,],
-        #     n_rows_import= 500,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = False
-        # ), 
-    ]
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs3788',
+            bfs_numbers=[3788,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs3764',
+            bfs_numbers=[3764,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs3762',
+            bfs_numbers=[3762,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs1631',
+            bfs_numbers=[1631,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs3746',
+            bfs_numbers=[3746,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs3543',
+            bfs_numbers=[3543,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs6037',
+            bfs_numbers=[6037,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs3851',
+            bfs_numbers=[3851,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs3792',
+            bfs_numbers=[3792,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs6252',
+            bfs_numbers=[6252,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+        Calibration_Settings(
+            name_dir_export='calib_mini_debug',
+            name_preprep_subsen='bfs6300',
+            bfs_numbers=[6300,],
+            # n_rows_import= 2000,
+            rerun_import_and_preprp_data_TF = True,
+            export_gwr_ALL_building_gdf_TF = True
+        ),
+    ]   
 
     for i_prep, prep_sett in enumerate(preprep_list):
         print('')
-        preprep_class = Calibration(prep_sett)
-        preprep_class.import_and_preprep_data() if preprep_class.sett.rerun_import_and_preprp_data_TF else None
+        # preprep_class = Calibration(prep_sett)
+        # preprep_class.import_and_preprep_data() if preprep_class.sett.rerun_import_and_preprp_data_TF else None
 
-    preprep_class = Calibration(preprep_list[0])
-    preprep_class.concatenate_prerep_data()
+    # preprep_class = Calibration(preprep_list[0])
+    # preprep_class.concatenate_prerep_data()
 
 
 
@@ -1481,19 +1694,16 @@ if __name__ == '__main__':
     calibration_list = [
         Calibration_Settings(
             name_dir_export='calib_mini_debug',
-            name_preprep_subsen='kt4',
-            kt_numbers  =[4, ],
-            # bfs_numbers =[
-                # 1201, 1205, 
-                # 96, 1033,
-            # ],
-            n_rows_import= 500,
+            name_preprep_subsen='bfs_mini_try',
+            name_calib_subscen='reg2_mini_bfs',
+            pvinst_pvtrif_elecpri_range_minmax = (2017, 2023),
             rerun_import_and_preprp_data_TF = False,
             export_gwr_ALL_building_gdf_TF = False
         ), 
     ]
     for calib_settings in calibration_list:
         calib_class = Calibration(calib_settings)
-        # calib_class.approach2_regression_instsize()     if calib_settings.run_approach2_regression_instsize_TF else None
+        calib_class.concatenate_prerep_data()
+        # calib_class.estimdf2_regression_instsize()     if calib_settings.run_estimdf2_regression_instsize_TF else None
 
 

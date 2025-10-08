@@ -42,6 +42,5 @@ source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 #add your command lines below
 #############################
 $(head -$SLURM_ARRAY_TASK_ID calib_ary_bfs_launch_2139nbfs.cmd | tail -1)
-python src/calibration_array_by_bfs_concat.py
 
 
