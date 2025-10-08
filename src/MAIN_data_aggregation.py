@@ -64,7 +64,7 @@ class DataAggScenario_Settings:
     GWR_GWAERZH: List[str]          = field(default_factory=lambda: ['7410', '7411',])                       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
     GWR_AREtypology : Dict          = field(default_factory=lambda:  {
                                             'Urban': [2, 4, ],
-                                            'Suburban': [3, 5 ], 
+                                            'Suburban': [3, 5, 4, 6 ], 
                                             'Rural': [7, 8,],                        
                                             # 1 - big centers   # https://map.geo.admin.ch/#/map?lang=en&center=2611872.51,1270543.42&z=3.703&topic=ech&layers=ch.swisstopo.zeitreihen@year=1864,f;ch.bfs.gebaeude_wohnungs_register,f;ch.bav.haltestellen-oev,f;ch.swisstopo.swisstlm3d-wanderwege,f;ch.vbs.schiessanzeigen,f;ch.astra.wanderland-sperrungen_umleitungen,f;ch.are.gemeindetypen;ch.swisstopo.swissboundaries3d-kanton-flaeche.fill&bgLayer=ch.swisstopo.pixelkarte-farbe            # '1' - big centers => URBAN
                                             # 2 - secondary centers of big centers  => URBAN 
@@ -1626,15 +1626,28 @@ if __name__ == '__main__':
             GWR_GKLAS = ['1110', ],  # '1121'],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
-
-
         DataAggScenario_Settings(
-            name_dir_export = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
-            kt_numbers = [13,],
-            year_range = [2022, 2023],
+            name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI',
+            # kt_numbers = [13, 12, 11], # BL, BS, SO
+            kt_numbers = [13, 11],
+            bfs_numbers = [
+                2761, 2768,
+                2546,  	 # Grenchen,  	
+                           ],
+            year_range = [2015, 2024],
+            split_data_geometry_AND_slow_api = True,
             GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
+
+
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
+        #     kt_numbers = [13,],
+        #     year_range = [2022, 2023],
+        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        # ),
         # DataAggScenario_Settings(
         #     name_dir_export = 'preprep_BL_22to23_extSolkatEGID_singlehouse',
         #     kt_numbers = [13,],
