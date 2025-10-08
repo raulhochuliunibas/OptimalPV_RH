@@ -1654,7 +1654,7 @@ class PVAllocScenario:
                     taxes =    elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('taxes')].sum()
                     fixcosts = elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('fixcosts')].sum()
 
-                    elecpri_egid = energy + grid + aidfee + taxes + fixcosts
+                    elecpri_egid = energy + grid + aidfee + taxes # + fixcosts
                     elecpri_info = {
                         'energy': energy,
                         'grid': grid,
