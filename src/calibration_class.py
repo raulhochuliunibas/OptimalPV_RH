@@ -11,7 +11,6 @@ import datetime
 import seaborn as sns
 import glob
 import shutil
-
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
@@ -1477,12 +1476,21 @@ class Calibration:
                     pl.col('BFS_NUMMER').first().alias('BFS_NUMMER'),
                     pl.col('xtf_id').first().alias('xtf_id'),
                     pl.col('DF_UID').count().alias('n_DF_UID'), 
+                    pl.col('GAREA').first().alias('GAREA'),
+                    pl.col('GBAUJ').first().alias('GBAUJ'),
+                    pl.col('GKLAS').first().alias('GKLAS'),
+                    pl.col('GSTAT').first().alias('GSTAT'),
+                    pl.col('GWAERZH1').first().alias('GWAERZH1'),
+                    pl.col('GENH1').first().alias('GENH1'),
+
                     pl.col('InitialPower').first().alias('InitialPower'),
                     pl.col('TotalPower').first().alias('TotalPower'), 
                     pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
                     pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'),
-                                    )
-            )
+
+                    pl.col('FLAECHE').sum().alias('FLAECHE_total'),
+                    )
+                )
             topo_agg = topo_rest.join(topo_pivot, on='EGID', how='left', )
 
             for direction in [
@@ -1578,106 +1586,107 @@ if __name__ == '__main__':
             name_dir_export='calib_mini_debug',
             name_preprep_subsen='bfs1201',
             bfs_numbers=[1201,],
-            # n_rows_import= 2000,
+            n_rows_import= 2000,
             rerun_import_and_preprp_data_TF = True,
             export_gwr_ALL_building_gdf_TF = True
         ), 
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs1205',
-            bfs_numbers=[1205,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ), 
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs3788',
-            bfs_numbers=[3788,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs3764',
-            bfs_numbers=[3764,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs3762',
-            bfs_numbers=[3762,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs1631',
-            bfs_numbers=[1631,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs3746',
-            bfs_numbers=[3746,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs3543',
-            bfs_numbers=[3543,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs6037',
-            bfs_numbers=[6037,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs3851',
-            bfs_numbers=[3851,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs3792',
-            bfs_numbers=[3792,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs6252',
-            bfs_numbers=[6252,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs6300',
-            bfs_numbers=[6300,],
-            # n_rows_import= 2000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
-        ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs1205',
+        #     bfs_numbers=[1205,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ), 
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs3788',
+        #     bfs_numbers=[3788,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs3764',
+        #     bfs_numbers=[3764,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs3762',
+        #     bfs_numbers=[3762,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs1631',
+        #     bfs_numbers=[1631,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs3746',
+        #     bfs_numbers=[3746,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs3543',
+        #     bfs_numbers=[3543,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs6037',
+        #     bfs_numbers=[6037,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs3851',
+        #     bfs_numbers=[3851,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs3792',
+        #     bfs_numbers=[3792,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs6252',
+        #     bfs_numbers=[6252,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs6300',
+        #     bfs_numbers=[6300,],
+        #     # n_rows_import= 2000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ),
+    
     ]   
 
     for i_prep, prep_sett in enumerate(preprep_list):
@@ -1704,6 +1713,6 @@ if __name__ == '__main__':
     for calib_settings in calibration_list:
         calib_class = Calibration(calib_settings)
         calib_class.concatenate_prerep_data()
-        # calib_class.estimdf2_regression_instsize()     if calib_settings.run_estimdf2_regression_instsize_TF else None
+        calib_class.estimdf2_regression_instsize()     if calib_settings.run_estimdf2_regression_instsize_TF else None
 
 
