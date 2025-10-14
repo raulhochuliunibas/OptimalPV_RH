@@ -229,7 +229,7 @@ class PVAllocScenario_Settings:
                                                                     # 'capa_roundup_pvprod_no_adj'              : assigns df_uid_w_inst to topo, based on pv_df TotalPower value (rounded up), pvprod_kW remains "untouched" and is still equivalent to production potential per roof partition
                                                                     # 'capa_roundup_pvprod_adjusted' - ATTENTION: will activate an if statement which will adjust pvprod_kW in topo_time_subdfs, so no longer pure production potential per roof partition
                                                                     # 'capa_no_adj_pvprod_adjusted' - ATTENTION: will activate an if statement which will adjust pvprod_kW in topo_time_subdfs, so no longer pure production potential per roof partition
-    ALGOspec_pvinst_option_to_EGID: str                         = 'max_dfuid_EGIDcombos'    # 'EGIDitercombos_maxdfuid' / 'EGIDoptimal__partial_dfuid'
+    ALGOspec_pvinst_option_to_EGID: str                         = 'max_dfuid_EGIDcombosc'    # 'EGIDitercombos_maxdfuid' / 'EGIDoptimal__partial_dfuid'
 
     ALGOspec_constr_capa_overshoot_fact: float                  = 1
     ALGOspec_subselec_filter_criteria: str                      = None  # 'southfacing_1spec' / 'eastwestfacing_3spec' / 'southwestfacing_2spec'
@@ -418,13 +418,11 @@ class PVAllocScenario:
             self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.sanity_check_path, i_m, m)
             if self.sett.ALGOspec_pvinst_size_calculation == 'inst_full_partition':
                 self.algo_update_npv_df_POLARS(self.sett.sanity_check_path, i_m, m)
-                self.algo_select_AND_adjust_topology(self.sett.sanity_check_path, 
-                                                    i_m, m)
+                self.algo_select_AND_adjust_topology(self.sett.sanity_check_path, i_m, m)
 
             elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
                 self.algo_update_npv_df_OPTIMIZED(self.sett.sanity_check_path, i_m, m)
-                self.algo_select_AND_adjust_topology_OPTIMIZED(self.sett.sanity_check_path, 
-                                                    i_m, m)
+                self.algo_select_AND_adjust_topology_OPTIMIZED(self.sett.sanity_check_path, i_m, m)
 
         end_sanity_check_allocation = datetime.datetime.now()
         self.mark_to_timing_csv('init', 'end_sanity_check_allocation', end_sanity_check_allocation, self.timediff_to_str_hhmmss(start_sanity_check_allocation, end_sanity_check_allocation), '-')
@@ -3861,6 +3859,77 @@ class PVAllocScenario:
                             npv_df.write_csv(f'{pred_npv_inst_by_M_path}/npv_df_{i_m}.csv')               
                         
                 checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
+
+
+        def algo_update_npv_df_STATESTIM(self, subdir_path: str, i_m: int, m):
+            """
+                This function estimates the installation size of all houses in sample, based on a previously run statistical model calibration. 
+                This stat model coefficients are imported and used to determine the most realistic installation size chose for the house
+            """
+
+            # setup -----------------------------------------------------
+            print_to_logfile('run function: algo_update_npv_df_STATESTIM', self.sett.log_name)         
+
+            # import -----------------------------------------------------
+            gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    
+            topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
+
+
+            # import topo_time_subdfs -----------------------------------------------------
+            topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet') 
+            no_pv_egid = [k for k, v in topo.items() if not v.get('pv_inst', {}).get('inst_TF') ]
+            
+            agg_npv_df_list = []
+            j = 0
+            i, path = j, topo_subdf_paths[j]
+            for i, path in enumerate(topo_subdf_paths):
+                print_topo_subdf_TF = len(topo_subdf_paths) > 5 and i <5  # i% (len(topo_subdf_paths) //3 ) == 0:
+                if print_topo_subdf_TF:
+                    print_to_logfile(f'updated npv (tranche {i+1}/{len(topo_subdf_paths)})', self.sett.log_name)
+                subdf_t0 = pl.read_parquet(path) # subdf_t0 = pd.read_parquet(path)
+
+                # drop egids with pv installations
+                subdf = subdf_t0.filter(pl.col("EGID").is_in(no_pv_egid))   
+
+                if subdf.shape[0] > 0:
+
+                    # merge gridprem_ts
+                    checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+                    subdf = subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
+                    checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+
+                    checkpoint_to_logfile('npv > subdf - all df_uid-combinations: start calc selfconsumption + netdemand', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+
+                    egid = '2362103'
+
+                    agg_npv_list = []                    
+                    n_egid_econ_functions_counter = 0
+                    for egid in list(subdf['EGID'].unique()):
+                        egid_subdf = subdf.filter(pl.col('EGID') == egid).clone()
+
+
+                        # reaggregate subdf on EGID-DFUID level ----------------------------------------------
+                        # BOOKMARK: 
+                        # - reagregate subdf simiarl to egid_npv_optim in algo_update_npv_df_OPTIMIZED() 
+                        # - add max_[orientation]_flaeche to data frame
+                        # - Import random forest regression model
+                        # - prediction installation size and distribute them similarly to OPèTIMIZED approach
+                        # - update gridnode_df function part 
+                        # - update installation pick part
+
+
+                        # compute npv of optimized installtion size ----------------------------------------------
+                        max_stromertrag = egid_subdf['STROMERTRAG'].max()
+                        max_dfuid_df = egid_subdf.filter(pl.col('STROMERTRAG') == max_stromertrag).sort(['t_int'], descending=[False,])
+                        max_dfuid_df.select(['EGID', 'df_uid', 't_int', 'STROMERTRAG', ])
+
+                        
+
+
+
+
+
+            print('asdf')
 
 
         def algo_select_AND_adjust_topology(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
