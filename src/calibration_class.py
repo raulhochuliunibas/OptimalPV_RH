@@ -11,10 +11,14 @@ import datetime
 import seaborn as sns
 import glob
 import shutil
+import joblib
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import GridSearchCV  
+from sklearn.model_selection import cross_val_score, KFold
 from sklearn.model_selection import train_test_split
 
 from shapely.geometry import Point
@@ -49,12 +53,42 @@ class Calibration_Settings:
     rerun_import_and_preprp_data_TF: bool           = True 
     export_gwr_ALL_building_gdf_TF: bool            = False  
 
+    run_concatenate_preprep_data_TF: bool           = True
     run_approach1_fit_optim_costfunction_TF: bool   = True  
-    run_estimdf2_regression_instsize_TF: bool      = True
+    run_approach2_regression_instsize_TF: bool      = True
+    run_appr2_random_forest_reg_TF: bool            = True
 
-    train_test_split_ratio: float            = 1/4
+
     pvinst_pvtrif_elecpri_range_minmax:Tuple[int,int]  = (2018, 2023)                             # min and max year of PV installation to be considered 
-    pvinst_capacity_minmax:Tuple[float,float]= (0.5, 40)                             # min and max capacity (in kWp) of PV installation to be considered
+    pvinst_capacity_minmax:Tuple[float,float]= (0.5, 50)                             # min and max capacity (in kWp) of PV installation to be considered
+
+    reg2_random_forest_reg_settings: Dict = field(default_factory=lambda: {
+        'run_ML_rfr_TF': True,
+        'comment_settings_RandomForestRegressor()': 
+        """
+            n_estimators:       Defines the number of decision trees in the Random Forest.
+            random_state=0:     Ensures the randomness in model training is controlled for reproducibility.
+            oob_score=True:     Enables out-of-bag scoring which evaluates the model's performance using data 
+                                not seen by individual trees during training
+            max_depth:          The maximum depth of the tree. If None, then nodes are expanded until all 
+                                leaves are pure or until all leaves contain less than min_samples_split 
+                                samples
+        """,
+        # 'n_estimators':         100 ,    # default: 100   # | 1,       
+        # 'min_samples_split':    5   ,    # default: 2     # | 1000,    
+        # 'max_depth':            20  ,    # default: None  # | 3,       
+        'random_state':         None,    # default: None  # | None,    
+        'n_jobs':               -1,      # default: None  # | -1,  
+        'cross_validation':     2, 
+        'n_estimators':         [1, ]  ,    # default: 100   # | 1,       
+        'min_samples_split':    [5, ]    ,    # default: 2     # | 1000,    
+        'max_depth':            [3, ]   ,    # default: None  # | 3,       
+
+        'reg2_rfrname_dfsuffix_tupls': [
+            ('_rfr1', ''),
+        ]
+    })
+
 
 
 
@@ -263,7 +297,7 @@ class Calibration_Settings:
         ALGOspec_topo_subdf_partitioner: int                        = 250  # 9999999
         ALGOspec_npv_update_groupby_cols_topo_aggdf: List[str]      = field(default_factory=lambda: [
                                                                         'EGID', 'df_uid', 'grid_node', 'bfs', 'GKLAS', 'GAREA', 'sfhmfh_typ', 'demand_arch_typ', 'inst_TF', 'info_source',
-                                                                        'pvid', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 
+                                                                        'pvid', 'pvtarif_Rp_kWh', 'elecpri_Rp_kWh', 'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 
                                                                         'NEIGUNG', 'STROMERTRAG'
                                                                     ])
         ALGOspec_npv_update_agg_cols_topo_aggdf: Dict[str, str]     = field(default_factory=lambda: {
@@ -357,6 +391,7 @@ class Calibration:
             self.sett.bfs_numbers = gm_select_kt['BFS_NUMMER'].unique().tolist()
         else:
             self.sett.bfs_numbers = [str(bfs) for bfs in self.sett.bfs_numbers]
+
 
     def write_to_logfile(self, str_text, log_time, log_file_path = None):
         if log_file_path is None:
@@ -1189,13 +1224,11 @@ class Calibration:
         print('\n')
 
 
-  
-
     def approach1_fit_optim_cost_function(self,):
         print('asdf')
 
 
-    def estimdf2_regression_instsize(self,):
+    def approach2_regression_instsize(self,):
         start_time = time.time()
         with open(f'{self.sett.calib_scen_path}/approach2_time_log.txt', 'a') as f:
             f.write(f'start time: {start_time}\n')
@@ -1413,7 +1446,7 @@ class Calibration:
             pv_pl       = pl.from_pandas(pv.drop(columns=self.sett.topo_df_excl_pv_cols))
             Map_egid_pv = Map_egid_pv.filter(pl.col('xtf_id').is_in(pv_pl['xtf_id'].implode()))
 
-            # topo_df_join0 = gwr_pl.filter(pl.col('EGID').is_in(Map_egid_pv['EGID'].to_series().implode()))
+
             topo_df_join0 = gwr_pl.filter(
                 pl.col('EGID').is_in(Map_egid_pv.select('EGID').to_series().implode())
             )
@@ -1425,9 +1458,6 @@ class Calibration:
 
             topo_df = topo_df_join5.clone()
             del topo_df_join0, topo_df_join1, topo_df_join2, topo_df_join3, topo_df_join4, topo_df_join5
-
-            # topo_df.select(['EGID', 'DF_UID', 'FLAECHE', 'NEIGUNG', 'AUSRICHTUNG'])
-            # pd.Series(topo_df['GGDENR']).unique()
 
 
         # add direction classification =====================================
@@ -1448,14 +1478,6 @@ class Calibration:
             topo_dir = topo_dir.with_columns([
                 pl.col("Direction").fill_null(0).alias("Direction")
                 ])
-            # # topo_dir.filter(pl.col('Direction').is_null()).select(['EGID', 'DF_UID', 'AUSRICHTUNG', 'Direction'])
-            # egid = '1189158'
-            # dfuid = '4572534'
-            # topo_egid = topo_dir.filter(pl.col('EGID') == egid)
-            # # topo_egid = topo_egid.select([col for col in topo_egid.columns if col not in ['GDEKT','GGDENR','GSTAT','GKAT','GKLAS','GBAUJ','GBAUM','GBAUP','GABBJ','GANZWHG','GWAERZH1','GENH1','GWAERSCEH1','GWAERDATH1','GEBF','GAREA','ARE_typ','sfhmfh_typ','arch_typ','demand_elec_pGAREA']])
-            # topo_egid = topo_egid.filter((pl.col('DF_UID') == dfuid) & (pl.col('year') == '22'))
-            # topo_egid.write_csv(f'{self.sett.calib_scen_path}/topo_egid_{egid}_dfuid_{dfuid}.csv')
-
 
             topo_pivot = (
                 topo_dir
@@ -1499,9 +1521,14 @@ class Calibration:
                 'south_max_flaeche',
                 'west_max_flaeche',
                 ]:
-                topo_agg = topo_agg.with_columns([
-                    pl.col(direction).fill_null(0).alias(direction)
+                if direction not in topo_agg.columns:
+                    topo_agg = topo_agg.with_columns([
+                    pl.lit(0).alias(direction)
                     ])
+                else:
+                    topo_agg = topo_agg.with_columns([
+                        pl.col(direction).fill_null(0).alias(direction)
+                        ])
 
 
         # export =====================================
@@ -1573,6 +1600,173 @@ class Calibration:
             df_train = df_pd.loc[~df_pd['EGID'].isin(df_test['EGID'])].copy()
             
 
+    def random_forest_regression(self,):
+        rfr_settings = self.sett.reg2_random_forest_reg_settings
+
+        # data prep ====================
+
+        def split_train_test(df_input, subset_type='train', split_ratio=0.7, seed=42):
+            train_df, test_df = train_test_split(df_input, train_size=split_ratio, random_state=seed)
+            if subset_type == 'train':
+                return train_df
+            elif subset_type == 'test':
+                return test_df
+            else:
+                raise ValueError("subset_type must be either 'train' or 'test'")
+
+
+        # data import + transform 
+        df = pd.read_csv(f'{self.sett.calib_scen_path}'f'/{self.sett.name_calib_subscen}_df_approach2.csv')
+
+        categorical_cols = ['GBAUJ', 'GKLAS', 'GSTAT', 'GWAERZH1', 'GENH1']
+        df[categorical_cols] = df[categorical_cols].astype('str')
+        df['GWAERZH1_str'] = np.where(df['GWAERZH1'].isin(['7410', '7411']), 'heatpump', 'no_heatpump')
+
+
+        # filtering + splitting 
+        df_train = split_train_test(df, 'train')
+        df_test = split_train_test(df, 'test')  
+        df_train.to_csv(f'{self.sett.calib_scen_path}/df_train.csv', index=False)
+        df_test.to_csv(f'{self.sett.calib_scen_path}/df_test.csv', index=False)
+
+        # Residential buildings 3+ units
+        df__res3plus = df.loc[df['GKLAS'].isin(['1110', '1121', '1122'])]
+        if df__res3plus.shape[0] > 0:
+            df_train_res3plus = split_train_test(df__res3plus, 'train')
+            df_test_res3plus = split_train_test(df__res3plus, 'test')
+            df_train_res3plus.to_csv(f'{self.sett.calib_scen_path}/df_train_res3plus.csv', index=False)
+            df_test_res3plus.to_csv(f'{self.sett.calib_scen_path}/df_test_res3plus.csv', index=False)
+
+        # Residential buildings 1-2 units
+        df__res1to2 = df.loc[df['GKLAS'].isin(['1110', '1121'])]
+        if df__res1to2.shape[0] > 0:
+            df_train_res1to2 = split_train_test(df__res1to2, 'train')
+            df_test_res1to2 = split_train_test(df__res1to2, 'test')
+            df_train_res1to2.to_csv(f'{self.sett.calib_scen_path}/df_train_res1to2.csv', index=False)
+            df_test_res1to2.to_csv(f'{self.sett.calib_scen_path}/df_test_res1to2.csv', index=False)
+
+        # Subset: Residential 1-2 units + TotalPower < 20
+        df__kwpmax20 = df.loc[(df['GKLAS'].isin(['1110', '1121'])) & (df['TotalPower'] < 20)]
+        if df__kwpmax20.shape[0] > 0:
+            df_train_kwpmax20 = split_train_test(df__kwpmax20, 'train')
+            df_test_kwpmax20 = split_train_test(df__kwpmax20, 'test')
+            df_train_kwpmax20.to_csv(f'{self.sett.calib_scen_path}/df_train_kwpmax20.csv', index=False)
+            df_test_kwpmax20.to_csv(f'{self.sett.calib_scen_path}/df_test_kwpmax20.csv', index=False)
+            
+
+        # random forest regression ====================
+
+        for i, (rfr_mod_name, df_suffix) in enumerate(rfr_settings['reg2_rfrname_dfsuffix_tupls']):
+
+            df_train_rfr = pd.read_csv(f'{self.sett.calib_scen_path}/df_train{df_suffix}.csv')
+            df_test_rfr  = pd.read_csv(f'{self.sett.calib_scen_path}/df_test{df_suffix}.csv')
+
+            # transformations
+            cols_dtypes_tupls = {
+                # 'year': 'int64',
+                'BFS_NUMMER': 'category',
+                'GAREA': 'float64',
+                # 'GBAUJ': 'int64',   
+                'GKLAS': 'category',
+                # 'GSTAT': 'category',
+                'GWAERZH1': 'category',
+                'GENH1': 'category',
+                'GWAERZH1_str': 'category',
+                # 'InitialPower': 'float64',
+                'TotalPower': 'float64',
+                'elecpri_Rp_kWh': 'float64',
+                'pvtarif_Rp_kWh': 'float64',
+                'FLAECHE_total': 'float64',
+                'east_max_flaeche': 'float64',
+                'west_max_flaeche': 'float64',
+                'north_max_flaeche': 'float64',
+                'south_max_flaeche': 'float64',
+            }
+            df_train_rfr = df_train_rfr[[col for col in cols_dtypes_tupls.keys() if col in df_train_rfr.columns]].copy()
+            df_test_rfr  = df_test_rfr[[col for col in cols_dtypes_tupls.keys() if col in df_test_rfr.columns]].copy()
+
+            df_train_rfr = df_train_rfr.dropna().copy()
+            df_test_rfr  = df_test_rfr.dropna().copy()
+
+            for col, dtype in cols_dtypes_tupls.items():
+                df_train_rfr[col] = df_train_rfr[col].astype(dtype)
+                df_test_rfr[col]  = df_test_rfr[col].astype(dtype)
+
+            X = df_train_rfr.drop(columns=['TotalPower', ])
+            y = df_train_rfr['TotalPower']
+
+            # encode categorical variables
+            cat_cols = X.select_dtypes(include=["object", "category"]).columns
+            encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+            encoded_Arry = encoder.fit_transform(X[cat_cols].astype(str))
+            encoded_df = pd.DataFrame(encoded_Arry, columns=encoder.get_feature_names_out(cat_cols))
+            X = pd.concat([X.drop(columns=cat_cols).reset_index(drop=True), encoded_df.reset_index(drop=True)], axis=1)
+
+
+            # rf model
+            if rfr_settings['run_ML_rfr_TF']:
+                # rfr_model = RandomForestRegressor(
+                #     n_estimators   = rfr_settings['n_estimators'],
+                #     max_depth      = rfr_settings['max_depth'],
+                #     random_state   = rfr_settings['random_state'],
+                #     n_jobs         = rfr_settings['n_jobs'],
+                # )
+                # # cross validation
+                # kf = KFold(n_splits=10, shuffle=True, random_state=42)
+                # cv_scores = cross_val_score(rfr_model, X, y, cv=kf, scoring='neg_mean_absolute_error')
+                # rfr_model.fit(X, y)
+
+                rfr_model = RandomForestRegressor(random_state = rfr_settings['random_state'])
+                param_grid = {
+                    'n_estimators':      rfr_settings['n_estimators'],
+                    'min_samples_split': rfr_settings['min_samples_split'],
+                    'max_depth':         rfr_settings['max_depth'],
+                }
+                    
+                grid_search = GridSearchCV(
+                    rfr_model,
+                    param_grid,
+                    cv=rfr_settings['cross_validation'],
+                    scoring='neg_mean_absolute_error',
+                    n_jobs=rfr_settings['n_jobs'],
+                    return_train_score=True,
+                )
+                grid_search.fit(X, y)
+                rfr_model = grid_search.best_estimator_
+
+
+                # save model + encoder
+                joblib.dump(rfr_model, f'{self.sett.calib_scen_path}/{rfr_mod_name}_model.pkl')
+                joblib.dump(encoder, f'{self.sett.calib_scen_path}/{rfr_mod_name}_encoder.pkl')
+
+                os.makedirs(f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs', exist_ok=True)
+                joblib.dump(rfr_model, f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{rfr_mod_name}_model.pkl')
+                joblib.dump(encoder, f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{rfr_mod_name}_encoder.pkl')
+                
+
+
+            # prediction
+            if rfr_settings['run_ML_rfr_TF']:
+                X_test = df_test_rfr.drop(columns=['TotalPower', ])
+                encoded_test_array = encoder.transform(X_test[cat_cols].astype(str))
+                encoded_test_df = pd.DataFrame(encoded_test_array, columns=encoder.get_feature_names_out(cat_cols))
+
+                X_test_final = pd.concat([X_test.drop(columns=cat_cols).reset_index(drop=True), encoded_test_df.reset_index(drop=True)], axis=1)
+                X_test_final = X_test_final[X.columns]
+
+                test_preds = rfr_model.predict(X_test_final)
+
+                df_test_rfr[f'pred_{rfr_mod_name}'] = test_preds
+
+            else: 
+                df_test_rfr[f'pred_{rfr_mod_name}'] = np.zeros(df_test_rfr.shape[0])
+        
+            # df_test_rfr.to_csv(f'{self.sett.calib_scen_path}/df_test_rfr_{rfr_mod_name}{df_suffix}.csv', index=False)
+            df_test_rfr.to_csv(f'{self.sett.calib_scen_path}/df_test_rfr_{rfr_mod_name}.csv', index=False)
+            del df_train_rfr, df_test_rfr
+            
+
+
 
 
 
@@ -1586,10 +1780,18 @@ if __name__ == '__main__':
             name_dir_export='calib_mini_debug',
             name_preprep_subsen='bfs1201',
             bfs_numbers=[1201,],
-            n_rows_import= 2000,
+            n_rows_import= 4000,
             rerun_import_and_preprp_data_TF = True,
             export_gwr_ALL_building_gdf_TF = True
         ), 
+        # Calibration_Settings(
+        #     name_dir_export='calib_mini_debug',
+        #     name_preprep_subsen='bfs1033',
+        #     bfs_numbers=[1033,],
+        #     n_rows_import= 4000,
+        #     rerun_import_and_preprp_data_TF = True,
+        #     export_gwr_ALL_building_gdf_TF = True
+        # ), 
         # Calibration_Settings(
         #     name_dir_export='calib_mini_debug',
         #     name_preprep_subsen='bfs1205',
@@ -1691,11 +1893,16 @@ if __name__ == '__main__':
 
     for i_prep, prep_sett in enumerate(preprep_list):
         print('')
-        # preprep_class = Calibration(prep_sett)
+        preprep_class = Calibration(prep_sett)
         # preprep_class.import_and_preprep_data() if preprep_class.sett.rerun_import_and_preprp_data_TF else None
 
     # preprep_class = Calibration(preprep_list[0])
-    # preprep_class.concatenate_prerep_data()
+    calib_class = Calibration(preprep_list[0])
+    calib_class.concatenate_prerep_data()           if calib_class.sett.run_concatenate_preprep_data_TF else None
+
+    calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
+    calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
+
 
 
 
@@ -1712,7 +1919,5 @@ if __name__ == '__main__':
     ]
     for calib_settings in calibration_list:
         calib_class = Calibration(calib_settings)
-        calib_class.concatenate_prerep_data()
-        calib_class.estimdf2_regression_instsize()     if calib_settings.run_estimdf2_regression_instsize_TF else None
 
 
