@@ -299,7 +299,7 @@ class Visual_Settings:
             'trace_color_palette': 'Turbo',
             'upper_lower_bound_interval': [0.05, 0.95],
             'colnames_cont_charact_installations_AND_numerator': [
-            ('pv_tarif_Rp_kWh',        1), 
+            ('pvtarif_Rp_kWh',        1), 
             ('elecpri_Rp_kWh',         1),
             ('selfconsum_kW',          1),
             ('FLAECHE',                1), 
@@ -558,7 +558,7 @@ class Visualization:
                                 'inst_TF': pv_inst.get('inst_TF'),
                                 'info_source': pv_inst.get('info_source'),
                                 'pvid': pv_inst.get('xtf_id'),
-                                'pv_tarif_Rp_kWh': v.get('pvtarif_Rp_kWh'),
+                                'pvtarif_Rp_kWh': v.get('pvtarif_Rp_kWh'),
                                 'TotalPower': pv_inst.get('TotalPower'),
                                 'df_uid_w_inst': v.get('df_uid_w_inst'),
 
@@ -5022,7 +5022,7 @@ class Visualization:
                                                     pl.col('grid_node').first().alias('grid_node'),
                                                     pl.col('demand_kW').first().alias('demand_kW'),
                                                     pl.col('panel_efficiency').first().alias('panel_efficiency'),
-                                                    pl.col('pv_tarif_Rp_kWh').first().alias('pv_tarif_Rp_kWh'),
+                                                    pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'),
                                                     pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
                                                     pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
 
@@ -5232,13 +5232,13 @@ class Visualization:
                                                 
 
                                                 # df = df.with_columns([
-                                                #     (pl.col("pv_tarif_Rp_kWh") / tweak_denominator).alias("pv_tarif_Rp_kWh"),
+                                                #     (pl.col("pvtarif_Rp_kWh") / tweak_denominator).alias("pvtarif_Rp_kWh"),
                                                 # ])
                                                 # calc economic income and spending
                                                 if not self.pvalloc_scen.ALGOspec_tweak_npv_excl_elec_demand:
 
                                                     df = df.with_columns([
-                                                        ((pl.col("netfeedin_kW") * pl.col("pv_tarif_Rp_kWh")) / 100 + 
+                                                        ((pl.col("netfeedin_kW") * pl.col("pvtarif_Rp_kWh")) / 100 + 
                                                         (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf"),
 
                                                         ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100 + 
@@ -5247,7 +5247,7 @@ class Visualization:
                                                     
                                                 else:
                                                     df = df.with_columns([
-                                                        ((pl.col("netfeedin_kW") * pl.col("pv_tarif_Rp_kWh")) / 100 + 
+                                                        ((pl.col("netfeedin_kW") * pl.col("pvtarif_Rp_kWh")) / 100 + 
                                                         (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf"),
                                                         ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100).alias("econ_spend_chf")
                                                         ])
@@ -5333,7 +5333,7 @@ class Visualization:
                                                 # feature: adjust pvtarif and elecpri to explore effects
                                                 if plot_mapline_specs['tryout_generic_pvtariff_elecpri_Rp_kWh'][0] is not None: 
                                                     subdf = subdf.with_columns([
-                                                        pl.lit(plot_mapline_specs['tryout_generic_pvtariff_elecpri_Rp_kWh'][0]).alias('pv_tarif_Rp_kWh'),
+                                                        pl.lit(plot_mapline_specs['tryout_generic_pvtariff_elecpri_Rp_kWh'][0]).alias('pvtarif_Rp_kWh'),
                                                     ])
                                                 if plot_mapline_specs['tryout_generic_pvtariff_elecpri_Rp_kWh'][1] is not None: 
                                                     subdf = subdf.with_columns([
@@ -5567,7 +5567,7 @@ class Visualization:
                                         selfconsum_kW_sum = np.array(selfconsum_kW_list)
                                         breakeven = np.array(breakeven_list)
 
-                                        pvtarif = round(max_dfuid_df['pv_tarif_Rp_kWh'][0], 4)
+                                        pvtarif = round(max_dfuid_df['pvtarif_Rp_kWh'][0], 4)
                                         elecpri = round(max_dfuid_df['elecpri_Rp_kWh'][0], 4)
                                         params_total_a = round(params_total[0], 1) 
                                         params_total_b = round(params_total[1], 1) 

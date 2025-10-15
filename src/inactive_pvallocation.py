@@ -31,7 +31,7 @@ def algo_calc_economics_in_topo_df(self,
     topo = topo
 
     egid_list, df_uid_list, bfs_list, gklas_list, demand_arch_typ_list, grid_node_list  = [], [], [], [], [], []
-    inst_list, info_source_list, pvdf_totalpower_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], [], []
+    inst_list, info_source_list, pvdf_totalpower_list, pvid_list, pvtarif_Rp_kWh_list = [], [], [], [], []
     flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_list = [], [], [], [], []
 
     k,v = list(topo.items())[0]
@@ -53,7 +53,7 @@ def algo_calc_economics_in_topo_df(self,
             inst_list.append(v.get('pv_inst').get('inst_TF'))
             info_source_list.append(v.get('pv_inst').get('info_source'))
             pvid_list.append(v.get('pv_inst').get('xtf_id'))
-            pv_tarif_Rp_kWh_list.append(v.get('pvtarif_Rp_kWh'))
+            pvtarif_Rp_kWh_list.append(v.get('pvtarif_Rp_kWh'))
             pvdf_totalpower_list.append(v.get('pv_inst').get('TotalPower'))
 
             flaeche_list.append(v_p.get('FLAECHE'))
@@ -67,7 +67,7 @@ def algo_calc_economics_in_topo_df(self,
                             'gklas': gklas_list, 'demand_arch_typ': demand_arch_typ_list, 'grid_node': grid_node_list,
 
                             'inst_TF': inst_list, 'info_source': info_source_list, 'pvid': pvid_list,
-                            'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list, 'TotalPower': pvdf_totalpower_list,
+                            'pvtarif_Rp_kWh': pvtarif_Rp_kWh_list, 'TotalPower': pvdf_totalpower_list,
 
                             'FLAECHE': flaeche_list, 'AUSRICHTUNG': ausrichtung_list, 
                             'STROMERTRAG': stromertrag_list, 'NEIGUNG': neigung_list, 
@@ -481,15 +481,15 @@ def algo_update_npv_df(self, subdir_path: str, i_m: int, m):
             subdf = subdf.merge(gridprem_ts[['t', 'prem_Rp_kWh', 'grid_node']], how='left', on=['t', 'grid_node']) 
 
             # compute selfconsumption + netdemand ----------------------------------------------
-            subdf_array = subdf[['pvprod_kW', 'demand_kW', 'pv_tarif_Rp_kWh', 'elecpri_Rp_kWh', 'prem_Rp_kWh']].to_numpy()
-            pvprod_kW, demand_kW, pv_tarif_Rp_kWh, elecpri_Rp_kWh, prem_Rp_kWh = subdf_array[:,0], subdf_array[:,1], subdf_array[:,2], subdf_array[:,3], subdf_array[:,4]
+            subdf_array = subdf[['pvprod_kW', 'demand_kW', 'pvtarif_Rp_kWh', 'elecpri_Rp_kWh', 'prem_Rp_kWh']].to_numpy()
+            pvprod_kW, demand_kW, pvtarif_Rp_kWh, elecpri_Rp_kWh, prem_Rp_kWh = subdf_array[:,0], subdf_array[:,1], subdf_array[:,2], subdf_array[:,3], subdf_array[:,4]
 
             demand_kW = demand_kW * self.sett.ALGOspec_tweak_gridnode_df_prod_demand_fact
             selfconsum_kW = np.minimum(pvprod_kW, demand_kW) * self.sett.TECspec_self_consumption_ifapplicable
             netdemand_kW = demand_kW - selfconsum_kW
             netfeedin_kW = pvprod_kW - selfconsum_kW
 
-            econ_inc_chf = ((netfeedin_kW * pv_tarif_Rp_kWh) /100) + ((selfconsum_kW * elecpri_Rp_kWh) /100)
+            econ_inc_chf = ((netfeedin_kW * pvtarif_Rp_kWh) /100) + ((selfconsum_kW * elecpri_Rp_kWh) /100)
             if not self.sett.ALGOspec_tweak_npv_excl_elec_demand:
                 econ_spend_chf = ((netfeedin_kW * prem_Rp_kWh) / 100)  + ((netdemand_kW * elecpri_Rp_kWh) /100)
             else:
@@ -514,7 +514,7 @@ def algo_update_npv_df(self, subdir_path: str, i_m: int, m):
             aggsub_npry = np.array(agg_subdf)
 
             egid_list, combo_df_uid_list, n_df_uid_list, bfs_list, gklas_list, demandtype_list, grid_node_list = [], [], [], [], [], [], []
-            inst_list, info_source_list, pvid_list, pv_tarif_Rp_kWh_list = [], [], [], []
+            inst_list, info_source_list, pvid_list, pvtarif_Rp_kWh_list = [], [], [], []
             flaeche_list, stromertrag_list, ausrichtung_list, neigung_list, elecpri_Rp_kWh_list = [], [], [], [], []
         
             flaech_angletilt_list = []
@@ -543,7 +543,7 @@ def algo_update_npv_df(self, subdir_path: str, i_m: int, m):
                         inst_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('inst_TF')][0])
                         info_source_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('info_source')][0])
                         pvid_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pvid')][0])
-                        pv_tarif_Rp_kWh_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pv_tarif_Rp_kWh')][0]) 
+                        pvtarif_Rp_kWh_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('pvtarif_Rp_kWh')][0]) 
                         elecpri_Rp_kWh_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('elecpri_Rp_kWh')][0])
                         demand_list.append(aggsub_npry[mask_dfuid_subdf, agg_subdf.columns.get_loc('demand_kW')][0])
 
@@ -567,7 +567,7 @@ def algo_update_npv_df(self, subdir_path: str, i_m: int, m):
                                             'demandtype': demandtype_list, 'grid_node': grid_node_list,
 
                                         'inst_TF': inst_list, 'info_source': info_source_list, 'pvid': pvid_list,
-                                        'pv_tarif_Rp_kWh': pv_tarif_Rp_kWh_list, 'elecpri_Rp_kWh': elecpri_Rp_kWh_list,
+                                        'pvtarif_Rp_kWh': pvtarif_Rp_kWh_list, 'elecpri_Rp_kWh': elecpri_Rp_kWh_list,
                                         'demand_kW': demand_list,
 
                                         'AUSRICHTUNG': ausrichtung_list, 'NEIGUNG': neigung_list,
