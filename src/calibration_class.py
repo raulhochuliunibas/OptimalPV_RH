@@ -34,6 +34,7 @@ class Calibration_Settings:
     name_preprep_subsen: str                = 'preprep_class_default_sett'
     name_calib_subscen: str                 = 'calib_class_default_sett'
     scicore_concat_data_path: str           = None
+    slurm_job_id: str                       = '9999'
 
 
     kt_numbers: List[int]                    = field(default_factory=lambda: [
@@ -54,6 +55,7 @@ class Calibration_Settings:
     export_gwr_ALL_building_gdf_TF: bool            = False  
 
     run_concatenate_preprep_data_TF: bool           = True
+    concat_bfs_subsample: bool                      = False
     run_approach1_fit_optim_costfunction_TF: bool   = True  
     run_approach2_regression_instsize_TF: bool      = True
     run_appr2_random_forest_reg_TF: bool            = True
@@ -74,19 +76,25 @@ class Calibration_Settings:
                                 leaves are pure or until all leaves contain less than min_samples_split 
                                 samples
         """,
+        'reg2_rfrname_dfsuffix_dicts': {
+           
+            'rfr_mod_name': '_rfr0', 
+            'df_suffix': '',
+
+            'random_state':         None,    # default: None  # | None,    
+            'n_jobs':               -1,      # default: None  # | -1,  
+            'cross_validation':     2, 
+            'n_estimators':         [1, ]  ,    # default: 100   # | 1,       
+            'min_samples_split':    [5, ]    ,    # default: 2     # | 1000,    
+            'max_depth':            [3, ]   ,    # default: None  # | 3,       
+        }, 
         # 'n_estimators':         100 ,    # default: 100   # | 1,       
         # 'min_samples_split':    5   ,    # default: 2     # | 1000,    
         # 'max_depth':            20  ,    # default: None  # | 3,       
-        'random_state':         None,    # default: None  # | None,    
-        'n_jobs':               -1,      # default: None  # | -1,  
-        'cross_validation':     2, 
-        'n_estimators':         [1, ]  ,    # default: 100   # | 1,       
-        'min_samples_split':    [5, ]    ,    # default: 2     # | 1000,    
-        'max_depth':            [3, ]   ,    # default: None  # | 3,       
 
-        'reg2_rfrname_dfsuffix_tupls': [
-            ('_rfr1', ''),
-        ]
+        # 'reg2_rfrname_dfsuffix_tupls': [
+            # ('_rfr1', ''),
+        # ]
     })
 
 
@@ -170,7 +178,7 @@ class Calibration_Settings:
     # existing ones
     if True:
         # # PART I: settings for alloc_initialization --------------------
-        GWRspec_solkat_max_n_partitions: int                = 10          # larger number of partitions make all combos of roof partitions practically impossible to calculate
+        GWRspec_solkat_max_n_partitions: int                = 20          # larger number of partitions make all combos of roof partitions practically impossible to calculate
         GWRspec_solkat_area_per_EGID_range: List[int]       = field(default_factory=lambda: [2, 600])  # for 100kWp inst, need 500m2 roof area => just above the threshold for residential subsidies KLEIV, below 2m2 too small to mount installations
         GWRspec_building_cols: List[str]                    = field(default_factory=lambda: [
                                                                 'EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
@@ -359,7 +367,7 @@ class Calibration:
         self.sett.calib_path = os.path.join(self.sett.data_path, 'calibration')
         self.sett.calib_scen_path = os.path.join(self.sett.calib_path, self.sett.name_dir_export)
         self.sett.calib_scen_preprep_path = os.path.join(self.sett.calib_scen_path, 'preprep_data')
-        self.sett.subscen_time_log_path = f'{self.sett.calib_scen_preprep_path}/{self.sett.name_preprep_subsen}_preprep_time_log.txt'
+        self.sett.subscen_preprep_time_log_path = f'{self.sett.calib_scen_preprep_path}/{self.sett.name_preprep_subsen}_DEFAULT_log.txt'
 
         
         os.makedirs(self.sett.calib_path, exist_ok=True)
@@ -395,8 +403,8 @@ class Calibration:
 
     def write_to_logfile(self, str_text, log_time, log_file_path = None):
         if log_file_path is None:
-            log_file_path = self.sett.subscen_time_log_path
-        with open(self.sett.subscen_time_log_path, 'a') as f:
+            log_file_path = self.sett.subscen_preprep_time_log_path
+        with open(log_file_path, 'a') as f:
             str_to_print = f'{str_text:70}, time: {time.ctime()}, to complete: {round((time.time()-log_time),2)} sec'
             f.write(str_to_print)
             print(str_to_print)
@@ -405,15 +413,17 @@ class Calibration:
 
 
     def import_and_preprep_data(self,):
+        import_preprep_log_path = f'{self.sett.calib_scen_preprep_path}/1_{self.sett.name_preprep_subsen}_job{self.sett.slurm_job_id}_preprep_InProcess_log.txt'
+
         os.makedirs(self.sett.calib_scen_preprep_path, exist_ok=True)
         name_preprep_subsen = self.sett.name_preprep_subsen
         
         log_time = time.time()
-        log_time = self.write_to_logfile('\n * import_and_preprep_data()', log_time)
+        log_time = self.write_to_logfile('\n * import_and_preprep_data()', log_time, log_file_path=import_preprep_log_path)
 
 
         start_time = time.time()
-        with open(self.sett.subscen_time_log_path, 'w') as f:
+        with open(import_preprep_log_path, 'w') as f:
             f.write(f'calibration - prerep_data: {self.sett.name_dir_export}>{self.sett.name_preprep_subsen} \n')
             f.write(f'start time: {time.ctime()} \n\n')
             
@@ -474,7 +484,7 @@ class Calibration:
             pv_pq  = pv_select_gdf.loc[:,pv_select_gdf.columns !='geometry'].copy()
             pv_geo = pv_select_gdf.loc[:,['xtf_id', 'BFS_NUMMER', 'geometry']].copy()
     
-            log_time = self.write_to_logfile('local data imported - pv, finished', log_time)
+            log_time = self.write_to_logfile('local data imported - pv, finished', log_time, log_file_path=import_preprep_log_path)
 
 
 
@@ -511,7 +521,7 @@ class Calibration:
             solkat_gdf  = solkat_export.copy()
             solkat_pq   = solkat_export.loc[:,solkat_export.columns !='geometry'].copy()
             solkat_geo  = solkat_export.loc[:,['DF_UID', 'BFS_NUMMER', 'geometry']].copy()
-            log_time = self.write_to_logfile('local data imported - solkat, finished', log_time)
+            log_time = self.write_to_logfile('local data imported - solkat, finished', log_time, log_file_path=import_preprep_log_path)
 
 
 
@@ -528,7 +538,7 @@ class Calibration:
             solkat_month_pq['DF_UID'] = solkat_month_pq['DF_UID'].astype(str)
             solkat_month_pq = solkat_month_pq.merge(solkat_pq[['DF_UID', 'BFS_NUMMER']], how = 'left', on = 'DF_UID')
             # solkat_month = solkat_month_pq[solkat_month_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
-            log_time = self.write_to_logfile('local data imported - solkat month, finished', log_time)
+            log_time = self.write_to_logfile('local data imported - solkat month, finished', log_time, log_file_path=import_preprep_log_path)
 
 
 
@@ -551,7 +561,7 @@ class Calibration:
             gwr_dwelling_df = pd.DataFrame(sqlrows, columns=query_columns)
             gwr_dwelling_df[['WAZIM', 'WAREA']] = gwr_dwelling_df[['WAZIM', 'WAREA']].replace('', 0).astype(float)
 
-            log_time = self.write_to_logfile('local data imported - gwr dwelling, finished', log_time)
+            log_time = self.write_to_logfile('local data imported - gwr dwelling, finished', log_time, log_file_path=import_preprep_log_path)
 
             # get ALL BUILDING data
             # select cols
@@ -566,7 +576,7 @@ class Calibration:
             conn.close()
 
             gwr_all_building_df = pd.DataFrame(sqlrows, columns=query_columns)
-            log_time = self.write_to_logfile('local data imported - gwr all building, finished', log_time)
+            log_time = self.write_to_logfile('local data imported - gwr all building, finished', log_time, log_file_path=import_preprep_log_path)
 
             # merger ------
             if False: 
@@ -618,9 +628,9 @@ class Calibration:
             gwr_gdf = gwr_to_gdf(gwr_pq)
             gwr_all_building_gdf = gwr_to_gdf(gwr_all_building_df) if self.sett.export_gwr_ALL_building_gdf_TF else None
 
-            log_time = self.write_to_logfile('local data imported - gwr merge + filter', log_time)
+            log_time = self.write_to_logfile('local data imported - gwr merge + filter', log_time, log_file_path=import_preprep_log_path)
         
-        log_time = self.write_to_logfile('local data imported - gwr, finished', log_time)
+        log_time = self.write_to_logfile('local data imported - gwr, finished', log_time, log_file_path=import_preprep_log_path)
 
 
         # continue only if houses in BFS =-=-=-=
@@ -639,9 +649,17 @@ class Calibration:
                     # solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
                     # solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
                     # solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
+                    # solkat_egidnan = solkat_select_gdf.loc[solkat_select_gdf['EGID'] == 'NAN',].copy()
+                    
                     solkat_v2_gdf = solkat_select_gdf.copy()
-                    solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
-                        
+                    solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == 'NAN', ['EGID', 'SB_UUID']]
+                    # Not dropping all the EGID nans but give them a proxy to keep as many roofs in the sample as possible
+                    # solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
+                    solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == 'NAN', 'EGID'] = solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == 'NAN'].apply(
+                        lambda row: f"egid_proxysbuuid_{row['SB_UUID']}", axis=1
+                    )
+                    # gwr_gdf.to_file(f'{self.sett.calib_scen_preprep_path}/GWR_TEST.geojson', driver='GeoJSON')
+           
                     # create mapping of solkatEGIDs and missing gwrEGIDs 
                     # union all shapes with the same EGID 
                     solkat_union_v2EGID = solkat_v2_gdf.groupby('EGID').agg({
@@ -661,11 +679,18 @@ class Calibration:
                     add_solkat_counter, add_solkat_partition = 1, 4
                     print_counter_max, i_print = 5, 0
 
-                    # debug_idx = 274
-                    # n_egid, egid = debug_idx, EGID_old_solkat_list[debug_idx]
+                    debug_idx = 2076
+                    n_egid, egid = debug_idx, EGID_old_solkat_list[debug_idx]
                     for n_egid, egid in enumerate(EGID_old_solkat_list):
                         egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
                         egid_join_union = egid_join_union.reset_index(drop = True)
+
+                        if all(egid_join_union['EGID_gwradded'].isna()):  
+                            # no overlapp between solkat and any GWR => skip
+                            continue
+
+                        if ('egid_proxy' in egid) & (not all(egid_join_union['EGID_gwradded'].isna())):
+                            print(f'negid {n_egid}, egid {egid}, has proxy EGID, but gwr EGIDs found in union shape, skipping proxy handling')
 
                         # Shapes of building that will not be included given GWR filter settings
                         if any(egid_join_union['EGID_gwradded'].isna()):  
@@ -727,44 +752,55 @@ class Calibration:
                                 solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
                                 
                             # Error case: Shapes of building that has multiple gwrEGIDs but does not overlap with the assigned / identical solkatEGID. 
-                            # Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID being placed in another shape. 
+                            # 5a Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID being placed in another shape. 
+                            # 5b edit: because nan in GWR_EGID of solkat have been replaced with SB_UUID as a proxy for coherent EGID union shapes, this case now apprears more often and
+                            # must be dealt differently (renaming SB_UUID proxy with actual EGID from GWR)
                             elif case5_TF:      # (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list()):
-
-                                # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
-                                gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
-                                # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
-                                gwrEGID_row['EGID_gwradded'] = egid
-                                egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
-
-                                # next follow all steps as in "Intended Case" above (solkat_shape with solkatEGID and gwrEGIDs)
-                                solkat_subdf_addedEGID_list = []
-                                n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
                                 
-                                for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+                                # 5b case
+                                if 'egid_proxy' in egid:
+                                    solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                    solkat_subdf = egid_join_union
+                                    # BOOKMARK!
 
-                                    # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
-                                    solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                                    solkat_addedEGID['EGID'] = egid_to_add
+                                else: 
+
+
+                                    # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
+                                    gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
+                                    # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                    gwrEGID_row['EGID_gwradded'] = egid
+                                    egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
+
+                                    # next follow all steps as in "Intended Case" above (solkat_shape with solkatEGID and gwrEGIDs)
+                                    solkat_subdf_addedEGID_list = []
+                                    n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
                                     
-                                    #extend the DF_UID with some numbers to have truely unique DF_UIDs
-                                    if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
-                                        str_suffix = str(n+1).zfill(3)
-                                        if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
-                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
-                                        elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
-                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+                                    for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
 
-                                    # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
-                                    for col in cols_adjust_for_missEGIDs_to_solkat:
-                                        solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                        # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                                        solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                        solkat_addedEGID['EGID'] = egid_to_add
+                                        
+                                        #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                                        if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
+                                            str_suffix = str(n+1).zfill(3)
+                                            if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                                                solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                            elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                                                solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+
+                                        # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                                        for col in cols_adjust_for_missEGIDs_to_solkat:
+                                            solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                        
+                                        # shrink topology to see which partitions are affected by EGID extensions
+                                        # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
+
+                                        solkat_subdf_addedEGID_list.append(solkat_addedEGID)
                                     
-                                    # shrink topology to see which partitions are affected by EGID extensions
-                                    # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
-
-                                    solkat_subdf_addedEGID_list.append(solkat_addedEGID)
-                                
-                                # concat all EGIDs within the same shape that were previously missing
-                                solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+                                    # concat all EGIDs within the same shape that were previously missing
+                                    solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
 
                                 if i_print < print_counter_max:
                                     print(f'ERROR: EGID {egid}: multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them')
@@ -826,14 +862,14 @@ class Calibration:
 
 
                 # Map_egid_pv = gwregid_pvid.loc[gwregid_pvid['EGID'].notna(), ['EGID', 'xtf_id']].copy()
-                Map_egid_pv = gwregid_pvid[['EGID', 'xtf_id', 'BFS_NUMMER']].copy()
-                Map_egid_pv = Map_egid_pv.dropna(subset=['EGID'])
+                Map_egid_pv= gwregid_pvid[['EGID', 'xtf_id', 'BFS_NUMMER']].copy()
+                # Map_egid_pv = Map_egid_pv.dropna(subset=['EGID'])
 
 
                 # MAP: BFSGM > EWR ------------------------------
                 Map_gm_ewr = pd.read_parquet(f'{self.sett.data_path}/input_api/Map_gm_ewr.parquet')
             
-                log_time = self.write_to_logfile('\nadd omitted EGIDs to SOLKAT, finished', log_time) 
+                log_time = self.write_to_logfile('\nadd omitted EGIDs to SOLKAT, finished', log_time, log_file_path=import_preprep_log_path)
 
 
             # import ts data and match households ====================
@@ -856,8 +892,6 @@ class Calibration:
                     gwr_join_gdf['ARE_typ'] = ''
                     gwr_join_gdf = gpd.sjoin(gwr_join_gdf, gemeinde_type_gdf[['NAME', 'TYP', 'BFS_NO', 'geometry']],
                                             how='left', predicate='intersects')
-                    # gemeinde_type_gdf['BFS_NO'] = gemeinde_type_gdf['BFS_NO'].astype(str)
-                    # gwr_join_gdf = gwr_join_gdf.merge(gemeinde_type_gdf[['NAME', 'TYP', 'BFS_NO']], left_on='GGDENR', right_on='BFS_NO', how='left')
 
                     gwr_join_gdf.rename(columns={'NAME': 'ARE_NAME', 'TYP': 'ARE_TYP', }, inplace=True)
                     for k,v in self.sett.GWR_AREtypology.items():
@@ -875,8 +909,6 @@ class Calibration:
                     gwr_join_gdf.rename(columns={'elec_dem_ind_cecb': 'demand_elec_pGAREA'}, inplace=True)
 
                     # attach information to gwr and export
-                    # gwr_pq = gwr_pq.merge(gwr_join_gdf[['EGID', 'ARE_typ', 'sfhmfh_typ', 'arch_typ', 'demand_elec_pGAREA']], on='EGID', how='left')
-                    # gwr_all_building_df = gwr_join_gdf.drop(columns=['geometry', ]).copy()
                     gwr_gdf = gwr_join_gdf.copy()
                     gwr_pq  = gwr_join_gdf.drop(columns=['geometry', ]).copy()
 
@@ -894,10 +926,6 @@ class Calibration:
                     # transformations
                     meteo['timestamp'] = pd.to_datetime(meteo['timestamp'], format = '%d.%m.%Y %H:%M:%S')
 
-                    # select relevant time frame
-                    # start_stamp = pd.to_datetime(f'01.01.{self.sett.year_range[0]}', format = '%d.%m.%Y')
-                    # end_stamp = pd.to_datetime(f'31.12.{self.sett.year_range[1]}', format = '%d.%m.%Y')
-                    # meteo = meteo[(meteo['timestamp'] >= start_stamp) & (meteo['timestamp'] <= end_stamp)]
                 
 
                 # angle tilt reduction ------------------------------
@@ -1004,10 +1032,8 @@ class Calibration:
                 elecpri = elecpri_all.loc[elecpri_all['bfs_number'].isin(self.sett.bfs_numbers)]
 
                 pvtarif_all = pd.read_parquet(f'{self.sett.data_path}/input_api/pvtarif.parquet')
-                # year_range_2int = [str(year % 100).zfill(2) for year in range(self.sett.year_range[0], self.sett.year_range[1]+1)]
-                # pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_2int), :])
                 pvtarif = copy.deepcopy(pvtarif_all)
-            log_time = self.write_to_logfile('import ts data and match households, finished', log_time)
+            log_time = self.write_to_logfile('import ts data and match households, finished', log_time, log_file_path=import_preprep_log_path)
 
 
             # export and store to class ====================
@@ -1046,29 +1072,57 @@ class Calibration:
                     f.write(gdf.to_json())
 
             end_time = time.time()
-            with open(self.sett.subscen_time_log_path, 'a') as f:
+            with open(import_preprep_log_path, 'a') as f:
                 f.write(f'\n\nend time: {time.ctime()}\n')
                 f.write(f'run time prep: {format(str(datetime.timedelta(seconds=end_time - start_time)))} hh:mm:ss\n')
                 
         print('end import_and_preprep_data()')
 
+        # import_preprep_log_path = f'{self.sett.calib_scen_preprep_path}/1_{self.sett.name_preprep_subsen}_job{self.sett.slurm_job_id}_preprep_InProcess_log.txt'
+        finished_prep_log_path = f'{self.sett.calib_scen_preprep_path}/{self.sett.name_preprep_subsen}_job{self.sett.slurm_job_id}_preprep__finished__log.txt'
+        if os.path.exists(import_preprep_log_path):
+            if os.path.exists(finished_prep_log_path):
+                try: 
+                    os.remove(finished_prep_log_path)   
+                except Exception as e:
+                    print(f'Could not remove file: {finished_prep_log_path} because of {e}')    
+            os.rename(import_preprep_log_path, finished_prep_log_path)
+
 
     def concatenate_prerep_data(self,):
         log_time = time.time()
-        self.sett.concat_time_log_path = f'{self.sett.calib_scen_path}/{self.sett.name_dir_export}_concat_time_log.txt'
-        log_time = self.write_to_logfile('\n * concatenate_prerep_data()', log_time= log_time, log_file_path= self.sett.concat_time_log_path )
+        concat_time_log_path = f'{self.sett.calib_scen_path}/{self.sett.name_dir_export}_concat_time_log.txt'
+        log_time = self.write_to_logfile('\n * concatenate_prerep_data()', log_time= log_time, log_file_path= concat_time_log_path )
 
         # remove all old concatenated files
         rm_old_files = glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}', f'*{self.sett.name_dir_export}*'))
         for path in rm_old_files:
-            os.remove(path)
+            try: 
+                os.remove(path)
+            except Exception as e:
+                print(f'Could not remove file: {path} because of {e}')
             
         # list of subfiles
         preprep_subscen_paths_raw = glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}','*log.txt'))
-        if 'scicore' in preprep_subscen_paths_raw[0]:
-            preprep_subscen_names = [path.split(f'{self.sett.calib_scen_preprep_path}/')[-1].split('_preprep_time_log.txt')[0] for path in preprep_subscen_paths_raw]
-        else:
-            preprep_subscen_names = [path.split(f'{self.sett.calib_scen_preprep_path}\\')[-1].split('_preprep_time_log.txt')[0] for path in preprep_subscen_paths_raw]
+        preprep_subscen_names = []
+        for path in preprep_subscen_paths_raw:
+            if 'scicore' in path:
+                if 'DEFAULT' in path:
+                    preprep_subscen_names.append(path.split('/')[-1].split('_DEFAULT_')[0])
+                elif '_finished_' in path: 
+                    preprep_subscen_names.append(path.split('/')[-1].split('_job')[0])          
+            else: 
+                if 'DEFAULT' in path:
+                    preprep_subscen_names.append(path.split('\\')[-1].split('_DEFAULT_')[0])
+                elif '_finished_' in path: 
+                    preprep_subscen_names.append(path.split('\\')[-1].split('_job')[0])          
+        preprep_subscen_names = list(set(preprep_subscen_names))
+
+
+        if self.sett.concat_bfs_subsample: 
+            bfs_str_list = [f'bfs{nr}' for nr in self.sett.bfs_numbers]
+            preprep_subscen_names = [name for name in preprep_subscen_names if name in bfs_str_list]
+
 
         name_list, n_file_list = [],[]
         files_to_select_list = [
@@ -1093,11 +1147,12 @@ class Calibration:
             'pv_gdf.geojson', 
             'solkat_gdf.geojson', 
         ]
+    
         for i_name, subscen_name in enumerate(preprep_subscen_names):
             file_list = []
             for file_pattern in files_to_select_list:
                 if len(glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}',f'{subscen_name}_{file_pattern}'))) == 0:
-                    print(f'-> missing file: {subscen_name}_{file_pattern}')
+                    print(f'-> missing file: {subscen_name}_{file_pattern}') if i_name < 50 else None
                 else: 
                     file_list.append(glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}',f'{subscen_name}_{file_pattern}')))
             
@@ -1129,7 +1184,7 @@ class Calibration:
 
         # file_type = file_types_names[0]
         for i_ft, file_type in enumerate(file_types_names):
-            print(file_type)
+            print(f'\n\n-- {file_type} ------------------')
             df_agg_list = []
             file_type_paths = glob.glob(os.path.join(f'{self.sett.calib_scen_preprep_path}',f'*{file_type}'))
 
@@ -1160,7 +1215,7 @@ class Calibration:
                                 'index_right',
                                 'BFS_NO',
                             ]
-                            int_cols = [
+                            int_cols  = [
                                 'GBAUJ',
                                 'ARE_TYP',
                             ]
@@ -1169,7 +1224,10 @@ class Calibration:
                                 'GAREA',
                                 'demand_elec_pGAREA', 
                             ]
-                            df = df.drop(drop_cols)
+                            for col in drop_cols:
+                                if col in df.columns:
+                                    df = df.drop(col)
+
                             str_cols = [col for col in df.columns if (col not in int_cols) & (col not in float_cols)]
                             for col in str_cols:
                                 df = df.with_columns([
@@ -1192,36 +1250,95 @@ class Calibration:
                                     .otherwise(pl.col(col).cast(pl.Int64))
                                     .alias(col)
                                 ])
-                            
-                            # print(f'\n{path}')
-                            # for col in df.columns:
-                            #     print(f'{col:15}, {df[col].dtype}')
- 
-                        if (df.null_count().to_numpy().sum()== 0) & (
-                           (df.shape[0] >= 1) ):
+
+
+                        # before appending df -----------------------
+                        if df.shape[0] > 0:
                             df_agg_list.append(df)
+                            try:
+                                print(f'ftype: {file_type:20}null_count: {df.null_count().to_numpy().sum():3} - shape: {df.shape} - {path}')
+                            except Exception as e:
+                                print(e)
+                            del df
 
                     df_agg = pl.concat(df_agg_list)
                     df_agg.write_parquet(os.path.join(f'{self.sett.calib_scen_preprep_path}', f'0_{self.sett.name_dir_export}_{file_type}'))
-                    # file_type_to_csv = file_type.split('.parquet')[0] + '.csv'
-                    # df_agg.write_csv(os.path.join(f'{self.sett.calib_scen_preprep_path}', f'0_{self.sett.name_dir_export}_{file_type_to_csv}'))
+
 
                 elif '.geojson' in file_type:
                     for path in file_type_paths:
                         df = gpd.read_file(path)
+                        
+                        if file_type == 'solkat_gdf.geojson':
+                            float_cols = [
+                                'MSTRAHLUNG', 'GSTRAHLUNG', 'STROMERTRAG', 
+                                'STROMERTRAG_SOMMERHALBJAHR', 'STROMERTRAG_WINTERHALBJAHR', ]
+                            for col in float_cols:
+                                df[col] = df[col].astype(float)
+
+                        if file_type == 'gwr_gdf.geojson':
+                            drop_cols = [
+                                'index_right',
+                                'BFS_NO',
+                            ]
+                            int_cols = [
+                                'GBAUJ',
+                                'ARE_TYP',
+                            ]
+                            float_cols = [ 
+                                'GKODE','GKODN', 
+                                'GAREA',
+                                'demand_elec_pGAREA', 
+                            ]
+                            for col in drop_cols:
+                                if col in df.columns:
+                                    df = df.drop(columns=[col])
+
+                            str_cols = [col for col in df.columns if (col != 'geometry') & (col not in int_cols) & (col not in float_cols)]
+                            for col in str_cols:
+                                df[col] = df[col].astype(str)
+                            for col in float_cols:
+                                if df[col].dtype == 'object':
+                                    df.loc[df[col].isnull(), col] = '0.0'
+                                    df.loc[df[col] == '', col] = '0.0'
+                                    df[col] = df[col].astype(float)      
+                                    
+                            for col in int_cols:
+                                df[col] = df[col].astype(int)
+                        
+
+                        # remove all date colums for geojson export
                         date_types = ['datetime64[ms]', 'datetime64[ns]', 'datetime64[ms, UTC]', ]
                         any_date_in_df = [True for dt in date_types if dt in df.dtypes.values]
                         if any(any_date_in_df):
                             date_cols = [col for col in df.columns if df[col].dtype in date_types]
                             df[date_cols] = df[date_cols].astype(str)
-                        df_agg_list.append(df)
-                    df_agg = gpd.GeoDataFrame(pd.concat(df_agg_list, ignore_index=True), crs=df.crs)
-                    # with open(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_{file_type}', 'w') as f:
+
+                        # adjust all-NA values in gm_shp_gdf
+                        if 'gm_shp_gdf' in file_type:
+                            keep_cols = ['BEZIRKSNUM', 'NAME', 'KANTONSNUM', 'BFS_NUMMER', 'GEM_TEIL', 'GEM_FLAECH', 'geometry']
+                            df = df[keep_cols].copy()
+ 
+
+                        # before appending df -----------------------
+                        if df.shape[0] > 0:
+                            df_agg_list.append(df)
+                            try: 
+                                print(f'ftype: {file_type:20}null_count: {df.isnull().sum().sum():3} - shape: {df.shape} - {path}')
+                            except Exception as e: 
+                                print(e)
+                            del df
+
+                    
+                    last_df = df_agg_list[-1]
+                    df_agg = gpd.GeoDataFrame(pd.concat(df_agg_list, ignore_index=True), crs = last_df.crs)
                     with open(os.path.join(f'{self.sett.calib_scen_preprep_path}', f'0_{self.sett.name_dir_export}_{file_type}'), 'w') as f:
                         f.write(df_agg.to_json())
-                    
-            log_time = self.write_to_logfile(f'exported: ./{self.sett.name_dir_export}_{file_type}', log_time, self.sett.concat_time_log_path )
-        print('\n')
+
+            try:
+                log_time = self.write_to_logfile(f'exported: ./{self.sett.name_dir_export}_{file_type} (shape: {df_agg.shape})', log_time, log_file_path= concat_time_log_path)
+            except Exception as e:
+                log_time = self.write_to_logfile(f'exported: ./{self.sett.name_dir_export}_{file_type} (could not get shape because of {e})', log_time, log_file_path= concat_time_log_path)
 
 
     def approach1_fit_optim_cost_function(self,):
@@ -1238,18 +1355,27 @@ class Calibration:
             # import dfs and merge --------------------------------
 
             if self.sett.scicore_concat_data_path == None: 
-                gwr                = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_gwr_pq.parquet')
-                solkat             = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_solkat_pq.parquet')
-                solkat_month       = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_solkat_month_pq.parquet')
-                pv                 = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_pv_pq.parquet')
-                meteo              = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_meteo.parquet')
-                Map_egid_pv        = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_Map_egid_pv.parquet')
-                Map_gm_ewr         = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_Map_gm_ewr.parquet')
-                pvtarif            = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_pvtarif.parquet')
-                elecpri            = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_elecpri.parquet')
-                HOY_weatheryear_df = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_HOY_weatheryear_df.parquet')
-                demandtypes_ts     = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_demandtypes_ts.parquet')
-                angle_tilt_df      = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_angle_tilt_df.parquet')
+                gwr                = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_gwr_pq.parquet'))
+                solkat             = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_solkat_pq.parquet'))
+                solkat_month       = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_solkat_month_pq.parquet'))
+                pv                 = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_pv_pq.parquet'))
+                meteo              = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_meteo.parquet'))
+                Map_egid_pv        = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_Map_egid_pv.parquet'))
+                Map_gm_ewr         = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_Map_gm_ewr.parquet'))
+                pvtarif            = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_pvtarif.parquet'))
+                elecpri            = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_elecpri.parquet'))
+                HOY_weatheryear_df = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_HOY_weatheryear_df.parquet'))
+                demandtypes_ts     = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_demandtypes_ts.parquet'))
+                angle_tilt_df      = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_angle_tilt_df.parquet'))
+                
+                solkat_gdf         = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_solkat_gdf.geojson'))
+                gwr_gdf            = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_gwr_gdf.geojson'))
+                # gwr4204_gdf = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'bfs4204_gwr_gdf.geojson'))
+                # gwr4204     = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'bfs4204_gwr_pq.parquet'))
+                solkat_gdf.shape
+                solkat.shape
+                gwr_gdf.shape
+                gwr.shape
 
             else: 
                 scicore_path = os.path.join(self.sett.scicore_concat_data_path, self.sett.name_dir_export, 'preprep_data')
@@ -1268,10 +1394,8 @@ class Calibration:
 
 
 
-
             # GWR -------
             # gwr = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/gwr_pq.parquet')
-
             gwr['EGID'] = gwr['EGID'].astype(str)
             gwr.loc[gwr['GBAUJ'] == '', 'GBAUJ'] = 0  # transform GBAUJ to apply filter and transform back
             gwr['GBAUJ'] = gwr['GBAUJ'].astype(int)
@@ -1390,16 +1514,12 @@ class Calibration:
             elecpri_year_range_list = [int(yr_str) for yr_str in year_rng]
 
 
-            # Map_egid_pv = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/Map_egid_pv.parquet')
-            # Map_egid_pv = Map_egid_pv.with_columns([pl.col('xtf_id').fill_null(0)])
-            # Map_egid_pv = Map_egid_pv.with_columns([pl.col('xtf_id').cast(pl.Int64).cast(pl.Utf8)])
             Map_egid_pv = Map_egid_pv.with_columns([pl.col('xtf_id').cast(pl.Utf8)])
           
-            # Map_gm_ewr = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/Map_gm_ewr.parquet')
             Map_gm_ewr = Map_gm_ewr.with_columns([pl.col('bfs').fill_null(0)])
             Map_gm_ewr = Map_gm_ewr.with_columns([pl.col('bfs').cast(pl.Int64).cast(pl.Utf8)])
 
-            # pvtarif = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/pvtarif.parquet')
+
             # transform 2 digit to 4 digit year
             pvtarif = pvtarif.with_columns([
                     pl.col('year').cast(pl.Int32).alias('year_int'),
@@ -1432,12 +1552,6 @@ class Calibration:
                 pl.col('year').cast(pl.Utf8),
             ])
             elecpri = elecpri.select(['bfs_number', 'year', 'elecpri_Rp_kWh']).clone()
-
-
-            # HOY_weatheryear_df  = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/HOY_weatheryear_df.parquet')
-            # demandtypes_ts      = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/demandtypes_ts.parquet')
-            # angle_tilt_df       = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/angle_tilt_df.parquet')
-
 
                        
             # build topo_df --------------------------------
@@ -1544,61 +1658,7 @@ class Calibration:
         df_approach2_gdf.to_file(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_approach2_gdf.geojson', driver='GeoJSON')
 
 
-        # regression =====================================
-        if False:
 
-            # exploratory data analysis --------------------------------
-            cols_reg = ['TotalPower', 'n_DF_UID', 'elecpri_Rp_kWh', 'pvtarif_Rp_kWh', 'north_max_flaeche', 'east_max_flaeche', 'south_max_flaeche', 'west_max_flaeche']
-            df_sctr_plot = topo_agg.select(['EGID'] + cols_reg).to_pandas()
-
-            # joint_sctr = sns.pairplot(df_sctr_plot, kind = 'scatter', plot_kws={'alpha':0.5})
-            # joint_sctr.savefig(f'{self.sett.calib_scen_path}/regression_scatterplot_matrix.png', dpi=300)
-
-            # sctr1 = sns.jointplot(x='TotalPower', y='south_max_flaeche', data=df_sctr_plot, kind='scatter', alpha=0.5)
-            # sctr1.savefig(f'{self.sett.calib_scen_path}/sctr1_TotalPower_SouthMaxFlaeche.png', dpi=300)
-
-
-
-            # regressions --------------------------------
-            df_pd = topo_agg.to_pandas()
-
-            # missing values
-            for col in cols_reg:
-                n_miss = df_pd[col].isna().sum()
-                print(f'col {col} has {n_miss} missing values')
-            
-            cols_reg = ['TotalPower', 'n_DF_UID', 'elecpri_Rp_kWh', 'pvtarif_Rp_kWh', 'north_max_flaeche', 'east_max_flaeche', 'south_max_flaeche', 'west_max_flaeche']
-            df_pd = df_pd.dropna(subset=cols_reg)
-            
-            # train test split
-            numeric_features = [
-                'elecpri_Rp_kWh', 'pvtarif_Rp_kWh',
-                'north_max_flaeche', 'east_max_flaeche', 'south_max_flaeche', 'west_max_flaeche'
-            ]
-            categorical_features = ['year', 'BFS_NUMMER']
-
-            x = df_pd[numeric_features + categorical_features]
-            y = df_pd['TotalPower']
-
-
-            x_train, x_test, y_train, y_test = train_test_split(x, y,test_size=0.33, random_state=42)
-            
-            preprocessor = ColumnTransformer(
-                transformers=[
-                    ('cat', OneHotEncoder(drop='first'), categorical_features),  # drop='first' avoids dummy trap
-                    ('num', 'passthrough', numeric_features)
-                ]
-            )
-
-            model = Pipeline(steps=[
-                ('preprocessor', preprocessor),
-                ('regressor', LinearRegression())
-            ])
-            model.fit(x_train, y_train)
-
-            df_test = df_pd.sample(frac=0.33, random_state=1).copy()
-            df_train = df_pd.loc[~df_pd['EGID'].isin(df_test['EGID'])].copy()
-            
 
     def random_forest_regression(self,):
         rfr_settings = self.sett.reg2_random_forest_reg_settings
@@ -1656,7 +1716,11 @@ class Calibration:
 
         # random forest regression ====================
 
-        for i, (rfr_mod_name, df_suffix) in enumerate(rfr_settings['reg2_rfrname_dfsuffix_tupls']):
+        # for i, (rfr_mod_name, df_suffix) in enumerate(rfr_settings['reg2_rfrname_dfsuffix_tupls']):
+        for mod_key, dict_rfrsett in rfr_settings['reg2_rfrname_dfsuffix_dicts'].items():
+            rfr_mod_name = dict_rfrsett['rfr_mod_name']
+            df_suffix    = dict_rfrsett['df_suffix']
+
 
             df_train_rfr = pd.read_csv(f'{self.sett.calib_scen_path}/df_train{df_suffix}.csv')
             df_test_rfr  = pd.read_csv(f'{self.sett.calib_scen_path}/df_test{df_suffix}.csv')
@@ -1716,19 +1780,19 @@ class Calibration:
                 # cv_scores = cross_val_score(rfr_model, X, y, cv=kf, scoring='neg_mean_absolute_error')
                 # rfr_model.fit(X, y)
 
-                rfr_model = RandomForestRegressor(random_state = rfr_settings['random_state'])
+                rfr_model = RandomForestRegressor(random_state = dict_rfrsett['random_state'], )
                 param_grid = {
-                    'n_estimators':      rfr_settings['n_estimators'],
-                    'min_samples_split': rfr_settings['min_samples_split'],
-                    'max_depth':         rfr_settings['max_depth'],
+                    'n_estimators':      dict_rfrsett['n_estimators'],
+                    'min_samples_split': dict_rfrsett['min_samples_split'],
+                    'max_depth':         dict_rfrsett['max_depth'],
                 }
                     
                 grid_search = GridSearchCV(
                     rfr_model,
                     param_grid,
-                    cv=rfr_settings['cross_validation'],
+                    # cv=rfr_settings['cross_validation'],
                     scoring='neg_mean_absolute_error',
-                    n_jobs=rfr_settings['n_jobs'],
+                    n_jobs= dict_rfrsett['n_jobs'],
                     return_train_score=True,
                 )
                 grid_search.fit(X, y)
@@ -1777,13 +1841,20 @@ if __name__ == '__main__':
     #     # Calibration_Settings(), 
 
         Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs1201',
-            bfs_numbers=[1201,],
-            n_rows_import= 4000,
+            # name_dir_export='calib_mini_debug',
+            # name_preprep_subsen='bfs1201',
+            name_dir_export='calib_all_CH_bfs3',
+            name_calib_subscen='reg2_all_CH_bfs',
+            bfs_numbers=[5391, 5394, 
+                        #  120, 4726, 4761, 
+                        4204, 4203,
+                         ],
+            # n_rows_import= 4000,
             rerun_import_and_preprp_data_TF = True,
             export_gwr_ALL_building_gdf_TF = True
         ), 
+ ]
+    other_preps = [
         # Calibration_Settings(
         #     name_dir_export='calib_mini_debug',
         #     name_preprep_subsen='bfs1033',
@@ -1894,30 +1965,11 @@ if __name__ == '__main__':
     for i_prep, prep_sett in enumerate(preprep_list):
         print('')
         preprep_class = Calibration(prep_sett)
-        # preprep_class.import_and_preprep_data() if preprep_class.sett.rerun_import_and_preprp_data_TF else None
+        preprep_class.import_and_preprep_data() if preprep_class.sett.rerun_import_and_preprp_data_TF else None
 
-    # preprep_class = Calibration(preprep_list[0])
     calib_class = Calibration(preprep_list[0])
     calib_class.concatenate_prerep_data()           if calib_class.sett.run_concatenate_preprep_data_TF else None
 
     calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
-    calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
-
-
-
-
-    # run calibration approaches --------------------------------
-    calibration_list = [
-        Calibration_Settings(
-            name_dir_export='calib_mini_debug',
-            name_preprep_subsen='bfs_mini_try',
-            name_calib_subscen='reg2_mini_bfs',
-            pvinst_pvtrif_elecpri_range_minmax = (2017, 2023),
-            rerun_import_and_preprp_data_TF = False,
-            export_gwr_ALL_building_gdf_TF = False
-        ), 
-    ]
-    for calib_settings in calibration_list:
-        calib_class = Calibration(calib_settings)
-
+    # calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
 
