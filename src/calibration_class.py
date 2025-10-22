@@ -12,6 +12,9 @@ import seaborn as sns
 import glob
 import shutil
 import joblib
+from scipy.optimize import curve_fit
+from scipy import optimize
+
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
@@ -61,8 +64,9 @@ class Calibration_Settings:
     run_appr2_random_forest_reg_TF: bool            = True
 
 
-    pvinst_pvtrif_elecpri_range_minmax:Tuple[int,int]  = (2018, 2023)                             # min and max year of PV installation to be considered 
-    pvinst_capacity_minmax:Tuple[float,float]= (0.5, 50)                             # min and max capacity (in kWp) of PV installation to be considered
+    pvinst_pvtrif_elecpri_range_minmax:Tuple[int,int]   = (2018, 2023)                             # min and max year of PV installation to be considered 
+    pvinst_capacity_minmax:Tuple[float,float]           = (0.5, 50)                             # min and max capacity (in kWp) of PV installation to be considered
+    elecpri_pvtarif_year: int                           = 2023                                    # year of electricity prices and pv tariffs to be considered for npv calculations
 
     reg2_random_forest_reg_settings: Dict = field(default_factory=lambda: {
         'run_ML_rfr_TF': True,
@@ -77,24 +81,24 @@ class Calibration_Settings:
                                 samples
         """,
         'reg2_rfrname_dfsuffix_dicts': {
-           
-            'rfr_mod_name': '_rfr0', 
-            'df_suffix': '',
+                    'mod1': {
+                        'rfr_mod_name': '_rfr1', 
+                        'df_suffix': '',
 
-            'random_state':         None,    # default: None  # | None,    
-            'n_jobs':               -1,      # default: None  # | -1,  
-            'cross_validation':     2, 
-            'n_estimators':         [1, ]  ,    # default: 100   # | 1,       
-            'min_samples_split':    [5, ]    ,    # default: 2     # | 1000,    
-            'max_depth':            [3, ]   ,    # default: None  # | 3,       
-        }, 
-        # 'n_estimators':         100 ,    # default: 100   # | 1,       
-        # 'min_samples_split':    5   ,    # default: 2     # | 1000,    
-        # 'max_depth':            20  ,    # default: None  # | 3,       
-
-        # 'reg2_rfrname_dfsuffix_tupls': [
-            # ('_rfr1', ''),
-        # ]
+                        'random_state':         None,    # default: None  # | None,    
+                        'n_jobs':               -1,      # default: None  # | -1,  
+                        'cross_validation':     None, 
+                        'n_estimators':         [100, ]  ,    # default: 100   # | 1,       
+                        'min_samples_split':    [20, ]    ,    # default: 2     # | 1000,    
+                        'max_depth':            [10, ]   ,    # default: None  # | 3,       
+                }, 
+            }
+            })
+    opt1_kWp_optimization_subs_settings: Dict = field(default_factory=lambda: {
+        'no_subs': {
+            'opt_suffix': 'opt_s0-00', 
+            'inst_subsidy': 0.0,
+        },
     })
 
 
@@ -268,11 +272,11 @@ class Calibration_Settings:
                                                                 (8 , 1.0 ), 
                                                                 (9 , 1.0 )  
                                                                 ])
-        # # panel_efficiency_specs
-        # PEFspec_variable_panel_efficiency_TF: bool              = True
-        # PEFspec_summer_months: List[int]                        = field(default_factory=lambda: [6, 7, 8, 9])
-        # PEFspec_hotsummer_hours: List[int]                      = field(default_factory=lambda: [11, 12, 13, 14, 15, 16, 17])
-        # PEFspec_hot_hours_discount: float                       = 0.1
+        # panel_efficiency_specs
+        PEFspec_variable_panel_efficiency_TF: bool              = True
+        PEFspec_summer_months: List[int]                        = field(default_factory=lambda: [6, 7, 8, 9])
+        PEFspec_hotsummer_hours: List[int]                      = field(default_factory=lambda: [11, 12, 13, 14, 15, 16, 17])
+        PEFspec_hot_hours_discount: float                       = 0.1
         
         # # sanitycheck_summary_byEGID_specs
         # CHECKspec_egid_list: List[str]                          = field(default_factory=lambda: [])
@@ -410,6 +414,7 @@ class Calibration:
             print(str_to_print)
             log_time = time.time()
         return log_time
+
 
 
     def import_and_preprep_data(self,):
@@ -601,18 +606,13 @@ class Calibration:
 
 
             # filter for spces ------
-            gwr_mrg0 = gwr_mrg.copy()  
+            gwr_mrg0 = gwr_mrg.copy() 
             gwr_mrg0['GBAUJ'] = gwr_mrg0['GBAUJ'].replace('', 0).astype(int)
 
-            # gwr_mrg0['GBAUJ'] = gwr_mrg0['GBAUJ'].replace('', 0).astype(int)
-            # gwr_mrg1 = gwr_mrg0[(gwr_mrg0['GSTAT'].isin(self.sett.GWR_GSTAT))]
-            # gwr_mrg2 = gwr_mrg1[(gwr_mrg1['GKLAS'].isin(self.sett.GWR_GKLAS))]
-            # gwr_mrg3 = gwr_mrg2[(gwr_mrg2['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) & (gwr_mrg2['GBAUJ'] <= self.sett.GWR_GBAUJ_minmax[1])]
-            # gwr_pq = copy.deepcopy(gwr_mrg3)
             gwr_pq = gwr_mrg0[
                 (gwr_mrg0['GSTAT'].isin(self.sett.GWR_GSTAT)) &
                 (gwr_mrg0['GKLAS'].isin(self.sett.GWR_GKLAS)) 
-                # (gwr_mrg0['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) &
+                # (gwr_mrg0['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) &  # no longer applied because so many missing observations in GBAUJ
                 # (gwr_mrg0['GBAUJ'] <= self.sett.GWR_GBAUJ_minmax[1])
             ].copy()  # shallow copy for the final result
 
@@ -679,23 +679,24 @@ class Calibration:
                     add_solkat_counter, add_solkat_partition = 1, 4
                     print_counter_max, i_print = 5, 0
 
-                    debug_idx = 2076
+                    debug_idx = 0
                     n_egid, egid = debug_idx, EGID_old_solkat_list[debug_idx]
                     for n_egid, egid in enumerate(EGID_old_solkat_list):
                         egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
                         egid_join_union = egid_join_union.reset_index(drop = True)
 
+                        # find cases for SB_UUID proxy
+                        # if ('egid_proxy' in egid) & (not all(egid_join_union['EGID_gwradded'].isna())):
+                        #     print(f'negid {n_egid}, egid {egid}, has proxy EGID, but gwr EGIDs found in union shape, skipping proxy handling')
+
                         if all(egid_join_union['EGID_gwradded'].isna()):  
                             # no overlapp between solkat and any GWR => skip
                             continue
-
-                        if ('egid_proxy' in egid) & (not all(egid_join_union['EGID_gwradded'].isna())):
-                            print(f'negid {n_egid}, egid {egid}, has proxy EGID, but gwr EGIDs found in union shape, skipping proxy handling')
-
+                                                
                         # Shapes of building that will not be included given GWR filter settings
-                        if any(egid_join_union['EGID_gwradded'].isna()):  
+                        elif any(egid_join_union['EGID_gwradded'].isna()):  
                             solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                            solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                            # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
 
                         elif all(egid_join_union['EGID_gwradded'] != np.nan): 
 
@@ -707,20 +708,22 @@ class Calibration:
                             case5_TF = (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list())
 
                             # "Best" case (unless step above applies): Shapes of building that only has 1 GWR EGID
-                            if case1_TF:        # (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid): 
+                            if case1_TF:
                                 solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                                solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                                # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
                                 
                             # Not best case but for consistency better to keep individual solkatEGIs matches (otherwise missmatch of newer buildings with old shape partitions possible)
-                            elif case2_TF:      # (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid): 
+                            # edit: Because also roofs with GWR_EGID == NAN are considered with SB_UUID proxy, make sense to also overwrite solkat EGID for this case
+                            elif case2_TF:
                                 solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                                solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                                # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                                solkat_subdf['EGID'] = egid_join_union['EGID_gwradded'].values[0]
 
-                            elif case3_TF:      # (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].isna()):
+                            elif case3_TF:
                                 print(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column')
 
                             # Intended case: Shapes of building that has multiple GWR EGIDs within the shape boundaries
-                            elif case4_TF:      # (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list()):
+                            elif case4_TF:
                                 
                                 solkat_subdf_addedEGID_list = []
                                 n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
@@ -728,7 +731,7 @@ class Calibration:
                                     
                                     # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
                                     solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                                    solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                    # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
                                     solkat_addedEGID['EGID'] = egid_to_add
                                     
                                     #extend the DF_UID with some numbers to have truely unique DF_UIDs
@@ -743,27 +746,52 @@ class Calibration:
                                     for col in cols_adjust_for_missEGIDs_to_solkat:
                                         solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
                                     
-                                    # shrink topology to see which partitions are affected by EGID extensions
-                                    # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
-
                                     solkat_subdf_addedEGID_list.append(solkat_addedEGID)
                                 
                                 # concat all EGIDs within the same shape that were previously missing
                                 solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
                                 
                             # Error case: Shapes of building that has multiple gwrEGIDs but does not overlap with the assigned / identical solkatEGID. 
-                            # 5a Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID being placed in another shape. 
+                            # 5a (discontinued because of 5b) Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID 
+                            # being placed in another shape (not necessarily though, just not in the egid_join_union)
                             # 5b edit: because nan in GWR_EGID of solkat have been replaced with SB_UUID as a proxy for coherent EGID union shapes, this case now apprears more often and
-                            # must be dealt differently (renaming SB_UUID proxy with actual EGID from GWR)
-                            elif case5_TF:      # (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list()):
-                                
+                            # must be dealt differently. Take roof shape(s), overwrite the proxyEGID (for shape union) with the gwr EGIDs within the union shape. then follow same steps 
+                            # as in case4. Because EGID_old_solkat is overwritten with EGID_gwradded, no special subcase is needed wether EGID_old_solkat is a "proper" EGID or a proxyEGID
+                            # using SB_UUID.
+                        
+                            elif case5_TF:
                                 # 5b case
-                                if 'egid_proxy' in egid:
-                                    solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                                    solkat_subdf = egid_join_union
-                                    # BOOKMARK!
+                                solkat_subdf_addedEGID_list = []
 
-                                else: 
+                                n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                                for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+                                    
+                                    # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                                    solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                    # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                    solkat_addedEGID['EGID'] = egid_to_add
+                                    
+                                    #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                                    if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
+                                        str_suffix = str(n+1).zfill(5)
+                                        if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                        elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+
+                                    # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                                    for col in cols_adjust_for_missEGIDs_to_solkat:
+                                        solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                    
+                                    solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                                
+                                # concat all EGIDs within the same shape that were previously missing
+                                solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+                                
+                                    
+                                    # 5a case (discontinued)
+                                if False: 
+                                    # else: 
 
 
                                     # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
@@ -1089,6 +1117,7 @@ class Calibration:
             os.rename(import_preprep_log_path, finished_prep_log_path)
 
 
+
     def concatenate_prerep_data(self,):
         log_time = time.time()
         concat_time_log_path = f'{self.sett.calib_scen_path}/{self.sett.name_dir_export}_concat_time_log.txt'
@@ -1209,6 +1238,8 @@ class Calibration:
                                 df = df.with_columns([
                                     pl.col(col).cast(pl.Float64)
                                 ])
+                            if 'DF_UID_solkat' in df.columns: 
+                                df = df.drop('DF_UID_solkat')
 
                         if file_type == 'gwr_pq.parquet':
                             drop_cols = [
@@ -1244,19 +1275,27 @@ class Calibration:
                                     .alias(col)
                                 ])
                             for col in int_cols:
-                                df = df.with_columns([
-                                    pl.when(pl.col(col).cast(pl.Utf8).str.strip_chars().is_in(['', None]))
-                                    .then(pl.lit(0))
-                                    .otherwise(pl.col(col).cast(pl.Int64))
-                                    .alias(col)
-                                ])
+                                if col in df.columns:
+                                    # normalize empty/whitespace strings to nulls, then cast safely to Int64
+                                    # print(f'col: {col:5}. dtype: {list(df[col])[0]}')
+                                    df = df.with_columns([
+                                        df[col]
+                                        .cast(pl.Utf8)
+                                        .str.strip_chars()
+                                        .fill_null('0')
+                                        .replace('0.0', '0')
+                                        .replace('', '0')
+                                        .cast(pl.Int64)
+                                        .alias(col)
+                                    ])
+
 
 
                         # before appending df -----------------------
-                        if df.shape[0] > 0:
+                        if df.shape[0] >= 1:
                             df_agg_list.append(df)
                             try:
-                                print(f'ftype: {file_type:20}null_count: {df.null_count().to_numpy().sum():3} - shape: {df.shape} - {path}')
+                                print(f'ftype: {file_type:20} - null_count: {df.null_count().to_numpy().sum():4} - shape: ({df.shape[0]:4},{df.shape[1]:2}) - {path}')
                             except Exception as e:
                                 print(e)
                             del df
@@ -1275,6 +1314,8 @@ class Calibration:
                                 'STROMERTRAG_SOMMERHALBJAHR', 'STROMERTRAG_WINTERHALBJAHR', ]
                             for col in float_cols:
                                 df[col] = df[col].astype(float)
+                            if 'DF_UID_solkat' in df.columns: 
+                                df = df.drop(columns=['DF_UID_solkat',])
 
                         if file_type == 'gwr_gdf.geojson':
                             drop_cols = [
@@ -1304,6 +1345,8 @@ class Calibration:
                                     df[col] = df[col].astype(float)      
                                     
                             for col in int_cols:
+                                if df[col].dtype == 'O':
+                                    df.loc[df[col] == '', col] = '0'
                                 df[col] = df[col].astype(int)
                         
 
@@ -1324,7 +1367,8 @@ class Calibration:
                         if df.shape[0] > 0:
                             df_agg_list.append(df)
                             try: 
-                                print(f'ftype: {file_type:20}null_count: {df.isnull().sum().sum():3} - shape: {df.shape} - {path}')
+                                print(f'ftype: {file_type:20} - null_count: {df.isnull().sum().sum():4} - shape: ({df.shape[0]:4},{df.shape[1]:2}) - {path}')
+
                             except Exception as e: 
                                 print(e)
                             del df
@@ -1341,13 +1385,517 @@ class Calibration:
                 log_time = self.write_to_logfile(f'exported: ./{self.sett.name_dir_export}_{file_type} (could not get shape because of {e})', log_time, log_file_path= concat_time_log_path)
 
 
+
     def approach1_fit_optim_cost_function(self,):
-        print('asdf')
+        approach1_log_path = f'{self.sett.calib_scen_preprep_path}/{self.sett.name_preprep_subsen}_approach1_log.txt'
+        start_time = time.time()
+        with open(approach1_log_path, 'a') as f:
+            f.write(f'start time: {start_time}\n')
+        
+        # create topo_df =====================================
+        if True:
+            # import dfs and merge --------------------------------
+
+            if self.sett.scicore_concat_data_path == None: 
+                gwr                = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_gwr_pq.parquet'))
+                solkat             = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_solkat_pq.parquet'))
+                solkat_month       = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_solkat_month_pq.parquet'))
+                pv                 = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_pv_pq.parquet'))
+                meteo              = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_meteo.parquet'))
+                Map_egid_pv        = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_Map_egid_pv.parquet'))
+                Map_gm_ewr         = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_Map_gm_ewr.parquet'))
+                pvtarif            = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_pvtarif.parquet'))
+                elecpri            = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_elecpri.parquet'))
+                HOY_weatheryear_df = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_HOY_weatheryear_df.parquet'))
+                demandtypes_ts     = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_demandtypes_ts.parquet'))
+                angle_tilt_df      = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_angle_tilt_df.parquet'))
+                meteo_ts           = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_meteo.parquet'))
+                solkat_month       = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_solkat_month_pq.parquet'))
+                
+                solkat_gdf         = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_solkat_gdf.geojson'))
+                gwr_gdf            = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_gwr_gdf.geojson'))
+                # gwr4204_gdf = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'bfs4204_gwr_gdf.geojson'))
+                # gwr4204     = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'bfs4204_gwr_pq.parquet'))
+                solkat_gdf.shape
+                solkat.shape
+                gwr_gdf.shape
+                gwr.shape
+
+            else: 
+                scicore_path = os.path.join(self.sett.scicore_concat_data_path, self.sett.name_dir_export, 'preprep_data')
+                gwr                = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_gwr_pq.parquet'))
+                solkat             = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_solkat_pq.parquet'))
+                solkat_month       = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_solkat_month_pq.parquet'))
+                pv                 = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_pv_pq.parquet'))
+                meteo              = pd.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_meteo.parquet'))
+                Map_egid_pv        = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_Map_egid_pv.parquet'))
+                Map_gm_ewr         = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_Map_gm_ewr.parquet'))
+                pvtarif            = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_pvtarif.parquet'))
+                elecpri            = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_elecpri.parquet'))
+                HOY_weatheryear_df = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_HOY_weatheryear_df.parquet'))
+                demandtypes_ts     = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_demandtypes_ts.parquet'))
+                angle_tilt_df      = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_angle_tilt_df.parquet'))
+                meteo_ts           = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_meteo.parquet'))
+                solkat_month       = pl.read_parquet(os.path.join(scicore_path, f'0_{self.sett.name_dir_export}_solkat_month_pq.parquet'))
+
+
+            # GWR -------
+            # gwr = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/gwr_pq.parquet')
+            gwr['EGID'] = gwr['EGID'].astype(str)
+            gwr.loc[gwr['GBAUJ'] == '', 'GBAUJ'] = 0  # transform GBAUJ to apply filter and transform back
+            gwr['GBAUJ'] = gwr['GBAUJ'].astype(int)
+            gwr.loc['GBAUJ'] = gwr['GBAUJ'].astype(str)
+            # filtering for self.sett.GWR_specs
+            gwr = gwr.loc[(gwr['GSTAT'].isin(self.sett.GWRspec_GSTAT)) &
+                        (gwr['GKLAS'].isin(self.sett.GWRspec_GKLAS)) 
+                        # (gwr['GBAUJ'] >= self.sett.GWRspec_GBAUJ_minmax[0]) &
+                        # (gwr['GBAUJ'] <= self.sett.GWRspec_GBAUJ_minmax[1])
+                        ].copy()
+            # because not all buldings have dwelling information, need to remove dwelling columns and rows again (remove duplicates where 1 building had multiple dwellings)
+            gwr.loc[gwr['GAREA'] == '', 'GAREA'] = 0
+            gwr['GAREA'] = gwr['GAREA'].astype(float)
+
+            if self.sett.GWRspec_dwelling_cols == []:
+                gwr = copy.deepcopy(gwr.loc[:, self.sett.GWRspec_building_cols + self.sett.GWRspec_swstore_demand_cols])
+                gwr = gwr.drop_duplicates(subset=['EGID'])
+            gwr.rename(columns={'GGDENR': 'BFS_NUMMER'}, inplace=True)  # rename for merge with other dfs
+            gwr = gwr.loc[gwr['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
+            gwr = copy.deepcopy(gwr)
+
+
+            # SOLKAT -------
+            # solkat = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/solkat_pq.parquet')
+
+            solkat['EGID'] = solkat['EGID'].fillna('').astype(str)
+            solkat['DF_UID'] = solkat['DF_UID'].fillna('').astype(str)
+            solkat['DF_NUMMER'] = solkat['DF_NUMMER'].fillna('').astype(str)
+            solkat['SB_UUID'] = solkat['SB_UUID'].fillna('').astype(str)
+            solkat['FLAECHE'] = solkat['FLAECHE'].fillna(0).astype(float)
+            solkat['STROMERTRAG'] = solkat['STROMERTRAG'].fillna(0).astype(float)
+            solkat['MSTRAHLUNG'] = solkat['MSTRAHLUNG'].fillna(0).astype(float)
+            solkat['GSTRAHLUNG'] = solkat['GSTRAHLUNG'].fillna(0).astype(float)
+            solkat['AUSRICHTUNG'] = solkat['AUSRICHTUNG'].astype(int)
+            solkat['NEIGUNG'] = solkat['NEIGUNG'].astype(int)
+
+            # remove building with maximal (outlier large) number of partitions => complicates the creation of partition combinations
+            solkat['EGID'].value_counts()
+            egid_counts = solkat['EGID'].value_counts()
+            egids_below_max = list(egid_counts[egid_counts < self.sett.GWRspec_solkat_max_n_partitions].index)
+            solkat = solkat.loc[solkat['EGID'].isin(egids_below_max)]
+
+            # remove buildings with a certain roof surface because they are too large to be residential houses
+            solkat_area_per_EGID_range = self.sett.GWRspec_solkat_area_per_EGID_range
+            if solkat_area_per_EGID_range != []:
+                solkat_agg_FLAECH = solkat.groupby('EGID')['FLAECHE'].sum()
+                solkat = solkat.merge(solkat_agg_FLAECH, how='left', on='EGID', suffixes=('', '_sum'))
+                solkat = solkat.rename(columns={'FLAECHE_sum': 'FLAECHE_total'})
+                solkat = solkat.loc[(solkat['FLAECHE_total'] >= solkat_area_per_EGID_range[0]) & 
+                                    (solkat['FLAECHE_total'] < solkat_area_per_EGID_range[1])]
+                solkat.drop(columns='FLAECHE_total', inplace=True)
+
+            solkat = solkat.loc[solkat['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
+            solkat = copy.deepcopy(solkat)
+
+
+                                                                            
+            # PV -------
+            # pv = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/pv_pq.parquet')
+            pv['xtf_id'] = pv['xtf_id'].fillna('NA').astype(str)
+            pv['TotalPower'] = pv['TotalPower'].fillna(0).astype(float)
+            
+            # date filter by GWR year range + extra PVINST year range
+            pv['BeginningOfOperation'] = pd.to_datetime(pv['BeginningOfOperation'], format='%Y-%m-%d', errors='coerce')
+            gbauj_range = [pd.to_datetime(f'{self.sett.GWRspec_GBAUJ_minmax[0]}-01-01'), 
+                           pd.to_datetime(f'{self.sett.GWRspec_GBAUJ_minmax[1]}-12-31')]
+            pv = pv.loc[(pv['BeginningOfOperation'] >= gbauj_range[0]) & (pv['BeginningOfOperation'] <= gbauj_range[1])]
+            
+            pvinst_date_range = [pd.to_datetime(f'{self.sett.pvinst_pvtrif_elecpri_range_minmax[0]}-01-01'),
+                            pd.to_datetime(f'{self.sett.pvinst_pvtrif_elecpri_range_minmax[1]}-12-31')]
+            pv = pv.loc[(pv['BeginningOfOperation'] >= pvinst_date_range[0]) & (pv['BeginningOfOperation'] <= pvinst_date_range[1])]
+            pv['BeginningOfOperation'] = pv['BeginningOfOperation'].dt.strftime('%Y-%m-%d')
+
+            # filter by PVINST peak capacity
+            pv = pv.loc[(pv['TotalPower'] >= self.sett.pvinst_capacity_minmax[0]) & (pv['TotalPower'] <= self.sett.pvinst_capacity_minmax[1])]
+
+            pv = pv.loc[pv["BFS_NUMMER"].isin(self.sett.bfs_numbers)]
+            pv = pv.copy()
+          
+            
+            # METEO -------
+            # meteo = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/meteo.parquet')
+            
+            meteo_col_dir_radiation =  self.sett.WEAspec_meteo_col_dir_radiation
+            meteo_col_diff_radiation = self.sett.WEAspec_meteo_col_diff_radiation
+            meteo_col_temperature =    self.sett.WEAspec_meteo_col_temperature
+            weater_year =              self.sett.WEAspec_weather_year
+
+            meteo_cols = ['timestamp', meteo_col_dir_radiation, meteo_col_diff_radiation, meteo_col_temperature]
+            meteo = meteo.loc[:,meteo_cols]
+
+            # get radiation
+            meteo['rad_direct'] = meteo[meteo_col_dir_radiation]
+            meteo['rad_diffuse'] = meteo[meteo_col_diff_radiation]
+            meteo.drop(columns=[meteo_col_dir_radiation, meteo_col_diff_radiation], inplace=True)
+
+            # get temperature
+            meteo['temperature'] = meteo[meteo_col_temperature]
+            meteo.drop(columns=meteo_col_temperature, inplace=True)
+
+            start_wy, end_wy = pd.to_datetime(f'{weater_year}-01-01 00:00:00'), pd.to_datetime(f'{weater_year}-12-31 23:00:00')
+            meteo = meteo.loc[(meteo['timestamp'] >= start_wy) & (meteo['timestamp'] <= end_wy)]
+
+            meteo['t']= meteo['timestamp'].apply(lambda x: f't_{(x.dayofyear -1) * 24 + x.hour +1}')
+            meteo_ts = pl.from_pandas(meteo.copy())
+
+            
+            # REST -------
+            year_rng = [str(yr) for yr in range(self.sett.pvinst_pvtrif_elecpri_range_minmax[0], self.sett.pvinst_pvtrif_elecpri_range_minmax[1]+1)]
+            pvtarif_year_range_list = [str(yr_str) for yr_str in year_rng]    
+            elecpri_year_range_list = [int(yr_str) for yr_str in year_rng]
+
+
+            Map_egid_pv = Map_egid_pv.with_columns([pl.col('xtf_id').cast(pl.Utf8)])
+          
+            Map_gm_ewr = Map_gm_ewr.with_columns([pl.col('bfs').fill_null(0)])
+            Map_gm_ewr = Map_gm_ewr.with_columns([pl.col('bfs').cast(pl.Int64).cast(pl.Utf8)])
+
+
+            # transform 2 digit to 4 digit year
+            pvtarif = pvtarif.with_columns([
+                    pl.col('year').cast(pl.Int32).alias('year_int'),
+                    pl.lit('19').alias('year_prefix'),  # default 1900s                
+                 ])
+            pvtarif = pvtarif.with_columns([
+                pl.when((pl.col('year_int') < 50) | (pl.col('year_int') >= 0)).then(pl.lit('20')).otherwise(pl.lit('19')).alias('year_prefix')
+            ])
+            pvtarif = pvtarif.with_columns([
+                (pl.col('year_prefix') + pl.col('year')).alias('year')
+                ])
+            pvtarif = pvtarif.filter(pl.col('year').is_in(pvtarif_year_range_list))
+
+            pvtarif = pvtarif.join(Map_gm_ewr, left_on='nrElcom', right_on='nrElcom', how='inner', suffix='_map_gmewr')
+            pvtarif = pvtarif.with_columns([pl.col(self.sett.TECspec_pvtarif_col).replace('', 0).cast(pl.Float64)])
+
+            empty_cols = [col for col in pvtarif.columns if pvtarif[col].is_null().all()]
+            pvtarif = pvtarif.select([col for col in pvtarif.columns if col not in empty_cols])
+            select_cols = ['nrElcom', 'nomEw', 'year', 'bfs', 'idofs'] + self.sett.TECspec_pvtarif_col
+            pvtarif = pvtarif.select(select_cols).clone()
+            pvtarif = pvtarif.rename({self.sett.TECspec_pvtarif_col[0]: 'pvtarif_Rp_kWh'})
+            pvtarif = pvtarif.select(['nrElcom', 'nomEw', 'year', 'bfs', 'pvtarif_Rp_kWh']).clone()
+
+            # elecpri = pl.read_parquet(f'{self.sett.calib_scen_preprep_path}/elecpri.parquet')
+            elecpri = elecpri.filter( ( pl.col('category')== self.sett.TECspec_elecpri_category) &
+                                      ( pl.col('year').is_in(elecpri_year_range_list)) )  
+                                    #   ( pl.col('year') == self.sett.TECspec_elecpri_year) )
+            elecpri = elecpri.with_columns([
+                (pl.col('energy') + pl.col('grid') + pl.col('aidfee') + pl.col('taxes') ).alias('elecpri_Rp_kWh'), 
+                pl.col('year').cast(pl.Utf8),
+            ])
+            # elecpri = elecpri.select(['bfs_number', 'year', 'elecpri_Rp_kWh']).clone()
+            elecpri = elecpri.filter(pl.col('year') == str(self.sett.elecpri_pvtarif_year)).select(['bfs_number', 'year', 'elecpri_Rp_kWh']).clone()
+
+            
+            # METEO -------
+            meteo_ts = meteo_ts.with_columns(pl.lit("Basel").alias("meteo_loc"))    
+            meteo_ts = meteo_ts.with_columns([
+                pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
+            ])
+            meteo_ts = meteo_ts.with_columns([
+                pl.col("timestamp").dt.month().cast(pl.Int32).alias("month")
+            ])
+
+
+
+            # SOLKAT MONTH -------
+            if 'DF_UID' in solkat_month.columns:
+                solkat_month = solkat_month.rename({"DF_UID": "df_uid"})
+            if 'MONAT' in solkat_month.columns:
+                solkat_month = solkat_month.rename({"MONAT": "month"})            
+                       
+
+            # build topo_df --------------------------------
+            gwr_pl      = pl.from_pandas(gwr.drop(columns=self.sett.topo_df_excl_gwr_cols))
+            solkat_pl   = pl.from_pandas(solkat.drop(columns=self.sett.topo_df_excl_solkat_cols))
+            pv_pl       = pl.from_pandas(pv.drop(columns=self.sett.topo_df_excl_pv_cols))
+            Map_egid_pv = Map_egid_pv.filter(pl.col('xtf_id').is_in(pv_pl['xtf_id'].implode()))
+            solkat_pl   = solkat_pl.rename({"DF_UID": "df_uid"})
+
+
+
+            topo_df_join0 = gwr_pl.filter(
+                pl.col('EGID').is_in(Map_egid_pv.select('EGID').to_series().implode())
+            )
+            topo_df_join1 = topo_df_join0.join(solkat_pl, left_on='EGID', right_on='EGID', how='left', suffix='_solkat')
+            topo_df_join2 = topo_df_join1.join(Map_egid_pv, left_on='EGID', right_on='EGID', how='left', suffix='_map_egidpv')
+            topo_df_join3 = topo_df_join2.join(pv_pl, left_on='xtf_id', right_on='xtf_id', how='left', suffix='_pv')
+            topo_df_join4 = topo_df_join3.join(elecpri, left_on='BFS_NUMMER', right_on='bfs_number', how='left', suffix='_elecpri')
+            topo_df_join5 = topo_df_join4.join(pvtarif, left_on=['BFS_NUMMER', 'year'],  right_on=['bfs', 'year'], how='left', suffix='_pvtarif')
+            topo_df_join5 = topo_df_join5.with_columns(pl.lit("Basel").alias("meteo_loc"))
+            topo_df_join6 = topo_df_join5.join(meteo_ts, left_on=['meteo_loc'], right_on=['meteo_loc'], how='left', suffix='_meteo_ts')
+            topo_df_join7 = topo_df_join6.join(solkat_month.select(["df_uid", "month", "A_PARAM", "B_PARAM", "C_PARAM"]),
+                                                left_on=['df_uid', 'month'], right_on=['df_uid', 'month'], how='left', suffix='_solkat_month')
+
+            topo_df = topo_df_join7.clone()
+            # del topo_df_join0, topo_df_join1, topo_df_join2, topo_df_join3, topo_df_join4, topo_df_join5, topo_df_join6, topo_df_join7
+
+
+
+            # calculate radiation --------------------------------
+            topo_df['A_PARAM'].is_nan().sum()
+            topo_df = topo_df.with_columns([
+                (
+                    pl.col("A_PARAM") * pl.col("rad_direct") +
+                    pl.col("B_PARAM") * pl.col("rad_diffuse") +
+                    pl.col("C_PARAM")
+                ).alias("radiation")
+            ])
+            # some radiation values are negative, because of the linear transformation with abc parameters. 
+            # force all negative values to 0
+            topo_df = topo_df.with_columns([
+                pl.when((pl.col("rad_direct") == 0) & (pl.col("rad_diffuse") == 0))
+                .then(0.0)
+                .when(pl.col("radiation") < 0)
+                .then(0.0)
+                .otherwise(pl.col("radiation"))
+                .alias("radiation")
+            ])
+
+            # add pannel efficiency --------------------------------
+            panel_efficiency   = self.sett.TECspec_panel_efficiency
+            summer_months      = self.sett.PEFspec_summer_months
+            hotsummer_hours    = self.sett.PEFspec_hotsummer_hours
+            hot_hours_discount = self.sett.PEFspec_hot_hours_discount
+            hot_hours_in_year = HOY_weatheryear_df.filter(
+                pl.col("month").is_in(summer_months) & pl.col("hour").is_in(hotsummer_hours)
+            )
+
+            hot_t_set = set(hot_hours_in_year["t"].to_list())
+
+            topo_df = topo_df.with_columns([
+                pl.when(pl.col("t").is_in(hot_t_set))
+                .then(panel_efficiency * (1 - hot_hours_discount))
+                .otherwise(panel_efficiency)
+                .alias("panel_efficiency")
+            ])
+
+            # attach / calculate demand profiles --------------------------------
+            demandtypes_unpivot = demandtypes_ts.unpivot(
+                on = ['SFH', 'MFH', ],
+                index=['t', 't_int'],  # col that stays unchanged
+                value_name='demand_profile',  # name of the column that will hold the values
+                variable_name='sfhmfh_typ'  # name of the column that will hold the original column names
+            )
+            topo_df = topo_df.join(demandtypes_unpivot, on=['t', 'sfhmfh_typ'], how="left")
+            topo_df = topo_df.with_columns([
+                (pl.col("demand_elec_pGAREA") * pl.col("demand_profile") * pl.col("GAREA") * self.sett.ALGOspec_tweak_demand_profile ).alias("demand_kW")  # convert to kW
+            ])
+
+
+
+
+
+        # optimal inst size (1:1 from update_npv_OPTIMIZED)=====================================
+        opt1_kWp_optimization_subs_settings = self.sett.opt1_kWp_optimization_subs_settings
+        
+
+        for opt_key, dict_optsett in opt1_kWp_optimization_subs_settings.items():
+            egid_list, TotalPower_list, opt_flaeche_list, opt_kwp_list, opt_invest_cost_list, opt_npv_list = [], [], [], [], [], []
+            
+            # subs_flaeche_list, subs_kwp_list, subs_invest_cost_list, subs_npv_list = [], [], [], []
+
+            for egid in list(topo_df['EGID'].unique()):
+                egid_subdf = topo_df.filter(pl.col('EGID') == egid).clone()
+
+
+                # compute npv of optimized installtion size ----------------------------------------------
+                max_stromertrag = egid_subdf['STROMERTRAG'].max()
+                max_dfuid_df = egid_subdf.filter(pl.col('STROMERTRAG') == max_stromertrag).sort(['t_int'], descending=[False,])
+                max_dfuid_df.select(['EGID', 'df_uid', 't_int', 'STROMERTRAG', ])
+
+                # find optimal installation size
+                if max_dfuid_df.shape[0] > 0 and max_dfuid_df['FLAECHE'].max() > 0:
+
+                    def initial_sml_get_instcost_interpolate_function(): 
+
+                        # with open(f'{self.sett.name_dir_export_path}/pvinstcost_coefficients.json', 'r') as file:
+                        #     pvinstcost_coefficients = json.load(file)
+                        # -> 
+                        pvinstcost_coefficients = {
+                            "params_pkW": [
+                                412431.2087276971, 
+                                -9.743454474016204, 
+                                -9.74564398378032, 
+                                -407456.58088694164
+                                ], 
+                            "params_total": [
+                                1193.8440714549947,
+                                4860.327566726608, 
+                                0.7290762504271993
+                                ]}
+                        params_pkW = pvinstcost_coefficients['params_pkW']
+                        # coefs_total = pvinstcost_coefficients['coefs_total']
+                        params_total = pvinstcost_coefficients['params_total']
+
+
+                        # PV Cost functions --------
+                        # Define the interpolation functions using the imported coefficients
+                        def func_chf_pkW(x, a, b, c, d):
+                            return a +  d*((x ** b) /  (x ** c))
+                        def estim_instcost_chfpkW(x):
+                            return func_chf_pkW(x, *params_pkW)
+
+                        def func_chf_total(x, a, b, c):
+                            return a +  b*(x**c) 
+                        def estim_instcost_chftotal(x):
+                            return func_chf_total(x, *params_total)
+                        
+                        return estim_instcost_chfpkW, estim_instcost_chftotal  
+                        
+                    estim_instcost_chfpkW, estim_instcost_chftotal = initial_sml_get_instcost_interpolate_function()
+
+                    def calculate_npv(flaeche, 
+                                    max_dfuid_df, 
+                                    estim_instcost_chftotal, 
+                                    tweak_denominator=1.0, 
+                                    inst_subsidy = dict_optsett['inst_subsidy']):
+                        """
+                        Calculate NPV for a given FLAECHE value
+                        
+                        Returns:
+                        -------
+                        float
+                            Net Present Value (NPV) of the installation
+                        """
+                        # Copy the dataframe to avoid modifying the original
+                        df = max_dfuid_df.clone()
+
+                        if self.sett.TECspec_pvprod_calc_method == 'method2.2':
+                            # Calculate production with the given FLAECHE
+                            df = df.with_columns([
+                                ((pl.col("radiation") / 1000) * 
+                                pl.col("panel_efficiency") * 
+                                self.sett.TECspec_inverter_efficiency * 
+                                self.sett.TECspec_share_roof_area_available * 
+                                flaeche).alias("pvprod_kW")
+                            ])
+
+                            # calc selfconsumption
+                            selfconsum_expr = pl.min_horizontal([ pl.col("pvprod_kW"), pl.col("demand_kW") ]) * self.sett.TECspec_self_consumption_ifapplicable
+
+                            df = df.with_columns([  
+                                selfconsum_expr.alias("selfconsum_kW"),
+                                (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
+                                (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
+                                ])
+                            
+
+                            df = df.with_columns([
+                                (pl.col("pvtarif_Rp_kWh") / tweak_denominator).alias("pvtarif_Rp_kWh"),
+                            ])
+                            # calc economic income and spending
+                            if not self.sett.ALGOspec_tweak_npv_excl_elec_demand:
+
+                                df = df.with_columns([
+                                    ((pl.col("netfeedin_kW") * pl.col("pvtarif_Rp_kWh")) / 100 + 
+                                    (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf"),
+
+                                    (
+                                    # (pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100 + 
+                                    (pl.col('demand_kW') * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_spend_chf")
+                                    ])
+                                
+                            else:
+                                df = df.with_columns([
+                                    ((pl.col("netfeedin_kW") * pl.col("pvtarif_Rp_kWh")) / 100 + 
+                                    (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf"), 
+                                    pl.lit(0).alias("econ_spend_chf")
+                                    # ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100).alias("econ_spend_chf")
+                                    ])
+
+                            annual_cashflow = (df["econ_inc_chf"].sum() - df["econ_spend_chf"].sum())
+
+                            # calc inst cost 
+                            kWp = flaeche * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available
+                            installation_cost = estim_instcost_chftotal(kWp)
+                            installation_cost = installation_cost * (1 - inst_subsidy)
+
+                            # calc NPV
+                            discount_factor = np.array([(1 + self.sett.TECspec_interest_rate)**-i for i in range(1, self.sett.TECspec_invst_maturity + 1)])
+                            disc_cashflow = annual_cashflow * np.sum(discount_factor)
+                            npv = -installation_cost + disc_cashflow
+                            
+                            pvprod_kW_sum = df['pvprod_kW'].sum()
+                            demand_kW_sum = df['demand_kW'].sum()
+                            selfconsum_kW_sum= df['selfconsum_kW'].sum()
+                            rest = (installation_cost, disc_cashflow, pvprod_kW_sum, demand_kW_sum, selfconsum_kW_sum)
+                            
+                            # return npv, installation_cost, disc_cashflow, pvprod_kW_sum, demand_kW_sum, selfconsum_kW_sum
+                            return npv, rest
+
+                    def optimize_pv_size(max_dfuid_df, estim_instcost_chftotal, max_flaeche_factor=None):
+                        """
+                        Find the optimal PV installation size (FLAECHE) that maximizes NPV
+                        
+                        """
+                        def obj_func(flaeche):
+                            npv, rest = calculate_npv(flaeche, max_dfuid_df, estim_instcost_chftotal)
+                            return -npv  
+
+                        
+                        # Set bounds - minimum FLAECHE is 0, maximum is either specified or from the data
+                        if max_flaeche_factor is not None:
+                            max_flaeche = max(max_dfuid_df['FLAECHE']) * max_flaeche_factor
+                        else:
+                            max_flaeche = max(max_dfuid_df['FLAECHE'])
+
+                            
+                        
+                        # Run the optimization
+                        result = optimize.minimize_scalar(
+                            obj_func,
+                            bounds=(0, max_flaeche),
+                            method='bounded'
+                        )
+                        
+                        # optimal values
+                        optimal_flaeche = result.x
+                        optimal_npv = -result.fun
+                                                    
+                        return optimal_flaeche, optimal_npv
+
+
+                    # store results ----------------------------------------------
+                    egid_list.append(max_dfuid_df['EGID'][0])
+                    TotalPower_list.append(max_dfuid_df['TotalPower'][0])
+
+                    opt_flaeche, opt_npv = optimize_pv_size(max_dfuid_df, estim_instcost_chftotal, self.sett.TECspec_opt_max_flaeche_factor)
+                    opt_kWpeak = opt_flaeche * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available
+                    opt_invest_cost = estim_instcost_chftotal(opt_kWpeak)
+
+                    opt_flaeche_list.append(opt_flaeche)
+                    opt_kwp_list.append(opt_kWpeak)
+                    opt_invest_cost_list.append(opt_invest_cost)
+                    opt_npv_list.append(opt_npv)
+
+
+            # export results =====================================
+            df_test_optim = pd.DataFrame({
+                'EGID':                                                 egid_list,
+                'TotalPower_W':                                         TotalPower_list,
+                f'opt_flaeche{dict_optsett["opt_suffix"]}':             opt_flaeche_list,
+                f'opt_kWp{dict_optsett["opt_suffix"]}':                 opt_kwp_list,
+                f'opt_invest_cost_chf{dict_optsett["opt_suffix"]}':     opt_invest_cost_list,
+                f'opt_npv_chf{dict_optsett["opt_suffix"]}':             opt_npv_list,
+            })
+
+            df_test_optim.to_csv(f'{self.sett.calib_scen_path}/df_test_optim{dict_optsett["opt_suffix"]}.csv', index=False)
+         
 
 
     def approach2_regression_instsize(self,):
+        approach2_log_path = f'{self.sett.calib_scen_preprep_path}/{self.sett.name_preprep_subsen}_approach2_log.txt'
         start_time = time.time()
-        with open(f'{self.sett.calib_scen_path}/approach2_time_log.txt', 'a') as f:
+        with open(approach2_log_path, 'a') as f:
             f.write(f'start time: {start_time}\n')
         
         # create topo_df =====================================
@@ -1551,7 +2099,9 @@ class Calibration:
                 (pl.col('energy') + pl.col('grid') + pl.col('aidfee') + pl.col('taxes') ).alias('elecpri_Rp_kWh'), 
                 pl.col('year').cast(pl.Utf8),
             ])
-            elecpri = elecpri.select(['bfs_number', 'year', 'elecpri_Rp_kWh']).clone()
+            # elecpri = elecpri.select(['bfs_number', 'year', 'elecpri_Rp_kWh']).clone()
+            elecpri = elecpri.filter(pl.col('year') == str(self.sett.elecpri_pvtarif_year)).select(['bfs_number', 'year', 'elecpri_Rp_kWh']).clone()
+
 
                        
             # build topo_df --------------------------------
@@ -1965,11 +2515,13 @@ if __name__ == '__main__':
     for i_prep, prep_sett in enumerate(preprep_list):
         print('')
         preprep_class = Calibration(prep_sett)
-        preprep_class.import_and_preprep_data() if preprep_class.sett.rerun_import_and_preprp_data_TF else None
+        # preprep_class.import_and_preprep_data() if preprep_class.sett.rerun_import_and_preprp_data_TF else None
 
     calib_class = Calibration(preprep_list[0])
-    calib_class.concatenate_prerep_data()           if calib_class.sett.run_concatenate_preprep_data_TF else None
+    # calib_class.concatenate_prerep_data()           if calib_class.sett.run_concatenate_preprep_data_TF else None
+
+    calib_class.approach1_fit_optim_cost_function()     if calib_class.sett.run_approach1_fit_optim_costfunction_TF else None
 
     calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
-    # calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
+    calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
 
