@@ -1,21 +1,18 @@
 #!/bin/bash
 
-#SBATCH --job-name=calib_arykt_6h8c32GB                   #This is the name of your job
-#SBATCH --cpus-per-task=8                  #This is the number of cores reserved
-#SBATCH --mem-per-cpu=32G              #This is the memory reserved per core.
-#Total memory reserved: 256GB
+#SBATCH --job-name=calib_conML_2h30c8GB                   #This is the name of your job
+#SBATCH --cpus-per-task=30                  #This is the number of cores reserved
+#SBATCH --mem-per-cpu=8G              #This is the memory reserved per core.
+#Total memory reserved: 240GB
 
 # Are you sure that you need THAT much memory?
 
-#SBATCH --time=06:00:00        #This is the time that your task will run
+#SBATCH --time=02:00:00        #This is the time that your task will run
 #SBATCH --qos=6hours           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
-#SBATCH --output=myrun.o%j     #These are the STDOUT and STDERR files
-#SBATCH --error=myrun.e%j
-
-#You selected an array of jobs from 1 to 26 with 26 simultaneous jobs
-#SBATCH --array=1-26%26
+#SBATCH --output=data/calibration/myrun.o%j     #These are the STDOUT and STDERR files
+#SBATCH --error=data/calibration/myrun.e%j
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT
 #SBATCH --mail-user=raul.hochuli@unibas.ch        #You will be notified via email when your task ends or fails
 
@@ -41,9 +38,6 @@ source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 
 #add your command lines below
 #############################
-$(head -$SLURM_ARRAY_TASK_ID calib_ary_kt_launch.cmd | tail -1)
-
-
-
+python src/calibration_array_by_bfs_concat.py
 
 

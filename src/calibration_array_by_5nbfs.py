@@ -10,7 +10,7 @@ if __name__ == '__main__':
         bfs_number = int(sys.argv[1])
         preprep_list = [
             Calibration_Settings(
-                name_dir_export='calib_all_CH_bfs3',
+                name_dir_export='calib_all_CH_bfs_TEST',
                 # name_preprep_subsen=f'kt{kt_number}',
                 # kt_numbers=[kt_number,], 
                 name_preprep_subsen=f'bfs{bfs_number}',

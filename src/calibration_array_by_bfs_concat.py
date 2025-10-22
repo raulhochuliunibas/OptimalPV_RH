@@ -3,14 +3,14 @@ from calibration_class import Calibration_Settings, Calibration
 if __name__ == '__main__':
     preprep_list = [
         Calibration_Settings(
-            name_dir_export='calib_all_CH_bfs2',
+            name_dir_export='calib_all_CH_bfs3',
             name_calib_subscen='reg2_all_CH_bfs',
             # kt_numbers=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,], 
             bfs_numbers=[5391, 5394, 
                          120, 4726, 4761, 4651, 
                          4203, 4204,
                          ],
-            concat_bfs_subsample              = True, 
+            # concat_bfs_subsample              = True, 
 
             n_rows_import                     = None,
             rerun_import_and_preprp_data_TF   = True,
@@ -57,9 +57,22 @@ if __name__ == '__main__':
                         'max_depth':            [20, ]   ,    # default: None  # | 3,       
                 }, 
 
-            }}
+            }},
 
-        ), 
+            opt1_kWp_optimization_subs_settings = {
+                'no_subs': {
+                    'opt_suffix': 'opt_s0-00', 
+                    'inst_subsidy': 0.0,
+                },
+                '30_percent': {
+                    'opt_suffix': 'opt_s0-30', 
+                    'inst_subsidy': 0.3,
+                },
+            },
+
+
+
+        ),
     ]
             
     for sett in preprep_list:
@@ -67,6 +80,9 @@ if __name__ == '__main__':
         calib_class.concatenate_prerep_data()           if calib_class.sett.run_concatenate_preprep_data_TF else None
 
         calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
-        # calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
+        calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
+
+        calib_class.approach1_fit_optim_cost_function()     if calib_class.sett.run_approach2_regression_instsize_TF else None
+
 
 
