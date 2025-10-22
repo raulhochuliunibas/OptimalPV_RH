@@ -809,7 +809,9 @@ class DataAggScenario:
             solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
             solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
             solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
-            solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
+            # solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
+            solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == 'NAN', ['EGID', 'SB_UUID']]
+
 
             # create mapping of solkatEGIDs and missing gwrEGIDs 
             # union all shapes with the same EGID 
@@ -840,27 +842,20 @@ class DataAggScenario:
                 egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
                 egid_join_union = egid_join_union.reset_index(drop = True)
 
-                # Shapes of building that will not be included given GWR filter settings
-                if any(egid_join_union['EGID_gwradded'].isna()):  
-                    solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                    solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                # find cases for SB_UUID proxy
+                # if ('egid_proxy' in egid) & (not all(egid_join_union['EGID_gwradded'].isna())):
+                #     print(f'negid {n_egid}, egid {egid}, has proxy EGID, but gwr EGIDs found in union shape, skipping proxy handling')
 
+                if all(egid_join_union['EGID_gwradded'].isna()):  
+                    # no overlapp between solkat and any GWR => skip
+                    continue
+                                        
+                # Shapes of building that will not be included given GWR filter settings
+                elif any(egid_join_union['EGID_gwradded'].isna()):  
+                    solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                    # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
 
                 elif all(egid_join_union['EGID_gwradded'] != np.nan): 
-
-                    # a gwrEGID can be picked up by the union shape, but still be present in the solkat df, drop theses rows
-                    # => currently disabled, because most likely the smaller issue. Added gwrEGIDs that still have a solkatEGID outside the current selection will just also be added
-                    # to the extended solkat df, with 1/n share of the original solkatEGID for gwrEGID extension and full share of the otherwise already present EGID in solkatEGID. 
-                    if False:
-                        egid_to_add = egid_join_union['EGID_gwradded'].unique()[0]
-                        for egid_to_add in egid_join_union['EGID_gwradded'].unique():
-                            if egid_join_union.shape[0] > 1:
-                                if egid_to_add != egid:
-                                    if egid_to_add in EGID_old_solkat_list:
-                                        egid_join_union = egid_join_union.drop(egid_join_union.loc[egid_join_union['EGID_gwradded'] == egid_to_add].index)
-                                    elif egid_to_add == egid:
-                                        print('')
-
 
                     # cases
                     case1_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid)
@@ -870,20 +865,22 @@ class DataAggScenario:
                     case5_TF = (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list())
 
                     # "Best" case (unless step above applies): Shapes of building that only has 1 GWR EGID
-                    if case1_TF:        # (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid): 
+                    if case1_TF:
                         solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                        solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                        # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
                         
                     # Not best case but for consistency better to keep individual solkatEGIs matches (otherwise missmatch of newer buildings with old shape partitions possible)
-                    elif case2_TF:      # (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid): 
+                    # edit: Because also roofs with GWR_EGID == NAN are considered with SB_UUID proxy, make sense to also overwrite solkat EGID for this case
+                    elif case2_TF:
                         solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                        solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                        # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                        solkat_subdf['EGID'] = egid_join_union['EGID_gwradded'].values[0]
 
-                    elif case3_TF:      # (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].isna()):
-                        checkpoint_to_logfile(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column', self.sett.log_name, 3, self.sett.show_debug_prints)
+                    elif case3_TF:
+                        print(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column')
 
                     # Intended case: Shapes of building that has multiple GWR EGIDs within the shape boundaries
-                    elif case4_TF:      # (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list()):
+                    elif case4_TF:
                         
                         solkat_subdf_addedEGID_list = []
                         n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
@@ -891,7 +888,7 @@ class DataAggScenario:
                             
                             # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
                             solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                            solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                            # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
                             solkat_addedEGID['EGID'] = egid_to_add
                             
                             #extend the DF_UID with some numbers to have truely unique DF_UIDs
@@ -906,37 +903,34 @@ class DataAggScenario:
                             for col in cols_adjust_for_missEGIDs_to_solkat:
                                 solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
                             
-                            # shrink topology to see which partitions are affected by EGID extensions
-                            # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
-
                             solkat_subdf_addedEGID_list.append(solkat_addedEGID)
                         
                         # concat all EGIDs within the same shape that were previously missing
                         solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
                         
                     # Error case: Shapes of building that has multiple gwrEGIDs but does not overlap with the assigned / identical solkatEGID. 
-                    # Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID being placed in another shape. 
-                    elif case5_TF:      # (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list()):
-
-                        # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
-                        gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
-                        # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
-                        gwrEGID_row['EGID_gwradded'] = egid
-                        egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
-
-                        # next follow all steps as in "Intended Case" above (solkat_shape with solkatEGID and gwrEGIDs)
+                    # 5a (discontinued because of 5b) Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID 
+                    # being placed in another shape (not necessarily though, just not in the egid_join_union)
+                    # 5b edit: because nan in GWR_EGID of solkat have been replaced with SB_UUID as a proxy for coherent EGID union shapes, this case now apprears more often and
+                    # must be dealt differently. Take roof shape(s), overwrite the proxyEGID (for shape union) with the gwr EGIDs within the union shape. then follow same steps 
+                    # as in case4. Because EGID_old_solkat is overwritten with EGID_gwradded, no special subcase is needed wether EGID_old_solkat is a "proper" EGID or a proxyEGID
+                    # using SB_UUID.
+                
+                    elif case5_TF:
+                        # 5b case
                         solkat_subdf_addedEGID_list = []
-                        n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
-                        
-                        for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
 
+                        n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                        for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+                            
                             # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
                             solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                            # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
                             solkat_addedEGID['EGID'] = egid_to_add
                             
                             #extend the DF_UID with some numbers to have truely unique DF_UIDs
                             if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
-                                str_suffix = str(n+1).zfill(3)
+                                str_suffix = str(n+1).zfill(5)
                                 if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
                                     solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
                                 elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
@@ -946,20 +940,60 @@ class DataAggScenario:
                             for col in cols_adjust_for_missEGIDs_to_solkat:
                                 solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
                             
-                            # shrink topology to see which partitions are affected by EGID extensions
-                            # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
-
                             solkat_subdf_addedEGID_list.append(solkat_addedEGID)
                         
                         # concat all EGIDs within the same shape that were previously missing
                         solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+                        
+                            
+                            # 5a case (discontinued)
+                        if False: 
+                            # else: 
+
+
+                            # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
+                            gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
+                            # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                            gwrEGID_row['EGID_gwradded'] = egid
+                            egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
+
+                            # next follow all steps as in "Intended Case" above (solkat_shape with solkatEGID and gwrEGIDs)
+                            solkat_subdf_addedEGID_list = []
+                            n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                            
+                            for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+
+                                # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                                solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                solkat_addedEGID['EGID'] = egid_to_add
+                                
+                                #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                                if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
+                                    str_suffix = str(n+1).zfill(3)
+                                    if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                                        solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                    elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                                        solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+
+                                # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                                for col in cols_adjust_for_missEGIDs_to_solkat:
+                                    solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                
+                                # shrink topology to see which partitions are affected by EGID extensions
+                                # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
+
+                                solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                            
+                            # concat all EGIDs within the same shape that were previously missing
+                            solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
 
                         if i_print < print_counter_max:
-                            checkpoint_to_logfile(f'ERROR: EGID {egid}: multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them', self.sett.log_name, 1, self.sett.show_debug_prints)
+                            print(f'ERROR: EGID {egid}: multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them')
                             i_print += 1
                         elif i_print == print_counter_max:
-                            checkpoint_to_logfile(f'ERROR: EGID {egid}: {print_counter_max}+ ... more cases of multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them', self.sett.log_name, 1, self.sett.show_debug_prints)
+                            print(f'ERROR: EGID {egid}: {print_counter_max}+ ... more cases of multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them')
                             i_print += 1
+
 
                 if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
                     checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition', self.sett.log_name, 3, self.sett.show_debug_prints)
