@@ -15,7 +15,7 @@
 #SBATCH --error=stdouterr_files/myrun.e%j
 
 #You selected an array of jobs from 1 to 2139 with 50 simultaneous jobs
-#SBATCH --array=1-10
+#SBATCH --array=1-15
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT
 #SBATCH --mail-user=raul.hochuli@unibas.ch        #You will be notified via email when your task ends or fails
 

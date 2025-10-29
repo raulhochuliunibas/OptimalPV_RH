@@ -8,6 +8,8 @@ python src/calibration_array_by_5nbfs.py 4206
 python src/calibration_array_by_5nbfs.py 4207
 python src/calibration_array_by_5nbfs.py 4210
 python src/calibration_array_by_5nbfs.py 4200
-
-
-
+python src/calibration_array_by_5nbfs.py 4002
+python src/calibration_array_by_5nbfs.py 4008
+python src/calibration_array_by_5nbfs.py 4001
+python src/calibration_array_by_5nbfs.py 4003
+python src/calibration_array_by_5nbfs.py 4012

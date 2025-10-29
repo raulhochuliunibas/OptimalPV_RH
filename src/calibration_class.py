@@ -2286,6 +2286,7 @@ class Calibration:
 
 
     def random_forest_regression(self,):
+        print(' * Starting random forest regression approach 2 * ')
         rfr_settings = self.sett.reg2_random_forest_reg_settings
 
         # data prep ====================
@@ -2403,6 +2404,7 @@ class Calibration:
         
 
         for i_mod, (mod_key, dict_rfrsett) in enumerate(rfr_settings['reg2_rfrname_dfsuffix_dicts'].items()):
+
             subplot_row = i_mod // subplot_cols + 1
             subplot_col = i_mod % subplot_cols + 1
 
@@ -2413,7 +2415,7 @@ class Calibration:
             segmentation_TF = any([True for kwp in kWp_segments if kwp[0] is not None and kwp[1] is not None])
             y_target_col  = 'TotalPower_segment'    if segmentation_TF else 'TotalPower'
 
-
+            print(f'   - Running random forest regression for model: rfr{dict_rfrsett["rfr_mod_name"]} df{df_suffix} ')
 
 
             # import data & transform 
@@ -2560,7 +2562,7 @@ class Calibration:
                         }
 
                     # export distributions
-                    with open(f'{self.sett.calib_scen_path}/rfr_segment_distribution_{rfr_mod_name}.json', 'w') as fp:
+                    with open(f'{self.sett.calib_scen_path}/{rfr_mod_name}_kWp_segments.json', 'w') as fp:
                         json.dump(rfr_segment_dist_dict, fp, indent=4)
 
 
@@ -2596,8 +2598,8 @@ class Calibration:
 
 
                     # pred values
-                    idx = 1
-                    segment_str, segment_dict = list(rfr_segment_dist_dict.keys())[idx], rfr_segment_dist_dict[list(rfr_segment_dist_dict.keys())[idx]]
+                    # idx = 1
+                    # segment_str, segment_dict = list(rfr_segment_dist_dict.keys())[idx], rfr_segment_dist_dict[list(rfr_segment_dist_dict.keys())[idx]]
 
                     df_test_rfr[f'pred{rfr_mod_name}'] = np.nan
                     for segment_str, segment_dict in rfr_segment_dist_dict.items():
@@ -2611,7 +2613,7 @@ class Calibration:
                         mean      = segment_dict['TotalPower_mean_seg']
                         stdev     = segment_dict['TotalPower_std_seg']
                         skewness  = segment_dict['TotalPower_skew_seg']
-                        kurto  = segment_dict['TotalPower_kurt_seg']
+                        kurto     = segment_dict['TotalPower_kurt_seg']
 
                         if stdev == 0:
                             df_test_rfr.loc[mask, f'pred{rfr_mod_name}'] = mean
@@ -2770,6 +2772,7 @@ class Calibration:
         )
         fig_rfr_subplot.write_html(f'{self.sett.calib_scen_path}/rfr_kWp_actualVSpred_subplots.html')
 
+    print(' * Finished random forest regression approach 2 * ')
 
 
 
@@ -2803,6 +2806,7 @@ if __name__ == '__main__':
                 'run_ML_rfr_TF': True,
                 'visualize_ML_rfr_TF': True,
                 'reg2_rfrname_dfsuffix_dicts': {
+
                     'mod1': {
                         'rfr_mod_name': '_rfr1', 
                         'df_suffix': '',
@@ -2810,11 +2814,11 @@ if __name__ == '__main__':
                         'random_state':         24,    # default: None  # | None,    
                         'n_jobs':               -1,      # default: None  # | -1,  
                         'cross_validation':     None, 
-                        'n_estimators':         50  ,    # default: 100   # | 1,       
+                        'n_estimators':         10  ,    # default: 100   # | 1,       
                         'min_samples_split':    50    ,    # default: 2     # | 1000,    
                         'max_depth':            10   ,    # default: None  # | 3,       
                         'kWp_segments': [(None, None)],
-                }, 
+                    }, 
 
                     'mod5': {
                         'rfr_mod_name': '_rfr5', 
@@ -2823,30 +2827,37 @@ if __name__ == '__main__':
                         'random_state':         24,    # default: None  # | None,    
                         'n_jobs':               -1,      # default: None  # | -1,  
                         'cross_validation':     None, 
-                        'n_estimators':         50  ,    # default: 100   # | 1,       
+                        'n_estimators':         10  ,    # default: 100   # | 1,       
                         'min_samples_split':    2     ,    # default: 2     # | 1000,    
                         'max_depth':            30   ,    # default: None  # | 3,       
                         'kWp_segments': [
-                            # (0, 5), 
-                            # (5, 7.5),
-                            # (7.5, 10),
-                            # (10, 12.5), 
-                            # (12.5, 17.5),
-                            # (17.5, 25),
-                            # (25, 100), 
-                            (3, 10),
-                            (10,20), 
-
-                            # (0.0, 10.0), 
-                            # (10.0, 20.0),
-                            # (20.0, 999.0),
+                            ( 3, 10),
+                            (10, 15), 
+                            (15, 20), 
                         ], 
-                }, 
+                    }, 
 
-            }},
+                    'mod6': {
+                        'rfr_mod_name': '_rfr6', 
+                        'df_suffix': '_pvroof20to70',
+
+                        'random_state':         24,    # default: None  # | None,    
+                        'n_jobs':               -1,      # default: None  # | -1,  
+                        'cross_validation':     None, 
+                        'n_estimators':         10  ,    # default: 100   # | 1,       
+                        'min_samples_split':    2     ,    # default: 2     # | 1000,    
+                        'max_depth':            30   ,    # default: None  # | 3,       
+                        'kWp_segments': [
+                            ( 3, 10),
+                            (10, 15), 
+                            (15, 20), 
+                        ], 
+                    }, 
+
+                },},
 
         ), 
- ]
+    ]
 
     for i_prep, prep_sett in enumerate(preprep_list):
         print('')
