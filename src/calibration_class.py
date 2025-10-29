@@ -12,17 +12,25 @@ import seaborn as sns
 import glob
 import shutil
 import joblib
+import json
+import plotly.graph_objects as go
+import plotly.express as px
+
+from plotly.subplots import make_subplots
 from scipy.optimize import curve_fit
 from scipy import optimize
+from scipy.stats import skew, kurtosis
+from scipy.stats import pearson3
 
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.model_selection import GridSearchCV  
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import root_mean_squared_error
 
 from shapely.geometry import Point
 from shapely.ops import unary_union
@@ -81,19 +89,21 @@ class Calibration_Settings:
                                 samples
         """,
         'reg2_rfrname_dfsuffix_dicts': {
-                    'mod1': {
-                        'rfr_mod_name': '_rfr1', 
-                        'df_suffix': '',
+            'mod1': {
+                'rfr_mod_name': '_rfr1', 
+                'df_suffix': '',
 
-                        'random_state':         None,    # default: None  # | None,    
-                        'n_jobs':               -1,      # default: None  # | -1,  
-                        'cross_validation':     None, 
-                        'n_estimators':         [100, ]  ,    # default: 100   # | 1,       
-                        'min_samples_split':    [20, ]    ,    # default: 2     # | 1000,    
-                        'max_depth':            [10, ]   ,    # default: None  # | 3,       
+                'random_state':         None,    # default: None  # | None,    
+                'n_jobs':               -1,      # default: None  # | -1,  
+                'cross_validation':     None, 
+                'n_estimators':         [100, ]  ,    # default: 100   # | 1,       
+                'min_samples_split':    [20, ]    ,    # default: 2     # | 1000,    
+                'max_depth':            [10, ]   ,    # default: None  # | 3,       
+
+                'kWp_segments': [(None, None)],
                 }, 
             }
-            })
+    })
     opt1_kWp_optimization_subs_settings: Dict = field(default_factory=lambda: {
         'no_subs': {
             'opt_suffix': 'opt_s0-00', 
@@ -1219,7 +1229,10 @@ class Calibration:
 
             if file_type in single_file_types: 
                 path = file_type_paths[0]
-                shutil.copy(path, f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_{file_type}')
+                single_file_path = f'{self.sett.calib_scen_preprep_path}/0_{self.sett.name_dir_export}_{file_type}'
+                if os.path.exists(single_file_path):
+                    os.remove(single_file_path)
+                shutil.copy(path, single_file_path)
 
             else:
                 if '.parquet' in file_type:
@@ -1265,15 +1278,16 @@ class Calibration:
                                     pl.col(col).cast(pl.Utf8)
                                 ])
                             for col in float_cols:
-                                df = df.with_columns([
-                                    df[col]
-                                    .cast(pl.Utf8)
-                                    .str.strip_chars()
-                                    .fill_null('0.0')
-                                    .replace('', '0.0')
-                                    .cast(pl.Float64)
-                                    .alias(col)
-                                ])
+                                if col in df.columns:
+                                    df = df.with_columns([
+                                        df[col]
+                                        .cast(pl.Utf8)
+                                        .str.strip_chars()
+                                        .fill_null('0.0')
+                                        .replace('', '0.0')
+                                        .cast(pl.Float64)
+                                        .alias(col)
+                                    ])
                             for col in int_cols:
                                 if col in df.columns:
                                     # normalize empty/whitespace strings to nulls, then cast safely to Int64
@@ -1283,8 +1297,7 @@ class Calibration:
                                         .cast(pl.Utf8)
                                         .str.strip_chars()
                                         .fill_null('0')
-                                        .replace('0.0', '0')
-                                        .replace('', '0')
+                                        .str.replace(r"\.0$", "", literal=False)  # <- regex replace to remove .0 at the end                                        .replace('', '0')
                                         .cast(pl.Int64)
                                         .alias(col)
                                     ])
@@ -1305,7 +1318,7 @@ class Calibration:
 
 
                 elif '.geojson' in file_type:
-                    for path in file_type_paths:
+                    for ip, path in enumerate(file_type_paths):
                         df = gpd.read_file(path)
                         
                         if file_type == 'solkat_gdf.geojson':
@@ -1338,16 +1351,49 @@ class Calibration:
                             str_cols = [col for col in df.columns if (col != 'geometry') & (col not in int_cols) & (col not in float_cols)]
                             for col in str_cols:
                                 df[col] = df[col].astype(str)
+                            # for col in float_cols:
+                            #     if df[col].dtype == 'object':
+                            #         df.loc[df[col].isnull(), col] = '0.0'
+                            #         df.loc[df[col] == '', col] = '0.0'
+                            #         df[col] = df[col].astype(float)      
                             for col in float_cols:
-                                if df[col].dtype == 'object':
-                                    df.loc[df[col].isnull(), col] = '0.0'
-                                    df.loc[df[col] == '', col] = '0.0'
-                                    df[col] = df[col].astype(float)      
+                                if col in df.columns:
+                                    df[col] = (
+                                        df[col]
+                                        .astype(str)                        # 1. Cast to string
+                                        .str.strip()                        # 2. Strip whitespace
+                                        .replace('nan', np.nan)             # 3a. Replace string 'nan' with actual NaN
+                                        .replace('', '0.0')                 # 4a. Replace empty string with '0.0'
+                                        .fillna('0.0')                      # 3b. Fill NaNs with '0.0'
+                                        .astype(float)                      # 5. Cast to float
+                                    )
                                     
+                            # for col in int_cols:
+                            #     if df[col].dtype == 'O':
+                            #         df.loc[df[col] == '', col] = '0'
+                            #     df[col] = df[col].astype(int)
+                            # for col in int_cols:
+                            #     if col in df.columns:
+                            #         df[col] = (
+                            #             df[col]
+                            #             .astype(str)                        # 1. Cast to string
+                            #             .str.strip()                        # 2. Strip whitespace
+                            #             .replace('nan', np.nan)             # 3a. Replace string 'nan' with actual NaN
+                            #             .replace(['', '0.0'], '0')          # 4a. Replace '' and '0.0' with '0'
+                            #             .fillna('0')                        # 3b. Fill NaNs with '0'
+                            #             .astype(int)                        # 5. Cast to int
+                            #         )
                             for col in int_cols:
-                                if df[col].dtype == 'O':
-                                    df.loc[df[col] == '', col] = '0'
-                                df[col] = df[col].astype(int)
+                                if col in df.columns:
+                                    df[col] = (
+                                        df[col]
+                                        .astype(str)                                 # 1. Ensure string type
+                                        .str.strip()                                 # 2. Strip whitespace
+                                        .str.replace(r"\.0$", "", regex=True)        # 3. Remove trailing .0
+                                        .replace(['', 'nan'], '0')                   # 4. Replace blanks/nan with '0'
+                                        .fillna('0')                                 # 5. Fill missing with '0'
+                                        .astype(int)                                 # 6. Convert to integer
+                                    )
                         
 
                         # remove all date colums for geojson export
@@ -1357,11 +1403,33 @@ class Calibration:
                             date_cols = [col for col in df.columns if df[col].dtype in date_types]
                             df[date_cols] = df[date_cols].astype(str)
 
-                        # adjust all-NA values in gm_shp_gdf
+
+                        # adjust gm_shp_gdf
                         if 'gm_shp_gdf' in file_type:
                             keep_cols = ['BEZIRKSNUM', 'NAME', 'KANTONSNUM', 'BFS_NUMMER', 'GEM_TEIL', 'GEM_FLAECH', 'geometry']
                             df = df[keep_cols].copy()
- 
+
+
+                        # check for all-NA values 
+                        na_cols = df.columns[df.isnull().all()].tolist()
+                        if (ip > 0) & (len(na_cols) > 0):
+                            prev_df = df_agg_list[-1]
+                            for col in na_cols:
+                                prev_type = prev_df[col].dtype
+                                df[col] = df[col].astype(prev_type)
+                        
+                        elif (ip == 0) & (len(na_cols) > 0):
+                            for col in na_cols:
+                                ip_iter = ip
+                                frwrd_dtype = np.nan
+                                while (frwrd_dtype == np.nan) & (ip_iter <= len(file_type_paths)-1):
+                                    next_df = gpd.read_file(file_type_paths[ip_iter])
+                                    if col in next_df.columns:
+                                        frwd_dtype = next_df[col].dtype
+                                    ip_iter += 1
+                                if frwd_dtype != np.nan:
+                                    df[col] = df[col].astype(frwd_dtype)
+                                    
 
                         # before appending df -----------------------
                         if df.shape[0] > 0:
@@ -1709,7 +1777,13 @@ class Calibration:
 
                 # compute npv of optimized installtion size ----------------------------------------------
                 max_stromertrag = egid_subdf['STROMERTRAG'].max()
-                max_dfuid_df = egid_subdf.filter(pl.col('STROMERTRAG') == max_stromertrag).sort(['t_int'], descending=[False,])
+                if max_stromertrag is not None: 
+                    max_dfuid_df = egid_subdf.filter(pl.col('STROMERTRAG') == max_stromertrag).sort(['t_int'], descending=[False,])
+                elif max_stromertrag is None:
+                    print(f'*** egid {egid} has no STROMERTRAG values, taking first df_uid as fallback ***')
+                    df_uid = egid_subdf['df_uid'].unique()[0]
+                    max_dfuid_df = egid_subdf.filter(pl.col('df_uid') == df_uid).sort(['t_int'], descending=[False,])
+
                 max_dfuid_df.select(['EGID', 'df_uid', 't_int', 'STROMERTRAG', ])
 
                 # find optimal installation size
@@ -1881,8 +1955,9 @@ class Calibration:
             # export results =====================================
             df_test_optim = pd.DataFrame({
                 'EGID':                                                 egid_list,
-                'TotalPower_W':                                         TotalPower_list,
+                'TotalPower':                                         TotalPower_list,
                 f'opt_flaeche{dict_optsett["opt_suffix"]}':             opt_flaeche_list,
+                
                 f'opt_kWp{dict_optsett["opt_suffix"]}':                 opt_kwp_list,
                 f'opt_invest_cost_chf{dict_optsett["opt_suffix"]}':     opt_invest_cost_list,
                 f'opt_npv_chf{dict_optsett["opt_suffix"]}':             opt_npv_list,
@@ -1916,14 +1991,14 @@ class Calibration:
                 demandtypes_ts     = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_demandtypes_ts.parquet'))
                 angle_tilt_df      = pl.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_angle_tilt_df.parquet'))
                 
-                solkat_gdf         = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_solkat_gdf.geojson'))
-                gwr_gdf            = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_gwr_gdf.geojson'))
-                # gwr4204_gdf = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'bfs4204_gwr_gdf.geojson'))
-                # gwr4204     = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'bfs4204_gwr_pq.parquet'))
-                solkat_gdf.shape
-                solkat.shape
-                gwr_gdf.shape
-                gwr.shape
+                # solkat_gdf         = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_solkat_gdf.geojson'))
+                # gwr_gdf            = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'0_{self.sett.name_dir_export}_gwr_gdf.geojson'))
+                # # gwr4204_gdf = gpd.read_file(os.path.join(self.sett.calib_scen_preprep_path, f'bfs4204_gwr_gdf.geojson'))
+                # # gwr4204     = pd.read_parquet(os.path.join(self.sett.calib_scen_preprep_path, f'bfs4204_gwr_pq.parquet'))
+                # solkat_gdf.shape
+                # solkat.shape
+                # gwr_gdf.shape
+                # gwr.shape
 
             else: 
                 scicore_path = os.path.join(self.sett.scicore_concat_data_path, self.sett.name_dir_export, 'preprep_data')
@@ -2240,42 +2315,111 @@ class Calibration:
         df_test.to_csv(f'{self.sett.calib_scen_path}/df_test.csv', index=False)
 
         # Residential buildings 3+ units
-        df__res3plus = df.loc[df['GKLAS'].isin(['1110', '1121', '1122'])]
-        if df__res3plus.shape[0] > 0:
-            df_train_res3plus = split_train_test(df__res3plus, 'train')
-            df_test_res3plus = split_train_test(df__res3plus, 'test')
+        df_res3plus = df.loc[df['GKLAS'].isin(['1110', '1121', '1122'])]
+        if df_res3plus.shape[0] > 0:
+            df_train_res3plus = split_train_test(df_res3plus, 'train')
+            df_test_res3plus = split_train_test(df_res3plus, 'test')
             df_train_res3plus.to_csv(f'{self.sett.calib_scen_path}/df_train_res3plus.csv', index=False)
             df_test_res3plus.to_csv(f'{self.sett.calib_scen_path}/df_test_res3plus.csv', index=False)
 
         # Residential buildings 1-2 units
-        df__res1to2 = df.loc[df['GKLAS'].isin(['1110', '1121'])]
-        if df__res1to2.shape[0] > 0:
-            df_train_res1to2 = split_train_test(df__res1to2, 'train')
-            df_test_res1to2 = split_train_test(df__res1to2, 'test')
+        df_res1to2 = df.loc[df['GKLAS'].isin(['1110', '1121'])]
+        if df_res1to2.shape[0] > 0:
+            df_train_res1to2 = split_train_test(df_res1to2, 'train')
+            df_test_res1to2 = split_train_test(df_res1to2, 'test')
             df_train_res1to2.to_csv(f'{self.sett.calib_scen_path}/df_train_res1to2.csv', index=False)
             df_test_res1to2.to_csv(f'{self.sett.calib_scen_path}/df_test_res1to2.csv', index=False)
 
         # Subset: Residential 1-2 units + TotalPower < 20
-        df__kwpmax20 = df.loc[(df['GKLAS'].isin(['1110', '1121'])) & (df['TotalPower'] < 20)]
-        if df__kwpmax20.shape[0] > 0:
-            df_train_kwpmax20 = split_train_test(df__kwpmax20, 'train')
-            df_test_kwpmax20 = split_train_test(df__kwpmax20, 'test')
+        df_kwpmax20 = df.loc[(df['GKLAS'].isin(['1110', '1121'])) & (df['TotalPower'] < 20)]
+        if df_kwpmax20.shape[0] > 0:
+            df_train_kwpmax20 = split_train_test(df_kwpmax20, 'train')
+            df_test_kwpmax20 = split_train_test(df_kwpmax20, 'test')
             df_train_kwpmax20.to_csv(f'{self.sett.calib_scen_path}/df_train_kwpmax20.csv', index=False)
             df_test_kwpmax20.to_csv(f'{self.sett.calib_scen_path}/df_test_kwpmax20.csv', index=False)
+
+        # only consider buildings with partial pv installation
+        def calc_inst_flaeche(row, ):
+            if row['TotalPower'] > 0 and row['FLAECHE_total'] > 0:
+                inst_total_flaeche = row['TotalPower'] * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available
+
+                for direction in ['south', 'west', 'east', 'north']:
+                    row[f"{direction}_max_ratio"] = 0
+
+                for direction in ['south', 'west', 'east', 'north']:
+                    fla_col = f"{direction}_max_flaeche"
+                    ratio_col = f"{direction}_max_ratio"
+
+                    if row[fla_col] <= 0:
+                        continue
+
+                    max_inst_flaeche = (
+                        row[fla_col] * self.sett.TECspec_share_roof_area_available
+                    )
+
+                    if inst_total_flaeche <= 0:
+                        break
+
+                    if inst_total_flaeche <= max_inst_flaeche:
+                        row[ratio_col] = inst_total_flaeche / max_inst_flaeche
+                        inst_total_flaeche = 0
+                    else:
+                        row[ratio_col] = 1
+                        inst_total_flaeche -= max_inst_flaeche
+            else:
+                for direction in ['south', 'west', 'east', 'north']:
+                    row[f"{direction}_max_ratio"] = 0
+
+            return row                    
+
+
+        df_pvroof_ratio = df.apply(calc_inst_flaeche, axis=1)
+        ratio_cols = ['south_max_ratio', 'west_max_ratio', 'east_max_ratio', 'north_max_ratio']
+        pvroof_ratio20to70_mask =  ((df_pvroof_ratio[ratio_cols] > 0.2) &     
+                                    (df_pvroof_ratio[ratio_cols] < 0.7)).any(axis=1)
+        df_pvroof_ratio20to70 = df_pvroof_ratio.loc[pvroof_ratio20to70_mask].copy()
+        if df_pvroof_ratio20to70.shape[0] > 0:
+            df_train_pvroof20to70 = split_train_test(df_pvroof_ratio20to70, 'train')
+            df_test_pvroof20to70 = split_train_test(df_pvroof_ratio20to70, 'test')
+            df_train_pvroof20to70.to_csv(f'{self.sett.calib_scen_path}/df_train_pvroof20to70.csv', index=False)
+            df_test_pvroof20to70.to_csv(f'{self.sett.calib_scen_path}/df_test_pvroof20to70.csv', index=False)
             
+
 
         # random forest regression ====================
 
-        # for i, (rfr_mod_name, df_suffix) in enumerate(rfr_settings['reg2_rfrname_dfsuffix_tupls']):
-        for mod_key, dict_rfrsett in rfr_settings['reg2_rfrname_dfsuffix_dicts'].items():
+        subplot_cols = 3 if len(rfr_settings['reg2_rfrname_dfsuffix_dicts']) >=3 else len(rfr_settings['reg2_rfrname_dfsuffix_dicts'])
+        subplot_rows = len(rfr_settings['reg2_rfrname_dfsuffix_dicts']) // subplot_cols + int(len(rfr_settings['reg2_rfrname_dfsuffix_dicts']) % subplot_cols > 0) 
+        fig_rfr_subplot = make_subplots(
+            rows=subplot_rows,  
+            cols=subplot_cols,
+            shared_xaxes=True,
+            shared_yaxes=True,
+            subplot_titles=[
+                dict_rfrsett['rfr_mod_name']
+                for dict_rfrsett in rfr_settings['reg2_rfrname_dfsuffix_dicts'].values()
+            ])        
+        fig_bar_rsme = go.Figure()
+        
+
+        for i_mod, (mod_key, dict_rfrsett) in enumerate(rfr_settings['reg2_rfrname_dfsuffix_dicts'].items()):
+            subplot_row = i_mod // subplot_cols + 1
+            subplot_col = i_mod % subplot_cols + 1
+
             rfr_mod_name = dict_rfrsett['rfr_mod_name']
             df_suffix    = dict_rfrsett['df_suffix']
+            kWp_segments = dict_rfrsett['kWp_segments']
+            
+            segmentation_TF = any([True for kwp in kWp_segments if kwp[0] is not None and kwp[1] is not None])
+            y_target_col  = 'TotalPower_segment'    if segmentation_TF else 'TotalPower'
 
 
+
+
+            # import data & transform 
             df_train_rfr = pd.read_csv(f'{self.sett.calib_scen_path}/df_train{df_suffix}.csv')
             df_test_rfr  = pd.read_csv(f'{self.sett.calib_scen_path}/df_test{df_suffix}.csv')
 
-            # transformations
             cols_dtypes_tupls = {
                 # 'year': 'int64',
                 'BFS_NUMMER': 'category',
@@ -2305,9 +2449,31 @@ class Calibration:
             for col, dtype in cols_dtypes_tupls.items():
                 df_train_rfr[col] = df_train_rfr[col].astype(dtype)
                 df_test_rfr[col]  = df_test_rfr[col].astype(dtype)
+            
+            x_cols = [tupl[0] for tupl in cols_dtypes_tupls.items() if tupl[0] not in [y_target_col, 'TotalPower', ]]
 
-            X = df_train_rfr.drop(columns=['TotalPower', ])
-            y = df_train_rfr['TotalPower']
+
+            # partition df into X / y for model
+            if segmentation_TF: 
+                df_train_rfr[y_target_col] = 'other'
+                df_train_rfr_seg = df_train_rfr.copy()
+
+                for i_seg, (min_kWp, max_kWp) in enumerate(kWp_segments):
+                    # segment_str = f'{min_kWp}to{max_kWp}_kWp_seg' 
+                    segment_str = f'seg_{i_seg+1}'
+                    mask = (df_train_rfr_seg['TotalPower'] >= min_kWp) & (df_train_rfr_seg['TotalPower'] < max_kWp)
+                    df_train_rfr_seg.loc[mask, y_target_col] = segment_str
+                
+                df_train_rfr_seg[y_target_col] = df_train_rfr_seg[y_target_col].astype('category')
+                
+                X = df_train_rfr_seg[x_cols].copy()
+                y = df_train_rfr_seg[y_target_col].copy()
+
+
+            elif not segmentation_TF:
+                X = df_train_rfr[x_cols].copy()
+                y = df_train_rfr[y_target_col].copy()
+
 
             # encode categorical variables
             cat_cols = X.select_dtypes(include=["object", "category"]).columns
@@ -2317,68 +2483,293 @@ class Calibration:
             X = pd.concat([X.drop(columns=cat_cols).reset_index(drop=True), encoded_df.reset_index(drop=True)], axis=1)
 
 
-            # rf model
+            # rf model -------------------
             if rfr_settings['run_ML_rfr_TF']:
-                # rfr_model = RandomForestRegressor(
-                #     n_estimators   = rfr_settings['n_estimators'],
-                #     max_depth      = rfr_settings['max_depth'],
-                #     random_state   = rfr_settings['random_state'],
-                #     n_jobs         = rfr_settings['n_jobs'],
-                # )
+
+                """
                 # # cross validation
                 # kf = KFold(n_splits=10, shuffle=True, random_state=42)
                 # cv_scores = cross_val_score(rfr_model, X, y, cv=kf, scoring='neg_mean_absolute_error')
                 # rfr_model.fit(X, y)
 
-                rfr_model = RandomForestRegressor(random_state = dict_rfrsett['random_state'], )
-                param_grid = {
-                    'n_estimators':      dict_rfrsett['n_estimators'],
-                    'min_samples_split': dict_rfrsett['min_samples_split'],
-                    'max_depth':         dict_rfrsett['max_depth'],
-                }
-                    
-                grid_search = GridSearchCV(
-                    rfr_model,
-                    param_grid,
-                    # cv=rfr_settings['cross_validation'],
-                    scoring='neg_mean_absolute_error',
-                    n_jobs= dict_rfrsett['n_jobs'],
-                    return_train_score=True,
-                )
-                grid_search.fit(X, y)
-                rfr_model = grid_search.best_estimator_
+                # # GridSearch Convolution
+                # rfr_model = RandomForestRegressor(random_state = dict_rfrsett['random_state'], )
+                # param_grid = {
+                #     'n_estimators':      dict_rfrsett['n_estimators'],
+                #     'min_samples_split': dict_rfrsett['min_samples_split'],
+                #     'max_depth':         dict_rfrsett['max_depth'],
+                # }
+                # grid_search = GridSearchCV(
+                #     rfr_model,
+                #     param_grid,
+                #     # cv=rfr_settings['cross_validation'],
+                #     scoring='neg_mean_absolute_error',
+                #     n_jobs= dict_rfrsett['n_jobs'],
+                #     return_train_score=True,
+                # )
+                # grid_search.fit(X, y)
+                # rfr_model = grid_search.best_estimator_
+                """
 
+                # single RandomForest
+                if not segmentation_TF:
+                    rfr_model = RandomForestRegressor(
+                        n_estimators   = dict_rfrsett['n_estimators'],
+                        max_depth      = dict_rfrsett['max_depth'],
+                        random_state   = dict_rfrsett['random_state'],
+                        n_jobs         = dict_rfrsett['n_jobs'],
+                    )
+                    rfr_model.fit(X, y)
 
+                elif segmentation_TF:
+                    rfr_model = RandomForestClassifier(
+                        n_estimators   = dict_rfrsett['n_estimators'],
+                        max_depth      = dict_rfrsett['max_depth'],
+                        random_state   = dict_rfrsett['random_state'],
+                        n_jobs         = dict_rfrsett['n_jobs'],
+                    )
+                    rfr_model.fit(X, y)
                 # save model + encoder
-                joblib.dump(rfr_model, f'{self.sett.calib_scen_path}/{rfr_mod_name}_model.pkl')
-                joblib.dump(encoder, f'{self.sett.calib_scen_path}/{rfr_mod_name}_encoder.pkl')
+                model_name = f'{rfr_mod_name}_model.pkl'
+                encoder_name = f'{rfr_mod_name}_encoder.pkl'
+
+                joblib.dump(rfr_model, f'{self.sett.calib_scen_path}/{model_name}')
+                joblib.dump(encoder,   f'{self.sett.calib_scen_path}/{encoder_name}')
 
                 os.makedirs(f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs', exist_ok=True)
-                joblib.dump(rfr_model, f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{rfr_mod_name}_model.pkl')
-                joblib.dump(encoder, f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{rfr_mod_name}_encoder.pkl')
-                
+                joblib.dump(rfr_model, f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{model_name}')
+                joblib.dump(encoder,   f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{encoder_name}')
 
 
-            # prediction
+
+                # save segment distribution
+                rfr_segment_dist_dict = {}
+                if segmentation_TF:
+                    for i_seg, (min_kWp, max_kWp) in enumerate(kWp_segments):
+                        # segment_str = f'{min_kWp}to{max_kWp}_kWp_seg' 
+                        segment_str = f'seg_{i_seg+1}'
+                        mask = (df_train_rfr_seg['TotalPower'] >= min_kWp) & (df_train_rfr_seg['TotalPower'] < max_kWp)
+                        df_segment = df_train_rfr_seg.loc[mask].copy()
+
+                        rfr_segment_dist_dict[segment_str] = {
+                            'nEGID_in_segment':      df_segment.shape[0],
+                            'TotalPower_mean_seg' :  df_segment['TotalPower'].mean()                 if df_segment.shape[0] > 0 else 0.0,
+                            'TotalPower_std_seg'  :  df_segment['TotalPower'].std()                  if df_segment.shape[0] > 1 else 0.0,
+                            'TotalPower_skew_seg':   skew(df_segment['TotalPower'], bias=False)      if df_segment.shape[0] > 3 else 0.0,
+                            'TotalPower_kurt_seg':   kurtosis(df_segment['TotalPower'], bias=False)  if df_segment.shape[0] > 1 else 0.0,
+                        }
+
+                    # export distributions
+                    with open(f'{self.sett.calib_scen_path}/rfr_segment_distribution_{rfr_mod_name}.json', 'w') as fp:
+                        json.dump(rfr_segment_dist_dict, fp, indent=4)
+
+
+            # prediction -------------------
             if rfr_settings['run_ML_rfr_TF']:
-                X_test = df_test_rfr.drop(columns=['TotalPower', ])
-                encoded_test_array = encoder.transform(X_test[cat_cols].astype(str))
-                encoded_test_df = pd.DataFrame(encoded_test_array, columns=encoder.get_feature_names_out(cat_cols))
 
-                X_test_final = pd.concat([X_test.drop(columns=cat_cols).reset_index(drop=True), encoded_test_df.reset_index(drop=True)], axis=1)
-                X_test_final = X_test_final[X.columns]
+                if not segmentation_TF:
+                    # X_test = df_test_rfr.drop(columns=['TotalPower', ])
+                    X_test = df_test_rfr[x_cols].copy()
+                    encoded_test_array = encoder.transform(X_test[cat_cols].astype(str))
+                    encoded_test_df = pd.DataFrame(encoded_test_array, columns=encoder.get_feature_names_out(cat_cols))
 
-                test_preds = rfr_model.predict(X_test_final)
+                    X_test_final = pd.concat([X_test.drop(columns=cat_cols).reset_index(drop=True), encoded_test_df.reset_index(drop=True)], axis=1)
+                    X_test_final = X_test_final[X.columns]
 
-                df_test_rfr[f'pred_{rfr_mod_name}'] = test_preds
+                    # pred values
+                    test_preds = rfr_model.predict(X_test_final)
+                    df_test_rfr[f'pred{rfr_mod_name}'] = test_preds
 
-            else: 
-                df_test_rfr[f'pred_{rfr_mod_name}'] = np.zeros(df_test_rfr.shape[0])
-        
-            # df_test_rfr.to_csv(f'{self.sett.calib_scen_path}/df_test_rfr_{rfr_mod_name}{df_suffix}.csv', index=False)
-            df_test_rfr.to_csv(f'{self.sett.calib_scen_path}/df_test_rfr_{rfr_mod_name}.csv', index=False)
-            del df_train_rfr, df_test_rfr
-            
+                elif segmentation_TF:
+
+                    X_test = df_test_rfr[x_cols].copy()
+                    encoded_test_array = encoder.transform(X_test[cat_cols].astype(str))
+                    encoded_test_df = pd.DataFrame(encoded_test_array, columns=encoder.get_feature_names_out(cat_cols))
+                    
+                    X_test_final = pd.concat([X_test.drop(columns=cat_cols).reset_index(drop=True), encoded_test_df.reset_index(drop=True)], axis=1)
+                    X_test_final = X_test_final[X.columns]
+
+                    # pred segments
+                    test_preds = rfr_model.predict(X_test_final)
+                    # df_test_rfr[y_target_col]                   = test_preds
+                    df_test_rfr[f'pred{rfr_mod_name}_segments'] = test_preds
+
+
+                    # pred values
+                    idx = 1
+                    segment_str, segment_dict = list(rfr_segment_dist_dict.keys())[idx], rfr_segment_dist_dict[list(rfr_segment_dist_dict.keys())[idx]]
+
+                    df_test_rfr[f'pred{rfr_mod_name}'] = np.nan
+                    for segment_str, segment_dict in rfr_segment_dist_dict.items():
+                        mask = df_test_rfr[f'pred{rfr_mod_name}_segments'] == segment_str
+                        n_rows = mask.sum()
+
+                        if n_rows == 0:
+                            continue
+
+                        nEGID     = segment_dict['nEGID_in_segment']
+                        mean      = segment_dict['TotalPower_mean_seg']
+                        stdev     = segment_dict['TotalPower_std_seg']
+                        skewness  = segment_dict['TotalPower_skew_seg']
+                        kurto  = segment_dict['TotalPower_kurt_seg']
+
+                        if stdev == 0:
+                            df_test_rfr.loc[mask, f'pred{rfr_mod_name}'] = mean
+                            continue
+
+                        dist_seg = pearson3.rvs(skew=skewness, loc=mean, scale=stdev, size=n_rows)
+                        df_test_rfr.loc[mask, f'pred{rfr_mod_name}'] = dist_seg
+                        # df_test_rfr.loc[mask, f'pred{rfr_mod_name}'] = np.clip(dist_seg, min_kWp, max_kWp)
+
+
+
+            # visualization ====================
+            if (rfr_settings['run_ML_rfr_TF'] & rfr_settings['visualize_ML_rfr_TF']):
+
+                # RFR prediction plot -------------------
+                fig = go.Figure()
+
+                for i_seg, (min_kWp, max_kWp) in enumerate(kWp_segments):
+                    segmentation_TF = any([True for kwp in kWp_segments if kwp[0] is not None and kwp[1] is not None])
+                    color_idx = i_seg % len(px.colors.qualitative.Plotly)
+                    color_seg = px.colors.qualitative.Plotly[color_idx]
+
+                    if not segmentation_TF:
+                        min_kWp = df_test_rfr['TotalPower'].min()
+                        max_kWp = df_test_rfr['TotalPower'].max()
+
+                    # segment_str = f'{min_kWp:.1f}to{max_kWp:.1f}_kWp_seg' 
+                    segment_str = f'seg_{i_seg+1}'
+                    if not segmentation_TF: 
+                        df_plot_seg = df_test_rfr.copy()
+                    elif segmentation_TF:
+                        df_plot_seg = df_test_rfr.loc[df_test_rfr[f'pred{rfr_mod_name}_segments'] == segment_str].copy()
+                        # df_plot_seg = df_test_rfr.loc[(df_test_rfr['TotalPower'] >= min_kWp) & (df_test_rfr['TotalPower'] < max_kWp)].copy()
+
+
+                    # scatter
+                    def add_scatter_trace(fig_plot, df_plot, rfr_mod_name, color_seg, segment_str, row=None, col=None): 
+                        trace = go.Scatter(
+                            y=df_plot['TotalPower'],
+                            x=df_plot[f'pred{rfr_mod_name}'],
+                            mode='markers',
+                            name=f'{rfr_mod_name}-{segment_str} scatter',
+                            marker=dict(size=6, opacity=0.4),
+                            marker_color=color_seg,
+                        )
+                        
+                        # return fig_plot
+                        if row is not None and col is not None:
+                            fig_plot.add_trace(trace, row=row, col=col)
+                        else:
+                            fig_plot.add_trace(trace)
+                        return fig_plot
+                    add_scatter_trace(fig,             df_plot_seg, rfr_mod_name, color_seg, segment_str)
+                    add_scatter_trace(fig_rfr_subplot, df_plot_seg, rfr_mod_name, color_seg, segment_str, row=subplot_row, col=subplot_col)
+
+
+                    # diagonale
+                    max_diag_val =  max_kWp  if i_seg < len(kWp_segments)-1 else  df_plot_seg['TotalPower'].max()
+                    min_diag_val =  min_kWp     #  df_plot_seg['TotalPower'].min()
+                    
+                    def add_diag_trace(fig_plot, max_diag_val, min_diag_val, color_seg, segment_str, row=None, col=None):
+                        trace = go.Scatter(
+                            x=[min_diag_val*1.0, max_diag_val*1.0],
+                            y=[min_diag_val*1.0, max_diag_val*1.0],
+                            mode='lines',
+                            name=f'{rfr_mod_name}-{segment_str} diag',
+                            line=dict(dash='dash'),
+                            line_color=color_seg,
+                        )
+                        if row is not None and col is not None:
+                            fig_plot.add_trace(trace, row=row, col=col)
+                        else:
+                            fig_plot.add_trace(trace)
+                        return fig_plot
+                    add_diag_trace(fig,             max_diag_val, min_diag_val, color_seg, segment_str)
+                    add_diag_trace(fig_rfr_subplot, max_diag_val, min_diag_val, color_seg, segment_str, row=subplot_row, col=subplot_col)
+
+                    # distribution
+                    if segmentation_TF: 
+                        segment_dict = rfr_segment_dist_dict[segment_str]
+                        nEGID     = segment_dict['nEGID_in_segment']
+                        mean      = segment_dict['TotalPower_mean_seg']
+                        stdev     = segment_dict['TotalPower_std_seg']
+                        skewness  = segment_dict['TotalPower_skew_seg']
+                        kurto     = segment_dict['TotalPower_kurt_seg']
+
+                        if stdev > 0:
+                            if i_seg < len(kWp_segments)-1:
+                                min_linspace, max_linspace = min_kWp, max_kWp
+                            elif i_seg == len(kWp_segments) -1:
+                                min_linspace, max_linspace = min_kWp, max_kWp # df_plot_seg['TotalPower'].max()
+
+                            dist_linspace = np.linspace(min_linspace * 0.8, max_linspace * 1.2, 200)
+                            dist_pdf = pearson3.pdf(dist_linspace, skew=skewness, loc=mean, scale=stdev)
+                            dist_pdf_scaled = dist_pdf # * dist_pdf.max()
+
+                            fig.add_trace(
+                                go.Scatter(
+                                    x=dist_pdf_scaled,
+                                    y=dist_linspace,
+                                    mode='lines',
+                                    name=f'{rfr_mod_name}-{segment_str} dist',
+                                    line_color = color_seg,
+                                )
+                            )
+                    
+                fig.update_layout(
+                    title=f'Random Forest (Prediction of Segment Distribution)',
+                    xaxis_title=f'Pred Pwr {df_plot_seg.shape[0]} nEGIDs',
+                    yaxis_title='Total Power (kWp)',
+                    legend_title=f'{rfr_mod_name} - Segments',
+                    template='plotly_white',
+                )
+
+                # export
+                fig.write_html(f'{self.sett.calib_scen_path}/rfr_kWp_actualVSpred_{rfr_mod_name}.html')
+
+                # RMSE bar plot -------------------
+                if (df_test_rfr['TotalPower'].isna().sum() > 0) | (df_test_rfr[f'pred{rfr_mod_name}'].isna().sum() > 0):
+                    df_test_rfr.loc[df_test_rfr[f'pred{rfr_mod_name}'].isna()]
+
+                    if (df_test_rfr['TotalPower'].isna().sum() == df_test_rfr.shape[0]) | (df_test_rfr[f'pred{rfr_mod_name}'].isna().sum() == df_test_rfr.shape[0]) :
+                        print(f' - All TotalPower values are NaN, skipping RMSE calculation for {rfr_mod_name}.')
+                    else:
+                        df_test_rfr = df_test_rfr.dropna(subset=['TotalPower', f'pred{rfr_mod_name}'])
+
+                df_test_rfr[f'pred{rfr_mod_name}'].isna().sum()
+                rmse = root_mean_squared_error(df_test_rfr['TotalPower'], df_test_rfr[f'pred{rfr_mod_name}'])
+
+                fig_bar_rsme.add_trace(
+                    go.Bar(
+                        x=[rfr_mod_name],
+                        y=[rmse],
+                        name=f'RMSE {rfr_mod_name}',
+                        text=[f'{rmse:.2f} kWp'],
+                        textposition='auto',
+                    )
+                )
+
+
+        # export rsme barplot
+        fig_bar_rsme.update_layout(
+            title='Random Forest Regression - RMSE Comparison',
+            xaxis_title='RFR Model',
+            yaxis_title='RMSE (kWp)',
+            template='plotly_white',
+        )
+        fig_bar_rsme.write_html(f'{self.sett.calib_scen_path}/rfr_kWp_RMSE_comparison.html')
+
+        # export makesubplot
+        fig_rfr_subplot.update_layout(
+            title='Random Forest (Prediction of Segment Distribution) - Subplots',
+            xaxis_title='Predicted Power (kWp)',
+            yaxis_title='Actual Total Power (kWp)',
+            template='plotly_white'
+        )
+        fig_rfr_subplot.write_html(f'{self.sett.calib_scen_path}/rfr_kWp_actualVSpred_subplots.html')
+
 
 
 
@@ -2393,124 +2784,69 @@ if __name__ == '__main__':
         Calibration_Settings(
             # name_dir_export='calib_mini_debug',
             # name_preprep_subsen='bfs1201',
-            name_dir_export='calib_all_CH_bfs3',
+            # name_dir_export='calib_all_CH_bfs3',
+ 
+            name_dir_export='calib_all_CH_bfs_TEST',
             name_calib_subscen='reg2_all_CH_bfs',
-            bfs_numbers=[5391, 5394, 
-                        #  120, 4726, 4761, 
-                        4204, 4203,
-                         ],
-            # n_rows_import= 4000,
-            rerun_import_and_preprp_data_TF = True,
-            export_gwr_ALL_building_gdf_TF = True
+            bfs_numbers=[
+                4203, 4204, 4726, 4761, 5391, 
+                ],
+            n_rows_import                     = None,
+            rerun_import_and_preprp_data_TF   = True,
+            export_gwr_ALL_building_gdf_TF    = False, 
+
+            run_concatenate_preprep_data_TF         = True,
+            run_approach1_fit_optim_costfunction_TF = True, 
+            run_approach2_regression_instsize_TF    = True,
+            run_appr2_random_forest_reg_TF          = True,
+            reg2_random_forest_reg_settings         = {
+                'run_ML_rfr_TF': True,
+                'visualize_ML_rfr_TF': True,
+                'reg2_rfrname_dfsuffix_dicts': {
+                    'mod1': {
+                        'rfr_mod_name': '_rfr1', 
+                        'df_suffix': '',
+
+                        'random_state':         24,    # default: None  # | None,    
+                        'n_jobs':               -1,      # default: None  # | -1,  
+                        'cross_validation':     None, 
+                        'n_estimators':         50  ,    # default: 100   # | 1,       
+                        'min_samples_split':    50    ,    # default: 2     # | 1000,    
+                        'max_depth':            10   ,    # default: None  # | 3,       
+                        'kWp_segments': [(None, None)],
+                }, 
+
+                    'mod5': {
+                        'rfr_mod_name': '_rfr5', 
+                        'df_suffix': '',
+
+                        'random_state':         24,    # default: None  # | None,    
+                        'n_jobs':               -1,      # default: None  # | -1,  
+                        'cross_validation':     None, 
+                        'n_estimators':         50  ,    # default: 100   # | 1,       
+                        'min_samples_split':    2     ,    # default: 2     # | 1000,    
+                        'max_depth':            30   ,    # default: None  # | 3,       
+                        'kWp_segments': [
+                            # (0, 5), 
+                            # (5, 7.5),
+                            # (7.5, 10),
+                            # (10, 12.5), 
+                            # (12.5, 17.5),
+                            # (17.5, 25),
+                            # (25, 100), 
+                            (3, 10),
+                            (10,20), 
+
+                            # (0.0, 10.0), 
+                            # (10.0, 20.0),
+                            # (20.0, 999.0),
+                        ], 
+                }, 
+
+            }},
+
         ), 
  ]
-    other_preps = [
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs1033',
-        #     bfs_numbers=[1033,],
-        #     n_rows_import= 4000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ), 
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs1205',
-        #     bfs_numbers=[1205,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ), 
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs3788',
-        #     bfs_numbers=[3788,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs3764',
-        #     bfs_numbers=[3764,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs3762',
-        #     bfs_numbers=[3762,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs1631',
-        #     bfs_numbers=[1631,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs3746',
-        #     bfs_numbers=[3746,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs3543',
-        #     bfs_numbers=[3543,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs6037',
-        #     bfs_numbers=[6037,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs3851',
-        #     bfs_numbers=[3851,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs3792',
-        #     bfs_numbers=[3792,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs6252',
-        #     bfs_numbers=[6252,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-        # Calibration_Settings(
-        #     name_dir_export='calib_mini_debug',
-        #     name_preprep_subsen='bfs6300',
-        #     bfs_numbers=[6300,],
-        #     # n_rows_import= 2000,
-        #     rerun_import_and_preprp_data_TF = True,
-        #     export_gwr_ALL_building_gdf_TF = True
-        # ),
-    
-    ]   
 
     for i_prep, prep_sett in enumerate(preprep_list):
         print('')
@@ -2519,9 +2855,8 @@ if __name__ == '__main__':
 
     calib_class = Calibration(preprep_list[0])
     # calib_class.concatenate_prerep_data()           if calib_class.sett.run_concatenate_preprep_data_TF else None
-
-    calib_class.approach1_fit_optim_cost_function()     if calib_class.sett.run_approach1_fit_optim_costfunction_TF else None
-
-    calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
+    # calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
     calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
+
+    # calib_class.approach1_fit_optim_cost_function()     if calib_class.sett.run_approach1_fit_optim_costfunction_TF else None
 
