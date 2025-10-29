@@ -22,6 +22,8 @@ from  dataclasses import dataclass, field, asdict
 from typing_extensions import List, Dict
 from scipy.optimize import curve_fit
 from scipy import optimize
+from scipy.stats import pearson3
+from sklearn.metrics import root_mean_squared_error
 
 
 # own modules
@@ -248,6 +250,7 @@ class PVAllocScenario_Settings:
     ALGOspec_tweak_gridnode_df_prod_demand_fact: float          = 1
     ALGOspec_tweak_demand_profile: float                        = 1.8
     ALGOspec_calib_estim_dir_name: str                          = 'PVALLOC_calibration_model_coefs'
+    ALGOspec_calib_estim_method: str                            = 'rf_regression'  # 'rf_regression' / 'rf_segment_distribution
     ALGOspec_calib_estim_mod_name_pkl: str                      = 'rfr1'
 
     # dsonodes_ts_specs
@@ -428,8 +431,8 @@ class PVAllocScenario:
                 self.algo_select_AND_adjust_topology_OPTIMIZED(self.sett.sanity_check_path, i_m, m)
 
             elif self.sett.ALGOspec_pvinst_size_calculation == 'stat_estimated':
-                self.algo_update_npv_df_STATESTIMATED(self.sett.sanity_check_path, i_m, m)
-                self.algo_select_AND_adjust_topology_STATESTIMATED(self.sett.sanity_check_path, i_m, m)
+                self.algo_update_npv_df_RFR(self.sett.sanity_check_path, i_m, m)
+                self.algo_select_AND_adjust_topology_RFR(self.sett.sanity_check_path, i_m, m)
 
 
         end_sanity_check_allocation = datetime.datetime.now()
@@ -573,7 +576,7 @@ class PVAllocScenario:
                     elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
                         self.algo_update_npv_df_OPTIMIZED(self.sett.mc_iter_path, i_m, m)
                     elif self.sett.ALGOspec_pvinst_size_calculation == 'stat_estimated':
-                        self.algo_update_npv_df_STATESTIMATED(self.sett.mc_iter_path, i_m, m)
+                        self.algo_update_npv_df_RFR(self.sett.mc_iter_path, i_m, m)
 
                         
                     end_time_update_npv = datetime.datetime.now()
@@ -612,7 +615,7 @@ class PVAllocScenario:
                         elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
                             inst_power = self.algo_select_AND_adjust_topology_OPTIMIZED(self.sett.mc_iter_path, i_m, m, safety_counter)
                         elif self.sett.ALGOspec_pvinst_size_calculation == 'stat_estimated':
-                            inst_power = self.algo_select_AND_adjust_topology_STATESTIMATED(self.sett.sanity_check_path, i_m, m)
+                            inst_power = self.algo_select_AND_adjust_topology_RFR(self.sett.sanity_check_path, i_m, m)
 
 
                     # Loop Exit + adjust constr_built capacity ----------
@@ -3861,10 +3864,13 @@ class PVAllocScenario:
                 checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
 
 
-        def algo_update_npv_df_STATESTIMATED(self, subdir_path: str, i_m: int, m):
+        def algo_update_npv_df_RFR(self, subdir_path: str, i_m: int, m):
             """
                 This function estimates the installation size of all houses in sample, based on a previously run statistical model calibration. 
                 This stat model coefficients are imported and used to determine the most realistic installation size chose for the house
+                Model used: 
+                    - Random Forest Regression 
+                      (directly estiamting the installation size based on building characteristics)
             """
 
             # setup -----------------------------------------------------
@@ -4237,11 +4243,256 @@ class PVAllocScenario:
             checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
 
 
-        def algo_select_AND_adjust_topology_STATESTIMATED(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
+        def algo_update_npv_df_RF_SEGMDIST(self, subdir_path: str, i_m: int, m):
+            """
+                This function estimates the installation size of all houses in sample, based on a previously run statistical model calibration. 
+                This stat model coefficients are imported and used to determine the most realistic installation size chose for the house
+                Model used: 
+                    - Random Forest Classifer + skew.norm segment distribution of TotalPower (kWp)
+                      (RF to determine kWp segment. Then historic skew.norm distribution fitted to kWp segment of actual installtions. 
+                       Draw n random samples from the distribution to estimate PV installation size)
+
+            """
+
+            # setup -----------------------------------------------------
+            print_to_logfile('run function: algo_update_npv_df_STATESTIM', self.sett.log_name)         
+
+            # import -----------------------------------------------------
+            gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    
+            topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
+
+            rfr_model    = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_model.pkl')
+            encoder      = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_encoder.pkl')
+            if os.path.exists(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_kWp_segments.json'):
+                try:
+                    kWp_segments = json.load(open(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_kWp_segments.json', 'r'))
+                except:
+                    print_to_logfile('Error loading kWp_segments json file', self.sett.log_name)
+            elif not os.path.exists(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_kWp_segments.json'):
+                try:
+                    kWp_segments = json.load(open(f'{self.sett.calib_model_coefs}/rfr_segment_distribution_{self.sett.ALGOspec_calib_estim_mod_name_pkl}.json', 'r'))
+                except:
+                    print_to_logfile('Error loading kWp_segments json file', self.sett.log_name)
+                
+        
+
+            # import topo_time_subdfs -----------------------------------------------------
+            topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet') 
+            no_pv_egid = [k for k, v in topo.items() if not v.get('pv_inst', {}).get('inst_TF') ]
+            
+            agg_npv_df_list = []
+            j = 0
+            i, path = j, topo_subdf_paths[j]
+            for i, path in enumerate(topo_subdf_paths):
+                print_topo_subdf_TF = len(topo_subdf_paths) > 5 and i <5  # i% (len(topo_subdf_paths) //3 ) == 0:
+                if print_topo_subdf_TF:
+                    print_to_logfile(f'updated npv (tranche {i+1}/{len(topo_subdf_paths)})', self.sett.log_name)
+                subdf_t0 = pl.read_parquet(path) # subdf_t0 = pd.read_parquet(path)
+
+                # drop egids with pv installations
+                subdf = subdf_t0.filter(pl.col("EGID").is_in(no_pv_egid))   
+
+                if subdf.shape[0] > 0:
+
+                    # merge gridprem_ts
+                    checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+                    subdf = subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
+                    checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+
+                    checkpoint_to_logfile('npv > subdf - all df_uid-combinations: start calc selfconsumption + netdemand', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+
+                    egid = '2362103'
+
+                    agg_npv_list = []                    
+                    n_egid_econ_functions_counter = 0
+
+                    # if True: 
+                    for egid in list(subdf['EGID'].unique()):
+                        egid_subdf = subdf.filter(pl.col('EGID') == egid).clone()
+
+
+                        # arrange data to fit stat estimation model --------------------
+
+                        # egid_dfuid_subagg = egid_subdf.group_by(['EGID', 'df_uid', ]).agg([
+                        sub_egiddfuid = egid_subdf.group_by(['EGID', 'df_uid', ]).agg([
+                            pl.col('bfs').first().alias('BFS_NUMMER'),
+                            pl.col('GKLAS').first().alias('GKLAS'),
+                            pl.col('GAREA').first().alias('GAREA'),
+                            pl.col('GBAUJ').first().alias('GBAUJ'),
+                            pl.col('GSTAT').first().alias('GSTAT'),
+                            pl.col('GWAERZH1').first().alias('GWAERZH1'),
+                            pl.col('GENH1').first().alias('GENH1'),
+                            pl.col('sfhmfh_typ').first().alias('sfhmfh_typ'),
+                            pl.col('demand_arch_typ').first().alias('demand_arch_typ'),
+                            pl.col('demand_elec_pGAREA').first().alias('demand_elec_pGAREA'),
+                            pl.col('grid_node').first().alias('grid_node'),
+                            pl.col('inst_TF').first().alias('inst_TF'),
+                            pl.col('info_source').first().alias('info_source'),
+                            pl.col('pvid').first().alias('pvid'),
+                            pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'),
+                            pl.col('TotalPower').first().alias('TotalPower'),
+                            pl.col('FLAECHE').first().alias('FLAECHE'),
+                            pl.col('AUSRICHTUNG').first().alias('AUSRICHTUNG'),
+                            pl.col('STROMERTRAG').first().alias('STROMERTRAG'),
+                            pl.col('NEIGUNG').first().alias('NEIGUNG'),
+                            pl.col('MSTRAHLUNG').first().alias('MSTRAHLUNG'),
+                            pl.col('GSTRAHLUNG').first().alias('GSTRAHLUNG'),
+                            pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
+                            pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
+                            ])
+
+                        # create direction classes
+                        subagg_dir = sub_egiddfuid.with_columns([
+                            pl.when((pl.col("AUSRICHTUNG") > 135) | (pl.col("AUSRICHTUNG") <= -135))
+                            .then(pl.lit("north_max_flaeche"))
+                            .when((pl.col("AUSRICHTUNG") > -135) & (pl.col("AUSRICHTUNG") <= -45))
+                            .then(pl.lit("east_max_flaeche"))
+                            .when((pl.col("AUSRICHTUNG") > -45) & (pl.col("AUSRICHTUNG") <= 45))
+                            .then(pl.lit("south_max_flaeche"))
+                            .when((pl.col("AUSRICHTUNG") > 45) & (pl.col("AUSRICHTUNG") <= 135))
+                            .then(pl.lit("west_max_flaeche"))
+                            .otherwise(pl.lit("Unkown"))
+                            .alias("Direction")
+                            ])
+                        subagg_dir = subagg_dir.with_columns([
+                            pl.col("Direction").fill_null(0).alias("Direction")
+                            ])
+
+                        topo_pivot = (
+                            subagg_dir
+                            .group_by(['EGID', 'Direction'])
+                            .agg(
+                                pl.col('FLAECHE').max().alias('max_flaeche'), 
+                                )
+                            .pivot(
+                                values='max_flaeche',
+                                index='EGID', 
+                                on='Direction')
+                                .sort('EGID')
+                            )
+                        topo_rest = (
+                            sub_egiddfuid
+                            .group_by(['EGID', ])
+                            .agg(
+                                pl.col('BFS_NUMMER').first().alias('BFS_NUMMER'),
+                                pl.col('GAREA').first().alias('GAREA'),
+                                pl.col('GBAUJ').first().alias('GBAUJ'),
+                                pl.col('GKLAS').first().alias('GKLAS'),
+                                pl.col('GSTAT').first().alias('GSTAT'),
+                                pl.col('GWAERZH1').first().alias('GWAERZH1'),
+                                pl.col('GENH1').first().alias('GENH1'),
+                                pl.col('sfhmfh_typ').first().alias('sfhmfh_typ'),
+                                pl.col('demand_arch_typ').first().alias('demand_arch_typ'),
+                                pl.col('demand_elec_pGAREA').first().alias('demand_elec_pGAREA'),
+                                pl.col('grid_node').first().alias('grid_node'),
+                                pl.col('inst_TF').first().alias('inst_TF'),
+                                pl.col('info_source').first().alias('info_source'),
+                                pl.col('pvid').first().alias('pvid'),
+                                pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'),
+                                pl.col('TotalPower').first().alias('TotalPower'),
+                                pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
+                                pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
+
+                                pl.col('FLAECHE').first().alias('FLAECHE_total'),
+                                )
+                            )
+                        subagg = topo_rest.join(topo_pivot, on=['EGID'], how='left')
+
+                        # fill empty classes with 0
+                        for direction in [
+                            'north_max_flaeche',
+                            'east_max_flaeche',
+                            'south_max_flaeche',
+                            'west_max_flaeche',
+                            ]:
+                            if direction not in subagg.columns:
+                                subagg = subagg.with_columns([
+                                pl.lit(0).alias(direction)
+                                ])
+                            else:
+                                subagg = subagg.with_columns([
+                                    pl.col(direction).fill_null(0).alias(direction)
+                                    ])
+                        
+
+                        # apply estim model prediction --------------------
+                        df = subagg.to_pandas()
+                        df['GWAERZH1_str'] = np.where(df['GWAERZH1'].isin(['7410', '7411']), 'heatpump', 'no_heatpump')
+
+                        cols_dtypes_tupls = {
+                            # 'year': 'int64',
+                            'BFS_NUMMER': 'category',
+                            'GAREA': 'float64',
+                            # 'GBAUJ': 'int64',   
+                            'GKLAS': 'category',
+                            # 'GSTAT': 'category',
+                            'GWAERZH1': 'category',
+                            'GENH1': 'category',
+                            'GWAERZH1_str': 'category',
+                            # 'InitialPower': 'float64',
+                            'TotalPower': 'float64',
+                            'elecpri_Rp_kWh': 'float64',
+                            'pvtarif_Rp_kWh': 'float64',
+                            'FLAECHE_total': 'float64',
+                            'east_max_flaeche': 'float64',
+                            'west_max_flaeche': 'float64',
+                            'north_max_flaeche': 'float64',
+                            'south_max_flaeche': 'float64',
+                        }
+                        df = df[[col for col in cols_dtypes_tupls.keys() if col in df.columns]]
+
+                        df = df.dropna().copy()
+                        
+                        for col, dtype in cols_dtypes_tupls.items():
+                            df[col] = df[col].astype(dtype)
+                        
+                        x_cols = [tupl[0] for tupl in cols_dtypes_tupls.items() if tupl[0] not in ['TotalPower', ]]
+
+
+                        # RF segment estimation ----------------
+                        X = df.drop(columns=['TotalPower',])
+                        cat_cols = X.select_dtypes(include=["object", "category"]).columns
+                        encoded_array = encoder.transform(X[cat_cols].astype(str))
+                        encoded_df = pd.DataFrame(encoded_array, columns=encoder.get_feature_names_out(cat_cols))
+                        
+                        X_final = pd.concat(
+                            [X.drop(columns=cat_cols).reset_index(drop=True), encoded_df.reset_index(drop=True)],
+                            axis=1)
+                        X_final = X_final[rfr_model.feature_names_in_]
+
+                        pred_kwp_segm = rfr_model.predict(X_final)[0]
+                        df['pred_instPower_segm'] = pred_kwp_segm
+
+
+                        # inst kWp pick of distirbution ----------------
+                        df['pred_instPower'] = np.nan
+                        for segment_str, segment_dict in kWp_segments.items():
+                            mask = df['pred_instPower_segm'] == segment_str
+                            n_rows = mask.sum()
+
+                            if n_rows == 0:
+                                continue
+
+                            nEGID     = segment_dict['nEGID_in_segment']
+                            mean      = segment_dict['TotalPower_mean_seg']
+                            stdev     = segment_dict['TotalPower_std_seg']
+                            skewness  = segment_dict['TotalPower_skew_seg']
+                            kurto     = segment_dict['TotalPower_kurt_seg']
+
+                            if stdev == 0:
+                                df.loc[mask, 'pred_instPower'] = mean
+                                continue
+
+                            dist_seg_picks = pearson3.rvs(skew=skewness, loc=mean, scale=stdev, size=n_rows)
+                            df.loc[mask, 'pred_instPower'] = dist_seg_picks
+
+
+
+        def algo_select_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
 
             print_to_logfile('run function: select_AND_adjust_topology', self.sett.log_name) if while_safety_counter < 5 else None
 
-            # import ----------
+            # import ----------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
             npv_df = pd.read_parquet(f'{subdir_path}/npv_df.parquet') 
             pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path}/pred_inst_df.parquet') else pd.DataFrame()
@@ -5009,7 +5260,7 @@ if __name__ == '__main__':
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
         ALGOspec_topo_subdf_partitioner                      = 250, 
         ALGOspec_pvinst_size_calculation                     = 'stat_estimated',   # 'inst_full_partition' / 'stat_estimated' / 'npv_optimized'
-        ALGOspec_calib_estim_mod_name_pkl                    = 'rfr1',      # 'reg2_local_nb_rfr1',    # 'rfr1', //_model
+        ALGOspec_calib_estim_mod_name_pkl                    = 'rfr5',      # 'reg2_local_nb_rfr1',    # 'rfr1', //_model
         ALGOspec_inst_selection_method                       = 'max_npv', 
         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
         ALGOspec_rand_seed                                   = 123,
