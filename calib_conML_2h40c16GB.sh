@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH --job-name=calib_conML_2h30c8GB                   #This is the name of your job
-#SBATCH --cpus-per-task=30                  #This is the number of cores reserved
-#SBATCH --mem-per-cpu=8G              #This is the memory reserved per core.
-#Total memory reserved: 240GB
+#SBATCH --job-name=calib_conML2h40c16GB                   #This is the name of your job
+#SBATCH --cpus-per-task=40                  #This is the number of cores reserved
+#SBATCH --mem-per-cpu=16G              #This is the memory reserved per core.
+#Total memory reserved: 640GB
 
 # Are you sure that you need THAT much memory?
 

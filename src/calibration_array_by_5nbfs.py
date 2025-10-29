@@ -11,8 +11,6 @@ if __name__ == '__main__':
         preprep_list = [
             Calibration_Settings(
                 name_dir_export='calib_all_CH_bfs_TEST',
-                # name_preprep_subsen=f'kt{kt_number}',
-                # kt_numbers=[kt_number,], 
                 name_preprep_subsen=f'bfs{bfs_number}',
                 bfs_numbers=[bfs_number,], 
                 n_rows_import= None,
