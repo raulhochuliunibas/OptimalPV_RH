@@ -73,7 +73,7 @@ class Calibration_Settings:
 
 
     pvinst_pvtrif_elecpri_range_minmax:Tuple[int,int]   = (2018, 2023)                             # min and max year of PV installation to be considered 
-    pvinst_capacity_minmax:Tuple[float,float]           = (0.5, 50)                             # min and max capacity (in kWp) of PV installation to be considered
+    pvinst_capacity_minmax:Tuple[float,float]           = (4, 50)                             # min and max capacity (in kWp) of PV installation to be considered
     elecpri_pvtarif_year: int                           = 2023                                    # year of electricity prices and pv tariffs to be considered for npv calculations
 
     reg2_random_forest_reg_settings: Dict = field(default_factory=lambda: {
@@ -262,7 +262,7 @@ class Calibration_Settings:
         TECspec_elecpri_category: str                           = 'H4'
         TECspec_invst_maturity: int                             = 25
         TECspec_kWpeak_per_m2: float                            = 0.2
-        TECspec_share_roof_area_available: float                = 1
+        TECspec_share_roof_area_available: float                = 0.7
         TECspec_max_distance_m_for_EGID_node_matching: float    = 0
         TECspec_kW_range_for_pvinst_cost_estim: List[int]       = field(default_factory=lambda: [0, 61])
         TECspec_estim_pvinst_cost_correctionfactor: float       = 1
@@ -2040,6 +2040,8 @@ class Calibration:
             gwr = gwr.loc[gwr['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
             gwr = copy.deepcopy(gwr)
 
+            gwr['demand_kW'] = gwr['demand_elec_pGAREA'] * gwr['GAREA'] 
+
 
             # SOLKAT -------
             # solkat = pd.read_parquet(f'{self.sett.calib_scen_preprep_path}/solkat_pq.parquet')
@@ -2130,6 +2132,7 @@ class Calibration:
             meteo['t']= meteo['timestamp'].apply(lambda x: f't_{(x.dayofyear -1) * 24 + x.hour +1}')
             meteo_ts = pl.from_pandas(meteo.copy())
 
+
             
             # REST -------
             year_rng = [str(yr) for yr in range(self.sett.pvinst_pvtrif_elecpri_range_minmax[0], self.sett.pvinst_pvtrif_elecpri_range_minmax[1]+1)]
@@ -2212,24 +2215,51 @@ class Calibration:
                 .when((pl.col("AUSRICHTUNG") > 45) & (pl.col("AUSRICHTUNG") <= 135))
                 .then(pl.lit("west_max_flaeche"))
                 .otherwise(pl.lit("Unkown"))
-                .alias("Direction")
+                .alias("Direction_max"), 
+                pl.when((pl.col("AUSRICHTUNG") > 135) | (pl.col("AUSRICHTUNG") <= -135))
+                .then(pl.lit("north_sum_flaeche"))
+                .when((pl.col("AUSRICHTUNG") > -135) & (pl.col("AUSRICHTUNG") <= -45))
+                .then(pl.lit("east_sum_flaeche"))
+                .when((pl.col("AUSRICHTUNG") > -45) & (pl.col("AUSRICHTUNG") <= 45))
+                .then(pl.lit("south_sum_flaeche"))
+                .when((pl.col("AUSRICHTUNG") > 45) & (pl.col("AUSRICHTUNG") <= 135))
+                .then(pl.lit("west_sum_flaeche"))
+                .otherwise(pl.lit("Unkown"))
+                .alias("Direction_sum")
                 ])
+            
             topo_dir = topo_dir.with_columns([
-                pl.col("Direction").fill_null(0).alias("Direction")
+                pl.col("Direction_max").fill_null(0).alias("Direction_max"),
+                pl.col("Direction_sum").fill_null(0).alias("Direction_sum")
                 ])
+            topo_dir = topo_dir.sort(['Direction_max', 'Direction_sum'])
 
-            topo_pivot = (
+            topo_pivot_max = (
                 topo_dir
-                .group_by(['EGID', 'Direction'])
+                .group_by(['EGID', 'Direction_max'])
                 .agg(
                     pl.col('FLAECHE').max().alias('max_flaeche'), 
                     )
                 .pivot(
-                    values='max_flaeche',
-                    index='EGID', 
-                    on='Direction')
+                    values=["max_flaeche",],  
+                    on='Direction_max')
                     .sort('EGID')
                 )
+            topo_pivot_sum = (
+                topo_dir
+                .group_by(['EGID', 'Direction_sum'])
+                .agg(
+                    pl.col('FLAECHE').sum().alias('sum_flaeche'), 
+                    )
+                .pivot(
+                    values=["sum_flaeche",],  
+                    on='Direction_sum')
+                    .sort('EGID')
+                )
+            topo_pivot = topo_pivot_max.join(topo_pivot_sum, on='EGID', how='left', )
+            topo_pivot = topo_pivot[['EGID', 'south_max_flaeche', 'west_max_flaeche', 'east_max_flaeche', 'north_max_flaeche', 'south_sum_flaeche', 'west_sum_flaeche', 'east_sum_flaeche', 'north_sum_flaeche',]]
+
+            
             topo_rest = (
                 topo_dir
                 .group_by(['EGID', 'year'])
@@ -2259,6 +2289,10 @@ class Calibration:
                 'east_max_flaeche',
                 'south_max_flaeche',
                 'west_max_flaeche',
+                'north_sum_flaeche',
+                'east_sum_flaeche',
+                'south_sum_flaeche',
+                'west_sum_flaeche',
                 ]:
                 if direction not in topo_agg.columns:
                     topo_agg = topo_agg.with_columns([
@@ -2312,79 +2346,126 @@ class Calibration:
         # filtering + splitting 
         df_train = split_train_test(df, 'train')
         df_test = split_train_test(df, 'test')  
-        df_train.to_csv(f'{self.sett.calib_scen_path}/df_train.csv', index=False)
-        df_test.to_csv(f'{self.sett.calib_scen_path}/df_test.csv', index=False)
+        df_train.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train.csv', index=False)
+        df_test.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test.csv', index=False)
 
         # Residential buildings 3+ units
         df_res3plus = df.loc[df['GKLAS'].isin(['1110', '1121', '1122'])]
         if df_res3plus.shape[0] > 0:
             df_train_res3plus = split_train_test(df_res3plus, 'train')
             df_test_res3plus = split_train_test(df_res3plus, 'test')
-            df_train_res3plus.to_csv(f'{self.sett.calib_scen_path}/df_train_res3plus.csv', index=False)
-            df_test_res3plus.to_csv(f'{self.sett.calib_scen_path}/df_test_res3plus.csv', index=False)
+            df_train_res3plus.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train_res3plus.csv', index=False)
+            df_test_res3plus.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test_res3plus.csv', index=False)
 
         # Residential buildings 1-2 units
         df_res1to2 = df.loc[df['GKLAS'].isin(['1110', '1121'])]
         if df_res1to2.shape[0] > 0:
             df_train_res1to2 = split_train_test(df_res1to2, 'train')
             df_test_res1to2 = split_train_test(df_res1to2, 'test')
-            df_train_res1to2.to_csv(f'{self.sett.calib_scen_path}/df_train_res1to2.csv', index=False)
-            df_test_res1to2.to_csv(f'{self.sett.calib_scen_path}/df_test_res1to2.csv', index=False)
+            df_train_res1to2.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train_res1to2.csv', index=False)
+            df_test_res1to2.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test_res1to2.csv', index=False)
 
         # Subset: Residential 1-2 units + TotalPower < 20
         df_kwpmax20 = df.loc[(df['GKLAS'].isin(['1110', '1121'])) & (df['TotalPower'] < 20)]
         if df_kwpmax20.shape[0] > 0:
             df_train_kwpmax20 = split_train_test(df_kwpmax20, 'train')
             df_test_kwpmax20 = split_train_test(df_kwpmax20, 'test')
-            df_train_kwpmax20.to_csv(f'{self.sett.calib_scen_path}/df_train_kwpmax20.csv', index=False)
-            df_test_kwpmax20.to_csv(f'{self.sett.calib_scen_path}/df_test_kwpmax20.csv', index=False)
+            df_train_kwpmax20.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train_kwpmax20.csv', index=False)
+            df_test_kwpmax20.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test_kwpmax20.csv', index=False)
 
         # only consider buildings with partial pv installation
         def calc_inst_flaeche(row, ):
-            if row['TotalPower'] > 0 and row['FLAECHE_total'] > 0:
-                inst_total_flaeche = row['TotalPower'] * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available
+            for meth in ['max', 'sum']:
+                if row['TotalPower'] > 0 and row['FLAECHE_total'] > 0:
+                    inst_total_flaeche = row['TotalPower'] * (1/self.sett.TECspec_kWpeak_per_m2) * self.sett.TECspec_share_roof_area_available
 
-                for direction in ['south', 'west', 'east', 'north']:
-                    row[f"{direction}_max_ratio"] = 0
+                    for direction in ['south', 'west', 'east', 'north']:
+                        row[f"{direction}_{meth}_ratio"] = 0
 
-                for direction in ['south', 'west', 'east', 'north']:
-                    fla_col = f"{direction}_max_flaeche"
-                    ratio_col = f"{direction}_max_ratio"
+                    for direction in ['south', 'west', 'east', 'north']:
+                        fla_col = f"{direction}_{meth}_flaeche"
+                        ratio_col = f"{direction}_{meth}_ratio"
 
-                    if row[fla_col] <= 0:
-                        continue
+                        if row[fla_col] <= 0:
+                            continue
 
-                    max_inst_flaeche = (
-                        row[fla_col] * self.sett.TECspec_share_roof_area_available
-                    )
+                        max_inst_flaeche = (
+                            row[fla_col] * self.sett.TECspec_share_roof_area_available
+                        )
 
-                    if inst_total_flaeche <= 0:
-                        break
+                        if inst_total_flaeche <= 0:
+                            break
 
-                    if inst_total_flaeche <= max_inst_flaeche:
-                        row[ratio_col] = inst_total_flaeche / max_inst_flaeche
-                        inst_total_flaeche = 0
-                    else:
-                        row[ratio_col] = 1
-                        inst_total_flaeche -= max_inst_flaeche
-            else:
-                for direction in ['south', 'west', 'east', 'north']:
-                    row[f"{direction}_max_ratio"] = 0
+                        if inst_total_flaeche <= max_inst_flaeche:
+                            row[ratio_col] = inst_total_flaeche / max_inst_flaeche
+                            inst_total_flaeche = 0
+                        else:
+                            row[ratio_col] = 1
+                            inst_total_flaeche -= max_inst_flaeche
+                else:
+                    for direction in ['south', 'west', 'east', 'north']:
+                        row[f"{direction}_{meth}_ratio"] = 0
 
             return row                    
 
 
         df_pvroof_ratio = df.apply(calc_inst_flaeche, axis=1)
         ratio_cols = ['south_max_ratio', 'west_max_ratio', 'east_max_ratio', 'north_max_ratio']
+        # ratio_cols = ['south_sum_ratio', 'west_sum_ratio', 'east_sum_ratio', 'north_sum_ratio']
+        
+
         pvroof_ratio20to70_mask =  ((df_pvroof_ratio[ratio_cols] > 0.2) &     
                                     (df_pvroof_ratio[ratio_cols] < 0.7)).any(axis=1)
         df_pvroof_ratio20to70 = df_pvroof_ratio.loc[pvroof_ratio20to70_mask].copy()
+        print(f'shape df_pvroof_ratio20to70: {df_pvroof_ratio20to70.shape}')
         if df_pvroof_ratio20to70.shape[0] > 0:
             df_train_pvroof20to70 = split_train_test(df_pvroof_ratio20to70, 'train')
             df_test_pvroof20to70 = split_train_test(df_pvroof_ratio20to70, 'test')
-            df_train_pvroof20to70.to_csv(f'{self.sett.calib_scen_path}/df_train_pvroof20to70.csv', index=False)
-            df_test_pvroof20to70.to_csv(f'{self.sett.calib_scen_path}/df_test_pvroof20to70.csv', index=False)
+            df_train_pvroof20to70.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train_pvroof20to70.csv', index=False)
+            df_test_pvroof20to70.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test_pvroof20to70.csv', index=False)
             
+        pvroof_ratio20to80_mask =  ((df_pvroof_ratio[ratio_cols] > 0.2) &     
+                                    (df_pvroof_ratio[ratio_cols] < 0.8)).any(axis=1)
+        df_pvroof_ratio20to80 = df_pvroof_ratio.loc[pvroof_ratio20to80_mask].copy()
+        print(f'shape df_pvroof_ratio20to80: {df_pvroof_ratio20to80.shape}')
+        if df_pvroof_ratio20to80.shape[0] > 0:
+            df_train_pvroof20to80 = split_train_test(df_pvroof_ratio20to80, 'train')
+            df_test_pvroof20to80 = split_train_test(df_pvroof_ratio20to80, 'test')
+            df_train_pvroof20to80.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train_pvroof20to80.csv', index=False)
+            df_test_pvroof20to80.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test_pvroof20to80.csv', index=False)
+
+        pvroof_ratio20to70hard_mask = ((df_pvroof_ratio[ratio_cols] < 0.99) & 
+                                       (df_pvroof_ratio[ratio_cols] > 0.2)  &
+                                       (df_pvroof_ratio[ratio_cols] < 0.7)).all(axis=1)
+        df_pvroof_ratio20to70hard = df_pvroof_ratio.loc[pvroof_ratio20to70hard_mask].copy()
+        # not applicable because empty data frame
+        print(f'shape df_pvroof_ratio20to70hard: {df_pvroof_ratio20to70hard.shape}')
+        if df_pvroof_ratio20to70hard.shape[0] > 0:
+            df_train_pvroof20to70hard = split_train_test(df_pvroof_ratio20to70hard, 'train')
+            df_test_pvroof20to70hard = split_train_test(df_pvroof_ratio20to70hard, 'test')
+            df_train_pvroof20to70hard.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train_pvroof20to70hard.csv', index=False)
+            df_test_pvroof20to70hard.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test_pvroof20to70hard.csv', index=False)
+        
+        pvroof_ratio20to60_mask =  ((df_pvroof_ratio[ratio_cols] > 0.2) &     
+                                    (df_pvroof_ratio[ratio_cols] < 0.6)).any(axis=1)
+        df_pvroof_ratio20to60 = df_pvroof_ratio.loc[pvroof_ratio20to60_mask].copy()
+        print(f'shape df_pvroof_ratio20to60: {df_pvroof_ratio20to60.shape}')
+        if df_pvroof_ratio20to60.shape[0] > 0:
+            df_train_pvroof20to60 = split_train_test(df_pvroof_ratio20to60, 'train')
+            df_test_pvroof20to60 = split_train_test(df_pvroof_ratio20to60, 'test')
+            df_train_pvroof20to60.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train_pvroof20to60.csv', index=False)
+            df_test_pvroof20to60.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test_pvroof20to60.csv', index=False)
+
+        pvroof_ratio20to50_mask =  ((df_pvroof_ratio[ratio_cols] > 0.2) &     
+                                    (df_pvroof_ratio[ratio_cols] < 0.5)).any(axis=1)
+        df_pvroof_ratio20to50 = df_pvroof_ratio.loc[pvroof_ratio20to50_mask].copy()
+        print(f'shape df_pvroof_ratio20to50: {df_pvroof_ratio20to50.shape}')
+        if df_pvroof_ratio20to50.shape[0] > 0:
+            df_train_pvroof20to50 = split_train_test(df_pvroof_ratio20to50, 'train')
+            df_test_pvroof20to50 = split_train_test(df_pvroof_ratio20to50, 'test')
+            df_train_pvroof20to50.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}df_train_pvroof20to50.csv', index=False)
+            df_test_pvroof20to50.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}df_test_pvroof20to50.csv', index=False)
+                                              
 
 
         # random forest regression ====================
@@ -2415,12 +2496,14 @@ class Calibration:
             segmentation_TF = any([True for kwp in kWp_segments if kwp[0] is not None and kwp[1] is not None])
             y_target_col  = 'TotalPower_segment'    if segmentation_TF else 'TotalPower'
 
-            print(f'   - Running random forest regression for model: rfr{dict_rfrsett["rfr_mod_name"]} df{df_suffix} ')
+            print(f'   - Running random forest regression for model: {dict_rfrsett["rfr_mod_name"]} df{df_suffix} ')
 
 
             # import data & transform 
-            df_train_rfr = pd.read_csv(f'{self.sett.calib_scen_path}/df_train{df_suffix}.csv')
-            df_test_rfr  = pd.read_csv(f'{self.sett.calib_scen_path}/df_test{df_suffix}.csv')
+            df_train_rfr        = pd.read_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train{df_suffix}.csv')
+            df_train_rfr_ALL    = pd.read_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_train.csv')
+            df_test_rfr         = pd.read_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test{df_suffix}.csv')
+            df_test_rfr_ALL     = pd.read_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test.csv')
 
             cols_dtypes_tupls = {
                 # 'year': 'int64',
@@ -2442,15 +2525,21 @@ class Calibration:
                 'north_max_flaeche': 'float64',
                 'south_max_flaeche': 'float64',
             }
-            df_train_rfr = df_train_rfr[[col for col in cols_dtypes_tupls.keys() if col in df_train_rfr.columns]].copy()
-            df_test_rfr  = df_test_rfr[[col for col in cols_dtypes_tupls.keys() if col in df_test_rfr.columns]].copy()
+            df_train_rfr        = df_train_rfr[[col for col in cols_dtypes_tupls.keys() if col in df_train_rfr.columns]].copy()
+            df_train_rfr_ALL    = df_train_rfr_ALL[[col for col in cols_dtypes_tupls.keys() if col in df_train_rfr_ALL.columns]].copy()
+            df_test_rfr         = df_test_rfr[[col for col in cols_dtypes_tupls.keys() if col in df_test_rfr.columns]].copy()
+            df_test_rfr_ALL     = df_test_rfr_ALL[[col for col in cols_dtypes_tupls.keys() if col in df_test_rfr_ALL.columns]].copy()
 
-            df_train_rfr = df_train_rfr.dropna().copy()
-            df_test_rfr  = df_test_rfr.dropna().copy()
+            df_train_rfr        = df_train_rfr.dropna().copy()
+            df_train_rfr_ALL    = df_train_rfr_ALL.dropna().copy()
+            df_test_rfr         = df_test_rfr.dropna().copy()
+            df_test_rfr_ALL     = df_test_rfr_ALL.dropna().copy()
 
             for col, dtype in cols_dtypes_tupls.items():
-                df_train_rfr[col] = df_train_rfr[col].astype(dtype)
-                df_test_rfr[col]  = df_test_rfr[col].astype(dtype)
+                df_train_rfr[col]     = df_train_rfr[col].astype(dtype)
+                df_train_rfr_ALL[col] = df_train_rfr_ALL[col].astype(dtype)
+                df_test_rfr[col]      = df_test_rfr[col].astype(dtype)
+                df_test_rfr_ALL[col]  = df_test_rfr_ALL[col].astype(dtype)
             
             x_cols = [tupl[0] for tupl in cols_dtypes_tupls.items() if tupl[0] not in [y_target_col, 'TotalPower', ]]
 
@@ -2460,7 +2549,7 @@ class Calibration:
                 df_train_rfr[y_target_col] = 'other'
                 df_train_rfr_seg = df_train_rfr.copy()
 
-                for i_seg, (min_kWp, max_kWp) in enumerate(kWp_segments):
+                for i_seg, (min_kWp, max_kWp, _) in enumerate(kWp_segments):
                     # segment_str = f'{min_kWp}to{max_kWp}_kWp_seg' 
                     segment_str = f'seg_{i_seg+1}'
                     mask = (df_train_rfr_seg['TotalPower'] >= min_kWp) & (df_train_rfr_seg['TotalPower'] < max_kWp)
@@ -2535,25 +2624,32 @@ class Calibration:
                 model_name = f'{rfr_mod_name}_model.pkl'
                 encoder_name = f'{rfr_mod_name}_encoder.pkl'
 
-                joblib.dump(rfr_model, f'{self.sett.calib_scen_path}/{model_name}')
-                joblib.dump(encoder,   f'{self.sett.calib_scen_path}/{encoder_name}')
+                joblib.dump(rfr_model, f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}{model_name}')
+                joblib.dump(encoder,   f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}{encoder_name}')
 
                 os.makedirs(f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs', exist_ok=True)
-                joblib.dump(rfr_model, f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{model_name}')
-                joblib.dump(encoder,   f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{encoder_name}')
+                joblib.dump(rfr_model, f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{self.sett.name_calib_subscen}{model_name}')
+                joblib.dump(encoder,   f'{self.sett.calib_path}/PVALLOC_calibration_model_coefs/{self.sett.name_calib_subscen}{encoder_name}')
 
 
 
                 # save segment distribution
                 rfr_segment_dist_dict = {}
                 if segmentation_TF:
-                    for i_seg, (min_kWp, max_kWp) in enumerate(kWp_segments):
+                    for i_seg, (min_kWp, max_kWp, pick_dist_type) in enumerate(kWp_segments):
                         # segment_str = f'{min_kWp}to{max_kWp}_kWp_seg' 
                         segment_str = f'seg_{i_seg+1}'
-                        mask = (df_train_rfr_seg['TotalPower'] >= min_kWp) & (df_train_rfr_seg['TotalPower'] < max_kWp)
-                        df_segment = df_train_rfr_seg.loc[mask].copy()
+                        if pick_dist_type == 'segment_dist':
+                            mask = (df_train_rfr_seg['TotalPower'] >= min_kWp) & (df_train_rfr_seg['TotalPower'] < max_kWp)
+                            df_segment = df_train_rfr_seg.loc[mask].copy()
+                        elif pick_dist_type == 'full_dist':
+                            df_segment = df_train_rfr_ALL.copy()
+                        elif pick_dist_type is None: 
+                            df_segment = df_train_rfr_ALL.copy()
+
 
                         rfr_segment_dist_dict[segment_str] = {
+                            'dist_type':             pick_dist_type,
                             'nEGID_in_segment':      df_segment.shape[0],
                             'TotalPower_mean_seg' :  df_segment['TotalPower'].mean()                 if df_segment.shape[0] > 0 else 0.0,
                             'TotalPower_std_seg'  :  df_segment['TotalPower'].std()                  if df_segment.shape[0] > 1 else 0.0,
@@ -2562,39 +2658,43 @@ class Calibration:
                         }
 
                     # export distributions
-                    with open(f'{self.sett.calib_scen_path}/{rfr_mod_name}_kWp_segments.json', 'w') as fp:
+                    with open(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}{rfr_mod_name}_kWp_segments.json', 'w') as fp:
                         json.dump(rfr_segment_dist_dict, fp, indent=4)
 
 
             # prediction -------------------
             if rfr_settings['run_ML_rfr_TF']:
 
+                # X_test = df_test_rfr.drop(columns=['TotalPower', ])
+                X_test = df_test_rfr[x_cols].copy()
+                encoded_test_array = encoder.transform(X_test[cat_cols].astype(str))
+                encoded_test_df = pd.DataFrame(encoded_test_array, columns=encoder.get_feature_names_out(cat_cols))
+                X_test_final = pd.concat([X_test.drop(columns=cat_cols).reset_index(drop=True), encoded_test_df.reset_index(drop=True)], axis=1)
+                X_test_final = X_test_final[X.columns]
+
+
+                X_test_ALL = df_test_rfr_ALL[x_cols].copy()
+                encoded_testALL_array = encoder.transform(X_test_ALL[cat_cols].astype(str))
+                encoded_testALL_df = pd.DataFrame(encoded_testALL_array, columns=encoder.get_feature_names_out(cat_cols))
+                X_test_ALL_final = pd.concat([X_test_ALL.drop(columns=cat_cols).reset_index(drop=True), encoded_testALL_df.reset_index(drop=True)], axis=1)
+                X_test_ALL_final = X_test_ALL_final[X.columns]
+
                 if not segmentation_TF:
-                    # X_test = df_test_rfr.drop(columns=['TotalPower', ])
-                    X_test = df_test_rfr[x_cols].copy()
-                    encoded_test_array = encoder.transform(X_test[cat_cols].astype(str))
-                    encoded_test_df = pd.DataFrame(encoded_test_array, columns=encoder.get_feature_names_out(cat_cols))
-
-                    X_test_final = pd.concat([X_test.drop(columns=cat_cols).reset_index(drop=True), encoded_test_df.reset_index(drop=True)], axis=1)
-                    X_test_final = X_test_final[X.columns]
-
                     # pred values
                     test_preds = rfr_model.predict(X_test_final)
                     df_test_rfr[f'pred{rfr_mod_name}'] = test_preds
 
+                    test_pred_ALL = rfr_model.predict(X_test_ALL_final)
+                    df_test_rfr_ALL[f'pred{rfr_mod_name}'] = test_pred_ALL
+
                 elif segmentation_TF:
-
-                    X_test = df_test_rfr[x_cols].copy()
-                    encoded_test_array = encoder.transform(X_test[cat_cols].astype(str))
-                    encoded_test_df = pd.DataFrame(encoded_test_array, columns=encoder.get_feature_names_out(cat_cols))
-                    
-                    X_test_final = pd.concat([X_test.drop(columns=cat_cols).reset_index(drop=True), encoded_test_df.reset_index(drop=True)], axis=1)
-                    X_test_final = X_test_final[X.columns]
-
                     # pred segments
                     test_preds = rfr_model.predict(X_test_final)
                     # df_test_rfr[y_target_col]                   = test_preds
                     df_test_rfr[f'pred{rfr_mod_name}_segments'] = test_preds
+
+                    test_pred_ALL = rfr_model.predict(X_test_ALL_final)
+                    df_test_rfr_ALL[f'pred{rfr_mod_name}_segments'] = test_pred_ALL
 
 
                     # pred values
@@ -2602,18 +2702,22 @@ class Calibration:
                     # segment_str, segment_dict = list(rfr_segment_dist_dict.keys())[idx], rfr_segment_dist_dict[list(rfr_segment_dist_dict.keys())[idx]]
 
                     df_test_rfr[f'pred{rfr_mod_name}'] = np.nan
+                    df_test_rfr_ALL[f'pred{rfr_mod_name}'] = np.nan
+
                     for segment_str, segment_dict in rfr_segment_dist_dict.items():
                         mask = df_test_rfr[f'pred{rfr_mod_name}_segments'] == segment_str
                         n_rows = mask.sum()
-
                         if n_rows == 0:
-                            continue
+                            continue                        
 
                         nEGID     = segment_dict['nEGID_in_segment']
                         mean      = segment_dict['TotalPower_mean_seg']
-                        stdev     = segment_dict['TotalPower_std_seg']
                         skewness  = segment_dict['TotalPower_skew_seg']
                         kurto     = segment_dict['TotalPower_kurt_seg']
+                        if 'stedev_factor' in list(dict_rfrsett.keys()):
+                            stdev = segment_dict['TotalPower_std_seg'] * dict_rfrsett['stdev_factor']
+                        else:
+                            stdev     = segment_dict['TotalPower_std_seg'] 
 
                         if stdev == 0:
                             df_test_rfr.loc[mask, f'pred{rfr_mod_name}'] = mean
@@ -2621,7 +2725,33 @@ class Calibration:
 
                         dist_seg = pearson3.rvs(skew=skewness, loc=mean, scale=stdev, size=n_rows)
                         df_test_rfr.loc[mask, f'pred{rfr_mod_name}'] = dist_seg
-                        # df_test_rfr.loc[mask, f'pred{rfr_mod_name}'] = np.clip(dist_seg, min_kWp, max_kWp)
+                        df_test_rfr.loc[mask, f'pred{rfr_mod_name}'] = np.clip(dist_seg, min_kWp, max_kWp)
+
+
+                        mask_ALL = df_test_rfr_ALL[f'pred{rfr_mod_name}_segments'] == segment_str
+                        n_rows_ALL = mask_ALL.sum()
+                        if n_rows_ALL == 0:
+                            continue
+                            
+                        nEGID_ALL     = segment_dict['nEGID_in_segment']
+                        mean_ALL      = segment_dict['TotalPower_mean_seg']
+                        skewness_ALL  = segment_dict['TotalPower_skew_seg']
+                        kurto_ALL     = segment_dict['TotalPower_kurt_seg']
+                        if 'stedev_factor' in list(dict_rfrsett.keys()):
+                            stdev_ALL = segment_dict['TotalPower_std_seg'] * dict_rfrsett['stdev_factor']
+                        else:
+                            stdev_ALL     = segment_dict['TotalPower_std_seg']
+
+                        if stdev_ALL == 0:
+                            df_test_rfr_ALL.loc[mask_ALL, f'pred{rfr_mod_name}'] = mean_ALL
+                            continue
+                        dist_seg_ALL = pearson3.rvs(skew=skewness_ALL, loc=mean_ALL, scale=stdev_ALL, size=n_rows_ALL)
+                        df_test_rfr_ALL.loc[mask_ALL, f'pred{rfr_mod_name}'] = dist_seg_ALL
+                   
+
+            # export test dfs with prediction -------------------
+            df_test_rfr.to_csv(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_df_test{df_suffix}.csv')
+
 
 
 
@@ -2631,7 +2761,7 @@ class Calibration:
                 # RFR prediction plot -------------------
                 fig = go.Figure()
 
-                for i_seg, (min_kWp, max_kWp) in enumerate(kWp_segments):
+                for i_seg, (min_kWp, max_kWp, _) in enumerate(kWp_segments):
                     segmentation_TF = any([True for kwp in kWp_segments if kwp[0] is not None and kwp[1] is not None])
                     color_idx = i_seg % len(px.colors.qualitative.Plotly)
                     color_seg = px.colors.qualitative.Plotly[color_idx]
@@ -2644,19 +2774,22 @@ class Calibration:
                     segment_str = f'seg_{i_seg+1}'
                     if not segmentation_TF: 
                         df_plot_seg = df_test_rfr.copy()
+                        df_plot_seg_ALL = df_test_rfr_ALL.copy()
                     elif segmentation_TF:
                         df_plot_seg = df_test_rfr.loc[df_test_rfr[f'pred{rfr_mod_name}_segments'] == segment_str].copy()
                         # df_plot_seg = df_test_rfr.loc[(df_test_rfr['TotalPower'] >= min_kWp) & (df_test_rfr['TotalPower'] < max_kWp)].copy()
+                        df_plot_seg_ALL = df_test_rfr_ALL.loc[df_test_rfr_ALL[f'pred{rfr_mod_name}_segments'] == segment_str].copy()
 
 
                     # scatter
-                    def add_scatter_trace(fig_plot, df_plot, rfr_mod_name, color_seg, segment_str, row=None, col=None): 
+                    def add_scatter_trace(fig_plot, df_plot, rfr_mod_name, color_seg, segment_str, 
+                                          psize=3, legend_suffix = '', row=None, col=None): 
                         trace = go.Scatter(
                             y=df_plot['TotalPower'],
                             x=df_plot[f'pred{rfr_mod_name}'],
                             mode='markers',
-                            name=f'{rfr_mod_name}-{segment_str} scatter',
-                            marker=dict(size=6, opacity=0.4),
+                            name=f'{rfr_mod_name}-{segment_str}({min_kWp:.1f}to{max_kWp:.1f}) scatter{legend_suffix}',
+                            marker=dict(size=psize, opacity=0.4),
                             marker_color=color_seg,
                         )
                         
@@ -2666,6 +2799,8 @@ class Calibration:
                         else:
                             fig_plot.add_trace(trace)
                         return fig_plot
+                    
+                    add_scatter_trace(fig,             df_plot_seg_ALL, rfr_mod_name, 'gray', segment_str, legend_suffix = ' - all')
                     add_scatter_trace(fig,             df_plot_seg, rfr_mod_name, color_seg, segment_str)
                     add_scatter_trace(fig_rfr_subplot, df_plot_seg, rfr_mod_name, color_seg, segment_str, row=subplot_row, col=subplot_col)
 
@@ -2691,6 +2826,7 @@ class Calibration:
                     add_diag_trace(fig,             max_diag_val, min_diag_val, color_seg, segment_str)
                     add_diag_trace(fig_rfr_subplot, max_diag_val, min_diag_val, color_seg, segment_str, row=subplot_row, col=subplot_col)
 
+
                     # distribution
                     if segmentation_TF: 
                         segment_dict = rfr_segment_dist_dict[segment_str]
@@ -2704,32 +2840,59 @@ class Calibration:
                             if i_seg < len(kWp_segments)-1:
                                 min_linspace, max_linspace = min_kWp, max_kWp
                             elif i_seg == len(kWp_segments) -1:
-                                min_linspace, max_linspace = min_kWp, max_kWp # df_plot_seg['TotalPower'].max()
+                                min_linspace, max_linspace = min_kWp, df_plot_seg['TotalPower'].max()
 
-                            dist_linspace = np.linspace(min_linspace * 0.8, max_linspace * 1.2, 200)
+                            dist_linspace = np.linspace(min_linspace*0.8, max_linspace*1.2 , 200)
                             dist_pdf = pearson3.pdf(dist_linspace, skew=skewness, loc=mean, scale=stdev)
                             dist_pdf_scaled = dist_pdf # * dist_pdf.max()
 
+                            # grouping dist legends by axis for nicer plot handling
+                            x_legend_added = True if i_seg == len(kWp_segments)-1 else False
+                            y_legend_added = True if i_seg == len(kWp_segments)-1 else False
+                            x_group = f'{rfr_mod_name}_dist_x'
+                            y_group = f'{rfr_mod_name}_dist_y'
+
+                            # ...existing code...
+                            # inside the segmentation_TF and stdev > 0 block, replace the two fig.add_trace(...) with:
+                            dist_name_x = 'Distributions (x-axis)'
+                            dist_name_y = 'Distributions (y-axis)'
+
+                            fig.add_trace(
+                                go.Scatter(
+                                    y=dist_pdf_scaled,
+                                    x=dist_linspace,
+                                    mode='lines',
+                                    # name=f'{rfr_mod_name}-{segment_str} dist1 (train kWp)',
+                                    name=dist_name_x,
+                                    legendgroup=x_group,
+                                    showlegend= x_legend_added,
+                                    line_color = color_seg,
+                                )
+                            )
                             fig.add_trace(
                                 go.Scatter(
                                     x=dist_pdf_scaled,
                                     y=dist_linspace,
                                     mode='lines',
-                                    name=f'{rfr_mod_name}-{segment_str} dist',
+                                    # name=f'{rfr_mod_name}-{segment_str} dist2 (train kWp)',
+                                    name=dist_name_y,
+                                    legendgroup=y_group,
+                                    showlegend= y_legend_added,
                                     line_color = color_seg,
                                 )
                             )
-                    
+
+
                 fig.update_layout(
-                    title=f'Random Forest (Prediction of Segment Distribution)',
-                    xaxis_title=f'Pred Pwr {df_plot_seg.shape[0]} nEGIDs',
+                    title=f'Random Forest: {rfr_mod_name}, df: {df_suffix} (Pred vs Actual)',
+                    xaxis_title=f'Pred Pwr {df_test_rfr.shape[0]} nEGIDs',
                     yaxis_title='Total Power (kWp)',
                     legend_title=f'{rfr_mod_name} - Segments',
                     template='plotly_white',
                 )
 
                 # export
-                fig.write_html(f'{self.sett.calib_scen_path}/rfr_kWp_actualVSpred_{rfr_mod_name}.html')
+                fig.write_html(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}{rfr_mod_name}_rfr_kWp_actualVSpred.html')
 
                 # RMSE bar plot -------------------
                 if (df_test_rfr['TotalPower'].isna().sum() > 0) | (df_test_rfr[f'pred{rfr_mod_name}'].isna().sum() > 0):
@@ -2761,7 +2924,7 @@ class Calibration:
             yaxis_title='RMSE (kWp)',
             template='plotly_white',
         )
-        fig_bar_rsme.write_html(f'{self.sett.calib_scen_path}/rfr_kWp_RMSE_comparison.html')
+        fig_bar_rsme.write_html(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_rfr_kWp_RMSE_comparison.html')
 
         # export makesubplot
         fig_rfr_subplot.update_layout(
@@ -2770,7 +2933,7 @@ class Calibration:
             yaxis_title='Actual Total Power (kWp)',
             template='plotly_white'
         )
-        fig_rfr_subplot.write_html(f'{self.sett.calib_scen_path}/rfr_kWp_actualVSpred_subplots.html')
+        fig_rfr_subplot.write_html(f'{self.sett.calib_scen_path}/{self.sett.name_calib_subscen}_rfr_kWp_actualVSpred_subplots.html')
 
     print(' * Finished random forest regression approach 2 * ')
 
@@ -2807,36 +2970,6 @@ if __name__ == '__main__':
                 'visualize_ML_rfr_TF': True,
                 'reg2_rfrname_dfsuffix_dicts': {
 
-                    'mod1': {
-                        'rfr_mod_name': '_rfr1', 
-                        'df_suffix': '',
-
-                        'random_state':         24,    # default: None  # | None,    
-                        'n_jobs':               -1,      # default: None  # | -1,  
-                        'cross_validation':     None, 
-                        'n_estimators':         10  ,    # default: 100   # | 1,       
-                        'min_samples_split':    50    ,    # default: 2     # | 1000,    
-                        'max_depth':            10   ,    # default: None  # | 3,       
-                        'kWp_segments': [(None, None)],
-                    }, 
-
-                    'mod5': {
-                        'rfr_mod_name': '_rfr5', 
-                        'df_suffix': '',
-
-                        'random_state':         24,    # default: None  # | None,    
-                        'n_jobs':               -1,      # default: None  # | -1,  
-                        'cross_validation':     None, 
-                        'n_estimators':         10  ,    # default: 100   # | 1,       
-                        'min_samples_split':    2     ,    # default: 2     # | 1000,    
-                        'max_depth':            30   ,    # default: None  # | 3,       
-                        'kWp_segments': [
-                            ( 3, 10),
-                            (10, 15), 
-                            (15, 20), 
-                        ], 
-                    }, 
-
                     'mod6': {
                         'rfr_mod_name': '_rfr6', 
                         'df_suffix': '_pvroof20to70',
@@ -2844,13 +2977,13 @@ if __name__ == '__main__':
                         'random_state':         24,    # default: None  # | None,    
                         'n_jobs':               -1,      # default: None  # | -1,  
                         'cross_validation':     None, 
-                        'n_estimators':         10  ,    # default: 100   # | 1,       
+                        'n_estimators':         5  ,    # default: 100   # | 1,       
                         'min_samples_split':    2     ,    # default: 2     # | 1000,    
                         'max_depth':            30   ,    # default: None  # | 3,       
                         'kWp_segments': [
-                            ( 3, 10),
-                            (10, 15), 
-                            (15, 20), 
+                            ( 3, 10, 'segment_dist' ),
+                            (10, 15, 'full_dist' ), 
+                            (15, 20, 'full_dist' ), 
                         ], 
                     }, 
 
@@ -2866,7 +2999,7 @@ if __name__ == '__main__':
 
     calib_class = Calibration(preprep_list[0])
     # calib_class.concatenate_prerep_data()           if calib_class.sett.run_concatenate_preprep_data_TF else None
-    # calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
+    calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
     calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
 
     # calib_class.approach1_fit_optim_cost_function()     if calib_class.sett.run_approach1_fit_optim_costfunction_TF else None
