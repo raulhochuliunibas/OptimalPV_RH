@@ -987,11 +987,13 @@ class DataAggScenario:
                             # concat all EGIDs within the same shape that were previously missing
                             solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
 
+
+                    else: 
                         if i_print < print_counter_max:
-                            print(f'ERROR: EGID {egid}: multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them')
+                            print(f'ERROR: EGID {egid:14}: not fitting into any case (1 to 5) for adjusting faulty SOLKAT EGIDs by matching shape to GWR_EGIDs')
                             i_print += 1
                         elif i_print == print_counter_max:
-                            print(f'ERROR: EGID {egid}: {print_counter_max}+ ... more cases of multiple gwrEGIDs, outside solkatEGID / without solkatEGID amongst them')
+                            print(f'ERROR: EGID {egid:14}: {print_counter_max}+ ... more cases not fitting into any case (1 to 5) for adjusting faulty SOLKAT EGIDs by matching shape to GWR_EGIDs')
                             i_print += 1
 
 
@@ -1648,18 +1650,18 @@ class DataAggScenario:
 if __name__ == '__main__':
     dataagg_scen_list = [
 
-        
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_debug',
-            # kt_numbers = [13, 12, 11], # BL, BS, SO
-            bfs_numbers = [
-                2761, 2768,
-                2546,  	 # Grenchen,  	
-                           ],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', ],  # '1121'],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_debug',
+        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
+        #     bfs_numbers = [
+        #         2761, 2768,
+        #         2546,  	 # Grenchen,  	
+        #                    ],
+        #     year_range = [2022, 2023],
+        #     GWR_GKLAS = ['1110', ],  # '1121'],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        # ),
+
         DataAggScenario_Settings(
             name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI',
             # kt_numbers = [13, 12, 11], # BL, BS, SO
@@ -1673,6 +1675,7 @@ if __name__ == '__main__':
             GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
+
 
 
         # DataAggScenario_Settings(
