@@ -526,7 +526,7 @@ class PVAllocScenario:
         for _ in montecarlo_iterations_fordev_seq:
 
             # set a random sleep so array tasks in scicore don't overwrite MC directories
-            sleep_range = list(range(10, 61, 5))
+            sleep_range = list(range(10, 1201, 5))
             sleep_time = np.random.choice(sleep_range)
             time.sleep(sleep_time)
 

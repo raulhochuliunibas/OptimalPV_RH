@@ -6,6 +6,41 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 # pv alloctaion ------------------------------------------
 pvalloc_scen_list = [
 
+        PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_2y_testMC',
+        bfs_numbers                                          = [
+                                                    2612, 
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    # 2773, # 2769, #2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
+                                                    # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
+                                                    # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    # 2883,
+                                                                ],          
+        create_gdf_export_of_topology                        = True,
+        export_csvs                                          = True,
+        T0_year_prediction                                   = 2022,
+        months_lookback                                      = 12,
+        months_prediction                                    = 240,
+        TECspec_add_heatpump_demand_TF                       = True,   
+        TECspec_heatpump_months_factor                       = [
+                                                                (10, 7.0),
+                                                                (11, 7.0), 
+                                                                (12, 7.0), 
+                                                                (1 , 7.0), 
+                                                                (2 , 7.0), 
+                                                                (3 , 7.0), 
+                                                                (4 , 7.0), 
+                                                                (5 , 7.0),     
+                                                                (6 , 1.0), 
+                                                                (7 , 1.0), 
+                                                                (8 , 1.0), 
+                                                                (9 , 1.0),
+                                                                ], 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ),
 
     PVAllocScenario_Settings(name_dir_export ='pvalloc_9nbfs_RUR_max_20y',
         bfs_numbers                                          = [
@@ -18,7 +53,7 @@ pvalloc_scen_list = [
                                                                 ],          
         create_gdf_export_of_topology                        = True,
         export_csvs                                          = True,
-        T0_year_prediction                                   = 2021,
+        T0_year_prediction                                   = 2022,
         months_lookback                                      = 12,
         months_prediction                                    = 240,
         TECspec_add_heatpump_demand_TF                       = True,   
@@ -53,7 +88,7 @@ pvalloc_scen_list = [
                                                                 ],          
         create_gdf_export_of_topology                        = True,
         export_csvs                                          = True,
-        T0_year_prediction                                   = 2021,
+        T0_year_prediction                                   = 2022,
         months_lookback                                      = 12,
         months_prediction                                    = 240,
         TECspec_add_heatpump_demand_TF                       = True,   
