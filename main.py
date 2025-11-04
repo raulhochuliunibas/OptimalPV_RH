@@ -6,87 +6,77 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 # pv alloctaion ------------------------------------------
 pvalloc_scen_list = [
 
-    # PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-001_max',
-    #     bfs_numbers                                          = [
-    #                                                 # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-    #                                                 2889, 
-    #                                                             ],          
-    #     mini_sub_model_TF                                    = False,
-    #     mini_sub_model_nEGIDs                                = 999999,
 
-    #     T0_year_prediction                                   = 2021,
-    #     months_prediction                                    = 360,
-    #     TECspec_self_consumption_ifapplicable                = 1.0,
-    #     TECspec_interest_rate                                = 0.01,
-    #     CSTRspec_ann_capacity_growth                         = 0.2,
-    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-    #     ALGOspec_topo_subdf_partitioner                      = 250, 
-    #     ALGOspec_inst_selection_method                       = 'max_npv', 
-    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-    #     ALGOspec_rand_seed                                   = 123,
-    #     # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-    # ), 
-    # PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-001_max_MINI',
-    #     bfs_numbers                                          = [
-    #                                                 # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-    #                                                 2889, 
-    #                                                             ],          
-    #     mini_sub_model_TF                                    = True,
-    #     mini_sub_model_nEGIDs                                = 15,
-    #     T0_year_prediction                                   = 2021,
-    #     months_prediction                                    = 360,
-    #     TECspec_self_consumption_ifapplicable                = 1.0,
-    #     TECspec_interest_rate                                = 0.01,
-    #     CSTRspec_ann_capacity_growth                         = 0.2,
-    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-    #     ALGOspec_topo_subdf_partitioner                      = 250, 
-    #     ALGOspec_inst_selection_method                       = 'max_npv', 
-    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-    #     ALGOspec_rand_seed                                   = 123,
-    #     # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-    # ), 
-
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_1bfs_RUR_r0-02_max',
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_9nbfs_RUR_max_20y',
         bfs_numbers                                          = [
-                                                    2889, 
+                                                    2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
+                                                    # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
+                                                    # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    # 2883,
                                                                 ],          
-        mini_sub_model_TF                                    = False,
-        # mini_sub_model_nEGIDs                                = 30,
+        create_gdf_export_of_topology                        = True,
+        export_csvs                                          = True,
         T0_year_prediction                                   = 2021,
-        months_prediction                                    = 360,
-        TECspec_self_consumption_ifapplicable                = 1.0,
-        TECspec_interest_rate                                = 0.02,
-        CSTRspec_ann_capacity_growth                         = 0.2,
-        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        months_lookback                                      = 12,
+        months_prediction                                    = 240,
+        TECspec_add_heatpump_demand_TF                       = True,   
+        TECspec_heatpump_months_factor                       = [
+                                                                (10, 7.0),
+                                                                (11, 7.0), 
+                                                                (12, 7.0), 
+                                                                (1 , 7.0), 
+                                                                (2 , 7.0), 
+                                                                (3 , 7.0), 
+                                                                (4 , 7.0), 
+                                                                (5 , 7.0),     
+                                                                (6 , 1.0), 
+                                                                (7 , 1.0), 
+                                                                (8 , 1.0), 
+                                                                (9 , 1.0),
+                                                                ], 
         ALGOspec_topo_subdf_partitioner                      = 250, 
-        ALGOspec_inst_selection_method                       = 'max_npv', 
+        ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
         ALGOspec_rand_seed                                   = 123,
-    ), 
-    # PVAllocScenario_Settings(name_dir_export ='pvalloc_9bfs_RUR_r0-02_max_15y',
-    #     bfs_numbers = [
-    #         2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616,
-    #     ],
-    #     mini_sub_model_TF = False,
-    #     mini_sub_model_nEGIDs = 50,
-    #     mini_sub_model_select_EGIDs = [
-    #         '101428161', '11513725', '190001512', '190004146', '190024109', '190033245', 
-    #         '190048248', '190083872', '190109228', '190116571', '190144906', '190178022', 
-    #         '190183577', '190185552', '190251628', '190251772', '190251828', '190296588', 
-    #         '190491308', '190694269', '190709629', '190814490', '190912633', '190960689', 
-    #         '2125434', '2362100', '245044986', '245048760', '245052560', '245053405', 
-    #         '245057989', '245060059', '3030694', '3030905', '3031761', '3032150', '3033714', 
-    #         '3075084', '386736', '432600', '432638', '432671', '432683', '432701', '432729', '434178',
-    #     ],
-    #     T0_year_prediction = 2021,
-    #     months_prediction = 180,
-    #     TECspec_self_consumption_ifapplicable = 1.0,
-    #     TECspec_interest_rate = 0.02,
-    #     CSTRspec_ann_capacity_growth = 0.2,
-    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF = True, 
-    #     ALGOspec_topo_subdf_partitioner = 250, 
-    #     ALGOspec_inst_selection_method = 'max_npv', 
-    #     ALGOspec_rand_seed = 123,
-    # ),
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ),
+    
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_9nbfs_RUR_rnd_20y',
+        bfs_numbers                                          = [
+                                                    2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
+                                                    # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
+                                                    # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
+                                                    # 2883,
+                                                                ],          
+        create_gdf_export_of_topology                        = True,
+        export_csvs                                          = True,
+        T0_year_prediction                                   = 2021,
+        months_lookback                                      = 12,
+        months_prediction                                    = 240,
+        TECspec_add_heatpump_demand_TF                       = True,   
+        TECspec_heatpump_months_factor                       = [
+                                                                (10, 7.0),
+                                                                (11, 7.0), 
+                                                                (12, 7.0), 
+                                                                (1 , 7.0), 
+                                                                (2 , 7.0), 
+                                                                (3 , 7.0), 
+                                                                (4 , 7.0), 
+                                                                (5 , 7.0),     
+                                                                (6 , 1.0), 
+                                                                (7 , 1.0), 
+                                                                (8 , 1.0), 
+                                                                (9 , 1.0),
+                                                                ], 
+
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'random',     # 'random', max_npv', 'prob_weighted_npv'
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ),    
 
 ]
 
@@ -226,8 +216,8 @@ if __name__ == '__main__':
     # visualization ---------------------
     for visual_scen in visualization_list:
         visual_class = Visualization(visual_scen)
-        visual_class.plot_ALL_init_sanitycheck()
-        visual_class.plot_ALL_mcalgorithm()
+        # visual_class.plot_ALL_init_sanitycheck()
+        # visual_class.plot_ALL_mcalgorithm()
 
 print('done')
 
