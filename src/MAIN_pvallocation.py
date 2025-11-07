@@ -131,8 +131,8 @@ class PVAllocScenario_Settings:
     WEAspec_flat_diffuse_rad_factor: int                = 1
 
     # constr_capacity_specs
-    CSTRspec_iter_time_unit: str                        = 'year'   # month, year
-    CSTRspec_ann_capacity_growth: float                 = 0.15
+    CSTRspec_iter_time_unit: str                        = 'year'   # month (not really feasible), year
+    CSTRspec_ann_capacity_growth: float                 = 0.0
     CSTRspec_constr_capa_overshoot_fact: int            = 1
     CSTRspec_month_constr_capa_tuples: List[tuple]      = field(default_factory=lambda: [
                                                             (1,  0.04), 
@@ -260,13 +260,18 @@ class PVAllocScenario_Settings:
     GRIDspec_flat_profile_demand_type_col: set                  = 'MFH_swstore'  # 'flat' / 'MFH_swstore' / 'outtopo_demand_zero'
 
     # gridprem_adjustment_specs
+    GRIDspec_apply_prem_tiers_TF: bool                          = False 
     GRIDspec_tier_description: str                              = 'tier_level: (voltage_threshold, gridprem_Rp_kWh)'
     GRIDspec_power_factor: float                                = 1
     GRIDspec_perf_factor_1kVA_to_XkW: float                     = 0.8
     GRIDspec_colnames: List[str]                                = field(default_factory=lambda: ['tier_level', 'used_node_capa_rate', 'gridprem_Rp_kWh'])
     GRIDspec_tiers: Dict[int, List[float]]                      = field(default_factory=lambda: {
-                                                                   1: [0.7, 1], 2: [0.8, 3], 3: [0.85, 5], 
-                                                                   4: [0.9, 7], 5: [0.95, 15], 6: [1, 100]
+                                                                   1: [0.7,   1], 
+                                                                   2: [0.8,   3], 
+                                                                   3: [0.85,  5], 
+                                                                   4: [0.9,   7], 
+                                                                   5: [0.95,  15], 
+                                                                   6: [1,     100]
                                                                 })
     
 
@@ -565,24 +570,26 @@ class PVAllocScenario:
                 if len(egid_without_pv) > 0:
 
                     # GRIDPREM + NPV_DF UPDATE ==========
-                    start_time_update_gridprem = datetime.datetime.now()
-                    print_to_logfile('- START update gridprem', self.sett.log_name)
-                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
-                    end_time_update_gridprem = datetime.datetime.now()
-                    
-                    print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
-                    self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
-                                                                                                                            
-                    start_time_update_npv = datetime.datetime.now()
-                    print_to_logfile('- START update npv', self.sett.log_name)
-                    if self.sett.ALGOspec_pvinst_size_calculation == 'inst_full_partition':
-                        self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
-                    elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
-                        self.algo_update_npv_df_OPTIMIZED(self.sett.mc_iter_path, i_m, m)
-                    elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
-                        self.algo_update_npv_df_RFR(self.sett.mc_iter_path, i_m, m)
-                    elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rf_segdist':
-                        self.algo_update_npv_df_RF_SEGMDIST(self.sett.mc_iter_path, i_m, m)
+                    # (only updated each iteration if feedin premium adjusts)
+                    if (i_m == 1) or (self.sett.GRIDspec_apply_prem_tiers_TF): 
+                        start_time_update_gridprem = datetime.datetime.now()
+                        print_to_logfile('- START update gridprem', self.sett.log_name)
+                        self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                        end_time_update_gridprem = datetime.datetime.now()
+                        
+                        print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
+                        self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
+                                                                                                                                
+                        start_time_update_npv = datetime.datetime.now()
+                        print_to_logfile('- START update npv', self.sett.log_name)
+                        if self.sett.ALGOspec_pvinst_size_calculation == 'inst_full_partition':
+                            self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
+                        elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
+                            self.algo_update_npv_df_OPTIMIZED(self.sett.mc_iter_path, i_m, m)
+                        elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
+                            self.algo_update_npv_df_RFR(self.sett.mc_iter_path, i_m, m)
+                        elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rf_segdist':
+                            self.algo_update_npv_df_RF_SEGMDIST(self.sett.mc_iter_path, i_m, m)
 
                         
                     end_time_update_npv = datetime.datetime.now()
@@ -653,6 +660,29 @@ class PVAllocScenario:
                 self.mark_to_timing_csv('MCalgo', f'end inst_whileloop_{i_m:0{max_digits}}', end_time_installation_whileloop, self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop),  '-')  #if i_m < 7 else None
                                             
                 checkpoint_to_logfile(f'end month allocation, runtime: {datetime.datetime.now() - start_allocation_month} (hh:mm:ss.s)', self.sett.log_name, 0, True)                    
+
+
+            # GRIDPREM + NPV_DF UPDATE ==========
+            # (if no gridprem applied, run only once at end of allocation)
+            if (i_m == len(trange_prediction)) and not (self.sett.GRIDspec_apply_prem_tiers_TF): 
+                start_time_update_gridprem = datetime.datetime.now()
+                print_to_logfile('- START update gridprem', self.sett.log_name)
+                self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                end_time_update_gridprem = datetime.datetime.now()
+                
+                print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
+                self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
+                                                                                                                        
+                start_time_update_npv = datetime.datetime.now()
+                print_to_logfile('- START update npv', self.sett.log_name)
+                if self.sett.ALGOspec_pvinst_size_calculation == 'inst_full_partition':
+                    self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
+                elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
+                    self.algo_update_npv_df_OPTIMIZED(self.sett.mc_iter_path, i_m, m)
+                elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
+                    self.algo_update_npv_df_RFR(self.sett.mc_iter_path, i_m, m)
+                elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rf_segdist':
+                    self.algo_update_npv_df_RF_SEGMDIST(self.sett.mc_iter_path, i_m, m)
 
 
             # CLEAN UP interim files of MC run ==========
@@ -3026,6 +3056,9 @@ class PVAllocScenario:
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
             gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
+            if not self.sett.GRIDspec_apply_prem_tiers_TF: 
+                gridtiers_df['gridprem_Rp_kWh'] = 0.0   
+
 
 
             # create Map_infosource_egid ----------------------------------------------
@@ -3322,8 +3355,8 @@ class PVAllocScenario:
                 prem = gridtiers_df.loc[i, 'gridprem_Rp_kWh']
 
                 condition = (
-                    ((pl.col("feedin_atnode_taken_kW") / pl.col("kW_threshold")) >= capa_tier_rate_lo) &
-                    ((pl.col("feedin_atnode_taken_kW") / pl.col("kW_threshold")) < capa_tier_rate_up)
+                    ((pl.col("feedin_atnode_taken_kW") / pl.col("kW_threshold")) > capa_tier_rate_lo) &
+                    ((pl.col("feedin_atnode_taken_kW") / pl.col("kW_threshold")) <= capa_tier_rate_up)
                 )
 
                 gridnode_df_for_prem = gridnode_df_for_prem.with_columns(
@@ -5399,13 +5432,13 @@ if __name__ == '__main__':
 
     PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID',
         bfs_numbers                                          = [
-                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-                                                    # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
-                                                    # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
-                                                    # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
-                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-                                                    2883, 2889, 2612
-
+                                                    2612, 
+                                                    # # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren, Seewen
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, 2480,
+                                                    # # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
+                                                    # 2612, 2782, 2618, 2786, 2785, 2772, 2761, 2743, 
+                                                    # # URBAN: Reinach, Münchenstein, Muttenz
+                                                    # 2773, 2769, 2770,
                                                                 ],          
         mini_sub_model_TF                                    = True,
         mini_sub_model_by_X                                  = 'by_EGID',
@@ -5438,8 +5471,6 @@ if __name__ == '__main__':
                                                                 (8 , 1.0), 
                                                                 (9 , 1.0),
                                                                 ], 
-        CSTRspec_iter_time_unit                              = 'year',
-        CSTRspec_ann_capacity_growth                         = 0.2,
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
         ALGOspec_topo_subdf_partitioner                      = 250, 
         ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
