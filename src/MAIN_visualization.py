@@ -216,7 +216,7 @@ class Visual_Settings:
     })
     plot_ind_mapline_prodHOY_EGIDrfcombo_specs:Dict        = field(default_factory=lambda: {
         'specific_selected_EGIDs': [], 
-        'show_selected_plots': [
+        'run_selected_plot_parts': [
                                 'map',  
                                 'timeseries', 
                                 'summary', 
@@ -241,24 +241,30 @@ class Visual_Settings:
                                         'TotalPower', 'demand_elec_pGAREA', 
                                         'pvtarif_Rp_kWh', 'elecpri_Rp_kWh', ],
         'recalc_opt_max_flaeche_factor': None, #  1.5,  
-        'recalc_interest_rate_list': None, 
-        # 'tryout_generic_pvtariff_elecpri_Rp_kWh': (5.0, 25.0),
-        'tryout_generic_pvtariff_elecpri_Rp_kWh': (None, None),
+        'recalc_interest_rate_list': [
+            0.02, ],
+        'tryout_generic_pvtariff_elecpri_Rp_kWh': (None, None), # e.g. other generic setting (5.0, 25.0),
         'generic_pvinstcost_coeff_total': {
             'use_generic_instcost_coeff_total_TF': False, 
-            'a': 1193, 
-            'b': 9340, 
-            'c': 0.45,
-        }, 
+            'coeff_total_dict_list': [
+                {'a': 1193.8, 'b': 4860.3, 'c': 0.7291},  #  estimates pvinst_coefficients 
+                # {'a': 6000, 'b': 5000, 'c': 0.65},  #  higher fix cost, more curvutre, lower cost for large inst
+                # {'a': 4000, 'b': 3300, 'c': 0.83},  #  higher fix cost, then much closes to estim function, higher cost for large inst
+                # {'a': 7000, 'b': 1500, 'c': 0.85},  #  much higher fix costs, much less change in curvature, almost linear, much lower cost for large inst
+                ],
+            }, 
         'noisy_demand_TF': False, 
         'noisy_demand_factor': 0.0,
         
         })
     plot_ind_jsctr_instpower_specs:Dict        = field(default_factory=lambda: {
         'specific_selected_EGIDs': [], 
-        'show_selected_plots': [
+        'run_selected_plot_parts': [
                                 'map',  
-                                'timeseries', 
+                                'all_combo_TS',
+                                'actual_inst_TS',
+                                'recalc_inst_TS',
+                                'outsample_TS',
                                 'summary', 
                                 'econ_func', 
                                 'joint_scatter', 
@@ -281,14 +287,16 @@ class Visual_Settings:
                                         'TotalPower', 'demand_elec_pGAREA', 
                                         'pvtarif_Rp_kWh', 'elecpri_Rp_kWh', ],
         'recalc_opt_max_flaeche_factor': None, #  1.5,  
-        'recalc_interest_rate_list': None, 
-        # 'tryout_generic_pvtariff_elecpri_Rp_kWh': (5.0, 25.0),
-        'tryout_generic_pvtariff_elecpri_Rp_kWh': (None, None),
+        'recalc_interest_rate_list': [0.02, ],
+        'tryout_generic_pvtariff_elecpri_Rp_kWh': (None, None),  # (5.0, 25.0),
         'generic_pvinstcost_coeff_total': {
             'use_generic_instcost_coeff_total_TF': False, 
-            'a': 1193, 
-            'b': 9340, 
-            'c': 0.45,
+            'coeff_total_dict_list': [
+                {'a': 1193.8, 'b': 4860.3, 'c': 0.7291},  #  estimates pvinst_coefficients 
+                # {'a': 6000, 'b': 5000, 'c': 0.65},  #  higher fix cost, more curvutre, lower cost for large inst
+                # {'a': 4000, 'b': 3300, 'c': 0.83},  #  higher fix cost, then much closes to estim function, higher cost for large inst
+                # {'a': 7000, 'b': 1500, 'c': 0.85},  #  much higher fix costs, much less change in curvature, almost linear, much lower cost for large inst
+                ],                                                         
         }, 
         'noisy_demand_TF': False, 
         'noisy_demand_factor': 0.0,
@@ -2632,7 +2640,7 @@ class Visualization:
                     dsonodes_df = pl.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/dsonodes_df.parquet')  
 
                     share_roof_area_available               = self.pvalloc_scen.TECspec_share_roof_area_available
-                    kWpeak_per_m2                           = self.pvalloc_scen.TECspec_kWpeak_per_m2_roof_area
+                    kWpeak_per_m2                           = self.pvalloc_scen.TECspec_kWpeak_per_m2
                     TECspec_self_consumption_ifapplicable   = self.pvalloc_scen.TECspec_self_consumption_ifapplicable
                     GRIDspec_perf_factor_1kVA_to_XkW        = self.pvalloc_scen.GRIDspec_perf_factor_1kVA_to_XkW
                     print_checkpoint_statements             = False
@@ -4706,21 +4714,36 @@ class Visualization:
 
 
                     # loop interest rates  ---------------
-                    for i_recalc_interest_rate, recalc_interest_rate in enumerate(plot_mapline_specs['recalc_interest_rate_list']):
-                        
+                    # for i_recalc_interest_rate, recalc_interest_rate in enumerate(plot_mapline_specs['recalc_interest_rate_list']):
+                    #     print(f'i_recalc_interest_rate: {i_recalc_interest_rate}, recalc_interest_rate: {recalc_interest_rate}')
 
-                        generic_pvinstcost_coeff_total = plot_mapline_specs['generic_pvinstcost_coeff_total']
-                        if not generic_pvinstcost_coeff_total['use_generic_instcost_coeff_total_TF']:
-                            generic_pvinstcost_coeff_total['coeff_total_dict_list'] = [{'a': 1, 'b': 1, 'c': 1}]
+                    #     generic_pvinstcost_coeff_total = plot_mapline_specs['generic_pvinstcost_coeff_total']
+                    #     if not generic_pvinstcost_coeff_total['use_generic_instcost_coeff_total_TF']:
+                    #         generic_pvinstcost_coeff_total['coeff_total_dict_list'] = [{'a': 1, 'b': 1, 'c': 1}]
                             
-                        for i_cost_coeff, cost_coeff_dict in enumerate(generic_pvinstcost_coeff_total['coeff_total_dict_list']): 
-                            egid_jsctr_list, TotalPower_jsctr_list, RecalcPowe_jsctr_list, sum_FLAECHE_list, max_optFLAECHE_list, interest_rate_list, cost_coeff_list = [], [], [], [], [], [], []
+                    #     for i_cost_coeff, cost_coeff_dict in enumerate(generic_pvinstcost_coeff_total['coeff_total_dict_list']): 
+                    #         egid_jsctr_list, TotalPower_jsctr_list, RecalcPowe_jsctr_list, sum_FLAECHE_list, max_optFLAECHE_list, interest_rate_list, cost_coeff_list = [], [], [], [], [], [], []
 
 
-                            egid = '190296588'
-                            fig_econfunc_comp = go.Figure()
-                            for i_egid, egid in enumerate(selected_egid):  # ['EGID'].unique():
+                    #         egid = '190296588'
+                    #         fig_econfunc_comp = go.Figure()
+                    #         for i_egid, egid in enumerate(selected_egid):  # ['EGID'].unique():
+
+
+                    for i_egid, egid in enumerate(selected_egid):  # ['EGID'].unique():
+
+                        for i_recalc_interest_rate, recalc_interest_rate in enumerate(plot_mapline_specs['recalc_interest_rate_list']):
+                            print(f'i_recalc_interest_rate: {i_recalc_interest_rate}, recalc_interest_rate: {recalc_interest_rate}')
+
+                            generic_pvinstcost_coeff_total = plot_mapline_specs['generic_pvinstcost_coeff_total']
+                            if not generic_pvinstcost_coeff_total['use_generic_instcost_coeff_total_TF']:
+                                generic_pvinstcost_coeff_total['coeff_total_dict_list'] = [{'a': 1, 'b': 1, 'c': 1}]
                                 
+                            fig_econfunc_comp = go.Figure()      
+                            for i_cost_coeff, cost_coeff_dict in enumerate(generic_pvinstcost_coeff_total['coeff_total_dict_list']): 
+                                egid_jsctr_list, TotalPower_jsctr_list, RecalcPowe_jsctr_list, sum_FLAECHE_list, max_optFLAECHE_list, interest_rate_list, cost_coeff_list = [], [], [], [], [], [], []
+
+
                                 if (True) & (i_scen < 1) & (i_egid < 2 ):
                                     checkpoint_print_TF = True
                                 else: 
@@ -5599,6 +5622,7 @@ class Visualization:
                                         fig_econfunc_comp.add_trace(     go.Scatter( x=[None,],        y=[None,],            mode='lines',  name='',  opacity = 0    ))
                                         fig_econfunc_comp_scen.add_trace(go.Scatter( x=[None,],        y=[None,],            mode='lines',  name='',  opacity = 0    ))
 
+                                checkpoint_to_logfile(f'--> i_scen: {i_scen}, i_egid: {i_egid};/{len(selected_egid)} end recalc inst', self.visual_sett.log_name) if checkpoint_print_TF else None
 
                             # fig jscatter
                             if 'recalc_opt_inst' in plot_mapline_specs['run_selected_plot_parts']:    
@@ -5640,7 +5664,6 @@ class Visualization:
                                     showlegend=True
                                 ))                   
 
-                        checkpoint_to_logfile(f'--> i_scen: {i_scen}, i_egid: {i_egid};/{len(selected_egid)} end recalc inst', self.visual_sett.log_name) if checkpoint_print_TF else None
                                         
 
                         # traces summary ==============================
@@ -5752,7 +5775,7 @@ class Visualization:
                         
 
                         # layout & export plots ==============================
-                        if ('map' in plot_mapline_specs['show_selected_plots']) & ('map' in plot_mapline_specs['run_selected_plot_parts']) :
+                        if ('map' in plot_mapline_specs['run_selected_plot_parts']) & ('map' in plot_mapline_specs['run_selected_plot_parts']) :
 
                             
                             # partition map
@@ -5796,7 +5819,7 @@ class Visualization:
                                 title = f"Roof Partitions Time Series for EGID: {egid}, n_partitions: {len(topo[egid]['solkat_partitions'])} info_source: {topo[egid]['pv_inst']['info_source']}",
                                 template = 'plotly_white',
                             )
-                            if 'timeseries' in plot_mapline_specs['show_selected_plots']:   
+                            if 'timeseries' in plot_mapline_specs['run_selected_plot_parts']:   
                                 if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
                                     if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
                                         fig_rfpart_ts.show()
@@ -5816,7 +5839,7 @@ class Visualization:
                                 legend=dict(x=0.99, y=0.99),
                                 template='plotly_white'
                             )
-                            # if 'recalc_pvdf' in plot_mapline_specs['show_selected_plots']:
+                            # if 'recalc_pvdf' in plot_mapline_specs['run_selected_plot_parts']:
                             #     if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
                             #         if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
                             #             fig_econfunc.show()
@@ -5841,7 +5864,7 @@ class Visualization:
                                     overlaying='x',  # Overlay on the main x-axis
                                 ),
                             )
-                            if 'summary' in plot_mapline_specs['show_selected_plots']:
+                            if 'summary' in plot_mapline_specs['run_selected_plot_parts']:
                                 if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
                                     if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
                                         fig_rfpart_summary.show()
@@ -5892,7 +5915,7 @@ class Visualization:
                         legend=dict(x=0.99, y=0.99),
                         template='plotly_white'
                     )   
-                    if 'econ_func' in plot_mapline_specs['show_selected_plots']:
+                    if 'econ_func' in plot_mapline_specs['run_selected_plot_parts']:
                         if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
                             if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
                                 fig_econfunc_comp.show()
@@ -5912,14 +5935,14 @@ class Visualization:
                         legend=dict(x=0.99, y=0.99),
                         template='plotly_white'
                     )   
-                if 'econ_func' in plot_mapline_specs['show_selected_plots']:
+                if 'econ_func' in plot_mapline_specs['run_selected_plot_parts']:
                     if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
                             fig_econfunc_comp_scen.show()
-                if os.path.exists(f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID{egid}_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen.html'):
-                    n_econ_comp_plots = len(glob.glob(f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID{egid}_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen*.html'))
-                    os.rename(f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID{egid}_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen.html',
-                              f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID{egid}_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen__{n_econ_comp_plots}nplot.html')
-                fig_econfunc_comp_scen.write_html(f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID{egid}_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen.html')  
+                if os.path.exists(f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen.html'):
+                    n_econ_comp_plots = len(glob.glob(f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen*.html'))
+                    os.rename(f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen.html',
+                              f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen__{n_econ_comp_plots}nplot.html')
+                fig_econfunc_comp_scen.write_html(f'{self.visual_sett.visual_path}/plot_ind_mapline_prodHOY_EGID_fig_econfunc_comp_scen__{len(self.pvalloc_scen_list)}scen.html')  
 
 
                 # agg joint scatter plot Power installation
@@ -5939,7 +5962,7 @@ class Visualization:
                         legend=dict(x=0.99, y=0.99),
                         template='plotly_white',
                     )
-                    if 'joint_scatter' in plot_mapline_specs['show_selected_plots']:
+                    if 'joint_scatter' in plot_mapline_specs['run_selected_plot_parts']:
                         if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
                                 fig_instpwr_jsctr.show()
                     if os.path.exists(f'{self.visual_sett.visual_path}/plot_ind_mapline_fig_instpwr_jsctr__{len(self.pvalloc_scen_list)}scen.html'):
@@ -5969,8 +5992,7 @@ if __name__ == '__main__':
                 '*old_vers*',
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_1bfs_RUR_r0-02_max',
-                # 'pvalloc_9bfs_RUR_r0-050_max_TEST',
+                'pvalloc_9nbfs_RUR_max_20y',
             ],
             
             # plot_show                          = False,
@@ -5992,7 +6014,7 @@ if __name__ == '__main__':
             # plot_ind_hist_pvcapaprod_TF                     = [True,      True,       False],
             # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
         
-            # plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
+            plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],        # not running smoothly!           
             # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                
             # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
             plot_ind_line_PVproduction_TF                   = [True,      True,       False],                   
@@ -6025,86 +6047,6 @@ if __name__ == '__main__':
                 'grid_trace_opacity' : 0.8,
             },
 
-            plot_ind_mapline_prodHOY_EGIDrfcombo_specs = {
-                    'specific_exclude_EGIDs': [
-                            '190178022', # strange large installation              
-                            '190296588',      
-                            ],
-                    'specific_selected_EGIDs': [
-                        # bfs: 2883 - Bretzwil
-                        # '3030694',      # pv_df
-                        # '2362100',    # pv_df  2 part
-                        # '245052560',    # pv_df 2 part
-                        # '3032150',    # pv_df  3 part
-                        # '434234',
-    
-                       # 9bfs: all of RUR bfs
-                       '101428161', '11513725', #'190001512',
-                        # '101428161', '11513725', '190001512', '190004146', '190024109', '190033245', 
-                        # '190048248', '190083872', '190109228', '190116571', '190144906', '190178022', 
-                        # '190183577', '190185552', '190251628', '190251772', '190251828', '190296588', 
-                        # '190491308', '190694269', '190709629', '190814490', '190912633', '190960689', 
-                        # '2125434', '2362100', '245044986', '245048760', '245052560', '245053405', 
-                        # '245057989', '245060059', '3030694', '3030905', '3031761', '3032150', '3033714', 
-                        # '3075084', '386736', '432600', '432638', '432671', '432683', '432701', '432729', '434178',
-
-                                                ], 
-                    'run_selected_plot_parts': [
-                        # 'map', 
-                        # 'all_combo_TS',
-                        # 'actual_inst_TS',
-                        # 'outsample_TS',
-                        'recalc_opt_inst',
-                        # 'summary'
-                    ], 
-                    'show_selected_plots': [
-                                                # 'map',  
-                                                # 'timeseries', 
-                                                # 'summary', 
-                                                'econ_func', 
-                                                'joint_scatter'
-                                                ],
-                    'traces_in_timeseries_plot': [
-                                                'full_partition_combo', 
-                                                'actual_pv_inst', 
-                                                'recalc_pv_inst',
-                                                ], 
-                    'rndm_sample_seed': 123,
-                    'n_rndm_egid_winst_pvdf': 0, 
-                    'n_rndm_egid_winst_alloc': 0,
-                    'n_rndm_egid_woinst': 0,
-                    'n_rndm_egid_outsample': 0, 
-                    'n_partition_pegid_minmax': (1,2), 
-                    'roofpartition_color': '#fff2ae',
-                    'actual_ts_trace_marker': 'cross',
-                    'summary_cols_only_in_legend': ['EGID', 'inst_TF', 'info_source', 'grid_node',
-                                                    'GKLAS', 'GAREA', 'are_typ', 'sfhmfh_typ', 
-                                                    'TotalPower', 'demand_elec_pGAREA', 
-                                                    'pvtarif_Rp_kWh', 'elecpri_Rp_kWh', ],
-                    'recalc_opt_max_flaeche_factor': 1.5, #  1.5,  
-                    'recalc_interest_rate_list': [
-                        0.020, 
-                        # 0.030,
-                        # 0.040, 
-                        # 0.050,
-                        # 0.043, 0.044, 0.045, 0.046, 0.047, 0.048, 0.049,
-                        # 0.051, 0.052, 0.053, 0.054, 0.055, 0.056, 0.057, 0.058, 0.059,
-                        ],
-                    # 'tryout_generic_pvtariff_elecpri_Rp_kWh': (5.0, 25.0),
-                    'tryout_generic_pvtariff_elecpri_Rp_kWh': (0.6, 25.0),
-                    'generic_pvinstcost_coeff_total': {
-                                                        'use_generic_instcost_coeff_total_TF': True, 
-                                                          'coeff_total_dict_list': [
-                                                            {'a': 1193.8, 'b': 4860.3, 'c': 0.7291},  #  estimates pvinst_coefficients 
-                                                            {'a': 6000, 'b': 5000, 'c': 0.65},  #  higher fix cost, more curvutre, lower cost for large inst
-                                                            {'a': 4000, 'b': 3300, 'c': 0.83},  #  higher fix cost, then much closes to estim function, higher cost for large inst
-                                                            {'a': 7000, 'b': 1500, 'c': 0.85},  #  much higher fix costs, much less change in curvature, almost linear, much lower cost for large inst
-                                                            ],                                                         
-                  }, 
-                    'noisy_demand_TF': False, 
-
-                    'noisy_demand_factor': 0.5
-                    },
         
         )]
 
@@ -6115,30 +6057,3 @@ if __name__ == '__main__':
  
     print('end MAIN_visualization.py')
 
-
-            
-            # # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
-            # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
-            # # plot_ind_hist_pvcapaprod_sanitycheck_TF         = [True,      True,       False],
-            # # plot_ind_hist_pvprod_deviation_TF               = [True,      True,       False],
-            # plot_ind_charac_omitted_gwr_TF                  = [True,      True,       False],
-            # # plot_ind_line_meteo_radiation_TF                = [True,      True,       False],
-
-            # # # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-            # # # plot_ind_line_installedCap_TF                   = [True,      True,       False],
-            # plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False],                   
-            # # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False],                   
-            # # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False],                   
-            # # plot_ind_line_PVproduction_TF                   = [True,      True,       False],                   
-            # # plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False],                   
-            # # # plot_ind_line_gridPremiumHOY_per_node_TF        = [True,      True,       False],
-            # # # plot_ind_line_gridPremiumHOY_per_EGID_TF        = [True,      True,       False],
-            # # # plot_ind_line_gridPremium_structure_TF          = [True,      True,       False],
-            # # # plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
-            # # # plot_ind_hist_pvcapaprod_TF                     = [True,      True,       False],
-            # # plot_ind_map_topo_egid_TF                       = [True,      True,       False],
-            # # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False],
-            # # # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False],
-
-
-            

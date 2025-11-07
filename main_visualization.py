@@ -13,28 +13,15 @@ visualization_list = [
                 '*test2_*'
                 ], 
             pvalloc_include_pattern_list = [
-                '*test2c*_selfcons1',
-                # 'pvalloc_BLsml_test2_default_w_pvdf_adjust_max_FORPLOT',  
+                'pvalloc_9nbfs_RUR_max_20y',
+                'pvalloc_9nbfs_RUR_rnd_20y',
+                
             ],
             save_plot_by_scen_directory        = True, 
             remove_old_plot_scen_directories   = True,  
             remove_old_plots_in_visualization  = True,  
             remove_old_csvs_in_visualization   = True,
             ),   
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['*test2b*_selfcons1',],),  
-        # Visual_Settings(
-        #     pvalloc_include_pattern_list = ['*test2a*_selfcons1',],),   
-            
-            
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_default_rnd_selfcons1',],),         
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_southfacing_rnd_selfcons1',],),
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_eastwestfacing_rnd_selfcons1',],),
-        Visual_Settings(
-            pvalloc_include_pattern_list = ['pvalloc*_default_max_selfcons1',],),
 
     ]    
 
@@ -53,7 +40,7 @@ if __name__ == '__main__':
 
         # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
         # visual_scen.plot_ind_line_installedCap_TF                 = [True,      True,       False]    
-        visual_scen.plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False]         
+        # visual_scen.plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False]         
         visual_scen.plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False]         
         visual_scen.plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]         
         visual_scen.plot_ind_line_PVproduction_TF                   = [True,      True,       False]         
