@@ -63,8 +63,8 @@ class DataAggScenario_Settings:
     GWR_GBAUJ_minmax: List[int]     = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
     GWR_GWAERZH: List[str]          = field(default_factory=lambda: ['7410', '7411',])                       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
     GWR_AREtypology : Dict          = field(default_factory=lambda:  {
-                                            'Urban': [2, 4, ],
-                                            'Suburban': [3, 5, 4, 6 ], 
+                                            'Urban': [1, 2, 4, ],
+                                            'Suburban': [3, 5, 6 ], 
                                             'Rural': [7, 8,],                        
                                             # 1 - big centers   # https://map.geo.admin.ch/#/map?lang=en&center=2611872.51,1270543.42&z=3.703&topic=ech&layers=ch.swisstopo.zeitreihen@year=1864,f;ch.bfs.gebaeude_wohnungs_register,f;ch.bav.haltestellen-oev,f;ch.swisstopo.swisstlm3d-wanderwege,f;ch.vbs.schiessanzeigen,f;ch.astra.wanderland-sperrungen_umleitungen,f;ch.are.gemeindetypen;ch.swisstopo.swissboundaries3d-kanton-flaeche.fill&bgLayer=ch.swisstopo.pixelkarte-farbe            # '1' - big centers => URBAN
                                             # 2 - secondary centers of big centers  => URBAN 
