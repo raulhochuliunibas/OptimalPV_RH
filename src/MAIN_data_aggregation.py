@@ -4,6 +4,7 @@ import numpy as np
 import glob
 import datetime as datetime
 import pandas as pd
+import polars as pl
 import geopandas as gpd
 import  sqlite3
 import shutil
@@ -194,6 +195,7 @@ class DataAggScenario:
         if self.sett.rerun_localimport_and_mappings:
             subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', self.sett.log_name)
             self.sql_gwr_data()
+            self.sql_gwr_ALL_CH_summary()
 
             subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', self.sett.log_name)
             self.preprep_local_data_AND_spatial_mappings()
@@ -702,6 +704,48 @@ class DataAggScenario:
 
             if self.sett.split_data_geometry_AND_slow_api:
                 gwr_gdf.to_file(f'{self.sett.data_path}/input_split_data_geometry/gwr_gdf.geojson', driver='GeoJSON')
+
+
+        def sql_gwr_ALL_CH_summary(self): 
+            """
+            Input:
+                - DataAggScenario_Settings
+            Tasks:
+                - Function to import all buidlings from GWR (no BFS selection) and create summary statistics for CH wide coverage
+            Output to preprep dir:
+                - gwr_all_ch_summary.txt or .json or csv
+            """
+            # SETUP --------------------------------------
+            print_to_logfile('run function: sql_gwr_ALL_CH_summary.py', self.sett.log_name)
+
+
+            # QUERYs --------------------------------------
+
+            # get ALL BUILDING data
+            # select cols
+            query_columns = self.sett.GWR_building_cols
+            query_columns_str = ', '.join(query_columns)
+            query_bfs_numbers = ', '.join([str(i) for i in self.sett.bfs_numbers])
+
+            conn = sqlite3.connect(f'{self.sett.data_path}/input/GebWohnRegister.CH/data.sqlite')
+            cur = conn.cursor()
+            cur.execute(f'SELECT {query_columns_str} FROM building')
+            sqlrows = cur.fetchall()
+            conn.close()
+
+            gwr_allch_raw = pl.DataFrame(sqlrows, schema = query_columns)
+
+
+            # AGGREGATION + EXPORT --------------------------------------
+            gwr_allch_raw = gwr_allch_raw.rename({'GGDENR':'BFS_NUMMER'})
+            gwr_allch_summary = gwr_allch_raw.group_by(['BFS_NUMMER', 'GSTAT', 'GKLAS']).agg([
+                pl.col('EGID').count().alias('nEGID'),
+                pl.col('GAREA').sum().alias('GAREA'),
+            ])
+
+            gwr_allch_summary.write_csv(f'{self.sett.preprep_path}/gwr_all_ch_summary.csv')
+            gwr_allch_summary.write_parquet(f'{self.sett.preprep_path}/gwr_all_ch_summary.parquet')       
+
 
 
         def preprep_local_data_AND_spatial_mappings(self):
