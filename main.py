@@ -45,6 +45,84 @@ pvalloc_scen_list = [
         # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
     ),
 
+    PVAllocScenario_Settings(name_dir_export = 'pvalloc_Xnbfs_LRG_max_40y',
+    bfs_numbers = [
+        # RURAL 
+        2612, 2889, 2883, 2621, 2622,
+        2620, 2615, 2614, 2616, 2480,
+        2617, 2611, 2788, 2619, 2783, 2477, 
+        # SUBURBAN
+        2613, 2782, 2618, 2786, 2785, 
+        2772, 2761, 2743, 2476, 2768,
+        # URBAN
+        2773, 2769, 2770,
+            ],
+        create_gdf_export_of_topology                        = True,
+        export_csvs                                          = False,
+        T0_year_prediction                                   = 2022,
+        months_lookback                                      = 12,
+        months_prediction                                    = 480,
+        TECspec_add_heatpump_demand_TF                       = True,   
+        TECspec_heatpump_months_factor                       = [
+                                                                (10, 7.0),
+                                                                (11, 7.0), 
+                                                                (12, 7.0), 
+                                                                (1 , 7.0), 
+                                                                (2 , 7.0), 
+                                                                (3 , 7.0), 
+                                                                (4 , 7.0), 
+                                                                (5 , 7.0),     
+                                                                (6 , 1.0), 
+                                                                (7 , 1.0), 
+                                                                (8 , 1.0), 
+                                                                (9 , 1.0),
+                                                                ], 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ),
+
+    PVAllocScenario_Settings(name_dir_export = 'pvalloc_Xnbfs_LRG_rnd_40y',
+    bfs_numbers = [
+        # RURAL 
+        2612, 2889, 2883, 2621, 2622,
+        2620, 2615, 2614, 2616, 2480,
+        2617, 2611, 2788, 2619, 2783, 2477, 
+        # SUBURBAN
+        2613, 2782, 2618, 2786, 2785, 
+        2772, 2761, 2743, 2476, 2768,
+        # URBAN
+        2773, 2769, 2770,
+            ],
+        create_gdf_export_of_topology                        = True,
+        export_csvs                                          = False,
+        T0_year_prediction                                   = 2022,
+        months_lookback                                      = 12,
+        months_prediction                                    = 480,
+        TECspec_add_heatpump_demand_TF                       = True,   
+        TECspec_heatpump_months_factor                       = [
+                                                                (10, 7.0),
+                                                                (11, 7.0), 
+                                                                (12, 7.0), 
+                                                                (1 , 7.0), 
+                                                                (2 , 7.0), 
+                                                                (3 , 7.0), 
+                                                                (4 , 7.0), 
+                                                                (5 , 7.0),     
+                                                                (6 , 1.0), 
+                                                                (7 , 1.0), 
+                                                                (8 , 1.0), 
+                                                                (9 , 1.0),
+                                                                ], 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_inst_selection_method                       = 'random',     # 'random', max_npv', 'prob_weighted_npv'
+        ALGOspec_rand_seed                                   = 123,
+        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+    ),
+
+
+
     PVAllocScenario_Settings(name_dir_export ='pvalloc_10nbfs_RUR_max_30y',
         bfs_numbers                                          = [
                                                     # # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren, Seewen
