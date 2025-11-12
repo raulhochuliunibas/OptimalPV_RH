@@ -125,7 +125,8 @@ class PVAllocScenario_Settings:
     WEAspec_flat_diffuse_rad_factor: int                = 1
 
     # constr_capacity_specs
-    CSTRspec_iter_time_unit: str                        = 'year'   # month (not really feasible), year
+    CSTRspec_capacity_type: str                         ='hist_constr_capa_year' # hist_constr_capa_year / hist_constr_capa_month / ep2050_zerobasis
+    # CSTRspec_iter_time_unit: str                        = 'year'   # month (not really feasible), year
     CSTRspec_ann_capacity_growth: float                 = 0.05
     CSTRspec_constr_capa_overshoot_fact: int            = 1
     CSTRspec_month_constr_capa_tuples: List[tuple]      = field(default_factory=lambda: [
@@ -142,6 +143,43 @@ class PVAllocScenario_Settings:
                                                             (11, 0.14), 
                                                             (12, 0.16)
                                                         ])
+    CSTRspec_ep2050_share_inst_classes: List[str]       = field(default_factory=lambda: ['class1', 'class2',])  # 'class1', 'class2', 'class3', 'class4'
+    CSTRspec_ep2050_capa_dict: Dict[str, float]         = field(default_factory=lambda: {
+        'ep2050_zerobasis':{
+            'pvcapa_total': {
+                '2020' : 2.5,  # <= this is for year 2019 in source, but for ease of use changed to 2020
+                '2025' : 4.8,
+                '2030' : 9.8,
+                '2035' : 16.2,
+                '2040' : 24.1,
+                '2045' : 31.0,
+                '2050' : 37.5,
+                '2055' : 40.4,
+                '2060' : 41.9
+                }, 
+            'share_instclass': {
+                '2020':{
+                    'class1': 0.389, 
+                    'class2': 0.1569, 
+                    'class3': 0.3819, 
+                    'class4': 0.0712
+                    }, 
+                '2035':{
+                    'class1': 0.42, 
+                    'class2': 0.1639,
+                    'class3': 0.3786, 
+                    'class4': 0.0354,
+                    }, 
+                '2050':{
+                    'class1': 0.4617, 
+                    'class2': 0.182,
+                    'class3': 0.3349,
+                    'class4': 0.0213,
+                    }, 
+            },
+        },
+    })
+
     
     # tech_economic_specs
     TECspec_self_consumption_ifapplicable: float            = 1.0
@@ -1928,15 +1966,23 @@ class PVAllocScenario:
             print_to_logfile('run function: define_construction_capacity.py', self.sett.log_name)
 
             # create monthly time structure
-            # T0 = pd.to_datetime(f'{self.sett.T0_prediction}')
             T0 = pd.to_datetime(f'{self.sett.T0_year_prediction}-01-01 00:00:00')
             start_loockback = T0 - pd.DateOffset(months=self.sett.months_lookback) #+ pd.DateOffset(hours=1)
             end_prediction = T0 + pd.DateOffset(months=self.sett.months_prediction) - pd.DateOffset(hours=1)
             months_lookback = pd.date_range(start=start_loockback, end=T0, freq='ME').to_period('M')
-            # trange_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME').to_period('M')
+
+            prediction_year_diff = end_prediction.year - T0.year
+            if prediction_year_diff > 0:
+                trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='YE')
+            elif prediction_year_diff == 0:
+                trange_prediction = pd.date_range(start=T0, end=end_prediction + pd.DateOffset(capa_years=1), freq='YE')
+
+            trange_prediction_df = pd.DataFrame({'n_iter': range(1,len(trange_prediction) + 1), 'date': trange_prediction, 
+                                                 'year': trange_prediction.year, 'month': trange_prediction.month, })
 
 
             # IMPORT ----------------------------------------------------------------------------
+            gwr_allch_summary = pl.read_parquet(f'{self.sett.name_dir_import_path}/gwr_all_ch_summary.parquet')
             pv = df_list[df_names.index('pv')]
             Map_egid_pv = df_list[df_names.index('Map_egid_pv')]
 
@@ -1954,6 +2000,130 @@ class PVAllocScenario:
             pv_sub['BeginningOfOperation'] = pd.to_datetime(pv_sub['BeginningOfOperation'])
             pv_sub['MonthPeriod'] = pv_sub['BeginningOfOperation'].dt.to_period('M')
             pv_sub = pv_sub.loc[pv_sub['MonthPeriod'].isin(months_lookback)]
+
+
+            # HISTORIC CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
+            capacity_growth = self.sett.CSTRspec_ann_capacity_growth
+            month_constr_capa_tuples = self.sett.CSTRspec_month_constr_capa_tuples
+            sum_TP_kW_lookback = pv_sub['TotalPower'].sum()
+
+            
+            # if self.sett.CSTRspec_iter_time_unit == 'month':
+            # per month (defacto discarded because runtime takes too long)
+            if True:
+                trange_prediction_m = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME')
+                # trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='MS')
+                constrcapa_hist_month = pd.DataFrame({'date': trange_prediction_m, 'year': trange_prediction_m.year, 'month': trange_prediction_m.month})
+                
+                capa_years_prediction = trange_prediction_m.year.unique()
+                i, y = 0, capa_years_prediction[0]
+                for i,y in enumerate(capa_years_prediction):
+
+                    TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
+                    for m, TP_m in month_constr_capa_tuples:
+                        constrcapa_hist_month.loc[(constrcapa_hist_month['year'] == y) & 
+                                    (constrcapa_hist_month['month'] == m), 'constr_capacity_kw'] = TP_y * TP_m
+
+            # per year
+            # elif self.sett.CSTRspec_iter_time_unit == 'year':
+            if True: 
+                constrcapa_hist_year = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
+
+                capa_years_prediction = trange_prediction.year.unique()
+                for i,y in enumerate(capa_years_prediction):
+                    TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
+                    constrcapa_hist_year.loc[(constrcapa_hist_year['year'] == y), 'constr_capacity_kw'] = TP_y 
+                
+            
+
+            # EP2050+ CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
+            
+            # extract ep2050 settings data
+            def build_eb2050_pvcapa_df(ep2050_zerobasis_dict):
+                capa_year_values = ep2050_zerobasis_dict['pvcapa_total']
+                share_year_values = ep2050_zerobasis_dict['share_instclass']
+                
+                capa_years =  [int(year) for year in capa_year_values.keys()]
+                share_years = [int(year) for year in share_year_values.keys()]
+                
+                # Define the full year range from min to max year
+                min_year_int = min(capa_years)
+                max_year_int = max(capa_years)
+                epzb_year_range = [year for year in range(min_year_int, max_year_int + 1)]
+
+                epzb_capa_value_list = []
+                class1to4_tuple_list = []
+                for year in epzb_year_range: 
+                    if year in capa_years:
+                        capa_value = capa_year_values[str(year)]
+                    else:
+                        lower_year = max([y for y in capa_years if y < year])
+                        upper_year = min([y for y in capa_years if y > year])
+                        lower_value = capa_year_values[str(lower_year)]
+                        upper_value = capa_year_values[str(upper_year)]
+
+                        capa_value = lower_value + (upper_value - lower_value) * ((year - lower_year) / (upper_year - lower_year))
+                    epzb_capa_value_list.append(capa_value)
+
+                    if year in share_years:
+                        class1to4_tuple = (
+                            share_year_values[str(year)]['class1'],
+                            share_year_values[str(year)]['class2'],
+                            share_year_values[str(year)]['class3'],
+                            share_year_values[str(year)]['class4'],
+                        )
+                    elif year <= max(share_years) and year >= min(share_years):
+                        lower_year = max([y for y in share_years if y < year])
+                        # upper_year1 = min([y for y in share_years if y > year else max(share_years)])
+                        upper_year = min([y for y in share_years if y > year], default=max(share_years))
+                        lower_tuple = (
+                            share_year_values[str(lower_year)]['class1'],
+                            share_year_values[str(lower_year)]['class2'],
+                            share_year_values[str(lower_year)]['class3'],
+                            share_year_values[str(lower_year)]['class4'],
+                        )
+                        upper_tuple = (
+                            share_year_values[str(upper_year)]['class1'],
+                            share_year_values[str(upper_year)]['class2'],
+                            share_year_values[str(upper_year)]['class3'],
+                            share_year_values[str(upper_year)]['class4'],
+                        )
+                        class1to4_tuple = tuple(
+                            lower + (upper - lower) * ((year - lower_year) / (upper_year - lower_year))
+                            for lower, upper in zip(lower_tuple, upper_tuple)
+                        )
+                    elif year > max(share_years):
+                        class1to4_tuple = (
+                            share_year_values[str(max(share_years))]['class1'],
+                            share_year_values[str(max(share_years))]['class2'],
+                            share_year_values[str(max(share_years))]['class3'],
+                            share_year_values[str(max(share_years))]['class4'],
+                        )
+                    class1to4_tuple_list.append(class1to4_tuple)
+
+                epzb_capa_df = pd.DataFrame({
+                    'year': epzb_year_range, 
+                    'epzb_capa_GW': epzb_capa_value_list, 
+                    'epzb_capa_kw': [value * 1e6 for value in epzb_capa_value_list],
+                    'class1': [t[0] for t in class1to4_tuple_list],
+                    'class2': [t[1] for t in class1to4_tuple_list],
+                    'class3': [t[2] for t in class1to4_tuple_list],
+                    'class4': [t[3] for t in class1to4_tuple_list],
+                })
+
+                return epzb_capa_df
+                           
+            epzb_capa_df = build_eb2050_pvcapa_df(self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis'])
+
+            # adjust allCH capa to sample size
+            
+            # BOOKMARK
+            gwr_allch_summary.shape
+            # > calculate share of buildings in sample to all of switzerland (exclude certain buldingy types to be defined later in settings)
+            # > divide capacity of of ep2050 by share and export as constr_capa
+
+
+            # PLOT  COMPARISON  ----------------------------------------------------------------------------
 
             # plot total power over time
             if True: 
@@ -1998,46 +2168,12 @@ class PVAllocScenario:
                 fig.write_html(f'{self.sett.name_dir_export_path}/pv_total_power_over_time.html')
 
 
-            # CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
-            capacity_growth = self.sett.CSTRspec_ann_capacity_growth
-            month_constr_capa_tuples = self.sett.CSTRspec_month_constr_capa_tuples
-            sum_TP_kW_lookback = pv_sub['TotalPower'].sum()
+            # SELECTION + PRINTs to LOGFILE ----------------------------------------------------------------------------
+            if self.sett.CSTRspec_capacity_type == 'hist_constr_capa_month':
+                constrcapa = constrcapa_hist_month.copy()
+            elif self.sett.CSTRspec_capacity_type == 'hist_constr_capa_year':
+                constrcapa = constrcapa_hist_year.copy()
 
-            
-            if self.sett.CSTRspec_iter_time_unit == 'month':
-                trange_prediction = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME')
-                # trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='MS')
-                constrcapa = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
-                
-                years_prediction = trange_prediction.year.unique()
-                i, y = 0, years_prediction[0]
-                for i,y in enumerate(years_prediction):
-
-                    TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
-                    for m, TP_m in month_constr_capa_tuples:
-                        constrcapa.loc[(constrcapa['year'] == y) & 
-                                    (constrcapa['month'] == m), 'constr_capacity_kw'] = TP_y * TP_m
-                # trange_prediction_df_month = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
-
-
-            elif self.sett.CSTRspec_iter_time_unit == 'year':
-                prediction_year_diff = end_prediction.year - T0.year
-                if prediction_year_diff > 0:
-                    trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='YE')
-                elif prediction_year_diff == 0:
-                    trange_prediction = pd.date_range(start=T0, end=end_prediction + pd.DateOffset(years=1), freq='YE')
-                constrcapa = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
-
-                years_prediction = trange_prediction.year.unique()
-                for i,y in enumerate(years_prediction):
-                    TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
-                    constrcapa.loc[(constrcapa['year'] == y), 'constr_capacity_kw'] = TP_y 
-                # trange_prediction_df_year = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
-                
-            trange_prediction_df = pd.DataFrame({'n_iter': range(1,len(trange_prediction) + 1), 'date': trange_prediction, 
-                                                 'year': trange_prediction.year, 'month': trange_prediction.month, })
-
-            # PRINTs to LOGFILE ----------------------------------------------------------------------------
             checkpoint_to_logfile(f'constr_capacity month lookback, between :                {months_lookback[0]} to {months_lookback[-1]}', self.sett.log_name, 0)
             checkpoint_to_logfile(f'constr_capacity KW built in period (sum_TP_kW_lookback): {round(sum_TP_kW_lookback,2)} kW', self.sett.log_name, 0)
             print_to_logfile('\n', self.sett.log_name)
@@ -2112,7 +2248,7 @@ class PVAllocScenario:
                             row_egid, row_bfs, row_gklas, row_node, row_demand_type, 
                             row_pvinst_info, row_pvinst_BeginOp, row_pvinst_TotalPower,
                             row_elecpri, row_pvtarif, 
-                            row_interest_rate, row_years_maturity, row_selfconsumption, row_pvprod_method, 
+                            row_interest_rate, row_capa_years_maturity, row_selfconsumption, row_pvprod_method, 
                             row_panel_efficiency, row_inverter_efficiency, row_kWpeak_per_m2, row_share_roof_area, 
                             empty_row ] = [get_new_row(), get_new_row(), get_new_row(), get_new_row(),
                                         get_new_row(), get_new_row(), get_new_row(), get_new_row(), 
@@ -2136,9 +2272,9 @@ class PVAllocScenario:
                         row_elecpri['key'], row_elecpri['descr'], row_elecpri['val'], row_elecpri['unit'], row_elecpri['col1'], row_elecpri['col2'] = 'elecpri', 'mean electricity price per BFS area', topo.get(egid).get('elecpri_Rp_kWh'), 'Rp/kWh', f"elecpri_info: {topo.get(egid).get('elecpri_info')}",f"year: {self.sett.TECspec_elecpri_year}"
                         row_pvtarif['key'], row_pvtarif['descr'], row_pvtarif['val'], row_pvtarif['unit'], row_pvtarif['col1'], row_pvtarif['col2'] = 'pvtarif', 'tariff for PV feedin to EWR',topo.get(egid).get('pvtarif_Rp_kWh'), 'Rp/kWh', f"EWRs: {topo.get(egid).get('EWR').get('name')}", f"year: {self.sett.TECspec_pvtarif_year}"
                         row_interest_rate['key'], row_interest_rate['descr'],row_interest_rate['val'] = 'interest_rate', 'generic interest rate used for dicsounting NPV calculation',              self.sett.TECspec_interest_rate
-                        row_years_maturity['key'], row_years_maturity['descr'], row_years_maturity['val'] = 'invst_maturity', 'number of years that consider pv production for NPV calculation',    self.sett.TECspec_invst_maturity
+                        row_capa_years_maturity['key'], row_capa_years_maturity['descr'], row_capa_years_maturity['val'] = 'invst_maturity', 'number of capa_years that consider pv production for NPV calculation',    self.sett.TECspec_invst_maturity
 
-                        # row_selfconsumption, row_interest_rate, row_years_maturity, row_kWpeak_per_m2  = get_new_row(), get_new_row(), get_new_row(), get_new_row()
+                        # row_selfconsumption, row_interest_rate, row_capa_years_maturity, row_kWpeak_per_m2  = get_new_row(), get_new_row(), get_new_row(), get_new_row()
                         row_selfconsumption['key'], row_selfconsumption['descr'], row_selfconsumption['val'] = 'self_consumption_ifapplicable', 'amount of production that can be consumed by the house at any hour during the year',   self.sett.TECspec_self_consumption_ifapplicable
                         row_pvprod_method['key'], row_pvprod_method['descr'], row_pvprod_method['val'] = 'pvprod_calc_method', 'method used to calculate PV production',                                                                self.sett.TECspec_pvprod_calc_method
                         row_panel_efficiency['key'], row_panel_efficiency['descr'], row_panel_efficiency['val'] = 'panel_efficiency', 'transformation factor, how much solar energy can be transformed into electricity',               self.sett.TECspec_panel_efficiency
