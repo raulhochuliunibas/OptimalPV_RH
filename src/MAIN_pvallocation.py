@@ -45,19 +45,13 @@ class PVAllocScenario_Settings:
     
     kt_numbers: List[int]                       = field(default_factory=list)  # list of cantons to be considered
     bfs_numbers: List[int]                      = field(default_factory=lambda: [
-                                                    # 2767,                                                     # for mini / debug model (with subselection for dsonodes_df)
-                                                    2767, 2771,                                             # BL mini with inst before 2006: Bottmingen, Oberwil
-                                                    # # 2767, 2771, 2765, 2764,                                 # BLsml with inst before 2008: Bottmingen, Oberwil, Binningen, Biel-Benken
-                                                    
-                                                    # 2767, 2771, 2761, 2762, 2769, 2764, 2765, 2773,           # BLmed with inst with / before 2008: Bottmingen, Oberwil, Aesch, Allschwil, Münchenstein, Biel-Benken, Binningen, Reinach
-                                                    # 2473, 2475, 2480,                                         # SOsml: Dornach, Hochwald, Seewen
-                                                    # 2473, 2475, 2480, 2618, 2621, 2883, 2622, 2616,           # SOmed: Dornach, Hochwald, Seewen, Himmelried, Nunningen, Bretzwil, Zullwil, Fehren    
-
-                                                    # 2773, 2769, 2770,                                     # URBAN: Reinach, Münchenstein, Muttenz
-                                                    # 2767, 2771, 2775, 2764,                               # SEMI-URBAN: Bottmingen, Oberwil, Therwil, Biel-Benken
-                                                    # # 2620, 2622, 2621, 2683, 2889, 2612,  # RURAL: Meltingen, Zullwil, Nunningen, Bretzwil, Lauwil, Beinwil
-                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren
-                                                    2889, 
+                                                    2641, 2615, 
+                                                    # # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren, Seewen
+                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, 2480,
+                                                    # # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
+                                                    # 2613, 2782, 2618, 2786, 2785, 2772, 2761, 2743, 
+                                                    # # URBAN: Reinach, Münchenstein, Muttenz
+                                                    # 2773, 2769, 2770,
                                                     ])
     mini_sub_model_TF: bool                     = False
     mini_sub_model_grid_nodes: List[str]        = field(default_factory=lambda: [
@@ -132,7 +126,7 @@ class PVAllocScenario_Settings:
 
     # constr_capacity_specs
     CSTRspec_iter_time_unit: str                        = 'year'   # month (not really feasible), year
-    CSTRspec_ann_capacity_growth: float                 = 0.0
+    CSTRspec_ann_capacity_growth: float                 = 0.05
     CSTRspec_constr_capa_overshoot_fact: int            = 1
     CSTRspec_month_constr_capa_tuples: List[tuple]      = field(default_factory=lambda: [
                                                             (1,  0.04), 
@@ -643,14 +637,14 @@ class PVAllocScenario:
                         print_to_logfile('exit While Loop, run last gridnode_update', self.sett.log_name)
                         self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
                         if constr_m_TF:
-                            checkpoint_to_logfile(f'exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built', self.sett.log_name, 0, self.sett.show_debug_prints)                    
+                            checkpoint_to_logfile(f'exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built', self.sett.log_name, 0, True)                    
                         if constr_y_TF:
-                            checkpoint_to_logfile(f'exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built', self.sett.log_name, 0, self.sett.show_debug_prints)                    
+                            checkpoint_to_logfile(f'exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built', self.sett.log_name, 0, True)                    
                         if safety_TF:
                             if npv_df_empty_TF:
-                                checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), NO MORE EGID to install PV on', self.sett.log_name, 0, self.sett.show_debug_prints)
+                                checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), NO MORE EGID to install PV on', self.sett.log_name, 0, True)
                             else:
-                                checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}', self.sett.log_name, 0, self.sett.show_debug_prints)                    
+                                checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}', self.sett.log_name, 0, True)                    
 
                         if constr_m_TF or constr_y_TF:    
                             checkpoint_to_logfile(f'{safety_counter} pv installations allocated', self.sett.log_name, 0, self.sett.show_debug_prints)                                        
@@ -673,17 +667,6 @@ class PVAllocScenario:
                 print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
                 self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
                                                                                                                         
-                start_time_update_npv = datetime.datetime.now()
-                print_to_logfile('- START update npv', self.sett.log_name)
-                if self.sett.ALGOspec_pvinst_size_calculation == 'inst_full_partition':
-                    self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
-                elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
-                    self.algo_update_npv_df_OPTIMIZED(self.sett.mc_iter_path, i_m, m)
-                elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
-                    self.algo_update_npv_df_RFR(self.sett.mc_iter_path, i_m, m)
-                elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rf_segdist':
-                    self.algo_update_npv_df_RF_SEGMDIST(self.sett.mc_iter_path, i_m, m)
-
 
             # CLEAN UP interim files of MC run ==========
             files_to_remove_paths =  glob.glob(f'{self.sett.mc_iter_path}/topo_subdf_*.parquet')
@@ -4903,9 +4886,10 @@ class PVAllocScenario:
                 topo_pick_df.loc[idx, 'share_pvprod_used'] =   flaeche_ratio                          if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'info_source'] = '       alloc_algorithm'                       if flaeche_ratio > 0.0 else ''
                 topo_pick_df.loc[idx, 'BeginOp'] =             str(m)                                 if flaeche_ratio > 0.0 else ''
+                topo_pick_df.loc[idx, 'iter_round'] =          i_m                                    if flaeche_ratio > 0.0 else -1
                 topo_pick_df.loc[idx, 'xtf_id'] =              df_uid_winst                           if flaeche_ratio > 0.0 else ''
+                topo_pick_df.loc[idx, 'demand_kW'] =           picked_demand_kW                       if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'dfuidPower'] =          flaeche_ratio * dfuid_inst_power       if flaeche_ratio > 0.0 else 0.0
-                topo_pick_df.loc[idx, 'demand_kW'] =           flaeche_ratio * picked_demand_kW       if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'poss_pvprod'] =         flaeche_ratio * picked_poss_pvprod     if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'pvprod_kW'] =           flaeche_ratio * picked_pvprod_kW       if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'selfconsum_kW'] =       flaeche_ratio * picked_selfconsum_kW   if flaeche_ratio > 0.0 else 0.0
@@ -5370,9 +5354,10 @@ class PVAllocScenario:
                 topo_pick_df.loc[idx, 'share_pvprod_used'] =   flaeche_ratio                          if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'info_source'] = '       alloc_algorithm'                       if flaeche_ratio > 0.0 else ''
                 topo_pick_df.loc[idx, 'BeginOp'] =             str(m)                                 if flaeche_ratio > 0.0 else ''
+                topo_pick_df.loc[idx, 'iter_round'] =          i_m                                    if flaeche_ratio > 0.0 else ''
                 topo_pick_df.loc[idx, 'xtf_id'] =              picked_dfuid                           if flaeche_ratio > 0.0 else ''
+                topo_pick_df.loc[idx, 'demand_kW'] =           picked_demand_kW                       if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'dfuidPower'] =          flaeche_ratio * dfuid_inst_power       if flaeche_ratio > 0.0 else 0.0
-                topo_pick_df.loc[idx, 'demand_kW'] =           flaeche_ratio * picked_demand_kW       if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'poss_pvprod'] =         flaeche_ratio * picked_poss_pvprod     if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'pvprod_kW'] =           flaeche_ratio * picked_pvprod_kW       if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'selfconsum_kW'] =       flaeche_ratio * picked_selfconsum_kW   if flaeche_ratio > 0.0 else 0.0

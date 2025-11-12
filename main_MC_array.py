@@ -12,12 +12,21 @@ if __name__ == '__main__':
         MC_iter = int(sys.argv[1])
         pvalloc_scen_list = [
 
-            PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_2y_testMC',
-            MCspec_montecarlo_iterations_fordev_sequentially     = 2,
-            export_csvs                                          = True,
-            
-            bfs_numbers                                          = [2612, ],          
+        PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_2y_testMC',
+            bfs_numbers                                          = [
+                                                        2641, 2615,
+                                                        # # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren, Seewen
+                                                        # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, 2480,
+                                                        # # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
+                                                        # 2613, 2782, 2618, 2786, 2785, 2772, 2761, 2743, 
+                                                        # # URBAN: Reinach, Münchenstein, Muttenz
+                                                        # 2773, 2769, 2770,
+                                                                    ],         
+            # mini_sub_model_TF                                    = False,
+            # mini_sub_model_ngridnodes                            = 20, 
+            # mini_sub_model_nEGIDs                                = 100,
             create_gdf_export_of_topology                        = True,
+            export_csvs                                          = True,
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
             months_prediction                                    = 240,
@@ -40,7 +49,7 @@ if __name__ == '__main__':
             ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
             ALGOspec_rand_seed                                   = 123,
             # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
-            ),
+        ),
 
         ]
 
