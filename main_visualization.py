@@ -8,19 +8,24 @@ visualization_list = [
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
                 '*.txt','*old_vers*', 
-                '*testX',
-                '*pandas_no_outtopo*',
-                '*test2_*'
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_9nbfs_RUR_max_20y',
-                'pvalloc_9nbfs_RUR_rnd_20y',
-                
+                # 'pvalloc_2nbfs_2y_testMC', 
+    
+                'pvalloc_10nbfs_RUR_max_30y', 
+                # 'pvalloc_10nbfs_RUR_rnd_30y', 
+
+                'pvalloc_8nbfs_SUB_max_30y', 
+                # 'pvalloc_8nbfs_SUB_rnd_30y', 
+
+                'pvalloc_3nbfs_URB_max_30y', 
+                # 'pvalloc_3nbfs_URB_rnd_30y', 
+
             ],
             save_plot_by_scen_directory        = True, 
-            remove_old_plot_scen_directories   = True,  
-            remove_old_plots_in_visualization  = True,  
-            remove_old_csvs_in_visualization   = True,
+            remove_old_plot_scen_directories   = False,  
+            remove_old_plots_in_visualization  = False,  
+            remove_old_csvs_in_visualization   = False,
             ),   
 
     ]    
@@ -49,10 +54,11 @@ if __name__ == '__main__':
         # visual_scen.plot_ind_line_gridPremiumHOY_per_EGID_TF        = [True,      True,       False]         
         # visual_scen.plot_ind_line_gridPremium_structure_TF          = [True,      True,       False]         
         # visual_scen.plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False]         
-        # visual_scen.plot_ind_hist_pvcapaprod_TF                     = [True,      True,       False]         
         visual_scen.plot_ind_map_topo_egid_TF                       = [True,      True,       False]         
-        visual_scen.plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]         
-        # visual_scen.plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False]         
+        # visual_scen.plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]         
+
+        visual_scen.plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False]    
+        
 
         visual_class = Visualization(visual_scen)
         visual_class.plot_ALL_init_sanitycheck()
