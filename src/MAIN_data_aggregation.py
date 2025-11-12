@@ -174,49 +174,38 @@ class DataAggScenario:
 
         # RUN DATA AGGREGATION ---------------------------------------------------
         if self.sett.split_data_geometry_AND_slow_api:
-            # split geom from data and import slow APIs
             subchapter_to_logfile('pre-prep data: SPLIT DATA GEOMETRY + IMPORT SLOW APIs', self.sett.log_name)
-            # split_data_geometry.split_data_geometry(self)
             self.split_data_geometry()
 
             subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', self.sett.log_name)
-            # api_pvtarif.api_pvtarif_gm_ewr_Mapping(self)
             self.api_pvtarif_gm_ewr_Mapping()
             
             subchapter_to_logfile('pre-prep data: API PVTARIF', self.sett.log_name)
-            # api_pvtarif.api_pvtarif_data(self)
             self.api_pvtarif_data()
 
         
         subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', self.sett.log_name)
-        # get_elecpri_data.get_elecpri_data_earlier_api_import(self)
         self.get_elecpri_earlier_api_import()
 
         subchapter_to_logfile('pre-prep data: API INPUT DATA', self.sett.log_name)
-        # preprep_data.get_earlier_api_import_data(self)
         self.get_preprep_data_earlier_api_import()
 
 
         if self.sett.rerun_localimport_and_mappings:
             subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', self.sett.log_name)
-            # sql_gwr.sql_gwr_data(self)
             self.sql_gwr_data()
 
             subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', self.sett.log_name)
-            # preprep_data.local_data_AND_spatial_mappings(self)
             self.preprep_local_data_AND_spatial_mappings()
 
             subchapter_to_logfile('pre-prep data: IMPORT DEMAND TS + match series HOUSES', self.sett.log_name)
-            # preprep_data.import_demand_TS_AND_match_households(self)
             self.preprep_data_import_ts_AND_match_households()
 
             subchapter_to_logfile('pre-prep data: IMPORT METEO SUNSHINE TS', self.sett.log_name)
-            # preprep_data.import_meteo_data(self)
             self.preprep_data_import_meteo_data()
 
         if self.sett.reextend_fixed_data:
             subchapter_to_logfile('extend data: GET ANGLE+TILT FACTOR + NODE MAPPING', self.sett.log_name)
-            # extend_data.get_angle_tilt_table(self)
             self.extend_data_get_angle_tilt_table()
 
         
@@ -1650,17 +1639,17 @@ class DataAggScenario:
 if __name__ == '__main__':
     dataagg_scen_list = [
 
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'preprep_debug',
-        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
-        #     bfs_numbers = [
-        #         2761, 2768,
-        #         2546,  	 # Grenchen,  	
-        #                    ],
-        #     year_range = [2022, 2023],
-        #     GWR_GKLAS = ['1110', ],  # '1121'],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_debug',
+            # kt_numbers = [13, 12, 11], # BL, BS, SO
+            bfs_numbers = [
+                2761, 2768,
+                2546,  	 # Grenchen,  	
+                           ],
+            year_range = [2022, 2023],
+            GWR_GKLAS = ['1110', ],  # '1121'],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+        ),
 
         DataAggScenario_Settings(
             name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI',
