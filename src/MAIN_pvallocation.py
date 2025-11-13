@@ -99,8 +99,8 @@ class PVAllocScenario_Settings:
     GWRspec_DEMAND_proxy: str                           = 'GAREA'
     # gwr topo_egid selection
     GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: [
-                                                                '1001', # GSTAT - 1001: in planing
-                                                                '1002', # GSTAT - 1002: construction right granted 
+                                                                # '1001', # GSTAT - 1001: in planing
+                                                                # '1002', # GSTAT - 1002: construction right granted 
                                                                 '1003', # GSTAT - 1003: in construction
                                                                 '1004', # GSTAT - 1004: fully constructed, existing buildings
                                                                 ])    
@@ -125,7 +125,7 @@ class PVAllocScenario_Settings:
     WEAspec_flat_diffuse_rad_factor: int                = 1
 
     # constr_capacity_specs
-    CSTRspec_capacity_type: str                         ='hist_constr_capa_year' # hist_constr_capa_year / hist_constr_capa_month / ep2050_zerobasis
+    CSTRspec_capacity_type: str                         ='ep2050_zerobasis' # hist_constr_capa_year / hist_constr_capa_month / ep2050_zerobasis
     # CSTRspec_iter_time_unit: str                        = 'year'   # month (not really feasible), year
     CSTRspec_ann_capacity_growth: float                 = 0.05
     CSTRspec_constr_capa_overshoot_fact: int            = 1
@@ -177,8 +177,50 @@ class PVAllocScenario_Settings:
                     'class4': 0.0213,
                     }, 
             },
-        },
+            'CHcapa_adjustment_filter': {
+                'classes_adj_list': [
+                    'class1', 
+                    # 'class2'
+                    ],
+                'GSTAT_list': [
+                    '1003', '1004',
+                    ],
+                'GKLAS_list': [
+                    '1110',    # : 'Gebäude mit einer Wohnung', 
+                    '1121',    # : 'Gebäude mit zwei Wohnungen', 
+                    '1122',    # : 'Gebäude drei oder mehr Wohnungen', 
+                    '1130',    # : 'Wohngebäude für Gemeinschaften', 
+                    '1211',    # : 'Hotels und ähnliche Gebäude', 
+                    '1212',    # : 'Kurzfristige Beherbergungen, Mobilheime', 
+                    '1220',    # : 'Büro- und Verwaltungsgebäude', 
+                    '1230',    # : 'Gross- und Einzelhandelsgebäude', 
+                    '1231',    # : 'Restaurants, Bars (ohne Wohnnutzung)', 
+                    '1241',    # : 'Bahnhöfe, Kommunikation, Verkehr', 
+                    '1242',    # : 'Garagengebäude, überdachte Parkplätze', 
+                    '1251',    # : 'Industriegebäude und Fabriken', 
+                    '1252',    # : 'Behälter, Silos, Lagergebäude', 
+                    '1261',    # : 'Kultur- und Freizeitzwecke',
+                    '1262',    # : 'Museen und Bibliotheken', 
+                    '1263',    # : 'Schulen, Hochschulen, Forschung', 
+                    '1264',    # : 'Krankenhäuser, Pflegeeinrichtungen',
+                    '1265',    # : 'Gebäude für Hallensport',
+                    # '1271',    # : 'Landwirtschaftliche Betriebsgebäude (ersetzt)',
+                    '1272',    # : 'Kirchen und Kultgebäude',
+                    # '1273',    # : 'Denkmäler, unter Denkmalschutz',
+                    # '1274',    # : 'Sonstige Hochbauten ungenannt',
+                    # '1275',    # : 'Andere Gebäude kollektive Unterkunft',
+                    # '1276',    # : 'Gebäude für Tierhaltung',
+                    # '1277',    # : 'Gebäude für Pflanzenbau',
+                    # '1278',    # : 'Andere landwirtschaftliche Gebäude'
+                ]
+            },
+      },
+
+
     })
+
+
+
 
     
     # tech_economic_specs
@@ -1983,6 +2025,8 @@ class PVAllocScenario:
 
             # IMPORT ----------------------------------------------------------------------------
             gwr_allch_summary = pl.read_parquet(f'{self.sett.name_dir_import_path}/gwr_all_ch_summary.parquet')
+            gwr_all_building_df = pl.read_parquet(f'{self.sett.name_dir_import_path}/gwr_all_building_df.parquet')
+
             pv = df_list[df_names.index('pv')]
             Map_egid_pv = df_list[df_names.index('Map_egid_pv')]
 
@@ -1999,7 +2043,11 @@ class PVAllocScenario:
 
             pv_sub['BeginningOfOperation'] = pd.to_datetime(pv_sub['BeginningOfOperation'])
             pv_sub['MonthPeriod'] = pv_sub['BeginningOfOperation'].dt.to_period('M')
-            pv_sub = pv_sub.loc[pv_sub['MonthPeriod'].isin(months_lookback)]
+            pv_sub_idx = pv_sub['MonthPeriod'].isin(months_lookback)
+            if pv_sub_idx.sum() >= 1:
+                pv_sub = pv_sub.loc[pv_sub_idx]
+            elif pv_sub_idx.sum() < 1: 
+                pv_sub = pv_sub.loc[pv_sub['MonthPeriod'] == max(pv_sub['MonthPeriod'])]
 
 
             # HISTORIC CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
@@ -2102,7 +2150,9 @@ class PVAllocScenario:
                     class1to4_tuple_list.append(class1to4_tuple)
 
                 epzb_capa_df = pd.DataFrame({
+                    'date': [pd.to_datetime(f'{year}-12-31') for year in epzb_year_range],
                     'year': epzb_year_range, 
+                    'month': [int(12) for i in epzb_year_range],
                     'epzb_capa_GW': epzb_capa_value_list, 
                     'epzb_capa_kw': [value * 1e6 for value in epzb_capa_value_list],
                     'class1': [t[0] for t in class1to4_tuple_list],
@@ -2115,57 +2165,81 @@ class PVAllocScenario:
                            
             epzb_capa_df = build_eb2050_pvcapa_df(self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis'])
 
+
             # adjust allCH capa to sample size
+            GSTAT_adj_list   = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GSTAT_list']
+            GKLAS_adj_list   = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GKLAS_list']
+            classes_adj_list = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['classes_adj_list']
+
+            nEGIDs_all_CH = gwr_allch_summary \
+                .filter( 
+                    (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
+                    (pl.col('GKLAS').is_in(GKLAS_adj_list)) ) \
+                .select('nEGID').sum().item()
+            nEGIDs_all_SAMPLE = gwr_all_building_df \
+                .filter( 
+                    (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
+                    (pl.col('GKLAS').is_in(GKLAS_adj_list)) ) \
+                .select('EGID').count().item()
             
-            # BOOKMARK
-            gwr_allch_summary.shape
-            # > calculate share of buildings in sample to all of switzerland (exclude certain buldingy types to be defined later in settings)
-            # > divide capacity of of ep2050 by share and export as constr_capa
+            epzb_capa_df['ratio_sample_allCH'] = nEGIDs_all_SAMPLE / nEGIDs_all_CH
+            epzb_capa_df['epzb_capa_sample_kw'] = epzb_capa_df['epzb_capa_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1) * epzb_capa_df['ratio_sample_allCH']
+            epzb_capa_df['constr_capacity_kw'] = epzb_capa_df['epzb_capa_sample_kw']
+            constrcapa_epzb = epzb_capa_df[['date', 'year', 'month', 'constr_capacity_kw']]
 
-
+            
             # PLOT  COMPARISON  ----------------------------------------------------------------------------
 
             # plot total power over time
+            fig = go.Figure()
             if True: 
                 pv_plot['BeginningOfOperation'] = pd.to_datetime(pv_plot['BeginningOfOperation'])
                 pv_plot.set_index('BeginningOfOperation', inplace=True)
 
                 # Resample by week, month, and year and calculate the sum of TotalPower
-                weekly_sum = pv_plot['TotalPower'].resample('W').sum()
                 monthly_sum = pv_plot['TotalPower'].resample('ME').sum()
                 yearly_sum = pv_plot['TotalPower'].resample('YE').sum()
 
-                # Create traces for each time period
-                trace_weekly = go.Scatter(x=weekly_sum.index, y=weekly_sum.values, mode='lines', name='Weekly')
-                trace_monthly = go.Scatter(x=monthly_sum.index, y=monthly_sum.values, mode='lines', name='Monthly')
-                trace_yearly = go.Scatter(x=yearly_sum.index, y=yearly_sum.values, mode='lines', name='Yearly')
+                fig = go.Figure()
 
-                layout = go.Layout(
-                    title='Built PV Capacity within Sample of GWR EGIDs',
-                    xaxis=dict(title='Time',
-                            range = ['2010-01-01', '2024-5-31']),
-                    yaxis=dict(title='Total Power'),
-                    legend=dict(x=0, y=1),
-                        shapes=[
-                            # Shaded region for months_lookback
-                            dict(
-                                type="rect",
-                                xref="x",
-                                yref="paper",
-                                x0=months_lookback[0].start_time,
-                                x1=months_lookback[-1].end_time,
-                                y0=0,
-                                y1=1,
-                                fillcolor="LightSalmon",
-                                opacity=0.3,
-                                layer="below",
-                                line_width=0,
-                    )
-                ]
+                # add historic traces
+                fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name='Hist. Built Capa. in Sample ---------------- ', opacity=0.0))
+                fig.add_trace(go.Scatter(x=monthly_sum.index, y=monthly_sum.values, mode='lines+markers', name='Monthly Built', line=dict(dash='dot')))
+                fig.add_trace(go.Scatter(x=yearly_sum.index, y=yearly_sum.values, mode='lines+markers', name='Yearly Built'))
+                
+                # add historically based constr capcacity 
+                fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name='Hist. Based Future Capa. ---------------- ', opacity=0.0))
+                fig.add_vrect(
+                    x0=start_loockback, 
+                    x1=T0,
+                    fillcolor="LightSalmon",
+                    opacity=0.3,
+                    layer="below",
+                    line_width=0,
+                    annotation_text="Lookback period",
+                    annotation_position="top left",
                 )
-                fig = go.Figure(data=[trace_weekly, trace_monthly, trace_yearly], layout=layout)
+                fig.add_trace(go.Scatter(x=constrcapa_hist_month['date'], y=constrcapa_hist_month['constr_capacity_kw'], mode='lines+markers', name='Monthly Hist. Based', line=dict(dash='dot')))
+                fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=constrcapa_hist_year['constr_capacity_kw'], mode='lines+markers', name='Yearly Hist. Based'))
+
+                # add EP2050 based constr capacity
+                fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name='EP2050 Based Future Capa. ---------------- ', opacity=0.0))
+                fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name=f'Adj_factor: {round(nEGIDs_all_SAMPLE / nEGIDs_all_CH,2) } - {nEGIDs_all_SAMPLE} nEGIDs in Sample / {nEGIDs_all_CH} nEGIDs allCH', opacity=0.0))
+                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'], mode='lines+markers', name='Yearly EP2050 Based',))
+                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1), mode='lines+markers', name=f'inst_size_class_adjusted ({classes_adj_list})',))
+                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_kw']/10, mode='lines+markers', name='allCH capacity kW (1/10)',))
+
+
+                # update layout + export
+                fig.update_layout(
+                    title=f'Construction Capacity in Sample Over Time ({len(self.sett.bfs_numbers)} nBFS, {len(topo.keys())} nEGIDs)',
+                    xaxis_title='Time',
+                    yaxis_title='Constructed Capacity (kW)',
+                    legend_title='Legend',
+                    template='plotly_white',
+                )
+                fig.write_html(f'{self.sett.name_dir_export_path}/construction_capacity_over_time.html')
                 # fig.show()
-                fig.write_html(f'{self.sett.name_dir_export_path}/pv_total_power_over_time.html')
 
 
             # SELECTION + PRINTs to LOGFILE ----------------------------------------------------------------------------
@@ -2173,6 +2247,9 @@ class PVAllocScenario:
                 constrcapa = constrcapa_hist_month.copy()
             elif self.sett.CSTRspec_capacity_type == 'hist_constr_capa_year':
                 constrcapa = constrcapa_hist_year.copy()
+            elif self.sett.CSTRspec_capacity_type == 'ep2050_zerobasis':
+                constrcapa = constrcapa_epzb.copy()
+        
 
             checkpoint_to_logfile(f'constr_capacity month lookback, between :                {months_lookback[0]} to {months_lookback[-1]}', self.sett.log_name, 0)
             checkpoint_to_logfile(f'constr_capacity KW built in period (sum_TP_kW_lookback): {round(sum_TP_kW_lookback,2)} kW', self.sett.log_name, 0)
@@ -5553,7 +5630,7 @@ if __name__ == '__main__':
 
     PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID',
         bfs_numbers                                          = [
-                                                    2612, 
+                                                    2612, 2889
                                                     # # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren, Seewen
                                                     # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, 2480,
                                                     # # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
@@ -5563,7 +5640,7 @@ if __name__ == '__main__':
                                                                 ],          
         mini_sub_model_TF                                    = True,
         mini_sub_model_by_X                                  = 'by_EGID',
-        mini_sub_model_nEGIDs                                = 12,
+        mini_sub_model_nEGIDs                                = 100,
         mini_sub_model_select_EGIDs                          = [
                                                                 '3030694', 
                                                                 # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
@@ -5572,8 +5649,9 @@ if __name__ == '__main__':
                                                                 ],
         create_gdf_export_of_topology                        = False,
         export_csvs                                          = True,
-        T0_year_prediction                                   = 2021,
+        T0_year_prediction                                   = 2022,
         months_prediction                                    = 120,
+        months_lookback                                      = 12, 
         TECspec_share_roof_area_available                    = 0.8,
         TECspec_self_consumption_ifapplicable                = 1.0,
         # TECspec_generic_pvtarif_Rp_kWh                       = None, 
