@@ -59,8 +59,8 @@ class PVAllocScenario_Settings:
                                                                                  '265', 
                                                                                  '341', '345', 
                                                                                  ]) 
-    mini_sub_model_ngridnodes: int              = 20
-    mini_sub_model_nEGIDs: int                  = 100
+    mini_sub_model_ngridnodes: int              = 5
+    mini_sub_model_nEGIDs: int                  = 30
     mini_sub_model_by_X: str                    = 'by_EGID'       # 'by_gridnode' / 'by_EGID' 
     mini_sub_model_select_EGIDs: List[str]      = field(default_factory=lambda: [
                                                     # pv_df EGIDs in BFS 2889 - Lauwil
@@ -143,7 +143,10 @@ class PVAllocScenario_Settings:
                                                             (11, 0.14), 
                                                             (12, 0.16)
                                                         ])
-    CSTRspec_ep2050_share_inst_classes: List[str]       = field(default_factory=lambda: ['class1', 'class2',])  # 'class1', 'class2', 'class3', 'class4'
+    CSTRspec_ep2050_share_inst_classes: List[str]       = field(default_factory=lambda: [
+                                                                                    'class1', 
+                                                                                    #  'class2',
+                                                                                        ])  # 'class1', 'class2', 'class3', 'class4'
     CSTRspec_ep2050_capa_dict: Dict[str, float]         = field(default_factory=lambda: {
         'ep2050_zerobasis':{
             'pvcapa_total': {
@@ -272,7 +275,7 @@ class PVAllocScenario_Settings:
                                                             #     '245057295', '245057294', '245011456', '391379', '391377'
                                                             # ])
     CHECKspec_n_EGIDs_of_alloc_algorithm: int               = 20
-    CHECKspec_n_iterations_before_sanitycheck: int          = 3
+    CHECKspec_n_iterations_before_sanitycheck: int          = 1
 
     # PART II: settings for MC algorithm --------------------
     MCspec_montecarlo_iterations_fordev_sequentially: int        = 1
@@ -334,19 +337,21 @@ class PVAllocScenario_Settings:
     GRIDspec_flat_profile_demand_type_col: set                  = 'MFH_swstore'  # 'flat' / 'MFH_swstore' / 'outtopo_demand_zero'
 
     # gridprem_adjustment_specs
-    GRIDspec_apply_prem_tiers_TF: bool                          = False 
+    GRIDspec_apply_prem_tiers_TF: bool                          = True 
     GRIDspec_tier_description: str                              = 'tier_level: (voltage_threshold, gridprem_Rp_kWh)'
     GRIDspec_power_factor: float                                = 1
     GRIDspec_perf_factor_1kVA_to_XkW: float                     = 0.8
     GRIDspec_colnames: List[str]                                = field(default_factory=lambda: ['tier_level', 'used_node_capa_rate', 'gridprem_Rp_kWh'])
     GRIDspec_tiers: Dict[int, List[float]]                      = field(default_factory=lambda: {
-                                                                   1: [0.7,   1], 
-                                                                   2: [0.8,   3], 
-                                                                   3: [0.85,  5], 
-                                                                   4: [0.9,   7], 
-                                                                   5: [0.95,  15], 
-                                                                   6: [1,     100]
+                                                                   1: [0.7,   0], 
+                                                                   2: [0.8,   0], 
+                                                                   3: [0.85,  0], 
+                                                                   4: [0.9,   0], 
+                                                                   5: [0.95,  0], 
+                                                                   6: [1,     0]
                                                                 })
+    GRIDspec_node_1hll_closed_TF: bool                         = False       # F: installations can still be built in grid nodes that have > 1 HOY Lost Load, T: no installations in circuits which have just 1 hour of lost load in the grid_updating stage. 
+
     
 
     def __post_init__(self):
@@ -489,6 +494,12 @@ class PVAllocScenario:
         for f in fresh_initial_files + topo_time_paths:
             shutil.copy(f, f'{self.sett.sanity_check_path}/')
 
+        # create grid node monitoring for >1HOY of lost load
+        node_1hll_closed_dict = {'k_descrip': 'k: iter_round of algorightm, v: list of nodes that have >1HOY of lost load'}
+        with open(f'{self.sett.sanity_check_path}/node_1hll_closed_dict.json', 'w') as f:
+            json.dump(node_1hll_closed_dict, f)
+
+                
         # ALLOCATION RUN ====================
         start_sanity_check_allocation = datetime.datetime.now()
         dfuid_installed_list = []
@@ -520,7 +531,6 @@ class PVAllocScenario:
         end_sanity_check_allocation = datetime.datetime.now()
         self.mark_to_timing_csv('init', 'end_sanity_check_allocation', end_sanity_check_allocation, self.timediff_to_str_hhmmss(start_sanity_check_allocation, end_sanity_check_allocation), '-')
         
-        # sanity.sanity_check_summary_byEGID(self, self.sanity_check_path)
         start_sanity_check_summary_by_EGID = datetime.datetime.now()
         self.sanity_check_summary_byEGID(self.sett.sanity_check_path )
 
@@ -540,6 +550,10 @@ class PVAllocScenario:
             end_sanity_check_export_spatial_data = datetime.datetime.now()
             self.mark_to_timing_csv('init', 'end_sanity_check_export_spatial_data', end_sanity_check_export_spatial_data, self.timediff_to_str_hhmmss(start_sanity_check_export_spatial_data, end_sanity_check_export_spatial_data), '-')
         
+
+        # CLEANUP ====================
+        self.sanity_check_cleanup_obsolete_data()
+
 
         end_sanity_check = datetime.datetime.now()
         self.mark_to_timing_csv('init', 'end_sanity_check', end_sanity_check, self.timediff_to_str_hhmmss(start_sanity_check, end_sanity_check), '-')
@@ -624,6 +638,11 @@ class PVAllocScenario:
             for f in fresh_initial_paths + topo_time_paths:
                 shutil.copy(f, self.sett.mc_iter_path)
 
+            # create grid node monitoring for >1HOY of lost load
+            node_1hll_closed_dict = {'k_descrip': 'k: iter_round of algorightm, v: list of nodes that have >1HOY of lost load'}
+            with open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'w') as f:
+                json.dump(node_1hll_closed_dict, f)
+
 
 
             # ALLOCATION ALGORITHM -----------------------------------------------------------------------------    
@@ -665,10 +684,10 @@ class PVAllocScenario:
                         elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rf_segdist':
                             self.algo_update_npv_df_RF_SEGMDIST(self.sett.mc_iter_path, i_m, m)
 
-                        
-                    end_time_update_npv = datetime.datetime.now()
-                    print_to_logfile(f'- END update npv: {self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv)} (hh:mm:ss.s)', self.sett.log_name)
-                    self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  #if i_m < 7 else None
+                        end_time_update_npv = datetime.datetime.now()
+                        print_to_logfile(f'- END update npv: {self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv)} (hh:mm:ss.s)', self.sett.log_name)
+
+                        self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  #if i_m < 7 else None
 
                 # init constr capa + safety_counter ==========
                 constr_built_m = 0
@@ -2683,6 +2702,15 @@ class PVAllocScenario:
                 f.write(pv_gdf_multiple_xtf_id.to_json())
 
 
+
+        def sanity_check_cleanup_obsolete_data(self,):
+            topo_time_paths_in_sanity_dir = glob.glob(f'{self.sett.sanity_check_path}/topo_subdf*.parquet')
+            for path in topo_time_paths_in_sanity_dir:
+                try: 
+                    os.remove(path)
+                except Exception as e:
+                    print(f'Failed to remove obsolete topo subdf file in sanity dir: {path}. Error: {e}')
+
  
     # MC ALGORITHM ---------------------------------------------------------------------------
     if True: 
@@ -3249,6 +3277,7 @@ class PVAllocScenario:
             topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
             outtopo_subdf_paths = glob.glob(f'{self.sett.name_dir_export_path}/outtopo_time_subdf/*.parquet')
             dsonodes_df = pl.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
+            node_1hll_closed_dict = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r'))
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
             gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
@@ -3525,6 +3554,41 @@ class PVAllocScenario:
                 .alias("feedin_atnode_loss_kW")
             ])
             checkpoint_to_logfile('gridprem: end merge with gridnode_df + pl.when()', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None   
+
+
+            # update node 1hll monitor  -----------------------------------------------------
+            # # --- only for dev ---
+            # gridnode_df = gridnode_df.with_columns(
+            #     pl.when((pl.col('grid_node') == '397') & (pl.col('t') == 't_10'))
+            #     .then(1)  # Assign value 1
+            #     .otherwise(pl.col('feedin_atnode_loss_kW'))  # Keep existing value if condition is not met
+            #     .alias('feedin_atnode_loss_kW')  # Update column in DataFrame
+            # )
+            # # --- --- ---
+            
+            gridnode_df.sort(['t_int','grid_node'], descending=[False, False])
+            gridnode_df.sort(['grid_node', 't_int'], descending=[False, False])
+            gridnode_df_hours_agg = gridnode_df.group_by(['grid_node', ]).agg([
+                pl.col('feedin_atnode_taken_kW').sum().alias('feedin_atnode_taken_kW'),
+                pl.col('feedin_atnode_loss_kW').sum().alias('feedin_atnode_loss_kW'),
+            ])
+            gridnode_df_abv_1hll = gridnode_df_hours_agg.filter(pl.col('feedin_atnode_loss_kW') > 0).select('grid_node').to_series().to_list()
+
+            if str(i_m-1) in node_1hll_closed_dict.keys(): 
+                prev_nodes_closed = node_1hll_closed_dict[str(i_m-1)]['all_nodes_abv_1hll']
+                new_nodes_closed = [node for node in gridnode_df_abv_1hll if node not in prev_nodes_closed]
+                add_dict = {'all_nodes_abv_1hll': gridnode_df_abv_1hll, 
+                            'new_nodes_abv_1hll': new_nodes_closed
+                            }
+            else: 
+                add_dict = {'all_nodes_abv_1hll': gridnode_df_abv_1hll, 
+                            'new_nodes_abv_1hll': gridnode_df_abv_1hll}
+                
+            
+            node_1hll_closed_dict[str(i_m)] = add_dict
+            with open(f'{subdir_path}/node_1hll_closed_dict.json', 'w') as f:
+                json.dump(node_1hll_closed_dict, f, indent=4)
+
 
 
             # update gridprem_ts -----------------------------------------------------
@@ -4114,7 +4178,7 @@ class PVAllocScenario:
             """
 
             # setup -----------------------------------------------------
-            print_to_logfile('run function: algo_update_npv_df_RFR', self.sett.log_name)         
+            print_to_logfile(f'run function: algo_update_npv_df_RFR, GRIDspec_node_1hll_closed_TF:{self.sett.GRIDspec_node_1hll_closed_TF}', self.sett.log_name)         
 
             # import -----------------------------------------------------
             gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    
@@ -4122,11 +4186,17 @@ class PVAllocScenario:
 
             rfr_model = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_model.pkl')
             encoder   = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_encoder.pkl')
-        
+
+            node_1hll_closed_dict = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r')) 
+                    
 
             # import topo_time_subdfs -----------------------------------------------------
             topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet') 
             no_pv_egid = [k for k, v in topo.items() if not v.get('pv_inst', {}).get('inst_TF') ]
+
+            closed_nodes = node_1hll_closed_dict[str(i_m)]['all_nodes_abv_1hll']
+            closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
+            
             
             agg_npv_df_list = []
             j = 0
@@ -4139,6 +4209,10 @@ class PVAllocScenario:
 
                 # drop egids with pv installations
                 subdf = subdf_t0.filter(pl.col("EGID").is_in(no_pv_egid))   
+
+                # drop egids with closed grid nodes
+                if self.sett.GRIDspec_node_1hll_closed_TF:
+                    subdf = subdf.filter( ~pl.col("EGID").is_in(closed_nodes_egid))
 
                 if subdf.shape[0] > 0:
 
