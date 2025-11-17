@@ -246,18 +246,18 @@ class PVAllocScenario_Settings:
     TECspec_opt_max_flaeche_factor: float                   = 1.5
     TECspec_add_heatpump_demand_TF: bool                    = True   
     TECspec_heatpump_months_factor: List[tuple]             = field(default_factory=lambda: [
-                                                            (10, 1.0 ),
-                                                            (11, 1.0 ), 
-                                                            (12, 1.0 ), 
-                                                            (1 , 1.0 ), 
-                                                            (2 , 1.0 ), 
-                                                            (3 , 1.0 ), 
-                                                            (4 , 1.0 ), 
-                                                            (5 , 1.0 ), 
-                                                            (6 , 1.0 ), 
-                                                            (7 , 1.0 ), 
-                                                            (8 , 1.0 ), 
-                                                            (9 , 1.0 )  
+                                                            (10, 7.0),
+                                                            (11, 7.0), 
+                                                            (12, 7.0), 
+                                                            (1 , 7.0), 
+                                                            (2 , 7.0), 
+                                                            (3 , 7.0), 
+                                                            (4 , 7.0), 
+                                                            (5 , 7.0),     
+                                                            (6 , 1.0), 
+                                                            (7 , 1.0), 
+                                                            (8 , 1.0), 
+                                                            (9 , 1.0),                                                            
                                                             ])
     # panel_efficiency_specs
     PEFspec_variable_panel_efficiency_TF: bool              = True
@@ -663,16 +663,16 @@ class PVAllocScenario:
                 if len(egid_without_pv) > 0:
 
                     # GRIDPREM + NPV_DF UPDATE ==========
+                    start_time_update_gridprem = datetime.datetime.now()
+                    print_to_logfile('- START update gridprem', self.sett.log_name)
+                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                    end_time_update_gridprem = datetime.datetime.now()
+                    
+                    print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
+                    self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
+                                                                                                                            
                     # (only updated each iteration if feedin premium adjusts)
                     if (i_m == 1) or (self.sett.GRIDspec_apply_prem_tiers_TF): 
-                        start_time_update_gridprem = datetime.datetime.now()
-                        print_to_logfile('- START update gridprem', self.sett.log_name)
-                        self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
-                        end_time_update_gridprem = datetime.datetime.now()
-                        
-                        print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
-                        self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
-                                                                                                                                
                         start_time_update_npv = datetime.datetime.now()
                         print_to_logfile('- START update npv', self.sett.log_name)
                         if self.sett.ALGOspec_pvinst_size_calculation == 'inst_full_partition':
@@ -754,31 +754,7 @@ class PVAllocScenario:
                 self.mark_to_timing_csv('MCalgo', f'end inst_whileloop_{i_m:0{max_digits}}', end_time_installation_whileloop, self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop),  '-')  #if i_m < 7 else None
                                             
                 checkpoint_to_logfile(f'end month allocation, runtime: {datetime.datetime.now() - start_allocation_month} (hh:mm:ss.s)', self.sett.log_name, 0, True)                    
-
-                
-                # GRIDPREM + NPV_DF UPDATE ==========
-                # (regular updating)
-                if (self.sett.GRIDspec_apply_prem_tiers_TF) and any([constr_m_TF, constr_y_TF]):
-                    start_time_update_gridprem = datetime.datetime.now()
-                    print_to_logfile('- START update gridprem', self.sett.log_name)
-                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
-                    end_time_update_gridprem = datetime.datetime.now()
-
-                    print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
-
-                # (if no gridprem applied, run only once at end of allocation)
-                elif (i_m == len(trange_prediction)) and not (self.sett.GRIDspec_apply_prem_tiers_TF): 
-                    start_time_update_gridprem = datetime.datetime.now()
-                    print_to_logfile('- START update gridprem', self.sett.log_name)
-                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
-                    end_time_update_gridprem = datetime.datetime.now()
-
-                    print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
-
-                self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
-
-
-                                                                                                                        
+                                                                           
 
             # CLEAN UP interim files of MC run ==========
             files_to_remove_paths =  glob.glob(f'{self.sett.mc_iter_path}/topo_subdf_*.parquet')
@@ -2208,13 +2184,15 @@ class PVAllocScenario:
                     (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
                     (pl.col('GKLAS').is_in(GKLAS_adj_list)) ) \
                 .select('nEGID').sum().item()
-            nEGIDs_all_SAMPLE = gwr_all_building_df \
-                .filter( 
-                    (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
-                    (pl.col('GKLAS').is_in(GKLAS_adj_list)) ) \
-                .select('EGID').count().item()
+            # nEGIDs_all_SAMPLE = gwr_all_building_df \
+            #     .filter( 
+            #         (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
+            #         (pl.col('GKLAS').is_in(GKLAS_adj_list)) ) \
+            #     .select('EGID').count().item()
+            # nEGIDs_all_SAMPLE / nEGIDs_all_CH
+            nEGIDs_SAMPLE = len(topo)
             
-            epzb_capa_df['ratio_sample_allCH'] = nEGIDs_all_SAMPLE / nEGIDs_all_CH
+            epzb_capa_df['ratio_sample_allCH'] = nEGIDs_SAMPLE / nEGIDs_all_CH
             epzb_capa_df['epzb_capa_sample_kw'] = epzb_capa_df['epzb_capa_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1) * epzb_capa_df['ratio_sample_allCH']
             epzb_capa_df['constr_capacity_kw'] = epzb_capa_df['epzb_capa_sample_kw']
             constrcapa_epzb = epzb_capa_df[['date', 'year', 'month', 'constr_capacity_kw']]
@@ -2223,7 +2201,6 @@ class PVAllocScenario:
             # PLOT  COMPARISON  ----------------------------------------------------------------------------
 
             # plot total power over time
-            fig = go.Figure()
             if True: 
                 pv_plot['BeginningOfOperation'] = pd.to_datetime(pv_plot['BeginningOfOperation'])
                 pv_plot.set_index('BeginningOfOperation', inplace=True)
@@ -2233,7 +2210,6 @@ class PVAllocScenario:
                 yearly_sum = pv_plot['TotalPower'].resample('YE').sum()
 
                 fig = go.Figure()
-
                 # add historic traces
                 fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name='Hist. Built Capa. in Sample ---------------- ', opacity=0.0))
                 fig.add_trace(go.Scatter(x=monthly_sum.index, y=monthly_sum.values, mode='lines+markers', name='Monthly Built', line=dict(dash='dot')))
@@ -2251,15 +2227,24 @@ class PVAllocScenario:
                     annotation_text="Lookback period",
                     annotation_position="top left",
                 )
-                fig.add_trace(go.Scatter(x=constrcapa_hist_month['date'], y=constrcapa_hist_month['constr_capacity_kw'], mode='lines+markers', name='Monthly Hist. Based', line=dict(dash='dot')))
-                fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=constrcapa_hist_year['constr_capacity_kw'], mode='lines+markers', name='Yearly Hist. Based'))
+                fig.add_trace(go.Scatter(x=constrcapa_hist_month['date'], y=constrcapa_hist_month['constr_capacity_kw'], mode='lines+markers', name='Monthly Hist. based', line=dict(dash='dot')))
+                fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=constrcapa_hist_year['constr_capacity_kw'], mode='lines+markers', name='constrcapa - Yearly Hist. based (Sample)'))
+
+                for r in [0.05, 0.075, 0.1, 0.125, 1.5, 1.75, 2.0]:
+                    adj_hist_year = []
+                    for i,y in enumerate(capa_years_prediction):
+                        val = sum_TP_kW_lookback * (1 + r)**(i+1)
+                        adj_hist_year.append(val)
+                    fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=adj_hist_year, mode='lines+markers', name=f'Yearly Hist. based + {int(r*100)}% p.a.', line=dict(dash='dot')))
+                    
 
                 # add EP2050 based constr capacity
+                classes_str = ', '.join(classes_adj_list) if len(classes_adj_list) > 1 else classes_adj_list[0]
                 fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name='EP2050 Based Future Capa. ---------------- ', opacity=0.0))
-                fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name=f'Adj_factor: {round(nEGIDs_all_SAMPLE / nEGIDs_all_CH,2) } - {nEGIDs_all_SAMPLE} nEGIDs in Sample / {nEGIDs_all_CH} nEGIDs allCH', opacity=0.0))
-                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'], mode='lines+markers', name='Yearly EP2050 Based',))
-                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1), mode='lines+markers', name=f'inst_size_class_adjusted ({classes_adj_list})',))
+                fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name=f'Adj_factor: {round(nEGIDs_SAMPLE / nEGIDs_all_CH,2) } - {nEGIDs_SAMPLE} nEGIDs in Sample / {nEGIDs_all_CH} nEGIDs allCH', opacity=0.0))
                 fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_kw']/10, mode='lines+markers', name='allCH capacity kW (1/10)',))
+                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'], mode='lines+markers', name='Yearly EP2050 based (Sample, all classes)',))
+                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1), mode='lines+markers', name=f'constrcapa - size_class_adjusted ({classes_str})',))
 
 
                 # update layout + export
@@ -2271,7 +2256,9 @@ class PVAllocScenario:
                     template='plotly_white',
                 )
                 fig.write_html(f'{self.sett.name_dir_export_path}/construction_capacity_over_time.html')
-                # fig.show()
+                fig.show()
+
+            # fig.show()
 
 
             # SELECTION + PRINTs to LOGFILE ----------------------------------------------------------------------------
@@ -5715,15 +5702,43 @@ class PVAllocScenario:
 if __name__ == '__main__':
     pvalloc_scen_list = [
 
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID',
+    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_histgr0-5',
+    #     bfs_numbers                                          = [
+    #                                                 2612, 2889
+    #                                                             ],          
+    #     mini_sub_model_TF                                    = True,
+    #     mini_sub_model_by_X                                  = 'by_EGID',
+    #     mini_sub_model_nEGIDs                                = 100,
+    #     mini_sub_model_select_EGIDs                          = [
+    #                                                             '3030694', 
+    #                                                             # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
+    #                                                            # houses in RUR area, with 0 NEiGUNG and littie deviation from south
+    #                                                             # '190487689',    
+    #                                                             ],
+    #     create_gdf_export_of_topology                        = False,
+    #     export_csvs                                          = True,
+    #     T0_year_prediction                                   = 2022,
+    #     months_prediction                                    = 120,
+    #     months_lookback                                      = 12, 
+    #     TECspec_share_roof_area_available                    = 0.8,
+    #     TECspec_self_consumption_ifapplicable                = 1.0,
+    #     # TECspec_generic_pvtarif_Rp_kWh                       = None, 
+    #     TECspec_add_heatpump_demand_TF                       = True,   
+
+    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+    #     ALGOspec_topo_subdf_partitioner                      = 250, 
+    #     ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
+    #     ALGOspec_inst_selection_method                       = 'max_npv', 
+    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+    #     ALGOspec_rand_seed                                   = 123,
+    #     CSTRspec_capacity_type                               = 'hist_constr_capa_year', 
+    #     CSTRspec_ann_capacity_growth                         = 0.5,  
+    # ),
+    
+
+    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_ep2050',
         bfs_numbers                                          = [
                                                     2612, 2889
-                                                    # # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren, Seewen
-                                                    # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, 2480,
-                                                    # # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
-                                                    # 2612, 2782, 2618, 2786, 2785, 2772, 2761, 2743, 
-                                                    # # URBAN: Reinach, Münchenstein, Muttenz
-                                                    # 2773, 2769, 2770,
                                                                 ],          
         mini_sub_model_TF                                    = True,
         mini_sub_model_by_X                                  = 'by_EGID',
@@ -5743,28 +5758,51 @@ if __name__ == '__main__':
         TECspec_self_consumption_ifapplicable                = 1.0,
         # TECspec_generic_pvtarif_Rp_kWh                       = None, 
         TECspec_add_heatpump_demand_TF                       = True,   
-        TECspec_heatpump_months_factor                       = [
-                                                                (10, 7.0),
-                                                                (11, 7.0), 
-                                                                (12, 7.0), 
-                                                                (1 , 7.0), 
-                                                                (2 , 7.0), 
-                                                                (3 , 7.0), 
-                                                                (4 , 7.0), 
-                                                                (5 , 7.0),     
-                                                                (6 , 1.0), 
-                                                                (7 , 1.0), 
-                                                                (8 , 1.0), 
-                                                                (9 , 1.0),
-                                                                ], 
+
         ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
         ALGOspec_topo_subdf_partitioner                      = 250, 
         ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
         ALGOspec_inst_selection_method                       = 'max_npv', 
         # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
         ALGOspec_rand_seed                                   = 123,
-        # ALGOspec_subselec_filter_criteria = 'southwestfacing_2spec', 
+        CSTRspec_capacity_type                               = 'ep2050_zerobasis', 
+        CSTRspec_ann_capacity_growth                         = 0.10,  
     ),
+    
+    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll',
+    #     bfs_numbers                                          = [
+    #                                                 2612, 2889
+    #                                                             ],          
+    #     mini_sub_model_TF                                    = True,
+    #     mini_sub_model_by_X                                  = 'by_EGID',
+    #     mini_sub_model_nEGIDs                                = 100,
+    #     mini_sub_model_select_EGIDs                          = [
+    #                                                             '3030694', 
+    #                                                             # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
+    #                                                            # houses in RUR area, with 0 NEiGUNG and littie deviation from south
+    #                                                             # '190487689',    
+    #                                                             ],
+    #     create_gdf_export_of_topology                        = False,
+    #     export_csvs                                          = True,
+    #     T0_year_prediction                                   = 2022,
+    #     months_prediction                                    = 120,
+    #     months_lookback                                      = 12, 
+    #     TECspec_share_roof_area_available                    = 0.8,
+    #     TECspec_self_consumption_ifapplicable                = 1.0,
+    #     # TECspec_generic_pvtarif_Rp_kWh                       = None, 
+    #     TECspec_add_heatpump_demand_TF                       = True,   
+
+    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+    #     ALGOspec_topo_subdf_partitioner                      = 250, 
+    #     ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
+    #     ALGOspec_inst_selection_method                       = 'max_npv', 
+    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+    #     ALGOspec_rand_seed                                   = 123,
+    #     CSTRspec_capacity_type                               = 'ep2050_zerobasis', 
+    #     CSTRspec_ann_capacity_growth                         = 0.05,  
+    #     GRIDspec_node_1hll_closed_TF                         = True,
+    # ),
+
     
     ]
 
