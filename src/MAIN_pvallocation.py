@@ -701,6 +701,7 @@ class PVAllocScenario:
 
                 # INST PICK ==========
                 start_time_installation_whileloop = datetime.datetime.now()
+                inst_counter = 0
                 print_to_logfile('- START inst while loop', self.sett.log_name)
 
                 print_to_logfile('start inst pick while loop', self.sett.log_name)
@@ -716,6 +717,7 @@ class PVAllocScenario:
                         safety_counter = safety_counter_max
 
                     if not npv_df_empty_TF: 
+                        inst_counter += 1
                         if self.sett.ALGOspec_pvinst_size_calculation == 'inst_full_partition': 
                             inst_power = self.algo_select_AND_adjust_topology(self.sett.mc_iter_path, i_m, m, safety_counter)
                         elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
@@ -726,45 +728,56 @@ class PVAllocScenario:
                             inst_power = self.algo_select_AND_adjust_topology_RFR(self.sett.mc_iter_path, i_m, m)
 
 
-
                     # Loop Exit + adjust constr_built capacity ----------
                     constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
                     overshoot_rate = self.sett.CSTRspec_constr_capa_overshoot_fact
                     constr_m_TF, constr_y_TF, safety_TF = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y, safety_counter > safety_counter_max
 
+                    # print statements ----------
                     if any([constr_m_TF, constr_y_TF, safety_TF]):
-                        print_to_logfile('exit While Loop, run last gridnode_update', self.sett.log_name)
-                        self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                        print_str = 'exit while loop -> '
                         if constr_m_TF:
-                            checkpoint_to_logfile(f'exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built', self.sett.log_name, 0, True)                    
+                            print_str += f' exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built; '                    
                         if constr_y_TF:
-                            checkpoint_to_logfile(f'exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built', self.sett.log_name, 0, True)                    
+                            print_str += f' exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built; '
                         if safety_TF:
                             if npv_df_empty_TF:
-                                checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), NO MORE EGID to install PV on', self.sett.log_name, 0, True)
+                                print_str += f' exceeded safety counter (safety_TF:{safety_TF}), NO MORE EGID to install PV on; '
                             else:
-                                checkpoint_to_logfile(f'exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}', self.sett.log_name, 0, True)                    
+                                print_str += f' exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}; '
+                        checkpoint_to_logfile(print_str, self.sett.log_name, 0, True)
 
-                        if constr_m_TF or constr_y_TF:    
-                            checkpoint_to_logfile(f'{safety_counter} pv installations allocated', self.sett.log_name, 0, self.sett.show_debug_prints)                                        
                                
                 end_time_installation_whileloop = datetime.datetime.now()
+                checkpoint_to_logfile(f'{inst_counter} installations installed', self.sett.log_name, 0, True)
                 print_to_logfile(f'- END inst while loop: {self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop)} (hh:mm:ss.s)', self.sett.log_name)
                 self.mark_to_timing_csv('MCalgo', f'end inst_whileloop_{i_m:0{max_digits}}', end_time_installation_whileloop, self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop),  '-')  #if i_m < 7 else None
                                             
                 checkpoint_to_logfile(f'end month allocation, runtime: {datetime.datetime.now() - start_allocation_month} (hh:mm:ss.s)', self.sett.log_name, 0, True)                    
 
-
-            # GRIDPREM + NPV_DF UPDATE ==========
-            # (if no gridprem applied, run only once at end of allocation)
-            if (i_m == len(trange_prediction)) and not (self.sett.GRIDspec_apply_prem_tiers_TF): 
-                start_time_update_gridprem = datetime.datetime.now()
-                print_to_logfile('- START update gridprem', self.sett.log_name)
-                self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
-                end_time_update_gridprem = datetime.datetime.now()
                 
-                print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
+                # GRIDPREM + NPV_DF UPDATE ==========
+                # (regular updating)
+                if (self.sett.GRIDspec_apply_prem_tiers_TF) and any([constr_m_TF, constr_y_TF]):
+                    start_time_update_gridprem = datetime.datetime.now()
+                    print_to_logfile('- START update gridprem', self.sett.log_name)
+                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                    end_time_update_gridprem = datetime.datetime.now()
+
+                    print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
+
+                # (if no gridprem applied, run only once at end of allocation)
+                elif (i_m == len(trange_prediction)) and not (self.sett.GRIDspec_apply_prem_tiers_TF): 
+                    start_time_update_gridprem = datetime.datetime.now()
+                    print_to_logfile('- START update gridprem', self.sett.log_name)
+                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                    end_time_update_gridprem = datetime.datetime.now()
+
+                    print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
+
                 self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
+
+
                                                                                                                         
 
             # CLEAN UP interim files of MC run ==========
@@ -4568,7 +4581,7 @@ class PVAllocScenario:
             """
 
             # setup -----------------------------------------------------
-            print_to_logfile('run function: algo_update_npv_df_STATESTIM', self.sett.log_name)         
+            # print_to_logfile('run function: algo_update_npv_df_STATESTIM', self.sett.log_name)         
 
             # import -----------------------------------------------------
             gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    
@@ -4976,7 +4989,7 @@ class PVAllocScenario:
 
         def algo_select_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
 
-            print_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name) if while_safety_counter < 5 else None
+            # print_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name) if while_safety_counter < 5 else None
 
             # import ----------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
@@ -5228,7 +5241,7 @@ class PVAllocScenario:
         def algo_select_AND_adjust_topology(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
 
     
-            print_to_logfile('run function: select_AND_adjust_topology', self.sett.log_name) if while_safety_counter < 5 else None
+            # print_to_logfile('run function: select_AND_adjust_topology', self.sett.log_name) if while_safety_counter < 5 else None
 
             # import ----------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
@@ -5448,7 +5461,7 @@ class PVAllocScenario:
 
         def algo_select_AND_adjust_topology_OPTIMIZED(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
 
-            print_to_logfile('run function: select_AND_adjust_topology', self.sett.log_name) if while_safety_counter < 5 else None
+            # print_to_logfile('run function: select_AND_adjust_topology', self.sett.log_name) if while_safety_counter < 5 else None
 
             # import ----------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
