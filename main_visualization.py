@@ -11,15 +11,21 @@ visualization_list = [
                 ], 
             pvalloc_include_pattern_list = [
                 # 'pvalloc_2nbfs_2y_testMC', 
-    
-                'pvalloc_10nbfs_RUR_max_30y', 
-                # 'pvalloc_10nbfs_RUR_rnd_30y', 
 
-                'pvalloc_8nbfs_SUB_max_30y', 
-                # 'pvalloc_8nbfs_SUB_rnd_30y', 
+                # pvalloc_16nbfs_RUR_max_30y_histgr0-05    
+                # pvalloc_16nbfs_RUR_max_30y_eb2050
+                # pvalloc_16nbfs_RUR_max_30y_eb2050_1hll
+                'pvalloc_16nbfs_RUR_max_*', 
 
-                'pvalloc_3nbfs_URB_max_30y', 
-                # 'pvalloc_3nbfs_URB_rnd_30y', 
+                # pvalloc_10nbfs_SUB_max_30y_histgr0
+                # pvalloc_10nbfs_SUB_max_30y_eb2050
+                # pvalloc_10nbfs_SUB_max_30y_eb2050_1hll
+                'pvalloc_10nbfs_SUB_max_*',
+
+                # pvalloc_29nbfs_30y_histgr0-05
+                # pvalloc_29nbfs_30y_eb2050
+                # pvalloc_29nbfs_max_30y_eb2050_1hll
+                'pvalloc_29nbfs*',
 
             ],
             save_plot_by_scen_directory        = True, 
