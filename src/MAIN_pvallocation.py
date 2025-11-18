@@ -19,6 +19,7 @@ import plotly.graph_objects as go
 import polars as pl
 from shapely import union_all
 from  dataclasses import dataclass, field, asdict
+from dataclasses import replace
 from typing_extensions import List, Dict
 from scipy.optimize import curve_fit
 from scipy import optimize
@@ -5721,143 +5722,62 @@ class PVAllocScenario:
 # RUN SCENARIOS
 # ======================================================================================================
 if __name__ == '__main__':
-    pvalloc_scen_list = [
 
-    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_histgr0-5',
-    #     bfs_numbers                                          = [
-    #                                                 2612, 2889
-    #                                                             ],          
-    #     mini_sub_model_TF                                    = True,
-    #     mini_sub_model_by_X                                  = 'by_EGID',
-    #     mini_sub_model_nEGIDs                                = 100,
-    #     mini_sub_model_select_EGIDs                          = [
-    #                                                             '3030694', 
-    #                                                             # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
-    #                                                            # houses in RUR area, with 0 NEiGUNG and littie deviation from south
-    #                                                             # '190487689',    
-    #                                                             ],
-    #     create_gdf_export_of_topology                        = False,
-    #     export_csvs                                          = True,
-    #     T0_year_prediction                                   = 2022,
-    #     months_prediction                                    = 120,
-    #     months_lookback                                      = 12, 
-    #     TECspec_share_roof_area_available                    = 0.8,
-    #     TECspec_self_consumption_ifapplicable                = 1.0,
-    #     # TECspec_generic_pvtarif_Rp_kWh                       = None, 
-    #     TECspec_add_heatpump_demand_TF                       = True,   
+    def make_scenario(default_scen, name_dir_export, bfs_numbers=None, **overrides):
+        kwargs = {'name_dir_export': name_dir_export}
+        if bfs_numbers is not None:
+            kwargs['bfs_numbers'] = bfs_numbers
+        if overrides:
+            kwargs.update(overrides)
+        return replace(default_scen, **kwargs)
 
-    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-    #     ALGOspec_topo_subdf_partitioner                      = 250, 
-    #     ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
-    #     ALGOspec_inst_selection_method                       = 'max_npv', 
-    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-    #     ALGOspec_rand_seed                                   = 123,
-    #     CSTRspec_capacity_type                               = 'hist_constr_capa_year', 
-    #     CSTRspec_ann_capacity_growth                         = 0.5,  
-    # ),
-    
+    pvalloc_mini_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_test_DEFAULT',
+            bfs_numbers                                          = [
+                                                        2641, 2615,
+                                                                    ],         
+            mini_sub_model_TF                                    = True,
+            mini_sub_model_by_X                                  = 'by_EGID',
+            mini_sub_model_nEGIDs                                = 100,
+            create_gdf_export_of_topology                        = False,
+            export_csvs                                          = True,
+            T0_year_prediction                                   = 2022,
+            months_lookback                                      = 12,
+            months_prediction                                    = 240,
+            TECspec_add_heatpump_demand_TF                       = True,   
+            TECspec_heatpump_months_factor                       = [
+                                                                    (10, 7.0),
+                                                                    (11, 7.0), 
+                                                                    (12, 7.0), 
+                                                                    (1 , 7.0), 
+                                                                    (2 , 7.0), 
+                                                                    (3 , 7.0), 
+                                                                    (4 , 7.0), 
+                                                                    (5 , 7.0),     
+                                                                    (6 , 1.0), 
+                                                                    (7 , 1.0), 
+                                                                    (8 , 1.0), 
+                                                                    (9 , 1.0),
+                                                                    ], 
+            ALGOspec_topo_subdf_partitioner                      = 250, 
+            ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
+            CSTRspec_ann_capacity_growth                         = 0.1,
+    )
+    bfs_mini_list = [2612, 2889]
 
-    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_ep2050',
-    #     bfs_numbers                                          = [
-    #                                                 2612, 2889
-    #                                                             ],          
-    #     mini_sub_model_TF                                    = True,
-    #     mini_sub_model_by_X                                  = 'by_EGID',
-    #     mini_sub_model_nEGIDs                                = 100,
-    #     mini_sub_model_select_EGIDs                          = [
-    #                                                             '3030694', 
-    #                                                             # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
-    #                                                            # houses in RUR area, with 0 NEiGUNG and littie deviation from south
-    #                                                             # '190487689',    
-    #                                                             ],
-    #     create_gdf_export_of_topology                        = False,
-    #     export_csvs                                          = True,
-    #     T0_year_prediction                                   = 2022,
-    #     months_prediction                                    = 120,
-    #     months_lookback                                      = 12, 
-    #     TECspec_share_roof_area_available                    = 0.8,
-    #     TECspec_self_consumption_ifapplicable                = 1.0,
-    #     # TECspec_generic_pvtarif_Rp_kWh                       = None, 
-    #     TECspec_add_heatpump_demand_TF                       = True,   
+    pvalloc_scen_list = [ 
 
-    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-    #     ALGOspec_topo_subdf_partitioner                      = 250, 
-    #     ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
-    #     ALGOspec_inst_selection_method                       = 'max_npv', 
-    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-    #     ALGOspec_rand_seed                                   = 123,
-    #     CSTRspec_capacity_type                               = 'ep2050_zerobasis', 
-    #     CSTRspec_ann_capacity_growth                         = 0.10,  
-    # ),
-    
-    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll',
-    #     bfs_numbers                                          = [
-    #                                                 2612, 2889
-    #                                                             ],          
-    #     mini_sub_model_TF                                    = True,
-    #     mini_sub_model_by_X                                  = 'by_EGID',
-    #     mini_sub_model_nEGIDs                                = 100,
-    #     mini_sub_model_select_EGIDs                          = [
-    #                                                             '3030694', 
-    #                                                             # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
-    #                                                            # houses in RUR area, with 0 NEiGUNG and littie deviation from south
-    #                                                             # '190487689',    
-    #                                                             ],
-    #     create_gdf_export_of_topology                        = False,
-    #     export_csvs                                          = True,
-    #     T0_year_prediction                                   = 2022,
-    #     months_prediction                                    = 120,
-    #     months_lookback                                      = 12, 
-    #     TECspec_share_roof_area_available                    = 0.8,
-    #     TECspec_self_consumption_ifapplicable                = 1.0,
-    #     # TECspec_generic_pvtarif_Rp_kWh                       = None, 
-    #     TECspec_add_heatpump_demand_TF                       = True,   
 
-    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-    #     ALGOspec_topo_subdf_partitioner                      = 250, 
-    #     ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
-    #     ALGOspec_inst_selection_method                       = 'max_npv', 
-    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-    #     ALGOspec_rand_seed                                   = 123,
-    #     CSTRspec_capacity_type                               = 'ep2050_zerobasis', 
-    #     CSTRspec_ann_capacity_growth                         = 0.05,  
-    #     GRIDspec_node_1hll_closed_TF                         = True,
-    # ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_histgr0-05',
+            bfs_numbers                     = bfs_mini_list,
+            CSTRspec_capacity_type          = 'hist_constr_capa_year', 
+            CSTRspec_ann_capacity_growth    = 0.5,  
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
+            bfs_numbers                     = bfs_mini_list,
+            CSTRspec_capacity_type          = 'ep2050_zerobasis', 
+        ), 
 
-        PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ewfirst',
-        bfs_numbers                                          = [
-                                                    2612, 2889
-                                                                ],          
-        mini_sub_model_TF                                    = True,
-        mini_sub_model_by_X                                  = 'by_EGID',
-        mini_sub_model_nEGIDs                                = 100,
-        mini_sub_model_select_EGIDs                          = [
-                                                                '3030694', 
-                                                                # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
-                                                               # houses in RUR area, with 0 NEiGUNG and littie deviation from south
-                                                                # '190487689',    
-                                                                ],
-        create_gdf_export_of_topology                        = False,
-        export_csvs                                          = True,
-        T0_year_prediction                                   = 2022,
-        months_prediction                                    = 120,
-        months_lookback                                      = 12, 
-        TECspec_share_roof_area_available                    = 0.8,
-        TECspec_self_consumption_ifapplicable                = 1.0,
-        # TECspec_generic_pvtarif_Rp_kWh                       = None, 
-        TECspec_add_heatpump_demand_TF                       = True,   
 
-        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-        ALGOspec_topo_subdf_partitioner                      = 250, 
-        ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
-        ALGOspec_inst_selection_method                       = 'max_npv', 
-        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-        ALGOspec_rand_seed                                   = 123,
-        CSTRspec_capacity_type                               = 'ep2050_zerobasis', 
-        CSTRspec_ann_capacity_growth                         = 0.05,  
-        GRIDspec_node_1hll_closed_TF                         = True,
-        ALGOspec_subselec_filter_criteria = 'eastwestfacing_3spec', 
-    ),
 
     
     ]
