@@ -660,34 +660,43 @@ class PVAllocScenario:
                 topo = json.load(open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r'))
                 egid_without_pv = [k for k,v in topo.items() if not v['pv_inst']['inst_TF']]
 
+
+                # GRIDPREM + NPV_DF UPDATE ==========
+                start_time_update_gridprem = datetime.datetime.now()
+                print_to_logfile('- START update gridprem', self.sett.log_name)
+                self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
+                end_time_update_gridprem = datetime.datetime.now()
+                
+                print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
+                self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
+
                 if len(egid_without_pv) > 0:
 
-                    # GRIDPREM + NPV_DF UPDATE ==========
-                    start_time_update_gridprem = datetime.datetime.now()
-                    print_to_logfile('- START update gridprem', self.sett.log_name)
-                    self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.mc_iter_path, i_m, m)
-                    end_time_update_gridprem = datetime.datetime.now()
-                    
-                    print_to_logfile(f'- END update gridprem: {self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem)} (hh:mm:ss.s)', self.sett.log_name)
-                    self.mark_to_timing_csv('MCalgo', f'end update_gridprem_{i_m:0{max_digits}}', end_time_update_gridprem, self.timediff_to_str_hhmmss(start_time_update_gridprem, end_time_update_gridprem), '-')  #if i_m < 7 else None
+                    # check if any EGID w/o PV in open node
+                    node_1hll_closed_dict = json.load(open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'r')) 
+                    closed_nodes = node_1hll_closed_dict[str(i_m)]['all_nodes_abv_1hll']
+                    closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
+                    egid_wo_pv_open_node = [egid for egid in egid_without_pv if egid not in closed_nodes_egid]
+
+                    if len(egid_wo_pv_open_node) > 0:
                                                                                                                             
-                    # (only updated each iteration if feedin premium adjusts)
-                    if (i_m == 1) or (self.sett.GRIDspec_apply_prem_tiers_TF): 
-                        start_time_update_npv = datetime.datetime.now()
-                        print_to_logfile('- START update npv', self.sett.log_name)
-                        if self.sett.ALGOspec_pvinst_size_calculation == 'inst_full_partition':
-                            self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
-                        elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
-                            self.algo_update_npv_df_OPTIMIZED(self.sett.mc_iter_path, i_m, m)
-                        elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
-                            self.algo_update_npv_df_RFR(self.sett.mc_iter_path, i_m, m)
-                        elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rf_segdist':
-                            self.algo_update_npv_df_RF_SEGMDIST(self.sett.mc_iter_path, i_m, m)
+                        # (only updated each iteration if feedin premium adjusts)
+                        if (i_m == 1) or (self.sett.GRIDspec_apply_prem_tiers_TF): 
+                            start_time_update_npv = datetime.datetime.now()
+                            print_to_logfile('- START update npv', self.sett.log_name)
+                            if self.sett.ALGOspec_pvinst_size_calculation == 'inst_full_partition':
+                                self.algo_update_npv_df_POLARS(self.sett.mc_iter_path, i_m, m)
+                            elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
+                                self.algo_update_npv_df_OPTIMIZED(self.sett.mc_iter_path, i_m, m)
+                            elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
+                                self.algo_update_npv_df_RFR(self.sett.mc_iter_path, i_m, m)
+                            elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rf_segdist':
+                                self.algo_update_npv_df_RF_SEGMDIST(self.sett.mc_iter_path, i_m, m)
 
-                        end_time_update_npv = datetime.datetime.now()
-                        print_to_logfile(f'- END update npv: {self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv)} (hh:mm:ss.s)', self.sett.log_name)
+                            end_time_update_npv = datetime.datetime.now()
+                            print_to_logfile(f'- END update npv: {self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv)} (hh:mm:ss.s)', self.sett.log_name)
 
-                        self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  #if i_m < 7 else None
+                            self.mark_to_timing_csv('MCalgo', f'end update_npv_{i_m:0{max_digits}}', end_time_update_npv, self.timediff_to_str_hhmmss(start_time_update_npv, end_time_update_npv), '-')  #if i_m < 7 else None
 
                 # init constr capa + safety_counter ==========
                 constr_built_m = 0
@@ -696,7 +705,7 @@ class PVAllocScenario:
                 constr_capa_m = constrcapa.loc[constrcapa['date'] == str(m), 'constr_capacity_kw'].iloc[0]
                 constr_capa_y = constrcapa.loc[constrcapa['year'].isin([m.year]), 'constr_capacity_kw'].sum()
 
-                safety_counter = 0 if len(egid_without_pv) > 0 else safety_counter_max
+                safety_counter = 0 if len(egid_wo_pv_open_node) > 0 else safety_counter_max
 
 
                 # INST PICK ==========
@@ -2230,7 +2239,7 @@ class PVAllocScenario:
                 fig.add_trace(go.Scatter(x=constrcapa_hist_month['date'], y=constrcapa_hist_month['constr_capacity_kw'], mode='lines+markers', name='Monthly Hist. based', line=dict(dash='dot')))
                 fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=constrcapa_hist_year['constr_capacity_kw'], mode='lines+markers', name='constrcapa - Yearly Hist. based (Sample)'))
 
-                for r in [0.05, 0.075, 0.1, 0.125, 1.5, 1.75, 2.0]:
+                for r in [0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2]:
                     adj_hist_year = []
                     for i,y in enumerate(capa_years_prediction):
                         val = sum_TP_kW_lookback * (1 + r)**(i+1)
@@ -4447,8 +4456,8 @@ class PVAllocScenario:
                             pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
                             pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                             pl.col('TotalPower').first().alias('TotalPower'),
-                            pl.col('AUSRICHTUNG').first().alias('AUSRICHTUNG'),
-                            pl.col('NEIGUNG').first().alias('NEIGUNG'),
+                            pl.col('AUSRICHTUNG').mean().alias('AUSRICHTUNG_mean'),
+                            pl.col('NEIGUNG').mean().alias('NEIGUNG_mean'),
 
                             pl.col('FLAECHE').sum().alias('FLAECHE'),
                             pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
@@ -4509,8 +4518,8 @@ class PVAllocScenario:
                             pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
                             pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                             pl.col('TotalPower').first().alias('TotalPower'),
-                            pl.col('AUSRICHTUNG').first().alias('AUSRICHTUNG'),
-                            pl.col('NEIGUNG').first().alias('NEIGUNG'),
+                            pl.col('AUSRICHTUNG_mean').first().alias('AUSRICHTUNG_mean'),
+                            pl.col('NEIGUNG_mean').first().alias('NEIGUNG_mean'),
                             pl.col('FLAECHE').first().alias('FLAECHE'),
                           
                             pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
@@ -4972,8 +4981,6 @@ class PVAllocScenario:
                 checkpoint_to_logfile('exported npv_df', self.sett.log_name, 0)
 
 
-
-
         def algo_select_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
 
             # print_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name) if while_safety_counter < 5 else None
@@ -4982,15 +4989,25 @@ class PVAllocScenario:
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
             npv_df = pd.read_parquet(f'{subdir_path}/npv_df.parquet') 
             pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path}/pred_inst_df.parquet') else pd.DataFrame()
+            
+            node_1hll_closed_dict = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r')) 
+
+
+            #  remove all closed nodes EGIDs if applicable ----------------
+            if self.sett.GRIDspec_node_1hll_closed_TF:
+                closed_nodes = node_1hll_closed_dict[str(i_m)]['all_nodes_abv_1hll']
+                closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
+
+                npv_df = copy.deepcopy(npv_df.loc[~npv_df['EGID'].isin(closed_nodes_egid)])
 
 
             #  SUBSELECTION FILTER specific scenarios ----------------
             if self.sett.ALGOspec_subselec_filter_criteria == 'southfacing_1spec':
                 npv_subdf_angle_dfuid = copy.deepcopy(npv_df)
                 npv_subdf_angle_dfuid = npv_subdf_angle_dfuid.loc[
-                                            (npv_subdf_angle_dfuid['n_df_uid'] == 1 ) & 
-                                            (npv_subdf_angle_dfuid['AUSRICHTUNG'] > -45) & 
-                                            (npv_subdf_angle_dfuid['AUSRICHTUNG'] <  45)]
+                                            (npv_subdf_angle_dfuid['n_dfuid'] == 1 ) & 
+                                            (npv_subdf_angle_dfuid['AUSRICHTUNG_mean'] > -45) & 
+                                            (npv_subdf_angle_dfuid['AUSRICHTUNG_mean'] <  45)]
                 
                 if npv_subdf_angle_dfuid.shape[0] > 0:
                     npv_df = copy.deepcopy(npv_subdf_angle_dfuid)
@@ -5001,19 +5018,19 @@ class PVAllocScenario:
                 selected_rows = []
                 for egid, group in npv_subdf_angle_dfuid.groupby('EGID'):
                     eastwest_spec = group[
-                        (group['n_df_uid'] == 2) &
-                        (group['AUSRICHTUNG'] > -30) &
-                        (group['AUSRICHTUNG'] < 30)
+                        (group['n_dfuid'] == 2) &
+                        (group['AUSRICHTUNG_mean'] > -30) &
+                        (group['AUSRICHTUNG_mean'] < 30)
                     ]
                     east_spec = group[
-                        (group['n_df_uid'] == 1) &
-                        (group['AUSRICHTUNG'] > -135) &
-                        (group['AUSRICHTUNG'] < -45)
+                        (group['n_dfuid'] == 1) &
+                        (group['AUSRICHTUNG_mean'] > -135) &
+                        (group['AUSRICHTUNG_mean'] < -45)
                     ]
                     west_spec = group[
-                        (group['n_df_uid'] == 1) &
-                        (group['AUSRICHTUNG'] > 45) &
-                        (group['AUSRICHTUNG'] < 135)
+                        (group['n_dfuid'] == 1) &
+                        (group['AUSRICHTUNG_mean'] > 45) &
+                        (group['AUSRICHTUNG_mean'] < 135)
                     ]
                     
                     if not eastwest_spec.empty:
@@ -5025,12 +5042,16 @@ class PVAllocScenario:
 
                 if len(selected_rows) > 0:
                     npv_subdf_selected = pd.concat(selected_rows, ignore_index = True)
-                    # sanity check
-                    cols_to_show = ['EGID', 'df_uid_combo', 'n_df_uid', 'inst_TF', 'AUSRICHTUNG', 'NEIGUNG', 'FLAECHE']
-                    npv_subdf_angle_dfuid.loc[npv_subdf_angle_dfuid['EGID'].isin(['400507', '400614']), cols_to_show]
-                    npv_subdf_selected.loc[npv_subdf_selected['EGID'].isin(['400507', '400614']), cols_to_show]
-
                     npv_df = copy.deepcopy(npv_subdf_selected)
+                    
+                    # sanity check export
+                    if i_m == 1:
+                        cols_to_show = ['EGID',  'n_dfuid', 'AUSRICHTUNG_mean', 'NEIGUNG_mean', 'FLAECHE']
+                        gwr_all_building_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_all_building_gdf.geojson')
+                        gwr_eastwestfacing_3spec = gwr_all_building_gdf.loc[gwr_all_building_gdf['EGID'].isin(list(npv_subdf_selected['EGID'].unique()))]   
+                        with open(f'{self.sett.name_dir_export_path}/gwr_eastwestfacing_3spec.geojson', 'w') as f:
+                            f.write(gwr_eastwestfacing_3spec.to_json())
+
                     
             elif self.sett.ALGOspec_subselec_filter_criteria == 'southwestfacing_2spec':
                 npv_subdf_angle_dfuid = copy.deepcopy(npv_df)
@@ -5038,12 +5059,12 @@ class PVAllocScenario:
                 selected_rows = []
                 for egid, group in npv_subdf_angle_dfuid.groupby('EGID'):
                     eastsouth_single_spec = group[
-                        (group['n_df_uid'] == 1) &
+                        (group['n_dfuid'] == 1) &
                         (group['AUSRICHTUNG'] > -45) &
                         (group['AUSRICHTUNG'] < 135)
                     ]
                     eastsouth_group_spec = group[
-                        (group['n_df_uid'] > 1) &
+                        (group['n_dfuid'] > 1) &
                         (group['AUSRICHTUNG'] > 0) &    
                         (group['AUSRICHTUNG'] < 90)
                     ]
@@ -5056,7 +5077,7 @@ class PVAllocScenario:
                 if len(selected_rows) > 0:
                     npv_subdf_selected = pd.concat(selected_rows, ignore_index = True)
                     # sanity check
-                    cols_to_show = ['EGID', 'df_uid_combo', 'n_df_uid', 'inst_TF', 'AUSRICHTUNG', 'NEIGUNG', 'FLAECHE']
+                    cols_to_show = ['EGID', 'df_uid_combo', 'n_dfuid', 'inst_TF', 'AUSRICHTUNG', 'NEIGUNG', 'FLAECHE']
                     npv_subdf_angle_dfuid.loc[npv_subdf_angle_dfuid['EGID'].isin(['400507', '400614']), cols_to_show]
                     npv_subdf_selected.loc[npv_subdf_selected['EGID'].isin(['400507', '400614']), cols_to_show]
 
@@ -5736,38 +5757,38 @@ if __name__ == '__main__':
     # ),
     
 
-    PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_ep2050',
-        bfs_numbers                                          = [
-                                                    2612, 2889
-                                                                ],          
-        mini_sub_model_TF                                    = True,
-        mini_sub_model_by_X                                  = 'by_EGID',
-        mini_sub_model_nEGIDs                                = 100,
-        mini_sub_model_select_EGIDs                          = [
-                                                                '3030694', 
-                                                                # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
-                                                               # houses in RUR area, with 0 NEiGUNG and littie deviation from south
-                                                                # '190487689',    
-                                                                ],
-        create_gdf_export_of_topology                        = False,
-        export_csvs                                          = True,
-        T0_year_prediction                                   = 2022,
-        months_prediction                                    = 120,
-        months_lookback                                      = 12, 
-        TECspec_share_roof_area_available                    = 0.8,
-        TECspec_self_consumption_ifapplicable                = 1.0,
-        # TECspec_generic_pvtarif_Rp_kWh                       = None, 
-        TECspec_add_heatpump_demand_TF                       = True,   
+    # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_ep2050',
+    #     bfs_numbers                                          = [
+    #                                                 2612, 2889
+    #                                                             ],          
+    #     mini_sub_model_TF                                    = True,
+    #     mini_sub_model_by_X                                  = 'by_EGID',
+    #     mini_sub_model_nEGIDs                                = 100,
+    #     mini_sub_model_select_EGIDs                          = [
+    #                                                             '3030694', 
+    #                                                             # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
+    #                                                            # houses in RUR area, with 0 NEiGUNG and littie deviation from south
+    #                                                             # '190487689',    
+    #                                                             ],
+    #     create_gdf_export_of_topology                        = False,
+    #     export_csvs                                          = True,
+    #     T0_year_prediction                                   = 2022,
+    #     months_prediction                                    = 120,
+    #     months_lookback                                      = 12, 
+    #     TECspec_share_roof_area_available                    = 0.8,
+    #     TECspec_self_consumption_ifapplicable                = 1.0,
+    #     # TECspec_generic_pvtarif_Rp_kWh                       = None, 
+    #     TECspec_add_heatpump_demand_TF                       = True,   
 
-        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
-        ALGOspec_topo_subdf_partitioner                      = 250, 
-        ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
-        ALGOspec_inst_selection_method                       = 'max_npv', 
-        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
-        ALGOspec_rand_seed                                   = 123,
-        CSTRspec_capacity_type                               = 'ep2050_zerobasis', 
-        CSTRspec_ann_capacity_growth                         = 0.10,  
-    ),
+    #     ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+    #     ALGOspec_topo_subdf_partitioner                      = 250, 
+    #     ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
+    #     ALGOspec_inst_selection_method                       = 'max_npv', 
+    #     # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+    #     ALGOspec_rand_seed                                   = 123,
+    #     CSTRspec_capacity_type                               = 'ep2050_zerobasis', 
+    #     CSTRspec_ann_capacity_growth                         = 0.10,  
+    # ),
     
     # PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll',
     #     bfs_numbers                                          = [
@@ -5802,6 +5823,41 @@ if __name__ == '__main__':
     #     CSTRspec_ann_capacity_growth                         = 0.05,  
     #     GRIDspec_node_1hll_closed_TF                         = True,
     # ),
+
+        PVAllocScenario_Settings(name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ewfirst',
+        bfs_numbers                                          = [
+                                                    2612, 2889
+                                                                ],          
+        mini_sub_model_TF                                    = True,
+        mini_sub_model_by_X                                  = 'by_EGID',
+        mini_sub_model_nEGIDs                                = 100,
+        mini_sub_model_select_EGIDs                          = [
+                                                                '3030694', 
+                                                                # '3032150', '2362100', '245044984', '2362101', '2362103', '2362102' # houses in 2889: Lauwill, 
+                                                               # houses in RUR area, with 0 NEiGUNG and littie deviation from south
+                                                                # '190487689',    
+                                                                ],
+        create_gdf_export_of_topology                        = False,
+        export_csvs                                          = True,
+        T0_year_prediction                                   = 2022,
+        months_prediction                                    = 120,
+        months_lookback                                      = 12, 
+        TECspec_share_roof_area_available                    = 0.8,
+        TECspec_self_consumption_ifapplicable                = 1.0,
+        # TECspec_generic_pvtarif_Rp_kWh                       = None, 
+        TECspec_add_heatpump_demand_TF                       = True,   
+
+        ALGOspec_adjust_existing_pvdf_pvprod_bypartition_TF  = True, 
+        ALGOspec_topo_subdf_partitioner                      = 250, 
+        ALGOspec_pvinst_size_calculation                     = 'estim_rfr',
+        ALGOspec_inst_selection_method                       = 'max_npv', 
+        # ALGOspec_inst_selection_method                     = 'prob_weighted_npv',
+        ALGOspec_rand_seed                                   = 123,
+        CSTRspec_capacity_type                               = 'ep2050_zerobasis', 
+        CSTRspec_ann_capacity_growth                         = 0.05,  
+        GRIDspec_node_1hll_closed_TF                         = True,
+        ALGOspec_subselec_filter_criteria = 'eastwestfacing_3spec', 
+    ),
 
     
     ]
