@@ -314,6 +314,9 @@ class PVAllocScenario_Settings:
 
     ALGOspec_constr_capa_overshoot_fact: float                  = 1
     ALGOspec_subselec_filter_criteria: str                      = None  # 'southfacing_1spec' / 'eastwestfacing_3spec' / 'southwestfacing_2spec'
+                                                                        # edit: new a tuple of order filtering, basically install inst on EGIDs with this filter_tag == True first
+                                                                        # df_tag_south_nr  df_tag_south_1r  eastwest_2r  eastwest_nr
+                                                                        
     ALGOspec_drop_cols_topo_time_subdf_list: List[str]          = field(default_factory=lambda: [
                                                                        'index', 'timestamp', 'rad_direct', 'rad_diffuse', 'temperature', 
                                                                        'A_PARAM', 'B_PARAM', 'C_PARAM', 'mean_top_radiation', 
@@ -4546,6 +4549,32 @@ class PVAllocScenario:
             agg_npv_df = pl.concat(agg_npv_df_list)
             npv_df = agg_npv_df.clone()
 
+
+            # add roof specific filter tag -----------------------------------------------------
+            npv_df = npv_df.with_columns(
+                df_tag_south_nr = (
+                    (pl.col("AUSRICHTUNG_mean") > -45) & 
+                    (pl.col("AUSRICHTUNG_mean") < 45)
+                ), 
+                df_tag_south_1r = (
+                    (pl.col("n_dfuid") == 1) &
+                    (pl.col("AUSRICHTUNG_mean") > -45) & 
+                    (pl.col("AUSRICHTUNG_mean") < 45)
+                ), 
+
+                eastwest_2r = (
+                    (pl.col("n_dfuid") == 2) &
+                    (pl.col("AUSRICHTUNG_mean") > -30) &
+                    (pl.col("AUSRICHTUNG_mean") < 30)
+                ),
+                eastwest_nr = (
+                    (pl.col("AUSRICHTUNG_mean") > -30) &
+                    (pl.col("AUSRICHTUNG_mean") < 30)
+                ),
+
+            )
+        
+
             # export npv_df -----------------------------------------------------
             npv_df.write_parquet(f'{subdir_path}/npv_df.parquet')
             if (self.sett.export_csvs) & ( i_m < 3):
@@ -4994,6 +5023,12 @@ class PVAllocScenario:
             node_1hll_closed_dict = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r')) 
 
 
+            #  remove all EGIDs with pv ----------------
+            no_pv_egid = [k for k, v in topo.items() if not v.get('pv_inst', {}).get('inst_TF') ]
+            npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'].isin(no_pv_egid)])
+
+
+
             #  remove all closed nodes EGIDs if applicable ----------------
             if self.sett.GRIDspec_node_1hll_closed_TF:
                 closed_nodes = node_1hll_closed_dict[str(i_m)]['all_nodes_abv_1hll']
@@ -5002,89 +5037,24 @@ class PVAllocScenario:
                 npv_df = copy.deepcopy(npv_df.loc[~npv_df['EGID'].isin(closed_nodes_egid)])
 
 
+
             #  SUBSELECTION FILTER specific scenarios ----------------
-            if self.sett.ALGOspec_subselec_filter_criteria == 'southfacing_1spec':
-                npv_subdf_angle_dfuid = copy.deepcopy(npv_df)
-                npv_subdf_angle_dfuid = npv_subdf_angle_dfuid.loc[
-                                            (npv_subdf_angle_dfuid['n_dfuid'] == 1 ) & 
-                                            (npv_subdf_angle_dfuid['AUSRICHTUNG_mean'] > -45) & 
-                                            (npv_subdf_angle_dfuid['AUSRICHTUNG_mean'] <  45)]
-                
-                if npv_subdf_angle_dfuid.shape[0] > 0:
-                    npv_df = copy.deepcopy(npv_subdf_angle_dfuid)
-
-            elif self.sett.ALGOspec_subselec_filter_criteria == 'eastwestfacing_3spec':
-                npv_subdf_angle_dfuid = copy.deepcopy(npv_df)
-                
-                selected_rows = []
-                for egid, group in npv_subdf_angle_dfuid.groupby('EGID'):
-                    eastwest_spec = group[
-                        (group['n_dfuid'] == 2) &
-                        (group['AUSRICHTUNG_mean'] > -30) &
-                        (group['AUSRICHTUNG_mean'] < 30)
-                    ]
-                    east_spec = group[
-                        (group['n_dfuid'] == 1) &
-                        (group['AUSRICHTUNG_mean'] > -135) &
-                        (group['AUSRICHTUNG_mean'] < -45)
-                    ]
-                    west_spec = group[
-                        (group['n_dfuid'] == 1) &
-                        (group['AUSRICHTUNG_mean'] > 45) &
-                        (group['AUSRICHTUNG_mean'] < 135)
-                    ]
-                    
-                    if not eastwest_spec.empty:
-                        selected_rows.append(eastwest_spec)
-                    elif not west_spec.empty:
-                        selected_rows.append(west_spec)
-                    elif not east_spec.empty:
-                        selected_rows.append(east_spec)
-
-                if len(selected_rows) > 0:
-                    npv_subdf_selected = pd.concat(selected_rows, ignore_index = True)
-                    npv_df = copy.deepcopy(npv_subdf_selected)
-                    
-                    # sanity check export
-                    if i_m == 1:
-                        cols_to_show = ['EGID',  'n_dfuid', 'AUSRICHTUNG_mean', 'NEIGUNG_mean', 'FLAECHE']
-                        gwr_all_building_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_all_building_gdf.geojson')
-                        gwr_eastwestfacing_3spec = gwr_all_building_gdf.loc[gwr_all_building_gdf['EGID'].isin(list(npv_subdf_selected['EGID'].unique()))]   
-                        with open(f'{self.sett.name_dir_export_path}/gwr_eastwestfacing_3spec.geojson', 'w') as f:
-                            f.write(gwr_eastwestfacing_3spec.to_json())
-
-                    
-            elif self.sett.ALGOspec_subselec_filter_criteria == 'southwestfacing_2spec':
-                npv_subdf_angle_dfuid = copy.deepcopy(npv_df)
-                
-                selected_rows = []
-                for egid, group in npv_subdf_angle_dfuid.groupby('EGID'):
-                    eastsouth_single_spec = group[
-                        (group['n_dfuid'] == 1) &
-                        (group['AUSRICHTUNG'] > -45) &
-                        (group['AUSRICHTUNG'] < 135)
-                    ]
-                    eastsouth_group_spec = group[
-                        (group['n_dfuid'] > 1) &
-                        (group['AUSRICHTUNG'] > 0) &    
-                        (group['AUSRICHTUNG'] < 90)
-                    ]
-                    
-                    if not eastsouth_group_spec.empty:
-                        selected_rows.append(eastsouth_group_spec)
-                    elif not eastsouth_single_spec.empty:
-                        selected_rows.append(eastsouth_single_spec)
-
-                if len(selected_rows) > 0:
-                    npv_subdf_selected = pd.concat(selected_rows, ignore_index = True)
-                    # sanity check
-                    cols_to_show = ['EGID', 'df_uid_combo', 'n_dfuid', 'inst_TF', 'AUSRICHTUNG', 'NEIGUNG', 'FLAECHE']
-                    npv_subdf_angle_dfuid.loc[npv_subdf_angle_dfuid['EGID'].isin(['400507', '400614']), cols_to_show]
-                    npv_subdf_selected.loc[npv_subdf_selected['EGID'].isin(['400507', '400614']), cols_to_show]
-
-                    npv_df = copy.deepcopy(npv_subdf_selected)
-                    
-
+            if self.sett.ALGOspec_subselec_filter_criteria is not None:
+                # export geojson for sanity check  ---
+                if (i_m == 1) and ('sanity' not in subdir_path):
+                    gwr_all_building_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_all_building_gdf.geojson')
+                    gwr_subselec_facing_tag_gdf = gwr_all_building_gdf.merge(npv_df, on = 'EGID', how = 'inner')
+                    with open(f'{self.sett.name_dir_export_path}/gwr_subselec_facing_tag_gdf.geojson', 'w') as f:
+                        f.write(gwr_subselec_facing_tag_gdf.to_json())
+                # ------
+                subselec_npv_df_empty = True
+                for filter_tag in self.sett.ALGOspec_subselec_filter_criteria: 
+                    subselec_npv_df = npv_df.loc[npv_df[filter_tag] == True]
+                    if subselec_npv_df_empty and subselec_npv_df.shape[0] > 0:
+                        npv_df = copy.deepcopy(subselec_npv_df)
+                        subselec_npv_df_empty = False
+       
+       
 
             # SELECTION BY METHOD ---------------
             # set random seed
@@ -5224,14 +5194,8 @@ class PVAllocScenario:
                                             'dfuid_w_inst_tuples': dfuid_w_inst_tuples
                                             }
 
-            # drop installed EGID (just to be sure, even though installed egids are excluded at the beginning)
-            npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'] != picked_egid])
-
-
 
             # export main dfs ------------------------------------------
-            # do not overwrite the original npv_df, this way can reimport it every month and filter for sanitycheck
-            npv_df.to_parquet(f'{subdir_path}/npv_df.parquet')
             pred_inst_df.to_parquet(f'{subdir_path}/pred_inst_df.parquet')
             pred_inst_df.to_csv(f'{subdir_path}/pred_inst_df.csv') if self.sett.export_csvs else None
             with open (f'{subdir_path}/topo_egid.json', 'w') as f:
