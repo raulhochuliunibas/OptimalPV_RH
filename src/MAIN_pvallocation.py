@@ -331,6 +331,7 @@ class PVAllocScenario_Settings:
     ALGOspec_pvinst_size_calculation: str                       = 'estim_rfr'   # 'estim_rf_segdist' / 'estim_rfr' / 'inst_full_partition' / 'npv_optimized'
     ALGOspec_calib_estim_dir_name: str                          = 'PVALLOC_calibration_model_coefs'
     ALGOspec_calib_estim_mod_name_pkl: str                      = 'allCHbfs_rfr2b'
+    ALGOspec_sleep_bfr_MCiter_TF: bool                          = False
 
     # dsonodes_ts_specs
     GRIDspec_flat_profile_demand_dict: Dict                     = field(default_factory=lambda: {
@@ -341,7 +342,7 @@ class PVAllocScenario_Settings:
     GRIDspec_flat_profile_demand_type_col: set                  = 'MFH_swstore'  # 'flat' / 'MFH_swstore' / 'outtopo_demand_zero'
 
     # gridprem_adjustment_specs
-    GRIDspec_apply_prem_tiers_TF: bool                          = True 
+    GRIDspec_apply_prem_tiers_TF: bool                          = False 
     GRIDspec_tier_description: str                              = 'tier_level: (voltage_threshold, gridprem_Rp_kWh)'
     GRIDspec_power_factor: float                                = 1
     GRIDspec_perf_factor_1kVA_to_XkW: float                     = 0.8
@@ -623,9 +624,10 @@ class PVAllocScenario:
         for _ in montecarlo_iterations_fordev_seq:
 
             # set a random sleep so array tasks in scicore don't overwrite MC directories
-            sleep_range = list(range(10, 1201, 5))
-            sleep_time = np.random.choice(sleep_range)
-            time.sleep(sleep_time)
+            if self.sett.ALGOspec_sleep_bfr_MCiter_TF:
+                sleep_range = list(range(10, 1201, 5))
+                sleep_time = np.random.choice(sleep_range)
+                time.sleep(sleep_time)
 
             # create additional next MC dir and copy init files
             n_mc_dir = len(glob.glob(f'{self.sett.name_dir_export_path}/zMC*'))
@@ -750,14 +752,14 @@ class PVAllocScenario:
                     if any([constr_m_TF, constr_y_TF, safety_TF]):
                         print_str = 'exit while loop -> '
                         if constr_m_TF:
-                            print_str += f' exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built; '                    
+                            print_str += f'\n* exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built; '                    
                         if constr_y_TF:
-                            print_str += f' exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built; '
+                            print_str += f'\n* exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built; '
                         if safety_TF:
                             if npv_df_empty_TF:
-                                print_str += f' exceeded safety counter (safety_TF:{safety_TF}), NO MORE EGID to install PV on; '
+                                print_str += f'\n* exceeded safety counter (safety_TF:{safety_TF}), NO MORE EGID to install PV on; '
                             else:
-                                print_str += f' exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}; '
+                                print_str += f'\n* exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}; '
                         checkpoint_to_logfile(print_str, self.sett.log_name, 0, True)
 
                                
@@ -2269,7 +2271,6 @@ class PVAllocScenario:
                     template='plotly_white',
                 )
                 fig.write_html(f'{self.sett.name_dir_export_path}/construction_capacity_over_time.html')
-                fig.show()
 
             # fig.show()
 
@@ -5704,9 +5705,11 @@ if __name__ == '__main__':
             mini_sub_model_nEGIDs                                = 100,
             create_gdf_export_of_topology                        = False,
             export_csvs                                          = True,
+            overwrite_scen_init                                  = False, 
+
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
-            months_prediction                                    = 240,
+            months_prediction                                    = 60,
             TECspec_add_heatpump_demand_TF                       = True,   
             TECspec_heatpump_months_factor                       = [
                                                                     (10, 7.0),
@@ -5731,18 +5734,26 @@ if __name__ == '__main__':
     pvalloc_scen_list = [ 
 
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_histgr0-05',
-            bfs_numbers                     = bfs_mini_list,
-            CSTRspec_capacity_type          = 'hist_constr_capa_year', 
-            CSTRspec_ann_capacity_growth    = 0.5,  
-        ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
-            bfs_numbers                     = bfs_mini_list,
-            CSTRspec_capacity_type          = 'ep2050_zerobasis', 
-        ), 
-
-
-
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_histgr0-05',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     CSTRspec_capacity_type          = 'hist_constr_capa_year', 
+        #     CSTRspec_ann_capacity_growth    = 0.05,  
+        # ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     CSTRspec_capacity_type          = 'ep2050_zerobasis', 
+        # ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll', 
+        #               bfs_numbers                     = bfs_mini_list,
+        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
+        #               GRIDspec_node_1hll_closed_TF = True,
+        # ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ewfirst',
+                      bfs_numbers                     = bfs_mini_list,
+                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
+                      GRIDspec_node_1hll_closed_TF = True,
+                      ALGOspec_subselec_filter_criteria = ('eastwest_2r', 'eastwest_nr' ), # df_tag_south_nr  df_tag_south_1r eastwest_2r   eastwest_nr
+        ),
     
     ]
 
