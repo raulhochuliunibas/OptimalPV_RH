@@ -14,7 +14,7 @@
 #SBATCH --output=stdouterr_files/myrun.oe%j     #This is the joined STDOUT and STDERR file
 
 #You selected an array of jobs from 1 to 6 with 6 simultaneous jobs
-#SBATCH --array=1-6%6
+#SBATCH --array=1-20%20
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT
 #SBATCH --mail-user=raul.hochuli@unibas.ch        #You will be notified via email when your task ends or fails
 
