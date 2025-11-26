@@ -425,7 +425,7 @@ class PVAllocScenario:
         # create dir for export, rename old export dir not to overwrite
         if os.path.exists(self.sett.name_dir_export_path):
             n_same_names = len(glob.glob(f'{self.sett.name_dir_export_path}*'))
-            os.rename(self.sett.name_dir_export_path, f'{self.sett.name_dir_export_path}_{n_same_names}_old_vers')
+            os.rename(self.sett.name_dir_export_path, f'x_{self.sett.name_dir_export_path}_{n_same_names}_old_vers')
         os.makedirs(self.sett.name_dir_export_path, exist_ok=True)
 
         # export class instance settings to dir        
@@ -5743,11 +5743,11 @@ if __name__ == '__main__':
         #     bfs_numbers                     = bfs_mini_list,
         #     CSTRspec_capacity_type          = 'ep2050_zerobasis', 
         # ), 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll', 
-        #               bfs_numbers                     = bfs_mini_list,
-        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
-        #               GRIDspec_node_1hll_closed_TF = True,
-        # ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll', 
+                      bfs_numbers                     = bfs_mini_list,
+                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
+                      GRIDspec_node_1hll_closed_TF = True,
+        ),
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ewfirst',
                       bfs_numbers                     = bfs_mini_list,
                       CSTRspec_capacity_type          = 'ep2050_zerobasis',
