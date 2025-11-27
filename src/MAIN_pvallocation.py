@@ -425,7 +425,9 @@ class PVAllocScenario:
         # create dir for export, rename old export dir not to overwrite
         if os.path.exists(self.sett.name_dir_export_path):
             n_same_names = len(glob.glob(f'{self.sett.name_dir_export_path}*'))
-            os.rename(self.sett.name_dir_export_path, f'x_{self.sett.name_dir_export_path}_{n_same_names}_old_vers')
+
+            os.rename(self.sett.name_dir_export_path, f'{self.sett.data_path}/pvalloc/x_{self.sett.name_dir_export}_old_vers')
+            
         os.makedirs(self.sett.name_dir_export_path, exist_ok=True)
 
         # export class instance settings to dir        
@@ -719,8 +721,7 @@ class PVAllocScenario:
                 inst_counter = 0
                 print_to_logfile('- START inst while loop', self.sett.log_name)
 
-                print_to_logfile('start inst pick while loop', self.sett.log_name)
-                while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
+                while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter < safety_counter_max) ):
                     topo = json.load(open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r'))
                     npv_df = pl.read_parquet(f'{self.sett.mc_iter_path}/npv_df.parquet')
 
@@ -729,7 +730,7 @@ class PVAllocScenario:
                     npv_df_empty_TF = npv_df.shape[0] == 0
 
                     if npv_df_empty_TF:
-                        safety_counter = safety_counter_max
+                        safety_counter = safety_counter_max + 1
 
                     if not npv_df_empty_TF: 
                         inst_counter += 1
@@ -738,15 +739,15 @@ class PVAllocScenario:
                         elif self.sett.ALGOspec_pvinst_size_calculation == 'npv_optimized':
                             inst_power = self.algo_select_AND_adjust_topology_OPTIMIZED(self.sett.mc_iter_path, i_m, m, safety_counter)
                         elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
-                            inst_power = self.algo_select_AND_adjust_topology_RFR(self.sett.mc_iter_path, i_m, m)
+                            inst_power = self.algo_select_AND_adjust_topology_RFR(self.sett.mc_iter_path, i_m, m, safety_counter)
                         elif self.sett.ALGOspec_pvinst_size_calculation == 'estim_rf_segdist':
-                            inst_power = self.algo_select_AND_adjust_topology_RFR(self.sett.mc_iter_path, i_m, m)
+                            inst_power = self.algo_select_AND_adjust_topology_RFR(self.sett.mc_iter_path, i_m, m, safety_counter)
 
 
                     # Loop Exit + adjust constr_built capacity ----------
-                    constr_built_m, constr_built_y, safety_counter = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
-                    overshoot_rate = self.sett.CSTRspec_constr_capa_overshoot_fact
-                    constr_m_TF, constr_y_TF, safety_TF = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y, safety_counter > safety_counter_max
+                    constr_built_m, constr_built_y, safety_counter  = constr_built_m + inst_power, constr_built_y + inst_power, safety_counter + 1
+                    overshoot_rate                                  = self.sett.CSTRspec_constr_capa_overshoot_fact
+                    constr_m_TF, constr_y_TF, safety_TF             = constr_built_m > constr_capa_m*overshoot_rate, constr_built_y > constr_capa_y, safety_counter > safety_counter_max
 
                     # print statements ----------
                     if any([constr_m_TF, constr_y_TF, safety_TF]):
@@ -4550,31 +4551,114 @@ class PVAllocScenario:
             agg_npv_df = pl.concat(agg_npv_df_list)
             npv_df = agg_npv_df.clone()
 
-
-            # add roof specific filter tag -----------------------------------------------------
+          
+            # add roof specific filter tag VERSION 1 -----------------------------------------------------
             npv_df = npv_df.with_columns(
-                df_tag_south_nr = (
+                filter_tag__south_nr = (
                     (pl.col("AUSRICHTUNG_mean") > -45) & 
                     (pl.col("AUSRICHTUNG_mean") < 45)
                 ), 
-                df_tag_south_1r = (
+                filter_tag__south_1r = (
                     (pl.col("n_dfuid") == 1) &
                     (pl.col("AUSRICHTUNG_mean") > -45) & 
                     (pl.col("AUSRICHTUNG_mean") < 45)
                 ), 
 
-                eastwest_2r = (
+                filter_tag__eastwest_2r = (
                     (pl.col("n_dfuid") == 2) &
                     (pl.col("AUSRICHTUNG_mean") > -30) &
                     (pl.col("AUSRICHTUNG_mean") < 30)
                 ),
-                eastwest_nr = (
+                filter_tag__eastwest_nr = (
+                    (pl.col("n_dfuid") >2) &
                     (pl.col("AUSRICHTUNG_mean") > -30) &
                     (pl.col("AUSRICHTUNG_mean") < 30)
                 ),
-
             )
         
+
+            # add roof specific filter tag VERSION 2 -----------------------------------------------------
+            
+            # get topo filter df
+            topo_filter_list = []
+            for k,v in topo.items():
+                for k_dfuid, v_dfuid in v['solkat_partitions'].items():
+                    row = {
+                        'EGID': k,
+                        'df_uid': k_dfuid, 
+                        'FLAECHE': v_dfuid['FLAECHE'],
+                        'AUSRICHTUNG': v_dfuid['AUSRICHTUNG'],
+                        'NEIGUNG': v_dfuid['NEIGUNG'],
+                    }
+                    topo_filter_list.append(row)
+            
+            topo_filter = pl.DataFrame(topo_filter_list)
+            
+            # get flaeche ratios
+            flaeche_by_egid = topo_filter.group_by('EGID').agg([
+                pl.col('FLAECHE').sum().alias('total_flaeche_by_egid')
+            ])  
+            topo_filter = topo_filter.join(flaeche_by_egid, on='EGID', how='left')
+
+            topo_filter = topo_filter.with_columns([
+                (pl.col('FLAECHE') / pl.col('total_flaeche_by_egid')).alias('FLAECHE_ratio')
+            ])
+
+            # get dfuid specific filters
+            topo_filter = topo_filter.with_columns([
+                pl.when(
+                    (pl.col('FLAECHE_ratio') >= 0.5 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_50pr'),
+                pl.when(
+                    (pl.col('FLAECHE_ratio') >= 0.5 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_50pr'),
+
+                pl.when(
+                    (pl.col('FLAECHE_ratio') >= 0.4 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_40pr'),
+                pl.when(
+                    (pl.col('FLAECHE_ratio') >= 0.4 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_40pr'),
+                
+                pl.when(
+                    (pl.col('FLAECHE_ratio') >= 0.35 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_35pr'),
+                pl.when(
+                    (pl.col('FLAECHE_ratio') >= 0.35 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_35pr'),
+            ])
+
+            #  groupby egid + derive filter_tags
+            topo_filter_egid = topo_filter.group_by('EGID').agg([
+                pl.col('filt_dfuid_east_50pr').any().alias('filt_dfuid_east_50pr'),
+                pl.col('filt_dfuid_west_50pr').any().alias('filt_dfuid_west_50pr'),
+                pl.col('filt_dfuid_west_40pr').any().alias('filt_dfuid_west_40pr'), 
+                pl.col('filt_dfuid_east_40pr').any().alias('filt_dfuid_east_40pr'),
+                pl.col('filt_dfuid_east_35pr').any().alias('filt_dfuid_east_35pr'),
+                pl.col('filt_dfuid_west_35pr').any().alias('filt_dfuid_west_35pr'),
+            ])
+
+            # get egid specific filters
+            topo_filter_egid = topo_filter_egid.with_columns([
+                pl.when(
+                    (pl.col('filt_dfuid_east_40pr') == True) & (pl.col('filt_dfuid_west_40pr') == True)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastwest_80pr'),              
+                pl.when(
+                    (pl.col('filt_dfuid_east_35pr') == True) & (pl.col('filt_dfuid_west_35pr') == True)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastwest_70pr'),
+                pl.when(
+                    (pl.col('filt_dfuid_east_50pr') == True) | (pl.col('filt_dfuid_west_50pr') == True)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastORwest_50pr'),
+                pl.when(
+                    (pl.col('filt_dfuid_east_40pr') == True) | (pl.col('filt_dfuid_west_40pr') == True)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastORwest_40pr'),
+            ])
+
+            # join to npv_df
+            npv_df = npv_df.join(topo_filter_egid, on='EGID', how='left')
+    
+
+
 
             # export npv_df -----------------------------------------------------
             npv_df.write_parquet(f'{subdir_path}/npv_df.parquet')
@@ -5014,7 +5098,7 @@ class PVAllocScenario:
 
         def algo_select_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
 
-            # print_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name) if while_safety_counter < 5 else None
+            print_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name) if while_safety_counter < 5 else None
 
             # import ----------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
@@ -5044,9 +5128,12 @@ class PVAllocScenario:
                 # export geojson for sanity check  ---
                 if (i_m == 1) and ('sanity' not in subdir_path):
                     gwr_all_building_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_all_building_gdf.geojson')
-                    gwr_subselec_facing_tag_gdf = gwr_all_building_gdf.merge(npv_df, on = 'EGID', how = 'inner')
-                    with open(f'{self.sett.name_dir_export_path}/gwr_subselec_facing_tag_gdf.geojson', 'w') as f:
-                        f.write(gwr_subselec_facing_tag_gdf.to_json())
+                    gwr_filter_tag_facing_gdf = gwr_all_building_gdf.merge(npv_df, on = 'EGID', how = 'inner')
+                    filter_tag_list = [col for col in npv_df.columns if 'filter_tag__' in col ]
+                    for filter_tag in filter_tag_list:
+                        gwr_filter_tag = gwr_filter_tag_facing_gdf.loc[gwr_filter_tag_facing_gdf[filter_tag] == True]
+                        with open(f'{self.sett.name_dir_export_path}/gwr_{filter_tag}_gdf.geojson', 'w') as f:
+                            f.write(gwr_filter_tag.to_json())
                 # ------
                 subselec_npv_df_empty = True
                 for filter_tag in self.sett.ALGOspec_subselec_filter_criteria: 
@@ -5705,7 +5792,7 @@ if __name__ == '__main__':
             mini_sub_model_nEGIDs                                = 100,
             create_gdf_export_of_topology                        = False,
             export_csvs                                          = True,
-            overwrite_scen_init                                  = False, 
+            overwrite_scen_init                                  = True, 
 
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
@@ -5743,16 +5830,16 @@ if __name__ == '__main__':
         #     bfs_numbers                     = bfs_mini_list,
         #     CSTRspec_capacity_type          = 'ep2050_zerobasis', 
         # ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll', 
-                      bfs_numbers                     = bfs_mini_list,
-                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
-                      GRIDspec_node_1hll_closed_TF = True,
-        ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll', 
+        #               bfs_numbers                     = bfs_mini_list,
+        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
+        #               GRIDspec_node_1hll_closed_TF = True,
+        # ),
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ewfirst',
                       bfs_numbers                     = bfs_mini_list,
                       CSTRspec_capacity_type          = 'ep2050_zerobasis',
                       GRIDspec_node_1hll_closed_TF = True,
-                      ALGOspec_subselec_filter_criteria = ('eastwest_2r', 'eastwest_nr' ), # df_tag_south_nr  df_tag_south_1r eastwest_2r   eastwest_nr
+                      ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
         ),
     
     ]
