@@ -126,9 +126,11 @@ class Visual_Settings:
     plot_ind_map_topo_egid_TF: List[bool]                       = field(default_factory=lambda: [False,      True,       False])
     plot_ind_map_topo_egid_incl_gridarea_TF: List[bool]         = field(default_factory=lambda: [False,      True,       False])
     plot_ind_mapline_prodHOY_EGIDrfcombo_TF: List[bool]         = field(default_factory=lambda: [False,      True,       False])
-    plot_ind_jsctr_instpower_specs_TF: List[bool]               = field(default_factory=lambda: [False,      True,       False])
-    plot_ind_lineband_contcharact_newinst_TF: List[bool]        = field(default_factory=lambda: [False,      True,       False])
     plot_ind_jsctr_ausricht_flaech_newinst_TF: List[bool]       = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_lineband_contcharact_newinst_TF: List[bool]        = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_hist_contcharact_newinst_TF: List[bool]            = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_bar_catgcharact_newinst_TF: List[bool]             = field(default_factory=lambda: [False,      True,       False])
+    plot_ind_summary_stats_by_node_TF: List[bool]             = field(default_factory=lambda: [False,      True,       False])
 
     plot_ind_line_productionHOY_per_EGID_specs: Dict        = field(default_factory=lambda: {
         'grid_nodes_counts_minmax': (5,999),         # try to select grid node with nEGIDs for visualization
@@ -183,7 +185,7 @@ class Visual_Settings:
     })
     plot_ind_line_PVproduction_bynode_specs: Dict        = field(default_factory=lambda: {
         'select_nodes_stacked_traces': [], 
-        'n_top_loss_nodes': 3,}
+        'n_top_loss_nodes': 15,}
         , ) 
     plot_ind_map_topo_egid_specs: Dict                      = field(default_factory=lambda: {
         'uniform_municip_color': '#fff2ae',
@@ -263,52 +265,6 @@ class Visual_Settings:
         'noisy_demand_factor': 0.0,
         
         })
-    plot_ind_jsctr_instpower_specs:Dict        = field(default_factory=lambda: {
-        'specific_selected_EGIDs': [], 
-        'run_selected_plot_parts': [
-                                'map',  
-                                'all_combo_TS',
-                                'actual_inst_TS',
-                                'recalc_inst_TS',
-                                'outsample_TS',
-                                'summary', 
-                                'econ_func', 
-                                'joint_scatter', 
-                                ],
-        'traces_in_timeseries_plot': [
-                                    'full_partition_combo', 
-                                    'actual_pv_inst', 
-                                    'recalc_pv_inst',
-                                    ], 
-        'rndm_sample_seed': None,
-        'n_rndm_egid_winst_pvdf': 1, 
-        'n_rndm_egid_winst_alloc': 1,
-        'n_rndm_egid_woinst': 1,
-        'n_rndm_egid_outsample': 4, 
-        'n_partition_pegid_minmax': (1,4), 
-        'roofpartition_color': '#fff2ae',
-        'actual_ts_trace_marker': 'cross', 
-        'summary_cols_only_in_legend': ['EGID', 'inst_TF', 'info_source', 'grid_node',
-                                        'GKLAS', 'GAREA', 'are_typ', 'sfhmfh_typ', 
-                                        'TotalPower', 'demand_elec_pGAREA', 
-                                        'pvtarif_Rp_kWh', 'elecpri_Rp_kWh', ],
-        'recalc_opt_max_flaeche_factor': None, #  1.5,  
-        'recalc_interest_rate_list': [0.02, ],
-        'tryout_generic_pvtariff_elecpri_Rp_kWh': (None, None),  # (5.0, 25.0),
-        'generic_pvinstcost_coeff_total': {
-            'use_generic_instcost_coeff_total_TF': False, 
-            'coeff_total_dict_list': [
-                {'a': 1193.8, 'b': 4860.3, 'c': 0.7291},  #  estimates pvinst_coefficients 
-                # {'a': 6000, 'b': 5000, 'c': 0.65},  #  higher fix cost, more curvutre, lower cost for large inst
-                # {'a': 4000, 'b': 3300, 'c': 0.83},  #  higher fix cost, then much closes to estim function, higher cost for large inst
-                # {'a': 7000, 'b': 1500, 'c': 0.85},  #  much higher fix costs, much less change in curvature, almost linear, much lower cost for large inst
-                ],                                                         
-        }, 
-        'noisy_demand_TF': False, 
-        'noisy_demand_factor': 0.0,
-        
-        })
-        
     plot_ind_lineband_contcharact_newinst_specs: Dict           = field(default_factory=lambda: {
             'trace_color_palette': 'Turbo',
             'upper_lower_bound_interval': [0.05, 0.95],
@@ -322,6 +278,38 @@ class Visual_Settings:
             # ('estim_pvinstcost_chf',   100,),
             ], 
         })
+    plot_ind_XX_charact_newinst_specs: Dict           = field(default_factory=lambda: {
+        'n_cols_cont_charact': 3,
+        'cols_cont_charact_inst_binsize': [
+            ('FLAECHE',                 35, ),
+            ('GAREA',                   35, ),
+            ('AUSRICHTUNG_original',    25, ),
+            ('AUSRICHTUNG_share_used',  25, ),
+            # ('NEIGUNG_original',        10, ),
+            # ('NEIGUNG_share_used',      10, ),
+            ], 
+        'n_cols_catg_charact': 4,
+        'max_n_rows_catg_charact': 2, 
+        'cols_catg_charact_inst': [
+            'GKLAS',
+            'GSTAT',
+            'GBAUJ_cat',
+            'are_typ',
+            'sfhmfh_typ',
+            'grid_node',
+            ],
+        })
+    plot_ind_summary_stats_by_node_specs: Dict              = field(default_factory=lambda:  {
+        'node_summary_list': [], 
+        'cont_col_plot': [
+            'AUSRICHTUNG_original',
+            'AUSRICHTUNG_FLAECHE',
+            'FLAECHE',
+            'GAREA',
+        ]
+    })
+
+    
     
 
     # for aggregated MC_algorithms
@@ -334,7 +322,7 @@ class Visual_Settings:
     
     plot_ind_map_omitted_egids_specs: Dict                  = field(default_factory=lambda: {
             'point_opacity': 0.7,
-            'point_size_select_but_omitted': 10,
+            'point_size_select_but_omitted': 12,
             'point_size_rest_not_selected': 1, # 4.5,
             'point_color_select_but_omitted': '#ed4242', # red
             'point_color_rest_not_selected': '#ff78ef',  # pink
@@ -408,33 +396,19 @@ class Visualization:
 
 
     # ------------------------------------------------------------------------------------------------------
-    # VISUALIZATION of PVAlloc_INITIALIZATION + SanityCHECK
+    # VISUALIZATION of PVAlloc_INITIALIZATION | SanityCHECK | PVAlloc_MC_ALGORITHM
     # ------------------------------------------------------------------------------------------------------
-    def plot_ALL_init_sanitycheck(self, ):
+    def plot_ALL(self, ):
         plots = [
+            # init sanity check plots
             self.plot_ind_var_summary_stats, 
             self.plot_demand_profiles,
             self.plot_ind_hist_pvcapaprod_sanitycheck, 
             # self.plot_ind_boxp_radiation_rng_sanitycheck, 
             self.plot_ind_charac_omitted_gwr, 
             self.plot_ind_line_meteo_radiation, 
-        ]
-        for plt in plots:
-            # try: 
-            plt()
-            # except Exception as e:
-            #     print_to_logfile(f'Error in plot_ind_var_summary_stats: {plt.__name__} - {e}', self.visual_sett.log_name)
-        
-        self.plot_ind_hist_pvcapaprod_sanitycheck()
 
-
-
-
-    # ------------------------------------------------------------------------------------------------------
-    # VISUALIZATION of PVAlloc_MC_ALGORITHM
-    # ------------------------------------------------------------------------------------------------------
-    def plot_ALL_mcalgorithm(self,): 
-        plots = [
+            # mc algorithm plots
             self.plot_ind_line_installedCap, 
             self.plot_ind_line_productionHOY_per_node, 
             self.plot_ind_line_productionHOY_per_EGID, 
@@ -449,16 +423,23 @@ class Visualization:
             self.plot_ind_map_topo_egid_incl_gridarea, 
             self.plot_ind_mapline_prodHOY_EGIDrfcombo, 
 
-            self.plot_ind_lineband_contcharact_newinst,
             self.plot_ind_jsctr_ausricht_flaech_newinst,
+            self.plot_ind_lineband_contcharact_newinst,
+            self.plot_ind_hist_contcharact_newinst,
+            self.plot_ind_bar_catgcharact_newinst,
+            self.plot_ind_summary_stats_by_node,
+
+
         ]
         for plt in plots:
             # try: 
             plt()
             # except Exception as e:
-            #     print_to_logfile(f'Error in plot_ALL_mcalgorithm: {plt.__name__} - {e}', self.visual_sett.log_name)
+                # print_to_logfile(f'Error in plot_ind_var_summary_stats: {plt.__name__} - {e}', self.visual_sett.log_name)
         
-        self.plot_ind_lineband_contcharact_newinst()
+
+
+
 
 
 
@@ -871,7 +852,7 @@ class Visualization:
                                     x=data_series.to_list(),
                                     name=scen_col_legend,
                                     marker=dict(color=color_map_cont[col]),
-                                    legendgroup=scen,
+                                    # legendgroup=scen,
                                     showlegend=True,
                                     nbinsx=30,
                                     opacity=0.6,
@@ -3759,24 +3740,7 @@ class Visualization:
                                             ]
                 fig_agg = go.Figure()
                 CSTRspec_capacity_type_added_TF = False
-
-                # add EP2050 capacity
-                # scens_bp2050 = []
-                # for i_scen, scen in enumerate(self.pvalloc_scen_list):
-                #     self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
-                #     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
-                #     if self.pvalloc_scen.CSTRspec_capacity_type == 'ep2050_zerobasis':
-                #         scens_bp2050.append(scen)
-                # if len(scens_bp2050) > 0:
-                #     scen_bp2050 = scens_bp2050[0]
-                #     self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen_bp2050}/{self.visual_sett.MC_subdir_for_plot}')[0]
-                #     self.get_pvalloc_sett_output(pvalloc_scen_name = scen_bp2050)
-
-                #     if self.pvalloc_scen.CSTRspec_capacity_type == 'ep2050_zerobasis':
-                #         constrcapa = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/constrcapa.parquet')
-                #         constrcapa['n_inter'] = range(1, len(constrcapa) + 1)
-                #         fig_agg.add_trace(go.Scatter(x=constrcapa['n_inter'], y=constrcapa['constr_capacity_kw'], name='EP2050+ Inst.Cap. (kW)', mode='lines+markers', line=dict(color='darkred', width=3, dash='dash'), marker=dict(symbol='star',), ))
-
+                unique_node_color_map = {}
 
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
@@ -3799,7 +3763,13 @@ class Visualization:
                     n_top_nodes = self.visual_sett.plot_ind_line_PVproduction_bynode_specs['n_top_loss_nodes']
                     manually_added_nodes_sett = self.visual_sett.plot_ind_line_PVproduction_bynode_specs['select_nodes_stacked_traces']
                     n_pick_top_nodes = n_top_nodes - len(manually_added_nodes_sett) 
-                    top_loss_nodes = manually_added_nodes_sett + loss_nodes.head(n_pick_top_nodes).select('grid_node').unique().to_series().to_list()
+                    top_loss_nodes = sorted(manually_added_nodes_sett + loss_nodes.head(n_pick_top_nodes).select('grid_node').unique().to_series().to_list() )
+
+                    node_not_in_map = [node for node in top_loss_nodes if node not in topo.keys()]                    
+                    unique_node_color_map.update({
+                        node: pc.qualitative.Plotly[i % len(pc.qualitative.Plotly)]
+                        for i, node in enumerate(node_not_in_map)
+                    })
 
 
                     # add EP2050 capacity ------------------
@@ -3810,7 +3780,6 @@ class Visualization:
                             constrcapa = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/constrcapa.parquet')
                             constrcapa['n_inter'] = range(1, len(constrcapa) + 1)
                             fig_agg.add_trace(go.Scatter(x=constrcapa['n_inter'], y=constrcapa['constr_capacity_kw'], name='EP2050+ Inst.Cap. (kW)', mode='lines+markers', line=dict(color='darkred', width=3, dash='dash'), marker=dict(symbol='star',), ))
-
 
 
                     # girdnode_df: transform and prep ------------------
@@ -4010,8 +3979,9 @@ class Visualization:
                     fig_agg.add_trace(go.Scatter(x=[None,], y=[None,], name='', opacity=0, line=dict(color = 'rgba(0,0,0,0)',), ))  # empty trace for spacing in legend
                   
                     for node in top_loss_nodes:
+                        opacity_value = random.uniform(0.2, 0.5)
                         agg_bynode_subdf = agg_bynode_df_by_iter.filter(pl.col('grid_node') == node).to_pandas()
-                        fig_agg.add_trace(go.Scatter(x=agg_bynode_subdf['n_iter'], y=agg_bynode_subdf['feedin_atnode_loss_kW'], name=f'node {node} _loss_kW', mode='lines+markers', line=dict(width=1,), opacity=0.4, stackgroup='loss_stack',))
+                        fig_agg.add_trace(go.Scatter(x=agg_bynode_subdf['n_iter'], y=agg_bynode_subdf['feedin_atnode_loss_kW'], name=f'node {node} loss_kW', mode='lines+markers', line=dict(color=unique_node_color_map[node], width=1,), marker=dict(symbol='cross',), opacity=opacity_value, stackgroup=scen,))
 
                     fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['n_EGID_pvinst'],                          name='n pvinst insample',               mode='lines+markers', line=dict(color=color_pal[color_pal_idx-4],),                 marker=dict(symbol='circle',),  ))                    
                     fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=gridnode_df_by_iter['TotalPower'],                      name='TotalPower',                      mode='lines+markers', line=dict(color=color_pal[color_pal_idx-6],),                 marker=dict(symbol='circle',),  ))                    
@@ -4038,7 +4008,7 @@ class Visualization:
                         range=[0, max(gridnode_df_by_iter['max_demand_feedin_atnode_kW']) * 1.2],  # Adjust range as needed
                     ),  
                     yaxis2=dict(
-                        title='Holding Capacity',
+                        title='',
                         overlaying='y',
                         side='right',
                         range=[0, max(gridnode_df_by_iter['holding_capacity_mean_of_mean']) * 1.2]  # Adjust range as needed
@@ -4058,147 +4028,7 @@ class Visualization:
                 print_to_logfile(f'\texport: plot_agg_line_PVproduction___{len(self.pvalloc_scen_list)}scen.html', self.visual_sett.log_name)
 
 
-
-        def plot_ind_line_PVproduction_bynode(self, ):
-            if self.visual_sett.plot_ind_line_PVproduction_bynode_TF[0]:
-
-                checkpoint_to_logfile('plot_ind_line_PVproduction', self.visual_sett.log_name)
-
-                trace_color_dict = {
-                    'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
-                    'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
-                    'Teal': pc.sequential.Teal, 'Magenta': pc.sequential.Magenta, 'Plotly3': pc.sequential.Plotly3,
-                    'Viridis': pc.sequential.Viridis, 'Turbo': pc.sequential.Turbo, 'Blackbody': pc.sequential.Blackbody, 
-                    'Bluered': pc.sequential.Bluered, 'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
-                    'Rainbow': pc.sequential.Rainbow, 'Burg': pc.sequential.Burg, 'Cividis': pc.sequential.Cividis,
-                    'Inferno': pc.sequential.Inferno, 'Magma': pc.sequential.Magma, 'Plasma': pc.sequential.Plasma,
-                }     
-
-                fig_agg_color_palettes = ['Oranges', 'Purples', 'Mint', 'Greys', 'Blues', 'Greens', 'Reds',
-                                          'Oranges', 'Purples', 'Mint', 'Greys', 'Blues', 'Greens', 'Reds',
-
-                                            ]
-                fig_agg = go.Figure()
-
-                for i_scen, scen in enumerate(self.pvalloc_scen_list):
-
-
-                    # setup + import --------------------------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
-                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
-
-                    gridnode_df_paths   = glob.glob(f'{self.visual_sett.mc_data_path}/pred_gridprem_node_by_M/gridnode_df_*.parquet')
-                    trange_prediction   = pd.read_parquet(f'{self.visual_sett.mc_data_path}/trange_prediction.parquet')
-                    topo                = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
-                    gridnode_df_main    = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
-                    
-
-                    # select nodes to for stacking ------------------
-                    loss_nodes = gridnode_df_main.group_by('grid_node').agg([
-                        pl.sum('feedin_atnode_loss_kW').alias('feedin_atnode_loss_kW'),
-                    ]).sort('feedin_atnode_loss_kW', descending=True)
-                    
-                    n_top_nodes = self.visual_sett.plot_ind_line_PVproduction_bynode_specs['n_top_loss_nodes']
-                    manually_added_nodes_sett = self.visual_sett.plot_ind_line_PVproduction_bynode_specs['select_nodes_stacked_traces']
-                    n_pick_top_nodes = n_top_nodes - len(manually_added_nodes_sett) 
-                    top_loss_nodes = manually_added_nodes_sett + loss_nodes.head(n_pick_top_nodes).select('grid_node').unique().to_series().to_list()
-
-
-                    # girdnode_df: transform and prep ------------------
-                    gridnode_df_by_iter_list = []
-                    agg_bynode_df_by_iter_list = []
-                    for path in gridnode_df_paths:
-                        n_iter = int(path.split('gridnode_df_')[1].split('.parquet')[0])
                         
-                        # taken 1:1 from plot_ind_line_productionHOY_per_node() ==========
-                        gridnode_df = pl.read_parquet(path)
-                        gridnode_df = gridnode_df.with_columns([
-                            pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
-                        ])
-                        gridnode_df = gridnode_df.sort("t_int", descending=False)
-
-                        # calc holding capacity
-                        gridnode_df = gridnode_df.with_columns([
-                            ((pl.col('kW_threshold') - pl.col('max_demand_feedin_atnode_kW')) / pl.col('kW_threshold')).alias('holding_capacity')
-                        ])
-
-                        # aggregate to total production per HOY
-                        gridnode_total_df = gridnode_df.group_by(['t', 't_int']).agg([
-                            
-                            pl.col('demand_kW').sum().alias('demand_kW'),
-                            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
-                            pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
-                            pl.col('netdemand_kW').sum().alias('netdemand_kW'),
-
-                            pl.col('feedin_atnode_kW').sum().alias('feedin_atnode_kW'),
-                            pl.col('demand_atnode_kW').sum().alias('demand_atnode_kW'),
-                            pl.col('max_demand_feedin_atnode_kW').sum().alias('max_demand_feedin_atnode_kW'),
-                            pl.col('feedin_atnode_taken_kW').sum().alias('feedin_atnode_taken_kW'),
-                            pl.col('feedin_atnode_loss_kW').sum().alias('feedin_atnode_loss_kW'),
-                            pl.col('kW_threshold').sum().alias('kW_threshold'),
-
-                            pl.col('holding_capacity').min().alias('holding_capacity_min'),
-                            pl.col('holding_capacity').max().alias('holding_capacity_max'),
-                            pl.col('holding_capacity').mean().alias('holding_capacity_mean'),
-                        ])
-                        gridnode_total_df = gridnode_total_df.sort("t_int", descending=False)
-                        # ==========
-
-                        agg_gridnode_row = gridnode_total_df.select([
-                            pl.sum('demand_kW').alias('demand_kW'),
-                            pl.sum('pvprod_kW').alias('pvprod_kW'),
-                            pl.sum('selfconsum_kW').alias('selfconsum_kW'),
-                            pl.sum('netdemand_kW').alias('netdemand_kW'),
-
-                            pl.sum('feedin_atnode_kW').alias('feedin_atnode_kW'), 
-                            pl.sum('demand_atnode_kW').alias('demand_atnode_kW'), 
-                            pl.sum('max_demand_feedin_atnode_kW').alias('max_demand_feedin_atnode_kW'),
-                            pl.sum('feedin_atnode_taken_kW').alias('feedin_atnode_taken_kW'), 
-                            pl.sum('feedin_atnode_loss_kW').alias('feedin_atnode_loss_kW'), 
-                            pl.first('kW_threshold').alias('kW_threshold'),
-
-                            pl.col('holding_capacity_min').min().alias('holding_capacity_min_abs'),
-                            pl.col('holding_capacity_mean').min().alias('holding_capacity_min_of_mean'),
-                            pl.col('holding_capacity_mean').mean().alias('holding_capacity_mean_of_mean'),
-                            pl.col('holding_capacity_mean').max().alias('holding_capacity_max_of_mean'),
-                            pl.col('holding_capacity_max').max().alias('holding_capacity_max_abs'),
-                        ]).with_columns([
-                            pl.lit(n_iter).alias('n_iter'),
-                            pl.lit(scen).alias('scen'),
-                        ])
-
-                        # add TotalPower per iter
-                        trange_prediction = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/trange_prediction.parquet')
-                        n_iter_date = trange_prediction.loc[trange_prediction['n_iter'] == n_iter, 'date'].values[0]
-                        topo_egid_TotalPower_list = []
-                        for k, v in topo.items():
-                            Topo_BeginOp_date = pd.to_datetime(v['pv_inst']['BeginOp'], errors='coerce')
-                            if (Topo_BeginOp_date <= n_iter_date ) & (v['pv_inst']['inst_TF'] == True):
-                                topo_egid_TotalPower_list.append(v['pv_inst']['TotalPower'])
-                        
-                        agg_gridnode_row = agg_gridnode_row.with_columns([
-                            pl.lit(sum(topo_egid_TotalPower_list)).alias('TotalPower'),
-                        ])
-                        
-                        gridnode_df_by_iter_list.append(agg_gridnode_row)
-
-                        # add individual grid specific rows to second df
-                        agg_bynode_row = gridnode_df.filter(pl.col('grid_node').is_in(top_loss_nodes)).group_by('grid_node').agg([
-                            pl.lit(n_iter).alias('n_iter'),
-                            pl.lit(scen).alias('scen'),
-                        ])
-                        agg_bynode_df_by_iter_list.append(agg_bynode_row)
-
-                       
-                    gridnode_df_by_iter     = pl.concat(gridnode_df_by_iter_list, how="vertical")
-                    agg_bynode_df_by_iter   = pl.concat(agg_bynode_df_by_iter_list, how="vertical")
-
-
-
-
-                        
-
-
         def plot_ind_hist_NPV_freepartitions(self, ): 
             if self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[0]:
 
@@ -4388,7 +4218,6 @@ class Visualization:
         def plot_ind_lineband_contcharact_newinst(self, ):
 
             if self.visual_sett.plot_ind_lineband_contcharact_newinst_TF[0]:
-            #  self.visual_sett.plot_ind_lineband_contcharact_newinst_specs
 
                 checkpoint_to_logfile('plot_ind_lineband_contcharact_newinst', self.visual_sett.log_name)
 
@@ -4756,7 +4585,7 @@ class Visualization:
             if self.visual_sett.plot_ind_map_topo_egid_incl_gridarea_TF[0]:
 
                 map_topo_egid_specs = self.visual_sett.plot_ind_map_topo_egid_specs
-                checkpoint_to_logfile('plot_ind_map_topo_egid', self.visual_sett.log_name)
+                checkpoint_to_logfile('plot_ind_map_topo_egid_incl_gridarea', self.visual_sett.log_name)
 
                 trace_color_dict = {
                     'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
@@ -4780,8 +4609,9 @@ class Visualization:
                         gwr_gdf         = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
                         gm_gdf          = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gm_shp_gdf.geojson')
                         dsonodes_gdf    = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/dsonodes_gdf.geojson')
+                        pred_inst_df    = pl.read_parquet( f'{self.visual_sett.mc_data_path}/pred_inst_df.parquet')
+                        topo            = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
 
-                        topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
                         egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
                         gklas_list, node_list, demand_type_list, pvtarif_list, elecpri_list, elecpri_info_list = [], [], [], [], [], []
 
@@ -4985,7 +4815,27 @@ class Visualization:
                             # hull_trace.visible = True                   # Ensures all toggle together
                             first_node_hull = False
                             
-                            fig_topoegid.add_trace(hull_trace)                          
+                            fig_topoegid.add_trace(hull_trace)      
+
+                    # topo egid map: add iter_round hulls ----------------
+                    if True:
+                        pred_inst_df = pred_inst_df.with_columns([
+                            pl.col("iter_round").cast(pl.Int64).alias("iter_round")
+                        ])
+                        pred_inst_df = pred_inst_df.to_pandas()
+                        subinst2_gdf_iter = subinst2_gdf.merge(pred_inst_df[['EGID', 'iter_round']], on='EGID', how='left')
+                        unique_iter_rounds = sorted(subinst2_gdf_iter['iter_round'].dropna().unique())
+
+                        for iter in unique_iter_rounds:
+                            gdf_iter = subinst2_gdf_iter.loc[subinst2_gdf_iter['iter_round'] == iter].copy()
+                            fig_topoegid.add_trace(go.Scattermapbox(lat=gdf_iter.geometry.y,lon=gdf_iter.geometry.x, mode='markers',
+                                marker=dict(
+                                    size=map_topo_egid_specs['point_size_pv'],
+                                    opacity=0.9,
+                                ),
+                                name = f'pvinst iter {iter}',
+                            ))
+                    
  
                     
                     # Update layout ----------------
@@ -5007,6 +4857,8 @@ class Visualization:
                         fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_map_topo_egid_incl_gridarea.html')
                     else:
                         fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_map_topo_egid_incl_gridarea.html')
+                    print_to_logfile(f'\texport: plot_ind_map_topo_egid_incl_gridarea (for: {scen})', self.visual_sett.log_name)
+
 
 
 
@@ -6661,6 +6513,7 @@ class Visualization:
                     fig_instpwr_jsctr.write_html(f'{self.visual_sett.visual_path}/plot_ind_mapline_fig_instpwr_jsctr___{len(self.pvalloc_scen_list)}scen.html')
 
 
+
         def plot_ind_jsctr_ausricht_flaech_newinst(self,):
             if self.visual_sett.plot_ind_jsctr_ausricht_flaech_newinst_TF[0]:
                 
@@ -6763,19 +6616,566 @@ class Visualization:
 
 
 
+        def plot_ind_hist_contcharact_newinst(self, ):
+            if self.visual_sett.plot_ind_hist_contcharact_newinst_TF[0]:
+
+                checkpoint_to_logfile('plot_ind_hist_contcharact_newinst', self.visual_sett.log_name)
+
+                # available color palettes
+                trace_color_dict = {
+                    'Blues': pc.sequential.Blues, 'Greens': pc.sequential.Greens, 'Reds': pc.sequential.Reds, 'Oranges': pc.sequential.Oranges,
+                    'Purples': pc.sequential.Purples, 'Greys': pc.sequential.Greys, 'Mint': pc.sequential.Mint, 'solar': pc.sequential.solar,
+                    'Teal': pc.sequential.Teal, 'Magenta': pc.sequential.Magenta, 'Plotly3': pc.sequential.Plotly3,
+                    'Viridis': pc.sequential.Viridis, 'Turbo': pc.sequential.Turbo, 'Blackbody': pc.sequential.Blackbody, 
+                    'Bluered': pc.sequential.Bluered, 'Aggrnyl': pc.sequential.Aggrnyl, 'Agsunset': pc.sequential.Agsunset,
+                    'Rainbow': pc.sequential.Rainbow, 'Burg': pc.sequential.Burg, 'Cividis': pc.sequential.Cividis,
+                    'Inferno': pc.sequential.Inferno, 'Magma': pc.sequential.Magma, 'Plasma': pc.sequential.Plasma,
+                }     
+                iter_color_map = {}
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+                    # setup + import ----------
+                    colnames_binsize_tuples = self.visual_sett.plot_ind_XX_charact_newinst_specs['cols_cont_charact_inst_binsize']
+                    n_cols                  = self.visual_sett.plot_ind_XX_charact_newinst_specs['n_cols_cont_charact']
+                    n_rows                   = int(np.ceil(len(colnames_binsize_tuples) / n_cols))
+                    
+                
+                    topo         = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+                    pred_inst_df = pl.read_parquet( f'{self.visual_sett.mc_data_path}/pred_inst_df.parquet')
 
 
+                    # add iter_round col if missing
+                    if 'iter_round' not in pred_inst_df.columns:
+                        pred_inst_df = pred_inst_df.with_columns([
+                            pl.col('BeginOp').str.strptime(pl.Date, fmt="%Y-%m-%d", strict=False).dt.year().alias('BeginOp_year')
+                        ])
+                        year_to_index = {year: i+1 for i, year in enumerate(sorted(pred_inst_df['BeginOp_year'].unique()))}
+                        pred_inst_df = pred_inst_df.with_columns([
+                            pl.col('BeginOp_year').map_dict(year_to_index).alias('iter_round')
+                        ])
+                        # predinst_all['BeginOp_date'] = pd.to_datetime(predinst_all['BeginOp'], errors='coerce')
+                        # year_to_index = {year: i+1 for i, year in enumerate(sorted(predinst_all['BeginOp_date'].dt.year.unique()))}
+                        # predinst_all['iter_round'] = predinst_all['BeginOp_date'].dt.year.map(year_to_index) 
+                    
 
+                    # transform / adjust cols
+                    GAREA_list =[]
+                    for k,v in topo.items():
+                        row = {
+                            'EGID': k,
+                            'GAREA': v['gwr_info']['garea'],    
+                        }
+                        GAREA_list.append(row)
+                    GAREA_df = pl.DataFrame(GAREA_list)
+                    pred_inst_df = pred_inst_df.join(GAREA_df, on='EGID', how='left')
+
+                    pred_inst_df = pred_inst_df.with_columns([
+                        pl.col('iter_round').cast(pl.Int64).alias('iter_round'),
+                    
+                        pl.col('AUSRICHTUNG').alias('AUSRICHTUNG_original'),
+                        pl.col('NEIGUNG').alias('NEIGUNG_original'),
+                        (pl.col('AUSRICHTUNG') * pl.col('share_pvprod_used')).alias('AUSRICHTUNG_share_used'),
+                        (pl.col('NEIGUNG') * pl.col('share_pvprod_used')).alias('NEIGUNG_share_used'),
+                    ])
+
+                    pred_inst_agg = pred_inst_df.group_by('EGID').agg([
+                        pl.col('df_uid').count().alias('n_dfuid'),
+                        pl.col('iter_round').first().alias('iter_round'),
+                        pl.col('FLAECHE').sum().alias('FLAECHE'),   
+                        pl.col('GAREA').sum().alias('GAREA'),   
+                        pl.col('AUSRICHTUNG_share_used').sum().alias('AUSRICHTUNG_share_used'),
+                        pl.col('NEIGUNG_share_used').sum().alias('NEIGUNG_share_used'),
+                        pl.col('AUSRICHTUNG').mean().alias('AUSRICHTUNG_mean'),
+                    ])
+
+                    # add iter_color_map
+                    unique_iter = list(pred_inst_df['iter_round'].unique())
+                    iter_not_in_map = [it for it in unique_iter if it not in iter_color_map.keys()]
+                    iter_color_map.update({
+                        it: px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)]
+                        for i, it in enumerate(iter_not_in_map)
+                        })
+
+
+                    # plots ----------
+                    fig = make_subplots(rows = n_rows, cols = n_cols,
+                            subplot_titles = [f'{col_tuple[0]}' for col_tuple in colnames_binsize_tuples],)
+
+                    for i_col, col_tuple in enumerate(colnames_binsize_tuples):
+                        col           = col_tuple[0]
+                        n_bins        = col_tuple[1]
+                        subplot_row   = (i_col // n_cols) + 1
+                        subplot_col   = (i_col % n_cols) + 1
+
+                        if 'original' in col:
+                            df_plot = pred_inst_df.to_pandas().copy()
+                        else: 
+                            df_plot = pred_inst_agg.to_pandas().copy() 
+
+                        global_x_min = df_plot[col].min()
+                        global_x_max = df_plot[col].max()
+                        global_bin_size = (global_x_max - global_x_min) / n_bins
+
+                        for i_iter, iter in enumerate(sorted(df_plot['iter_round'].unique())):
+                            show_legend = True if i_col == 0 else False
+                            bin_size  = int((df_plot[col].max() - df_plot[col].min()) / n_bins)
+                            df_iter = df_plot.loc[df_plot['iter_round'] == iter]
+
+                            fig.add_trace(
+                                go.Histogram(
+                                    x=df_iter[col],
+                                    xbins=dict(
+                                        start=global_x_min,
+                                        end=global_x_max,
+                                        size=global_bin_size,
+                                    ),
+                                    # nbinsx=n_bins,
+                                    # name=f'col {col} iter {iter}',
+                                    name=f'iter {iter}',
+                                    marker_color=iter_color_map[iter],
+                                    opacity=0.7, 
+                                    showlegend=show_legend,
+                                    legendgroup = f'iter{iter}',
+                                ),
+                                row=subplot_row,
+                                col=subplot_col,
+                            )
+
+                    # update layout
+                    fig.update_layout(
+                        title_text=f'Hist Continous Columns by Iteration (scen: {scen})', 
+                        barmode= 'overlay',
+                        template= 'plotly_white',
+                    )
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_contcharact_newinst_TF[1]:
+                        if self.visual_sett.plot_ind_hist_contcharact_newinst_TF[2]:    
+                            fig.show()
+                        elif not self.visual_sett.plot_ind_hist_contcharact_newinst_TF[2]:
+                            fig.show() if i_scen == 0 else None
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_hist_contcharact_newinst.html')
+                    else:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_hist_contcharact_newinst.html')
+                    print_to_logfile(f'\texport: plot_ind_hist_contcharact_newinst (for: {scen})', self.visual_sett.log_name)
+
+
+        def plot_ind_bar_catgcharact_newinst(self, ):
+            if self.visual_sett.plot_ind_bar_catgcharact_newinst_TF[0]:
+                checkpoint_to_logfile('plot_ind_bar_catgcharact_newinst', self.visual_sett.log_name)
+                color_map_catg = {}
+
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+                    # setup + import ----------
+                    cols_catg_charact_inst  = self.visual_sett.plot_ind_XX_charact_newinst_specs['cols_catg_charact_inst']
+                    n_cols_subplot          = self.visual_sett.plot_ind_XX_charact_newinst_specs['n_cols_catg_charact']
+                    max_n_rows_catg_charact = self.visual_sett.plot_ind_XX_charact_newinst_specs['max_n_rows_catg_charact']
+                
+                    topo         = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+                    pred_inst_df = pl.read_parquet( f'{self.visual_sett.mc_data_path}/pred_inst_df.parquet')
+
+                    pred_inst_df = pred_inst_df.with_columns([
+                        pl.col('iter_round').cast(pl.Int64).alias('iter_round'),
+                    ])
+                    
+                    # topo_df
+                    rows = []
+                    # compute topo_df
+                    for k,v in topo.items():
+
+                        partitions = v.get('solkat_partitions', {})
+                        gwr_info = v.get('gwr_info', {})
+                        pv_inst = v.get('pv_inst', {})
+
+                        for k_p, v_p in partitions.items():
+                            row = {
+                                'EGID': k,
+                                'df_uid': k_p,
+                                'bfs': gwr_info.get('bfs'),
+                                'GKLAS': gwr_info.get('gklas'),
+                                'GSTAT': gwr_info.get('gstat'),
+                                'GAREA': gwr_info.get('garea'),
+                                'GBAUJ': gwr_info.get('gbauj'),
+                                'are_typ': gwr_info.get('are_typ'),
+                                'sfhmfh_typ': gwr_info.get('sfhmfh_typ'),
+                                'demand_arch_typ': v.get('demand_arch_typ'),
+                                'demand_elec_dem_pGAREA': v.get('demand_elec_dem_pGAREA'),
+                                'grid_node': v.get('grid_node'),
+
+                                'inst_TF': pv_inst.get('inst_TF'),
+                                'info_source': pv_inst.get('info_source'),
+                                'pvid': pv_inst.get('xtf_id'),
+                                'pvtarif_Rp_kWh': v.get('pvtarif_Rp_kWh'),
+                                'TotalPower': pv_inst.get('TotalPower'),
+                                'df_uid_w_inst': v.get('df_uid_w_inst'),
+
+                                'FLAECHE': v_p.get('FLAECHE'),
+                                'AUSRICHTUNG': v_p.get('AUSRICHTUNG'),
+                                'STROMERTRAG': v_p.get('STROMERTRAG'),
+                                'NEIGUNG': v_p.get('NEIGUNG'),
+                                'MSTRAHLUNG': v_p.get('MSTRAHLUNG'),
+                                'elecpri_Rp_kWh': v.get('elecpri_Rp_kWh'),
+                            }
+                            rows.append(row)
+
+                    topo_df_catg_raw = pl.DataFrame(rows)
+                    # transform data to relevant columns ----------
+                    # GBAUJ into bins
+                    if True: 
+                        topo_df_catg_raw = topo_df_catg_raw.with_columns(
+                            pl.when(pl.col("GBAUJ") == "").then(pl.lit(0)).otherwise(pl.col("GBAUJ").cast(pl.Int32)).alias("GBAUJ_int")
+                        )
+                        bins = np.linspace(1900, 2030, 14)  # 13 bins => 14 edges
+                        labels = [f"{int(bins[i])}-{int(bins[i+1]-1)}" for i in range(len(bins)-1)]
+
+                        # Initialize category column
+                        topo_df_catg_raw = topo_df_catg_raw.with_columns(
+                            pl.when(pl.col("GBAUJ") == "")
+                            .then(pl.lit("missing"))
+                            .otherwise(pl.lit("unknown"))
+                            .alias("GBAUJ_cat")
+                        )
+
+                        # Assign bins for non-missing values
+                        for i in range(len(bins) - 1):
+                            lower = int(bins[i])
+                            upper = int(bins[i+1])
+
+                            label = f"{lower}-{upper-1}"
+
+                            topo_df_catg_raw = topo_df_catg_raw.with_columns(
+                                pl.when(
+                                    (pl.col("GBAUJ") != "") &  # skip empty values
+                                    (pl.col("GBAUJ_int") >= lower) &
+                                    (pl.col("GBAUJ_int") < upper)
+                                )
+                                .then(pl.lit(label))
+                                .otherwise(pl.col("GBAUJ_cat"))
+                                .alias("GBAUJ_cat")
+                            )
+                        topo_df_catg_raw[['GBAUJ', 'GBAUJ_int', 'GBAUJ_cat' ]]
+
+                    
+                    # make color mapping CATG ----------
+                    topo_df_catg = topo_df_catg_raw.group_by('EGID').agg([
+                        pl.col('GKLAS').first().alias('GKLAS'),
+                        pl.col('GSTAT').first().alias('GSTAT'),
+                        pl.col('GBAUJ_cat').first().alias('GBAUJ_cat'),
+                        pl.col('are_typ').first().alias('are_typ'),
+                        pl.col('sfhmfh_typ').first().alias('sfhmfh_typ'),
+                        pl.col('grid_node').first().alias('grid_node'),
+                    ])
+
+                    all_categories = (
+                        topo_df_catg
+                        .select(cols_catg_charact_inst)
+                        .unpivot(on=cols_catg_charact_inst)   # equivalent to melt()
+                        .select("value")
+                        .unique()
+                        .to_series()
+                        .to_list()
+                    )
+                    categoires_not_in_color_map = [cat for cat in all_categories if cat not in color_map_catg.keys()]
+                    color_map_catg.update({
+                        cat: px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)]
+                        for i, cat in enumerate(categoires_not_in_color_map)
+                    })
+                
+                    # Plots ----------------------------------------
+                    df_plot = pred_inst_df.join(topo_df_catg, on='EGID', how='left')
+                    
+                    n_rows_subplot_all = int(np.ceil(len(list(df_plot['iter_round'].unique())) / n_cols_subplot)) 
+                    n_rows_subplot = n_rows_subplot_all if n_rows_subplot_all <= max_n_rows_catg_charact else max_n_rows_catg_charact
+                    
+                    iter_list = sorted(list(df_plot['iter_round'].unique()))
+                    if len(iter_list)> (n_rows_subplot * n_cols_subplot):
+                        iter_list = iter_list[:n_rows_subplot * n_cols_subplot]
+
+                    fig = make_subplots(rows = n_rows_subplot, cols = n_cols_subplot,
+                            subplot_titles = [f'iter {iter}' for iter in iter_list])
+                    
+                    for i_iter, iter in enumerate(iter_list):
+                        # df_iter = df_plot.loc[df_plot['iter_round'] == iter]
+                        df_iter = df_plot.filter(df_plot['iter_round'] == iter)
+                        
+                        for i_col, col in enumerate(cols_catg_charact_inst):
+                           
+                            vc = df_iter[col].value_counts().to_dict(as_series=True)
+                            # categories = list(vc.keys()) # vc[col]
+                            # counts = list(vc.values())    # vc["count"]
+                            categories = vc[col]
+                            counts = vc["count"]
+                            scen_col_legend = f"{scen} – {col} - iter {iter}"
+                            
+                            for idx, (cat, count) in enumerate(zip(categories, counts)):
+                                show_legend_for_trace = True # if idx == 0 else False
+                                fig.add_trace(
+                                    go.Bar(
+                                        x=[col],
+                                        y=[count],
+                                        name = scen_col_legend,
+                                        marker=dict(color=color_map_catg[cat]),   
+                                        # legendgroup=scen_col_legend,
+                                        showlegend=show_legend_for_trace,
+                                        # name=cat,                     # category shown in legend
+                                        # legendgroup=cat,              # same category across columns/scenarios
+                                        base=None,                    # required for stacking
+                                        text=[f"{cat}: {count}"],
+                                        hovertemplate=(
+                                            f"Scenario: {scen}<br>"
+                                            f"Column: {col}<br>"
+                                            f"Category: {cat}<br>"
+                                            f"Share: {count / sum(counts) * 100:.2f}%"
+                                            "Count: %{y}<extra></extra>"
+                                        )
+                                    ),
+                                    row = (i_iter // n_cols_subplot) + 1,
+                                    col = (i_iter % n_cols_subplot) + 1,
+                                )
+
+                    # update layout + export
+                    fig.update_layout(
+                        title_text=f'Hist Continous Columns by Iteration (scen: {scen})', 
+                        barmode= 'stack',
+                        template= 'plotly_white',
+                    )
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_bar_catgcharact_newinst_TF[1]:
+                        if self.visual_sett.plot_ind_bar_catgcharact_newinst_TF[2]:    
+                            fig.show()
+                        elif not self.visual_sett.plot_ind_bar_catgcharact_newinst_TF[2]:
+                            fig.show() if i_scen == 0 else None
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_bar_catgcharact_newinst.html')
+                    else:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_bar_catgcharact_newinst.html')
+                    print_to_logfile(f'\texport: plot_ind_bar_catgcharact_newinst (for: {scen})', self.visual_sett.log_name)
+                    
+
+        def plot_ind_summary_stats_by_node(self, ):
+            if self.visual_sett.plot_ind_summary_stats_by_node_TF[0]:
+
+                checkpoint_to_logfile('plot_ind_summary_stats_by_node', self.visual_sett.log_name)
+
+                # "settings" ----------
+                n_cols_cont = 1
+                node_summary_list = self.visual_sett.plot_ind_summary_stats_by_node_specs['node_summary_list']
+                cont_col_plot     = self.visual_sett.plot_ind_summary_stats_by_node_specs['cont_col_plot']
+
+
+                # color dict ----------
+                if True: 
+                    global_color_rows = []
+                    for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                        self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+                        self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+
+                        # import
+                        topo         = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+
+                        # compute topo_df
+                        for k,v in topo.items():
+
+                            partitions = v.get('solkat_partitions', {})
+                            gwr_info = v.get('gwr_info', {})
+                            pv_inst = v.get('pv_inst', {})
+
+                            for k_p, v_p in partitions.items():
+                                row = {
+                                    'EGID': k,
+                                    'df_uid': k_p,
+                                    'bfs': gwr_info.get('bfs'),
+                                    'GKLAS': gwr_info.get('gklas'),
+                                    'GSTAT': gwr_info.get('gstat'),
+                                    'GAREA': gwr_info.get('garea'),
+                                    'GBAUJ': gwr_info.get('gbauj'),
+                                    'are_typ': gwr_info.get('are_typ'),
+                                    'sfhmfh_typ': gwr_info.get('sfhmfh_typ'),
+                                    'demand_arch_typ': v.get('demand_arch_typ'),
+                                    'demand_elec_dem_pGAREA': v.get('demand_elec_dem_pGAREA'),
+                                    'grid_node': v.get('grid_node'),
+
+                                    'inst_TF': pv_inst.get('inst_TF'),
+                                    'info_source': pv_inst.get('info_source'),
+                                    'pvid': pv_inst.get('xtf_id'),
+                                    'pvtarif_Rp_kWh': v.get('pvtarif_Rp_kWh'),
+                                    'TotalPower': pv_inst.get('TotalPower'),
+                                    'df_uid_w_inst': v.get('df_uid_w_inst'),
+
+                                    'FLAECHE': v_p.get('FLAECHE'),
+                                    'AUSRICHTUNG': v_p.get('AUSRICHTUNG'),
+                                    'STROMERTRAG': v_p.get('STROMERTRAG'),
+                                    'NEIGUNG': v_p.get('NEIGUNG'),
+                                    'MSTRAHLUNG': v_p.get('MSTRAHLUNG'),
+                                    'elecpri_Rp_kWh': v.get('elecpri_Rp_kWh'),
+                                }
+                                global_color_rows.append(row)
+
+                    topo_df_catg_raw = pl.DataFrame(global_color_rows)
+                    topo_df_cont_raw = pl.DataFrame(global_color_rows)
+
+
+                    # make color mapping CONT ----------
+                    topo_df_cont = topo_df_cont_raw.group_by('EGID').agg([
+                        pl.col('GAREA').sum().alias('GAREA'),
+                        pl.col('FLAECHE').sum().alias('FLAECHE'),
+                        pl.col('AUSRICHTUNG').mean().alias('AUSRICHTUNG_mean'),
+                    ])
+
+
+                    color_map_cont = {
+                        col: px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)]
+                        for i, col in enumerate(cont_col_plot)
+                    }
+
+
+                
+
+                # Plots ----------------------------------------
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+
+                    # import
+                    topo         = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
+                    gridnode_df = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
+
+
+                    # compute topo_df
+                    rows = []
+
+                    for k,v in topo.items():
+
+                        partitions = v.get('solkat_partitions', {})
+                        gwr_info = v.get('gwr_info', {})
+                        pv_inst = v.get('pv_inst', {})
+
+                        for k_p, v_p in partitions.items():
+                            row = {
+                                'EGID': k,
+                                'df_uid': k_p,
+                                'bfs': gwr_info.get('bfs'),
+                                'GKLAS': gwr_info.get('gklas'),
+                                'GSTAT': gwr_info.get('gstat'),
+                                'GAREA': gwr_info.get('garea'),
+                                'GBAUJ': gwr_info.get('gbauj'),
+                                'are_typ': gwr_info.get('are_typ'),
+                                'sfhmfh_typ': gwr_info.get('sfhmfh_typ'),
+                                'demand_arch_typ': v.get('demand_arch_typ'),
+                                'demand_elec_dem_pGAREA': v.get('demand_elec_dem_pGAREA'),
+                                'grid_node': v.get('grid_node'),
+
+                                'inst_TF': pv_inst.get('inst_TF'),
+                                'info_source': pv_inst.get('info_source'),
+                                'pvid': pv_inst.get('xtf_id'),
+                                'pvtarif_Rp_kWh': v.get('pvtarif_Rp_kWh'),
+                                'TotalPower': pv_inst.get('TotalPower'),
+                                'df_uid_w_inst': v.get('df_uid_w_inst'),
+
+                                'FLAECHE': v_p.get('FLAECHE'),
+                                'AUSRICHTUNG': v_p.get('AUSRICHTUNG'),
+                                'STROMERTRAG': v_p.get('STROMERTRAG'),
+                                'NEIGUNG': v_p.get('NEIGUNG'),
+                                'MSTRAHLUNG': v_p.get('MSTRAHLUNG'),
+                                'elecpri_Rp_kWh': v.get('elecpri_Rp_kWh'),
+                            }
+                            rows.append(row)
+
+
+                    topo_df_cont_raw = pl.DataFrame(rows)
+                    
+                    
+                    # transform / adjust cols
+                    topo_df_cont_raw = topo_df_cont_raw.with_columns([
+                        (pl.col('AUSRICHTUNG')).alias('AUSRICHTUNG_original'),
+                        (pl.col('AUSRICHTUNG') * pl.col('FLAECHE')).alias('AUSRICHTUNG_FLAECHE'),
+                    ])
+
+                    topo_df_cont_agg = topo_df_cont_raw.group_by('EGID').agg([
+                        pl.col('grid_node').first().alias('grid_node'),
+                        pl.col('info_source').first().alias('info_source'),
+                        pl.col('FLAECHE').sum().alias('FLAECHE'),
+                        pl.col('GAREA').sum().alias('GAREA'),
+                        pl.col('AUSRICHTUNG_FLAECHE').sum().alias('AUSRICHTUNG_FLAECHE'),
+                    ])
+                    # topo_df_gridnode_pvdf = topo_df_cont_agg.group_by('grid_node').agg([
+
+                    # ])
+                    # BOOKMARK!! ADD PVDF ration!!!!
+
+
+                    # plots ----------------------------------------
+                    if len(node_summary_list)==0: 
+                        gridnode_df_top_loss = gridnode_df.group_by('grid_node').agg([
+                            pl.col('feedin_atnode_loss_kW').sum().alias('feedin_atnode_loss_kW')
+                        ]).sort('feedin_atnode_loss_kW', descending=True).head(5).select('grid_node')
+                        compare_nodes_list = gridnode_df_top_loss['grid_node'].to_list()
+                    else: 
+                        compare_nodes_list = node_summary_list
+
+                    # create Plots 
+                    n_rows_cont = int(np.ceil(len(compare_nodes_list) / n_cols_cont))
+                    fig = make_subplots(rows=n_rows_cont, cols=n_cols_cont,
+                                                        subplot_titles=[f'node {node}' for node in compare_nodes_list],)
+                    
+                    for i_node, node in enumerate(compare_nodes_list): 
+
+                        for i_col, col in enumerate(cont_col_plot):
+
+                            if 'original' in col: 
+                                df_plot = topo_df_cont_raw.filter(pl.col('grid_node')==node).to_pandas()
+                            else:
+                                df_plot = topo_df_cont_agg.filter(pl.col('grid_node')==node).to_pandas()
+                           
+                            fig.add_trace(
+                                go.Histogram(
+                                    x=df_plot[col],
+                                    name=f"node {node} – {col}",
+                                    marker=dict(color=color_map_cont[col]),
+                                    legendgroup=col,
+                                    showlegend=True,
+                                    nbinsx=30,
+                                    opacity=0.6,
+                                    texttemplate="%{y}",
+                                    hovertemplate=(
+                                        f"Scenario: {scen}<br>"
+                                        f"Column: {col}<br>"
+                                        "Value: %{x}<br>"
+                                        "Count: %{y}<extra></extra>"
+                                    )
+                                ),
+                                row = (i_node // n_cols_cont) + 1, 
+                                col = (i_node % n_cols_cont) + 1,
+                            )
+
+
+                    # update + export ----------------------------------------
+                    fig.update_layout(
+                        title = f'Comparison EGID charact. by Node (scen: {scen})', 
+                        barmode='overlay', 
+                        template='plotly_white',
+                    )
+
+                    if self.visual_sett.plot_show and self.visual_sett.plot_ind_summary_stats_by_node_TF[1]:
+                        if self.visual_sett.plot_ind_summary_stats_by_node_TF[2]:    
+                            fig.show()
+                        elif not self.visual_sett.plot_ind_summary_stats_by_node_TF[2]:
+                            fig.show() if i_scen == 0 else None
+                    if self.visual_sett.save_plot_by_scen_directory:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_summary_stats_by_node.html')
+                    else:
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_summary_stats_by_node.html')
+                    print_to_logfile(f'\texport: plot_ind_summary_stats_by_node (for: {scen})', self.visual_sett.log_name)
 
 
                     
-
-
-
-
-        def plot_ind_jsctr_instpower(self,):
-            if self.visual_sett.plot_ind_jsctr_instpower_specs_TF[0]:
-                print('asdf')
 
 
 
@@ -6837,55 +7237,63 @@ if __name__ == '__main__':
         #     # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False], 
             
 
-        #     plot_ind_line_productionHOY_per_EGID_specs = { 
-        #         'grid_nodes_counts_minmax': (0,3),         # try to select grid node with nEGIDs for visualization
-        #         'specific_gridnodes_egid_HOY': None,         # select specific gridn node by id number for visualization
-        #         'egid_col_to_plot'          : ['demand_kW', 
-        #                                     'radiation',
-        #                                     'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW' ],
-        #         'grid_col_to_plot_tuples'   : [('netfeedin_kW', 'feedin_atnode_kW'),
-        #                                     ('netfeedin_kW', 'demand_proxy_out_kW'),
-        #                                     #    ('netfeedin_kW', 'feedin_atnode_taken_kW'),
-        #                                     #    ('netfeedin_kW', 'feedin_atnode_loss_kW'),
-        #                                     #    ('netfeedin_kW', 'kW_threshold'),
-        #                                     ],
-        #         'gridnode_pick_col_to_agg':  [  
-        #                                         'demand_kW',
-        #                                         'netfeedin_kW', 
-        #                                         'feedin_atnode_kW', 
-        #                                         # 'feedin_atnode_taken_kW', 
-        #                                         # 'feedin_atnode_loss_kW', 
-        #                                         'kW_threshold', 
-        #                                         'demand_proxy_out_kW'
-        #                                         ], 
-        #         'egid_trace_opacity' : 0.9,
-        #         'grid_trace_opacity' : 0.8,
-        #     },
-        #     # )
-
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
                 '*.txt','*old_vers*', 
-                '*histgr*', 
-                '*ewfirst*',
+                '*mini*',
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_16nbfs_RUR_30y*',
+                'pvalloc_*_ew1first', 
             ],
             save_plot_by_scen_directory        = False, 
-            # remove_old_plot_scen_directories   = True,  
-            # remove_old_plots_in_visualization  = True,  
-            # remove_old_csvs_in_visualization   = True,
+            remove_old_plot_scen_directories   = True,  
+            remove_old_plots_in_visualization  = True,  
+            remove_old_csvs_in_visualization   = True,
+            default_map_zoom                   = 10,
+            default_map_center                 =[47.46, 7.58],
+
 
             # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
             # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
-            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]    , 
-            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
-            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       True]  , 
-
-            # plot_ind_jsctr_ausricht_flaech_newinst_TF       = [True,      True,       True]  , 
+            plot_ind_summary_stats_by_node_TF                   = [True,      True,       False],
+            
             
             ), 
+
+        # Visual_Settings(
+        #     pvalloc_exclude_pattern_list = [
+        #         '*.txt','*old_vers*', 
+        #         ], 
+        #     pvalloc_include_pattern_list = [
+        #         # pvalloc_mini_byEGID_ep2050_1hll_ew1first
+        #         # pvalloc_mini_byEGID_ep2050_1hll_ew1pool
+        #         # 'pvalloc_mini_byEGID_ep2050_ew1first', 
+        #         # 'pvalloc_mini_byEGID_ep2050_ew1pool', 
+
+        #         'pvalloc_mini_byEGID_ep2050*',
+
+        #         # 'pvalloc_10nbfs_SUB_ew2first', 
+        #         # 'pvalloc_10nbfs_SUB_ew2pool',
+        #         # 'pvalloc_10nbfs_SUB_ew1first',
+        #         # 'pvalloc_10nbfs_SUB_ew1pool',
+        #     ],
+        #     save_plot_by_scen_directory        = False, 
+        #     remove_old_plot_scen_directories   = True,  
+        #     remove_old_plots_in_visualization  = True,  
+        #     remove_old_csvs_in_visualization   = True,
+        #     default_map_zoom                   = 10,
+        #     default_map_center                 =[47.46, 7.58],
+
+
+        #     # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
+        #     # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
+        #     # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]    , 
+        #     # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+        #     plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       True]  , 
+        #     plot_ind_hist_contcharact_newinst_TF       = [True,      True,       True]  , 
+        #     plot_ind_bar_catgcharact_newinst_TF        = [True,      True,       True]  , 
+            
+        #     ), 
 
 
 
@@ -6893,8 +7301,7 @@ if __name__ == '__main__':
 
     for visual_scen in visualization_list:
         visual_class = Visualization(visual_scen)
-        visual_class.plot_ALL_init_sanitycheck()
-        visual_class.plot_ALL_mcalgorithm()
+        visual_class.plot_ALL()
  
     print('end MAIN_visualization.py')
 

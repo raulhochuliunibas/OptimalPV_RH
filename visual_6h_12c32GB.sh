@@ -38,4 +38,4 @@ source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 
 #add your command lines below
 #############################
-python main_scicore_visualization.py
+python main_visualization.py
