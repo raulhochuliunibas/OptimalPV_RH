@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=main_INary_6h_12c32GB                   #This is the name of your job
+#SBATCH --job-name=INIT6h_12c32GB                   #This is the name of your job
 #SBATCH --cpus-per-task=12                  #This is the number of cores reserved
 #SBATCH --mem-per-cpu=32G              #This is the memory reserved per core.
 #Total memory reserved: 384GB

@@ -316,6 +316,7 @@ class PVAllocScenario_Settings:
     ALGOspec_subselec_filter_criteria: str                      = None  # 'southfacing_1spec' / 'eastwestfacing_3spec' / 'southwestfacing_2spec'
                                                                         # edit: new a tuple of order filtering, basically install inst on EGIDs with this filter_tag == True first
                                                                         # df_tag_south_nr  df_tag_south_1r  eastwest_2r  eastwest_nr
+    ALGOspec_subselec_filter_method: str                        = 'pooled'  # 'ordered' / 'pooled'
                                                                         
     ALGOspec_drop_cols_topo_time_subdf_list: List[str]          = field(default_factory=lambda: [
                                                                        'index', 'timestamp', 'rad_direct', 'rad_diffuse', 'temperature', 
@@ -426,7 +427,7 @@ class PVAllocScenario:
         if os.path.exists(self.sett.name_dir_export_path):
             n_same_names = len(glob.glob(f'{self.sett.name_dir_export_path}*'))
 
-            os.rename(self.sett.name_dir_export_path, f'{self.sett.data_path}/pvalloc/x_{self.sett.name_dir_export}_old_vers')
+            os.rename(self.sett.name_dir_export_path, f'{self.sett.data_path}/pvalloc/x_{self.sett.name_dir_export}_{n_same_names}_old_vers')
             
         os.makedirs(self.sett.name_dir_export_path, exist_ok=True)
 
@@ -721,7 +722,7 @@ class PVAllocScenario:
                 inst_counter = 0
                 print_to_logfile('- START inst while loop', self.sett.log_name)
 
-                while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter < safety_counter_max) ):
+                while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
                     topo = json.load(open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r'))
                     npv_df = pl.read_parquet(f'{self.sett.mc_iter_path}/npv_df.parquet')
 
@@ -3278,7 +3279,7 @@ class PVAllocScenario:
         def algo_update_gridnode_AND_gridprem_POLARS(self, subdir_path: str, i_m: int, m): 
     
             # setup -----------------------------------------------------
-            print_to_logfile('run function: update_gridprem', self.sett.log_name)
+            checkpoint_to_logfile('run function: update_gridprem', self.sett.log_name, 0, True)
             gridtiers_power_factor                = self.sett.GRIDspec_power_factor
             share_roof_area_available             = self.sett.TECspec_share_roof_area_available
             kWpeak_per_m2                         = self.sett.TECspec_kWpeak_per_m2
@@ -4193,7 +4194,7 @@ class PVAllocScenario:
             """
 
             # setup -----------------------------------------------------
-            print_to_logfile(f'run function: algo_update_npv_df_RFR, GRIDspec_node_1hll_closed_TF:{self.sett.GRIDspec_node_1hll_closed_TF}', self.sett.log_name)         
+            checkpoint_to_logfile(f'run function: algo_update_npv_df_RFR, GRIDspec_node_1hll_closed_TF:{self.sett.GRIDspec_node_1hll_closed_TF}', self.sett.log_name, 0, True)         
 
             # import -----------------------------------------------------
             gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    
@@ -5098,7 +5099,7 @@ class PVAllocScenario:
 
         def algo_select_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
 
-            print_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name) if while_safety_counter < 5 else None
+            checkpoint_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name, 0, True) if while_safety_counter < 5 else None
 
             # import ----------------
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
@@ -5135,13 +5136,22 @@ class PVAllocScenario:
                         with open(f'{self.sett.name_dir_export_path}/gwr_{filter_tag}_gdf.geojson', 'w') as f:
                             f.write(gwr_filter_tag.to_json())
                 # ------
-                subselec_npv_df_empty = True
-                for filter_tag in self.sett.ALGOspec_subselec_filter_criteria: 
-                    subselec_npv_df = npv_df.loc[npv_df[filter_tag] == True]
-                    if subselec_npv_df_empty and subselec_npv_df.shape[0] > 0:
+                if self.sett.ALGOspec_subselec_filter_method == 'ordered':
+                    subselec_npv_df_empty = True
+                    for filter_tag in self.sett.ALGOspec_subselec_filter_criteria: 
+                        subselec_npv_df = npv_df.loc[npv_df[filter_tag] == True]
+                        if subselec_npv_df_empty and subselec_npv_df.shape[0] > 0:
+                            npv_df = copy.deepcopy(subselec_npv_df)
+                            subselec_npv_df_empty = False
+
+                elif self.sett.ALGOspec_subselec_filter_method == 'pooled':
+                    mask = np.zeros(npv_df.shape[0], dtype=bool)
+                    for filter_tag in self.sett.ALGOspec_subselec_filter_criteria: 
+                        mask = mask | (npv_df[filter_tag] == True)
+                    subselec_npv_df = npv_df.loc[mask]
+                    if subselec_npv_df.shape[0] > 0:
                         npv_df = copy.deepcopy(subselec_npv_df)
-                        subselec_npv_df_empty = False
-       
+                    
        
 
             # SELECTION BY METHOD ---------------
@@ -5814,7 +5824,12 @@ if __name__ == '__main__':
                                                                     ], 
             ALGOspec_topo_subdf_partitioner                      = 250, 
             ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
+            ALGOspec_subselec_filter_method   = 'pooled',
             CSTRspec_ann_capacity_growth                         = 0.1,
+            CSTRspec_capacity_type          = 'ep2050_zerobasis', 
+
+
+
     )
     bfs_mini_list = [2612, 2889]
 
@@ -5826,19 +5841,37 @@ if __name__ == '__main__':
         #     CSTRspec_capacity_type          = 'hist_constr_capa_year', 
         #     CSTRspec_ann_capacity_growth    = 0.05,  
         # ), 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     CSTRspec_capacity_type          = 'ep2050_zerobasis', 
-        # ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
+            bfs_numbers                     = bfs_mini_list,
+        ), 
         # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll', 
         #               bfs_numbers                     = bfs_mini_list,
         #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
         #               GRIDspec_node_1hll_closed_TF = True,
         # ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ewfirst',
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ew1first',
+        #               bfs_numbers                     = bfs_mini_list,
+        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
+        #               GRIDspec_node_1hll_closed_TF = True,
+        #               ALGOspec_subselec_filter_method   = 'ordered',
+        #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
+        # ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ew1pool',
+        #               bfs_numbers                     = bfs_mini_list,
+        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
+        #               GRIDspec_node_1hll_closed_TF = True,
+        #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
+        # ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1first',
                       bfs_numbers                     = bfs_mini_list,
                       CSTRspec_capacity_type          = 'ep2050_zerobasis',
-                      GRIDspec_node_1hll_closed_TF = True,
+                      ALGOspec_subselec_filter_method   = 'ordered',
+                      ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1pool',
+                      bfs_numbers                     = bfs_mini_list,
+                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
+                      ALGOspec_subselec_filter_method   = 'pooled',
                       ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
         ),
     
