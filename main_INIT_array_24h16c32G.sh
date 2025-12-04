@@ -11,7 +11,7 @@
 #SBATCH --qos=1day           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
-#SBATCH --output=stdouterr_files/myrun.oe%j     #This is the joined STDOUT and STDERR file
+#SBATCH --output=stdouterr_files/myrun.oe%A_%a
 
 #You selected an array of jobs from 1 to 6 with 6 simultaneous jobs
 #SBATCH --array=1-20%20

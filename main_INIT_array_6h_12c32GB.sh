@@ -11,8 +11,7 @@
 #SBATCH --qos=6hours           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
-#SBATCH --output=stdouterr_files/myrun.o%j     #These are the STDOUT and STDERR files
-#SBATCH --error=stdouterr_files/myrun.e%j
+#SBATCH --output=stdouterr_files/myrun.oe%A_%a
 
 #You selected an array of jobs from 1 to 20 with 20 simultaneous jobs
 #SBATCH --array=1-20%20
@@ -37,7 +36,9 @@ source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 
 #export your required environment variables below
 #################################################
-export SLURM_JOB_ID_ENV=$SLURM_JOB_ID
+# export SLURM_JOB_ID_ENV=$SLURM_JOB_ID
+export SLURM_ARRAY_TASK_ID_ENV=$SLURM_ARRAY_TASK_ID
+export SLURM_ARRAY_JOB_ID_ENV=$SLURM_ARRAY_JOB_ID   
 
 
 

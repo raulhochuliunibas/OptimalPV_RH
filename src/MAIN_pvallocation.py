@@ -383,6 +383,7 @@ class PVAllocScenario:
 
 
 
+
     # ------------------------------------------------------------------------------------------------------
     # INITIALIZATION of PV Allocatoin Scenario
     # ------------------------------------------------------------------------------------------------------
@@ -420,19 +421,28 @@ class PVAllocScenario:
         self.sett.summary_name = os.path.join(self.sett.name_dir_export_path, 'summary_data_selection_log.txt')
         self.sett.timing_marks_csv_path = os.path.join(self.sett.name_dir_export_path, 'timing_marks.csv')
 
-        
         self.sett.bfs_numbers: List[str] = get_bfs_from_ktnr(self.sett.kt_numbers, self.sett.data_path, self.sett.log_name) if self.sett.kt_numbers != [] else [str(bfs) for bfs in self.sett.bfs_numbers]
 
         # create dir for export, rename old export dir not to overwrite
         if os.path.exists(self.sett.name_dir_export_path):
-            n_same_names = len(glob.glob(f'{self.sett.name_dir_export_path}*'))
-
+            export_name     = self.sett.name_dir_export
+            export_to_path  = self.sett.name_dir_export_path.split(export_name)[0]
+            n_same_names = len(glob.glob(f'{export_to_path}*{export_name}*'))
+            while os.path.exists(f'{self.sett.data_path}/pvalloc/x_{self.sett.name_dir_export}_{n_same_names}_old_vers'):
+                n_same_names +=1
             os.rename(self.sett.name_dir_export_path, f'{self.sett.data_path}/pvalloc/x_{self.sett.name_dir_export}_{n_same_names}_old_vers')
             
         os.makedirs(self.sett.name_dir_export_path, exist_ok=True)
 
         # export class instance settings to dir        
         self.export_pvalloc_scen_settings()
+
+
+        # export slurm ID to find log files on HPC
+        if hasattr(self.sett, 'slurm_full_id'):
+            with open(f'{self.sett.name_dir_export_path}/0_HPC_job_{self.sett.slurm_full_id}.txt', 'w') as f:
+                f.write(f'Combined: {self.sett.slurm_full_id}\n')
+                f.write(f'PVAlloc Scenario Index: {self.sett.pvalloc_scen_index}\n')
 
 
         # create log file
@@ -724,12 +734,23 @@ class PVAllocScenario:
 
                 while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
                     topo = json.load(open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r'))
+                    node_1hll_closed_dict = json.load(open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'r')) 
+
                     npv_df = pl.read_parquet(f'{self.sett.mc_iter_path}/npv_df.parquet')
 
-                    egid_wo_inst = [egid for egid in topo if not topo.get(egid, {}).get('pv_inst', {}).get('inst_TF')]
-                    npv_df = npv_df.filter(pl.col('EGID').is_in(egid_wo_inst))
-                    npv_df_empty_TF = npv_df.shape[0] == 0
+                    #  remove all EGIDs with pv ----------------
+                    egid_without_pv = [k for k,v in topo.items() if not v['pv_inst']['inst_TF']]
+                    npv_df = npv_df.filter(pl.col('EGID').is_in(egid_without_pv))
+                    
+                    #  remove all closed nodes EGIDs if applicable ----------------
+                    if self.sett.GRIDspec_node_1hll_closed_TF:
+                        closed_nodes = node_1hll_closed_dict[str(i_m)]['all_nodes_abv_1hll']
+                        closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
 
+                        npv_df = npv_df.filter(~pl.col('EGID').is_in(closed_nodes_egid)).clone()
+                        # npv_df = copy.deepcopy(npv_df.loc[~npv_df['EGID'].isin(closed_nodes_egid)])
+                        
+                    npv_df_empty_TF = npv_df.shape[0] == 0
                     if npv_df_empty_TF:
                         safety_counter = safety_counter_max + 1
 
@@ -1523,7 +1544,7 @@ class PVAllocScenario:
                 select_cols = ['nrElcom', 'nomEw', 'year', 'bfs', 'idofs'] + pvtarif_col
                 pvtarif = pvtarif[select_cols].copy()
 
-
+and s
                 # ELECTRICITY PRICE -------
                 elecpri = pd.read_parquet(f'{self.sett.name_dir_import_path}/elecpri.parquet')
                 elecpri['bfs_number'] = elecpri['bfs_number'].astype(str)
@@ -5110,8 +5131,8 @@ class PVAllocScenario:
 
 
             #  remove all EGIDs with pv ----------------
-            no_pv_egid = [k for k, v in topo.items() if not v.get('pv_inst', {}).get('inst_TF') ]
-            npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'].isin(no_pv_egid)])
+            egid_without_pv = [k for k,v in topo.items() if not v['pv_inst']['inst_TF']]
+            npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'].isin(egid_without_pv)])
 
 
 
@@ -5831,7 +5852,67 @@ if __name__ == '__main__':
 
 
     )
+
+    
+    pvalloc_Xnbfs_ARE_30y_DEFAULT = PVAllocScenario_Settings(
+        name_dir_export ='pvalloc_29nbfs_30y_DEFAULT',
+        bfs_numbers                                          = [
+            # RURAL 
+            2612, 2889, 2883, 2621, 2622,
+            2620, 2615, 2614, 2616, 2480,
+            2617, 2611, 2788, 2619, 2783, 2477, 
+            # SUBURBAN
+            2613, 2782, 2618, 2786, 2785, 
+            2772, 2761, 2743, 2476, 2768,
+            # URBAN
+            2773, 2769, 2770,
+                ],
+        create_gdf_export_of_topology                        = True,
+        export_csvs                                          = False,
+        T0_year_prediction                                   = 2022,
+        months_lookback                                      = 12,
+        months_prediction                                    = 360,
+        TECspec_add_heatpump_demand_TF                       = True,
+        TECspec_heatpump_months_factor                       = [
+                                                                (10, 7.0),
+                                                                (11, 7.0), 
+                                                                (12, 7.0), 
+                                                                (1 , 7.0), 
+                                                                (2 , 7.0), 
+                                                                (3 , 7.0), 
+                                                                (4 , 7.0), 
+                                                                (5 , 7.0),     
+                                                                (6 , 1.0), 
+                                                                (7 , 1.0), 
+                                                                (8 , 1.0), 
+                                                                (9 , 1.0),
+                                                                ],
+        ALGOspec_topo_subdf_partitioner                      = 250,
+        ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
+        CSTRspec_ann_capacity_growth                         = 0.1,
+        ALGOspec_subselec_filter_method                      = 'pooled',
+        CSTRspec_capacity_type                               = 'ep2050_zerobasis',
+
+    ) 
+
     bfs_mini_list = [2612, 2889]
+
+    XLRG_bfs_name = 'pvalloc_47nbfs_30y'
+    XLRG_bfs_list = [
+        # RURAL 
+        2612, 2889, 2883, 2621, 2622,
+        2620, 2615, 2614, 2616, 2480,
+        2617, 2611, 2788, 2619, 2783, 2477, 
+        # SUBURBAN
+        2613, 2782, 2618, 2786, 2785, 
+        2772, 2761, 2743, 2476, 2768,
+        2471, 2481, 2775, 2764, 2771, 
+        2763, 2473, 2475, 2474, 2472, 
+        2478, 2830, 2766, 2767, 2774, 
+        # URBAN
+        2773, 2769, 2770,
+        2762, 2765, 
+        ],
 
     pvalloc_scen_list = [ 
 
@@ -5841,9 +5922,9 @@ if __name__ == '__main__':
         #     CSTRspec_capacity_type          = 'hist_constr_capa_year', 
         #     CSTRspec_ann_capacity_growth    = 0.05,  
         # ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
-            bfs_numbers                     = bfs_mini_list,
-        ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
+        #     bfs_numbers                     = bfs_mini_list,
+        # ), 
         # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll', 
         #               bfs_numbers                     = bfs_mini_list,
         #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
@@ -5862,18 +5943,21 @@ if __name__ == '__main__':
         #               GRIDspec_node_1hll_closed_TF = True,
         #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
         # ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1first',
-                      bfs_numbers                     = bfs_mini_list,
-                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
-                      ALGOspec_subselec_filter_method   = 'ordered',
-                      ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
-        ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1pool',
-                      bfs_numbers                     = bfs_mini_list,
-                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
-                      ALGOspec_subselec_filter_method   = 'pooled',
-                      ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
-        ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1first',
+        #               bfs_numbers                     = bfs_mini_list,
+        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
+        #               ALGOspec_subselec_filter_method   = 'ordered',
+        #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
+        # ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1pool',
+        #               bfs_numbers                     = bfs_mini_list,
+        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
+        #               ALGOspec_subselec_filter_method   = 'pooled',
+        #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
+        # ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}',
+                bfs_numbers                       = XLRG_bfs_list,
+        ), 
     
     ]
 

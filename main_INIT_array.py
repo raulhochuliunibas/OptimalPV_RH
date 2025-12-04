@@ -45,7 +45,10 @@ if __name__ == '__main__':
                                                                     ], 
             ALGOspec_topo_subdf_partitioner                      = 250, 
             ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
-            CSTRspec_ann_capacity_growth                         = 0.1,
+            # CSTRspec_ann_capacity_growth                         = 0.1,
+            CSTRspec_capacity_type                               = 'ep2050_zerobasis',
+            ALGOspec_subselec_filter_method                      = 'pooled',
+
     )
 
     
@@ -89,6 +92,8 @@ if __name__ == '__main__':
         CSTRspec_capacity_type                               = 'ep2050_zerobasis',
 
     ) 
+
+    test_scen_name = 'pvalloc_2nbfs_2y_testMC'
 
     RUR_bfs_name = 'pvalloc_16nbfs_RUR'
     RUR_bfs_list =[
@@ -138,18 +143,18 @@ if __name__ == '__main__':
 
     # scen lists ------------------------------------------
     test_scen = [
+    # pvalloc_scen_list = [
 
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, 'pvalloc_2nbfs_2y_testMC'),
-
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, 'pvalloc_2nbfs_2y_testMC_eb2050',
-                      CSTRspec_capacity_type        ='ep2050_zerobasis', # hist_constr_capa_year / hist_constr_capa_month / ep2050_zerobasis
+        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}',
         ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, 'pvalloc_2nbfs_2y_testMC_eb2050_1hll',
-                      CSTRspec_capacity_type        ='ep2050_zerobasis', # hist_constr_capa_year / hist_constr_capa_month / ep2050_zerobasis
+        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_1hll',
                       GRIDspec_node_1hll_closed_TF  = True,
         ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, 'pvalloc_2nbfs_2y_testMC_ew2first',
-                      CSTRspec_capacity_type        ='ep2050_zerobasis', # hist_constr_capa_year / hist_constr_capa_month / ep2050_zerobasis
+        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_ew2first',
+                      ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
+                                                            'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr')
+        ),
+        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_1hll_ew2first',
                       GRIDspec_node_1hll_closed_TF  = True,
                       ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
                                                             'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr')
@@ -158,7 +163,7 @@ if __name__ == '__main__':
 
     ]
      
-    RUR_SUB_scen_list = [
+    RUR_scen_list = [
     # pvalloc_scen_list = [
         make_scenario(pvalloc_2nbfs_test_DEFAULT, 'pvalloc_2nbfs_2y_testMC_ew2first',
                       CSTRspec_capacity_type        ='ep2050_zerobasis', # hist_constr_capa_year / hist_constr_capa_month / ep2050_zerobasis
@@ -167,73 +172,61 @@ if __name__ == '__main__':
                                                             'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr')
         ),
 
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}_histgr',
-                      bfs_numbers                       = RUR_bfs_list,
-                      CSTRspec_capacity_type            ='hist_constr_capa_year',
-            ), 
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}', 
                       bfs_numbers                       = RUR_bfs_list,
-                      CSTRspec_capacity_type            ='ep2050_zerobasis',
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}_ew1pool', 
                       bfs_numbers                       = RUR_bfs_list,
-                      CSTRspec_capacity_type            ='ep2050_zerobasis',
                         ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',),
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}_ew2pool', 
                       bfs_numbers                       = RUR_bfs_list,
-                      CSTRspec_capacity_type            ='ep2050_zerobasis',
                       ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
                                                             'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}_1hll', 
                       bfs_numbers                       = RUR_bfs_list,
-                      CSTRspec_capacity_type            ='ep2050_zerobasis',
                       GRIDspec_node_1hll_closed_TF      = True,
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}_1hll_ew1pool', 
                       bfs_numbers                       = RUR_bfs_list,
-                      CSTRspec_capacity_type            ='ep2050_zerobasis',
                       GRIDspec_node_1hll_closed_TF      = True,
                       ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr', )
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}_1hll_ew2pool',
                         bfs_numbers                       = RUR_bfs_list,
-                        CSTRspec_capacity_type            ='ep2050_zerobasis',
                         GRIDspec_node_1hll_closed_TF      = True,
                         ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
                                                               'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
                 ),
+    ]
+
+    SUB_scen_list = [
+    # pvalloc_scen_list = [
 
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{SUB_bfs_name}', 
                       bfs_numbers                       = SUB_bfs_list,
-                        CSTRspec_capacity_type            ='ep2050_zerobasis',
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{SUB_bfs_name}_ew1pool',
                         bfs_numbers                       = SUB_bfs_list,
-                        CSTRspec_capacity_type            ='ep2050_zerobasis',
                         ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',),
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{SUB_bfs_name}_ew2pool',
-                        bfs_numbers                       = SUB_bfs_list,
                         CSTRspec_capacity_type            ='ep2050_zerobasis',
                         ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
                                                               'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{SUB_bfs_name}_1hll',
                       bfs_numbers                       = SUB_bfs_list,
-                      CSTRspec_capacity_type            ='ep2050_zerobasis',
                       GRIDspec_node_1hll_closed_TF      = True,
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{SUB_bfs_name}_1hll_ew1pool',
                       bfs_numbers                       = SUB_bfs_list,
-                      CSTRspec_capacity_type            ='ep2050_zerobasis',
                       GRIDspec_node_1hll_closed_TF      = True,
                       ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr', )
             ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{SUB_bfs_name}_1hll_ew2pool',
                         bfs_numbers                       = SUB_bfs_list,
-                        CSTRspec_capacity_type            ='ep2050_zerobasis',
                         GRIDspec_node_1hll_closed_TF      = True,
                         ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
                                                               'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
@@ -266,8 +259,9 @@ if __name__ == '__main__':
             ),
         
     ]
-    # XLRG_scen_list = [
-    pvalloc_scen_list = [
+    
+    XLRG_scen_list = [
+    # pvalloc_scen_list = [
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}',
                 bfs_numbers                       = XLRG_bfs_list,
         ), 
@@ -289,31 +283,44 @@ if __name__ == '__main__':
                 GRIDspec_node_1hll_closed_TF      = True,
                 ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr', )
         ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}_1hll_ew2pool',
+                bfs_numbers                       = XLRG_bfs_list,
+                GRIDspec_node_1hll_closed_TF      = True,
+                ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
+                                                      'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
+        ),
     ]
-    # scen lists ------------------------------------------
+    
+    # call scen in array and run ------------------------------------------
     # test_scen
-    # RUR_SUB_scen_list
+    # RUR_scen_list
+    # SUB_scen_list
     # LRG_scen_list
     # XLRG_scen_list
+    pvalloc_scen_list = RUR_scen_list
 
-    # pvalloc_scen_list = [
-    # pvalloc_scen_list = [ XLRG_scen_list #LRG_scen_list +  RUR_SUB_scen_list
+    # for pvalloc_scen_index in range(0,10):
+    #     print(f'idx < len(list)-1 ->i: {pvalloc_scen_index} | {pvalloc_scen_index < len(pvalloc_scen_list)-1}')
 
-
-    slurm_job_id = os.environ.get('SLURM_JOB_ID_ENV', 'unknown')
+    # slurm_job_id = os.environ.get('SLURM_JOB_ID_ENV', 'unknown')
+    slurm_job_id = os.environ.get('SLURM_ARRAY_JOB_ID_ENV', 'unknown')
+    slurm_array_id = os.environ.get('SLURM_ARRAY_TASK_ID_ENV', 'unknown')
+    slurm_full_id = f"{slurm_job_id}_{slurm_array_id}"
 
     if len(sys.argv) > 1:
         pvalloc_scen_index = int(sys.argv[1])
-        pvalloc_scen = pvalloc_scen_list[pvalloc_scen_index]
+        if pvalloc_scen_index < len(pvalloc_scen_list):
+            pvalloc_scen = pvalloc_scen_list[pvalloc_scen_index]
+            
+            scen_class = PVAllocScenario(pvalloc_scen)
 
-    else: 
-        pvalloc_scen = PVAllocScenario_Settings()
+            scen_class.sett.slurm_full_id        = slurm_full_id
+            scen_class.sett.pvalloc_scen_index   = pvalloc_scen_index
     
-    scen_class = PVAllocScenario(pvalloc_scen)
-    scen_class.run_pvalloc_initalization()
-    scen_class.run_pvalloc_mcalgorithm()
+            scen_class.run_pvalloc_initalization()
+            scen_class.run_pvalloc_mcalgorithm()
     
-print('done')
+        print('done')
 
 
 
