@@ -1544,7 +1544,7 @@ class PVAllocScenario:
                 select_cols = ['nrElcom', 'nomEw', 'year', 'bfs', 'idofs'] + pvtarif_col
                 pvtarif = pvtarif[select_cols].copy()
 
-and s
+
                 # ELECTRICITY PRICE -------
                 elecpri = pd.read_parquet(f'{self.sett.name_dir_import_path}/elecpri.parquet')
                 elecpri['bfs_number'] = elecpri['bfs_number'].astype(str)
@@ -5912,7 +5912,7 @@ if __name__ == '__main__':
         # URBAN
         2773, 2769, 2770,
         2762, 2765, 
-        ],
+        ]
 
     pvalloc_scen_list = [ 
 
@@ -5922,9 +5922,9 @@ if __name__ == '__main__':
         #     CSTRspec_capacity_type          = 'hist_constr_capa_year', 
         #     CSTRspec_ann_capacity_growth    = 0.05,  
         # ), 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
-        #     bfs_numbers                     = bfs_mini_list,
-        # ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
+            bfs_numbers                     = bfs_mini_list,
+        ), 
         # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll', 
         #               bfs_numbers                     = bfs_mini_list,
         #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
@@ -5943,21 +5943,21 @@ if __name__ == '__main__':
         #               GRIDspec_node_1hll_closed_TF = True,
         #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
         # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1first',
-        #               bfs_numbers                     = bfs_mini_list,
-        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
-        #               ALGOspec_subselec_filter_method   = 'ordered',
-        #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
-        # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1pool',
-        #               bfs_numbers                     = bfs_mini_list,
-        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
-        #               ALGOspec_subselec_filter_method   = 'pooled',
-        #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
-        # ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}',
-                bfs_numbers                       = XLRG_bfs_list,
-        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1first',
+                      bfs_numbers                     = bfs_mini_list,
+                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
+                      ALGOspec_subselec_filter_method   = 'ordered',
+                      ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1pool',
+                      bfs_numbers                     = bfs_mini_list,
+                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
+                      ALGOspec_subselec_filter_method   = 'pooled',
+                      ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
+        ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}',
+        #         bfs_numbers                       = XLRG_bfs_list,
+        # ), 
     
     ]
 

@@ -136,7 +136,7 @@ if __name__ == '__main__':
         # URBAN
         2773, 2769, 2770,
         2762, 2765, 
-        ],
+        ]
 
         
 
@@ -297,7 +297,7 @@ if __name__ == '__main__':
     # SUB_scen_list
     # LRG_scen_list
     # XLRG_scen_list
-    pvalloc_scen_list = RUR_scen_list
+    pvalloc_scen_list = XLRG_scen_list
 
     # for pvalloc_scen_index in range(0,10):
     #     print(f'idx < len(list)-1 ->i: {pvalloc_scen_index} | {pvalloc_scen_index < len(pvalloc_scen_list)-1}')

@@ -36,8 +36,8 @@ source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 
 #export your required environment variables below
 #################################################
-export SLURM_JOB_ID_ENV=$SLURM_JOB_ID
-
+export SLURM_ARRAY_TASK_ID_ENV=$SLURM_ARRAY_TASK_ID
+export SLURM_ARRAY_JOB_ID_ENV=$SLURM_ARRAY_JOB_ID   
 
 
 #add your command lines below
