@@ -54,6 +54,7 @@ class Visual_Settings:
     remove_old_plot_scen_directories: bool       = False
     remove_old_plots_in_visualization: bool      = False
     remove_old_csvs_in_visualization: bool       = False
+    export_only_agg_comparison_plots: bool       = False
     MC_subdir_for_plot: str                      = '*MC*1'
     mc_plots_individual_traces: bool             = True
     cut_timeseries_to_zoom_hour: bool            = False
@@ -297,6 +298,7 @@ class Visual_Settings:
             'are_typ',
             'sfhmfh_typ',
             'grid_node',
+            'heatpump_TF',
             ],
         })
     plot_ind_summary_stats_by_node_specs: Dict              = field(default_factory=lambda:  {
@@ -306,6 +308,7 @@ class Visual_Settings:
             'AUSRICHTUNG_FLAECHE',
             'FLAECHE',
             'GAREA',
+            'pvdf_inst_ratio',
         ]
     })
 
@@ -433,9 +436,9 @@ class Visualization:
         ]
         for plt in plots:
             # try: 
-            plt()
+            plt()   
             # except Exception as e:
-                # print_to_logfile(f'Error in plot_ind_var_summary_stats: {plt.__name__} - {e}', self.visual_sett.log_name)
+            #     print_to_logfile(f'Error in plot_ind_var_summary_stats: {plt.__name__} - {e}', self.visual_sett.log_name)
         
 
 
@@ -1058,9 +1061,9 @@ class Visualization:
                         elif not self.visual_sett.plot_demand_profiles_TF[2]:
                             fig.show() if i_scen == 0 else None
                     if self.visual_sett.save_plot_by_scen_directory:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_line_demand_by_arch_typ.html')
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_line_demand_by_arch_typ___{scen}.html')
                     else:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_line_demand_by_arch_typ.html')
+                        fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_line_demand_by_arch_typ___{scen}.html')
                     print_to_logfile(f'\texport: plot_ind_bar_totaldemand_by_type.html (for: {scen})', self.visual_sett.log_name)
 
 
@@ -2409,11 +2412,12 @@ class Visualization:
                             fig.show()
                         elif not self.visual_sett.plot_ind_line_productionHOY_per_node_TF[2]:
                             fig.show() if i_scen == 0 else None
-                    if self.visual_sett.save_plot_by_scen_directory:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_line_productionHOY_per_node.html')
-                    else:   
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_line_productionHOY_per_node.html')
-                    print_to_logfile(f'\texport: plot_ind_line_productionHOY_per_node.html (for: {scen})', self.visual_sett.log_name)
+                    if not self.visual_sett.export_only_agg_comparison_plots:
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_line_productionHOY_per_node___{scen}.html')
+                        else:   
+                            fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_line_productionHOY_per_node___{scen}.html')
+                        print_to_logfile(f'\texport: plot_ind_line_productionHOY_per_node.html (for: {scen})', self.visual_sett.log_name)
 
 
                 # export comparison plot
@@ -2584,7 +2588,7 @@ class Visualization:
                         ])
 
                         # --------------------
-                        # BOOKMARK
+                        # sanity_check
                         subdf_sanity_check = subdf_updated.filter(
                             (pl.col('t').is_in([
                             # 't_1', 't_2', 't_3', 't_4', 't_5', 't_6', 
@@ -2600,7 +2604,7 @@ class Visualization:
                                 'EGID', 'df_uid', 't', 'inst_TF', 'TotalPower', 'info_source', 'dfuidPower', 'poss_pvprod_kW', 'pvprod_kW'
                                 ]).head(50)
                         subdf_sanity_check
-                        # BOOKMARK
+                        # sanity_check
                         # --------------------
 
                         # force pvprod == 0 for EGID-df_uid without inst
@@ -3002,9 +3006,9 @@ class Visualization:
                         elif not self.visual_sett.plot_ind_line_productionHOY_per_EGID_TF[2]:
                             fig_egid_traces.show() if i_scen == 0 else None
                     if self.visual_sett.save_plot_by_scen_directory:
-                        fig_egid_traces.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_line_productionHOY_per_EGID.html')
+                        fig_egid_traces.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_line_productionHOY_per_EGID___{scen}.html')
                     else:
-                        fig_sub.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_line_productionHOY_per_EGID.html')
+                        fig_sub.write_html(f'{self.visual_sett.visual_path}/plot_ind_line_productionHOY_per_EGID___{scen}.html')
                     
                     print_to_logfile(f'\texport: plot_ind_line_productionHOY_per_EGID.html (for: {scen})', self.visual_sett.log_name)
 
@@ -3168,7 +3172,7 @@ class Visualization:
                             ])
 
                             # --------------------
-                            # BOOKMARK
+                            # sanitycheck
                             subdf_sanity_check = subdf_updated.filter(
                                 (pl.col('t').is_in([
                                 # 't_1', 't_2', 't_3', 't_4', 't_5', 't_6', 
@@ -3184,7 +3188,7 @@ class Visualization:
                                     'EGID', 'df_uid', 't', 'inst_TF', 'TotalPower', 'info_source', 'dfuidPower', 'poss_pvprod_kW', 'pvprod_kW'
                                     ]).head(50)
                             subdf_sanity_check
-                            # BOOKMARK
+                            # sanitycheck
                             # --------------------
 
                             # force pvprod == 0 for EGID-df_uid without inst
@@ -3966,11 +3970,12 @@ class Visualization:
                                 fig.show()
                             elif not self.visual_sett.plot_ind_line_PVproduction_TF[2]:
                                 fig.show() if i_scen == 0 else None
-                        if self.visual_sett.save_plot_by_scen_directory:
-                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_line_PVproduction.html')
-                        else:
-                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_line_PVproduction.html')
-                        print_to_logfile(f'\texport: plot_ind_line_PVproduction.html (for: {scen})', self.visual_sett.log_name)                    
+                        if not self.visual_sett.export_only_agg_comparison_plots:
+                            if self.visual_sett.save_plot_by_scen_directory:
+                                fig.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_line_PVproduction___{scen}.html')
+                            else:
+                                fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_line_PVproduction___{scen}.html')
+                            print_to_logfile(f'\texport: plot_ind_line_PVproduction.html (for: {scen})', self.visual_sett.log_name)                    
 
 
                     # plot AGGREGATION ----------------
@@ -4041,19 +4046,27 @@ class Visualization:
                     self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
-                    
-                    npv_df_paths = glob.glob(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_*.parquet')
-                    # periods_list = [pd.to_datetime(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
-                    periods_list = [int(path.split('npv_df_')[-1].split('.parquet')[0]) for path in npv_df_paths]
-                    before_period, after_period = min(periods_list), max(periods_list)
+                    # import ----------------
+                    npv_df = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_1.parquet')
 
-                    npv_df_before = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{before_period}.parquet')
-                    npv_df_after  = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_{after_period}.parquet')
+                    egid_filter_tags = [col for col in npv_df.columns if 'filt_egid' in col]
+                    dfuid_filter_tags = [col for col in npv_df.columns if 'filt_dfuid' in col]
+                    joint_tags = egid_filter_tags + dfuid_filter_tags
+                    
+                    exclude_tags = []
+                    filter_tags =  [col for col in joint_tags if col not in exclude_tags]
+                    
 
                     # plot ----------------
                     fig = go.Figure()
-                    fig.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name='Before Allocation Algorithm', opacity=0.5))
-                    fig.add_trace(go.Histogram(x=npv_df_after['NPV_uid'], name='After Allocation Algorithm', opacity=0.5))
+
+                    fig.add_trace(go.Histogram(x=npv_df['NPV_uid'], name=f'all EGID', opacity=0.5))
+                    fig_agg.add_trace(go.Histogram(x=npv_df['NPV_uid'], name=f'all EGID scen: {scen}', opacity=0.5))
+
+                    for tag in filter_tags:
+                        df_filter = npv_df.filter(npv_df[tag] == True)
+                        fig.add_trace(go.Histogram(x=df_filter['NPV_uid'], name=f'Filter: {tag}', opacity=0.5))
+                        fig_agg.add_trace(go.Histogram(x=df_filter['NPV_uid'], name=f'Filter: {tag} scen: {scen}', opacity=0.5))
 
                     fig.update_layout(
                         xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
@@ -4070,17 +4083,15 @@ class Visualization:
                         elif not self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[2]:
                             fig.show() if i_scen == 0 else None
                     if self.visual_sett.save_plot_by_scen_directory:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_hist_NPV_freepartitions.html')
+                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_hist_NPV_freepartitions___{scen}.html')
                     else:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_hist_NPV_freepartitions.html')
+                        fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_hist_NPV_freepartitions___{scen}.html')
                         
 
                     # aggregate plot ----------------
                     fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
                     fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,)) 
 
-                    fig_agg.add_trace(go.Histogram(x=npv_df_before['NPV_uid'], name=f'Before Allocation', opacity=0.7, xbins=dict(size=500)))
-                    fig_agg.add_trace(go.Histogram(x=npv_df_after['NPV_uid'],  name=f'After Allocation',  opacity=0.7, xbins=dict(size=500)))
 
                 fig_agg.update_layout(
                     xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
@@ -4853,11 +4864,12 @@ class Visualization:
                             fig_topoegid.show()
                         elif not self.visual_sett.plot_ind_map_topo_egid_incl_gridarea_TF[2]:
                             fig_topoegid.show() if i_scen == 0 else None
-                    if self.visual_sett.save_plot_by_scen_directory:
-                        fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_map_topo_egid_incl_gridarea.html')
-                    else:
-                        fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_map_topo_egid_incl_gridarea.html')
-                    print_to_logfile(f'\texport: plot_ind_map_topo_egid_incl_gridarea (for: {scen})', self.visual_sett.log_name)
+                    if not self.visual_sett.export_only_agg_comparison_plots:
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig_topoegid.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_map_topo_egid_incl_gridarea___{scen}.html')
+                        else:
+                            fig_topoegid.write_html(f'{self.visual_sett.visual_path}/plot_ind_map_topo_egid_incl_gridarea___{scen}.html')
+                        print_to_logfile(f'\texport: plot_ind_map_topo_egid_incl_gridarea (for: {scen})', self.visual_sett.log_name)
 
 
 
@@ -6756,11 +6768,12 @@ class Visualization:
                             fig.show()
                         elif not self.visual_sett.plot_ind_hist_contcharact_newinst_TF[2]:
                             fig.show() if i_scen == 0 else None
-                    if self.visual_sett.save_plot_by_scen_directory:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_hist_contcharact_newinst.html')
-                    else:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_hist_contcharact_newinst.html')
-                    print_to_logfile(f'\texport: plot_ind_hist_contcharact_newinst (for: {scen})', self.visual_sett.log_name)
+                    if not self.visual_sett.export_only_agg_comparison_plots:
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_hist_contcharact_newinst___{scen}.html')
+                        else:
+                            fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_hist_contcharact_newinst___{scen}.html')
+                        print_to_logfile(f'\texport: plot_ind_hist_contcharact_newinst (for: {scen})', self.visual_sett.log_name)
 
 
         def plot_ind_bar_catgcharact_newinst(self, ):
@@ -6805,6 +6818,7 @@ class Visualization:
                                 'GBAUJ': gwr_info.get('gbauj'),
                                 'are_typ': gwr_info.get('are_typ'),
                                 'sfhmfh_typ': gwr_info.get('sfhmfh_typ'),
+                                'GWAERZH1': gwr_info.get('gwaerzh1'),
                                 'demand_arch_typ': v.get('demand_arch_typ'),
                                 'demand_elec_dem_pGAREA': v.get('demand_elec_dem_pGAREA'),
                                 'grid_node': v.get('grid_node'),
@@ -6827,6 +6841,13 @@ class Visualization:
 
                     topo_df_catg_raw = pl.DataFrame(rows)
                     # transform data to relevant columns ----------
+                    topo_df_catg_raw = topo_df_catg_raw.with_columns([
+                        pl.when(pl.col('GWAERZH1').is_in(['7410', '7411']))
+                            .then(pl.lit('heatpump'))
+                            .otherwise(pl.lit('no_heatpump'))
+                            .alias('heatpump_TF'),
+                    ])
+
                     # GBAUJ into bins
                     if True: 
                         topo_df_catg_raw = topo_df_catg_raw.with_columns(
@@ -6871,6 +6892,7 @@ class Visualization:
                         pl.col('are_typ').first().alias('are_typ'),
                         pl.col('sfhmfh_typ').first().alias('sfhmfh_typ'),
                         pl.col('grid_node').first().alias('grid_node'),
+                        pl.col('heatpump_TF').first().alias('heatpump_TF'),
                     ])
 
                     all_categories = (
@@ -6951,11 +6973,12 @@ class Visualization:
                             fig.show()
                         elif not self.visual_sett.plot_ind_bar_catgcharact_newinst_TF[2]:
                             fig.show() if i_scen == 0 else None
-                    if self.visual_sett.save_plot_by_scen_directory:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_bar_catgcharact_newinst.html')
-                    else:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_bar_catgcharact_newinst.html')
-                    print_to_logfile(f'\texport: plot_ind_bar_catgcharact_newinst (for: {scen})', self.visual_sett.log_name)
+                    if not self.visual_sett.export_only_agg_comparison_plots:
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_bar_catgcharact_newinst___{scen}.html')
+                        else:
+                            fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_bar_catgcharact_newinst___{scen}.html')
+                        print_to_logfile(f'\texport: plot_ind_bar_catgcharact_newinst (for: {scen})', self.visual_sett.log_name)
                     
 
         def plot_ind_summary_stats_by_node(self, ):
@@ -6995,6 +7018,7 @@ class Visualization:
                                     'GSTAT': gwr_info.get('gstat'),
                                     'GAREA': gwr_info.get('garea'),
                                     'GBAUJ': gwr_info.get('gbauj'),
+                                    'GWAERZH1': gwr_info.get('gwaerzh1'),
                                     'are_typ': gwr_info.get('are_typ'),
                                     'sfhmfh_typ': gwr_info.get('sfhmfh_typ'),
                                     'demand_arch_typ': v.get('demand_arch_typ'),
@@ -7105,25 +7129,48 @@ class Visualization:
                         pl.col('GAREA').sum().alias('GAREA'),
                         pl.col('AUSRICHTUNG_FLAECHE').sum().alias('AUSRICHTUNG_FLAECHE'),
                     ])
-                    # topo_df_gridnode_pvdf = topo_df_cont_agg.group_by('grid_node').agg([
 
-                    # ])
-                    # BOOKMARK!! ADD PVDF ration!!!!
+                    # add pv_df inst / nEGID ratio
+                    gridnode_infosource_count = topo_df_cont_agg.group_by(['grid_node', 'info_source']).agg([
+                        pl.col('info_source').count().alias('n_pv_inst'),
+                    ]).filter(pl.col('info_source') == 'pv_df')
+                    gridnode_egid_count = topo_df_cont_agg.group_by('grid_node').agg([
+                        pl.col('EGID').count().alias('nEGID_gridnode')
+                    ])
+                    pvdf_inst_ratio = gridnode_infosource_count.join(gridnode_egid_count, on = 'grid_node', how = 'left')
+                    pvdf_inst_ratio = pvdf_inst_ratio.with_columns([
+                        (pl.col('n_pv_inst') / pl.col('nEGID_gridnode')).alias('pvdf_inst_ratio')
+                    ]).select(['grid_node', 'pvdf_inst_ratio'])
+                    # topo_df_cont_agg = topo_df_cont_agg.join(pvdf_inst_ratio, on = 'grid_node', how = 'left')
+
+                    # check_nodes = ['524', '905', '10', '26', '399']
+                    # pvdf_inst_ratio.filter(pl.col('grid_node').is_in(check_nodes))
+
 
 
                     # plots ----------------------------------------
+                    # plot for 5 nodes with most loss
                     if len(node_summary_list)==0: 
-                        gridnode_df_top_loss = gridnode_df.group_by('grid_node').agg([
-                            pl.col('feedin_atnode_loss_kW').sum().alias('feedin_atnode_loss_kW')
-                        ]).sort('feedin_atnode_loss_kW', descending=True).head(5).select('grid_node')
-                        compare_nodes_list = gridnode_df_top_loss['grid_node'].to_list()
+                        gridnode_df_any_loss = gridnode_df.filter(pl.col('feedin_atnode_loss_kW') > 0)
+                        if gridnode_df_any_loss.shape[0] > 0:
+                            gridnode_df_top_loss = gridnode_df_any_loss.group_by('grid_node').agg([
+                                pl.col('feedin_atnode_loss_kW').sum().alias('feedin_atnode_loss_kW')
+                            ]).sort('feedin_atnode_loss_kW', descending=True).head(5).select('grid_node')
+                            compare_nodes_list = gridnode_df_top_loss['grid_node'].to_list()
+                        else: 
+                            compare_nodes_list = pvdf_inst_ratio.sort('pvdf_inst_ratio', descending=True).head(1)['grid_node'].to_list()
+                            
                     else: 
                         compare_nodes_list = node_summary_list
+                        
+                    max_pvinst_node = pvdf_inst_ratio.sort('pvdf_inst_ratio', descending=True).head(1)['grid_node'].to_list()[0]
+
 
                     # create Plots 
                     n_rows_cont = int(np.ceil(len(compare_nodes_list) / n_cols_cont))
                     fig = make_subplots(rows=n_rows_cont, cols=n_cols_cont,
                                                         subplot_titles=[f'node {node}' for node in compare_nodes_list],)
+                    fig_bar = go.Figure()
                     
                     for i_node, node in enumerate(compare_nodes_list): 
 
@@ -7131,29 +7178,100 @@ class Visualization:
 
                             if 'original' in col: 
                                 df_plot = topo_df_cont_raw.filter(pl.col('grid_node')==node).to_pandas()
+                            elif 'pvdf_inst_ratio' in col:
+                                df_plot = pvdf_inst_ratio.filter(pl.col('grid_node')==node).to_pandas()
                             else:
                                 df_plot = topo_df_cont_agg.filter(pl.col('grid_node')==node).to_pandas()
-                           
-                            fig.add_trace(
-                                go.Histogram(
-                                    x=df_plot[col],
-                                    name=f"node {node} – {col}",
-                                    marker=dict(color=color_map_cont[col]),
-                                    legendgroup=col,
-                                    showlegend=True,
-                                    nbinsx=30,
-                                    opacity=0.6,
-                                    texttemplate="%{y}",
-                                    hovertemplate=(
-                                        f"Scenario: {scen}<br>"
-                                        f"Column: {col}<br>"
-                                        "Value: %{x}<br>"
-                                        "Count: %{y}<extra></extra>"
-                                    )
-                                ),
-                                row = (i_node // n_cols_cont) + 1, 
-                                col = (i_node % n_cols_cont) + 1,
-                            )
+                                                        
+                            if 'pvdf_inst_ratio' in col: 
+                                fig.add_trace(
+                                    go.Histogram(
+                                        x=[0,],
+                                        name=f"node {node:4} – {col:15}: {df_plot[col].values[0] * 100:.2f}%",
+                                        marker=dict(color=color_map_cont[col]),
+                                        legendgroup=col,
+                                        showlegend=True,
+                                        nbinsx=30,
+                                        opacity=0.6,
+                                        texttemplate="%{y}",
+                                    ),
+                                    row = (i_node // n_cols_cont) + 1, 
+                                    col = (i_node % n_cols_cont) + 1,
+                                )
+
+                                node_loss_df = gridnode_df.group_by('grid_node').agg([
+                                                pl.col('feedin_atnode_loss_kW').sum().alias('feedin_atnode_loss_kW')
+                                                ]).sort('feedin_atnode_loss_kW', descending=True).select(['grid_node', 'feedin_atnode_loss_kW'])
+                                node_loss = node_loss_df.filter(pl.col('grid_node')==node).select('feedin_atnode_loss_kW').to_numpy()[0][0]
+                                
+                                fig_bar.add_trace(
+                                    go.Bar(
+                                        x=[f"node {node} - loss"],
+                                        y=[node_loss / 1000000],
+                                        name=f"node {node} – loss /1e6",
+                                        # marker=dict(color=color_map_cont[col]),
+                                        # legendgroup=col,
+                                        showlegend=True,
+                                        text=[f"{node_loss / 1000000:.2f}"],
+                                ))
+                                fig_bar.add_trace(
+                                    go.Bar(
+                                        x=[f"node {node} - pvratio"],
+                                        y=[df_plot[col].values[0]],
+                                        name=f"node {node} – {col}",
+                                        # marker=dict(color=color_map_cont[col]),
+                                        # legendgroup=col,
+                                        showlegend=True,
+                                        text=[f"{df_plot[col].values[0] * 100:.2f}%"],
+                                ))
+
+
+                                # add node with max pv ratio as comparison to max loss nodes 
+                                if i_node == len(compare_nodes_list) -1:
+                                    df_plot = pvdf_inst_ratio.filter(pl.col('grid_node')==max_pvinst_node).to_pandas()
+                                    node_loss2 = node_loss_df.filter(pl.col('grid_node')==max_pvinst_node).select('feedin_atnode_loss_kW').to_numpy()[0][0]
+                                    fig_bar.add_trace(
+                                        go.Bar(
+                                            x=[f"max pvratio node {max_pvinst_node} - loss"],
+                                            y=[node_loss2 / 1000000],
+                                            name=f"node {max_pvinst_node} – loss /1e6",
+                                            # marker=dict(color=color_map_cont[col]),
+                                            # legendgroup=col,
+                                            showlegend=True,
+                                            text=[f"{node_loss2 / 1000000:.2f}"],
+                                    ))
+                                    fig_bar.add_trace(
+                                        go.Bar(
+                                            x=[f"max pvratio node {max_pvinst_node} - pvratio"],
+                                            y=[df_plot[col].values[0]],
+                                            name=f"node {max_pvinst_node} – {col}",
+                                            # marker=dict(color=color_map_cont[col]),
+                                            # legendgroup=col,
+                                            showlegend=True,
+                                            text=[f"{df_plot[col].values[0] * 100:.2f}%"],
+                                    ))
+
+                            else:
+                                fig.add_trace(
+                                    go.Histogram(
+                                        x=df_plot[col],
+                                        name=f"node {node} – {col}",
+                                        marker=dict(color=color_map_cont[col]),
+                                        legendgroup=col,
+                                        showlegend=True,
+                                        nbinsx=30,
+                                        opacity=0.6,
+                                        texttemplate="%{y}",
+                                        hovertemplate=(
+                                            f"Scenario: {scen}<br>"
+                                            f"Column: {col}<br>"
+                                            "Value: %{x}<br>"
+                                            "Count: %{y}<extra></extra>"
+                                        )
+                                    ),
+                                    row = (i_node // n_cols_cont) + 1, 
+                                    col = (i_node % n_cols_cont) + 1,
+                                )
 
 
                     # update + export ----------------------------------------
@@ -7162,17 +7280,27 @@ class Visualization:
                         barmode='overlay', 
                         template='plotly_white',
                     )
+                    fig_bar.update_layout(
+                        title = f'PVdf Inst Ratio and Node Loss (scen: {scen})', 
+                        barmode='group', 
+                        template='plotly_white',
+                    )
 
                     if self.visual_sett.plot_show and self.visual_sett.plot_ind_summary_stats_by_node_TF[1]:
                         if self.visual_sett.plot_ind_summary_stats_by_node_TF[2]:    
                             fig.show()
+                            fig_bar.show()
                         elif not self.visual_sett.plot_ind_summary_stats_by_node_TF[2]:
                             fig.show() if i_scen == 0 else None
-                    if self.visual_sett.save_plot_by_scen_directory:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_summary_stats_by_node.html')
-                    else:
-                        fig.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_summary_stats_by_node.html')
-                    print_to_logfile(f'\texport: plot_ind_summary_stats_by_node (for: {scen})', self.visual_sett.log_name)
+                            fig_bar.show() if i_scen == 0 else None
+                    if not self.visual_sett.export_only_agg_comparison_plots:
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_summary_stats_by_node___{scen}.html')
+                            fig_bar.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_summary_stats_by_node_pvshare_bar___{scen}.html')
+                        else:
+                            fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_summary_stats_by_node___{scen}.html')
+                            fig_bar.write_html(f'{self.visual_sett.visual_path}/plot_ind_summary_stats_by_node_pvshare_bar___{scen}.html')
+                        print_to_logfile(f'\texport: plot_ind_summary_stats_by_node (for: {scen})', self.visual_sett.log_name)
 
 
                     
@@ -7188,62 +7316,17 @@ if __name__ == '__main__':
     # if False:
 
     visualization_list = [
-        # Visual_Settings(
-        #     pvalloc_exclude_pattern_list = [
-        #         '*.txt','*.xlsx','*.csv','*.parquet',
-        #         '*old_vers*',
-        #         ], 
-        #     pvalloc_include_pattern_list = [
-        #         # 'pvalloc_mini_byEGID_histgr0-5',
-        #         # 'pvalloc_mini_byEGID_ep2050',
-        #         'pvalloc_mini_byEGID_ep2050_1hll',
-        #         'pvalloc_mini_byEGID_ep2050_1hll_ewfirst',
-        #     ],
-            
-        #     # plot_show                          = False,
-        #     save_plot_by_scen_directory        = False,
-             
-        #     remove_old_plot_scen_directories   = True,  
-        #     remove_old_plots_in_visualization  = True,  
-        #     remove_old_csvs_in_visualization   = True, 
-        
-        #     cut_timeseries_to_zoom_hour        = True,
-        #     add_day_night_HOY_bands            = True,
 
-            
-
-        #     # # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
-        #     # plot_ind_var_summary_stats_TF                   = [True,      True,       False], 
-        #     # plot_demand_profiles_TF                         = [True,      True,       False],
-        #     # # plot_ind_hist_pvcapaprod_sanitycheck_TF         = [True,      True,       False], 
-        #     # # plot_ind_hist_pvprod_deviation_TF               = [True,      True,       False], 
-        #     # plot_ind_charac_omitted_gwr_TF                  = [True,      True,       False], 
-        #     # # plot_ind_line_meteo_radiation_TF                = [True,      True,       False], 
-
-        #     # # # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-        #     # # plot_ind_line_installedCap_TF                 = [True,      True,       False]    
-        #     # # plot_ind_mapline_prodHOY_EGIDrfcombo_TF         = [True,      True,       False]  , 
-        #     # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,       False]    , 
-        #     plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]    , 
-        #     plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
-        #     # # plot_ind_hist_cols_HOYagg_per_EGID_TF           = [True,      True,       False]    , 
-        #     # # # plot_ind_line_gridPremiumHOY_per_node_TF        = [True,      True,       False]  , 
-        #     # # # plot_ind_line_gridPremiumHOY_per_EGID_TF        = [True,      True,       False]  , 
-        #     # # # plot_ind_line_gridPremium_structure_TF          = [True,      True,       False]  , 
-        #     # # # plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False]  , 
-        #     # plot_ind_map_topo_egid_TF                       = [True,      True,       False]    , 
-        #     # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  , 
-
-        #     # plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False], 
-            
 
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
                 '*.txt','*old_vers*', 
-                '*mini*',
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_*_ew1first', 
+                # 'pvalloc_*nbfs*_ew1first',
+                # 'pvalloc_16nbfs_RUR', 
+                # 'pvalloc_10nbfs_SUB',
+                'pvalloc_mini*'
             ],
             save_plot_by_scen_directory        = False, 
             remove_old_plot_scen_directories   = True,  
@@ -7255,45 +7338,16 @@ if __name__ == '__main__':
 
             # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
             # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
-            plot_ind_summary_stats_by_node_TF                   = [True,      True,       False],
-            
+            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]    , 
+            # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       True]  ,
+            # plot_ind_hist_contcharact_newinst_TF           = [True,      True,       True]  , 
+            # plot_ind_bar_catgcharact_newinst_TF            = [True,      True,       True]  , 
+            # plot_ind_summary_stats_by_node_TF              = [True,      True,       True],
+            plot_ind_hist_NPV_freepartitions_TF              = [True,      True,       True],
+
             
             ), 
-
-        # Visual_Settings(
-        #     pvalloc_exclude_pattern_list = [
-        #         '*.txt','*old_vers*', 
-        #         ], 
-        #     pvalloc_include_pattern_list = [
-        #         # pvalloc_mini_byEGID_ep2050_1hll_ew1first
-        #         # pvalloc_mini_byEGID_ep2050_1hll_ew1pool
-        #         # 'pvalloc_mini_byEGID_ep2050_ew1first', 
-        #         # 'pvalloc_mini_byEGID_ep2050_ew1pool', 
-
-        #         'pvalloc_mini_byEGID_ep2050*',
-
-        #         # 'pvalloc_10nbfs_SUB_ew2first', 
-        #         # 'pvalloc_10nbfs_SUB_ew2pool',
-        #         # 'pvalloc_10nbfs_SUB_ew1first',
-        #         # 'pvalloc_10nbfs_SUB_ew1pool',
-        #     ],
-        #     save_plot_by_scen_directory        = False, 
-        #     remove_old_plot_scen_directories   = True,  
-        #     remove_old_plots_in_visualization  = True,  
-        #     remove_old_csvs_in_visualization   = True,
-        #     default_map_zoom                   = 10,
-        #     default_map_center                 =[47.46, 7.58],
-
-
-        #     # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-        #     # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
-        #     # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]    , 
-        #     # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
-        #     plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       True]  , 
-        #     plot_ind_hist_contcharact_newinst_TF       = [True,      True,       True]  , 
-        #     plot_ind_bar_catgcharact_newinst_TF        = [True,      True,       True]  , 
-            
-        #     ), 
 
 
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#SBATCH --job-name=visual_6h_12c32GB                   #This is the name of your job
-#SBATCH --cpus-per-task=12                  #This is the number of cores reserved
+#SBATCH --job-name=visual_6h_24c32GB                   #This is the name of your job
+#SBATCH --cpus-per-task=24                  #This is the number of cores reserved
 #SBATCH --mem-per-cpu=32G              #This is the memory reserved per core.
 #Total memory reserved: 384GB
 
