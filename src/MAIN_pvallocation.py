@@ -50,7 +50,7 @@ class PVAllocScenario_Settings:
                                                     # # RURAL - Beinwil, Lauwil, Bretzwil, Nunningen, Zullwil, Meltingen, Erschwil, Büsserach, Fehren, Seewen
                                                     # 2612, 2889, 2883, 2621, 2622, 2620, 2615, 2614, 2616, 2480,
                                                     # # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
-                                                    # 2613, 2782, 2618, 2786, 2785, 2772, 2761, 2743, 
+                                                    # 2613, 27  2, 2618, 2786, 2785, 2772, 2761, 2743, 
                                                     # # URBAN: Reinach, Münchenstein, Muttenz
                                                     # 2773, 2769, 2770,
                                                     ])
@@ -1852,6 +1852,14 @@ class PVAllocScenario:
                         grid_node = Map_egid_dsonode.loc[egid, 'grid_node']
                     elif isinstance(Map_egid_dsonode.loc[egid, 'grid_node'], pd.Series):
                         grid_node = Map_egid_dsonode.loc[egid, 'grid_node'].iloc[0]
+
+                    
+                    # add subsidy (placeholder) --------
+                    subsidy_egid = {
+                        'dfuid_subsidy_fix_chf': 0.0, 
+                        'node_subsidy_fix_chf': 0.0,
+                    }
+
                         
 
                 # attach to topo --------
@@ -1867,6 +1875,7 @@ class PVAllocScenario:
                     'EWR': ewr_info, 
                     'elecpri_Rp_kWh': elecpri_egid,
                     'elecpri_info': elecpri_info,
+                    'subsidy': subsidy_egid,
                     }  
 
                 # Checkpoint prints
@@ -4626,8 +4635,9 @@ class PVAllocScenario:
                 (pl.col('FLAECHE') / pl.col('total_flaeche_by_egid')).alias('FLAECHE_ratio')
             ])
 
-            # get dfuid specific filters
+            # get dfuid specific filters ---------------
             topo_filter = topo_filter.with_columns([
+                # EAST WEST
                 pl.when(
                     (pl.col('FLAECHE_ratio') >= 0.5 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
                 ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_50pr'),
@@ -4648,19 +4658,33 @@ class PVAllocScenario:
                 pl.when(
                     (pl.col('FLAECHE_ratio') >= 0.35 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
                 ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_35pr'),
+
+                # SOUTH
+                pl.when(
+                    (pl.col('FLAECHE_ratio') >= 0.5) & (pl.col('AUSRICHTUNG') > -45) & (pl.col('AUSRICHTUNG') < 45)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_south_50pr'),
+
+                pl.when(
+                    (pl.col('FLAECHE_ratio') >= 0.4) & (pl.col('AUSRICHTUNG') > -45) & (pl.col('AUSRICHTUNG') < 45)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_south_40pr'),
+
             ])
 
             #  groupby egid + derive filter_tags
             topo_filter_egid = topo_filter.group_by('EGID').agg([
                 pl.col('filt_dfuid_east_50pr').any().alias('filt_dfuid_east_50pr'),
-                pl.col('filt_dfuid_west_50pr').any().alias('filt_dfuid_west_50pr'),
-                pl.col('filt_dfuid_west_40pr').any().alias('filt_dfuid_west_40pr'), 
                 pl.col('filt_dfuid_east_40pr').any().alias('filt_dfuid_east_40pr'),
                 pl.col('filt_dfuid_east_35pr').any().alias('filt_dfuid_east_35pr'),
+
+                pl.col('filt_dfuid_west_50pr').any().alias('filt_dfuid_west_50pr'),
+                pl.col('filt_dfuid_west_40pr').any().alias('filt_dfuid_west_40pr'), 
                 pl.col('filt_dfuid_west_35pr').any().alias('filt_dfuid_west_35pr'),
+
+                pl.col('filt_dfuid_south_50pr').any().alias('filt_dfuid_south_50pr'),
+                pl.col('filt_dfuid_south_40pr').any().alias('filt_dfuid_south_40pr'),
             ])
 
-            # get egid specific filters
+            # get egid specific filters ---------------
             topo_filter_egid = topo_filter_egid.with_columns([
                 pl.when(
                     (pl.col('filt_dfuid_east_40pr') == True) & (pl.col('filt_dfuid_west_40pr') == True)
@@ -4674,6 +4698,13 @@ class PVAllocScenario:
                 pl.when(
                     (pl.col('filt_dfuid_east_40pr') == True) | (pl.col('filt_dfuid_west_40pr') == True)
                 ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastORwest_40pr'),
+
+                pl.when(
+                    (pl.col('filt_dfuid_south_50pr') == True)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__south_50pr'),
+                pl.when(
+                    (pl.col('filt_dfuid_south_40pr') == True)
+                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__south_40pr'),
             ])
 
             # join to npv_df
@@ -5814,16 +5845,16 @@ if __name__ == '__main__':
             kwargs.update(overrides)
         return replace(default_scen, **kwargs)
 
+    # mini scenario dev + debug
     pvalloc_mini_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_test_DEFAULT',
             bfs_numbers                                          = [
                                                         2641, 2615,
                                                                     ],         
             mini_sub_model_TF                                    = True,
             mini_sub_model_by_X                                  = 'by_EGID',
-            mini_sub_model_nEGIDs                                = 100,
+            mini_sub_model_nEGIDs                                = 500,
             create_gdf_export_of_topology                        = False,
             export_csvs                                          = True,
-            overwrite_scen_init                                  = True, 
 
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
@@ -5852,112 +5883,27 @@ if __name__ == '__main__':
 
 
     )
-
-    
-    pvalloc_Xnbfs_ARE_30y_DEFAULT = PVAllocScenario_Settings(
-        name_dir_export ='pvalloc_29nbfs_30y_DEFAULT',
-        bfs_numbers                                          = [
-            # RURAL 
-            2612, 2889, 2883, 2621, 2622,
-            2620, 2615, 2614, 2616, 2480,
-            2617, 2611, 2788, 2619, 2783, 2477, 
-            # SUBURBAN
-            2613, 2782, 2618, 2786, 2785, 
-            2772, 2761, 2743, 2476, 2768,
-            # URBAN
-            2773, 2769, 2770,
-                ],
-        create_gdf_export_of_topology                        = True,
-        export_csvs                                          = False,
-        T0_year_prediction                                   = 2022,
-        months_lookback                                      = 12,
-        months_prediction                                    = 360,
-        TECspec_add_heatpump_demand_TF                       = True,
-        TECspec_heatpump_months_factor                       = [
-                                                                (10, 7.0),
-                                                                (11, 7.0), 
-                                                                (12, 7.0), 
-                                                                (1 , 7.0), 
-                                                                (2 , 7.0), 
-                                                                (3 , 7.0), 
-                                                                (4 , 7.0), 
-                                                                (5 , 7.0),     
-                                                                (6 , 1.0), 
-                                                                (7 , 1.0), 
-                                                                (8 , 1.0), 
-                                                                (9 , 1.0),
-                                                                ],
-        ALGOspec_topo_subdf_partitioner                      = 250,
-        ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
-        CSTRspec_ann_capacity_growth                         = 0.1,
-        ALGOspec_subselec_filter_method                      = 'pooled',
-        CSTRspec_capacity_type                               = 'ep2050_zerobasis',
-
-    ) 
-
+    bfs_mini_name = 'pvalloc_mini'
     bfs_mini_list = [2612, 2889]
-
-    XLRG_bfs_name = 'pvalloc_47nbfs_30y'
-    XLRG_bfs_list = [
-        # RURAL 
-        2612, 2889, 2883, 2621, 2622,
-        2620, 2615, 2614, 2616, 2480,
-        2617, 2611, 2788, 2619, 2783, 2477, 
-        # SUBURBAN
-        2613, 2782, 2618, 2786, 2785, 
-        2772, 2761, 2743, 2476, 2768,
-        2471, 2481, 2775, 2764, 2771, 
-        2763, 2473, 2475, 2474, 2472, 
-        2478, 2830, 2766, 2767, 2774, 
-        # URBAN
-        2773, 2769, 2770,
-        2762, 2765, 
-        ]
+    
 
     pvalloc_scen_list = [ 
 
-
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_histgr0-05',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     CSTRspec_capacity_type          = 'hist_constr_capa_year', 
-        #     CSTRspec_ann_capacity_growth    = 0.05,  
-        # ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050',
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}',
             bfs_numbers                     = bfs_mini_list,
         ), 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll', 
+
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_ew1first',
         #               bfs_numbers                     = bfs_mini_list,
-        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
-        #               GRIDspec_node_1hll_closed_TF = True,
-        # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ew1first',
-        #               bfs_numbers                     = bfs_mini_list,
-        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
-        #               GRIDspec_node_1hll_closed_TF = True,
         #               ALGOspec_subselec_filter_method   = 'ordered',
         #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
         # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_1hll_ew1pool',
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_ew1pool',
         #               bfs_numbers                     = bfs_mini_list,
-        #               CSTRspec_capacity_type          = 'ep2050_zerobasis',
-        #               GRIDspec_node_1hll_closed_TF = True,
+        #               ALGOspec_subselec_filter_method   = 'pooled',
         #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
         # ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1first',
-                      bfs_numbers                     = bfs_mini_list,
-                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
-                      ALGOspec_subselec_filter_method   = 'ordered',
-                      ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
-        ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='pvalloc_mini_byEGID_ep2050_ew1pool',
-                      bfs_numbers                     = bfs_mini_list,
-                      CSTRspec_capacity_type          = 'ep2050_zerobasis',
-                      ALGOspec_subselec_filter_method   = 'pooled',
-                      ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
-        ),
-        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}',
-        #         bfs_numbers                       = XLRG_bfs_list,
-        # ), 
+
     
     ]
 

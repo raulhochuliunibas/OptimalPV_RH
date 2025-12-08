@@ -121,7 +121,7 @@ if __name__ == '__main__':
         2773, 2769, 2770,
         ],
 
-    XLRG_bfs_name = 'pvalloc_47nbfs_30y'
+    XLRG_bfs_name = 'pvalloc_47nbfs_30y4'
     XLRG_bfs_list = [
         # RURAL 
         2612, 2889, 2883, 2621, 2622,
@@ -241,10 +241,10 @@ if __name__ == '__main__':
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_ew1pool',
                       ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',),
             ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_ew2pool',
-                      ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
-                                                            'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
-            ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_ew2pool',
+        #               ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
+        #                                                     'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
+        #     ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_1hll',
                       GRIDspec_node_1hll_closed_TF      = True,
             ),
@@ -252,11 +252,11 @@ if __name__ == '__main__':
                       GRIDspec_node_1hll_closed_TF      = True,
                       ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr', )
             ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_1hll_ew2pool',
-                      GRIDspec_node_1hll_closed_TF      = True,
-                      ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
-                                                            'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
-            ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_1hll_ew2pool',
+        #               GRIDspec_node_1hll_closed_TF      = True,
+        #               ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
+        #                                                     'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
+        #     ),
         
     ]
     
@@ -269,11 +269,11 @@ if __name__ == '__main__':
                 bfs_numbers                       = XLRG_bfs_list,
                 ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',),
         ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}_ew2pool',
-                bfs_numbers                       = XLRG_bfs_list,
-                ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
-                                                      'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
-        ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}_ew2pool',
+        #         bfs_numbers                       = XLRG_bfs_list,
+        #         ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
+        #                                               'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
+        # ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}_1hll',
                 bfs_numbers                       = XLRG_bfs_list,
                 GRIDspec_node_1hll_closed_TF      = True,
@@ -283,12 +283,12 @@ if __name__ == '__main__':
                 GRIDspec_node_1hll_closed_TF      = True,
                 ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr', )
         ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}_1hll_ew2pool',
-                bfs_numbers                       = XLRG_bfs_list,
-                GRIDspec_node_1hll_closed_TF      = True,
-                ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
-                                                      'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
-        ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}_1hll_ew2pool',
+        #         bfs_numbers                       = XLRG_bfs_list,
+        #         GRIDspec_node_1hll_closed_TF      = True,
+        #         ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
+        #                                               'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
+        # ),
     ]
     
     # call scen in array and run ------------------------------------------
