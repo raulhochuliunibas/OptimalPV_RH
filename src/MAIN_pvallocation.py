@@ -505,12 +505,19 @@ class PVAllocScenario:
         self.mark_to_timing_csv('init', 'start_sanity_check', start_sanity_check, np.nan, '-')
 
         # make sanitycheck folder and move relevant initial files there (delete all old files, not distort results)
-        os.makedirs(self.sett.sanity_check_path, exist_ok=False) 
+        if os.path.exists(self.sett.sanity_check_path):
+            shutil.rmtree(self.sett.sanity_check_path)
+        os.makedirs(self.sett.sanity_check_path)
 
-        fresh_initial_files = [f'{self.sett.name_dir_export_path}/{file}' for file in self.sett.MCspec_fresh_initial_files] 
-        topo_time_paths = glob.glob(f'{self.sett.name_dir_export_path}/topo_time_subdf/*.parquet')
-        for f in fresh_initial_files + topo_time_paths:
-            shutil.copy(f, f'{self.sett.sanity_check_path}/')
+        fresh_initial_files = [os.path.join(self.sett.name_dir_export_path, file) for file in self.sett.MCspec_fresh_initial_files] 
+        for f in fresh_initial_files:
+            file_name = os.path.basename(f) #f.split('\\')[-1]
+            shutil.copy(f, os.path.join(self.sett.sanity_check_path, file_name))
+
+        topo_time_paths = glob.glob(os.path.join(self.sett.name_dir_export_path, 'topo_time_subdf', '*.parquet'))
+        for f in topo_time_paths:
+            file_name = os.path.basename(f) #f.split('\\')[-1]
+            shutil.copy(f, os.path.join(self.sett.sanity_check_path, file_name))
 
         # create grid node monitoring for >1HOY of lost load
         node_1hll_closed_dict = {'k_descrip': 'k: iter_round of algorightm, v: list of nodes that have >1HOY of lost load'}
@@ -652,10 +659,25 @@ class PVAllocScenario:
 
             # copy all initial files to MC directory
             self.sett.mc_iter_path = os.path.join(self.sett.name_dir_export_path, f'zMC{mc_iter:0{max_digits}}')
-            shutil.rmtree(self.sett.mc_iter_path) if os.path.exists(self.sett.mc_iter_path) else None
+            if os.path.exists(self.sett.mc_iter_path):
+                shutil.rmtree(self.sett.mc_iter_path)
             os.makedirs(self.sett.mc_iter_path, exist_ok=False)
-            for f in fresh_initial_paths + topo_time_paths:
-                shutil.copy(f, self.sett.mc_iter_path)
+
+            fresh_initial_files = [os.path.join(self.sett.name_dir_export_path, file) for file in self.sett.MCspec_fresh_initial_files] 
+            for f in fresh_initial_files:
+                file_name = os.path.basename(f) 
+                shutil.copy(f, os.path.join(self.sett.mc_iter_path, file_name))
+
+            topo_time_paths = glob.glob(os.path.join(self.sett.name_dir_export_path, 'topo_time_subdf', '*.parquet'))
+            for f in topo_time_paths:
+                file_name = os.path.basename(f) 
+                shutil.copy(f, os.path.join(self.sett.mc_iter_path, file_name))
+            
+            # shutil.rmtree(self.sett.mc_iter_path) if os.path.exists(self.sett.mc_iter_path) else None
+            # os.makedirs(self.sett.mc_iter_path, exist_ok=False)
+            # for f in fresh_initial_paths + topo_time_paths:
+                    # shutil.copy(f, self.sett.mc_iter_path)
+
 
             # create grid node monitoring for >1HOY of lost load
             node_1hll_closed_dict = {'k_descrip': 'k: iter_round of algorightm, v: list of nodes that have >1HOY of lost load'}
@@ -5852,7 +5874,7 @@ if __name__ == '__main__':
                                                                     ],         
             mini_sub_model_TF                                    = True,
             mini_sub_model_by_X                                  = 'by_EGID',
-            mini_sub_model_nEGIDs                                = 500,
+            mini_sub_model_nEGIDs                                = 200,
             create_gdf_export_of_topology                        = False,
             export_csvs                                          = True,
 
@@ -5885,13 +5907,88 @@ if __name__ == '__main__':
     )
     bfs_mini_name = 'pvalloc_mini'
     bfs_mini_list = [2612, 2889]
+
+    pvalloc_Xnbfs_ARE_30y_DEFAULT = PVAllocScenario_Settings(
+        name_dir_export ='pvalloc_29nbfs_30y_DEFAULT',
+        bfs_numbers                                          = [
+            # RURAL 
+            2612, 2889, 2883, 2621, 2622,
+            2620, 2615, 2614, 2616, 2480,
+            2617, 2611, 2788, 2619, 2783, 2477, 
+            # SUBURBAN
+            2613, 2782, 2618, 2786, 2785, 
+            2772, 2761, 2743, 2476, 2768,
+            # URBAN
+            2773, 2769, 2770,
+                ],
+        create_gdf_export_of_topology                        = True,
+        export_csvs                                          = False,
+        T0_year_prediction                                   = 2022,
+        months_lookback                                      = 12,
+        months_prediction                                    = 360,
+        TECspec_add_heatpump_demand_TF                       = True,
+        TECspec_heatpump_months_factor                       = [
+                                                                (10, 7.0),
+                                                                (11, 7.0), 
+                                                                (12, 7.0), 
+                                                                (1 , 7.0), 
+                                                                (2 , 7.0), 
+                                                                (3 , 7.0), 
+                                                                (4 , 7.0), 
+                                                                (5 , 7.0),     
+                                                                (6 , 1.0), 
+                                                                (7 , 1.0), 
+                                                                (8 , 1.0), 
+                                                                (9 , 1.0),
+                                                                ],
+        ALGOspec_topo_subdf_partitioner                      = 250,
+        ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
+        CSTRspec_ann_capacity_growth                         = 0.1,
+        ALGOspec_subselec_filter_method                      = 'pooled',
+        CSTRspec_capacity_type                               = 'ep2050_zerobasis',
+
+    ) 
+
+    RUR_bfs_name = 'pvalloc_16nbfs_RUR'
+    RUR_bfs_list =[
+        # RURAL
+        2612, 2889, 2883, 2621, 2622,
+        2620, 2615, 2614, 2616, 2480,
+        2617, 2611, 2788, 2619, 2783, 2477, 
+    ]
+
+    LRG_bfs_name = 'pvalloc_29nbfs_30y3'
+    LRG_bfs_list = [
+        # RURAL 
+        2612, 2889, 2883, 2621, 2622,
+        2620, 2615, 2614, 2616, 2480,
+        2617, 2611, 2788, 2619, 2783, 2477, 
+        # SUBURBAN
+        2613, 2782, 2618, 2786, 2785, 
+        2772, 2761, 2743, 2476, 2768,
+        # URBAN
+        2773, 2769, 2770,
+        ],
+
     
 
     pvalloc_scen_list = [ 
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}',
-            bfs_numbers                     = bfs_mini_list,
-        ), 
+
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1k',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     mini_sub_model_nEGIDs           = 1000,
+        # ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_all',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     mini_sub_model_TF               = False,
+        # ), 
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}', 
+                bfs_numbers                       = RUR_bfs_list,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}',
+        ),
+
 
         # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_ew1first',
         #               bfs_numbers                     = bfs_mini_list,
