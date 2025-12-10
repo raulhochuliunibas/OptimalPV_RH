@@ -223,9 +223,6 @@ class PVAllocScenario_Settings:
 
     })
 
-
-
-
     
     # tech_economic_specs
     TECspec_self_consumption_ifapplicable: float            = 1.0
@@ -357,6 +354,68 @@ class PVAllocScenario_Settings:
                                                                    6: [1,     0]
                                                                 })
     GRIDspec_node_1hll_closed_TF: bool                         = False       # F: installations can still be built in grid nodes that have > 1 HOY Lost Load, T: no installations in circuits which have just 1 hour of lost load in the grid_updating stage. 
+    GRIDspec_subsidy_name: str                                 = 'default_subsidy'   # 'subsidy_name' / None
+    GRIDspec_subsidy_filtag_node_schemes: Dict[str, float]     = field(default_factory=lambda: {
+        'default_subsidy': {
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 0.0),
+                ('filter_tag__eastwest_70pr', 0.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   0.0), 
+            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+        },
+        'A1':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 2000.0),
+                ('filter_tag__eastwest_70pr', 2000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   0.0), 
+            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+        },
+        'A3':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   0.0), 
+            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+        },
+
+        'B1':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 0.0),
+                ('filter_tag__eastwest_70pr', 0.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   3000.0),
+            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+        },
+        'B2':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 0.0),
+                ('filter_tag__eastwest_70pr', 0.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.95,  5000.0), 
+        },
+
+        'C1':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 2000.0),
+                ('filter_tag__eastwest_70pr', 2000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   3000.0),
+            'pena_nodeHC_chf_tuples':(0.95,  0.0),
+        },
+        'C2':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 2000.0),
+                ('filter_tag__eastwest_70pr', 2000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.95,  5000.0), 
+        },
+        
+        })
 
     
 
@@ -524,6 +583,12 @@ class PVAllocScenario:
         with open(f'{self.sett.sanity_check_path}/node_1hll_closed_dict.json', 'w') as f:
             json.dump(node_1hll_closed_dict, f)
 
+        # create grid node monitoring for subsidy
+        node_subsidy_monitor_dict = {'k_descrip': 'k: iter_round of algorightm, v: list of nodes that have subsidy applied'}
+        with open(f'{self.sett.sanity_check_path}/node_subsidy_monitor_dict.json', 'w') as f:
+            json.dump(node_subsidy_monitor_dict, f)
+
+
                 
         # ALLOCATION RUN ====================
         start_sanity_check_allocation = datetime.datetime.now()
@@ -684,6 +749,10 @@ class PVAllocScenario:
             with open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'w') as f:
                 json.dump(node_1hll_closed_dict, f)
 
+            # create grid node monitoring for subsidy
+            node_subsidy_monitor_dict = {'k_descrip': 'k: iter_round of algorightm, v: list of nodes that have subsidy applied'}
+            with open(f'{self.sett.mc_iter_path}/node_subsidy_monitor_dict.json', 'w') as f:
+                json.dump(node_subsidy_monitor_dict, f)
 
 
             # ALLOCATION ALGORITHM -----------------------------------------------------------------------------    
@@ -3346,6 +3415,7 @@ class PVAllocScenario:
             outtopo_subdf_paths = glob.glob(f'{self.sett.name_dir_export_path}/outtopo_time_subdf/*.parquet')
             dsonodes_df = pl.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
             node_1hll_closed_dict = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r'))
+            node_subsidy_monitor_dict = json.load(open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'r'))
 
             data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
             gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
@@ -3632,10 +3702,8 @@ class PVAllocScenario:
             #     .otherwise(pl.col('feedin_atnode_loss_kW'))  # Keep existing value if condition is not met
             #     .alias('feedin_atnode_loss_kW')  # Update column in DataFrame
             # )
-            # # --- --- ---
-            
-            gridnode_df.sort(['t_int','grid_node'], descending=[False, False])
-            gridnode_df.sort(['grid_node', 't_int'], descending=[False, False])
+            # # --- --- ---          
+            gridnode_df = gridnode_df.sort(['grid_node', 't_int'], descending=[False, False])
             gridnode_df_hours_agg = gridnode_df.group_by(['grid_node', ]).agg([
                 pl.col('feedin_atnode_taken_kW').sum().alias('feedin_atnode_taken_kW'),
                 pl.col('feedin_atnode_loss_kW').sum().alias('feedin_atnode_loss_kW'),
@@ -3657,6 +3725,32 @@ class PVAllocScenario:
             with open(f'{subdir_path}/node_1hll_closed_dict.json', 'w') as f:
                 json.dump(node_1hll_closed_dict, f, indent=4)
 
+
+            # update node subsidy monitor  -----------------------------------------------------
+            subsidy_node_name   = self.sett.GRIDspec_subsidy_name
+            subsidy_node_scheme = self.sett.GRIDspec_subsidy_filtag_node_schemes[subsidy_node_name]
+            subs_node_tpl = subsidy_node_scheme['subs_nodeHC_chf_tuples']
+            pena_node_tpl = subsidy_node_scheme['pena_nodeHC_chf_tuples']
+
+
+            gridnode_df = gridnode_df.sort(['grid_node', 't_int'], descending=[False, False])
+            gridnode_max_HC = gridnode_df.group_by(['grid_node', ]).agg([
+                pl.col('max_demand_feedin_atnode_kW').max().alias('max_demand_feedin_atnode_kW'),
+                pl.col('kW_threshold').first().alias('kW_threshold'),
+            ])
+            gridnode_max_HC = gridnode_max_HC.with_columns([
+                (pl.col('max_demand_feedin_atnode_kW') / pl.col('kW_threshold')).alias('HC_ratio'),
+            ])
+
+            subs_gridnodes_list = gridnode_max_HC.filter(pl.col('HC_ratio') <= subs_node_tpl[0]).select('grid_node').to_series().to_list()
+            pena_gridnodes_list = gridnode_max_HC.filter(pl.col('HC_ratio') >  pena_node_tpl[0]).select('grid_node').to_series().to_list()
+
+            node_subsidy_monitor_dict[str(i_m)] = {
+                'subs_gridnodes': list(set(subs_gridnodes_list)),
+                'pena_gridnodes': list(set(pena_gridnodes_list)),
+            }
+            with open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'w') as f:
+                json.dump(node_subsidy_monitor_dict, f, indent=4)
 
 
             # update gridprem_ts -----------------------------------------------------
@@ -4255,7 +4349,8 @@ class PVAllocScenario:
             rfr_model = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_model.pkl')
             encoder   = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_encoder.pkl')
 
-            node_1hll_closed_dict = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r')) 
+            node_1hll_closed_dict     = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r')) 
+            node_subsidy_monitor_dict = json.load(open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'r'))
                     
 
             # import topo_time_subdfs -----------------------------------------------------
@@ -4601,11 +4696,11 @@ class PVAllocScenario:
 
         
             # concat all egid_agg
-            agg_npv_df = pl.concat(agg_npv_df_list)
-            npv_df = agg_npv_df.clone()
+            npv_df = pl.concat(agg_npv_df_list).clone()
 
           
-            # add roof specific filter tag VERSION 1 -----------------------------------------------------
+            # add roof specific filter tag VERSION 1 -----------------
+            """
             npv_df = npv_df.with_columns(
                 filter_tag__south_nr = (
                     (pl.col("AUSRICHTUNG_mean") > -45) & 
@@ -4628,9 +4723,9 @@ class PVAllocScenario:
                     (pl.col("AUSRICHTUNG_mean") < 30)
                 ),
             )
-        
+            """
 
-            # add roof specific filter tag VERSION 2 -----------------------------------------------------
+            # add roof specific filter tag VERSION 2 -----------------
             
             # get topo filter df
             topo_filter_list = []
@@ -4657,7 +4752,7 @@ class PVAllocScenario:
                 (pl.col('FLAECHE') / pl.col('total_flaeche_by_egid')).alias('FLAECHE_ratio')
             ])
 
-            # get dfuid specific filters ---------------
+            # get dfuid specific filters -----
             topo_filter = topo_filter.with_columns([
                 # EAST WEST
                 pl.when(
@@ -4706,7 +4801,7 @@ class PVAllocScenario:
                 pl.col('filt_dfuid_south_40pr').any().alias('filt_dfuid_south_40pr'),
             ])
 
-            # get egid specific filters ---------------
+            # get egid specific filters -----
             topo_filter_egid = topo_filter_egid.with_columns([
                 pl.when(
                     (pl.col('filt_dfuid_east_40pr') == True) & (pl.col('filt_dfuid_west_40pr') == True)
@@ -4731,14 +4826,58 @@ class PVAllocScenario:
 
             # join to npv_df
             npv_df = npv_df.join(topo_filter_egid, on='EGID', how='left')
-    
 
+            
+            # add subsidy where applicable -----------------
+            node_subsidy_monitor_iter = node_subsidy_monitor_dict[str(i_m)]
+            subsidy_node_name   = self.sett.GRIDspec_subsidy_name
+            subsidy_filtag_node_schemes = self.sett.GRIDspec_subsidy_filtag_node_schemes[subsidy_node_name]
+            npv_df = npv_df.with_columns([
+                pl.lit(0.0).alias('subs_filter_tags_chf'),
+                pl.lit(0.0).alias('subs_nodeHC_chf'),
+                pl.lit(0.0).alias('pena_nodeHC_chf'),
+            ])
+
+            # filter_tag subsidy ----
+            subs_filter_tags_chf_tuples = subsidy_filtag_node_schemes['subs_filter_tags_chf_tuples']  # ['filter_tags_subs_chf_tuples']
+            for filt_tag, subs_chf in reversed(subs_filter_tags_chf_tuples):
+                npv_df = npv_df.with_columns([
+                    pl.when(pl.col(filt_tag) == True
+                            ).then(pl.lit(subs_chf)
+                    ).otherwise(pl.col('subs_filter_tags_chf')
+                    ).alias('subs_filter_tags_chf'),
+                ])
+
+            # node subsidy / penalty ----
+            subs_node_tpl = subsidy_filtag_node_schemes['subs_nodeHC_chf_tuples']
+            pena_node_tpl = subsidy_filtag_node_schemes['pena_nodeHC_chf_tuples']
+
+            npv_df = npv_df.with_columns([
+                pl.when(pl.col('grid_node').is_in(node_subsidy_monitor_iter['subs_gridnodes'])
+                        ).then(pl.lit(subs_node_tpl[1])
+                ).otherwise(pl.col('subs_nodeHC_chf')
+                ).alias('subs_nodeHC_chf'),
+
+                pl.when(pl.col('grid_node').is_in(node_subsidy_monitor_iter['pena_gridnodes'])
+                        ).then(pl.lit(pena_node_tpl[1])
+                ).otherwise(pl.col('pena_nodeHC_chf')
+                ).alias('pena_nodeHC_chf'),
+            ])
+
+            
+            # apply subsidy / penality ----
+            npv_df = npv_df.with_columns([
+                pl.col('NPV_uid').alias('NPV_uid_before_subsidy'),
+                (pl.col('NPV_uid') + pl.col('subs_filter_tags_chf') + pl.col('subs_nodeHC_chf') - pl.col('pena_nodeHC_chf')
+                ).alias('NPV_uid'),
+            ])  
 
 
             # export npv_df -----------------------------------------------------
             npv_df.write_parquet(f'{subdir_path}/npv_df.parquet')
             if (self.sett.export_csvs) & ( i_m < 3):
                 npv_df.write_csv(f'{subdir_path}/npv_df.csv')
+
 
             # export by Month -----------------------------------------------------
             if self.sett.MCspec_keep_files_month_iter_TF:
@@ -5872,9 +6011,9 @@ if __name__ == '__main__':
             bfs_numbers                                          = [
                                                         2641, 2615,
                                                                     ],         
-            mini_sub_model_TF                                    = True,
+            mini_sub_model_TF                                    = False,
             mini_sub_model_by_X                                  = 'by_EGID',
-            mini_sub_model_nEGIDs                                = 200,
+            mini_sub_model_nEGIDs                                = 500,
             create_gdf_export_of_topology                        = False,
             export_csvs                                          = True,
 
@@ -5905,104 +6044,53 @@ if __name__ == '__main__':
 
 
     )
-    bfs_mini_name = 'pvalloc_mini'
+    bfs_mini_name = 'pvalloc_mini_all'
     bfs_mini_list = [2612, 2889]
 
-    pvalloc_Xnbfs_ARE_30y_DEFAULT = PVAllocScenario_Settings(
-        name_dir_export ='pvalloc_29nbfs_30y_DEFAULT',
-        bfs_numbers                                          = [
-            # RURAL 
-            2612, 2889, 2883, 2621, 2622,
-            2620, 2615, 2614, 2616, 2480,
-            2617, 2611, 2788, 2619, 2783, 2477, 
-            # SUBURBAN
-            2613, 2782, 2618, 2786, 2785, 
-            2772, 2761, 2743, 2476, 2768,
-            # URBAN
-            2773, 2769, 2770,
-                ],
-        create_gdf_export_of_topology                        = True,
-        export_csvs                                          = False,
-        T0_year_prediction                                   = 2022,
-        months_lookback                                      = 12,
-        months_prediction                                    = 360,
-        TECspec_add_heatpump_demand_TF                       = True,
-        TECspec_heatpump_months_factor                       = [
-                                                                (10, 7.0),
-                                                                (11, 7.0), 
-                                                                (12, 7.0), 
-                                                                (1 , 7.0), 
-                                                                (2 , 7.0), 
-                                                                (3 , 7.0), 
-                                                                (4 , 7.0), 
-                                                                (5 , 7.0),     
-                                                                (6 , 1.0), 
-                                                                (7 , 1.0), 
-                                                                (8 , 1.0), 
-                                                                (9 , 1.0),
-                                                                ],
-        ALGOspec_topo_subdf_partitioner                      = 250,
-        ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
-        CSTRspec_ann_capacity_growth                         = 0.1,
-        ALGOspec_subselec_filter_method                      = 'pooled',
-        CSTRspec_capacity_type                               = 'ep2050_zerobasis',
 
-    ) 
 
-    RUR_bfs_name = 'pvalloc_16nbfs_RUR'
-    RUR_bfs_list =[
-        # RURAL
-        2612, 2889, 2883, 2621, 2622,
-        2620, 2615, 2614, 2616, 2480,
-        2617, 2611, 2788, 2619, 2783, 2477, 
-    ]
-
-    LRG_bfs_name = 'pvalloc_29nbfs_30y3'
-    LRG_bfs_list = [
-        # RURAL 
-        2612, 2889, 2883, 2621, 2622,
-        2620, 2615, 2614, 2616, 2480,
-        2617, 2611, 2788, 2619, 2783, 2477, 
-        # SUBURBAN
-        2613, 2782, 2618, 2786, 2785, 
-        2772, 2761, 2743, 2476, 2768,
-        # URBAN
-        2773, 2769, 2770,
-        ],
-
-    
 
     pvalloc_scen_list = [ 
 
-
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1k',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     mini_sub_model_nEGIDs           = 1000,
-        # ), 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_all',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     mini_sub_model_TF               = False,
-        # ), 
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}', 
-                bfs_numbers                       = RUR_bfs_list,
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}',
+            bfs_numbers                     = bfs_mini_list,
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_subsidy_name           = 'A1',
         ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}',
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_subsidy_name           = 'B1',
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_subsidy_name           = 'C2',
+        ),
+
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_node_1hll_closed_TF    = True,
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sA1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_node_1hll_closed_TF    = True,
+            GRIDspec_subsidy_name           = 'A1',
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sB1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_node_1hll_closed_TF    = True,
+            GRIDspec_subsidy_name           = 'B1',
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sC1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_node_1hll_closed_TF    = True,
+            GRIDspec_subsidy_name           = 'C2',
         ),
 
 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_ew1first',
-        #               bfs_numbers                     = bfs_mini_list,
-        #               ALGOspec_subselec_filter_method   = 'ordered',
-        #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
-        # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_ew1pool',
-        #               bfs_numbers                     = bfs_mini_list,
-        #               ALGOspec_subselec_filter_method   = 'pooled',
-        #               ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr' ), # filter_tag__eastORwest_50pr  filter_tag__eastORwest_40pr
-        # ),
-
-    
     ]
+
 
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
