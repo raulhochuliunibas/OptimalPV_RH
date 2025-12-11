@@ -188,6 +188,39 @@ class Visual_Settings:
         'select_nodes_stacked_traces': [], 
         'n_top_loss_nodes': 15,}
         , ) 
+    plot_ind_hist_NPV_freepartitions_specs: Dict        = field(default_factory=lambda: {
+        'show_traces': ['hist', 'kde'],
+        'exclude_filter_tags': [
+            'filter_tag__south_nr', 'filter_tag__south_1r',
+            'filter_tag__eastwest_2r', 'filter_tag__eastwest_nr',
+            'subs_filter_tags_chf', 
+
+            # 'filter_tag__eastwest_80pr', 
+            'filter_tag__eastwest_70pr', 
+            'filter_tag__eastORwest_50pr', 
+            'filter_tag__eastORwest_40pr', 
+            # 'filter_tag__south_50pr', 
+            # 'filter_tag__south_40pr', 
+            'filt_dfuid_east_50pr', 
+            'filt_dfuid_east_40pr', 
+            'filt_dfuid_east_35pr', 
+            'filt_dfuid_west_50pr', 
+            'filt_dfuid_west_40pr', 
+            'filt_dfuid_west_35pr', 
+            'filt_dfuid_south_50pr', 
+            'filt_dfuid_south_40pr', 
+        ],
+        'nbins': 25, 
+        'tag_subsidy_tuples':{
+            ('filter_tag__eastwest_80pr', 0),
+            # ('filter_tag__eastwest_80pr', 2500),
+            # ('filter_tag__eastwest_80pr', 5000),
+            # ('filter_tag__eastwest_80pr', 7500),
+        }
+    })
+
+
+
     plot_ind_map_topo_egid_specs: Dict                      = field(default_factory=lambda: {
         'uniform_municip_color': '#fff2ae',
         'shape_opacity': 0.2,
@@ -289,17 +322,25 @@ class Visual_Settings:
             # ('NEIGUNG_original',        10, ),
             # ('NEIGUNG_share_used',      10, ),
             ], 
-        'n_cols_catg_charact': 4,
+        'n_cols_catg_charact': 2,
         'max_n_rows_catg_charact': 2, 
         'cols_catg_charact_inst': [
             'GKLAS',
-            'GSTAT',
+            # 'GSTAT',
             'GBAUJ_cat',
             'are_typ',
             'sfhmfh_typ',
             'grid_node',
             'heatpump_TF',
+            'filter_tag',
             ],
+        'cols_as_filter_tags': [
+            # ascending order so that "larger" tags overwritte smaller ones (e.g. south50 is also in south40, so will overwrite it if later in the queue)
+            'filter_tag__eastwest_70pr',
+            'filter_tag__eastwest_80pr',
+            'filter_tag__south_40pr',
+            'filter_tag__south_50pr',
+        ]
         })
     plot_ind_summary_stats_by_node_specs: Dict              = field(default_factory=lambda:  {
         'node_summary_list': [], 
@@ -420,7 +461,6 @@ class Visualization:
             self.plot_ind_hist_NPV_freepartitions, 
             self.plot_ind_line_gridPremiumHOY_per_node, 
             self.plot_ind_line_gridPremium_structure, 
-            self.plot_ind_hist_NPV_freepartitions, 
 
             self.plot_ind_map_topo_egid, 
             self.plot_ind_map_topo_egid_incl_gridarea, 
@@ -4039,41 +4079,115 @@ class Visualization:
 
                 checkpoint_to_logfile('plot_ind_hist_NPV_freepartitions', self.visual_sett.log_name)
 
+                # init agg plots and color dict
                 fig_agg = go.Figure()
+                fig_agg_true_npv  = go.Figure()
+                scen_filter_tags_list = []
+                for i_scen, scen in enumerate(self.pvalloc_scen_list):
+                    # setup + import ----------
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+                    exclude_filter_tags = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['exclude_filter_tags']
+                    nbins               = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['nbins']
+                    tag_subsidy_tuples  = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['tag_subsidy_tuples']
+
+                    # import ----------------
+                    npv_df = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_1.parquet')
+
+                    egid_filter_tags = [col for col in npv_df.columns if 'filter_tag' in col]
+                    dfuid_filter_tags = [col for col in npv_df.columns if 'filt_dfuid' in col]
+                    joint_tags = egid_filter_tags + dfuid_filter_tags
+                    
+                    filter_tags =  [col for col in joint_tags if col not in exclude_filter_tags]
+
+                    for tag in filter_tags:
+                        scen_filter_tags_list.append(f'{scen}_{tag}')
+
+                    scen_filter_tags_list.append(f'{scen}_all')
+                    
+                scen_filter_tags_list = list(set(scen_filter_tags_list))
+                color_map_scen_filter_tag_dict = {
+                    scen_filter_tag: px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)]
+                    for i, scen_filter_tag in enumerate(scen_filter_tags_list)
+                }
+                                    
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     # setup + import ----------
                     self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
+                    exclude_filter_tags = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['exclude_filter_tags']
+                    nbins               = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['nbins']
+                    tag_subsidy_tuples  = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['tag_subsidy_tuples']
 
                     # import ----------------
                     npv_df = pd.read_parquet(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/npv_df_1.parquet')
 
-                    egid_filter_tags = [col for col in npv_df.columns if 'filt_egid' in col]
+                    egid_filter_tags = [col for col in npv_df.columns if 'filter_tag' in col]
                     dfuid_filter_tags = [col for col in npv_df.columns if 'filt_dfuid' in col]
                     joint_tags = egid_filter_tags + dfuid_filter_tags
                     
-                    exclude_tags = []
-                    filter_tags =  [col for col in joint_tags if col not in exclude_tags]
+                    filter_tags =  [col for col in joint_tags if col not in exclude_filter_tags]
                     
 
                     # plot ----------------
                     fig = go.Figure()
+                    scen_filter_tag = f'{scen}_all'
 
-                    fig.add_trace(go.Histogram(x=npv_df['NPV_uid'], name=f'all EGID', opacity=0.5))
-                    fig_agg.add_trace(go.Histogram(x=npv_df['NPV_uid'], name=f'all EGID scen: {scen}', opacity=0.5))
+                    fig.add_trace(go.Histogram(x=npv_df['NPV_uid'], name=f'all EGID', opacity=0.5, nbinsx = nbins))
+                    kde_all = gaussian_kde(npv_df['NPV_uid'])
+                    x_range_all = np.linspace(npv_df['NPV_uid'].min(), npv_df['NPV_uid'].max(), 1000)
+                    fig.add_trace(go.Scatter(x=x_range_all, y=kde_all(x_range_all), mode='lines', name=f'kde all EGID', line=dict(color='black', width=2,), opacity=0.8, yaxis='y2'))
+
+                    fig_agg.add_trace(         go.Histogram(x=npv_df['NPV_uid'], name=f'all EGID scen: {scen}', opacity=0.5, nbinsx = nbins, marker_color = color_map_scen_filter_tag_dict[scen_filter_tag],))
+                    fig_agg.add_trace(         go.Scatter(x=x_range_all, y=kde_all(x_range_all), mode='lines', name=f'kde all EGID scen: {scen}', line=dict(color = color_map_scen_filter_tag_dict[scen_filter_tag], width=2,), opacity=0.8, yaxis='y2'))
+
+                    fig_agg_true_npv.add_trace(go.Histogram(x=npv_df['NPV_uid'], name=f'all EGID scen: {scen}', opacity=0.5, nbinsx = nbins))
+                    fig_agg_true_npv.add_trace(go.Scatter(x=x_range_all, y=kde_all(x_range_all), mode='lines', name=f'kde all EGID scen: {scen}',                                     opacity=0.8, yaxis='y2'))
 
                     for tag in filter_tags:
-                        df_filter = npv_df.filter(npv_df[tag] == True)
-                        fig.add_trace(go.Histogram(x=df_filter['NPV_uid'], name=f'Filter: {tag}', opacity=0.5))
-                        fig_agg.add_trace(go.Histogram(x=df_filter['NPV_uid'], name=f'Filter: {tag} scen: {scen}', opacity=0.5))
+                        scen_filter_tag = f'{scen}_{tag}'
+                        df_filter = npv_df.loc[npv_df[tag] == True, ]
+                        fig.add_trace(go.Histogram(x=df_filter['NPV_uid'],      name=f'hist {tag:25}',              opacity=0.5, nbinsx = nbins))
+                        fig_agg.add_trace(go.Histogram(x=df_filter['NPV_uid'],  name=f'hist {tag:25}   -   {scen}', opacity=0.5, nbinsx = nbins, marker_color = color_map_scen_filter_tag_dict[scen_filter_tag],))
+                    
+                    for tag in filter_tags:
+                        scen_filter_tag = f'{scen}_{tag}'
+                        df_filter = npv_df.loc[npv_df[tag] == True, ]
+                        if len(df_filter) > 1:
+                            kde = gaussian_kde(df_filter['NPV_uid'])
+                            x_range = np.linspace(df_filter['NPV_uid'].min(), df_filter['NPV_uid'].max(), 1000)
+                            fig.add_trace(go.Scatter(x=x_range, y=kde(x_range), mode='lines', name=f'kde  {tag:25}',                  opacity=0.8, yaxis='y2'))
+                            fig_agg.add_trace(go.Scatter(x=x_range, y=kde(x_range), mode='lines', name=f'kde  {tag:25}   -   {scen}', line = dict(color = color_map_scen_filter_tag_dict[scen_filter_tag],), opacity=0.8,  yaxis='y2'))
+
+                        # add subsidized NPVs 
+                        subsidized_tags = [tupl[0] for tupl in tag_subsidy_tuples]
+                        if tag in subsidized_tags:
+                            for tupl in tag_subsidy_tuples:
+                                tag = tupl[0]
+                                subsidy_amount = tupl[1]
+                                if tag in filter_tags:
+                                    df_filter = npv_df.loc[npv_df[tag] == True, ]
+                                    npv_with_subsidy = df_filter['NPV_uid'] + subsidy_amount
+                                    kde_subsidy = gaussian_kde(npv_with_subsidy)
+                                    x_range_subsidy = np.linspace(npv_with_subsidy.min(), npv_with_subsidy.max(), 1000)
+                                    fig.add_trace(go.Scatter(x=x_range_subsidy, y=kde_subsidy(x_range_subsidy), mode='lines', 
+                                                            name=f'kde  {tag:25} + subsidy {subsidy_amount}', opacity=0.8, yaxis='y2', line=dict(dash='dash')))
+                                    fig_agg.add_trace(go.Scatter(x=x_range_subsidy, y=kde_subsidy(x_range_subsidy), mode='lines', 
+                                                                name=f'kde  {tag:25} + subsidy {subsidy_amount}   -   {scen}', opacity=0.8, yaxis='y2', line=dict(dash='dash')))
 
                     fig.update_layout(
                         xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
                         yaxis_title='Frequency',
                         title = f'NPV Distribution of possible PV installations, first / last year (weather year: {self.pvalloc_scen.WEAspec_weather_year})',
-                        barmode = 'overlay')
-                    fig.update_traces(bingroup=1, opacity=0.5)
+                        barmode = 'overlay',
+                        template='plotly_white',
+                        yaxis2=dict(
+                            title='KDE Density',
+                            overlaying='y',
+                            side='right',
+                            showgrid = False,
+                        ))
 
                     fig = self.add_scen_name_to_plot(fig, scen, self.pvalloc_scen)
                         
@@ -4090,16 +4204,34 @@ class Visualization:
 
                     # aggregate plot ----------------
                     fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'', opacity=0,))
-                    fig_agg.add_trace(go.Scatter(x=[0,], y=[0,], name=f'{scen}', opacity=0,)) 
 
 
+                # export AGGREGATION ----------------
                 fig_agg.update_layout(
-                    xaxis_title=f'Net Present Value (NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr)',
+                    xaxis_title=f'NPV, interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr, weather year: {self.pvalloc_scen.WEAspec_weather_year}',
                     yaxis_title='Frequency',
-                    title = f'NPV Distribution of possible PV installations, first / last year ({len(self.pvalloc_scen_list)} scen, weather year: {self.pvalloc_scen.WEAspec_weather_year})',
-                    barmode = 'overlay')
-                # fig_agg.update_traces(bingroup=1, opacity=0.75)
-
+                    title = f'Comparison NPV Distribution of poss. PV installations ({len(self.pvalloc_scen_list)} scen)',
+                    barmode = 'overlay',
+                    template='plotly_white',
+                    yaxis2=dict(
+                        title='KDE Density',
+                        overlaying='y',
+                        side='right',
+                        showgrid = False,
+                    ))
+                fig_agg_true_npv.update_layout(
+                    xaxis_title=f'NPV (no subsampling), interest rate: {self.pvalloc_scen.TECspec_interest_rate}, maturity: {self.pvalloc_scen.TECspec_invst_maturity} yr, weather year: {self.pvalloc_scen.WEAspec_weather_year}',
+                    yaxis_title='Frequency',
+                    title = f'Comparison NPV Distribution of poss. PV installations ({len(self.pvalloc_scen_list)} scen)',
+                    barmode = 'overlay',
+                    template='plotly_white',
+                    yaxis2=dict(
+                        title='KDE Density',
+                        overlaying='y',
+                        side='right',
+                        showgrid = False,
+                    ))
+                
                 if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[1]:
                     fig_agg.show()
                 if os.path.exists(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions___{len(self.pvalloc_scen_list)}scen.html'):
@@ -4107,6 +4239,14 @@ class Visualization:
                     os.rename(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions___{len(self.pvalloc_scen_list)}scen.html', 
                               f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions___{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.html')
                 fig_agg.write_html(f'{self.visual_sett.visual_path}/plot_agg_hist_NPV_freepartitions___{len(self.pvalloc_scen_list)}scen.html')
+
+                if self.visual_sett.plot_show and self.visual_sett.plot_ind_hist_NPV_freepartitions_TF[1]:
+                    fig_agg_true_npv.show()
+                if os.path.exists(f'{self.visual_sett.visual_path}/plot_agg_hist_trueNPV_freepartitions___{len(self.pvalloc_scen_list)}scen.html'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}/plot_agg_hist_trueNPV_freepartitions___{len(self.pvalloc_scen_list)}scen*.html'))
+                    os.rename(f'{self.visual_sett.visual_path}/plot_agg_hist_trueNPV_freepartitions___{len(self.pvalloc_scen_list)}scen.html', 
+                              f'{self.visual_sett.visual_path}/plot_agg_hist_trueNPV_freepartitions___{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.html')
+                fig_agg_true_npv.write_html(f'{self.visual_sett.visual_path}/plot_agg_hist_trueNPV_freepartitions___{len(self.pvalloc_scen_list)}scen.html')
 
                
 
@@ -6790,9 +6930,11 @@ class Visualization:
                     cols_catg_charact_inst  = self.visual_sett.plot_ind_XX_charact_newinst_specs['cols_catg_charact_inst']
                     n_cols_subplot          = self.visual_sett.plot_ind_XX_charact_newinst_specs['n_cols_catg_charact']
                     max_n_rows_catg_charact = self.visual_sett.plot_ind_XX_charact_newinst_specs['max_n_rows_catg_charact']
+                    cols_as_filter_tags     = self.visual_sett.plot_ind_XX_charact_newinst_specs['cols_as_filter_tags']
                 
                     topo         = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
                     pred_inst_df = pl.read_parquet( f'{self.visual_sett.mc_data_path}/pred_inst_df.parquet')
+                    npv_df       = pl.read_parquet( f'{self.visual_sett.mc_data_path}/npv_df.parquet')
 
                     pred_inst_df = pred_inst_df.with_columns([
                         pl.col('iter_round').cast(pl.Int64).alias('iter_round'),
@@ -6883,7 +7025,22 @@ class Visualization:
                             )
                         topo_df_catg_raw[['GBAUJ', 'GBAUJ_int', 'GBAUJ_cat' ]]
 
-                    
+
+                    # Add filter_tags
+                    EGID_filter_tags_map = npv_df.select(['EGID',] + cols_as_filter_tags)
+                    topo_df_catg_raw = topo_df_catg_raw.join(EGID_filter_tags_map, on='EGID', how='left')
+                    topo_df_catg_raw = topo_df_catg_raw.with_columns([
+                        pl.lit('na').alias('filter_tag')
+                    ])
+                    for tag_col in cols_as_filter_tags: 
+                        tag_str = tag_col.split('__')[-1]
+                        topo_df_catg_raw = topo_df_catg_raw.with_columns([
+                            pl.when(pl.col(tag_col)
+                            ).then(pl.lit(tag_str)
+                            ).otherwise(pl.col('filter_tag')
+                            ).alias('filter_tag')
+                        ])
+
                     # make color mapping CATG ----------
                     topo_df_catg = topo_df_catg_raw.group_by('EGID').agg([
                         pl.col('GKLAS').first().alias('GKLAS'),
@@ -6893,7 +7050,10 @@ class Visualization:
                         pl.col('sfhmfh_typ').first().alias('sfhmfh_typ'),
                         pl.col('grid_node').first().alias('grid_node'),
                         pl.col('heatpump_TF').first().alias('heatpump_TF'),
+                        pl.col('filter_tag').first().alias('filter_tag'),
                     ])
+
+
 
                     all_categories = (
                         topo_df_catg
@@ -6934,7 +7094,8 @@ class Visualization:
                             # counts = list(vc.values())    # vc["count"]
                             categories = vc[col]
                             counts = vc["count"]
-                            scen_col_legend = f"{scen} – {col} - iter {iter}"
+                            # scen_col_legend = f"{scen} – {col} - iter {iter}"
+                            scen_col_legend = f"{col} - iter {iter}"
                             
                             for idx, (cat, count) in enumerate(zip(categories, counts)):
                                 show_legend_for_trace = True # if idx == 0 else False
@@ -6964,7 +7125,7 @@ class Visualization:
 
                     # update layout + export
                     fig.update_layout(
-                        title_text=f'Hist Continous Columns by Iteration (scen: {scen})', 
+                        title_text=f'Bars Categorical Columns by Iteration (scen: {scen})', 
                         barmode= 'stack',
                         template= 'plotly_white',
                     )
@@ -7321,12 +7482,14 @@ if __name__ == '__main__':
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
                 '*.txt','*old_vers*', 
+                '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
                 # 'pvalloc_*nbfs*_ew1first',
-                # 'pvalloc_16nbfs_RUR', 
-                # 'pvalloc_10nbfs_SUB',
-                'pvalloc_mini*'
+                # 'pvalloc_mini_all*',
+                # 'pvalloc_mini_all',
+                # 'pvalloc_mini_all_sC2',
+                'pvalloc_2nbf_40_10y*',
             ],
             save_plot_by_scen_directory        = False, 
             remove_old_plot_scen_directories   = True,  
@@ -7337,14 +7500,14 @@ if __name__ == '__main__':
 
 
             # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-            # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
-            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]    , 
+            # # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
+            # # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]    , 
             # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
-            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       True]  ,
-            # plot_ind_hist_contcharact_newinst_TF           = [True,      True,       True]  , 
-            # plot_ind_bar_catgcharact_newinst_TF            = [True,      True,       True]  , 
-            # plot_ind_summary_stats_by_node_TF              = [True,      True,       True],
-            plot_ind_hist_NPV_freepartitions_TF              = [True,      True,       True],
+            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            # plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
+            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
 
             
             ), 
