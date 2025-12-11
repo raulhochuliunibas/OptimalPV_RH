@@ -6007,6 +6007,13 @@ if __name__ == '__main__':
         return replace(default_scen, **kwargs)
 
     # mini scenario dev + debug
+    bfs_mini_name = 'pvalloc_2nbfs_10y'
+    bfs_mini_list = [
+        # critical nodes - max npv
+        2762, 2771, 
+        # critical nodes - ew 
+        2768, 2769,
+    ]
     pvalloc_mini_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_test_DEFAULT',
             bfs_numbers                                          = [
                                                         2641, 2615,
@@ -6019,7 +6026,7 @@ if __name__ == '__main__':
 
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
-            months_prediction                                    = 60,
+            months_prediction                                    = 120,
             TECspec_add_heatpump_demand_TF                       = True,   
             TECspec_heatpump_months_factor                       = [
                                                                     (10, 7.0),
@@ -6040,12 +6047,7 @@ if __name__ == '__main__':
             ALGOspec_subselec_filter_method   = 'pooled',
             CSTRspec_ann_capacity_growth                         = 0.1,
             CSTRspec_capacity_type          = 'ep2050_zerobasis', 
-
-
-
     )
-    bfs_mini_name = 'pvalloc_mini_all'
-    bfs_mini_list = [2612, 2889]
 
 
 
