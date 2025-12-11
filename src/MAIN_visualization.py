@@ -42,11 +42,8 @@ class Visual_Settings:
     pvalloc_exclude_pattern_list : List[str]     = field(default_factory=lambda: [
                                                     '*.txt',
                                                     '*old_vers*',
-                                                    '*testX',
-                                                    '*pandas*',
-                                                    '*text2_*', 
-                                                    '*_BLsml_*', 
-                                                    '*_mini_2m_*',
+                                                    '*old*',
+                                                    'x_*',
                                                     ])
     pvalloc_include_pattern_list : List[str]      = field(default_factory=lambda: [])
     plot_show: bool                              = True
