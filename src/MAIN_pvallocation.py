@@ -60,20 +60,20 @@ class PVAllocScenario_Settings:
                                                                                  '265', 
                                                                                  '341', '345', 
                                                                                  ]) 
-    mini_sub_model_ngridnodes: int              = 5
+    mini_sub_model_ngridnodes: int              = 6
     mini_sub_model_nEGIDs: int                  = 30
     mini_sub_model_by_X: str                    = 'by_EGID'       # 'by_gridnode' / 'by_EGID' 
     mini_sub_model_select_EGIDs: List[str]      = field(default_factory=lambda: [
                                                     # pv_df EGIDs in BFS 2889 - Lauwil
                                                     # '3032150', '2362100', '245052560', '245048760', '434178', '245057989', '245044986', 
                                                     # pv_df EGIDs in 9 BFS RUR selection
-                                                    '101428161', '11513725', '190001512', '190004146', '190024109', '190033245', 
-                                                    '190048248', '190083872', '190109228', '190116571', '190144906', '190178022', 
-                                                    '190183577', '190185552', '190251628', '190251772', '190251828', '190296588', 
-                                                    '190491308', '190694269', '190709629', '190814490', '190912633', '190960689', 
-                                                    '2125434', '2362100', '245044986', '245048760', '245052560', '245053405', 
-                                                    '245057989', '245060059', '3030694', '3030905', '3031761', '3032150', '3033714', 
-                                                    '3075084', '386736', '432600', '432638', '432671', '432683', '432701', '432729', '434178',
+                                                    # '101428161', '11513725', '190001512', '190004146', '190024109', '190033245', 
+                                                    # '190048248', '190083872', '190109228', '190116571', '190144906', '190178022', 
+                                                    # '190183577', '190185552', '190251628', '190251772', '190251828', '190296588', 
+                                                    # '190491308', '190694269', '190709629', '190814490', '190912633', '190960689', 
+                                                    # '2125434', '2362100', '245044986', '245048760', '245052560', '245053405', 
+                                                    # '245057989', '245060059', '3030694', '3030905', '3031761', '3032150', '3033714', 
+                                                    # '3075084', '386736', '432600', '432638', '432671', '432683', '432701', '432729', '434178',
                                                     ])
     T0_year_prediction: int                     = 2022                          # year for the prediction of the future construction capacity
     # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
@@ -6007,10 +6007,10 @@ if __name__ == '__main__':
         return replace(default_scen, **kwargs)
 
     # mini scenario dev + debug
-    bfs_mini_name = 'pvalloc_2nbfs_10y'
+    bfs_mini_name = 'pvalloc_2nbf_40_10y'
     bfs_mini_list = [
         # critical nodes - max npv
-        2762, 2771, 
+        # 2762, 2771, 
         # critical nodes - ew 
         2768, 2769,
     ]
@@ -6018,11 +6018,19 @@ if __name__ == '__main__':
             bfs_numbers                                          = [
                                                         2641, 2615,
                                                                     ],         
-            mini_sub_model_TF                                    = False,
-            mini_sub_model_by_X                                  = 'by_EGID',
-            mini_sub_model_nEGIDs                                = 500,
+            mini_sub_model_TF                                    = True,
+            mini_sub_model_by_X                                  = 'by_gridnode',
+            mini_sub_model_grid_nodes                            = [
+                                                                    #ew nodes
+                                                                    '524', 
+                                                                    '743',
+                                                                    #   '724', 
+                                                                    # regular nodes problematic
+                                                                    '81', '867', '79',
+                                                                    ],
+            mini_sub_model_nEGIDs                                = 40,
             create_gdf_export_of_topology                        = False,
-            export_csvs                                          = True,
+            export_csvs                                          = False,
 
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
@@ -6054,41 +6062,54 @@ if __name__ == '__main__':
 
     pvalloc_scen_list = [ 
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}',
-            bfs_numbers                     = bfs_mini_list,
-        ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA1',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_subsidy_name           = 'A1',
-        ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB1',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_subsidy_name           = 'B1',
-        ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}',
+        #     bfs_numbers                     = bfs_mini_list,
+        # ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA1',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_subsidy_name           = 'A1',
+        # ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB1',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_subsidy_name           = 'B1',
+        # ),
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_subsidy_name           = 'C1',
+        ),
+
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA3',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_subsidy_name           = 'A3',
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB2',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_subsidy_name           = 'B2',
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC2',
             bfs_numbers                     = bfs_mini_list,
             GRIDspec_subsidy_name           = 'C2',
         ),
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_node_1hll_closed_TF    = True,
-        ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sA1',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_node_1hll_closed_TF    = True,
-            GRIDspec_subsidy_name           = 'A1',
-        ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sB1',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_node_1hll_closed_TF    = True,
-            GRIDspec_subsidy_name           = 'B1',
-        ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sC1',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_node_1hll_closed_TF    = True,
-            GRIDspec_subsidy_name           = 'C2',
-        ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_node_1hll_closed_TF    = True,
+        # ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sA1',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_node_1hll_closed_TF    = True,
+        #     GRIDspec_subsidy_name           = 'A1',
+        # ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sB1',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_node_1hll_closed_TF    = True,
+        #     GRIDspec_subsidy_name           = 'B1',
+        # ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sC1',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_node_1hll_closed_TF    = True,
+        #     GRIDspec_subsidy_name           = 'C1',
+        # ),
 
 
     ]
