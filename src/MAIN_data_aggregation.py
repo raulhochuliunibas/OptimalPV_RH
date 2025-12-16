@@ -78,8 +78,13 @@ class DataAggScenario_Settings:
                                             # 9 - tourist communes => RURAL
     })
     GWR_SFHMFHtypology: Dict       = field(default_factory=lambda: {
-                                            'SFH': ['1110', ], 
-                                            'MFH': ['1121', '1122', '1276', '1278', ],
+                                            'SFH': ['1110', ],  # GKLAS - 1110: only 1 living space per building
+                                            'MFH': [
+                                                '1121',  # GKLAS - 1121: Double-, row houses with each appartment (living unit) having it's own roof;
+                                                '1122',  # GKLAS - 1122: Buildings with three or more appartments
+                                                '1276',  # GKLAS - 1276: structure for animal keeping (most likely still one owner)
+                                                '1278',  # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
+                                                ],
     })
     GWR_SFHMFH_outsample_proxy:str = 'MFH'
 

@@ -75,7 +75,7 @@ class PVAllocScenario_Settings:
                                                     # '245057989', '245060059', '3030694', '3030905', '3031761', '3032150', '3033714', 
                                                     # '3075084', '386736', '432600', '432638', '432671', '432683', '432701', '432729', '434178',
                                                     ])
-    T0_year_prediction: int                     = 2022                          # year for the prediction of the future construction capacity
+    T0_year_prediction: int                     = 2024                          # year for the prediction of the future construction capacity
     # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
     months_lookback: int                        = 12                           # number of months to look back for the prediction of the future construction capacity
     months_prediction: int                      = 12                         # number of months to predict the future construction capacity
@@ -288,7 +288,7 @@ class PVAllocScenario_Settings:
                                                                 ])
 
     # algorithm_specs
-    ALGOspec_inst_selection_method: str                         = 'random'          # 'random', max_npv', 'prob_weighted_npv'
+    ALGOspec_inst_selection_method: str                         = 'prob_weighted_npv'          # 'random', max_npv', 'prob_weighted_npv'
     ALGOspec_rand_seed: bool                                    = None
     ALGOspec_while_inst_counter_max: int                        = 5000
     ALGOspec_topo_subdf_partitioner: int                        = 250  # 9999999
@@ -372,6 +372,14 @@ class PVAllocScenario_Settings:
             'subs_nodeHC_chf_tuples':(0.5,   0.0), 
             'pena_nodeHC_chf_tuples':(0.95,  0.0), 
         },
+        'A2':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 4000.0),
+                ('filter_tag__eastwest_70pr', 4000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   0.0), 
+            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+        },
         'A3':{
             'subs_filter_tags_chf_tuples': [
                 ('filter_tag__eastwest_80pr', 6000.0),
@@ -386,8 +394,8 @@ class PVAllocScenario_Settings:
                 ('filter_tag__eastwest_80pr', 0.0),
                 ('filter_tag__eastwest_70pr', 0.0),
             ],
-            'subs_nodeHC_chf_tuples':(0.5,   3000.0),
-            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+            'subs_nodeHC_chf_tuples':(0.5,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  4000.0), 
         },
         'B2':{
             'subs_filter_tags_chf_tuples': [
@@ -395,16 +403,24 @@ class PVAllocScenario_Settings:
                 ('filter_tag__eastwest_70pr', 0.0),
             ],
             'subs_nodeHC_chf_tuples':(0.7,   0.0),
-            'pena_nodeHC_chf_tuples':(0.95,  5000.0), 
+            'pena_nodeHC_chf_tuples':(0.90,  8000.0), 
+        },
+        'B3':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 0.0),
+                ('filter_tag__eastwest_70pr', 0.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.80,  8000.0), 
         },
 
         'C1':{
             'subs_filter_tags_chf_tuples': [
-                ('filter_tag__eastwest_80pr', 2000.0),
-                ('filter_tag__eastwest_70pr', 2000.0),
+                ('filter_tag__eastwest_80pr', 4000.0),
+                ('filter_tag__eastwest_70pr', 4000.0),
             ],
-            'subs_nodeHC_chf_tuples':(0.5,   3000.0),
-            'pena_nodeHC_chf_tuples':(0.95,  0.0),
+            'subs_nodeHC_chf_tuples':(0.5,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  4000.0),
         },
         'C2':{
             'subs_filter_tags_chf_tuples': [
@@ -412,7 +428,15 @@ class PVAllocScenario_Settings:
                 ('filter_tag__eastwest_70pr', 2000.0),
             ],
             'subs_nodeHC_chf_tuples':(0.7,   0.0),
-            'pena_nodeHC_chf_tuples':(0.95,  5000.0), 
+            'pena_nodeHC_chf_tuples':(0.9,  8000.0), 
+        },
+        'C3':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 4000.0),
+                ('filter_tag__eastwest_70pr', 4000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.8,  8000.0), 
         },
         
         })
@@ -3525,16 +3549,18 @@ class PVAllocScenario:
                     how='anti'
                 )
 
+                subdf_no_inst_EGID = subdf_no_inst['EGID'].to_list()
+                subdf_no_inst_dfuid = subdf_no_inst['df_uid'].to_list()
                 subdf_updated = subdf_updated.with_columns([
                     pl.when(
-                        (pl.col('EGID').is_in(subdf_no_inst['EGID'].implode())) &
-                        (pl.col('df_uid').is_in(subdf_no_inst['df_uid'].implode()))
+                        (pl.col('EGID').is_in(subdf_no_inst_EGID) &
+                        (pl.col('df_uid').is_in(subdf_no_inst_dfuid)))
                     ).then(pl.lit(0.0)).otherwise(pl.col('pvprod_kW')).alias('pvprod_kW'),
                 ])
                 subdf_updated = subdf_updated.with_columns([
                     pl.when(
-                        (pl.col('EGID').is_in(subdf_no_inst['EGID'].implode())) &
-                        (pl.col('df_uid').is_in(subdf_no_inst['df_uid'].implode()))
+                        (pl.col('EGID').is_in(subdf_no_inst_EGID) &
+                        (pl.col('df_uid').is_in(subdf_no_inst_dfuid)))
                     ).then(pl.lit(0.0)).otherwise(pl.col('radiation')).alias('radiation'),
                 ])
 
@@ -6007,7 +6033,7 @@ if __name__ == '__main__':
         return replace(default_scen, **kwargs)
 
     # mini scenario dev + debug
-    bfs_mini_name = 'pvalloc_2nbf_40_10y'
+    bfs_mini_name = 'pvalloc_2nbf_500_10y'
     bfs_mini_list = [
         # critical nodes - max npv
         # 2762, 2771, 
@@ -6028,7 +6054,7 @@ if __name__ == '__main__':
                                                                     # regular nodes problematic
                                                                     '81', '867', '79',
                                                                     ],
-            mini_sub_model_nEGIDs                                = 40,
+            mini_sub_model_nEGIDs                                = 500,
             create_gdf_export_of_topology                        = False,
             export_csvs                                          = False,
 
@@ -6062,56 +6088,35 @@ if __name__ == '__main__':
 
     pvalloc_scen_list = [ 
 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}',
-        #     bfs_numbers                     = bfs_mini_list,
-        # ), 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA1',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_subsidy_name           = 'A1',
-        # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB1',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_subsidy_name           = 'B1',
-        # ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC1',
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}',
             bfs_numbers                     = bfs_mini_list,
-            GRIDspec_subsidy_name           = 'C1',
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_subsidy_name           = 'A1',
         ),
-
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA3',
             bfs_numbers                     = bfs_mini_list,
             GRIDspec_subsidy_name           = 'A3',
+        ),
+
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_subsidy_name           = 'B1',
         ),
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB2',
             bfs_numbers                     = bfs_mini_list,
             GRIDspec_subsidy_name           = 'B2',
         ),
+
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC1',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_subsidy_name           = 'C1',
+        ),
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC2',
             bfs_numbers                     = bfs_mini_list,
             GRIDspec_subsidy_name           = 'C2',
         ),
-
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_node_1hll_closed_TF    = True,
-        # ), 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sA1',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_node_1hll_closed_TF    = True,
-        #     GRIDspec_subsidy_name           = 'A1',
-        # ), 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sB1',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_node_1hll_closed_TF    = True,
-        #     GRIDspec_subsidy_name           = 'B1',
-        # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_1hll_sC1',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_node_1hll_closed_TF    = True,
-        #     GRIDspec_subsidy_name           = 'C1',
-        # ),
-
-
     ]
 
 
@@ -6129,8 +6134,4 @@ if __name__ == '__main__':
 
 
 print('')
-
-
-
-
 
