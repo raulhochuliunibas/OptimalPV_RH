@@ -5,112 +5,150 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 
 visualization_list = [
 
-
-
-        # Visual_Settings(
-        #     pvalloc_exclude_pattern_list = [
-        #         '*.txt','*old_vers*',
-        #         '*old*',
-        #         'x_*',
-        #         # 'pvalloc_47nbfs_30y_1hll',
-        #         ], 
-        #     pvalloc_include_pattern_list = [
-        #         'pvalloc_47nbfs_30y*'
-        #     ],
-        #     cut_timeseries_to_zoom_hour        = True,
-        #     add_day_night_HOY_bands            = True,
-        #     save_plot_by_scen_directory        = False, 
-        #     # remove_old_plot_scen_directories   = True,  
-        #     # remove_old_plots_in_visualization  = True,  
-        #     # remove_old_csvs_in_visualization   = True,
-            
-        #     plot_ind_var_summary_stats_TF                   = [True,      True,      False], 
-        #     plot_ind_line_productionHOY_per_node_TF         = [True,      False,     False],      
-        #     plot_ind_line_PVproduction_TF                   = [True,      False,     False],      
-        #     plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,      True],     
-        #     plot_ind_hist_contcharact_newinst_TF            = [True,      True,      True], 
-        #     plot_ind_bar_catgcharact_newinst_TF             = [True,      True,      True], 
-        #     plot_ind_summary_stats_by_node_TF               = [True,      True,      True],
-        #     ), 
-
-
-        Visual_Settings(
-            # pvalloc_exclude_pattern_list = [], 
-            pvalloc_include_pattern_list = [
-                'pvalloc_2nbfs_2y_test*',
-            ],
-            # export_only_agg_comparison_plots   = True,# <===
-            cut_timeseries_to_zoom_hour        = True,
-            add_day_night_HOY_bands            = True,
-            save_plot_by_scen_directory        = False, 
-            
-            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
-            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
-            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
-            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
-            plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
-            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
-            ), 
-
-        Visual_Settings(
-            # pvalloc_exclude_pattern_list = [], 
-            pvalloc_include_pattern_list = [
-                'pvalloc_16nbfs_RUR*',
-            ],
-            # export_only_agg_comparison_plots   = True,# <===
-            cut_timeseries_to_zoom_hour        = True,
-            add_day_night_HOY_bands            = True,
-            save_plot_by_scen_directory        = False, 
-            
-            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
-            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
-            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
-            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
-            plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
-            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
-            ), 
-
-        Visual_Settings(
-            # pvalloc_exclude_pattern_list = [], 
-            pvalloc_include_pattern_list = [
-                'pvalloc_10nbfs_SUB*',
-            ],
-            # export_only_agg_comparison_plots   = True,# <===
-            cut_timeseries_to_zoom_hour        = True,
-            add_day_night_HOY_bands            = True,
-            save_plot_by_scen_directory        = False, 
-            
-            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
-            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
-            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
-            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
-            plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
-            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
-            ), 
-
-    
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
                 '*.txt','*old_vers*',
-                '*old*',
-                'x_*',
-                ], 
+            ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_16nbfs_RUR', 
-                'pvalloc_10nbfs_SUB',
+                'pvalloc_29nbfs_30y5*',
             ],
+            # export_only_agg_comparison_plots   = True,# <===
+            remove_old_plot_scen_directories   = True,  
+            remove_old_plots_in_visualization  = True, 
+            remove_old_csvs_in_visualization   = True, 
+
+
             cut_timeseries_to_zoom_hour        = True,
-            add_day_night_HOY_bands            = True,
+            # add_day_night_HOY_bands            = True,
             save_plot_by_scen_directory        = False, 
             
-            plot_ind_var_summary_stats_TF                   = [True,      True,      False], 
-            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,      True],     
-            # plot_ind_line_PVproduction_TF                   = [True,      False,     False],   
-            # plot_ind_hist_contcharact_newinst_TF            = [True,      True,      True], 
-            # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,      True], 
-            # plot_ind_summary_stats_by_node_TF               = [True,      True,      True],
+            plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
+            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
             ), 
 
+        Visual_Settings(
+            pvalloc_exclude_pattern_list = [
+                '*.txt','*old_vers*',
+            ], 
+            pvalloc_include_pattern_list = [
+                'pvalloc_29nbfs_30y5',
+                'pvalloc_29nbfs_30y5_max_s*', 
+            ],
+            # export_only_agg_comparison_plots   = True,# <===
+            # remove_old_plot_scen_directories   = True,  
+            # remove_old_plots_in_visualization  = True, 
+            # remove_old_csvs_in_visualization   = True, 
+
+            cut_timeseries_to_zoom_hour        = True,
+            # add_day_night_HOY_bands            = True,
+            save_plot_by_scen_directory        = False, 
+            
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
+            ), 
+
+        Visual_Settings(
+            pvalloc_exclude_pattern_list = [
+                '*.txt','*old_vers*',
+            ], 
+            pvalloc_include_pattern_list = [
+                'pvalloc_29nbfs_30y5', 
+                'pvalloc_29nbfs_30y5_1hll',
+                'pvalloc_29nbfs_30y5*A*',
+            ],
+            # export_only_agg_comparison_plots   = True,# <===
+            # remove_old_plot_scen_directories   = True,  
+            # remove_old_plots_in_visualization  = True, 
+            # remove_old_csvs_in_visualization   = True, 
+
+            cut_timeseries_to_zoom_hour        = True,
+            # add_day_night_HOY_bands            = True,
+            save_plot_by_scen_directory        = False, 
+            
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
+            ), 
+
+        Visual_Settings(
+            pvalloc_exclude_pattern_list = [
+                '*.txt','*old_vers*',
+            ], 
+            pvalloc_include_pattern_list = [
+                'pvalloc_29nbfs_30y5', 
+                'pvalloc_29nbfs_30y5_1hll',
+                'pvalloc_29nbfs_30y5*B*',
+            ],
+            # export_only_agg_comparison_plots   = True,# <===
+            # remove_old_plot_scen_directories   = True,  
+            # remove_old_plots_in_visualization  = True, 
+            # remove_old_csvs_in_visualization   = True, 
+
+            cut_timeseries_to_zoom_hour        = True,
+            # add_day_night_HOY_bands            = True,
+            save_plot_by_scen_directory        = False, 
+            
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
+            ), 
+
+        Visual_Settings(
+            pvalloc_exclude_pattern_list = [
+                '*.txt','*old_vers*',
+            ], 
+            pvalloc_include_pattern_list = [
+                'pvalloc_29nbfs_30y5', 
+                'pvalloc_29nbfs_30y5_1hll',
+                'pvalloc_29nbfs_30y5*C*',
+            ],
+            # export_only_agg_comparison_plots   = True,# <===
+            # remove_old_plot_scen_directories   = True,  
+            # remove_old_plots_in_visualization  = True, 
+            # remove_old_csvs_in_visualization   = True, 
+
+            cut_timeseries_to_zoom_hour        = True,
+            # add_day_night_HOY_bands            = True,
+            save_plot_by_scen_directory        = False, 
+            
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
+            ), 
+
+        Visual_Settings(
+            pvalloc_exclude_pattern_list = [
+                '*.txt','*old_vers*',
+            ], 
+            pvalloc_include_pattern_list = [
+                'pvalloc_29nbfs_30y5', 
+                'pvalloc_29nbfs_30y5_1hll',
+                'pvalloc_29nbfs_30y5*s*3',
+            ],
+            # export_only_agg_comparison_plots   = True,# <===
+            # remove_old_plot_scen_directories   = True,  
+            # remove_old_plots_in_visualization  = True, 
+            # remove_old_csvs_in_visualization   = True, 
+
+            cut_timeseries_to_zoom_hour        = True,
+            # add_day_night_HOY_bands            = True,
+            save_plot_by_scen_directory        = False, 
+            
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
+            ), 
  
     ]    
 
@@ -119,6 +157,14 @@ if __name__ == '__main__':
 
     # visualization ---------------------
     for visual_scen in visualization_list:
+
+        visual_class = Visualization(visual_scen)
+        visual_class.plot_ALL()
+    
+    print('end main_visualization.py')
+
+
+
 
         # # # -- def plot_ALL_init_sanitycheck(self, ): --- [run plot,  show plot,  show all scen] ---------
         # visual_scen.plot_ind_var_summary_stats_TF                   = [True,      True,       False]
@@ -146,10 +192,3 @@ if __name__ == '__main__':
         # visual_scen.plot_ind_lineband_contcharact_newinst_TF        = [True,      True,       False]    
 
         
-
-        visual_class = Visualization(visual_scen)
-        visual_class.plot_ALL()
-    
-    print('end main_visualization.py')
-
-

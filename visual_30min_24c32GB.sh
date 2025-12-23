@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=visual_30min_24c32GB                   #This is the name of your job
+#SBATCH --job-name=visual30min_24c32GB                   #This is the name of your job
 #SBATCH --cpus-per-task=24                  #This is the number of cores reserved
 #SBATCH --mem-per-cpu=32G              #This is the memory reserved per core.
 #Total memory reserved: 768GB
@@ -8,7 +8,7 @@
 # Are you sure that you need THAT much memory?
 
 #SBATCH --time=00:30:00        #This is the time that your task will run
-#SBATCH --qos=30min           #You will run in this queue
+#SBATCH --qos=30min            #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
 #SBATCH --output=myrun.o%j     #These are the STDOUT and STDERR files

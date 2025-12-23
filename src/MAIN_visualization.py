@@ -27,7 +27,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.colors as pc
 from plotly.subplots import make_subplots
-
+from plotly.colors import qualitative
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -56,6 +56,14 @@ class Visual_Settings:
     mc_plots_individual_traces: bool             = True
     cut_timeseries_to_zoom_hour: bool            = False
     add_day_night_HOY_bands: bool                = False
+    reduce_information_content: bool             = False
+    export_png_TF: bool                          = True
+    export_png_dict: Dict                        = field(default_factory=lambda: {
+        'width':    300, 
+        'height':   175, 
+        'scale':    2, 
+        'engine':   'kaleido',
+    }) 
 
 
     default_zoom_year: List[int]                 = field(default_factory=lambda: [2002, 2030]) # field(default_factory=lambda: [2002, 2030]),
@@ -327,7 +335,7 @@ class Visual_Settings:
             'GBAUJ_cat',
             'are_typ',
             'sfhmfh_typ',
-            'grid_node',
+            # 'grid_node',
             'heatpump_TF',
             'filter_tag',
             ],
@@ -400,7 +408,7 @@ class Visualization:
                 # if not any(fnmatch.fnmatch(scen, pattern) for pattern in self.visual_sett.pvalloc_exclude_pattern_list)
             ]
 
-        self.pvalloc_scen_list = filered_scen_list
+        self.pvalloc_scen_list = sorted(filered_scen_list)
         
         # create new visual directories per scenario (+ remove old ones)
         for scen in self.pvalloc_scen_list:
@@ -432,7 +440,10 @@ class Visualization:
 
 
         chapter_to_logfile('start MASTER_visualization\n', self.visual_sett.log_name, overwrite_file=True)
-        # print('end_setup')
+        subchapter_to_logfile('scenarios to plot:', self.visual_sett.log_name)
+        for scen in self.pvalloc_scen_list:
+            print_to_logfile(f'- {scen}', self.visual_sett.log_name)
+
 
 
 
@@ -586,7 +597,7 @@ class Visualization:
                 checkpoint_to_logfile('plot_ind_var_summary_stats', self.visual_sett.log_name)
 
                 # "settings" ----------
-                n_cols_catg = 3
+                n_cols_catg = 3 if len(self.pvalloc_scen_list) >= 3 else len(self.pvalloc_scen_list) 
                 n_cols_cont = 1
 
                 catg_col_plot = [
@@ -912,7 +923,7 @@ class Visualization:
                 # update + export ----------------------------------------
                 # bar plot
                 fig_smry_catg_bar.update_layout(
-                    title = 'Categorical Summary Statistics per Scenario',
+                    title = 'Summary EGID Charact. of Sample per Scen (categorical)',
                     barmode='stack',
                     template='plotly_white',
                     )
@@ -929,7 +940,7 @@ class Visualization:
 
                 # histogramm
                 fig_smry_cont_hist.update_layout(
-                    title = 'Continuous Summary Statistics per Scenario',
+                    title = 'Summary EGID Charact. of Sample per Scen (coontinuous)',
                     barmode='overlay',
                     template='plotly_white',
                     )
@@ -2434,7 +2445,7 @@ class Visualization:
                         xaxis_title='Hour of Year',
                         yaxis_title='Production / Feedin (kW)',
                         legend_title='Node ID',
-                        title = f'Production per node (kW, weather year: {self.pvalloc_scen.WEAspec_weather_year}, self consum. rate: {self.pvalloc_scen.TECspec_self_consumption_ifapplicable})', 
+                        title = f'Production per node (kW, weather year: __, self consum. rate: __)', 
                         template = 'plotly_white', 
                     )
 
@@ -2462,7 +2473,7 @@ class Visualization:
                     xaxis_title='Hour of Year',
                     yaxis_title='Production / Feedin (kW)',
                     legend_title='Scen',
-                    title = f'Production per node (kW, weather year: {self.pvalloc_scen.WEAspec_weather_year}, self consum. rate: {self.pvalloc_scen.TECspec_self_consumption_ifapplicable})', 
+                    title = f'Production per node (kW, weather year: __, self consum. rate: __)', 
                     template = 'plotly_white', 
                     )
                 fig_scen_comp = self.set_default_fig_zoom_hour(fig_scen_comp, self.visual_sett.default_zoom_hour)
@@ -3777,10 +3788,13 @@ class Visualization:
 
                 fig_agg_color_palettes = ['Oranges', 'Purples', 'Mint', 'Greys', 'Blues', 'Greens', 'Reds',
                                           'Oranges', 'Purples', 'Mint', 'Greys', 'Blues', 'Greens', 'Reds',
-
-                                            ]
+                                          'Oranges', 'Purples', 'Mint', 'Greys', 'Blues', 'Greens', 'Reds',
+                                          'Oranges', 'Purples', 'Mint', 'Greys', 'Blues', 'Greens', 'Reds',
+                                          ]
                 fig_agg = go.Figure()
                 CSTRspec_capacity_type_added_TF = False
+                max_end_modelled_pv_list = []
+
                 unique_node_color_map = {}
 
 
@@ -3817,8 +3831,9 @@ class Visualization:
                     if self.pvalloc_scen.CSTRspec_capacity_type == 'ep2050_zerobasis':
                         if not CSTRspec_capacity_type_added_TF:
                             CSTRspec_capacity_type_added_TF = True
-                            
+
                             constrcapa = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/constrcapa.parquet')
+                            constrcapa = constrcapa.loc[constrcapa['year'] >= self.pvalloc_scen.T0_year_prediction].copy()
                             constrcapa['n_inter'] = range(1, len(constrcapa) + 1)
                             fig_agg.add_trace(go.Scatter(x=constrcapa['n_inter'], y=constrcapa['constr_capacity_kw'], name='EP2050+ Inst.Cap. (kW)', mode='lines+markers', line=dict(color='darkred', width=3, dash='dash'), marker=dict(symbol='star',), ))
 
@@ -4018,12 +4033,21 @@ class Visualization:
                     # plot AGGREGATION ----------------
                     color_pal = trace_color_dict[fig_agg_color_palettes[i_scen]]
                     color_pal_idx = len(color_pal)
+                    # index of 2nd zero
+                    if len(topo_df_iter.index[topo_df_iter["n_EGID_pvinst"] == 0]) >= 2:
+                        iter_where_n_EGID_pvinst02nd = topo_df_iter.loc[topo_df_iter.index[topo_df_iter["n_EGID_pvinst"] == 0][1], "n_iter"]
+                        max_end_modelled_pv_list.append(iter_where_n_EGID_pvinst02nd)
+                    else: 
+                        max_end_modelled_pv_list.append(topo_df_iter['n_iter'].max())
+
+
                     fig_agg.add_trace(go.Scatter(x=[None,], y=[None,], name='', opacity=0, line=dict(color = 'rgba(0,0,0,0)',), ))  # empty trace for spacing in legend
-                  
-                    for node in top_loss_nodes:
-                        opacity_value = random.uniform(0.2, 0.5)
-                        agg_bynode_subdf = agg_bynode_df_by_iter.filter(pl.col('grid_node') == node).to_pandas()
-                        fig_agg.add_trace(go.Scatter(x=agg_bynode_subdf['n_iter'], y=agg_bynode_subdf['feedin_atnode_loss_kW'], name=f'node {node} loss_kW', mode='lines+markers', line=dict(color=unique_node_color_map[node], width=1,), marker=dict(symbol='cross',), opacity=opacity_value, stackgroup=scen,))
+
+                    if not self.visual_sett.reduce_information_content: 
+                        for node in top_loss_nodes:
+                            opacity_value = random.uniform(0.2, 0.5)
+                            agg_bynode_subdf = agg_bynode_df_by_iter.filter(pl.col('grid_node') == node).to_pandas()
+                            fig_agg.add_trace(go.Scatter(x=agg_bynode_subdf['n_iter'], y=agg_bynode_subdf['feedin_atnode_loss_kW'], name=f'node {node} loss_kW', mode='lines+markers', line=dict(color=unique_node_color_map[node], width=1,), marker=dict(symbol='cross',), opacity=opacity_value, stackgroup=scen,))
 
                     fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['n_EGID_pvinst'],                          name='n pvinst insample',               mode='lines+markers', line=dict(color=color_pal[color_pal_idx-4],),                 marker=dict(symbol='circle',),  ))                    
                     fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=gridnode_df_by_iter['TotalPower'],                      name='TotalPower',                      mode='lines+markers', line=dict(color=color_pal[color_pal_idx-6],),                 marker=dict(symbol='circle',),  ))                    
@@ -4045,6 +4069,9 @@ class Visualization:
                 fig_agg.update_layout(
                     xaxis_title='Time',
                     yaxis_title='Energy (kWh Feedin / Loss)',
+                    xaxis=dict(
+                        range=[1, max(max_end_modelled_pv_list) * 1.05],  # Adjust range as needed
+                    ),
                     yaxis=dict(
                         title='Energy Feedin / Loss (kW)',
                         range=[0, max(gridnode_df_by_iter['max_demand_feedin_atnode_kW']) * 1.2],  # Adjust range as needed
@@ -4197,6 +4224,7 @@ class Visualization:
                         fig.write_html(f'{self.visual_sett.visual_path}/{scen}/plot_ind_hist_NPV_freepartitions___{scen}.html')
                     else:
                         fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_hist_NPV_freepartitions___{scen}.html')
+                    print_to_logfile(f'\texport: plot_ind_hist_NPV_freepartitions.html (for: {scen})', self.visual_sett.log_name)
                         
 
                     # aggregate plot ----------------
@@ -4647,7 +4675,10 @@ class Visualization:
                     # topo egid map: all buildings ----------------
                     if True:
                         # subset inst_gdf for different traces in map plot
-                        pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>node: {row['grid_node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
+                        if not self.visual_sett.reduce_information_content:
+                            pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>node: {row['grid_node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
+                        elif self.visual_sett.reduce_information_content:
+                            pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
 
                         subinst1_gdf, subinst2_gdf, subinst3_gdf  = pvinst_gdf.copy(), pvinst_gdf.copy(), pvinst_gdf.copy()
                         subinst1_gdf, subinst2_gdf, subinst3_gdf = subinst1_gdf.loc[(subinst1_gdf['inst_TF'] == True) & (subinst1_gdf['info_source'] == 'pv_df')], subinst2_gdf.loc[(subinst2_gdf['inst_TF'] == True) & (subinst2_gdf['info_source'] == 'alloc_algorithm')], subinst3_gdf.loc[(subinst3_gdf['inst_TF'] == False)]
@@ -4709,7 +4740,7 @@ class Visualization:
                     
                     # Update layout ----------------
                     fig_topoegid.update_layout(
-                            title=f"Map of model PV Topology ({scen})",
+                            title=f"Map of Model PV Topology ({scen})",
                             mapbox=dict(
                                 style="carto-positron",
                                 center={"lat": self.visual_sett.default_map_center[0], "lon": self.visual_sett.default_map_center[1]},  # Center the map on the region
@@ -4861,7 +4892,10 @@ class Visualization:
                     # topo egid map: all buildings ----------------
                     if True:
                         # subset inst_gdf for different traces in map plot
-                        pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>node: {row['grid_node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
+                        if not self.visual_sett.reduce_information_content:
+                            pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>node: {row['grid_node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
+                        elif self.visual_sett.reduce_information_content:
+                            pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
 
                         subinst1_gdf, subinst2_gdf, subinst3_gdf  = pvinst_gdf.copy(), pvinst_gdf.copy(), pvinst_gdf.copy()
                         subinst1_gdf, subinst2_gdf, subinst3_gdf = subinst1_gdf.loc[(subinst1_gdf['inst_TF'] == True) & (subinst1_gdf['info_source'] == 'pv_df')], subinst2_gdf.loc[(subinst2_gdf['inst_TF'] == True) & (subinst2_gdf['info_source'] == 'alloc_algorithm')], subinst3_gdf.loc[(subinst3_gdf['inst_TF'] == False)]
@@ -4915,32 +4949,58 @@ class Visualization:
                         node_color_map = {node: area_palette[i] for node, i in zip(unique_nodes, palette_indices)}
                         pvinst_gdf['color'] = pvinst_gdf['grid_node'].map(node_color_map)
                         dsonodes_in_topo_gdf['color'] = dsonodes_in_topo_gdf['grid_node'].map(node_color_map)
-    
-                        fig_topoegid.add_trace(
-                            go.Scattermapbox(
-                                lat=dsonodes_in_topo_gdf.geometry.y,
-                                lon=dsonodes_in_topo_gdf.geometry.x,
-                                mode='markers+text',  # Add text next to markers
-                                marker=dict(
-                                    size=map_topo_egid_specs['gridnode_point_size'],
-                                    color=dsonodes_in_topo_gdf['color'],
-                                    opacity=map_topo_egid_specs['gridnode_point_opacity']
-                                ),
-                                text=dsonodes_in_topo_gdf['grid_node'],  # Or any other label (e.g. 'id')
-                                textposition='top right',  # Position relative to marker
-                                textfont=dict(
-                                    size=10,  # Adjust font size as needed
-                                    color='black'
-                                ),
-                                customdata=dsonodes_in_topo_gdf[['grid_node', 'kW_threshold']],
-                                hovertemplate=(
-                                    "Grid Node: %{customdata[0]}<br>" +
-                                    "kW Limit: %{customdata[1]}<extra></extra>"
-                                ),
-                                name='Grid Nodes (Centroid)',
-                                showlegend=True
+
+                        if not self.visual_sett.reduce_information_content:
+                            fig_topoegid.add_trace(
+                                go.Scattermapbox(
+                                    lat=dsonodes_in_topo_gdf.geometry.y,
+                                    lon=dsonodes_in_topo_gdf.geometry.x,
+                                    mode='markers+text',  # Add text next to markers
+                                    marker=dict(
+                                        size=map_topo_egid_specs['gridnode_point_size'],
+                                        color=dsonodes_in_topo_gdf['color'],
+                                        opacity=map_topo_egid_specs['gridnode_point_opacity']
+                                    ),
+                                    text=dsonodes_in_topo_gdf['grid_node'],  # Or any other label (e.g. 'id')
+                                    textposition='top right',  # Position relative to marker
+                                    textfont=dict(
+                                        size=10,  # Adjust font size as needed
+                                        color='black'
+                                    ),
+                                    customdata=dsonodes_in_topo_gdf[['grid_node', 'kW_threshold']],
+                                    hovertemplate=(
+                                        "Grid Node: %{customdata[0]}<br>" +
+                                        "kW Limit: %{customdata[1]}<extra></extra>" 
+                                        ), 
+                                    name='Grid Nodes (Centroid)',
+                                    showlegend=True
+                                )
                             )
-                        )
+                        elif self.visual_sett.reduce_information_content:
+                            fig_topoegid.add_trace(
+                                go.Scattermapbox(
+                                    lat=dsonodes_in_topo_gdf.geometry.y,
+                                    lon=dsonodes_in_topo_gdf.geometry.x,
+                                    mode='markers+text',  # Add text next to markers
+                                    marker=dict(
+                                        size=map_topo_egid_specs['gridnode_point_size'],
+                                        color=dsonodes_in_topo_gdf['color'],
+                                        opacity=map_topo_egid_specs['gridnode_point_opacity']
+                                    ),
+                                    text=dsonodes_in_topo_gdf['grid_node'],  # Or any other label (e.g. 'id')
+                                    textposition='top right',  # Position relative to marker
+                                    textfont=dict(
+                                        size=10,  # Adjust font size as needed
+                                        color='black'
+                                    ),
+                                    customdata=dsonodes_in_topo_gdf[['grid_node', 'kW_threshold']],
+                                    hovertemplate=(
+                                        "Grid Node: %{customdata[0]}<br><extra></extra>" 
+                                        ), 
+                                    name='Grid Nodes (Centroid)',
+                                    showlegend=True
+                                )
+                            )
                         
                         first_node_hull = True
                         for node in pvinst_gdf['grid_node'].unique():
@@ -4957,6 +5017,7 @@ class Visualization:
                                 color_discrete_sequence=[color], 
                                 opacity=map_topo_egid_specs['girdnode_egid_opacity'],
                             ).data[0]
+                            hull_trace.update(hoverinfo="skip", hovertemplate=None)
                             hull_trace.name = "Grid Node (EGID hull)"
                             hull_trace.legendgroup = "grid_node_area"  # <== GROUPING KEY
                             hull_trace.showlegend = first_node_hull     # Show only on first
@@ -4988,7 +5049,7 @@ class Visualization:
                     
                     # Update layout ----------------
                     fig_topoegid.update_layout(
-                            title=f"Map of model PV Topology ({scen})",
+                            title=f"Map of Model PV Topology ({scen})",
                             mapbox=dict(
                                 style="carto-positron",
                                 center={"lat": self.visual_sett.default_map_center[0], "lon": self.visual_sett.default_map_center[1]},  # Center the map on the region
@@ -5007,7 +5068,6 @@ class Visualization:
                         else:
                             fig_topoegid.write_html(f'{self.visual_sett.visual_path}/plot_ind_map_topo_egid_incl_gridarea___{scen}.html')
                         print_to_logfile(f'\texport: plot_ind_map_topo_egid_incl_gridarea (for: {scen})', self.visual_sett.log_name)
-
 
 
 
@@ -6896,7 +6956,7 @@ class Visualization:
 
                     # update layout
                     fig.update_layout(
-                        title_text=f'Hist Continous Columns by Iteration (scen: {scen})', 
+                        title_text=f'Charact. of EGID with new PV (numeric by iteration, scen: {scen})',                         
                         barmode= 'overlay',
                         template= 'plotly_white',
                     )
@@ -6911,6 +6971,7 @@ class Visualization:
                         else:
                             fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_hist_contcharact_newinst___{scen}.html')
                         print_to_logfile(f'\texport: plot_ind_hist_contcharact_newinst (for: {scen})', self.visual_sett.log_name)
+
 
 
         def plot_ind_bar_catgcharact_newinst(self, ):
@@ -7051,21 +7112,42 @@ class Visualization:
                     ])
 
 
+                    # all_categories = (
+                    #     topo_df_catg
+                    #     .select(cols_catg_charact_inst)
+                    #     .unpivot(on=cols_catg_charact_inst)   # equivalent to melt()
+                    #     .select("value")
+                    #     .unique()
+                    #     .to_series()
+                    #     .to_list()
+                    # )
+                    # categoires_not_in_color_map = [cat for cat in all_categories if cat not in color_map_catg.keys()]
+                    # color_map_catg.update({
+                    #     cat: px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)]
+                    #     for i, cat in enumerate(categoires_not_in_color_map)
+                    # })
 
-                    all_categories = (
-                        topo_df_catg
-                        .select(cols_catg_charact_inst)
-                        .unpivot(on=cols_catg_charact_inst)   # equivalent to melt()
-                        .select("value")
-                        .unique()
-                        .to_series()
-                        .to_list()
-                    )
-                    categoires_not_in_color_map = [cat for cat in all_categories if cat not in color_map_catg.keys()]
-                    color_map_catg.update({
-                        cat: px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)]
-                        for i, cat in enumerate(categoires_not_in_color_map)
-                    })
+                    # alternative color_mapping => by column
+                    column_categories = {}
+                    for col in cols_catg_charact_inst:
+                        column_categories[col] = (
+                            topo_df_catg
+                            .select(pl.col(col))
+                            .unique()
+                            .to_series()
+                            .drop_nulls()
+                            .to_list()
+                        )
+                        color_map_catg = {}
+                        palette = qualitative.Plotly  # or Dark24, Set3, etc.
+                        for col, cats in column_categories.items():
+                            color_map_catg[col] = {
+                                cat: palette[i % len(palette)]
+                                for i, cat in enumerate(cats)
+                            }
+
+
+
                 
                     # Plots ----------------------------------------
                     df_plot = pred_inst_df.join(topo_df_catg, on='EGID', how='left')
@@ -7092,17 +7174,17 @@ class Visualization:
                             categories = vc[col]
                             counts = vc["count"]
                             # scen_col_legend = f"{scen} – {col} - iter {iter}"
-                            scen_col_legend = f"{col} - iter {iter}"
                             
                             for idx, (cat, count) in enumerate(zip(categories, counts)):
                                 show_legend_for_trace = True # if idx == 0 else False
+                                scen_col_legend = f"{col} - {cat}"
                                 fig.add_trace(
                                     go.Bar(
                                         x=[col],
                                         y=[count],
+                                        marker=dict(color=color_map_catg[col][cat]),   
                                         name = scen_col_legend,
-                                        marker=dict(color=color_map_catg[cat]),   
-                                        # legendgroup=scen_col_legend,
+                                        legendgroup=scen_col_legend,
                                         showlegend=show_legend_for_trace,
                                         # name=cat,                     # category shown in legend
                                         # legendgroup=cat,              # same category across columns/scenarios
@@ -7122,7 +7204,7 @@ class Visualization:
 
                     # update layout + export
                     fig.update_layout(
-                        title_text=f'Bars Categorical Columns by Iteration (scen: {scen})', 
+                        title_text=f'Charact. of EGID with new PV (categorical by iteration, scen: {scen})', 
                         barmode= 'stack',
                         template= 'plotly_white',
                     )
@@ -7138,6 +7220,7 @@ class Visualization:
                             fig.write_html(f'{self.visual_sett.visual_path}/plot_ind_bar_catgcharact_newinst___{scen}.html')
                         print_to_logfile(f'\texport: plot_ind_bar_catgcharact_newinst (for: {scen})', self.visual_sett.log_name)
                     
+
 
         def plot_ind_summary_stats_by_node(self, ):
             if self.visual_sett.plot_ind_summary_stats_by_node_TF[0]:
@@ -7321,9 +7404,21 @@ class Visualization:
                     else: 
                         compare_nodes_list = node_summary_list
                         
-                    max_pvinst_node = pvdf_inst_ratio.sort('pvdf_inst_ratio', descending=True).head(1)['grid_node'].to_list()[0]
+                    # node with most pv, but not single-EGID-node
+                    EGID_node_map = topo_df_cont_raw.group_by('EGID').agg([
+                        pl.col('grid_node').first().alias('grid_node'),
+                    ])
+                    node_EGID_count = EGID_node_map.group_by('grid_node').agg([
+                        pl.col('EGID').count().alias('n_EGID')
+                    ])
+                    pvdf_inst_ratio = pvdf_inst_ratio.join(node_EGID_count, on = 'grid_node', how = 'left')
 
-
+                    pvdf_inst_ratio.filter(pl.col('n_EGID') > 0).sort('pvdf_inst_ratio', descending=True).head(10)
+                    max_pvinst_2nEGID = max( pvdf_inst_ratio.filter(pl.col('n_EGID') > 1).select('pvdf_inst_ratio').to_series().to_list())
+                    
+                    max_pvinst_nodes_2nEGID = pvdf_inst_ratio.filter(pl.col('pvdf_inst_ratio') == max_pvinst_2nEGID).head(5).select('grid_node').to_series().to_list()
+                    max_pvinst_node         = pvdf_inst_ratio.filter(pl.col('n_EGID') > 1).sort('pvdf_inst_ratio', descending=True).head(1).select('grid_node').to_series().to_list()[0]
+                    
                     # create Plots 
                     n_rows_cont = int(np.ceil(len(compare_nodes_list) / n_cols_cont))
                     fig = make_subplots(rows=n_rows_cont, cols=n_cols_cont,
@@ -7361,12 +7456,13 @@ class Visualization:
                                                 pl.col('feedin_atnode_loss_kW').sum().alias('feedin_atnode_loss_kW')
                                                 ]).sort('feedin_atnode_loss_kW', descending=True).select(['grid_node', 'feedin_atnode_loss_kW'])
                                 node_loss = node_loss_df.filter(pl.col('grid_node')==node).select('feedin_atnode_loss_kW').to_numpy()[0][0]
-                                
+                                n_EGID_reg = pvdf_inst_ratio.filter(pl.col('grid_node')==node).select('n_EGID').to_numpy()[0][0]
+
                                 fig_bar.add_trace(
                                     go.Bar(
                                         x=[f"node {node} - loss"],
                                         y=[node_loss / 1000000],
-                                        name=f"node {node} – loss /1e6",
+                                        name=f"node {node} – loss /1e6 (nEGID: {n_EGID_reg})",
                                         # marker=dict(color=color_map_cont[col]),
                                         # legendgroup=col,
                                         showlegend=True,
@@ -7386,28 +7482,30 @@ class Visualization:
 
                                 # add node with max pv ratio as comparison to max loss nodes 
                                 if i_node == len(compare_nodes_list) -1:
-                                    df_plot = pvdf_inst_ratio.filter(pl.col('grid_node')==max_pvinst_node).to_pandas()
-                                    node_loss2 = node_loss_df.filter(pl.col('grid_node')==max_pvinst_node).select('feedin_atnode_loss_kW').to_numpy()[0][0]
-                                    fig_bar.add_trace(
-                                        go.Bar(
-                                            x=[f"max pvratio node {max_pvinst_node} - loss"],
-                                            y=[node_loss2 / 1000000],
-                                            name=f"node {max_pvinst_node} – loss /1e6",
-                                            # marker=dict(color=color_map_cont[col]),
-                                            # legendgroup=col,
-                                            showlegend=True,
-                                            text=[f"{node_loss2 / 1000000:.2f}"],
-                                    ))
-                                    fig_bar.add_trace(
-                                        go.Bar(
-                                            x=[f"max pvratio node {max_pvinst_node} - pvratio"],
-                                            y=[df_plot[col].values[0]],
-                                            name=f"node {max_pvinst_node} – {col}",
-                                            # marker=dict(color=color_map_cont[col]),
-                                            # legendgroup=col,
-                                            showlegend=True,
-                                            text=[f"{df_plot[col].values[0] * 100:.2f}%"],
-                                    ))
+                                    for max_node in max_pvinst_nodes_2nEGID: 
+                                        n_EGID = pvdf_inst_ratio.filter(pl.col('grid_node')==max_node).select('n_EGID').to_numpy()[0][0]
+                                        df_plot = pvdf_inst_ratio.filter(pl.col('grid_node')==max_node).to_pandas()
+                                        node_loss2 = node_loss_df.filter(pl.col('grid_node')==max_node).select('feedin_atnode_loss_kW').to_numpy()[0][0]
+                                        fig_bar.add_trace(
+                                            go.Bar(
+                                                x=[f"max pvratio node {max_node} - loss"],
+                                                y=[node_loss2 / 1000000],
+                                                name=f"node {max_node} – loss /1e6, min 2nEGID (nEGID: {n_EGID})",
+                                                # marker=dict(color=color_map_cont[col]),
+                                                # legendgroup=col,
+                                                showlegend=True,
+                                                text=[f"{node_loss2 / 1000000:.2f}"],
+                                        ))
+                                        fig_bar.add_trace(
+                                            go.Bar(
+                                                x=[f"max pvratio node {max_node} - pvratio"],
+                                                y=[df_plot[col].values[0]],
+                                                name=f"node {max_node} – {col}",
+                                                # marker=dict(color=color_map_cont[col]),
+                                                # legendgroup=col,
+                                                showlegend=True,
+                                                text=[f"{df_plot[col].values[0] * 100:.2f}%"],
+                                        ))
 
                             else:
                                 fig.add_trace(
@@ -7478,35 +7576,44 @@ if __name__ == '__main__':
 
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
-                '*.txt','*old_vers*', 
-                '*1hll*', 
+                '*.txt',
+                '*old_vers*', 
+                # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                # 'pvalloc_*nbfs*_ew1first',
-                # 'pvalloc_mini_all*',
-                # 'pvalloc_mini_all',
-                # 'pvalloc_mini_all_sC2',
-                'pvalloc_2nbf_40_10y*',
+                'pvalloc_2nbf_10y_compare',
+                # 'pvalloc_29nbfs_30y3',
             ],
-            save_plot_by_scen_directory        = False, 
-            remove_old_plot_scen_directories   = True,  
-            remove_old_plots_in_visualization  = True,  
+            # plot_show                          = False,
+            # remove_old_plot_scen_directories   = True,  
+            # remove_old_plots_in_visualization  = True,  
             remove_old_csvs_in_visualization   = True,
+            reduce_information_content         = True,
+
+            # save_plot_by_scen_directory        = False, 
+            cut_timeseries_to_zoom_hour        = True,
+            add_day_night_HOY_bands            = True,
             default_map_zoom                   = 10,
-            default_map_center                 =[47.46, 7.58],
+            default_map_center                 = [47.46, 7.58],
+
+            export_png_TF                      = True,
+            export_png_dict                    = {
+                'width':    300, 
+                'height':   175, 
+                'scale':    2, 
+                'engine':   'kaleido',
+            },
 
 
             # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-            # # plot_ind_var_summary_stats_TF                   = [True,      True,       False],
-            # # plot_ind_line_productionHOY_per_node_TF         = [True,      True,       False]    , 
-            # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
-            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            # plot_ind_var_summary_stats_TF                   = [True,      True,      False], 
+            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
             # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
-            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
             # plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
-            plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
-
-            
+            # plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
             ), 
 
 
