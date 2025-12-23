@@ -73,7 +73,7 @@ if True:
                 ],
         create_gdf_export_of_topology                        = True,
         export_csvs                                          = False,
-        T0_year_prediction                                   = 2022,
+        T0_year_prediction                                   = 2024,
         months_lookback                                      = 12,
         months_prediction                                    = 360,
         TECspec_add_heatpump_demand_TF                       = True,
@@ -114,7 +114,8 @@ if True:
         2613, 2782, 2618, 2786, 2785, 
         2772, 2761, 2743, 2476, 2768,
     ]
-    LRG_bfs_name = 'pvalloc_29nbfs_30y4'
+    LRG_bfs_name = 'pvalloc_29nbfs_30y5'
+    # v5 -> T0_prediction: 2024
     LRG_bfs_list = [
         # RURAL 
         2612, 2889, 2883, 2621, 2622,
@@ -152,54 +153,31 @@ if True:
     test_scen_list = [
     # pvalloc_scen_list = [
 
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sA1',
-                      GRIDspec_subsidy_name = 'A1',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sA3',
-                      GRIDspec_subsidy_name = 'A3',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sB1',
-                      GRIDspec_subsidy_name = 'B1',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sB2',
-                      GRIDspec_subsidy_name = 'B2',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sC1',
-                      GRIDspec_subsidy_name = 'C1',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sC2',
-                      GRIDspec_subsidy_name = 'C2',
+        # make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}',
+        # ),
+        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_probnpv',
+                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
         ),
 
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_1hll',
-                      GRIDspec_node_1hll_closed_TF  = True,
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_1hll_sA1',
-                      GRIDspec_node_1hll_closed_TF  = True,
-                      GRIDspec_subsidy_name         = 'A1',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_1hll_sA3',
-                      GRIDspec_node_1hll_closed_TF  = True,
-                      GRIDspec_subsidy_name         = 'A3',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_1hll_sB1',
-                      GRIDspec_node_1hll_closed_TF  = True,
-                      GRIDspec_subsidy_name         = 'B1',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_1hll_sB2',
-                      GRIDspec_node_1hll_closed_TF  = True,
-                      GRIDspec_subsidy_name         = 'B2',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_1hll_sC1',
-                      GRIDspec_node_1hll_closed_TF  = True,
-                      GRIDspec_subsidy_name         = 'C1',
-        ),
-        make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_1hll_sC2',
-                      GRIDspec_node_1hll_closed_TF  = True,
-                      GRIDspec_subsidy_name         = 'C2',
-        ),
+        # make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sA1',
+        #               GRIDspec_subsidy_name = 'A1',
+        # ),
+        # make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sA3',
+        #               GRIDspec_subsidy_name = 'A3',
+        # ),
+        # make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sB1',
+        #               GRIDspec_subsidy_name = 'B1',
+        # ),
+        # make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sB2',
+        #               GRIDspec_subsidy_name = 'B2',
+        # ),
+        # make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sC1',
+        #               GRIDspec_subsidy_name = 'C1',
+        # ),
+        # make_scenario(pvalloc_2nbfs_test_DEFAULT, f'{test_scen_name}_sC2',
+        #               GRIDspec_subsidy_name = 'C2',
+        # ),
+
         
     ]
         
@@ -387,97 +365,142 @@ if True:
     LRG_scen_list = [
     # pvalloc_scen_list = [
 
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}', 
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sA1', 
-                        GRIDspec_subsidy_name             = 'A1',
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sA2',
-                        GRIDspec_subsidy_name             = 'A2',
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sA3',
-                        GRIDspec_subsidy_name             = 'A3',
-        ),
-        
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sB1',
-                        GRIDspec_subsidy_name             = 'B1',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sB2',
-                        GRIDspec_subsidy_name             = 'B2',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sB3',
-                        GRIDspec_subsidy_name             = 'B3',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-        
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sC1',
-                        GRIDspec_subsidy_name             = 'C1',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sC2',
-                        GRIDspec_subsidy_name             = 'C2',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sC3',
-                        GRIDspec_subsidy_name             = 'C3',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-
-
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sA1', 
-                        GRIDspec_subsidy_name             = 'A1',
-                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sA2',
-                        GRIDspec_subsidy_name             = 'A2',
-                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sA3',
-                        GRIDspec_subsidy_name             = 'A3',
-                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
-        ),
-        
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sB1',
-                        GRIDspec_subsidy_name             = 'B1',
-                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sB2',
-                        GRIDspec_subsidy_name             = 'B2',
-                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sB3',
-                        GRIDspec_subsidy_name             = 'B3',
-                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sC1',
-                        GRIDspec_subsidy_name             = 'C1',
-                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sC2',
-                        GRIDspec_subsidy_name             = 'C2',
-                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sC3',
-                        GRIDspec_subsidy_name             = 'C3',
-                        ALGOspec_inst_selection_method    = 'prob_weighted_npv',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-        ),
-
-
-
-
-        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_1hll_sA1',
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}', 
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_1hll',
         #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'A1',
         # ),  
+
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sA1', 
+        #                 GRIDspec_subsidy_name             = 'A1',
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sA2',
+        #                 GRIDspec_subsidy_name             = 'A2',
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sA3',
+        #                 GRIDspec_subsidy_name             = 'A3',
+        # ),
+        
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sB1',
+        #                 GRIDspec_subsidy_name             = 'B1',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sB2',
+        #                 GRIDspec_subsidy_name             = 'B2',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sB3',
+        #                 GRIDspec_subsidy_name             = 'B3',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+        
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sC1',
+        #                 GRIDspec_subsidy_name             = 'C1',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sC2',
+        #                 GRIDspec_subsidy_name             = 'C2',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sC3',
+        #                 GRIDspec_subsidy_name             = 'C3',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+
+
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sA1', 
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_subsidy_name             = 'A1',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sA2',
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_subsidy_name             = 'A2',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sA3',
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_subsidy_name             = 'A3',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sB1',
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_subsidy_name             = 'B1',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sB2',
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_subsidy_name             = 'B2',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sB3',
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_subsidy_name             = 'B3',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sC1',
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_subsidy_name             = 'C1',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sC2',
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_subsidy_name             = 'C2',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sC3',
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_subsidy_name             = 'C3',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+        ),
+
+
+
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sA1', 
+        #                 GRIDspec_subsidy_name             = 'A1',
+        #                 ALGOspec_inst_selection_method    = 'prob_weighted_npv',
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sA2',
+        #                 GRIDspec_subsidy_name             = 'A2',
+        #                 ALGOspec_inst_selection_method    = 'prob_weighted_npv',
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sA3',
+        #                 GRIDspec_subsidy_name             = 'A3',
+        #                 ALGOspec_inst_selection_method    = 'prob_weighted_npv',
+        # ),
+        
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sB1',
+        #                 GRIDspec_subsidy_name             = 'B1',
+        #                 ALGOspec_inst_selection_method    = 'prob_weighted_npv',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sB2',
+        #                 GRIDspec_subsidy_name             = 'B2',
+        #                 ALGOspec_inst_selection_method    = 'prob_weighted_npv',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sB3',
+        #                 GRIDspec_subsidy_name             = 'B3',
+        #                 ALGOspec_inst_selection_method    = 'prob_weighted_npv',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sC1',
+        #                 GRIDspec_subsidy_name             = 'C1',
+        #                 ALGOspec_inst_selection_method    = 'prob_weighted_npv',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sC2',
+        #                 GRIDspec_subsidy_name             = 'C2',
+        #                 ALGOspec_inst_selection_method    = 'prob_weighted_npv',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_probnpv_sC3',
+        #                 GRIDspec_subsidy_name             = 'C3',
+        #                 ALGOspec_inst_selection_method    = 'prob_weighted_npv',
+        #                 GRIDspec_apply_prem_tiers_TF      = True,
+        # ),
+
+
+
+
         # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_1hll_sA2',
         #                 GRIDspec_node_1hll_closed_TF      = True,
         #                 GRIDspec_subsidy_name             = 'A2',
@@ -503,25 +526,6 @@ if True:
         #                 GRIDspec_subsidy_name             = 'C2',
         # ),
 
-        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_ew1pool',
-        #                 ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',),
-        #     ),
-        # # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_ew2pool',
-        # #               ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
-        # #                                                     'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
-        # #     ),
-        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_1hll',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #     ),
-        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_1hll_ew1pool',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 ALGOspec_subselec_filter_criteria = ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr', )
-        #     ),
-        # # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_1hll_ew2pool',
-        # #               GRIDspec_node_1hll_closed_TF      = True,
-        # #               ALGOspec_subselec_filter_criteria =  ('filter_tag__eastwest_80pr', 'filter_tag__eastwest_70pr',
-        # #                                                     'filter_tag__eastORwest_50pr', 'filter_tag__eastORwest_40pr'),
-        # #     ),sba
             ]
 
     XLRG_scen_list = [
@@ -630,8 +634,9 @@ if __name__ == '__main__':
     # RUR_scen_list
     # SUB_scen_list
     # LRG_scen_list
+
     # XLRG_scen_list
-    pvalloc_scen_list = LRG_scen_list
+    pvalloc_scen_list = test_scen_list
 
     # for pvalloc_scen_index in range(0,10):
     #     print(f'idx < len(list)-1 ->i: {pvalloc_scen_index} | {pvalloc_scen_index < len(pvalloc_scen_list)-1}')
@@ -651,6 +656,15 @@ if __name__ == '__main__':
             scen_class.sett.slurm_full_id        = slurm_full_id
             scen_class.sett.pvalloc_scen_index   = pvalloc_scen_index
     
+            scen_class.run_pvalloc_initalization()
+            scen_class.run_pvalloc_mcalgorithm()
+    
+    elif 'c:\\Models' in os.getcwd():
+
+        for pvalloc_scen_index in range(0, len(pvalloc_scen_list)):
+            pvalloc_scen = pvalloc_scen_list[pvalloc_scen_index]
+            
+            scen_class = PVAllocScenario(pvalloc_scen)
             scen_class.run_pvalloc_initalization()
             scen_class.run_pvalloc_mcalgorithm()
     

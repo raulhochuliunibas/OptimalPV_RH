@@ -5441,9 +5441,22 @@ class PVAllocScenario:
                 picked_netdemand_kW      = npv_pick['netdemand_kW'].values[0]
 
                 topo_pick_df = npv_pick
+                
             elif isinstance(npv_pick, pd.Series):
                 picked_egid  = npv_pick['EGID']
                 picked_power = npv_pick['pred_instPower']
+                df_uid_winst = npv_pick['df_uid_winst']
+                # picked_flaeche           = npv_pick['opt_FLAECHE']
+                picked_flaeche = npv_pick['FLAECHE']
+                # picked_dfuidPower        = npv_pick['dfuidPower']
+                # picked_share_pvprod_used = npv_pick['share_pvprod_used']
+                picked_demand_kW         = npv_pick['demand_kW']
+                picked_poss_pvprod       = npv_pick['poss_pvprod_kW']
+                picked_pvprod_kW         = npv_pick['pvprod_kW']
+                picked_selfconsum_kW     = npv_pick['selfconsum_kW']
+                picked_netfeedin_kW      = npv_pick['netfeedin_kW']
+                picked_netdemand_kW      = npv_pick['netdemand_kW']
+
                 topo_pick_df = pd.DataFrame(npv_pick).T
 
 
@@ -6033,18 +6046,12 @@ if __name__ == '__main__':
         return replace(default_scen, **kwargs)
 
     # mini scenario dev + debug
-    bfs_mini_name = 'pvalloc_2nbf_500_10y'
-    bfs_mini_list = [
-        # critical nodes - max npv
-        # 2762, 2771, 
-        # critical nodes - ew 
-        2768, 2769,
-    ]
+    bfs_mini_name = 'pvalloc_2nbf_10y_compare2'
     pvalloc_mini_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_test_DEFAULT',
             bfs_numbers                                          = [
                                                         2641, 2615,
                                                                     ],         
-            mini_sub_model_TF                                    = True,
+            mini_sub_model_TF                                    = False,
             mini_sub_model_by_X                                  = 'by_gridnode',
             mini_sub_model_grid_nodes                            = [
                                                                     #ew nodes
@@ -6056,7 +6063,7 @@ if __name__ == '__main__':
                                                                     ],
             mini_sub_model_nEGIDs                                = 500,
             create_gdf_export_of_topology                        = False,
-            export_csvs                                          = False,
+            export_csvs                                          = True,
 
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
@@ -6082,43 +6089,53 @@ if __name__ == '__main__':
             CSTRspec_ann_capacity_growth                         = 0.1,
             CSTRspec_capacity_type          = 'ep2050_zerobasis', 
     )
-
-
-
-
-    pvalloc_scen_list = [ 
+    bfs_mini_list = [
+        # default bfs
+        2641, 2615, 
+        # critical nodes - max npv
+        # 2762, 2771, 
+        # critical nodes - ew 
+        # 2768, 2769,
+    ]    
+    bfs_mini_scen_list = [ 
 
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}',
             bfs_numbers                     = bfs_mini_list,
         ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA1',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_subsidy_name           = 'A1',
-        ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA3',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_subsidy_name           = 'A3',
-        ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_probnpv',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     ALGOspec_inst_selection_method   = 'prob_weighted_npv',
+        # ), 
+        
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA1',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_subsidy_name           = 'A1',
+        # ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA3',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_subsidy_name           = 'A3',
+        # ),
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB1',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_subsidy_name           = 'B1',
-        ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB2',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_subsidy_name           = 'B2',
-        ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB1',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_subsidy_name           = 'B1',
+        # ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB2',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_subsidy_name           = 'B2',
+        # ),
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC1',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_subsidy_name           = 'C1',
-        ),
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC2',
-            bfs_numbers                     = bfs_mini_list,
-            GRIDspec_subsidy_name           = 'C2',
-        ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC1',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_subsidy_name           = 'C1',
+        # ),
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC2',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     GRIDspec_subsidy_name           = 'C2',
+        # ),
     ]
-
+ 
+    pvalloc_scen_list = bfs_mini_scen_list
 
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
@@ -6134,4 +6151,6 @@ if __name__ == '__main__':
 
 
 print('')
-
+if False: 
+    df = pd.read_parquet(r"C:\Users\hocrau00\Downloads\pred_inst_df_9.parquet")
+    df.to_csv(r"C:\Users\hocrau00\Downloads\pred_inst_df_9.csv")
