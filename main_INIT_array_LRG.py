@@ -7,7 +7,8 @@ from main_INIT_array import get_subscen_list
 
 if __name__ == "__main__":
 
-    pvalloc_scen_list = get_subscen_list('LRG')
+    # pvalloc_scen_list = get_subscen_list('LRG')
+    pvalloc_scen_list = get_subscen_list('LRG_final')
 
     slurm_job_id = os.environ.get('SLURM_ARRAY_JOB_ID_ENV', 'unknown')
     slurm_array_id = os.environ.get('SLURM_ARRAY_TASK_ID_ENV', 'unknown')

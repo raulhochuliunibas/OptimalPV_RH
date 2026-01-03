@@ -438,6 +438,245 @@ class PVAllocScenario_Settings:
             'subs_nodeHC_chf_tuples':(0.7,   0.0),
             'pena_nodeHC_chf_tuples':(0.8,  8000.0), 
         },
+
+
+        'C4p4':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.9,  4000.0), 
+        },
+        'C4p6':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.9,  6000.0), 
+        },
+        'C4p8':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.9,  8000.0), 
+        },
+
+        'C5p4':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.8,  4000.0), 
+        },
+        'C5p6':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.8,  6000.0), 
+        },
+        'C5p8':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.8,  8000.0), 
+        },
+
+
+        'C6s2':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 2000.0),
+                ('filter_tag__eastwest_70pr', 2000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.9,  8000.0),
+        },
+        'C6s4':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 4000.0),
+                ('filter_tag__eastwest_70pr', 4000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.9,  8000.0),
+        },
+        'C6s6':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.9,  8000.0),
+        },
+
+        'C7s2':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 2000.0),
+                ('filter_tag__eastwest_70pr', 2000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.9,  4000.0),
+        },
+        'C7s4':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 4000.0),
+                ('filter_tag__eastwest_70pr', 4000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.9,  4000.0),
+        },
+        'C7s6':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.9,  4000.0),
+        },
+
+
+        # new naming convention ---------------------------------------
+
+        'As2p0':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 2000.0),
+                ('filter_tag__eastwest_70pr', 2000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   0.0), 
+            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+        },
+        'As4p0':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 4000.0),
+                ('filter_tag__eastwest_70pr', 4000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   0.0), 
+            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+        },
+        'As6p0':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   0.0), 
+            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+        },
+
+        'Bs0p4':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 0.0),
+                ('filter_tag__eastwest_70pr', 0.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  4000.0), 
+        },
+        'Bs0p6':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 0.0),
+                ('filter_tag__eastwest_70pr', 0.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  8000.0), 
+        },
+        'Bs0p8':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 0.0),
+                ('filter_tag__eastwest_70pr', 0.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  8000.0), 
+        },
+
+
+        'Cs2p4':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 2000.0),
+                ('filter_tag__eastwest_70pr', 2000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  4000.0), 
+        },
+        'Cs2p6':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 2000.0),
+                ('filter_tag__eastwest_70pr', 2000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  6000.0), 
+        },
+        'Cs2p8':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 2000.0),
+                ('filter_tag__eastwest_70pr', 2000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  8000.0), 
+        },
+
+
+        'Cs4p4':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 4000.0),
+                ('filter_tag__eastwest_70pr', 4000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  4000.0), 
+        },
+        'Cs4p6':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 4000.0),
+                ('filter_tag__eastwest_70pr', 4000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  6000.0), 
+        },
+        'Cs4p8':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 4000.0),
+                ('filter_tag__eastwest_70pr', 4000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  8000.0), 
+        },
+
+        'Cs6p4':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  4000.0), 
+        },
+        'Cs6p6':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  6000.0), 
+        },
+        'Cs6p8':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 6000.0),
+                ('filter_tag__eastwest_70pr', 6000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  8000.0), 
+        },
+
+
+        
+
+
+
+
         
         })
 
@@ -6099,40 +6338,16 @@ if __name__ == '__main__':
     ]    
     bfs_mini_scen_list = [ 
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}',
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
             bfs_numbers                     = bfs_mini_list,
         ), 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_probnpv',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     ALGOspec_inst_selection_method   = 'prob_weighted_npv',
-        # ), 
-        
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA1',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_subsidy_name           = 'A1',
-        # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sA3',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_subsidy_name           = 'A3',
-        # ),
 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB1',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_subsidy_name           = 'B1',
-        # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sB2',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_subsidy_name           = 'B2',
-        # ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max_sC4p6',
+            bfs_numbers                     = bfs_mini_list,
+            GRIDspec_apply_prem_tiers_TF    = True,
+            GRIDspec_subsidy_name           = 'C4p6',   
+        )
 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC1',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_subsidy_name           = 'C1',
-        # ),
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_sC2',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     GRIDspec_subsidy_name           = 'C2',
-        # ),
     ]
  
     pvalloc_scen_list = bfs_mini_scen_list
