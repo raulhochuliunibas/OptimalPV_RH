@@ -3440,7 +3440,7 @@ class PVAllocScenario:
                     elif pvprod_calc_method == "method3.1":
                         subdf = subdf.with_columns([
                             (
-                                pl.col("radiation_rel_locmax") * pl.col("panel_efficiency") * share_roof_area_available * inverter_efficiency * share_roof_area_available * pl.col("FLAECHE") * pl.col("efficiency_factor")
+                                pl.col("radiation_rel_locmax") * pl.col("panel_efficiency") * kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * pl.col("FLAECHE") * pl.col("efficiency_factor")
                             ).alias("pvprod_kW")
                         ])
                         formla_for_log_print = "inPOLARS: subdf['pvprod_kW'] = subdf['radiation_rel_locmax'] * subdf['panel_efficiency'] * kWpeak_per_m2 * inverter_efficiency * share_roof_area_available * subdf['FLAECHE'] * subdf['efficiency_factor']"
