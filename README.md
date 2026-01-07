@@ -1,14 +1,15 @@
 # OptimalPV 
 
-## Preamble:
+## Working Paper:
 **Author**: raul.hochuli@unibas.ch \
-**Latest update**: of README: Feb 2025 
+**Latest update**: Working Paper: Jan 2026, README: Jan 2026 
+Find the current version of [OptiamlPV working paper](docs/OptimalPV_RH_v1_260107_WorkingPaper.pdf), my signle author paper for my PhD, here for more elabortion on the scientific contribution. 
+
 > **Abstract**: Due to the global push for distributed photovoltaic (PV) systems, grid capacity will be a limiting factor for further expansion in the near future. Additional installations can cause a negative externality by hindering other production in the same grid circuit. 
 This calls for a detailed modeling approach that captures the negative impact of a PV installation on neighbor's production capability. 
 Using spatial data at the individual house level for ca. 40 thousand single-family houses, I propose a stochastic Monte Carlo method to model theoretical PV expansion pathways until 2050 from a social planer's perspective considering optimal grid ussage and a economic rational individual's perspective. 
 I use a local grid operators data on low distribution house-grid connections and transformer capacities. This is the cornerstone for further research on a dynamic feed-in permit that is designed to mitigate grid congestion without requiring intense regulator monitoring.  
 
-Find the current version of [OptiamlPV working paper](), my signle author paper for my PhD, here for more elabortion on the scientific contribution. 
 
 ## Main Execution Scripts
 - The [main_INIT_array.py](main_INIT_array.py) file serves as the primary entry point for running the PV allocation model, calling `MAIN_pvallocation.py` to execute model simulations that determine residential  photovoltaic installation pathways across municipalities under various scenarios. 
