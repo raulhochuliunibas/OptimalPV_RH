@@ -627,7 +627,7 @@ if False:
         b_name = get_bfsnr_name_tuple_list([int(b),])[0][1]
         fig.add_trace(go.Scatter(x=subdf['BeginOp_year'], y=subdf['TotalPower'], mode='lines+markers', name=f'{b}_{b_name}'))
 
-    fig.update_layout(title='PV Total Power per year (all BFS in primeo grid)', xaxis_title='Year', yaxis_title='Total Power')
+    fig.update_layout(title='PV Total Power per year (all BFS in DSO grid)', xaxis_title='Year', yaxis_title='Total Power')
     fig.show()
     fig.write_html(f'{data_path}/pvinstCap_in_primeo_BFS.html')
 
@@ -681,7 +681,7 @@ if False:
         mapbox_style="carto-positron",
         mapbox_zoom=7,
         mapbox_center={"lat": 47.5, "lon": 7.5},
-        title_text="PV Total Power per year (all BFS in primeo grid)",
+        title_text="PV Total Power per year (all BFS in DSO grid)",
         title_x=0.5,
     )
     map.show()
