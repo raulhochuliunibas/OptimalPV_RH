@@ -2,8 +2,12 @@
 
 ## Working Paper:
 **Author**: raul.hochuli@unibas.ch \
-**Latest update**: Working Paper: Jan 2026, README: Jan 2026 \
-Find the current version of [OptiamlPV working paper](docs/OptimalPV_RH_v1_260107_WorkingPaper.pdf), my signle author paper for my PhD, here for more elabortion on the scientific contribution. 
+**Latest Version**:
+Find the current version of [OptiamlPV working paper](docs/OptimalPV_RH_v1_260107_WorkingPaper.pdf), my signle author paper for my PhD, here for more elabortion on the scientific contribution.
+**Latest update**: \
+- Working Paper:  Jan 2026
+- README:         Jan 2026 
+**HPC**: Calculations were performed at sciCORE (http://scicore.unibas.ch/) scientific computing center at University of Basel.
 
 > **Abstract**: Due to the global push for distributed photovoltaic (PV) systems, grid capacity will be a limiting factor for further expansion in the near future. Additional installations can cause a negative externality by hindering other production in the same grid circuit. 
 This calls for a detailed modeling approach that captures the negative impact of a PV installation on neighbor's production capability. 
