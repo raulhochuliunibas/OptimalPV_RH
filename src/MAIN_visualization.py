@@ -2506,14 +2506,16 @@ class Visualization:
                 fig_scen_comp.write_html(f'{self.visual_sett.visual_path}/plot_agg_line_productionHOY_per_node___{len(self.pvalloc_scen_list)}scen.html')
                 print_to_logfile(f'\texport: plot_agg_line_productionHOY_per_node___{len(self.pvalloc_scen_list)}scen.html', self.visual_sett.log_name)
 
+
                 # export plot data as csv
                 export_plot_data_df = pd.DataFrame(export_plot_data_list)
-                if os.path.exists(f'{self.visual_sett.visual_path}/plot_agg_line_productionHOY_per_node___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv'):
-                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}/plot_agg_line_productionHOY_per_node___export_plot_data___{len(self.pvalloc_scen_list)}scen*.csv'))
-                    os.rename(f'{self.visual_sett.visual_path}/plot_agg_line_productionHOY_per_node___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', 
-                              f'{self.visual_sett.visual_path}/plot_agg_line_productionHOY_per_node___export_plot_data___{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
-                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}/plot_agg_line_productionHOY_per_node___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', index=False)
-                print_to_logfile(f'\texport: plot_agg_line_productionHOY_per_node___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+                export_path_part = '/visualization_static_wpaper/plot_agg_line_productionHOY_per_node___export_plot_data___'
+                if os.path.exists(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen*.csv'))
+                    os.rename(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', 
+                              f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                print_to_logfile(f'\texport: {export_path_part}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
 
 
 
@@ -4231,12 +4233,13 @@ class Visualization:
 
                 # export plot data as csv
                 export_plot_data_df = pd.DataFrame(export_plot_data_list)
-                if os.path.exists(f'{self.visual_sett.visual_path}/pplot_agg_line_PVproduction___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv'):
-                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}/pplot_agg_line_PVproduction___export_plot_data___{len(self.pvalloc_scen_list)}scen*.csv'))
-                    os.rename(f'{self.visual_sett.visual_path}/pplot_agg_line_PVproduction___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', 
-                              f'{self.visual_sett.visual_path}/pplot_agg_line_PVproduction___export_plot_data___{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
-                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}/pplot_agg_line_PVproduction___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', index=False)
-                print_to_logfile(f'\texport: pplot_agg_line_PVproduction___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+                export_path_part = '/visualization_static_wpaper/plot_agg_line_PVproduction___export_plot_data___'
+                if os.path.exists(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen*.csv'))
+                    os.rename(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', 
+                              f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                print_to_logfile(f'\texport: {export_path_part}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
 
 
                         
@@ -5145,6 +5148,7 @@ class Visualization:
                             )
                         
                         first_node_hull = True
+                        spatial_gdf_list = []
                         for node in pvinst_gdf['grid_node'].unique():
                             subdf_node_egid = pvinst_gdf.loc[pvinst_gdf['grid_node'] == node].copy()
                             hull_subdf = MultiPoint(subdf_node_egid.geometry.tolist()).convex_hull
@@ -5167,6 +5171,15 @@ class Visualization:
                             first_node_hull = False
                             
                             fig_topoegid.add_trace(hull_trace)      
+
+
+                            # export spatial hull data
+                            row = {
+                                'grid_node': node,
+                                'color': color,
+                                'geometry': hull_subdf
+                            }
+                            spatial_gdf_list.append(row)
 
                     # topo egid map: add iter_round hulls ----------------
                     if True:
@@ -5210,6 +5223,19 @@ class Visualization:
                         else:
                             fig_topoegid.write_html(f'{self.visual_sett.visual_path}/plot_ind_map_topo_egid_incl_gridarea___{scen}.html')
                         print_to_logfile(f'\texport: plot_ind_map_topo_egid_incl_gridarea (for: {scen})', self.visual_sett.log_name)
+
+
+                    # export spatial hull data
+                    spatial_hulls_gdf = gpd.GeoDataFrame(spatial_gdf_list, crs='EPSG:4326', geometry='geometry')
+                    spatial_path = os.path.join(self.visual_sett.data_path, 'pvalloc',self.pvalloc_scen.name_dir_export, 'topo_spatial_data')
+                    if os.path.exists(spatial_path):
+
+
+                        with open (os.path.join(self.visual_sett.data_path, 'pvalloc',self.pvalloc_scen.name_dir_export, 'topo_spatial_data', f'topo_egid_gridnode_hulls___{scen}.geojson'), 'w') as f:
+                            f.write(spatial_hulls_gdf.to_json())
+
+                        spatial_hulls_gdf.to_file(os.path.join(self.visual_sett.data_path, self.pvalloc_scen.name_dir_export, 'topo_spatial_data', f'topo_egid_gridnode_hulls___{scen}.geojson'), driver='GeoJSON')
+                        print_to_logfile(f'\texport: topo_egid_gridnode_hulls geojson (for: {scen})', self.visual_sett.log_name)
 
 
 
@@ -7133,12 +7159,13 @@ class Visualization:
 
                 # export plot data as csv
                 export_plot_data_df = pd.DataFrame(export_plot_data_list)
-                if os.path.exists(f'{self.visual_sett.visual_path}/plot_ind_hist_contcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv'):
-                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}/plot_ind_hist_contcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen*.csv'))
-                    os.rename(f'{self.visual_sett.visual_path}/plot_ind_hist_contcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', 
-                              f'{self.visual_sett.visual_path}/plot_ind_hist_contcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
-                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}/plot_ind_hist_contcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', index=False)
-                print_to_logfile(f'\texport: plot_ind_hist_contcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+                export_path_part = '/visualization_static_wpaper/plot_agg_hist_contcharact_newinst___export_plot_data___'
+                if os.path.exists(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen*.csv'))
+                    os.rename(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', 
+                              f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                print_to_logfile(f'\texport: {export_path_part}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
 
 
 
@@ -7404,12 +7431,13 @@ class Visualization:
 
                 # export plot data as csv
                 export_plot_data_df = pd.DataFrame(export_plot_data_list)
-                if os.path.exists(f'{self.visual_sett.visual_path}/plot_ind_bar_catgcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv'):
-                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}/plot_ind_bar_catgcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen*.csv'))
-                    os.rename(f'{self.visual_sett.visual_path}/plot_ind_bar_catgcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', 
-                              f'{self.visual_sett.visual_path}/plot_ind_bar_catgcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
-                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}/plot_ind_bar_catgcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', index=False)
-                print_to_logfile(f'\texport: plot_ind_bar_catgcharact_newinst___export_plot_data___{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+                export_path_part = '/visualization_static_wpaper/plot_agg_bar_catgcharact_newinst___export_plot_data___'
+                if os.path.exists(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen*.csv'))
+                    os.rename(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', 
+                              f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                print_to_logfile(f'\texport: {export_path_part}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
                 
 
         def plot_ind_summary_stats_by_node(self, ):
