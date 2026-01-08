@@ -389,6 +389,7 @@ class Visualization:
         self.visual_sett.wd_path = os.getcwd()
         self.visual_sett.data_path = os.path.join(self.visual_sett.wd_path, 'data')
         self.visual_sett.visual_path = os.path.join(self.visual_sett.data_path, 'visualization')
+        self.visual_sett.visual_static_export_path = os.path.join(self.visual_sett.data_path, 'visualization_static_wpaper')
         self.visual_sett.log_name = f'{self.visual_sett.visual_path}/visual_log.txt'
 
         os.makedirs(self.visual_sett.visual_path, exist_ok=True)
@@ -2444,16 +2445,17 @@ class Visualization:
                     fig_scen_comp.add_trace(go.Scatter(x=[None, ], y=[None, ], name='', opacity = 0, ))
 
                     # append export plot data
-                    row_plot_data = {
-                        'scen':                         scen,
-                        't_int':                        gridnode_total_df['t_int'].tolist(),
-                        'feedin_atnode_kW':             gridnode_total_df['feedin_atnode_kW'].tolist(),
-                        'demand_atnode_kW':             gridnode_total_df['demand_atnode_kW'].tolist(),
-                        'max_demand_feedin_atnode_kW':  gridnode_total_df['max_demand_feedin_atnode_kW'].tolist(),
-                        'feedin_atnode_taken_kW':       gridnode_total_df['feedin_atnode_taken_kW'].tolist(),
-                        'feedin_atnode_loss_kW':        gridnode_total_df['feedin_atnode_loss_kW'].tolist(),
-                    }
-                    export_plot_data_list.append(row_plot_data)
+                    tmp_df = gridnode_total_df.loc[:,
+                        [
+                            't_int',
+                            'feedin_atnode_kW',
+                            'demand_atnode_kW',
+                            'max_demand_feedin_atnode_kW',
+                            'feedin_atnode_taken_kW',
+                            'feedin_atnode_loss_kW',
+                    ]]
+                    tmp_df.loc[:,'scen'] = scen
+                    export_plot_data_list.append(tmp_df)
 
                     # update + export
                     fig.update_layout(
@@ -2508,14 +2510,16 @@ class Visualization:
 
 
                 # export plot data as csv
-                export_plot_data_df = pd.DataFrame(export_plot_data_list)
-                export_path_part = '/visualization_static_wpaper/plot_agg_line_productionHOY_per_node___export_plot_data___'
-                if os.path.exists(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv'):
-                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen*.csv'))
-                    os.rename(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', 
-                              f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
-                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', index=False)
-                print_to_logfile(f'\texport: {export_path_part}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+                export_plot_data_df = pd.concat(export_plot_data_list, ignore_index=True)
+                os.makedirs(f'{self.visual_sett.visual_static_export_path}', exist_ok=True)
+                export_df_name         = 'plot_agg_line_productionHOY_per_node___export_plot_data___'
+                export_df_name_scenlen = f'{export_df_name}{len(self.pvalloc_scen_list)}scen'
+                if os.path.exists(f'{self.visual_sett.visual_static_export_path}/{export_df_name_scenlen}.csv'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen*.csv'))
+                    os.rename(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', 
+                              f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                export_plot_data_df.to_csv(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                print_to_logfile(f'\texport: {export_df_name}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
 
 
 
@@ -2526,6 +2530,7 @@ class Visualization:
                 # print_to_logfile(f'{self.pvalloc_scen_list}', self.visual_sett.log_name)
 
                 fig_scen_comp = go.Figure()
+                export_plot_data_list = []
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
 
@@ -2533,7 +2538,7 @@ class Visualization:
                     self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0] # take first path if multiple apply, so code can still run properlyrly
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
-                    iter_to_plot = [ 1, 2, 3,] #4,# 5, 6, 7, 8]
+                    iter_to_plot = [ 1, 2, 3, 4, 5, 6, 7, 8]
                     gridnode_paths = []
                     for i in iter_to_plot:
                         gridnode_path = f'{self.visual_sett.mc_data_path}/pred_gridprem_node_by_M/gridnode_df_{i}.parquet'
@@ -2584,6 +2589,22 @@ class Visualization:
                         # fig_scen_comp.add_trace(go.Scatter(x=gridnode_total_df['t_int'], y=gridnode_total_df['demand_atnode_kW'],            name=f'Total demand_atnode_kW {legend_suffix}',                  mode='lines+markers', line=dict(width=2), )) #   marker=dict(symbol='cross',), ))
                         fig_scen_comp.add_trace(go.Scatter(x=gridnode_total_df['t_int'], y=gridnode_total_df['feedin_atnode_kW'],            name=f'Total feedin_atnode_kW {legend_suffix}',                  mode='lines+markers', line=dict(width=2), )) #  marker=dict(symbol='cross',), ))
                         fig_scen_comp.add_trace(go.Scatter(x=[None, ], y=[None, ], name='', opacity = 0, ))
+                        
+                        
+                        # append export plot data
+                        gridnode_total_df_pd = gridnode_total_df.to_pandas()
+                        tmp_df = gridnode_total_df_pd.loc[:,
+                            [
+                                't_int',
+                                'feedin_atnode_kW',
+                                'demand_atnode_kW',
+                                'max_demand_feedin_atnode_kW',
+                                'feedin_atnode_taken_kW',
+                                'feedin_atnode_loss_kW',
+                        ]].copy()
+                        tmp_df.loc[:,'iter'] = legend_suffix
+                        tmp_df.loc[:,'scen'] = scen
+                        export_plot_data_list.append(tmp_df)
 
 
                 # export comparison plot
@@ -2607,6 +2628,20 @@ class Visualization:
                               f'{self.visual_sett.visual_path}/plot_agg_line_productionHOY_per_node_byiter___{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.html')    
                 fig_scen_comp.write_html(f'{self.visual_sett.visual_path}/plot_agg_line_productionHOY_per_node_byiter___{len(self.pvalloc_scen_list)}scen.html')
                 print_to_logfile(f'\texport: plot_agg_line_productionHOY_per_node_byiter___{len(self.pvalloc_scen_list)}scen.html', self.visual_sett.log_name)
+
+
+                # export plot data as csv
+                export_plot_data_df = pd.concat(export_plot_data_list)
+                os.makedirs(f'{self.visual_sett.visual_static_export_path}', exist_ok=True)
+                export_df_name         = 'plot_agg_line_productionHOY_per_node_byiter___export_plot_data___'
+                export_df_name_scenlen = f'{export_df_name}{len(self.pvalloc_scen_list)}scen'
+                if os.path.exists(f'{self.visual_sett.visual_static_export_path}/{export_df_name_scenlen}.csv'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen*.csv'))
+                    os.rename(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', 
+                              f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                export_plot_data_df.to_csv(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                print_to_logfile(f'\texport: {export_df_name}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+
 
 
 
@@ -4187,16 +4222,19 @@ class Visualization:
                     # fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_mean_of_mean'],   name='Holding Capac mean of mean',      mode='lines+markers', line=dict(color=color_pal[color_pal_idx-7],),                 marker=dict(symbol='diamond',), yaxis = 'y2'))
                     # fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_max_abs'],        name='Holding Capac max abs',           mode='lines',         line=dict(color=color_pal[color_pal_idx-7], dash = 'dash'),                                   yaxis = 'y2'))
                     # fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_min_abs'],        name='Holding Capac min abs',           mode='lines',         line=dict(color=color_pal[color_pal_idx-7], dash = 'dash'),                                   yaxis = 'y2'))
-                    row_plot_data = {
-                        'scen':                     scen,
-                        'n_iter':                   gridnode_df_by_iter['n_iter'].to_list(),
-                        'feedin_atnode_loss_kW':    gridnode_df_by_iter['feedin_atnode_loss_kW'].to_list(),
-                        'demand_atnode_kW':         gridnode_df_by_iter['demand_atnode_kW'].to_list(),
-                        'feedin_atnode_kW':         gridnode_df_by_iter['feedin_atnode_kW'].to_list(),
-                        'n_EGID_pvinst':            topo_df_iter['n_EGID_pvinst'].to_list(),
-                        'TotalPower':               gridnode_df_by_iter['TotalPower'].to_list(),  
-                        'ratio_EGID_pvinst':        topo_df_iter['ratio_EGID_pvinst'].to_list(),
-                    }
+                    gridnode_df_by_iter_pd = gridnode_df_by_iter.to_pandas()
+                    tmp_df = gridnode_df_by_iter_pd.loc[:,
+                        [
+                            'n_iter',
+                            'feedin_atnode_loss_kW',
+                            'demand_atnode_kW',
+                            'feedin_atnode_kW',
+                            'TotalPower',
+                        ]]
+                    tmp_df.loc[:,['n_EGID_pvinst', 'ratio_EGID_pvinst']] = topo_df_iter.loc[:,['n_EGID_pvinst', 'ratio_EGID_pvinst']].to_numpy()
+                    tmp_df.loc[:, 'scen'] = scen
+
+                    export_plot_data_list.append(tmp_df)
 
 
 
@@ -4231,15 +4269,19 @@ class Visualization:
                 fig_agg.write_html(f'{self.visual_sett.visual_path}/plot_agg_line_PVproduction___{len(self.pvalloc_scen_list)}scen.html')
                 print_to_logfile(f'\texport: plot_agg_line_PVproduction___{len(self.pvalloc_scen_list)}scen.html', self.visual_sett.log_name)
 
-                # export plot data as csv
-                export_plot_data_df = pd.DataFrame(export_plot_data_list)
-                export_path_part = '/visualization_static_wpaper/plot_agg_line_PVproduction___export_plot_data___'
-                if os.path.exists(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv'):
-                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen*.csv'))
-                    os.rename(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', 
-                              f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
-                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', index=False)
-                print_to_logfile(f'\texport: {export_path_part}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+                # export plot data as csv              
+                export_plot_data_df = pd.concat(export_plot_data_list, ignore_index=True)
+                os.makedirs(f'{self.visual_sett.visual_static_export_path}', exist_ok=True)
+                export_df_name         = 'plot_agg_line_PVproduction___export_plot_data___'
+                export_df_name_scenlen = f'{export_df_name}{len(self.pvalloc_scen_list)}scen'
+                if os.path.exists(f'{self.visual_sett.visual_static_export_path}/{export_df_name_scenlen}.csv'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen*.csv'))
+                    os.rename(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', 
+                              f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                export_plot_data_df.to_csv(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                print_to_logfile(f'\texport: {export_df_name}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+
+
 
 
                         
@@ -7124,17 +7166,12 @@ class Visualization:
                                 col=subplot_col,
                             )
 
-                            # append export plot data
-                            hist_values = df_iter[col].tolist()
+                        # append export plot data
+                            # if i_col == 0:
+                        tmp_df = df_plot.loc[:,['iter_round','GAREA', 'FLAECHE' ]].copy()
+                        tmp_df.loc[:,'scen'] = scen
 
-
-                            row_plot_data = {
-                                'scen':           [scen for _ in range(len(hist_values))],
-                                'iter':           [iter for _ in range(len(hist_values))],
-                                'col':            [col for _ in range(len(hist_values))],   
-                                'hist_values':    hist_values,
-                            }
-                            export_plot_data_list.append(row_plot_data)
+                        export_plot_data_list.append(tmp_df)
 
 
 
@@ -7158,14 +7195,16 @@ class Visualization:
 
 
                 # export plot data as csv
-                export_plot_data_df = pd.DataFrame(export_plot_data_list)
-                export_path_part = '/visualization_static_wpaper/plot_agg_hist_contcharact_newinst___export_plot_data___'
-                if os.path.exists(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv'):
-                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen*.csv'))
-                    os.rename(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', 
-                              f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
-                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', index=False)
-                print_to_logfile(f'\texport: {export_path_part}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+                export_plot_data_df = pd.concat(export_plot_data_list)
+                os.makedirs(f'{self.visual_sett.visual_static_export_path}', exist_ok=True)
+                export_df_name         = 'plot_agg_hist_contcharact_newinst___export_plot_data___'
+                export_df_name_scenlen = f'{export_df_name}{len(self.pvalloc_scen_list)}scen'
+                if os.path.exists(f'{self.visual_sett.visual_static_export_path}/{export_df_name_scenlen}.csv'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen*.csv'))
+                    os.rename(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', 
+                              f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                export_plot_data_df.to_csv(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                print_to_logfile(f'\texport: {export_df_name}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
 
 
 
@@ -7407,6 +7446,7 @@ class Visualization:
                                     'category':       cat,
                                     'count':         count,
                                 }
+                                export_plot_data_list.append(row_plot_data)
 
 
 
@@ -7431,13 +7471,16 @@ class Visualization:
 
                 # export plot data as csv
                 export_plot_data_df = pd.DataFrame(export_plot_data_list)
-                export_path_part = '/visualization_static_wpaper/plot_agg_bar_catgcharact_newinst___export_plot_data___'
-                if os.path.exists(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv'):
-                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen*.csv'))
-                    os.rename(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', 
-                              f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
-                export_plot_data_df.to_csv(f'{self.visual_sett.visual_path}{export_path_part}{len(self.pvalloc_scen_list)}scen.csv', index=False)
-                print_to_logfile(f'\texport: {export_path_part}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+                os.makedirs(f'{self.visual_sett.visual_static_export_path}', exist_ok=True)
+                export_df_name         = 'plot_agg_bar_catgcharact_newinst___export_plot_data___'
+                export_df_name_scenlen = f'{export_df_name}{len(self.pvalloc_scen_list)}scen'
+                if os.path.exists(f'{self.visual_sett.visual_static_export_path}/{export_df_name_scenlen}.csv'):
+                    n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen*.csv'))
+                    os.rename(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', 
+                              f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                export_plot_data_df.to_csv(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                print_to_logfile(f'\texport: {export_df_name}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+
                 
 
         def plot_ind_summary_stats_by_node(self, ):
