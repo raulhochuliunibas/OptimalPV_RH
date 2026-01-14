@@ -5276,7 +5276,7 @@ class Visualization:
                         with open (os.path.join(self.visual_sett.data_path, 'pvalloc',self.pvalloc_scen.name_dir_export, 'topo_spatial_data', f'topo_egid_gridnode_hulls___{scen}.geojson'), 'w') as f:
                             f.write(spatial_hulls_gdf.to_json())
 
-                        spatial_hulls_gdf.to_file(os.path.join(self.visual_sett.data_path, self.pvalloc_scen.name_dir_export, 'topo_spatial_data', f'topo_egid_gridnode_hulls___{scen}.geojson'), driver='GeoJSON')
+                        # spatial_hulls_gdf.to_file(os.path.join(self.visual_sett.data_path, self.pvalloc_scen.name_dir_export, 'topo_spatial_data', f'topo_egid_gridnode_hulls___{scen}.geojson'), driver='GeoJSON')
                         print_to_logfile(f'\texport: topo_egid_gridnode_hulls geojson (for: {scen})', self.visual_sett.log_name)
 
 
