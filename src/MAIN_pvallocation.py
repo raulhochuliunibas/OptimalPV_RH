@@ -252,10 +252,10 @@ class PVAllocScenario_Settings:
                                                             (3 , 7.0), 
                                                             (4 , 7.0), 
                                                             (5 , 7.0),     
-                                                            (6 , 1.0), 
-                                                            (7 , 1.0), 
-                                                            (8 , 1.0), 
-                                                            (9 , 1.0),                                                            
+                                                            (6 ,     1.0), 
+                                                            (7 ,     1.0), 
+                                                            (8 ,     1.0), 
+                                                            (9 ,     1.0),                                                            
                                                             ])
     # panel_efficiency_specs
     PEFspec_variable_panel_efficiency_TF: bool              = True
