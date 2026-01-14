@@ -2,9 +2,10 @@ import sys
 import os as os
 import numpy as np
 import pandas as pd
+import polars as pl
 import glob
 
-import geopandas as gpd
+import json
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -12,6 +13,7 @@ import seaborn as sns
 # GENERAL SETTINGS
 class static_plotter_class:
     def __init__(self):
+        self.data_path = os.path.join('C:',os.sep, 'Models', 'OptimalPV_RH', 'data')
         self.dir_path = os.path.join('C:',os.sep, 'Models', 'OptimalPV_RH', 'data', 'visualization_static_wpaper')
         self.scen_default_color_map = {
             'pvalloc_29nbfs_30y5_max': (200, 50, 50),
@@ -429,8 +431,167 @@ class static_plotter_class:
         plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=300)
         plt.close()
     
-            
-    # NOT WORKING PROPERLY YET
+    
+    def plot_ind_line_demand(self,
+                             name_dir_export ,
+                             hours_incl_list,
+                             export_name,
+                             plot_width_func=None,
+                             plot_height_func=None):
+        
+        plot_width = self.plot_width if plot_width_func is None else plot_width_func
+        plot_height = self.plot_height if plot_height_func is None else plot_height_func
+        
+        file_path = os.path.join(self.data_path, 'pvalloc', name_dir_export)
+
+        topo    = json.load(open(os.path.join(file_path, 'topo_egid.json')))
+        npv_df  = pd.read_parquet(os.path.join(file_path, 'zMC1', 'npv_df.parquet'))
+        topo_subdf_paths    = glob.glob(f'{self.data_path}/pvalloc/{name_dir_export}/topo_time_subdf/topo_subdf_*.parquet')
+
+        sfhmfh_map_list = []
+        for k,v in topo.items():
+            sfhmfh_map_list.append({
+                'EGID': k, 
+                'sfhmfh_typ': v['gwr_info']['sfhmfh_typ'], 
+                'are_typ': v['gwr_info']['are_typ'],
+                'gwaerzh1': v['gwr_info']['gwaerzh1'],
+                'genh1': v['gwr_info']['genh1'],
+            })
+        sfhmfh_map_df = pd.DataFrame(sfhmfh_map_list)
+        sfhmfh_map_df['heatpump_TF'] = np.where(sfhmfh_map_df['gwaerzh1'].isin(['7410', '7411']), 'heatpump', 'no_heatpump')
+
+        npv_df_info = npv_df.merge(sfhmfh_map_df, on='EGID', how='left')
+
+        def get_n_egids_filtered_df(df, n, sfhmfh, are, heatpump):
+            df_filt = df[
+                (df['sfhmfh_typ'] == sfhmfh) &
+                (df['are_typ'] == are) &
+                (df['heatpump_TF'] == heatpump)
+            ]
+            egid_list = df_filt['EGID'].unique().tolist()[:n]
+            return list(df.loc[df['EGID'].isin(egid_list), 'EGID'])
+        sfh_sub_hpT = get_n_egids_filtered_df(npv_df_info, 1, 'SFH', 'Suburban', 'heatpump') 
+        sfh_sub_hpF = get_n_egids_filtered_df(npv_df_info, 1, 'SFH', 'Suburban', 'no_heatpump') 
+        
+        filter_egids_subdf = sfh_sub_hpT + sfh_sub_hpF
+
+        topo_subdf_list = []
+        for path in topo_subdf_paths:
+            topo_subdf = pl.read_parquet(path)
+            topo_filtr = topo_subdf.filter(pl.col('EGID').is_in(filter_egids_subdf))
+            if topo_filtr.shape[0] > 0:
+                topo_subdf_list.append(topo_filtr)
+                topo_subdf_list.append(topo_filtr)
+
+
+        topo_subdf = pl.concat(topo_subdf_list)
+
+        # --- first df_uid per EGID ---
+        topo_subdf_first = topo_subdf.group_by('EGID').agg([
+            pl.first('df_uid').alias('df_uid')
+        ]).to_pandas()
+
+        # --- convert full topo_subdf to pandas for seaborn plotting ---
+        topo_subdf_pd = topo_subdf.to_pandas()
+
+        # --- prepare two plot variants: week and full year ---
+        plot_variants = [
+            {"hours": hours_incl_list, "suffix": "_week"},
+            {"hours": None, "suffix": "_year"}  # all hours
+        ]
+
+        for variant in plot_variants:
+            hours = variant["hours"]
+            suffix = variant["suffix"]
+
+            plt.figure(figsize=(plot_width, plot_height))
+            np.random.seed(42)
+            n_pairs = topo_subdf_first.shape[0]
+            random_colors = [tuple(np.random.rand(3)) for _ in range(n_pairs)]
+
+            single_values_list = []
+
+            for i, row in topo_subdf_first.iterrows():
+                egid = row['EGID']
+                df_uid = row['df_uid']
+                sfhmfh = topo[str(egid)]['gwr_info']['sfhmfh_typ']
+                are_typ = topo[str(egid)]['gwr_info']['are_typ']
+                heatpump_TF = 'heatpump' if topo[str(egid)]['gwr_info']['gwaerzh1'] in ['7410', '7411'] else 'no_heatpump'
+
+                df_plot = topo_subdf_pd.loc[
+                    (topo_subdf_pd['EGID'] == egid) &
+                    (topo_subdf_pd['df_uid'] == df_uid)
+                ].copy()
+
+                # optional filtering for week hours
+                if hours is not None and 't_int' in df_plot.columns:
+                    df_plot = df_plot.loc[df_plot['t_int'].isin(hours)]
+
+                if df_plot.shape[0] == 0:
+                    continue  # skip empty
+
+                color = random_colors[i]
+
+                sns.lineplot(
+                    data=df_plot,
+                    x='t_int' if 't_int' in df_plot.columns else np.arange(len(df_plot)),
+                    y='demand_kW',
+                    # color=color,
+                    label=f"EGID{egid} ({sfhmfh}, {are_typ}, {heatpump_TF})",
+                    alpha=self.line_opacity
+                )
+
+                # collect single values
+                egid = egid
+                garea = topo[str(egid)]['gwr_info']['garea']
+                TotalPower = npv_df.loc[npv_df['EGID'] == egid, 'TotalPower'].values[0]
+                NPV = npv_df.loc[npv_df['EGID'] == egid, 'NPV_uid'].values[0]
+                total_demand_kWh = df_plot['demand_kW'].sum()
+                total_pvprod_kWh = df_plot['pvprod_kW'].sum() if 'pvprod_kW' in df_plot.columns else 0
+
+                single_values_list.append({
+                    'EGID': egid,
+                    'GAREA': garea,
+                    'TotalPower': TotalPower,
+                    'NPV': NPV,
+                    'Total_Demand_kWh': total_demand_kWh,
+                    'Total_PVProd_kWh': total_pvprod_kWh,
+                    'sfhmfh_typ': sfhmfh,
+                    'are_typ': are_typ,
+                    'heatpump_TF': heatpump_TF,
+                })
+
+            # plot export
+            plt.xlabel('Hour (t_int)' if hours is not None else 'Index')
+            plt.ylabel('Demand (kW)')
+            plt.title(f'Individual Demand Profiles {suffix.strip("_")}')
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(os.path.join(self.dir_path, f"{export_name}{suffix}.png"), dpi=300)
+            plt.close() 
+
+        # export single values
+        single_values_df = pd.DataFrame(single_values_list)
+        single_values_df.to_csv(os.path.join(self.dir_path, f"{export_name}_single_values.csv"), index=False)
+
+
+
+
+    def get_single_values(self, 
+                          name_dir_export = 'pvalloc_29nbfs_30y5_max',
+                          egid_str = '1366620'
+                          ):
+        name_dir_export_path = os.path.join(self.data_path, 'pvalloc', name_dir_export)
+        topo    = json.load(open(os.path.join(name_dir_export_path, 'topo_egid.json')))
+        npv_df  = pd.read_parquet(os.path.join(name_dir_export_path, 'zMC1', 'npv_df.parquet'))
+
+        garea = topo[egid_str]['gwr_info']['GAREA']
+
+
+
+
+
+    # NOT WORKING PROPERLY YET   
     def plot_productionHOY_iters_hue(self, 
                                     csv_file,
                                     scen_incl_list,
@@ -492,6 +653,18 @@ if __name__ == "__main__":
     for png_file in png_files:
         os.remove(png_file)
 
+    # demand and single values
+    if True:
+        plotter = static_plotter_class()
+        plotter.plot_ind_line_demand(
+            name_dir_export='pvalloc_29nbfs_30y5_max',
+            hours_incl_list=list(range(4920, 4920 + 7*24)),
+            export_name='example_demand_BU',
+            plot_width_func=4,
+            plot_height_func=4,
+        )
+        plotter.get_single_values()
+    
     # # BU case
     if False: 
         plotter = static_plotter_class()
@@ -563,7 +736,6 @@ if __name__ == "__main__":
             plot_height_func = 4, 
             plot_width_func = 2.5,
         )
-
 
     # all casses loss appendix
     if False: 
@@ -821,16 +993,16 @@ if __name__ == "__main__":
             csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
             scen_incl_list=[
                 'pvalloc_29nbfs_30y5_max',
-                'pvalloc_29nbfs_30y5_max_sAs2p0',
-                'pvalloc_29nbfs_30y5_max_sAs4p0',
+                # 'pvalloc_29nbfs_30y5_max_sAs2p0',
+                # 'pvalloc_29nbfs_30y5_max_sAs4p0',
                 'pvalloc_29nbfs_30y5_max_sAs6p0',
                 
-                'pvalloc_29nbfs_30y5_max_sBs0p4',
-                'pvalloc_29nbfs_30y5_max_sBs0p6',
+                # 'pvalloc_29nbfs_30y5_max_sBs0p4',
+                # 'pvalloc_29nbfs_30y5_max_sBs0p6',
                 'pvalloc_29nbfs_30y5_max_sBs0p8',
                 
-                'pvalloc_29nbfs_30y5_max_sCs2p4',
-                'pvalloc_29nbfs_30y5_max_sCs4p6',
+                # 'pvalloc_29nbfs_30y5_max_sCs2p4',
+                # 'pvalloc_29nbfs_30y5_max_sCs4p6',
                 'pvalloc_29nbfs_30y5_max_sCs6p8',
                 
                 ],
@@ -843,7 +1015,8 @@ if __name__ == "__main__":
 
 
     # comparison loss max cases
-    if True: 
+    comparison_PVproduction_height = 4
+    if False: 
         plotter = static_plotter_class()
         plotter.line_opacity = 0.6 
         plotter.scen_default_color_map = {
@@ -868,7 +1041,7 @@ if __name__ == "__main__":
             'pvalloc_29nbfs_30y5_max_sCs6p8': (200, 200, 50),
         }
         plotter.plot_width_func=9,
-        plotter.plot_height_func=4,
+        plotter.plot_height_func=comparison_PVproduction_height,
 
         plotter.plot_PVproduction_line(
             # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
@@ -886,7 +1059,7 @@ if __name__ == "__main__":
         )
 
     # comparison loss 1hll cases
-    if True: 
+    if False: 
         plotter = static_plotter_class()
         plotter.line_opacity = 0.6 
         plotter.scen_default_color_map = {
@@ -912,7 +1085,7 @@ if __name__ == "__main__":
             'pvalloc_29nbfs_30y5_max_1hll_sCs6p8': (200, 200, 50),
         }
         plotter.plot_width_func=9,
-        plotter.plot_height_func=4,
+        plotter.plot_height_func=comparison_PVproduction_height,
 
         plotter.plot_PVproduction_line(
             # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
@@ -929,27 +1102,31 @@ if __name__ == "__main__":
             y_label='Feed-in Loss',
         )
 
-    # compmarison production 1hll cases appendix
-    if True:
+
+    # compmarison production 1hll cases 
+    if False:
         plotter = static_plotter_class()
         plotter.line_opacity = 0.6 
         plotter.scen_default_color_map = {
-            'pvalloc_29nbfs_30y5_max_1hll': (180, 60, 60),        # muted red
+            
+            'pvalloc_29nbfs_30y5_max': (180, 60, 60),        # muted red
+            'pvalloc_29nbfs_30y5_max_1hll': (220, 100, 100),    # light red
+
             # --- Scheme A (greens / yellow-green gradient) ---
             # 'pvalloc_29nbfs_30y5_max_sAs2p0_1hll': (60, 150, 90),   # teal-green
             'pvalloc_29nbfs_30y5_max_sAs6p0_': (90, 180, 60),   # green
-            'pvalloc_29nbfs_30y5_max_sAs6p0_1hll': (180, 180, 60),  # yellow-green
+            'pvalloc_29nbfs_30y5_max_1hll_sAs6p0': (180, 180, 60),  # yellow-green
             # --- Scheme B (blues / cyan gradient) ---
             # 'pvalloc_29nbfs_30y5_max_sBs0p4_1hll': (70, 130, 180),  # steel blue
             'pvalloc_29nbfs_30y5_max_sBs0p8': (60, 160, 200),  # cyan-blue
-            'pvalloc_29nbfs_30y5_max_sBs0p8_1hll': (40, 190, 190),  # turquoise
+            'pvalloc_29nbfs_30y5_max_1hll_sBs0p8': (40, 190, 190),  # turquoise
             # --- Scheme C (purple / magenta gradient) ---
-            # 'pvalloc_29nbfs_30y5_max_sCs2p4_1hll': (140, 90, 180),  # soft purple
+            # 'pvalloc_29nbfs_30y5_max_sCs2p4_1hll': (200, 70, 120),  # rose-magenta
             'pvalloc_29nbfs_30y5_max_sCs4p6': (170, 80, 150),  # magenta-purple
-            'pvalloc_29nbfs_30y5_max_sCs4p6_1hll': (200, 70, 120),  # rose-magenta
+            'pvalloc_29nbfs_30y5_max_1hll_sCs4p6': (140, 90, 180),  # soft purple
         }
         plotter.plot_width_func=9,
-        plotter.plot_height_func=4.5,
+        plotter.plot_height_func=comparison_PVproduction_height,
 
 
         plotter.plot_PVproduction_line(
@@ -957,19 +1134,20 @@ if __name__ == "__main__":
             csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
             scen_incl_list=[
                 'pvalloc_29nbfs_30y5_max',
+                'pvalloc_29nbfs_30y5_max_1hll',
                 # 'pvalloc_29nbfs_30y5_max_sAs2p0',
                 # 'pvalloc_29nbfs_30y5_max_sAs4p0',
                 'pvalloc_29nbfs_30y5_max_sAs6p0',
-                'pvalloc_29nbfs_30y5_max_sAs6p0_1hll',
+                'pvalloc_29nbfs_30y5_max_1hll_sAs6p0',
                 
                 # 'pvalloc_29nbfs_30y5_max_sBs0p4',
                 # 'pvalloc_29nbfs_30y5_max_sBs0p6',
                 'pvalloc_29nbfs_30y5_max_sBs0p8',
-                'pvalloc_29nbfs_30y5_max_sBs0p8_1hll',
+                'pvalloc_29nbfs_30y5_max_1hll_sBs0p8',
                 
                 # 'pvalloc_29nbfs_30y5_max_sCs2p4',
                 'pvalloc_29nbfs_30y5_max_sCs4p6',
-                'pvalloc_29nbfs_30y5_max_sCs4p6_1hll',
+                'pvalloc_29nbfs_30y5_max_1hll_sCs4p6',
                 # 'pvalloc_29nbfs_30y5_max_sCs6p8',
                 
                 ],
@@ -980,7 +1158,6 @@ if __name__ == "__main__":
         )
 
 
-    
 #     plotter = static_plotter_class()
 #     plotter.scen_default_color_map = {
 #         'pvalloc_29nbfs_30y5_max': (200, 50, 50),
