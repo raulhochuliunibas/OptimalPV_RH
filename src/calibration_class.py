@@ -123,7 +123,9 @@ class Calibration_Settings:
     if True: 
         GWR_building_cols: List[str]    = field(default_factory=lambda: ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE',
                                                 'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
-                                                'GANZWHG','GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
+                                                'GANZWHG',
+                                                'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
+                                                'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2',
                                                 'GEBF', 'GAREA'])
         GWR_dwelling_cols: List[str]    = field(default_factory=lambda: ['EGID', 'EWID', 'WAZIM', 'WAREA', ])
         GWR_GSTAT: List[str]            = field(default_factory=lambda: [
@@ -196,8 +198,11 @@ class Calibration_Settings:
         GWRspec_solkat_area_per_EGID_range: List[int]       = field(default_factory=lambda: [2, 600])  # for 100kWp inst, need 500m2 roof area => just above the threshold for residential subsidies KLEIV, below 2m2 too small to mount installations
         GWRspec_building_cols: List[str]                    = field(default_factory=lambda: [
                                                                 'EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
-                                                                'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
-                                                                'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1', 'GEBF', 'GAREA'
+                                                                'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
+                                                                'GANZWHG',
+                                                                'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
+                                                                'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2',
+                                                                'GEBF', 'GAREA'
                                                             ])
         
         GWRspec_dwelling_cols: List[str]                    = field(default_factory=list)
@@ -2273,7 +2278,9 @@ class Calibration:
                     pl.col('GSTAT').first().alias('GSTAT'),
                     pl.col('GWAERZH1').first().alias('GWAERZH1'),
                     pl.col('GENH1').first().alias('GENH1'),
-
+                    pl.col('GWAERZH2').first().alias('GWAERZH2'),
+                    pl.col('GENH2').first().alias('GENH2'),
+                    
                     pl.col('InitialPower').first().alias('InitialPower'),
                     pl.col('TotalPower').first().alias('TotalPower'), 
                     pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
@@ -2338,9 +2345,10 @@ class Calibration:
         # data import + transform 
         df = pd.read_csv(f'{self.sett.calib_scen_path}'f'/{self.sett.name_calib_subscen}_df_approach2.csv')
 
-        categorical_cols = ['GBAUJ', 'GKLAS', 'GSTAT', 'GWAERZH1', 'GENH1']
+        categorical_cols = ['GBAUJ', 'GKLAS', 'GSTAT', 'GWAERZH1', 'GENH1', 'GWAERZH2', 'GENH2']
         df[categorical_cols] = df[categorical_cols].astype('str')
         df['GWAERZH1_str'] = np.where(df['GWAERZH1'].isin(['7410', '7411']), 'heatpump', 'no_heatpump')
+        df['GWAERZH2_str'] = np.where(df['GWAERZH2'].isin(['7410', '7411']), 'heatpump', 'no_heatpump')
 
 
         # filtering + splitting 
@@ -2515,6 +2523,9 @@ class Calibration:
                 'GWAERZH1': 'category',
                 'GENH1': 'category',
                 'GWAERZH1_str': 'category',
+                'GWAERZH2': 'category',
+                'GENH2': 'category',
+                'GWAERZH2_str': 'category',
                 # 'InitialPower': 'float64',
                 'TotalPower': 'float64',
                 'elecpri_Rp_kWh': 'float64',

@@ -44,7 +44,9 @@ class DataAggScenario_Settings:
 
     GWR_building_cols: List[str]    = field(default_factory=lambda: ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE',
                                             'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
-                                            'GANZWHG','GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
+                                            'GANZWHG',
+                                            'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
+                                            'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2',
                                             'GEBF', 'GAREA'])
     GWR_dwelling_cols: List[str]    = field(default_factory=lambda: ['EGID', 'EWID', 'WAZIM', 'WAREA', ])
     GWR_DEMAND_proxy: str           = 'GAREA'
@@ -1049,14 +1051,28 @@ class DataAggScenario:
             
 
             # SOLKAT_MONTH ====================
-            solkat_month_all_pq = pd.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
-            checkpoint_to_logfile(f'import solkat_month_pq, {solkat_month_all_pq.shape[0]} rows,', self.sett.log_name, 1, self.sett.show_debug_prints)
+            # solkat_month_all_pq = pd.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
+            # checkpoint_to_logfile(f'import solkat_month_pq, {solkat_month_all_pq.shape[0]} rows,', self.sett.log_name, 1, self.sett.show_debug_prints)
 
-            # transformations
-            solkat_month_all_pq['SB_UUID'] = solkat_month_all_pq['SB_UUID'].astype(str)
-            solkat_month_all_pq['DF_UID'] = solkat_month_all_pq['DF_UID'].astype(str)
-            solkat_month_all_pq = solkat_month_all_pq.merge(solkat_all_pq[['DF_UID', 'BFS_NUMMER']], how = 'left', on = 'DF_UID')
-            solkat_month = solkat_month_all_pq[solkat_month_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
+            # # transformations
+            # solkat_month_all_pq['SB_UUID'] = solkat_month_all_pq['SB_UUID'].astype(str)
+            # solkat_month_all_pq['DF_UID'] = solkat_month_all_pq['DF_UID'].astype(str)
+            # solkat_month_all_pq = solkat_month_all_pq.merge(solkat_all_pq[['DF_UID', 'BFS_NUMMER']], how = 'left', on = 'DF_UID')
+            # solkat_month = solkat_month_all_pq[solkat_month_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)]
+            
+            # in polars, because RAM issues with large df in pandas
+            solkat_month_all_pl = pl.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
+            checkpoint_to_logfile(f'import solkat_month_pq, {solkat_month_all_pl.shape[0]} rows,', self.sett.log_name, 1, self.sett.show_debug_prints)
+
+            solkat_month_all_pl = solkat_month_all_pl.with_columns([
+                pl.col('SB_UUID').cast(pl.Utf8),
+                pl.col('DF_UID').cast(pl.Utf8)
+            ])
+            solkat_all_pl = pl.from_pandas(solkat_all_pq)
+            solkat_month_all_pl = solkat_month_all_pl.join(solkat_all_pl.select(['DF_UID', 'BFS_NUMMER']), on='DF_UID', how='left')
+            solkat_month_pl = solkat_month_all_pl.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers))
+            solkat_month = solkat_month_pl.to_pandas()
+
 
 
             # BFS-ARE Gemeinde Type ====================
