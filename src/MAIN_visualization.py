@@ -2740,7 +2740,46 @@ class Visualization:
                     agg_subdf_updated_pvdf_list = []
                     agg_subdf_df_list, agg_egids_list, agg_egids_all_list = [], [], []
                     for i_path, path in enumerate(topo_subdf_paths):
-                        subdf = pl.read_parquet(path)          
+                        subdf = pl.read_parquet(path)   
+
+                        # extend subdf with static data (safe disk space) --------------------
+                        subdf_static = subdf['EGID'].unique().to_list()
+                        subdf_static_list = []
+                        for egid in subdf_static:
+                            static_topo = topo[egid]
+                            
+                            for k,v in static_topo['solkat_partitions'].items():
+                                egid_dfuid_row = {
+                                    'EGID':               egid,
+                                    'df_uid':             k,
+                                    'bfs':                static_topo['gwr_info']['bfs'], 
+                                    'GKLAS':              static_topo['gwr_info']['gklas'],
+                                    'GAREA':              static_topo['gwr_info']['garea'],
+                                    'GBAUJ':              static_topo['gwr_info']['gbauj'],
+                                    'GSTAT':              static_topo['gwr_info']['gstat'],
+                                    'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
+                                    'GENH1':              static_topo['gwr_info']['genh1'],
+                                    'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
+                                    'demand_arch_typ':    static_topo['demand_arch_typ'],
+                                    'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
+                                    'grid_node':          static_topo['grid_node'],
+                                    'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
+                                    'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
+                                    'inst_TF':            static_topo['pv_inst']['inst_TF'],
+                                    'info_source':        static_topo['pv_inst']['info_source'],
+                                    'pvid':               static_topo['pv_inst']['xtf_id'],
+                                    'TotalPower':         static_topo['pv_inst']['TotalPower'],
+                                    'FLAECHE':            v['FLAECHE'],
+                                    'AUSRICHTUNG':        v['AUSRICHTUNG'],
+                                    'STROMERTRAG':        v['STROMERTRAG'],
+                                    'NEIGUNG':            v['NEIGUNG'],
+                                    'MSTRAHLUNG':         v['MSTRAHLUNG'],
+                                    'GSTRAHLUNG':         v['GSTRAHLUNG'],
+                                }
+                                subdf_static_list.append(egid_dfuid_row)
+
+                        subdf_static_df = pl.DataFrame(subdf_static_list)
+                        subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
 
                         # Only plot EGIDs for 1 node: 
                         subdf = subdf.filter(pl.col('grid_node') == gridnode_pick)  
@@ -4761,8 +4800,9 @@ class Visualization:
                         gwr_all_building_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_all_building_gdf.geojson')
                         outtopo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/outtopo_time_subdf/outtopo_subdf_*.parquet')
 
-                        egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list= [], [], [], [], [], []
-                        gklas_list, node_list, demand_type_list, pvtarif_list, elecpri_list, elecpri_info_list = [], [], [], [], [], []
+                        egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list = [], [], [], [], [], []
+                        gklas_list, heating_system_list, gwaerzh1, gwaerzh2, node_list, demand_type_list   = [], [], [], [], [], []
+                        pvtarif_list, elecpri_list, elecpri_info_list = [], [], []
 
                         for k,v, in topo.items():
                             egid_list.append(k)
@@ -4772,6 +4812,9 @@ class Visualization:
                             TotalPower_list.append(v['pv_inst']['TotalPower'])
                             bfs_list.append(v['gwr_info']['bfs'])
                             gklas_list.append(v['gwr_info']['gklas'])
+                            heating_system_list.append(v['gwr_info']['heating_system'])
+                            gwaerzh1.append(v['gwr_info']['gwaerzh1'])
+                            gwaerzh2.append(v['gwr_info']['gwaerzh2'])
                             node_list.append(v['grid_node'])
                             demand_type_list.append(v['demand_arch_typ'])
                             pvtarif_list.append(v['pvtarif_Rp_kWh'])
@@ -4780,7 +4823,9 @@ class Visualization:
 
                         pvinst_df = pd.DataFrame({'EGID': egid_list, 'inst_TF': inst_TF_list, 'info_source': info_source_list,
                                                 'BeginOp': BeginOp_list, 'TotalPower': TotalPower_list, 'bfs': bfs_list, 
-                                                'gklas': gklas_list, 'grid_node': node_list, 'demand_type': demand_type_list,
+                                                'gklas': gklas_list, 'heating_system': heating_system_list,
+                                                'gwaerzh1': gwaerzh1, 'gwaerzh2': gwaerzh2,
+                                                'grid_node': node_list, 'demand_type': demand_type_list,
                                                 'pvtarif': pvtarif_list, 'elecpri': elecpri_list, 'elecpri_info': elecpri_info_list })
                         pvinst_df = pvinst_df.merge(gwr_gdf[['geometry', 'EGID']], on='EGID', how='left')
                         pvinst_gdf = gpd.GeoDataFrame(pvinst_df, crs='EPSG:2056', geometry='geometry')
@@ -4863,9 +4908,9 @@ class Visualization:
                     if True:
                         # subset inst_gdf for different traces in map plot
                         if not self.visual_sett.reduce_information_content:
-                            pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>node: {row['grid_node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
+                            pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>heating_system: {row['heating_system']}<br>gwaerzh1/2: {row['gwaerzh1']}, {row['gwaerzh2']}<br>node: {row['grid_node']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
                         elif self.visual_sett.reduce_information_content:
-                            pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
+                            pvinst_gdf['hover_text'] = pvinst_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>BeginOp: {row['BeginOp']}<br>TotalPower: {row['TotalPower']}<br>gklas: {row['gklas']}<br>heating_system: {row['heating_system']}<br>gwaerzh1/2: {row['gwaerzh1']}, {row['gwaerzh2']}<br>pvtarif: {row['pvtarif']}<br>elecpri: {row['elecpri']}<br>elecpri_info: {row['elecpri_info']}", axis=1)
 
                         subinst1_gdf, subinst2_gdf, subinst3_gdf  = pvinst_gdf.copy(), pvinst_gdf.copy(), pvinst_gdf.copy()
                         subinst1_gdf, subinst2_gdf, subinst3_gdf = subinst1_gdf.loc[(subinst1_gdf['inst_TF'] == True) & (subinst1_gdf['info_source'] == 'pv_df')], subinst2_gdf.loc[(subinst2_gdf['inst_TF'] == True) & (subinst2_gdf['info_source'] == 'alloc_algorithm')], subinst3_gdf.loc[(subinst3_gdf['inst_TF'] == False)]
@@ -5785,6 +5830,46 @@ class Visualization:
 
                                                 if egid in subdf['EGID'].to_list():
 
+                                                    # extend subdf with static data (safe disk space) --------------------
+                                                    subdf_static = subdf['EGID'].unique().to_list()
+                                                    subdf_static_list = []
+                                                    for egid in subdf_static:
+                                                        static_topo = topo[egid]
+                                                        
+                                                        for k,v in static_topo['solkat_partitions'].items():
+                                                            egid_dfuid_row = {
+                                                                'EGID':               egid,
+                                                                'df_uid':             k,
+                                                                'bfs':                static_topo['gwr_info']['bfs'], 
+                                                                'GKLAS':              static_topo['gwr_info']['gklas'],
+                                                                'GAREA':              static_topo['gwr_info']['garea'],
+                                                                'GBAUJ':              static_topo['gwr_info']['gbauj'],
+                                                                'GSTAT':              static_topo['gwr_info']['gstat'],
+                                                                'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
+                                                                'GENH1':              static_topo['gwr_info']['genh1'],
+                                                                'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
+                                                                'demand_arch_typ':    static_topo['demand_arch_typ'],
+                                                                'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
+                                                                'grid_node':          static_topo['grid_node'],
+                                                                'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
+                                                                'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
+                                                                'inst_TF':            static_topo['pv_inst']['inst_TF'],
+                                                                'info_source':        static_topo['pv_inst']['info_source'],
+                                                                'pvid':               static_topo['pv_inst']['xtf_id'],
+                                                                'TotalPower':         static_topo['pv_inst']['TotalPower'],
+                                                                'FLAECHE':            v['FLAECHE'],
+                                                                'AUSRICHTUNG':        v['AUSRICHTUNG'],
+                                                                'STROMERTRAG':        v['STROMERTRAG'],
+                                                                'NEIGUNG':            v['NEIGUNG'],
+                                                                'MSTRAHLUNG':         v['MSTRAHLUNG'],
+                                                                'GSTRAHLUNG':         v['GSTRAHLUNG'],
+                                                            }
+                                                            subdf_static_list.append(egid_dfuid_row)
+
+                                                    subdf_static_df = pl.DataFrame(subdf_static_list)
+                                                    subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
+
+
                                                     # topo_time_subdf aggregation
                                                     subdf_combo = subdf.filter(
                                                         (pl.col('EGID') == egid) & 
@@ -5939,6 +6024,45 @@ class Visualization:
 
                                             if egid in subdf['EGID'].to_list():
 
+                                                # extend subdf with static data (safe disk space) --------------------
+                                                subdf_static = subdf['EGID'].unique().to_list()
+                                                subdf_static_list = []
+                                                for egid in subdf_static:
+                                                    static_topo = topo[egid]
+                                                    
+                                                    for k,v in static_topo['solkat_partitions'].items():
+                                                        egid_dfuid_row = {
+                                                            'EGID':               egid,
+                                                            'df_uid':             k,
+                                                            'bfs':                static_topo['gwr_info']['bfs'], 
+                                                            'GKLAS':              static_topo['gwr_info']['gklas'],
+                                                            'GAREA':              static_topo['gwr_info']['garea'],
+                                                            'GBAUJ':              static_topo['gwr_info']['gbauj'],
+                                                            'GSTAT':              static_topo['gwr_info']['gstat'],
+                                                            'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
+                                                            'GENH1':              static_topo['gwr_info']['genh1'],
+                                                            'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
+                                                            'demand_arch_typ':    static_topo['demand_arch_typ'],
+                                                            'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
+                                                            'grid_node':          static_topo['grid_node'],
+                                                            'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
+                                                            'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
+                                                            'inst_TF':            static_topo['pv_inst']['inst_TF'],
+                                                            'info_source':        static_topo['pv_inst']['info_source'],
+                                                            'pvid':               static_topo['pv_inst']['xtf_id'],
+                                                            'TotalPower':         static_topo['pv_inst']['TotalPower'],
+                                                            'FLAECHE':            v['FLAECHE'],
+                                                            'AUSRICHTUNG':        v['AUSRICHTUNG'],
+                                                            'STROMERTRAG':        v['STROMERTRAG'],
+                                                            'NEIGUNG':            v['NEIGUNG'],
+                                                            'MSTRAHLUNG':         v['MSTRAHLUNG'],
+                                                            'GSTRAHLUNG':         v['GSTRAHLUNG'],
+                                                        }
+                                                        subdf_static_list.append(egid_dfuid_row)
+
+                                                subdf_static_df = pl.DataFrame(subdf_static_list)
+                                                subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
+                                                
                                                 subdf = subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
 
                                                 subdf_updated = subdf.filter(pl.col('EGID') == egid).clone()
@@ -6311,6 +6435,46 @@ class Visualization:
 
 
                                             if egid in subdf['EGID'].to_list():
+
+                                                # extend subdf with static data (safe disk space) --------------------
+                                                subdf_static = subdf['EGID'].unique().to_list()
+                                                subdf_static_list = []
+                                                for egid in subdf_static:
+                                                    static_topo = topo[egid]
+                                                    
+                                                    for k,v in static_topo['solkat_partitions'].items():
+                                                        egid_dfuid_row = {
+                                                            'EGID':               egid,
+                                                            'df_uid':             k,
+                                                            'bfs':                static_topo['gwr_info']['bfs'], 
+                                                            'GKLAS':              static_topo['gwr_info']['gklas'],
+                                                            'GAREA':              static_topo['gwr_info']['garea'],
+                                                            'GBAUJ':              static_topo['gwr_info']['gbauj'],
+                                                            'GSTAT':              static_topo['gwr_info']['gstat'],
+                                                            'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
+                                                            'GENH1':              static_topo['gwr_info']['genh1'],
+                                                            'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
+                                                            'demand_arch_typ':    static_topo['demand_arch_typ'],
+                                                            'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
+                                                            'grid_node':          static_topo['grid_node'],
+                                                            'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
+                                                            'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
+                                                            'inst_TF':            static_topo['pv_inst']['inst_TF'],
+                                                            'info_source':        static_topo['pv_inst']['info_source'],
+                                                            'pvid':               static_topo['pv_inst']['xtf_id'],
+                                                            'TotalPower':         static_topo['pv_inst']['TotalPower'],
+                                                            'FLAECHE':            v['FLAECHE'],
+                                                            'AUSRICHTUNG':        v['AUSRICHTUNG'],
+                                                            'STROMERTRAG':        v['STROMERTRAG'],
+                                                            'NEIGUNG':            v['NEIGUNG'],
+                                                            'MSTRAHLUNG':         v['MSTRAHLUNG'],
+                                                            'GSTRAHLUNG':         v['GSTRAHLUNG'],
+                                                        }
+                                                        subdf_static_list.append(egid_dfuid_row)
+
+                                                subdf_static_df = pl.DataFrame(subdf_static_list)
+                                                subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
+
 
                                                 # feature: adjust pvtarif and elecpri to explore effects
                                                 if plot_mapline_specs['tryout_generic_pvtariff_elecpri_Rp_kWh'][0] is not None: 

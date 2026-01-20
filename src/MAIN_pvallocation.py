@@ -24,7 +24,6 @@ from typing_extensions import List, Dict
 from scipy.optimize import curve_fit
 from scipy import optimize
 from scipy.stats import pearson3
-from sklearn.metrics import root_mean_squared_error
 
 
 # own modules
@@ -87,18 +86,22 @@ class PVAllocScenario_Settings:
     overwrite_scen_init: bool                   = True
     
     # PART I: settings for alloc_initialization --------------------
+
+    # gwr_specs
     GWRspec_solkat_max_n_partitions: int                = 10          # larger number of partitions make all combos of roof partitions practically impossible to calculate
     GWRspec_solkat_area_per_EGID_range: List[int]       = field(default_factory=lambda: [2, 600])  # for 100kWp inst, need 500m2 roof area => just above the threshold for residential subsidies KLEIV, below 2m2 too small to mount installations
     GWRspec_building_cols: List[str]                    = field(default_factory=lambda: [
                                                             'EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
                                                             'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
-                                                            'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1', 'GEBF', 'GAREA'
+                                                            'GEBF', 'GAREA', 
+                                                            'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
+                                                            'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2'
                                                         ])
     
     GWRspec_dwelling_cols: List[str]                    = field(default_factory=list)
     GWRspec_swstore_demand_cols: List[str]              = field(default_factory=lambda: ['ARE_typ', 'sfhmfh_typ', 'arch_typ', 'demand_elec_pGAREA'])
     GWRspec_DEMAND_proxy: str                           = 'GAREA'
-    # gwr topo_egid selection
+    # gwr selection
     GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: [
                                                                 # '1001', # GSTAT - 1001: in planing
                                                                 # '1002', # GSTAT - 1002: construction right granted 
@@ -243,19 +246,20 @@ class PVAllocScenario_Settings:
     TECspec_estim_pvinst_cost_correctionfactor: float       = 1
     TECspec_opt_max_flaeche_factor: float                   = 1.5
     TECspec_add_heatpump_demand_TF: bool                    = True   
+    TECspec_heatpump_indicator: List[str]                   = field(default_factory=lambda: ['7400', '7410'] )
     TECspec_heatpump_months_factor: List[tuple]             = field(default_factory=lambda: [
-                                                            (10, 7.0),
-                                                            (11, 7.0), 
-                                                            (12, 7.0), 
-                                                            (1 , 7.0), 
-                                                            (2 , 7.0), 
-                                                            (3 , 7.0), 
-                                                            (4 , 7.0), 
-                                                            (5 , 7.0),     
+                                                            (9 ,  2.0),                                                            
+                                                            (10,  4.0),
+                                                            (11,  8.0), 
+                                                            (12, 10.0), 
+                                                            (1 , 10.0), 
+                                                            (2 , 10.0), 
+                                                            (3 ,  8.0), 
+                                                            (4 ,  4.0), 
+                                                            (5 ,  2.0),     
                                                             (6 ,     1.0), 
                                                             (7 ,     1.0), 
                                                             (8 ,     1.0), 
-                                                            (9 ,     1.0),                                                            
                                                             ])
     # panel_efficiency_specs
     PEFspec_variable_panel_efficiency_TF: bool              = True
@@ -318,7 +322,14 @@ class PVAllocScenario_Settings:
     ALGOspec_drop_cols_topo_time_subdf_list: List[str]          = field(default_factory=lambda: [
                                                                        'index', 'timestamp', 'rad_direct', 'rad_diffuse', 'temperature', 
                                                                        'A_PARAM', 'B_PARAM', 'C_PARAM', 'mean_top_radiation', 
-                                                                       'radiation_rel_locmax'])
+                                                                       'radiation_rel_locmax', 
+                                                                       'GKLAS', 'GAREA', 'GBAUJ', 'GSTAT', 'GWAERZH1', 'GENH1', 'GWAERZH2', 'GENH2', 
+                                                                       'sfhmfh_typ', 'arch_typ', 'demand_arch_typ', 'demand_elec_pGAREA',
+                                                                       'pvid', 'inst_TF', 'info_source', 'TotalPower', 'efficiency_factor', 
+                                                                       'grid_node',
+                                                                       'pvtarif_Rp_kWh', 'elecpri_Rp_kWh',
+                                                                       'FLAECHE', 'FLAECH_angletilt', 'AUSRICHTUNG', 'NEIGUNG', 'STROMERTRAG', 'MSTRAHLUNG', 'GSTRAHLUNG',
+                                                                       'meteo_loc', ])
     
     ALGOspec_reinstall_inst_EGID_pvdf_for_check_TF :bool        = False  # True: will reinstall the dfuid_winst to EGIDs that already have a inst in reality in pv_df to check accuracy of allocation kWp estimates
     ALGOspec_tweak_constr_capacity_fact: float                  = 1
@@ -356,6 +367,9 @@ class PVAllocScenario_Settings:
     GRIDspec_node_1hll_closed_TF: bool                         = False       # F: installations can still be built in grid nodes that have > 1 HOY Lost Load, T: no installations in circuits which have just 1 hour of lost load in the grid_updating stage. 
     GRIDspec_subsidy_name: str                                 = 'default_subsidy'   # 'subsidy_name' / None
     GRIDspec_subsidy_filtag_node_schemes: Dict[str, float]     = field(default_factory=lambda: {
+
+        # new naming convention ---------------------------------------
+
         'default_subsidy': {
             'subs_filter_tags_chf_tuples': [
                 ('filter_tag__eastwest_80pr', 0.0),
@@ -489,16 +503,8 @@ class PVAllocScenario_Settings:
             ],
             'subs_nodeHC_chf_tuples':(0.7,   0.0),
             'pena_nodeHC_chf_tuples':(0.90,  8000.0), 
-        },
-
-
-        
-
-
-
-
-        
-        })
+        },       
+    })
 
     
 
@@ -2002,17 +2008,37 @@ class PVAllocScenario:
 
 
                     # add GWR --------
-                    gwr_info ={
-                        'bfs':        gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0],
-                        'gklas':      gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GKLAS')][0],
-                        'garea':      gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GAREA')][0],
-                        'gstat':      gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GSTAT')][0],
-                        'gbauj':      gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GBAUJ')][0],
-                        'gwaerzh1':   gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH1')][0],   
-                        'genh1':   gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GENH1')][0],   
-                        'are_typ':    gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('ARE_typ')][0],
-                        'sfhmfh_typ': gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('sfhmfh_typ')][0],
+                    if all([col in gwr.columns for col in ['GWAERZH2', 'GENH2']]):
+                        gwaerzh1  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH1')][0]
+                        gwaerzh2  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH2')][0]
+                        genh2     = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GENH2')][0]
+                        if any([gwaerzh_genh in self.sett.TECspec_heatpump_indicator for gwaerzh_genh in [gwaerzh1, gwaerzh2, ]]):
+                            heating_system = 'heatpump'
+                        else:
+                            heating_system = 'no_heatpump'
+                    else:
+                        gwaerzh1  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH1')][0]
+                        gwaerzh2  = None
+                        genh2     = None
+                        if any([gwaerzh1 in self.sett.TECspec_heatpump_indicator]):
+                            heating_system = 'heatpump'
+                        else:
+                            heating_system = 'no_heatpump'
 
+
+                    gwr_info ={
+                        'bfs':            gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0],
+                        'gklas':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GKLAS')][0],
+                        'garea':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GAREA')][0],
+                        'gstat':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GSTAT')][0],
+                        'gbauj':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GBAUJ')][0],
+                        'are_typ':        gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('ARE_typ')][0],
+                        'sfhmfh_typ':     gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('sfhmfh_typ')][0],
+                        'genh1':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GENH1')][0],   
+                        'genh2':          genh2, 
+                        'gwaerzh1':       gwaerzh1,
+                        'gwaerzh2':       gwaerzh2,
+                        'heating_system': heating_system,
                     }
                     
 
@@ -3199,8 +3225,27 @@ class PVAllocScenario:
                     ])
 
 
+
                     # add heatpump to demand profiles --------------------
                     if self.sett.TECspec_add_heatpump_demand_TF:
+                        # classification heating system 
+                        if 'GWAERZH2' in subdf.columns:
+                            subdf = subdf.with_columns([
+                                pl.when( (pl.col('GWAERZH1').is_in(self.sett.TECspec_heatpump_indicator)) | 
+                                        (pl.col('GWAERZH2').is_in(self.sett.TECspec_heatpump_indicator)) )
+                                    .then(pl.lit('heatpump'))
+                                    .otherwise(pl.lit('no_heatpump'))
+                                    .alias('heating_system')
+                            ])
+                        else:
+                            subdf = subdf.with_columns([
+                                pl.when( pl.col('GWAERZH1').is_in(self.sett.TECspec_heatpump_indicator) )
+                                    .then(pl.lit('heatpump'))
+                                    .otherwise(pl.lit('no_heatpump'))
+                                    .alias('heating_system')
+                            ])
+
+                        
                         subdf = subdf.with_columns([
                             pl.col('demand_kW').alias('demand_sfhmfh_kW'), 
                             pl.col('demand_kW').alias('demand_appliances_kW'), 
@@ -3217,7 +3262,11 @@ class PVAllocScenario:
                             (pl.col('demand_sfhmfh_kW') * pl.col('heatpump_factor')).alias('demand_heatpump_kW'),
                         ])
                         subdf = subdf.with_columns([
-                            (pl.col('demand_sfhmfh_kW') + pl.col('demand_heatpump_kW')).alias('demand_kW'),
+                            # (pl.col('demand_sfhmfh_kW') + pl.col('demand_heatpump_kW')).alias('demand_kW'),
+                            pl.when(pl.col('heating_system') == 'heatpump')
+                                .then(pl.col('demand_sfhmfh_kW') + pl.col('demand_heatpump_kW'))
+                                .otherwise(pl.col('demand_appliances_kW'))
+                                .alias('demand_kW')
                         ])
                         subdf = subdf.drop('heatpump_factor')
 
@@ -3553,8 +3602,48 @@ class PVAllocScenario:
 
             for i, path in enumerate(topo_subdf_paths):
                 checkpoint_to_logfile('gridprem > subdf: start read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None
-                subdf = pl.read_parquet(path)          
-                
+                subdf = pl.read_parquet(path)      
+
+                # extend subdf with static data (safe disk space) --------------------
+                subdf_static = subdf['EGID'].unique().to_list()
+                subdf_static_list = []
+                for egid in subdf_static:
+                    static_topo = topo[egid]
+                    
+                    for k,v in static_topo['solkat_partitions'].items():
+                        egid_dfuid_row = {
+                            'EGID':               egid,
+                            'df_uid':             k,
+                            'bfs':                static_topo['gwr_info']['bfs'], 
+                            'GKLAS':              static_topo['gwr_info']['gklas'],
+                            'GAREA':              static_topo['gwr_info']['garea'],
+                            'GBAUJ':              static_topo['gwr_info']['gbauj'],
+                            'GSTAT':              static_topo['gwr_info']['gstat'],
+                            'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
+                            'GENH1':              static_topo['gwr_info']['genh1'],
+                            'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
+                            'demand_arch_typ':    static_topo['demand_arch_typ'],
+                            'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
+                            'grid_node':          static_topo['grid_node'],
+                            'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
+                            'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
+                            'inst_TF':            static_topo['pv_inst']['inst_TF'],
+                            'info_source':        static_topo['pv_inst']['info_source'],
+                            'pvid':               static_topo['pv_inst']['xtf_id'],
+                            'TotalPower':         static_topo['pv_inst']['TotalPower'],
+                            'FLAECHE':            v['FLAECHE'],
+                            'AUSRICHTUNG':        v['AUSRICHTUNG'],
+                            'STROMERTRAG':        v['STROMERTRAG'],
+                            'NEIGUNG':            v['NEIGUNG'],
+                            'MSTRAHLUNG':         v['MSTRAHLUNG'],
+                            'GSTRAHLUNG':         v['GSTRAHLUNG'],
+                        }
+                        subdf_static_list.append(egid_dfuid_row)
+
+                subdf_static_df = pl.DataFrame(subdf_static_list)
+                subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
+    
+
                 checkpoint_to_logfile('gridprem > subdf: end read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None
 
                 # start for 1:1 copy for visualization
@@ -4444,7 +4533,7 @@ class PVAllocScenario:
 
             closed_nodes = node_1hll_closed_dict[str(i_m)]['all_nodes_abv_1hll']
             closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
-            
+                        
             
             agg_npv_df_list = []
             j = 0
@@ -4464,6 +4553,46 @@ class PVAllocScenario:
 
                 if subdf.shape[0] > 0:
 
+                    # extend subdf with static data (safe disk space) --------------------
+                    subdf_static = subdf['EGID'].unique().to_list()
+                    subdf_static_list = []
+                    for egid in subdf_static:
+                        static_topo = topo[egid]
+                        
+                        for k,v in static_topo['solkat_partitions'].items():
+                            egid_dfuid_row = {
+                                'EGID':               egid,
+                                'df_uid':             k,
+                                'bfs':                static_topo['gwr_info']['bfs'], 
+                                'GKLAS':              static_topo['gwr_info']['gklas'],
+                                'GAREA':              static_topo['gwr_info']['garea'],
+                                'GBAUJ':              static_topo['gwr_info']['gbauj'],
+                                'GSTAT':              static_topo['gwr_info']['gstat'],
+                                'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
+                                'GENH1':              static_topo['gwr_info']['genh1'],
+                                'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
+                                'demand_arch_typ':    static_topo['demand_arch_typ'],
+                                'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
+                                'grid_node':          static_topo['grid_node'],
+                                'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
+                                'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
+                                'inst_TF':            static_topo['pv_inst']['inst_TF'],
+                                'info_source':        static_topo['pv_inst']['info_source'],
+                                'pvid':               static_topo['pv_inst']['xtf_id'],
+                                'TotalPower':         static_topo['pv_inst']['TotalPower'],
+                                'FLAECHE':            v['FLAECHE'],
+                                'AUSRICHTUNG':        v['AUSRICHTUNG'],
+                                'STROMERTRAG':        v['STROMERTRAG'],
+                                'NEIGUNG':            v['NEIGUNG'],
+                                'MSTRAHLUNG':         v['MSTRAHLUNG'],
+                                'GSTRAHLUNG':         v['GSTRAHLUNG'],
+                            }
+                            subdf_static_list.append(egid_dfuid_row)
+
+                    subdf_static_df = pl.DataFrame(subdf_static_list)
+                    subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
+
+
                     # merge gridprem_ts
                     checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                     subdf = subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
@@ -4478,7 +4607,6 @@ class PVAllocScenario:
                     # if True: 
                     for egid in list(subdf['EGID'].unique()):
                         egid_subdf = subdf.filter(pl.col('EGID') == egid).clone()
-
 
                         # arrange data to fit stat estimation model --------------------
 
@@ -6121,12 +6249,20 @@ if __name__ == '__main__':
                                                                     '81', '867', '79',
                                                                     ],
             mini_sub_model_nEGIDs                                = 500,
-            create_gdf_export_of_topology                        = False,
+            create_gdf_export_of_topology                        = True,
             export_csvs                                          = True,
 
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
             months_prediction                                    = 120,
+            GWRspec_building_cols                                = [
+                                                            'EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                                                            'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                                                            'GEBF', 'GAREA', 
+                                                            'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
+                                                            # 'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2'
+                                                        ],
+
             TECspec_add_heatpump_demand_TF                       = True,   
             TECspec_heatpump_months_factor                       = [
                                                                     (10, 7.0),
