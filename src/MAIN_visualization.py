@@ -57,13 +57,7 @@ class Visual_Settings:
     cut_timeseries_to_zoom_hour: bool            = False
     add_day_night_HOY_bands: bool                = False
     reduce_information_content: bool             = False
-    export_png_TF: bool                          = True
-    export_png_dict: Dict                        = field(default_factory=lambda: {
-        'width':    300, 
-        'height':   175, 
-        'scale':    2, 
-        'engine':   'kaleido',
-    }) 
+ 
 
 
     default_zoom_year: List[int]                 = field(default_factory=lambda: [2002, 2030]) # field(default_factory=lambda: [2002, 2030]),
@@ -264,12 +258,22 @@ class Visual_Settings:
     })
     plot_ind_mapline_prodHOY_EGIDrfcombo_specs:Dict        = field(default_factory=lambda: {
         'specific_selected_EGIDs': [], 
+        # 'specific_selected_EGIDs': [
+        #     '190113872', # heatpump
+        #     '190057138', # no heatpump
+        # ], 
+        'specific_exclude_EGIDs': [],
         'run_selected_plot_parts': [
                                 'map',  
                                 'timeseries', 
                                 'summary', 
                                 'econ_func', 
                                 'joint_scatter', 
+
+                                # 'all_combo_TS', 
+                                # 'actual_inst_TS',
+                                'outsample_TS',
+                                'recalc_opt_inst',
                                 ],
         'traces_in_timeseries_plot': [
                                     'full_partition_combo', 
@@ -280,7 +284,7 @@ class Visual_Settings:
         'n_rndm_egid_winst_pvdf': 1, 
         'n_rndm_egid_winst_alloc': 1,
         'n_rndm_egid_woinst': 1,
-        'n_rndm_egid_outsample': 4, 
+        'n_rndm_egid_outsample': 0, 
         'n_partition_pegid_minmax': (1,4), 
         'roofpartition_color': '#fff2ae',
         'actual_ts_trace_marker': 'cross', 
@@ -303,8 +307,7 @@ class Visual_Settings:
             }, 
         'noisy_demand_TF': False, 
         'noisy_demand_factor': 0.0,
-        
-        })
+            })
     plot_ind_lineband_contcharact_newinst_specs: Dict           = field(default_factory=lambda: {
             'trace_color_palette': 'Turbo',
             'upper_lower_bound_interval': [0.05, 0.95],
@@ -6433,7 +6436,6 @@ class Visualization:
                                         for i_path, path in enumerate(topo_subdf_paths):
                                             subdf = pl.read_parquet(path)
 
-
                                             if egid in subdf['EGID'].to_list():
 
                                                 # extend subdf with static data (safe disk space) --------------------
@@ -8006,35 +8008,29 @@ if __name__ == '__main__':
                 # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_2nbf_10y_compare2_max*',
+                'pvalloc_2nbf_10y_compare2_max',
                 # 'pvalloc_29nbfs_30y3',
             ],
             # plot_show                          = False,
             # remove_old_plot_scen_directories   = True,  
             # remove_old_plots_in_visualization  = True,  
             remove_old_csvs_in_visualization   = True,
-            reduce_information_content         = True,
+            # reduce_information_content         = True,
 
             # save_plot_by_scen_directory        = False, 
-            cut_timeseries_to_zoom_hour        = True,
-            add_day_night_HOY_bands            = True,
+            # cut_timeseries_to_zoom_hour        = True,
+            # add_day_night_HOY_bands            = True,
             default_map_zoom                   = 10,
             default_map_center                 = [47.46, 7.58],
-
-            export_png_TF                      = True,
-            export_png_dict                    = {
-                'width':    300, 
-                'height':   175, 
-                'scale':    2, 
-                'engine':   'kaleido',
-            },
 
 
             # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
             # plot_ind_var_summary_stats_TF                   = [True,      True,      False], 
+            # plot_ind_line_productionHOY_per_EGID_TF        = [True,      True,       False]  ,
             # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
-            plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,       False],
+            # plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,       False],
             # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            # plot_ind_map_topo_egid_TF                      = [True,      True,       False]  ,
             # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
             # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
             # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
