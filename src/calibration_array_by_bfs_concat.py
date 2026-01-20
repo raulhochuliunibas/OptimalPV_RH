@@ -17,7 +17,7 @@ if __name__ == '__main__':
             export_gwr_ALL_building_gdf_TF    = False, 
 
             run_concatenate_preprep_data_TF         = True,
-            run_approach1_fit_optim_costfunction_TF = True, 
+            run_approach1_fit_optim_costfunction_TF = False, 
             run_approach2_regression_instsize_TF    = True,
             run_appr2_random_forest_reg_TF          = True,
 
@@ -60,48 +60,26 @@ if __name__ == '__main__':
                         'kWp_segments': [(None, None, 'full_dist')],
                        }, 
 
-                    'mod3a': {
-                        'rfr_mod_name': '_rfr3a', 
-                        'df_suffix': '',
-
-                        'random_state':         None,    # default: None  # | None,    
-                        'n_jobs':               -1,      # default: None  # | -1,  
-                        'cross_validation':     None, 
-                        'n_estimators':         600  ,    # default: 100   # | 1,       
-                        'min_samples_split':    2     ,    # default: 2     # | 1000,    
-                        'max_depth':            40   ,    # default: None  # | 3,
-                        'kWp_segments': [
-                            ( 0.0,  5.0,    'segment_dist', ), 
-                            ( 5.0,  7.5,    'segment_dist', ),
-                            ( 7.5,  10.0,   'segment_dist', ),
-                            ( 10.0, 12.5,   'segment_dist', ),
-                            ( 12.5, 17.5,   'segment_dist', ),
-                            ( 17.5, 25.0,   'segment_dist', ),
-                            ( 25.0, 100.0,  'segment_dist', ),
-                        ], 
-                    }, 
-                    'mod3b': {
-                        'rfr_mod_name': '_rfr3b', 
-                        'df_suffix': '_pvroof20to70',
-
-                        'random_state':         None,    # default: None  # | None,    
-                        'n_jobs':               -1,      # default: None  # | -1,  
-                        'cross_validation':     None, 
-                        'n_estimators':         600  ,    # default: 100   # | 1,       
-                        'min_samples_split':    2     ,    # default: 2     # | 1000,    
-                        'max_depth':            40   ,    # default: None  # | 3,
-                        'kWp_segments': [
-                            ( 0.0,  5.0,    'segment_dist'), 
-                            ( 5.0,  7.5,    'segment_dist'), 
-                            ( 7.5,  10.0,   'full_dist'), 
-                            ( 10.0, 12.5,   'full_dist'), 
-                            ( 12.5, 17.5,   'full_dist'), 
-                            ( 17.5, 25.0,   'full_dist'), 
-                            ( 25.0, 100.0,  'full_dist'), 
-                        ],
-                    }, 
             }},
         ),
+
+
+    ]
+            
+    for sett in preprep_list:
+        calib_class = Calibration(sett)
+        # calib_class.concatenate_prerep_data()           if calib_class.sett.run_concatenate_preprep_data_TF else None
+
+        calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
+        calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
+
+        # calib_class.approach1_fit_optim_cost_function()     if calib_class.sett.run_approach2_regression_instsize_TF else None
+
+
+
+
+
+"""
 
         Calibration_Settings(
             name_dir_export='calib_all_CH_bfs3',
@@ -405,22 +383,9 @@ if __name__ == '__main__':
                     }, 
             }},
         ), 
-    ]
-            
-    for sett in preprep_list:
-        calib_class = Calibration(sett)
-        # calib_class.concatenate_prerep_data()           if calib_class.sett.run_concatenate_preprep_data_TF else None
+    
+        
 
-        calib_class.approach2_regression_instsize()     if calib_class.sett.run_approach2_regression_instsize_TF else None
-        calib_class.random_forest_regression()          if calib_class.sett.run_appr2_random_forest_reg_TF else None
-
-        # calib_class.approach1_fit_optim_cost_function()     if calib_class.sett.run_approach2_regression_instsize_TF else None
-
-
-
-
-
-"""
         Calibration_Settings(
             name_dir_export='calib_all_CH_bfs3',
             name_calib_subscen='reg2_all_CH_bfs',
