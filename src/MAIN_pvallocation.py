@@ -28,7 +28,8 @@ from scipy.stats import pearson3
 
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
+from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr, add_static_topo_data_to_subdf
+
 
 # settings
 pl.Config.set_tbl_rows(30)  # Adjust 50 to whatever number of rows you want
@@ -318,7 +319,7 @@ class PVAllocScenario_Settings:
                                                                         # edit: new a tuple of order filtering, basically install inst on EGIDs with this filter_tag == True first
                                                                         # df_tag_south_nr  df_tag_south_1r  eastwest_2r  eastwest_nr
     ALGOspec_subselec_filter_method: str                        = 'pooled'  # 'ordered' / 'pooled'
-                                                                        
+    # drop cols in subdf (safe disk space)                                                                    
     ALGOspec_drop_cols_topo_time_subdf_list: List[str]          = field(default_factory=lambda: [
                                                                        'index', 'timestamp', 'rad_direct', 'rad_diffuse', 'temperature', 
                                                                        'A_PARAM', 'B_PARAM', 'C_PARAM', 'mean_top_radiation', 
@@ -377,7 +378,7 @@ class PVAllocScenario_Settings:
                 ],
             'subs_nodeHC_chf_tuples':(0.5,   0.0),
             'pena_nodeHC_chf_tuples':(0.95,  0.0),
-    },
+        },
         'As2p0':{
             'subs_filter_tags_chf_tuples': [
                 ('filter_tag__eastwest_80pr', 2000.0),
@@ -3605,43 +3606,7 @@ class PVAllocScenario:
                 subdf = pl.read_parquet(path)      
 
                 # extend subdf with static data (safe disk space) --------------------
-                subdf_static = subdf['EGID'].unique().to_list()
-                subdf_static_list = []
-                for egid in subdf_static:
-                    static_topo = topo[egid]
-                    
-                    for k,v in static_topo['solkat_partitions'].items():
-                        egid_dfuid_row = {
-                            'EGID':               egid,
-                            'df_uid':             k,
-                            'bfs':                static_topo['gwr_info']['bfs'], 
-                            'GKLAS':              static_topo['gwr_info']['gklas'],
-                            'GAREA':              static_topo['gwr_info']['garea'],
-                            'GBAUJ':              static_topo['gwr_info']['gbauj'],
-                            'GSTAT':              static_topo['gwr_info']['gstat'],
-                            'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
-                            'GENH1':              static_topo['gwr_info']['genh1'],
-                            'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
-                            'demand_arch_typ':    static_topo['demand_arch_typ'],
-                            'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
-                            'grid_node':          static_topo['grid_node'],
-                            'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
-                            'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
-                            'inst_TF':            static_topo['pv_inst']['inst_TF'],
-                            'info_source':        static_topo['pv_inst']['info_source'],
-                            'pvid':               static_topo['pv_inst']['xtf_id'],
-                            'TotalPower':         static_topo['pv_inst']['TotalPower'],
-                            'FLAECHE':            v['FLAECHE'],
-                            'AUSRICHTUNG':        v['AUSRICHTUNG'],
-                            'STROMERTRAG':        v['STROMERTRAG'],
-                            'NEIGUNG':            v['NEIGUNG'],
-                            'MSTRAHLUNG':         v['MSTRAHLUNG'],
-                            'GSTRAHLUNG':         v['GSTRAHLUNG'],
-                        }
-                        subdf_static_list.append(egid_dfuid_row)
-
-                subdf_static_df = pl.DataFrame(subdf_static_list)
-                subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
+                subdf = add_static_topo_data_to_subdf(subdf, topo)
     
 
                 checkpoint_to_logfile('gridprem > subdf: end read subdf', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None
@@ -4554,43 +4519,7 @@ class PVAllocScenario:
                 if subdf.shape[0] > 0:
 
                     # extend subdf with static data (safe disk space) --------------------
-                    subdf_static = subdf['EGID'].unique().to_list()
-                    subdf_static_list = []
-                    for egid in subdf_static:
-                        static_topo = topo[egid]
-                        
-                        for k,v in static_topo['solkat_partitions'].items():
-                            egid_dfuid_row = {
-                                'EGID':               egid,
-                                'df_uid':             k,
-                                'bfs':                static_topo['gwr_info']['bfs'], 
-                                'GKLAS':              static_topo['gwr_info']['gklas'],
-                                'GAREA':              static_topo['gwr_info']['garea'],
-                                'GBAUJ':              static_topo['gwr_info']['gbauj'],
-                                'GSTAT':              static_topo['gwr_info']['gstat'],
-                                'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
-                                'GENH1':              static_topo['gwr_info']['genh1'],
-                                'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
-                                'demand_arch_typ':    static_topo['demand_arch_typ'],
-                                'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
-                                'grid_node':          static_topo['grid_node'],
-                                'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
-                                'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
-                                'inst_TF':            static_topo['pv_inst']['inst_TF'],
-                                'info_source':        static_topo['pv_inst']['info_source'],
-                                'pvid':               static_topo['pv_inst']['xtf_id'],
-                                'TotalPower':         static_topo['pv_inst']['TotalPower'],
-                                'FLAECHE':            v['FLAECHE'],
-                                'AUSRICHTUNG':        v['AUSRICHTUNG'],
-                                'STROMERTRAG':        v['STROMERTRAG'],
-                                'NEIGUNG':            v['NEIGUNG'],
-                                'MSTRAHLUNG':         v['MSTRAHLUNG'],
-                                'GSTRAHLUNG':         v['GSTRAHLUNG'],
-                            }
-                            subdf_static_list.append(egid_dfuid_row)
-
-                    subdf_static_df = pl.DataFrame(subdf_static_list)
-                    subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
+                    subdf = add_static_topo_data_to_subdf(subdf, topo)
 
 
                     # merge gridprem_ts
