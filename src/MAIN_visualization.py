@@ -590,6 +590,45 @@ class Visualization:
                     return MultiPolygon([self.flatten_geometry(poly) for poly in geom.geoms])
             return geom
 
+        def export_cmd_GridOptim_parallel_HPC(self, name_dir_export): 
+
+            topo = json.load(open(f'{self.visual_sett.data_path}/pvalloc/{name_dir_export}/topo_egid.json', 'r'))
+            topo_df_list = []
+            for k,v in topo.items():
+                rows = {
+                    'EGID': k,
+                    'grid_node': v.get('grid_node'),
+                }
+                topo_df_list.append(rows)
+            topo_df = pl.DataFrame(topo_df_list)
+
+            topo_df = topo_df.group_by('grid_node').agg([
+                pl.count('EGID').alias('n_egids_in_node'),
+            ])
+            topo_df = topo_df.sort('n_egids_in_node', descending=True)
+            topo_df = topo_df.with_row_index(
+                name="grid_node_idx",
+                offset=1
+            )
+
+            # create and export txt lines for cmd file (parallelization HPC)
+            lines = (
+                topo_df
+                .select(
+                    pl.format(
+                        "python main_OPTIM_array_LRG.py {}",
+                        pl.col("grid_node")
+                    ).alias("cmd")
+                )
+                .to_series()
+                .to_list()
+            )
+
+            with open(f'{self.visual_sett.wd_path}/main_OPTIM_array_LRG_XYh_XcXG.txt', 'w') as f:
+                for line in lines:
+                    f.write(f"{line}\n")
+                    
+
     # ------------------------------------------------------------------------------------------------------------------------
     # ALL AVAILABLE PLOTS 
     # ------------------------------------------------------------------------------------------------------------------------
@@ -8008,8 +8047,8 @@ if __name__ == '__main__':
                 # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_2nbf_10y_compare2_max',
-                # 'pvalloc_29nbfs_30y3',
+                # 'pvalloc_2nbf_10y_compare2_max',
+                'pvalloc_29nbfs_30y5_max',
             ],
             # plot_show                          = False,
             # remove_old_plot_scen_directories   = True,  
@@ -8044,6 +8083,7 @@ if __name__ == '__main__':
 
     for visual_scen in visualization_list:
         visual_class = Visualization(visual_scen)
+        visual_class.export_cmd_GridOptim_parallel_HPC('pvalloc_29nbfs_30y5_max')
         visual_class.plot_ALL()
  
     print('end MAIN_visualization.py')
