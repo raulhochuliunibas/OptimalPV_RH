@@ -4,6 +4,8 @@ import polars as pl
 from typing_extensions import List
 
 from datetime import datetime
+from dataclasses import replace
+
 
 # this is required to set the timer properly
 time_last_call = None
@@ -326,6 +328,67 @@ def get_bfsnr_name_tuple_list(bfs_number_list=None):
     return bfsnr_name_tuple_list
 
 
+
+def add_static_topo_data_to_subdf(subdf, topo):
+    # extend subdf with static data (safe disk space) --------------------
+    subdf_static = subdf['EGID'].unique().to_list()
+    subdf_static_list = []
+    for egid in subdf_static:
+        static_topo = topo[egid]
+        
+        for k,v in static_topo['solkat_partitions'].items():
+            egid_dfuid_row = {
+                'EGID':               egid,
+                'df_uid':             k,
+                'bfs':                static_topo['gwr_info']['bfs'], 
+                'GKLAS':              static_topo['gwr_info']['gklas'],
+                'GAREA':              static_topo['gwr_info']['garea'],
+                'GBAUJ':              static_topo['gwr_info']['gbauj'],
+                'GSTAT':              static_topo['gwr_info']['gstat'],
+                'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
+                'GENH1':              static_topo['gwr_info']['genh1'],
+                'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
+                'demand_arch_typ':    static_topo['demand_arch_typ'],
+                'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
+                'grid_node':          static_topo['grid_node'],
+                'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
+                'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
+                'inst_TF':            static_topo['pv_inst']['inst_TF'],
+                'info_source':        static_topo['pv_inst']['info_source'],
+                'pvid':               static_topo['pv_inst']['xtf_id'],
+                'TotalPower':         static_topo['pv_inst']['TotalPower'],
+                'FLAECHE':            v['FLAECHE'],
+                'AUSRICHTUNG':        v['AUSRICHTUNG'],
+                'STROMERTRAG':        v['STROMERTRAG'],
+                'NEIGUNG':            v['NEIGUNG'],
+                'MSTRAHLUNG':         v['MSTRAHLUNG'],
+                'GSTRAHLUNG':         v['GSTRAHLUNG'],
+            }
+            subdf_static_list.append(egid_dfuid_row)
+
+    subdf_static_df = pl.DataFrame(subdf_static_list)
+    subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
+    return subdf
+
+
+def make_scenario(default_scen, name_dir_export, bfs_numbers=None, **overrides):
+    kwargs = {'name_dir_export': name_dir_export}
+    if bfs_numbers is not None:
+        kwargs['bfs_numbers'] = bfs_numbers
+    if overrides:
+        kwargs.update(overrides)
+    return replace(default_scen, **kwargs)
+
+
+# ----------------------------------------------------------------------
+    
+def test_functions(text):
+    print(f'return: {text}')
+
+
+
+# NO LONGER ACTIVENo longer Active ----------------------------------------------------------------------
+
 def print_directory_stucture_to_txtfile(if_True = False):
     dir_exclusion_list = ['archiv_no_longer_used', '__pycache__', '__init__.py', 'poetry.lock', '__poetry.lock', 'pyproject.toml', '__pyproject.toml', 
                           'README.md', 'selection_mechanism_theory.py', 'ToDos_NextSteps.py', 'TRY_OUT.py', 'OptimalPV_RH_directory_structure.txt',
@@ -370,48 +433,3 @@ def print_directory_stucture_to_txtfile(if_True = False):
         #         f.write(line + '\n')
 
 
-def add_static_topo_data_to_subdf(subdf, topo):
-    # extend subdf with static data (safe disk space) --------------------
-    subdf_static = subdf['EGID'].unique().to_list()
-    subdf_static_list = []
-    for egid in subdf_static:
-        static_topo = topo[egid]
-        
-        for k,v in static_topo['solkat_partitions'].items():
-            egid_dfuid_row = {
-                'EGID':               egid,
-                'df_uid':             k,
-                'bfs':                static_topo['gwr_info']['bfs'], 
-                'GKLAS':              static_topo['gwr_info']['gklas'],
-                'GAREA':              static_topo['gwr_info']['garea'],
-                'GBAUJ':              static_topo['gwr_info']['gbauj'],
-                'GSTAT':              static_topo['gwr_info']['gstat'],
-                'GWAERZH1':           static_topo['gwr_info']['gwaerzh1'],
-                'GENH1':              static_topo['gwr_info']['genh1'],
-                'sfhmfh_typ':         static_topo['gwr_info']['sfhmfh_typ'],
-                'demand_arch_typ':    static_topo['demand_arch_typ'],
-                'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
-                'grid_node':          static_topo['grid_node'],
-                'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
-                'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
-                'inst_TF':            static_topo['pv_inst']['inst_TF'],
-                'info_source':        static_topo['pv_inst']['info_source'],
-                'pvid':               static_topo['pv_inst']['xtf_id'],
-                'TotalPower':         static_topo['pv_inst']['TotalPower'],
-                'FLAECHE':            v['FLAECHE'],
-                'AUSRICHTUNG':        v['AUSRICHTUNG'],
-                'STROMERTRAG':        v['STROMERTRAG'],
-                'NEIGUNG':            v['NEIGUNG'],
-                'MSTRAHLUNG':         v['MSTRAHLUNG'],
-                'GSTRAHLUNG':         v['GSTRAHLUNG'],
-            }
-            subdf_static_list.append(egid_dfuid_row)
-
-    subdf_static_df = pl.DataFrame(subdf_static_list)
-    subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
-    return subdf
-
-# ----------------------------------------------------------------------
-    
-def test_functions(text):
-    print(f'return: {text}')
