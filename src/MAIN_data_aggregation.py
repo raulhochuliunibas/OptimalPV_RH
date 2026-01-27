@@ -45,8 +45,8 @@ class DataAggScenario_Settings:
     GWR_building_cols: List[str]    = field(default_factory=lambda: ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE',
                                             'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
                                             'GANZWHG',
-                                            'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
-                                            'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2',
+                                            'GWAERZH1', 'GENH1',# 'GWAERSCEH1', 'GWAERDATH1',
+                                            'GWAERZH2', 'GENH2',# 'GWAERSCEH2', 'GWAERDATH2',
                                             'GEBF', 'GAREA'])
     GWR_dwelling_cols: List[str]    = field(default_factory=lambda: ['EGID', 'EWID', 'WAZIM', 'WAREA', ])
     GWR_DEMAND_proxy: str           = 'GAREA'
