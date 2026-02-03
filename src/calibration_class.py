@@ -125,7 +125,7 @@ class Calibration_Settings:
                                                 'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
                                                 'GANZWHG',
                                                 'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
-                                                'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2',
+                                                # 'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2',
                                                 'GEBF', 'GAREA'])
         GWR_dwelling_cols: List[str]    = field(default_factory=lambda: ['EGID', 'EWID', 'WAZIM', 'WAREA', ])
         GWR_GSTAT: List[str]            = field(default_factory=lambda: [
@@ -201,7 +201,7 @@ class Calibration_Settings:
                                                                 'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
                                                                 'GANZWHG',
                                                                 'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
-                                                                'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2',
+                                                                # 'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2',
                                                                 'GEBF', 'GAREA'
                                                             ])
         
@@ -2278,8 +2278,8 @@ class Calibration:
                     pl.col('GSTAT').first().alias('GSTAT'),
                     pl.col('GWAERZH1').first().alias('GWAERZH1'),
                     pl.col('GENH1').first().alias('GENH1'),
-                    pl.col('GWAERZH2').first().alias('GWAERZH2'),
-                    pl.col('GENH2').first().alias('GENH2'),
+                    # pl.col('GWAERZH2').first().alias('GWAERZH2'),
+                    # pl.col('GENH2').first().alias('GENH2'),
                     
                     pl.col('InitialPower').first().alias('InitialPower'),
                     pl.col('TotalPower').first().alias('TotalPower'), 
@@ -2345,10 +2345,13 @@ class Calibration:
         # data import + transform 
         df = pd.read_csv(f'{self.sett.calib_scen_path}'f'/{self.sett.name_calib_subscen}_df_approach2.csv')
 
-        categorical_cols = ['GBAUJ', 'GKLAS', 'GSTAT', 'GWAERZH1', 'GENH1', 'GWAERZH2', 'GENH2']
+        categorical_cols = ['GBAUJ', 'GKLAS', 'GSTAT', 
+                            'GWAERZH1', 'GENH1', 
+                            # 'GWAERZH2', 'GENH2'
+                            ]
         df[categorical_cols] = df[categorical_cols].astype('str')
         df['GWAERZH1_str'] = np.where(df['GWAERZH1'].isin(['7410', '7411']), 'heatpump', 'no_heatpump')
-        df['GWAERZH2_str'] = np.where(df['GWAERZH2'].isin(['7410', '7411']), 'heatpump', 'no_heatpump')
+        # df['GWAERZH2_str'] = np.where(df['GWAERZH2'].isin(['7410', '7411']), 'heatpump', 'no_heatpump')
 
 
         # filtering + splitting 
@@ -2523,9 +2526,9 @@ class Calibration:
                 'GWAERZH1': 'category',
                 'GENH1': 'category',
                 'GWAERZH1_str': 'category',
-                'GWAERZH2': 'category',
-                'GENH2': 'category',
-                'GWAERZH2_str': 'category',
+                # 'GWAERZH2': 'category',
+                # 'GENH2': 'category',
+                # 'GWAERZH2_str': 'category',
                 # 'InitialPower': 'float64',
                 'TotalPower': 'float64',
                 'elecpri_Rp_kWh': 'float64',
@@ -2981,23 +2984,30 @@ if __name__ == '__main__':
                 'visualize_ML_rfr_TF': True,
                 'reg2_rfrname_dfsuffix_dicts': {
 
-                    'mod6': {
-                        'rfr_mod_name': '_rfr6', 
-                        'df_suffix': '_pvroof20to70',
+                    'mod1a': {
+                        'rfr_mod_name': '_rfr1a', 
+                        'df_suffix': '',
 
-                        'random_state':         24,    # default: None  # | None,    
+                        'random_state':         None,    # default: None  # | None,    
                         'n_jobs':               -1,      # default: None  # | -1,  
                         'cross_validation':     None, 
-                        'n_estimators':         5  ,    # default: 100   # | 1,       
-                        'min_samples_split':    2     ,    # default: 2     # | 1000,    
-                        'max_depth':            30   ,    # default: None  # | 3,       
-                        'kWp_segments': [
-                            ( 3, 10, 'segment_dist' ),
-                            (10, 15, 'full_dist' ), 
-                            (15, 20, 'full_dist' ), 
-                        ], 
-                    }, 
+                        'n_estimators':         600  ,    # default: 100   # | 1,       
+                        'min_samples_split':    2    ,    # default: 2     # | 1000,    
+                        'max_depth':            40   ,    # default: None  # | 3,       
+                        'kWp_segments': [(None, None, 'full_dist')],
+                        }, 
+                    'mod2b': {
+                        'rfr_mod_name': '_rfr2b', 
+                        'df_suffix': '_pvroof20to70',
 
+                        'random_state':         None,    # default: None  # | None,    
+                        'n_jobs':               -1,      # default: None  # | -1,  
+                        'cross_validation':     None, 
+                        'n_estimators':         600  ,    # default: 100   # | 1,       
+                        'min_samples_split':    2     ,    # default: 2     # | 1000,    
+                        'max_depth':            40   ,    # default: None  # | 3,
+                        'kWp_segments': [(None, None, 'full_dist')],
+                       }, 
                 },},
 
         ), 
