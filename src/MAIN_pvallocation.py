@@ -525,7 +525,7 @@ class PVAllocScenario_Settings:
 
     # PART III: settings for Grid Optimal PV Expansion --------------------
     # region part III: grid optimal pv expansion settings
-    OPTIMspecs_gridnode_subsample: str                = 'max_node', # 'max_node' / 'all_nodes_pyparallel / 'all_nodes_loop'/ 'custom-> grid_node: str'
+    OPTIMspecs_gridnode_subsample: str                = 'all_nodes_pyparallel', # 'max_node' / 'all_nodes_pyparallel / 'all_nodes_loop'/ 'custom-> grid_node: str'
     # OPTIMspecs_solving_method: str                    = 'greedy'       # 'greedy' / 'pulp'
     OPTIMspecs_solving_method: List[str]              = field(default_factory=lambda: [
                                                     'greedy', 'pulp',
@@ -567,7 +567,7 @@ class PVAllocScenario:
     # ------------------------------------------------------------------------------------------------------
     # INITIALIZATION of PV Allocatoin Scenario
     # ------------------------------------------------------------------------------------------------------
-    def run_pvalloc_initalization(self):
+    def run_pvalloc_initialization(self):
         """
         Input:
             > PVAllocScenario class containing a data class (_Settings) which specifies all scenraio settings (e.g. also path to preprep data directory where all data for the
@@ -1060,7 +1060,7 @@ class PVAllocScenario:
         # CREATE MC DIR + TRANSFER INITIAL DATA FILES ----------------------------------------------
         # (identical to mcalgo, because then plots for visualization can be kept the same!)
 
-        self.sett.optim_path = os.path.join(self.sett.name_dir_export_path, 'zOptimExpa')
+        self.sett.optim_path = os.path.join(self.sett.name_dir_export_path, 'zMC1_OptimExpa')
         os.makedirs(self.sett.optim_path, exist_ok=True)
 
         fresh_initial_paths = [f'{self.sett.name_dir_export_path}/{file}' for file in self.sett.MCspec_fresh_initial_files]
@@ -1601,7 +1601,7 @@ class PVAllocScenario:
         chapter_to_logfile(f'start MAIN_pvalloc_GridOptim_Expansion for : {self.sett.name_dir_export}', self.sett.log_name, overwrite_file=True)
         print_to_logfile('*model allocation specifications*:', self.sett.log_name)
 
-        self.sett.optim_path = os.path.join(self.sett.name_dir_export_path, 'zOptimExpa')
+        self.sett.optim_path = os.path.join(self.sett.name_dir_export_path, 'zMC1_OptimExpa')
         safety_counter_max = self.sett.ALGOspec_while_inst_counter_max
 
 
@@ -5589,8 +5589,8 @@ if __name__ == '__main__':
 
             run_pvalloc_initalization_TF    = False,
             run_pvalloc_mcalgorithm_TF      = False,
-            run_gridoptimized_orderinst_TF  = True,
-            # run_gridoptimized_expansion_TF  = True,
+            # run_gridoptimized_orderinst_TF  = True,
+            run_gridoptimized_expansion_TF  = True,
             
             OPTIMspecs_solving_method          = ['pulp'], 
             # OPTIMspecs_gridnode_subsample      = '731',
@@ -5610,7 +5610,7 @@ if __name__ == '__main__':
         # sleep_time = np.random.choice(sleep_range)
         # time.sleep(sleep_time)
         if pvalloc_class.sett.run_pvalloc_initalization_TF:
-            pvalloc_class.run_pvalloc_initalization()
+            pvalloc_class.run_pvalloc_initialization()
         
         if pvalloc_class.sett.run_pvalloc_mcalgorithm_TF:
             pvalloc_class.run_pvalloc_mcalgorithm()

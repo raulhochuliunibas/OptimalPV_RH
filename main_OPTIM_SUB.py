@@ -55,27 +55,50 @@ if __name__ == "__main__":
 
             # OPTIMspecs_gridnode_subsample                        = grid_node_str,
         ) 
+    SUB_bfs_name = 'pvalloc_10nbfs_SUB'
+    SUB_bfs_list = [
+        # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
+        2613, 2782, 2618, 2786, 2785, 
+        2772, 2761, 2743, 2476, 2768,
+    ]
 
-    pvalloc_scen = make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, 'pvalloc_29nbfs_30y5_gridoptim_max', 
+
+    pvalloc_scen_list =[
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{SUB_bfs_name}_gridoptim_max', 
+                                 bfs_numbers                       = SUB_bfs_list,
                                  run_pvalloc_initalization_TF    = True,
                                  run_pvalloc_mcalgorithm_TF      = False,
                                  run_gridoptimized_orderinst_TF  = True,
                                  run_gridoptimized_expansion_TF  = True,
                                  OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
                                  OPTEXPApecs_apply_gridoptim_order_TF     = True,
-                                 )
-           
-    scen_class = PVAllocScenario(pvalloc_scen)
-    scen_class.sett.slurm_full_id        = slurm_full_id
+                                 ), 
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{SUB_bfs_name}_gridoptim_loop_max', 
+                                 bfs_numbers                       = SUB_bfs_list,
+                                 run_pvalloc_initalization_TF    = True,
+                                 run_pvalloc_mcalgorithm_TF      = False,
+                                 run_gridoptimized_orderinst_TF  = True,
+                                 run_gridoptimized_expansion_TF  = True,
+                                 OPTIMspecs_gridnode_subsample           = 'all_nodes_loop', 
+                                 OPTEXPApecs_apply_gridoptim_order_TF     = True,
+                                 ), 
+    ]
+                                 
 
-    if scen_class.sett.run_pvalloc_initalization_TF:
-        scen_class.run_pvalloc_initialization()
 
-    if scen_class.sett.run_gridoptimized_orderinst_TF:
-        scen_class.run_gridoptimized_orderinst()
+    for pvalloc_scen in pvalloc_scen_list:
+            
+        scen_class = PVAllocScenario(pvalloc_scen)
+        scen_class.sett.slurm_full_id        = slurm_full_id
 
-    if scen_class.sett.run_gridoptimized_expansion_TF:
-        scen_class.run_gridoptimized_expansion()
+        if scen_class.sett.run_pvalloc_initalization_TF:
+            scen_class.run_pvalloc_initialization()
+
+        if scen_class.sett.run_gridoptimized_orderinst_TF:
+            scen_class.run_gridoptimized_orderinst()
+
+        if scen_class.sett.run_gridoptimized_expansion_TF:
+            scen_class.run_gridoptimized_expansion()
 
     print('done')
         

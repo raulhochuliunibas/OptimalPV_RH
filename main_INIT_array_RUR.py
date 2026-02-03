@@ -23,7 +23,7 @@ if __name__ == "__main__":
             scen_class.sett.slurm_full_id        = slurm_full_id
             scen_class.sett.pvalloc_scen_index   = pvalloc_scen_index
     
-            scen_class.run_pvalloc_initalization()
+            scen_class.run_pvalloc_initialization()
             scen_class.run_pvalloc_mcalgorithm()
     
         print('done')

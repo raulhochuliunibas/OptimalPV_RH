@@ -7,8 +7,7 @@ from main_INIT_array import get_subscen_list
 
 if __name__ == "__main__":
 
-    pvalloc_scen_list = get_subscen_list('LRG')
-    # pvalloc_scen_list = get_subscen_list('LRG_final')
+    pvalloc_scen_list = get_subscen_list('DEV')
 
     slurm_job_id = os.environ.get('SLURM_ARRAY_JOB_ID_ENV', 'unknown')
     slurm_array_id = os.environ.get('SLURM_ARRAY_TASK_ID_ENV', 'unknown')
@@ -24,8 +23,17 @@ if __name__ == "__main__":
             scen_class.sett.slurm_full_id        = slurm_full_id
             scen_class.sett.pvalloc_scen_index   = pvalloc_scen_index
     
-            scen_class.run_pvalloc_initialization()
-            scen_class.run_pvalloc_mcalgorithm()
-    
+            if scen_class.sett.run_pvalloc_initalization_TF:
+                scen_class.run_pvalloc_initialization()
+
+            if scen_class.sett.run_pvalloc_mcalgorithm_TF:
+                scen_class.run_pvalloc_mcalgorithm()
+
+            if scen_class.sett.run_gridoptimized_orderinst_TF:
+                scen_class.run_gridoptimized_orderinst()
+
+            if scen_class.sett.run_gridoptimized_expansion_TF:
+                scen_class.run_gridoptimized_expansion()
+        
         print('done')
         
