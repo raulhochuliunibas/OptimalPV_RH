@@ -1820,6 +1820,106 @@ class PVAllocScenario:
         return formatted_time
 
 
+    def get_topo_filter_tag_mapping(self, topo_func):
+        # get topo filter df
+        topo_filter_list = []
+        for k,v in topo_func.items():
+            for k_dfuid, v_dfuid in v['solkat_partitions'].items():
+                row = {
+                    'EGID': k,
+                    'df_uid': k_dfuid, 
+                    'FLAECHE': v_dfuid['FLAECHE'],
+                    'AUSRICHTUNG': v_dfuid['AUSRICHTUNG'],
+                    'NEIGUNG': v_dfuid['NEIGUNG'],
+                }
+                topo_filter_list.append(row)
+        
+        topo_filter = pl.DataFrame(topo_filter_list)
+        
+        # get flaeche ratios
+        flaeche_by_egid = topo_filter.group_by('EGID').agg([
+            pl.col('FLAECHE').sum().alias('total_flaeche_by_egid')
+        ])  
+        topo_filter = topo_filter.join(flaeche_by_egid, on='EGID', how='left')
+
+        topo_filter = topo_filter.with_columns([
+            (pl.col('FLAECHE') / pl.col('total_flaeche_by_egid')).alias('FLAECHE_ratio')
+        ])
+
+        # get dfuid specific filters -----
+        topo_filter = topo_filter.with_columns([
+            # EAST WEST
+            pl.when(
+                (pl.col('FLAECHE_ratio') >= 0.5 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_50pr'),
+            pl.when(
+                (pl.col('FLAECHE_ratio') >= 0.5 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_50pr'),
+
+            pl.when(
+                (pl.col('FLAECHE_ratio') >= 0.4 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_40pr'),
+            pl.when(
+                (pl.col('FLAECHE_ratio') >= 0.4 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_40pr'),
+            
+            pl.when(
+                (pl.col('FLAECHE_ratio') >= 0.35 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_35pr'),
+            pl.when(
+                (pl.col('FLAECHE_ratio') >= 0.35 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_35pr'),
+
+            # SOUTH
+            pl.when(
+                (pl.col('FLAECHE_ratio') >= 0.5) & (pl.col('AUSRICHTUNG') > -45) & (pl.col('AUSRICHTUNG') < 45)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_south_50pr'),
+
+            pl.when(
+                (pl.col('FLAECHE_ratio') >= 0.4) & (pl.col('AUSRICHTUNG') > -45) & (pl.col('AUSRICHTUNG') < 45)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_south_40pr'),
+
+        ])
+
+        #  groupby egid + derive filter_tags
+        topo_filter_egid = topo_filter.group_by('EGID').agg([
+            pl.col('filt_dfuid_east_50pr').any().alias('filt_dfuid_east_50pr'),
+            pl.col('filt_dfuid_east_40pr').any().alias('filt_dfuid_east_40pr'),
+            pl.col('filt_dfuid_east_35pr').any().alias('filt_dfuid_east_35pr'),
+
+            pl.col('filt_dfuid_west_50pr').any().alias('filt_dfuid_west_50pr'),
+            pl.col('filt_dfuid_west_40pr').any().alias('filt_dfuid_west_40pr'), 
+            pl.col('filt_dfuid_west_35pr').any().alias('filt_dfuid_west_35pr'),
+
+            pl.col('filt_dfuid_south_50pr').any().alias('filt_dfuid_south_50pr'),
+            pl.col('filt_dfuid_south_40pr').any().alias('filt_dfuid_south_40pr'),
+        ])
+
+        # get egid specific filters -----
+        topo_filter_egid = topo_filter_egid.with_columns([
+            pl.when(
+                (pl.col('filt_dfuid_east_40pr') == True) & (pl.col('filt_dfuid_west_40pr') == True)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastwest_80pr'),              
+            pl.when(
+                (pl.col('filt_dfuid_east_35pr') == True) & (pl.col('filt_dfuid_west_35pr') == True)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastwest_70pr'),
+            pl.when(
+                (pl.col('filt_dfuid_east_50pr') == True) | (pl.col('filt_dfuid_west_50pr') == True)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastORwest_50pr'),
+            pl.when(
+                (pl.col('filt_dfuid_east_40pr') == True) | (pl.col('filt_dfuid_west_40pr') == True)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastORwest_40pr'),
+
+            pl.when(
+                (pl.col('filt_dfuid_south_50pr') == True)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__south_50pr'),
+            pl.when(
+                (pl.col('filt_dfuid_south_40pr') == True)
+            ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__south_40pr'),
+        ])
+
+        return topo_filter_egid
+
 
     # INITIALIZATION ---------------------------------------------------------------------------
     if True:
@@ -5050,133 +5150,10 @@ class PVAllocScenario:
             # concat all egid_agg
             npv_df = pl.concat(agg_npv_df_list).clone()
 
-          
-            # add roof specific filter tag VERSION 1 -----------------
-            """
-            npv_df = npv_df.with_columns(
-                filter_tag__south_nr = (
-                    (pl.col("AUSRICHTUNG_mean") > -45) & 
-                    (pl.col("AUSRICHTUNG_mean") < 45)
-                ), 
-                filter_tag__south_1r = (
-                    (pl.col("n_dfuid") == 1) &
-                    (pl.col("AUSRICHTUNG_mean") > -45) & 
-                    (pl.col("AUSRICHTUNG_mean") < 45)
-                ), 
-
-                filter_tag__eastwest_2r = (
-                    (pl.col("n_dfuid") == 2) &
-                    (pl.col("AUSRICHTUNG_mean") > -30) &
-                    (pl.col("AUSRICHTUNG_mean") < 30)
-                ),
-                filter_tag__eastwest_nr = (
-                    (pl.col("n_dfuid") >2) &
-                    (pl.col("AUSRICHTUNG_mean") > -30) &
-                    (pl.col("AUSRICHTUNG_mean") < 30)
-                ),
-            )
-            """
 
             # add roof specific filter tag VERSION 2 -----------------
-            
-            # get topo filter df
-            topo_filter_list = []
-            for k,v in topo.items():
-                for k_dfuid, v_dfuid in v['solkat_partitions'].items():
-                    row = {
-                        'EGID': k,
-                        'df_uid': k_dfuid, 
-                        'FLAECHE': v_dfuid['FLAECHE'],
-                        'AUSRICHTUNG': v_dfuid['AUSRICHTUNG'],
-                        'NEIGUNG': v_dfuid['NEIGUNG'],
-                    }
-                    topo_filter_list.append(row)
-            
-            topo_filter = pl.DataFrame(topo_filter_list)
-            
-            # get flaeche ratios
-            flaeche_by_egid = topo_filter.group_by('EGID').agg([
-                pl.col('FLAECHE').sum().alias('total_flaeche_by_egid')
-            ])  
-            topo_filter = topo_filter.join(flaeche_by_egid, on='EGID', how='left')
+            topo_filter_egid = self.get_topo_filter_tag_mapping(topo)
 
-            topo_filter = topo_filter.with_columns([
-                (pl.col('FLAECHE') / pl.col('total_flaeche_by_egid')).alias('FLAECHE_ratio')
-            ])
-
-            # get dfuid specific filters -----
-            topo_filter = topo_filter.with_columns([
-                # EAST WEST
-                pl.when(
-                    (pl.col('FLAECHE_ratio') >= 0.5 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_50pr'),
-                pl.when(
-                    (pl.col('FLAECHE_ratio') >= 0.5 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_50pr'),
-
-                pl.when(
-                    (pl.col('FLAECHE_ratio') >= 0.4 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_40pr'),
-                pl.when(
-                    (pl.col('FLAECHE_ratio') >= 0.4 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_40pr'),
-                
-                pl.when(
-                    (pl.col('FLAECHE_ratio') >= 0.35 ) & (pl.col('AUSRICHTUNG') > -135) & (pl.col('AUSRICHTUNG') < -45)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_east_35pr'),
-                pl.when(
-                    (pl.col('FLAECHE_ratio') >= 0.35 ) & (pl.col('AUSRICHTUNG') > 45) & (pl.col('AUSRICHTUNG') < 135)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_west_35pr'),
-
-                # SOUTH
-                pl.when(
-                    (pl.col('FLAECHE_ratio') >= 0.5) & (pl.col('AUSRICHTUNG') > -45) & (pl.col('AUSRICHTUNG') < 45)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_south_50pr'),
-
-                pl.when(
-                    (pl.col('FLAECHE_ratio') >= 0.4) & (pl.col('AUSRICHTUNG') > -45) & (pl.col('AUSRICHTUNG') < 45)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filt_dfuid_south_40pr'),
-
-            ])
-
-            #  groupby egid + derive filter_tags
-            topo_filter_egid = topo_filter.group_by('EGID').agg([
-                pl.col('filt_dfuid_east_50pr').any().alias('filt_dfuid_east_50pr'),
-                pl.col('filt_dfuid_east_40pr').any().alias('filt_dfuid_east_40pr'),
-                pl.col('filt_dfuid_east_35pr').any().alias('filt_dfuid_east_35pr'),
-
-                pl.col('filt_dfuid_west_50pr').any().alias('filt_dfuid_west_50pr'),
-                pl.col('filt_dfuid_west_40pr').any().alias('filt_dfuid_west_40pr'), 
-                pl.col('filt_dfuid_west_35pr').any().alias('filt_dfuid_west_35pr'),
-
-                pl.col('filt_dfuid_south_50pr').any().alias('filt_dfuid_south_50pr'),
-                pl.col('filt_dfuid_south_40pr').any().alias('filt_dfuid_south_40pr'),
-            ])
-
-            # get egid specific filters -----
-            topo_filter_egid = topo_filter_egid.with_columns([
-                pl.when(
-                    (pl.col('filt_dfuid_east_40pr') == True) & (pl.col('filt_dfuid_west_40pr') == True)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastwest_80pr'),              
-                pl.when(
-                    (pl.col('filt_dfuid_east_35pr') == True) & (pl.col('filt_dfuid_west_35pr') == True)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastwest_70pr'),
-                pl.when(
-                    (pl.col('filt_dfuid_east_50pr') == True) | (pl.col('filt_dfuid_west_50pr') == True)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastORwest_50pr'),
-                pl.when(
-                    (pl.col('filt_dfuid_east_40pr') == True) | (pl.col('filt_dfuid_west_40pr') == True)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__eastORwest_40pr'),
-
-                pl.when(
-                    (pl.col('filt_dfuid_south_50pr') == True)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__south_50pr'),
-                pl.when(
-                    (pl.col('filt_dfuid_south_40pr') == True)
-                ).then(pl.lit(True)).otherwise(pl.lit(False)).alias('filter_tag__south_40pr'),
-            ])
-
-            # join to npv_df
             npv_df = npv_df.join(topo_filter_egid, on='EGID', how='left')
 
             
@@ -5599,22 +5576,33 @@ if __name__ == '__main__':
 
     ) 
     LRG_bfs_name = 'pvalloc_29nbfs_30y5'
+    RUR_bfs_name = 'pvalloc_16nbfs_RUR'
+    RUR_bfs_list =[
+        # RURAL
+        2612, 2889, 2883, 2621, 2622,
+        2620, 2615, 2614, 2616, 2480,
+        2617, 2611, 2788, 2619, 2783, 2477, 
+    ]
 
 
     bfs_mini_scen_list = [ 
+    #     make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
+    #         # bfs_numbers                     = bfs_mini_list,
+    #         run_pvalloc_initalization_TF    = True,
+    #         run_pvalloc_mcalgorithm_TF      = True,
+    #         run_gridoptimized_orderinst_TF  = False,
+    #         run_gridoptimized_expansion_TF  = False,
+    #     ), 
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
-            bfs_numbers                     = bfs_mini_list,
-            run_pvalloc_initalization_TF    = False,
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_gridopt_max',
+            # bfs_numbers                     = bfs_mini_list,
+            # run_pvalloc_initalization_TF    = True,
             run_pvalloc_mcalgorithm_TF      = False,
-            run_gridoptimized_orderinst_TF= True,
-        ), 
-
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_opt',
-            bfs_numbers                     = bfs_mini_list,
-            run_pvalloc_initalization_TF    = True,
-            run_pvalloc_mcalgorithm_TF      = False,
-            run_gridoptimized_orderinst_TF= True,
+            run_gridoptimized_orderinst_TF  = True,
+            run_gridoptimized_expansion_TF  = True,
+            # OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
+            OPTIMspecs_gridnode_subsample           = 'max_node', 
+            OPTEXPApecs_apply_gridoptim_order_TF     = True,
 
         ), 
     ]
@@ -5637,7 +5625,21 @@ if __name__ == '__main__':
 
     ]
 
-    pvalloc_scen_list = LRG_scen_list
+    DEV_scen_list = [
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}_max_gridoptim', 
+                                 bfs_numbers                       = RUR_bfs_list,
+                                 run_pvalloc_initalization_TF    = False,
+                                 run_pvalloc_mcalgorithm_TF      = False,
+                                 run_gridoptimized_orderinst_TF  = False,
+                                 run_gridoptimized_expansion_TF  = True,
+                                 OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
+                                 OPTEXPApecs_apply_gridoptim_order_TF     = True,
+                                 ),
+    ]
+
+
+
+    pvalloc_scen_list = bfs_mini_scen_list
 
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
@@ -5645,6 +5647,7 @@ if __name__ == '__main__':
         # sleep_range = list(range(10, 61, 5))
         # sleep_time = np.random.choice(sleep_range)
         # time.sleep(sleep_time)
+
         if pvalloc_class.sett.run_pvalloc_initalization_TF:
             pvalloc_class.run_pvalloc_initialization()
         
@@ -5657,10 +5660,6 @@ if __name__ == '__main__':
         if pvalloc_class.sett.run_gridoptimized_expansion_TF:
             pvalloc_class.run_gridoptimized_expansion()
         
-        # pvalloc_self.sett.run_pvalloc_postprocess()
 
 
-print('')
-if False: 
-    df = pd.read_parquet(r"C:\Users\hocrau00\Downloads\pred_inst_df_9.parquet")
-    df.to_csv(r"C:\Users\hocrau00\Downloads\pred_inst_df_9.csv")
+    print('... end of <MAIN_pvallocation.py> ...')
