@@ -108,7 +108,7 @@ class PVAllocScenario_Settings:
                                                             'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
                                                             'GEBF', 'GAREA', 
                                                             'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
-                                                            'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2'
+                                                            # 'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2'
                                                         ])
     
     GWRspec_dwelling_cols: List[str]                    = field(default_factory=list)
@@ -533,7 +533,9 @@ class PVAllocScenario_Settings:
     OPTIMspecs_greedy_selection_strategy: str         = 'peak_efficient'       # # - 'peak_efficient': Select houses with lowest peak contribution|  - 'energy_max': Select houses with highest energy contribution|  - 'random': Random selection (for baseline comparison)| # endregion
     OPTIMspecs_peak_ext_limit_kW: float               = 0
     OPTIMspecs_cumulative_limit_kWh: float            = 0
-    OPTIMspecs_apply_gridoptim_order_TF: bool         = False  # similar to ALGOspec_subselec_filter_criteria, npv_df is sorted, such that min(grid_optim_inst_order) rows are always picked first. 
+    
+    OPTEXPApecs_apply_gridoptim_order_TF: bool         = False  # similar to ALGOspec_subselec_filter_criteria, npv_df is sorted, such that min(grid_optim_inst_order) rows are always picked first. 
+    OPTEXPApecs_solving_method: str                    = 'pulp'       # 'greedy' / 'pulp'
     
 
         
@@ -622,6 +624,8 @@ class PVAllocScenario:
         if hasattr(self.sett, 'slurm_full_id'):
             with open(f'{self.sett.name_dir_export_path}/0_HPC_job_{self.sett.slurm_full_id}.txt', 'w') as f:
                 f.write(f'Combined: {self.sett.slurm_full_id}\n')
+        if hasattr(self.sett, 'pvalloc_scen_index'):
+            with open(f'{self.sett.name_dir_export_path}/0_HPC_job_{self.sett.slurm_full_id}.txt', 'a') as f:
                 f.write(f'PVAlloc Scenario Index: {self.sett.pvalloc_scen_index}\n')
 
 
@@ -1040,7 +1044,7 @@ class PVAllocScenario:
         """
 
         # SETUP -----------------------------------------------------------------------------
-        self.sett.log_name = os.path.join(self.sett.name_dir_export_path, 'pvalloc_OptExpansion_log.txt')
+        self.sett.log_name = os.path.join(self.sett.name_dir_export_path, 'pvalloc_OptOrderinst_log.txt')
         self.sett.timing_marks_csv_path = os.path.join(self.sett.name_dir_export_path, 'timing_marks.csv')
 
         # create log file
@@ -1445,8 +1449,14 @@ class PVAllocScenario:
                         
                         node_subdf_list.append(egid_agg)
 
-
             topo_node_subdf = pl.concat(node_subdf_list)
+
+
+            # add roof specific filter tag VERSION 2 -----------------
+            topo_filter_egid = self.get_topo_filter_tag_mapping(topo)
+            # npv_df = npv_df.join(topo_filter_egid, on='EGID', how='left')
+            topo_node_subdf = topo_node_subdf.join(topo_filter_egid, on='EGID', how='left')
+            topo_node_df = topo_node_df.join(topo_filter_egid, on='EGID', how='left')
 
             # export node_subdf
             topo_node_subdf.write_parquet(f'{self.sett.optim_path}/topo_node_subdf.parquet')
@@ -1502,6 +1512,7 @@ class PVAllocScenario:
                     pl.col('n_dfuid').first().alias('n_dfuid'),
                     pl.col('grid_node').first().alias('grid_node'),
                     pl.col('TotalPower').first().alias('TotalPower'),
+                    pl.col('FLAECHE').first().alias('FLAECHE'),
                     pl.col('pred_instPower').first().alias('pred_instPower'),
                     pl.col('estim_pvinstcost_chf').first().alias('estim_pvinstcost_chf'),
                     pl.col('NPV_uid').first().alias('NPV_uid'),
@@ -1586,9 +1597,9 @@ class PVAllocScenario:
                     except Exception as e:
                         print(f'Error processing node {node}: {e}')
 
-            
 
-        print(f'OptExpa - finished PV allocation optimization expansion scenario for: {self.sett.name_dir_export}') #, datetime.datetime.now(), np.nan, '-')
+        chapter_to_logfile(f'end MAIN_pvalloc_GridOptim_Orderinst for : {self.sett.name_dir_export}', self.sett.log_name, overwrite_file=True)
+
                 
 
     def run_gridoptimized_expansion(self):
@@ -1606,13 +1617,21 @@ class PVAllocScenario:
 
 
         # CONCATENATE NPV_DF -----------------------------------------------------------------------------    
-
+        optorder_paths = glob.glob(f'{self.sett.optim_path}/grid_optorder/grid_optorder_df_{self.sett.OPTEXPApecs_solving_method}_node*.parquet')
+        npv_df_list = []
+        for path in optorder_paths:
+            npv_df_part = pl.read_parquet(path)
+            npv_df_list.append(npv_df_part)
+        npv_df = pl.concat(npv_df_list)
+        npv_df.write_parquet(f'{self.sett.optim_path}/npv_df.parquet')
 
 
         # ALLOCATION ALGORITHM -----------------------------------------------------------------------------    
+        start_expan_algo = datetime.datetime.now()
         trange_prediction_df = pd.read_parquet(f'{self.sett.optim_path}/trange_prediction.parquet')
         trange_prediction = [m.date() for m in trange_prediction_df['date']]
         constrcapa = pd.read_parquet(f'{self.sett.optim_path}/constrcapa.parquet')
+
 
         for i_m, m in enumerate(trange_prediction):
             i_m = i_m + 1    
@@ -1624,6 +1643,7 @@ class PVAllocScenario:
 
 
             # GRIDPREM + NPV_DF UPDATE ==========
+            # update gridnode_df one last time, after npv_df is empty to still capture full effect of expansion
             start_time_update_gridprem = datetime.datetime.now()
             print_to_logfile('- START update gridprem', self.sett.log_name)
             self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.optim_path, i_m, m)
@@ -1693,18 +1713,33 @@ class PVAllocScenario:
                     if any([constr_m_TF, constr_y_TF, safety_TF]):
                         print_str = 'exit while loop -> '
                         if constr_m_TF:
-                            print_str += f'\n* exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built; '                    
+                            print_str += f'\n\t* exceeded constr_limit month (constr_m_TF:{constr_m_TF}), {round(constr_built_m,1)} of {round(constr_capa_m,1)} kW capacity built; '                    
                         if constr_y_TF:
-                            print_str += f'\n* exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built; '
+                            print_str += f'\n\t* exceeded constr_limit year (constr_y_TF:{constr_y_TF}), {round(constr_built_y,1)} of {round(constr_capa_y,1)} kW capacity built; '
                         if safety_TF:
                             if npv_df_empty_TF:
-                                print_str += f'\n* exceeded safety counter (safety_TF:{safety_TF}), NO MORE EGID to install PV on; '
+                                print_str += f'\n\t* exceeded safety counter (safety_TF:{safety_TF}), NO MORE EGID to install PV on; '
                             else:
-                                print_str += f'\n* exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}; '
+                                print_str += f'\n\t* exceeded safety counter (safety_TF:{safety_TF}), {safety_counter} rounds for safety counter max of: {safety_counter_max}; '
                         checkpoint_to_logfile(print_str, self.sett.log_name, 0, True)
 
 
-            
+            end_time_installation_whileloop = datetime.datetime.now()
+            checkpoint_to_logfile(f'{inst_counter} installations installed', self.sett.log_name, 0, True)
+            print_to_logfile(f'- END inst while loop: {self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop)} (hh:mm:ss.s)', self.sett.log_name)
+            self.mark_to_timing_csv('GridOptim Expansion', f'end inst_whileloop_{i_m}', end_time_installation_whileloop, self.timediff_to_str_hhmmss(start_time_installation_whileloop, end_time_installation_whileloop),  '-')  #if i_m < 7 else None
+            checkpoint_to_logfile(f'end month allocation, runtime: {datetime.datetime.now() - start_allocation_month} (hh:mm:ss.s)', self.sett.log_name, 0, True)                    
+
+
+        # END ---------------------------------------------------
+        end_expan_algo = datetime.datetime.now()
+        self.mark_to_timing_csv('MCalgo', 'END_MC_algo', end_expan_algo, self.timediff_to_str_hhmmss(start_expan_algo, end_expan_algo),  '-')
+
+        if 'start_total_runtime' in dir(self.sett): 
+            self.mark_to_timing_csv('TOTAL', 'END_total_runtime', end_expan_algo, self.timediff_to_str_hhmmss(self.sett.start_total_runtime, end_expan_algo),  '-')
+            os.rename(self. sett.timing_marks_csv_path, f'{self.sett.timing_marks_csv_path.split(".cs")[0]}_{self.sett.name_dir_export}.csv')
+
+        chapter_to_logfile(f'end MAIN_pvalloc_GridOptim_Expansion for : {self.sett.name_dir_export} \n Runtime (hh:mm:ss):{datetime.datetime.now() - start_expan_algo}', self.sett.log_name, overwrite_file=False)
 
 
   
@@ -5269,7 +5304,7 @@ class PVAllocScenario:
 
             
             #  SUBSELECTION GRIDOPTIM installation order scenario ----------------
-            if self.sett.OPTIMspecs_apply_gridoptim_order_TF:
+            if self.sett.OPTEXPApecs_apply_gridoptim_order_TF and 'OptimExpa' in subdir_path:
                 min_grid_optim_inst_order = npv_df['grid_optim_inst_order'].min()
                 npv_df = copy.deepcopy(npv_df.loc[npv_df['grid_optim_inst_order'] == min_grid_optim_inst_order])
 
@@ -5436,6 +5471,7 @@ class PVAllocScenario:
 
 
             # export by Month ------------------------------------------
+            os.makedirs(f'{subdir_path}/pred_npv_inst_by_M', exist_ok=True)
             pred_inst_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{i_m}.parquet')
             pred_inst_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{i_m}.csv') if self.sett.export_csvs else None
             with open(f'{subdir_path}/pred_npv_inst_by_M/topo_{i_m}.json', 'w') as f:
@@ -5516,7 +5552,7 @@ if __name__ == '__main__':
         # default bfs
         2641, 2615, 
         # critical nodes - max npv
-        # 2762, 2771, 
+        2762, 2771, 
         # critical nodes - ew 
         # 2768, 2769,
     ]    
