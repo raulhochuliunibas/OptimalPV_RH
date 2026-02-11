@@ -13,6 +13,7 @@ import json
 import requests
 from shapely.geometry import Point
 from shapely.ops import unary_union
+from shapely import wkt 
 import plotly.express as px
 import itertools
 
@@ -23,7 +24,7 @@ from typing_extensions import List, Dict
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr
-from src.api_keys import get_pvtarif_key, get_primeo_path
+from src.api_keys import get_pvtarif_key, get_dso_path
 
 
 
@@ -63,7 +64,8 @@ class DataAggScenario_Settings:
                                             '1276', # GKLAS - 1276: structure for animal keeping (most likely still one owner)
                                             '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
                                             ])
-    GWR_GBAUJ_minmax: List[int]     = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
+    # GBAUJ not applicable because it drops too many houses with GBAUJ: NA, which are still existing, GSTAT: 1004
+    # GWR_GBAUJ_minmax: List[int]     = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
     GWR_GWAERZH: List[str]          = field(default_factory=lambda: ['7410', '7411',])                       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
     GWR_AREtypology : Dict          = field(default_factory=lambda:  {
                                             'Urban': [1, 2, 4, ],
@@ -204,6 +206,9 @@ class DataAggScenario:
             self.sql_gwr_data()
             self.sql_gwr_ALL_CH_summary()
 
+            subchapter_to_logfile('pre-prep data: ADJUST SOLKAT for MISSIGN EGIDS', self.sett.log_name)
+            self.preprep_solkat_adjust_for_missing_egids()
+            
             subchapter_to_logfile('pre-prep data: IMPORT LOCAL DATA + create SPATIAL MAPPINGS', self.sett.log_name)
             self.preprep_local_data_AND_spatial_mappings()
 
@@ -258,7 +263,8 @@ class DataAggScenario:
 
 
             # IMPORT DATA --------------------------------------   
-            gm_shp_df = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+            # gm_shp_df = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+            gm_shp_df = gpd.read_file(os.path.join(self.sett.data_path, 'input', 'swissboundaries3d_2023-01_2056_5728.shp'), layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
 
             # Function: Merge GM BFS numbers to spatial data sources
             def attach_bfs_to_spatial_data(gdf, gm_shp_df, keep_cols = ['BFS_NUMMER', 'geometry' ]):
@@ -277,7 +283,8 @@ class DataAggScenario:
 
 
             # PV -------------------
-            elec_prod_gdf = gpd.read_file(f'{self.sett.data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', layer ='ElectricityProductionPlant')
+            # elec_prod_gdf = gpd.read_file(f'{self.sett.data_path}/input/ch.bfe.elektrizitaetsproduktionsanlagen_gpkg/ch.bfe.elektrizitaetsproduktionsanlagen.gpkg', layer ='ElectricityProductionPlant')
+            elec_prod_gdf = gpd.read_file(os.path.join(self.sett.data_path, 'input', 'ch.bfe.elektrizitaetsproduktionsanlagen_gpkg', 'ch.bfe.elektrizitaetsproduktionsanlagen.gpkg'), layer ='ElectricityProductionPlant')
             pv_all_gdf = copy.deepcopy(elec_prod_gdf[elec_prod_gdf['SubCategory'] == 'subcat_2'])
             checkpoint_to_logfile(f'import pv, {pv_all_gdf.shape[0]} rows', self.sett.log_name, 1, self.sett.show_debug_prints)
 
@@ -298,7 +305,8 @@ class DataAggScenario:
 
 
             # SOLKAT -------------------
-            solkat_all_gdf = gpd.read_file(f'{self.sett.data_path}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH')
+            # solkat_all_gdf = gpd.read_file(f'{self.sett.data_path}/input\solarenergie-eignung-daecher_2056.gpkg\SOLKAT_DACH.gpkg', layer ='SOLKAT_CH_DACH')
+            solkat_all_gdf = gpd.read_file(os.path.join(self.sett.data_path, 'input', 'solarenergie-eignung-daecher_2056.gpkg', 'SOLKAT_DACH.gpkg'), layer ='SOLKAT_CH_DACH')
             checkpoint_to_logfile(f'import solkat, {solkat_all_gdf.shape[0]} rows', self.sett.log_name, 2, self.sett.show_debug_prints)
 
             solkat_all_gdf = attach_bfs_to_spatial_data(solkat_all_gdf, gm_shp_df)
@@ -309,7 +317,7 @@ class DataAggScenario:
             solkat_pq = copy.deepcopy(solkat_all_gdf.loc[:,solkat_all_gdf.columns !='geometry'])
             solkat_geo = copy.deepcopy(solkat_all_gdf.loc[:,['DF_UID', 'BFS_NUMMER', 'geometry']])
 
-            solkat_pq.to_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_pq.parquet')
+            solkat_pq.to_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_pq.parquet', index=False)
             checkpoint_to_logfile('-- exported solkat_pq.parquet', self.sett.log_name, 5, self.sett.show_debug_prints)
 
             with open(f'{self.sett.data_path}/input_split_data_geometry/solkat_geo.geojson', 'w') as f:
@@ -318,13 +326,26 @@ class DataAggScenario:
 
 
             # SOLKAT MONTH -------------------
-            solkat_month_pq = gpd.read_file(f'{self.sett.data_path}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
+            # solkat_month_pq = gpd.read_file(f'{self.sett.data_path}/input\solarenergie-eignung-daecher_2056_monthlydata.gpkg\SOLKAT_DACH_MONAT.gpkg', layer ='SOLKAT_CH_DACH_MONAT')
+            solkat_month_pq = gpd.read_file(os.path.join(self.sett.data_path, 'input', 'solarenergie-eignung-daecher_2056_monthlydata.gpkg', 'SOLKAT_DACH_MONAT.gpkg'), layer ='SOLKAT_CH_DACH_MONAT')
+
             solkat_month_pq.to_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_month_pq.parquet')
             
 
 
             # SUBSET for BSBLSO case ========================================================
             bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13,], self.sett.data_path, self.sett.log_name)
+
+            # DEBUGGING -------------------
+            checkpoint_to_logfile('subset solkat for bsblso case', self.sett.log_name, 5, self.sett.show_debug_prints)
+            debugbfs_numbers = ['2615', '2614' ]
+            solkat_debugbfs_geo = copy.deepcopy(solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(debugbfs_numbers)])
+            if solkat_debugbfs_geo.shape[0] > 0:
+                with open (f'{self.sett.data_path}/input_split_data_geometry/solkat_debugbfs_geo.geojson', 'w') as f:
+                    f.write(solkat_debugbfs_geo.to_json())
+                checkpoint_to_logfile('-- exported solkat_debugbfs_geo.geojson', self.sett.log_name, 5, self.sett.show_debug_prints)
+            else:
+                print('no rows for debug bfs numbers found in solkat_geo')
 
             # PV -------------------
             checkpoint_to_logfile('subset pv for bsblso case', self.sett.log_name, 5, self.sett.show_debug_prints)
@@ -341,6 +362,7 @@ class DataAggScenario:
                 with open (f'{self.sett.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson', 'w') as f:
                     f.write(solkat_bsblso_geo.to_json())
                 checkpoint_to_logfile('-- exported solkat_bsblso_geo.geojson', self.sett.log_name, 5, self.sett.show_debug_prints)
+
 
             # GWR -------------------
             # get all BUILDING data 
@@ -394,7 +416,8 @@ class DataAggScenario:
 
             # QUERY --------------------------------------
             # gm_shp_df = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp/swissBOUNDARIES3D_1_4_TLM_HOHEITSGRENZE.shp')
-            gm_shp_df = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+            # gm_shp_df = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+            gm_shp_df = gpd.read_file(os.path.join(self.sett.data_path, 'input', 'swissboundaries3d_2023-01_2056_5728.shp'), layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
             
 
             bfs_list = gm_shp_df['BFS_NUMMER'].unique()
@@ -514,12 +537,14 @@ class DataAggScenario:
 
             # IMPORT + SUBSET DATA --------------------------------------
             # elecpri_all = pd.read_parquet(f'{self.sett.data_path}/input_api/elecpri.parquet')
-            elecpri_all = pd.read_parquet(f'{self.sett.data_path}/input/ElCom_consum_price_api_data/elecpri.parquet')
-            elecpri = elecpri_all.loc[elecpri_all['bfs_number'].isin(self.sett.bfs_numbers)]
+            elecpri_all = pl.read_parquet(os.path.join(self.sett.data_path, 'input', 'ElCom_consum_price_api_data', 'elecpri.parquet'))
 
+            elecpri = elecpri_all.filter(pl.col('bfs_number').is_in(self.sett.bfs_numbers))
+            
             # EXPORT --------------------------------------
             checkpoint_to_logfile('export elecpri of local data from former api import', self.sett.log_name)
-            elecpri.to_parquet(f'{self.sett.preprep_path}/elecpri.parquet')  
+            elecpri.write_parquet(os.path.join(self.sett.preprep_path, 'elecpri.parquet'))
+
 
 
         def get_preprep_data_earlier_api_import(self):
@@ -536,18 +561,19 @@ class DataAggScenario:
             print_to_logfile('run function: get_earlier_api_import_data.py', self.sett.log_name)
 
             # IMPORT + STORE DATA in preprep folder --------------------------------------
+
             # Map_gm_ewr
-            Map_gm_ewr = pd.read_parquet(f'{self.sett.data_path}/input_api/Map_gm_ewr.parquet')
-            Map_gm_ewr.to_parquet(f'{self.sett.preprep_path}/Map_gm_ewr.parquet')
-            Map_gm_ewr.to_csv(f'{self.sett.preprep_path}/Map_gm_ewr.csv', sep=';', index=False)
+            Map_gm_ewr = pl.read_parquet(os.path.join(self.sett.data_path, 'input_api', 'Map_gm_ewr.parquet'))
+            Map_gm_ewr.write_parquet(os.path.join(self.sett.preprep_path, 'Map_gm_ewr.parquet'))
+            Map_gm_ewr.write_csv(    os.path.join(self.sett.preprep_path, 'Map_gm_ewr.csv'), separator=';')
             checkpoint_to_logfile('Map_gm_ewr stored in prepreped data', self.sett.log_name, 2, self.sett.show_debug_prints)
-            
+
             # pvtarif
-            pvtarif_all = pd.read_parquet(f'{self.sett.data_path}/input_api/pvtarif.parquet')
+            pvtarif_all = pl.read_parquet(os.path.join(self.sett.data_path, 'input_api', 'pvtarif.parquet'))
             year_range_2int = [str(year % 100).zfill(2) for year in range(self.sett.year_range[0], self.sett.year_range[1]+1)]
-            pvtarif = copy.deepcopy(pvtarif_all.loc[pvtarif_all['year'].isin(year_range_2int), :])
-            pvtarif.to_parquet(f'{self.sett.preprep_path}/pvtarif.parquet')
-            pvtarif.to_csv(f'{self.sett.preprep_path}/pvtarif.csv', sep=';', index=False)
+            pvtarif = copy.deepcopy(pvtarif_all.filter(pl.col('year').is_in(year_range_2int)))
+            pvtarif.write_parquet(os.path.join(self.sett.preprep_path, 'pvtarif.parquet'))
+            pvtarif.write_csv(    os.path.join(self.sett.preprep_path, 'pvtarif.csv'), separator=';')
             checkpoint_to_logfile('pvtarif stored in prepreped data', self.sett.log_name, 2, self.sett.show_debug_prints)
                 
 
@@ -585,9 +611,14 @@ class DataAggScenario:
             conn.close()
             checkpoint_to_logfile('sql query DWELLING done', self.sett.log_name, 10, self.sett.show_debug_prints)
 
-            gwr_dwelling_df = pd.DataFrame(sqlrows, columns=query_columns)
-            gwr_dwelling_df[['WAZIM', 'WAREA']] = gwr_dwelling_df[['WAZIM', 'WAREA']].replace('', 0).astype(float)
-            gwr_dwelling_df.to_csv(f'{self.sett.preprep_path}/gwr_dwelling_df.csv', sep=';', index=False)
+            # gwr_dwelling_dfpd = pd.DataFrame(sqlrows, columns=query_columns)
+            # gwr_dwelling_df[['WAZIM', 'WAREA']] = gwr_dwelling_df[['WAZIM', 'WAREA']].replace('', 0).astype(float)
+            # gwr_dwelling_df.to_csv(f'{self.sett.preprep_path}/gwr_dwelling_df.csv', sep=';', index=False)
+            gwr_dwelling_df = pl.DataFrame(sqlrows, schema=query_columns)
+            gwr_dwelling_df = gwr_dwelling_df.with_columns(
+                pl.col(['WAZIM', 'WAREA']).replace('', 0).cast(pl.Float64)
+            )
+            gwr_dwelling_df.write_parquet(f'{self.sett.preprep_path}/gwr_dwelling_df.parquet')
 
 
             # get ALL BUILDING data
@@ -603,91 +634,152 @@ class DataAggScenario:
             conn.close()
             checkpoint_to_logfile('sql query ALL BUILDING done', self.sett.log_name, 10, self.sett.show_debug_prints)
 
-            gwr_all_building_df = pd.DataFrame(sqlrows, columns=query_columns)
-            gwr_all_building_df.to_csv(f'{self.sett.preprep_path}/gwr_all_building_df.csv', sep=';', index=False)
-            gwr_all_building_df.to_parquet(f'{self.sett.preprep_path}/gwr_all_building_df.parquet')
+            # gwr_all_building_df = pd.DataFrame(sqlrows, columns=query_columns)
+            # gwr_all_building_df.to_csv(f'{self.sett.preprep_path}/gwr_all_building_df.csv', sep=';', index=False)
+            # gwr_all_building_df.to_parquet(f'{self.sett.preprep_path}/gwr_all_building_df.parquet')
+            gwr_all_building_df = pl.DataFrame(sqlrows, schema=query_columns)
+            gwr_all_building_df = gwr_all_building_df.with_columns(
+                pl.col(['GAREA']).replace('', 0).cast(pl.Float64)
+            )
+            gwr_all_building_df.write_parquet(f'{self.sett.preprep_path}/gwr_all_building_df.parquet')
+            gwr_all_building_df.write_csv(f'{self.sett.preprep_path}/gwr_all_building_df.csv', separator=';')
 
 
             # merger -------------------
             # gwr = gwr_building_df.merge(gwr_dwelling_df, on='EGID', how='left')
-            gwr_mrg = gwr_all_building_df.merge(gwr_dwelling_df, on='EGID', how='left')
+            # gwr_mrg = gwr_all_building_df.merge(gwr_dwelling_df, on='EGID', how='left')
+            gwr_mrg = gwr_all_building_df.join(gwr_dwelling_df, on='EGID', how='left')
+            del gwr_dwelling_df
 
 
             # aggregate dwelling data per EGID -------------------
             print('print to log_file')
             print_to_logfile('aggregate dwelling data per EGID', self.sett.log_name)
-            checkpoint_to_logfile(f'check gwr BEFORE aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],1)*100} %', self.sett.log_name, 3, True)
+            checkpoint_to_logfile(f'check gwr BEFORE aggregation: {gwr_mrg["EGID"].n_unique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].n_unique())/gwr_mrg.shape[0],1)*100} %', self.sett.log_name, 3, True)
 
             print('print to summary_file')
             print_to_logfile('aggregate dwelling data per EGID', self.sett.summary_name)
-            checkpoint_to_logfile(f'check gwr BEFORE aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],1)*100} %', self.sett.summary_name, 3, True)
+            checkpoint_to_logfile(f'check gwr BEFORE aggregation: {gwr_mrg["EGID"].n_unique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].n_unique())/gwr_mrg.shape[0],1)*100} %', self.sett.summary_name, 3, True)
 
-            bldg_agg_cols = copy.deepcopy(self.sett.GWR_building_cols)
-            bldg_agg_cols.remove('EGID')
-            bldg_agg_meth = {col: 'first' for col in bldg_agg_cols}
+            # bldg_agg_cols = self.sett.GWR_building_cols
+            # bldg_agg_cols.remove('EGID')
+            # bldg_agg_meth = {col: 'first' for col in bldg_agg_cols}
 
-            gwr_mrg['nEWID'] = gwr_mrg['EWID']
-            def concat_strings(x):
-                return '_'.join(x.dropna().astype(str))
-            dwel_agg_meth = {'EWID':concat_strings,'nEWID': 'count', 'WAZIM': 'sum', 'WAREA': 'sum'}
+            # gwr_mrg['nEWID'] = gwr_mrg['EWID']
+            # def concat_strings(x):
+            #     return '_'.join(x.dropna().astype(str))
+            # dwel_agg_meth = {'EWID':concat_strings,'nEWID': 'count', 'WAZIM': 'sum', 'WAREA': 'sum'}
 
-            agg_meth = {**bldg_agg_meth, **dwel_agg_meth}
-            gwr_mrg_after_agg =           gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
-            gwr_mrg_all_building_in_bfs = gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
-            gwr_mrg = copy.deepcopy(gwr_mrg_after_agg)
+            # agg_meth = {**bldg_agg_meth, **dwel_agg_meth}
+            # gwr_mrg_after_agg =           gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
+            # gwr_mrg_all_building_in_bfs = gwr_mrg.groupby('EGID').agg(agg_meth).reset_index()
+            # gwr_mrg = copy.deepcopy(gwr_mrg_after_agg)
+            bldg_agg_cols = self.sett.GWR_building_cols.copy()
+            bldg_agg_cols.remove("EGID")
+            bldg_agg_exprs = [
+                pl.col(col).first().alias(col)
+                for col in bldg_agg_cols
+            ]
+            gwr_mrg = gwr_mrg.with_columns(
+                pl.col("EWID").alias("nEWID")
+            )
+            dwel_agg_exprs = [
+                # pl.concat_str(pl.col("EWID").drop_nulls(), separator="_").alias("EWID"),
+                pl.count("nEWID").alias("nEWID"),
+                pl.sum("WAZIM").alias("WAZIM"),
+                pl.sum("WAREA").alias("WAREA"),
+            ]
 
-            checkpoint_to_logfile(f'check gwr AFTER aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],1)*100} %', self.sett.log_name, 3, True)
-            checkpoint_to_logfile(f'check gwr AFTER aggregation: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique())/gwr_mrg.shape[0],1)*100} %', self.sett.summary_name, 3, True)
+            agg_exprs = bldg_agg_exprs + dwel_agg_exprs
+            gwr_mrg_after_agg = (
+                gwr_mrg
+                .group_by("EGID")
+                .agg(agg_exprs)
+            )
+            gwr_mrg_all_building_in_bfs = (
+                gwr_mrg
+                .group_by("EGID")
+                .agg(agg_exprs)
+            )
+            gwr_mrg = gwr_mrg_after_agg
+
+            checkpoint_to_logfile(f'check gwr AFTER aggregation: {gwr_mrg["EGID"].n_unique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].n_unique())/gwr_mrg.shape[0],1)*100} %', self.sett.log_name, 3, True)
+            checkpoint_to_logfile(f'check gwr AFTER aggregation: {gwr_mrg["EGID"].n_unique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].n_unique())/gwr_mrg.shape[0],1)*100} %', self.sett.summary_name, 3, True)
 
 
             # filter for specs -------------------
-            checkpoint_to_logfile(f'check gwr_mrg BEFORE filtering: {gwr_mrg["EGID"].nunique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].nunique() )/gwr_mrg.shape[0],2)*100} %', self.sett.log_name, 3, True)
+            checkpoint_to_logfile(f'check gwr_mrg BEFORE filtering: {gwr_mrg["EGID"].n_unique()} unique EGIDs in gwr_mrg.shape {gwr_mrg.shape}, {round((gwr_mrg["EGID"].n_unique() )/gwr_mrg.shape[0],2)*100} %', self.sett.log_name, 3, True)
 
-            gwr_mrg0 = copy.deepcopy(gwr_mrg)
-            gwr_mrg0['GBAUJ'] = gwr_mrg0['GBAUJ'].replace('', 0).astype(int)
-            gwr_mrg1 = gwr_mrg0[(gwr_mrg0['GSTAT'].isin(self.sett.GWR_GSTAT))]
-            gwr_mrg2 = gwr_mrg1[(gwr_mrg1['GKLAS'].isin(self.sett.GWR_GKLAS))]
-            gwr_mrg3 = gwr_mrg2[(gwr_mrg2['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) & (gwr_mrg2['GBAUJ'] <= self.sett.GWR_GBAUJ_minmax[1])]
-            gwr = copy.deepcopy(gwr_mrg3)
-            checkpoint_to_logfile(f'check gwr AFTER filtering: {gwr["EGID"].nunique()} unique EGIDs in gwr.shape {gwr.shape}, {round((gwr["EGID"].nunique() )/gwr_mrg.shape[0],2)*100} %', self.sett.log_name, 3, True)
+            # gwr_mrg0 = copy.deepcopy(gwr_mrg)
+            # gwr_mrg0['GBAUJ'] = gwr_mrg0['GBAUJ'].replace('', 0).astype(int)
+            # gwr_mrg1 = gwr_mrg0[(gwr_mrg0['GSTAT'].isin(self.sett.GWR_GSTAT))]
+            # gwr_mrg2 = gwr_mrg1[(gwr_mrg1['GKLAS'].isin(self.sett.GWR_GKLAS))]
+            # gwr_mrg3 = gwr_mrg2[(gwr_mrg2['GBAUJ'] >= self.sett.GWR_GBAUJ_minmax[0]) & (gwr_mrg2['GBAUJ'] <= self.sett.GWR_GBAUJ_minmax[1])]
+            # gwr = copy.deepcopy(gwr_mrg3)
+            gwr_mrg0 = gwr_mrg.with_columns(
+                pl.when(pl.col("GBAUJ") == "")
+                .then(0)
+                .otherwise(pl.col("GBAUJ"))
+                .cast(pl.Int64)
+                .alias("GBAUJ")
+            )
+            gwr_mrg1 = gwr_mrg0.filter(
+                pl.col("GSTAT").is_in(self.sett.GWR_GSTAT)
+            )
+            gwr_mrg2 = gwr_mrg1.filter(
+                pl.col("GKLAS").is_in(self.sett.GWR_GKLAS)
+            )
+            # gwr_mrg3 = gwr_mrg2.filter(
+            #     (pl.col("GBAUJ") >= self.sett.GWR_GBAUJ_minmax[0]) &
+            #     (pl.col("GBAUJ") <= self.sett.GWR_GBAUJ_minmax[1])
+            # )
+            gwr = gwr_mrg2
+            
+            checkpoint_to_logfile(f'check gwr AFTER filtering: {gwr["EGID"].n_unique()} unique EGIDs in gwr.shape {gwr.shape}, {round((gwr["EGID"].n_unique() )/gwr_mrg.shape[0],2)*100} %', self.sett.log_name, 3, True)
             print_to_logfile('\n', self.sett.summary_name)
 
 
             # summary log -------------------
             print_to_logfile('Building and Dwelling data import:', self.sett.summary_name)
-            checkpoint_to_logfile(f'gwr_mrg0.shape: {gwr_mrg0.shape}, EGID: {gwr_mrg0["EGID"].nunique()}', self.sett.summary_name, 2, True)
+            checkpoint_to_logfile(f'gwr_mrg0.shape: {gwr_mrg0.shape}, EGID: {gwr_mrg0["EGID"].n_unique()}', self.sett.summary_name, 2, True)
             checkpoint_to_logfile(f'\t> selection range n BFS municipalities: {len(self.sett.bfs_numbers)}', self.sett.summary_name, 2, True)
             # print_to_logfile(f'\n', log_file_name_def=summary_name)
-            checkpoint_to_logfile(f'after GSTAT selection, gwr.shape: {gwr_mrg1.shape} EGID.nunique: {gwr_mrg1["EGID"].nunique()} ({round((gwr_mrg1.shape[0] ) / gwr_mrg0.shape[0] * 100, 2)} % of gwr_mrg0)', self.sett.summary_name, 2, True) 
+            checkpoint_to_logfile(f'after GSTAT selection, gwr.shape: {gwr_mrg1.shape} EGID.nunique: {gwr_mrg1["EGID"].n_unique()} ({round((gwr_mrg1.shape[0] ) / gwr_mrg0.shape[0] * 100, 2)} % of gwr_mrg0)', self.sett.summary_name, 2, True) 
             checkpoint_to_logfile(f'\t> selection GSTAT: {self.sett.GWR_GSTAT} "only existing bulidings"', self.sett.summary_name, 2, True)
             # print_to_logfile(f'\n', log_file_name_def=summary_name)
-            checkpoint_to_logfile(f'after GKLAS selection, gwr.shape: {gwr_mrg2.shape} EGID.nunique: {gwr_mrg2["EGID"].nunique()} ({round((gwr_mrg2.shape[0] ) / gwr_mrg1.shape[0] * 100, 2)} % of gwr_mrg1)', self.sett.summary_name, 2, True)
+            checkpoint_to_logfile(f'after GKLAS selection, gwr.shape: {gwr_mrg2.shape} EGID.nunique: {gwr_mrg2["EGID"].n_unique()} ({round((gwr_mrg2.shape[0] ) / gwr_mrg1.shape[0] * 100, 2)} % of gwr_mrg1)', self.sett.summary_name, 2, True)
             checkpoint_to_logfile(f'\t> selection GKLAS: {self.sett.GWR_GKLAS} "1110 - building w 1 living space, 1121 - w 2 living spaces, 1276 - agricluture buildings (stables, barns )"', self.sett.summary_name, 2, True)
             # print_to_logfile(f'\n', log_file_name_def=summary_name)
-            checkpoint_to_logfile(f'after GBAUJ_minmax selection, gwr.shape: {gwr_mrg3.shape} EGID.nunique: {gwr_mrg3["EGID"].nunique()} ({round((gwr_mrg3.shape[0] ) / gwr_mrg2.shape[0] * 100, 2)} % of gwr_mrg3)', self.sett.summary_name, 2, True)
-            checkpoint_to_logfile(f'\t> selection GBAUJ_minmax: {self.sett.GWR_GBAUJ_minmax} "built construction between years"', self.sett.summary_name, 2, True)
+            # checkpoint_to_logfile(f'after GBAUJ_minmax selection, gwr.shape: {gwr_mrg3.shape} EGID.nunique: {gwr_mrg3["EGID"].n_unique()} ({round((gwr_mrg3.shape[0] ) / gwr_mrg2.shape[0] * 100, 2)} % of gwr_mrg3)', self.sett.summary_name, 2, True)
+            # checkpoint_to_logfile(f'\t> selection GBAUJ_minmax: {self.sett.GWR_GBAUJ_minmax} "built construction between years"', self.sett.summary_name, 2, True)
             # print_to_logfile(f'\n', log_file_name_def=summary_name)
-            checkpoint_to_logfile(f'from ALL gwr_mrg0 (aggregated with dwelling, bfs already selected): {gwr_mrg0["EGID"].nunique()-gwr_mrg3["EGID"].nunique()} of {gwr_mrg0["EGID"].nunique()} EGIDs removed ({round((gwr_mrg0["EGID"].nunique() - gwr_mrg3["EGID"].nunique()  )/gwr_mrg0["EGID"].nunique()*100, 2)}%, mrg0-mrg3 of mrg0)', self.sett.summary_name, 2, True)
-            checkpoint_to_logfile(f'\t> {gwr_mrg3["EGID"].nunique()} gwr_mrg3 EGIDS {round((gwr_mrg3["EGID"].nunique())/gwr_mrg0["EGID"].nunique()*100, 2)}%  of  {gwr_mrg0["EGID"].nunique()} gwr_mrg0', self.sett.summary_name, 2, True)
+            # checkpoint_to_logfile(f'from ALL gwr_mrg0 (aggregated with dwelling, bfs already selected): {gwr_mrg0["EGID"].n_unique()-gwr_mrg3["EGID"].n_unique()} of {gwr_mrg0["EGID"].n_unique()} EGIDs removed ({round((gwr_mrg0["EGID"].n_unique() - gwr_mrg3["EGID"].n_unique()  )/gwr_mrg0["EGID"].n_unique()*100, 2)}%, mrg0-mrg3 of mrg0)', self.sett.summary_name, 2, True)
+            # checkpoint_to_logfile(f'\t> {gwr_mrg3["EGID"].n_unique()} gwr_mrg3 EGIDS {round((gwr_mrg3["EGID"].n_unique())/gwr_mrg0["EGID"].n_unique()*100, 2)}%  of  {gwr_mrg0["EGID"].n_unique()} gwr_mrg0', self.sett.summary_name, 2, True)
             print_to_logfile('\n', self.sett.summary_name)
 
 
             # check proxy possiblity -------------------
-            # checkpoint_to_logfile(f'gwr_guilding_df.shape: {gwr_building_df.shape}, EGID: {gwr_building_df["EGID"].nunique()};\n  gwr_dwelling_df.shape: {gwr_dwelling_df.shape}, EGID: {gwr_dwelling_df["EGID"].nunique()};\n  gwr.shape: {gwr.shape}, EGID: {gwr["EGID"].nunique()}', self.sett.log_name, 2, True)
+            # checkpoint_to_logfile(f'gwr_guilding_df.shape: {gwr_building_df.shape}, EGID: {gwr_building_df["EGID"].n_unique()};\n  gwr_dwelling_df.shape: {gwr_dwelling_df.shape}, EGID: {gwr_dwelling_df["EGID"].n_unique()};\n  gwr.shape: {gwr.shape}, EGID: {gwr["EGID"].n_unique()}', self.sett.log_name, 2, True)
             
-            checkpoint_to_logfile(f'* check for WAZIM: {gwr.loc[gwr["WAZIM"] != "", "EGID"].nunique()} unique EGIDs of non-empty WAZIM", {round((gwr.loc[gwr["WAZIM"] != "", "EGID"].nunique() ) / gwr["EGID"].nunique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].nunique()})', self.sett.log_name, 1, True)
-            checkpoint_to_logfile(f'* check for WAREA: {gwr.loc[gwr["WAREA"] != "", "EGID"].nunique()} unique EGIDs of non-empty WAREA", {round((gwr.loc[gwr["WAREA"] != "", "EGID"].nunique() ) / gwr["EGID"].nunique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].nunique()})', self.sett.log_name, 1, True)
-            checkpoint_to_logfile(f'* check for GAREA: {gwr.loc[gwr["GAREA"] != "", "EGID"].nunique()} unique EGIDs of non-empty GAREA", {round((gwr.loc[gwr["GAREA"] != "", "EGID"].nunique() ) / gwr["EGID"].nunique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].nunique()})', self.sett.log_name, 1, True)
+            # checkpoint_to_logfile(f'* check for WAZIM: {gwr.loc[gwr["WAZIM"] != "", "EGID"].n_unique()} unique EGIDs of non-empty WAZIM", {round((gwr.loc[gwr["WAZIM"] != "", "EGID"].n_unique() ) / gwr["EGID"].n_unique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].n_unique()})', self.sett.log_name, 1, True)
+            # checkpoint_to_logfile(f'* check for WAREA: {gwr.loc[gwr["WAREA"] != "", "EGID"].n_unique()} unique EGIDs of non-empty WAREA", {round((gwr.loc[gwr["WAREA"] != "", "EGID"].n_unique() ) / gwr["EGID"].n_unique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].n_unique()})', self.sett.log_name, 1, True)
+            # checkpoint_to_logfile(f'* check for GAREA: {gwr.loc[gwr["GAREA"] != "", "EGID"].n_unique()} unique EGIDs of non-empty GAREA", {round((gwr.loc[gwr["GAREA"] != "", "EGID"].n_unique() ) / gwr["EGID"].n_unique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].n_unique()})', self.sett.log_name, 1, True)
+            checkpoint_to_logfile(f'* check for WAZIM: {gwr.filter(pl.col("WAZIM") != 0).select("EGID").n_unique()} unique EGIDs of non-empty WAZIM", {round((gwr.filter(pl.col("WAZIM") != 0).select("EGID").n_unique() ) / gwr["EGID"].n_unique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].n_unique()})', self.sett.log_name, 1, True)
+            checkpoint_to_logfile(f'* check for WAREA: {gwr.filter(pl.col("WAREA") != 0).select("EGID").n_unique()} unique EGIDs of non-empty WAREA", {round((gwr.filter(pl.col("WAREA") != 0).select("EGID").n_unique() ) / gwr["EGID"].n_unique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].n_unique()})', self.sett.log_name, 1, True)
+            checkpoint_to_logfile(f'* check for GAREA: {gwr.filter(pl.col("GAREA") != 0).select("EGID").n_unique()} unique EGIDs of non-empty GAREA", {round((gwr.filter(pl.col("GAREA") != 0).select("EGID").n_unique() ) / gwr["EGID"].n_unique() * 100, 2)} % of total unique EGIDs ({gwr["EGID"].n_unique()})', self.sett.log_name, 1, True)
 
             # checkpoint_to_logfile('Did NOT us a combination of building and dwelling data, \n because they overlap way too little. This makes sense \nintuitievly as single unit houses probably are not registered \nas dwellings in the data base.', log_file_name_def, 1, True)
 
 
             # merge dfs and export -------------------
             # gwr = gwr_building_df
-            gwr.to_csv(f'{self.sett.preprep_path}/gwr.csv', sep=';', index=False)
-            gwr_mrg_all_building_in_bfs.to_csv(f'{self.sett.preprep_path}/gwr_mrg_all_building_in_bfs.csv', sep=';', index=False)
-            gwr.to_parquet(f'{self.sett.preprep_path}/gwr.parquet')
-            gwr_mrg_all_building_in_bfs.to_parquet(f'{self.sett.preprep_path}/gwr_mrg_all_building_in_bfs.parquet')
+            # gwr.to_csv(f'{self.sett.preprep_path}/gwr.csv', sep=';', index=False)
+            # gwr_mrg_all_building_in_bfs.to_csv(f'{self.sett.preprep_path}/gwr_mrg_all_building_in_bfs.csv', sep=';', index=False)
+            # gwr.to_parquet(f'{self.sett.preprep_path}/gwr.parquet')
+            # gwr_mrg_all_building_in_bfs.to_parquet(f'{self.sett.preprep_path}/gwr_mrg_all_building_in_bfs.parquet')
+            gwr.write_csv(f'{self.sett.preprep_path}/gwr.csv', separator=';')
+            gwr_mrg_all_building_in_bfs.write_csv(f'{self.sett.preprep_path}/gwr_mrg_all_building_in_bfs.csv', separator=';')
+            gwr.write_parquet(f'{self.sett.preprep_path}/gwr.parquet')
             checkpoint_to_logfile('exported gwr data', self.sett.log_name, n_tabs_def = 4)
 
 
@@ -701,12 +793,14 @@ class DataAggScenario:
                 return gdf
 
             # gwr_gdf (will later be reimported and reexported again just because in preprep_data, all major geo spatial dfs are imported and exported)    
-            gwr_gdf = gwr_to_gdf(gwr)
+            gwr_pd = gwr.to_pandas()
+            gwr_gdf = gwr_to_gdf(gwr_pd)
             gwr_gdf = gwr_gdf.loc[:, ['EGID', 'geometry']]
             gwr_gdf.to_file(f'{self.sett.preprep_path}/gwr_gdf.geojson', driver='GeoJSON')
 
             # gwr_all_building_gdf exported for DSO nodes location determination later
-            gwr_all_building_gdf = gwr_to_gdf(gwr_all_building_df)
+            gwr_all_building_df_pd = gwr_all_building_df.to_pandas()
+            gwr_all_building_gdf = gwr_to_gdf(gwr_all_building_df_pd)
             gwr_all_building_gdf.to_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson', driver='GeoJSON')
 
             if self.sett.split_data_geometry_AND_slow_api:
@@ -754,6 +848,368 @@ class DataAggScenario:
             gwr_allch_summary.write_parquet(f'{self.sett.preprep_path}/gwr_all_ch_summary.parquet')       
 
 
+        def preprep_solkat_adjust_for_missing_egids(self):
+            # GWR ====================
+            gwr = pl.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
+            gwr_gdf = gpd.read_file(f'{self.sett.preprep_path}/gwr_gdf.geojson')
+            gwr_all_building_gdf = gpd.read_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson')
+            checkpoint_to_logfile(f'import gwr, {gwr.shape[0]} rows', self.sett.log_name, 5, self.sett.show_debug_prints)
+
+
+            # # SOLKAT ====================
+            solkat_all_pq = pl.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_pq.parquet')
+
+            # bsblso_bfs_numbers = get_bfs_from_ktnr([11,12,13], self.sett.data_path, self.sett.log_name)
+            # bsblso_bfs_numbers_TF = all([bfs in bsblso_bfs_numbers for bfs in self.sett.bfs_numbers])
+            # if (bsblso_bfs_numbers_TF) & (os.path.exists(f'{self.sett.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson')):
+            #     solkat_all_geo = gpd.read_file(f'{self.sett.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson')
+            # else:  
+            #     solkat_all_geo = gpd.read_file(f'{self.sett.data_path}/input_split_data_geometry/solkat_geo.geojson')
+            solkat_all_geo = gpd.read_file(f'{self.sett.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson')
+            checkpoint_to_logfile(f'import solkat_geo, {solkat_all_geo.shape[0]} rows', self.sett.log_name,  1, self.sett.show_debug_prints)    
+
+            # minor transformations to str (with removing nan values)
+            solkat_all_geo['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
+            
+            solkat_all_pq = solkat_all_pq.with_columns(
+                pl.col('DF_UID').cast(pl.Utf8),
+                pl.col('SB_UUID').cast(pl.Utf8),
+            )
+            solkat_all_pq = solkat_all_pq.with_columns(
+                pl.when(pl.col('GWR_EGID').is_null())
+                .then(0)
+                .otherwise(pl.col('GWR_EGID').cast(pl.Int64).cast(pl.Utf8))
+                .alias('GWR_EGID')  
+            )
+            solkat_all_pq = solkat_all_pq.with_columns(
+                pl.when(pl.col('GWR_EGID') == '0')
+                .then(pl.lit('NAN'))
+                .otherwise(pl.col('GWR_EGID'))  
+                .alias('GWR_EGID')
+            )
+            solkat_all_pq = solkat_all_pq.rename({'GWR_EGID': 'EGID'})
+            solkat_all_pq = solkat_all_pq.filter(pl.col('DF_UID').is_not_null())
+            solkat_all_pq = solkat_all_pq.with_columns(
+                pl.col('EGID').count().over('EGID').alias('EGID_count')
+            )
+
+            # PARTITION SOLKAT with BFS NUMBERS  ---------------------------------------------------------------------------------
+            solkat_all_pq.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers))
+
+            solkat_all_dfuid = solkat_all_pq['DF_UID'].unique().to_list()
+            stepsize = 200
+            tranche_counter = 0
+            for i in range(0, len(solkat_all_dfuid), stepsize):
+                tranche_counter += 1
+                solkat_sub = solkat_all_pq.filter(pl.col('DF_UID').is_in(solkat_all_dfuid[i:i+stepsize]))
+                solkat_sub_pd = solkat_sub.to_pandas()
+                solkat_subgdf = solkat_all_geo.merge(solkat_sub_pd, how='inner', on='DF_UID')
+                solkat_subgdf = gpd.GeoDataFrame(solkat_subgdf, geometry='geometry')
+
+                # remove all date columns
+                solkat_subgdf = solkat_subgdf.drop(columns=solkat_subgdf.select_dtypes(include=["datetime64[ns]", "datetime64[ms, UTC]"]).columns)
+
+                with open(f'{self.sett.preprep_path}/solkat_partitioned_tranche_{tranche_counter}.geojson', 'w') as f:
+                    f.write(solkat_subgdf.to_json())
+                
+                del solkat_sub, solkat_subgdf
+            del solkat_all_pq, solkat_all_geo
+            
+            # add omitted EGIDs to SOLKAT ---------------------------------------------------------------------------------
+
+            # the solkat df has missing EGIDs, for example row houses where the entire roof is attributed to one EGID. Attempt to 
+            # 1 - add roof (perfectly overlapping roofpartitions) to solkat for all the EGIDs within the unions shape
+            # 2- reduce the FLAECHE for all theses partitions by dividing it through the number of EGIDs in the union shape
+            print_to_logfile('\nMatch missing EGIDs to solkat (where gwrEGIDs overlapp solkat shape but are not present as a single solkat_row)', self.sett.summary_name)
+            cols_adjust_for_missEGIDs_to_solkat = self.sett.SOLKAT_cols_adjust_for_missEGIDs_to_solkat
+
+
+            solkat_subgdf_paths = glob.glob(f'{self.sett.preprep_path}/solkat_partitioned_tranche_*.geojson')
+            for path in solkat_subgdf_paths:
+                solkat_v2_gdf = gpd.read_file(path)
+
+                # # solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
+                # solkat_v2 = solkat_all_pq.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers)).to_pandas()
+                # solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
+                # solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
+                # # solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
+                # solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == 'NAN', ['EGID', 'SB_UUID']]
+
+
+                # create mapping of solkatEGIDs and missing gwrEGIDs 
+                # union all shapes with the same EGID 
+                solkat_union_v2EGID = solkat_v2_gdf.groupby('EGID').agg({
+                    'geometry': lambda x: unary_union(x),  # Combine all geometries into one MultiPolygon
+                    'DF_UID': lambda x: '_'.join(map(str, x))  # Concatenate DF_UID values as a single string
+                    }).reset_index()
+                solkat_union_v2EGID = gpd.GeoDataFrame(solkat_union_v2EGID, geometry='geometry')
+            
+
+                # match gwrEGID through sjoin to solkat
+                solkat_union_v2EGID = solkat_union_v2EGID.rename(columns = {'EGID': 'EGID_old_solkat'})  # rename EGID colum because gwr_EGIDs are now matched to union_shapes
+                solkat_union_v2EGID.set_crs(gwr_gdf.crs, allow_override=True, inplace=True)
+                join_gwr_solkat_union = gpd.sjoin(solkat_union_v2EGID, gwr_gdf, how='left')
+                join_gwr_solkat_union.rename(columns = {'EGID': 'EGID_gwradded'}, inplace = True)
+
+                # transform to polars for easier handling
+                solkat_v2_pl = pl.from_pandas(solkat_v2_gdf.drop(columns=['geometry']))
+                
+                join_gwr_pl  = pl.from_pandas(join_gwr_solkat_union.drop(columns=['geometry']))
+                checkpoint_to_logfile(f'nrows \n\tsolkat_all_pq: {solkat_all_pq.shape[0]}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf.shape[0]} (remove EGID.NANs)\n\tsolkat_union_v2EGID: {solkat_union_v2EGID.shape[0]}\t\tjoin_gwr_solkat_union: {join_gwr_solkat_union.shape[0]}', self.sett.log_name, 3, self.sett.show_debug_prints)
+                checkpoint_to_logfile(f'nEGID \n\tsolkat_all_pq: {solkat_all_pq["EGID"].n_unique()}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf["EGID"].nunique()} (remove EGID.NANs)\n\tsolkat_union_v2EGID_EGID_old: {solkat_union_v2EGID["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_old: {join_gwr_solkat_union["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_gwradded: {join_gwr_solkat_union["EGID_gwradded"].nunique()}', self.sett.log_name, 3, self.sett.show_debug_prints)
+
+
+                # check EGID mapping case by case, add missing gwrEGIDs to solkat -------------------
+                EGID_old_solkat_list = list( join_gwr_solkat_union['EGID_old_solkat'].unique() )
+                new_solkat_append_list = []
+                add_solkat_counter, add_solkat_partition = 1, 4
+                print_counter_max, i_print = 50, 0
+                # n_egid, egid = 0, EGID_old_solkat_list[0]
+
+                # assign dtypes to avoid int - float confusion
+                solkat_v2_pl = solkat_v2_pl.with_columns(
+                    pl.col('DF_UID').cast(pl.Utf8),
+                    pl.col('DF_NUMMER').cast(pl.Utf8),
+                    pl.col('DATUM_ERSTELLUNG').cast(pl.Utf8),
+                    pl.col('DATUM_AENDERUNG').cast(pl.Utf8),
+                    pl.col('SB_UUID').cast(pl.Utf8),
+                    pl.col('SB_OBJEKTART').cast(pl.Utf8),
+                    pl.col('SB_DATUM_ERSTELLUNG').cast(pl.Utf8),
+                    pl.col('SB_DATUM_AENDERUNG').cast(pl.Utf8),
+                    pl.col('KLASSE').cast(pl.Utf8),
+                    pl.col('FLAECHE').cast(pl.Float64),
+                    pl.col('AUSRICHTUNG').cast(pl.Float64),
+                    pl.col('NEIGUNG').cast(pl.Float64),
+                    pl.col('MSTRAHLUNG').cast(pl.Float64),
+                    pl.col('GSTRAHLUNG').cast(pl.Float64),
+                    pl.col('STROMERTRAG').cast(pl.Float64),
+                    pl.col('STROMERTRAG_SOMMERHALBJAHR').cast(pl.Float64),
+                    pl.col('STROMERTRAG_WINTERHALBJAHR').cast(pl.Float64),
+                    pl.col('WAERMEERTRAG').cast(pl.Float64),
+                    pl.col('DUSCHGAENGE').cast(pl.Float64),
+                    pl.col('DG_HEIZUNG').cast(pl.Float64),
+                    pl.col('DG_WAERMEBEDARF').cast(pl.Float64),
+                    pl.col('BEDARF_WARMWASSER').cast(pl.Float64),
+                    pl.col('BEDARF_HEIZUNG').cast(pl.Float64),
+                    pl.col('FLAECHE_KOLLEKTOREN').cast(pl.Float64),
+                    pl.col('VOLUMEN_SPEICHER').cast(pl.Float64),
+                    pl.col('EGID').cast(pl.Utf8),
+                    pl.col('BFS_NUMMER').cast(pl.Utf8),
+                    pl.col('EGID_count').cast(pl.Int64),
+                )
+                for n_egid, egid in enumerate(EGID_old_solkat_list):
+
+                    # egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
+                    # egid_join_union = egid_join_union.reset_index(drop = True)
+                    egid_join_union = join_gwr_pl.filter(pl.col('EGID_old_solkat') == egid)
+
+                    # find cases for SB_UUID proxy
+                    # if ('egid_proxy' in egid) & (not all(egid_join_union['EGID_gwradded'].isna())):
+                    #     print(f'negid {n_egid}, egid {egid}, has proxy EGID, but gwr EGIDs found in union shape, skipping proxy handling')
+
+                    # if all(egid_join_union['EGID_gwradded'].isna()):  
+                    if all(egid_join_union['EGID_gwradded'].is_null()):
+                        # no overlapp between solkat and any GWR => skip
+                        continue
+                                            
+                    # Shapes of building that will not be included given GWR filter settings
+                    # elif any(egid_join_union['EGID_gwradded'].isna()):
+                    elif any(egid_join_union['EGID_gwradded'].is_null()):
+                        # solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                        solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                        # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+
+                    elif all(egid_join_union['EGID_gwradded'] != np.nan): 
+
+                        # cases
+                        # case1_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid)
+                        # case2_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid)
+                        # case3_TF = (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].isna())
+                        # case4_TF = (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list())
+                        # case5_TF = (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list())
+                        case1_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].first() == egid)
+                        case2_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].first() != egid)
+                        case3_TF = (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].is_null())
+                        case4_TF = (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list())
+                        case5_TF = (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list())
+
+                        # "Best" case (unless step above applies): Shapes of building that only has 1 GWR EGID
+                        if case1_TF:
+                            # solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                            solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+
+                            
+                        # Not best case but for consistency better to keep individual solkatEGIs matches (otherwise missmatch of newer buildings with old shape partitions possible)
+                        # edit: Because also roofs with GWR_EGID == NAN are considered with SB_UUID proxy, make sense to also overwrite solkat EGID for this case
+                        elif case2_TF:
+                            # solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                            # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                            # solkat_subdf['EGID'] = egid_join_union['EGID_gwradded'].values[0]
+                            solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                            solkat_subdf = solkat_subdf.with_columns(
+                                pl.lit(egid_join_union['EGID_gwradded'].item()).alias('EGID')   
+                            )
+
+                        elif case3_TF:
+                            print(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column')
+
+                        # Intended case: Shapes of building that has multiple GWR EGIDs within the shape boundaries
+                        elif case4_TF:
+                            
+                            solkat_subdf_addedEGID_list = []
+                            n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                            for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+                                
+                                # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                                # solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                # # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                # solkat_addedEGID['EGID'] = egid_to_add
+                                solkat_addedEGID = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                                solkat_addedEGID = solkat_addedEGID.with_columns(
+                                    pl.lit(egid_to_add).alias('EGID')   
+                                )
+                                
+                                #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                                if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
+                                    str_suffix = str(n+1).zfill(5)
+                                    if isinstance(solkat_addedEGID['DF_UID'].item(), str):
+                                        # solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                        solkat_addedEGID = solkat_addedEGID.with_columns(
+                                            pl.col('DF_UID').apply(lambda x: f'{x}{str_suffix}').alias('DF_UID')
+                                        )
+                                    elif isinstance(solkat_addedEGID['DF_UID'].item(), int):   
+                                        # solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+                                        solkat_addedEGID = solkat_addedEGID.with_columns(
+                                            pl.col('DF_UID').apply(lambda x: int(f'{x}{str_suffix}')).alias('DF_UID')   
+                                        )
+
+                                # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                                for col in cols_adjust_for_missEGIDs_to_solkat:
+                                    # solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                    solkat_addedEGID = solkat_addedEGID.with_columns(
+                                        (pl.col(col) / egid_join_union.shape[0]).alias(col)
+                                    )
+                                
+                                solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                                del solkat_addedEGID
+
+                            
+                            # concat all EGIDs within the same shape that were previously missing
+                            # solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+                            solkat_subdf = pl.concat(solkat_subdf_addedEGID_list)
+                            
+                        # Error case: Shapes of building that has multiple gwrEGIDs but does not overlap with the assigned / identical solkatEGID. 
+                        # 5a (discontinued because of 5b) Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID 
+                        # being placed in another shape (not necessarily though, just not in the egid_join_union)
+                        # 5b edit: because nan in GWR_EGID of solkat have been replaced with SB_UUID as a proxy for coherent EGID union shapes, this case now apprears more often and
+                        # must be dealt differently. Take roof shape(s), overwrite the proxyEGID (for shape union) with the gwr EGIDs within the union shape. then follow same steps 
+                        # as in case4. Because EGID_old_solkat is overwritten with EGID_gwradded, no special subcase is needed wether EGID_old_solkat is a "proper" EGID or a proxyEGID
+                        # using SB_UUID.
+                    
+                        elif case5_TF:
+                            # 5b case
+                            solkat_subdf_addedEGID_list = []
+
+                            n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                            for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+                                
+                                # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                                # solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                # # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                # solkat_addedEGID['EGID'] = egid_to_add
+                                solkat_addedEGID = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                                solkat_addedEGID = solkat_addedEGID.with_columns(
+                                    pl.lit(egid_to_add).alias('EGID')
+                                )
+                                
+                                #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                                if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
+                                    str_suffix = str(n+1).zfill(5)
+                                    if isinstance(solkat_addedEGID['DF_UID'].item(), str):
+                                        # solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                        solkat_addedEGID = solkat_addedEGID.with_columns(
+                                            pl.col('DF_UID').apply(lambda x: f'{x}{str_suffix}').alias('DF_UID')
+                                        )
+                                    elif isinstance(solkat_addedEGID['DF_UID'].item(), int):   
+                                        # solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+                                        solkat_addedEGID = solkat_addedEGID.with_columns(
+                                            pl.col('DF_UID').apply(lambda x: int(f'{x}{str_suffix}')).alias('DF_UID')
+                                        )
+                                                                                
+
+                                # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                                for col in cols_adjust_for_missEGIDs_to_solkat:
+                                    # solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                    solkat_addedEGID = solkat_addedEGID.with_columns(
+                                        (pl.col(col) / egid_join_union.shape[0]).alias(col)
+                                    )
+                                
+                                solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                                del solkat_addedEGID
+                            
+                            # concat all EGIDs within the same shape that were previously missing
+                            # solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+                            solkat_subdf = pl.concat(solkat_subdf_addedEGID_list)
+
+                        else: 
+                            if i_print < print_counter_max:
+                                print(f'ERROR: EGID {egid:14}: not fitting into any case (1 to 5) for adjusting faulty SOLKAT EGIDs by matching shape to GWR_EGIDs')
+                                i_print += 1
+                            elif i_print == print_counter_max:
+                                print(f'ERROR: EGID {egid:14}: {print_counter_max}+ ... more cases not fitting into any case (1 to 5) for adjusting faulty SOLKAT EGIDs by matching shape to GWR_EGIDs')
+                                i_print += 1
+
+
+                    if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
+                        checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition', self.sett.log_name, 3, self.sett.show_debug_prints)
+                        
+                    # merge all solkat partitions to new solkat df
+                    new_solkat_append_list.append(solkat_subdf) 
+
+                # concat all new solkat partitions  
+                solkat_postadjust_pl = pl.concat(new_solkat_append_list)
+                solkat_postadjust_pd = solkat_postadjust_pl.to_pandas()
+                solkat_postadjust_gdf = solkat_postadjust_pd.merge(solkat_v2_gdf[['DF_UID', 'geometry']], how='left', on='DF_UID')
+
+                # export adjusted solkat
+                solkat_postadjust_pl.write_parquet(f'{self.sett.preprep_path}/solkat_postadjust_tranche_{tranche_counter}.parquet')   
+                with open(f'{self.sett.preprep_path}/solkat_postadjust_tranche_{tranche_counter}.geojson', 'w') as f:
+                    solkat_postadjust_gdf.to_file(f, driver='GeoJSON')
+                    
+                del solkat_v2_gdf, solkat_subdf, solkat_postadjust_pl, solkat_postadjust_pd, solkat_postadjust_gdf
+    
+
+            # concate partitioned files after adjustment ---------------------------------------------------------------------------------
+            solkat_postadjust_pl_paths = glob.glob(f'{self.sett.preprep_path}/solkat_postadjust_tranche_*.parquet')
+            solkat_postadjust_list = []
+            for path in solkat_postadjust_pl_paths:
+                solkat_postadjust_pl = pl.read_parquet(path)
+                solkat_postadjust_list.append(solkat_postadjust_pl)
+                del solkat_postadjust_pl
+
+            solkat_pl_final = pl.concat(solkat_postadjust_list)
+            solkat_pl_final.write_parquet(f'{self.sett.preprep_path}/solkat.parquet')
+
+            # for file in solkat_postadjust_pl_paths:
+            #     os.remove(file)
+            
+
+            solkat_postadjust_gdf_paths = glob.glob(f'{self.sett.preprep_path}/solkat_postadjust_tranche_*.geojson')
+            solkat_postadjust_gdf_list = []
+            for path in solkat_postadjust_gdf_paths:
+                solkat_postadjust_gdf = gpd.read_file(path)
+                solkat_postadjust_gdf_list.append(solkat_postadjust_gdf)
+                del solkat_postadjust_gdf
+                
+            solkat_gdf_final = pd.concat(solkat_postadjust_gdf_list, ignore_index=True)
+            solkat_gdf_final = gpd.GeoDataFrame(solkat_gdf_final, geometry='geometry')
+            with open(f'{self.sett.preprep_path}/solkat_gdf.geojson', 'w') as f:
+                solkat_gdf_final.to_file(f, driver='GeoJSON')
+
+            # for file in solkat_postadjust_gdf_paths:
+            #     os.remove(file)
+            
+
 
         def preprep_local_data_AND_spatial_mappings(self):
             """
@@ -773,281 +1229,418 @@ class DataAggScenario:
             print_to_logfile('run function: local_data_AND_spatial_mappings.py', self.sett.log_name)
 
             # IMPORT DATA ---------------------------------------------------------------------------------
-            gm_shp_gdf = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+            # gm_shp_gdf = gpd.read_file(f'{self.sett.data_path}/input/swissboundaries3d_2023-01_2056_5728.shp', layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+            gm_shp_gdf = gpd.read_file(os.path.join(self.sett.data_path, 'input', 'swissboundaries3d_2023-01_2056_5728.shp'), layer ='swissBOUNDARIES3D_1_4_TLM_HOHEITSGEBIET')
+            
             
 
             # PV ====================
-            pv_all_pq = pd.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/pv_pq.parquet')
+            # pv_all_pq = pd.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/pv_pq.parquet')
+            pv_all_pq = pl.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/pv_pq.parquet')
             checkpoint_to_logfile(f'import pv_pq, {pv_all_pq.shape[0]} rows', self.sett.log_name, 2, self.sett.show_debug_prints)
             pv_all_geo = gpd.read_file(f'{self.sett.data_path}/input_split_data_geometry/pv_geo.geojson')
             checkpoint_to_logfile(f'import pv_geo, {pv_all_geo.shape[0]} rows', self.sett.log_name, 2, self.sett.show_debug_prints)
 
             # transformations
-            pv_all_pq['xtf_id'] = pv_all_pq['xtf_id'].astype(str)
+            # pv_all_pq['xtf_id'] = pv_all_pq['xtf_id'].astype(str)
+            pv_all_pq = pv_all_pq.with_columns( 
+                pl.col('xtf_id').cast(pl.Utf8)
+            )
             pv_all_geo['xtf_id'] = pv_all_geo['xtf_id'].astype(str)
 
-            pv = pv_all_pq[pv_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)]  # select and export pq for BFS numbers
-            pv_wgeo = pv.merge(pv_all_geo[['xtf_id', 'geometry']], how = 'left', on = 'xtf_id') # merge geometry for later use
+
+            # pv = pv_all_pq[pv_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)]  # select and export pq for BFS numbers
+            pv = pv_all_pq.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers))  
+            del pv_all_pq
+            pv_pd = pv.to_pandas()
+            pv_wgeo = pv_pd.merge(pv_all_geo[['xtf_id', 'geometry']], how = 'left', on = 'xtf_id') # merge geometry for later use
             pv_gdf = gpd.GeoDataFrame(pv_wgeo, geometry='geometry')
 
 
             # GWR ====================
-            gwr = pd.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
+            # gwr = pd.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
+            gwr = pl.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
             gwr_gdf = gpd.read_file(f'{self.sett.preprep_path}/gwr_gdf.geojson')
             gwr_all_building_gdf = gpd.read_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson')
             checkpoint_to_logfile(f'import gwr, {gwr.shape[0]} rows', self.sett.log_name, 5, self.sett.show_debug_prints)
 
 
             # SOLKAT ====================
-            solkat_all_pq = pd.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_pq.parquet')
-            checkpoint_to_logfile(f'import solkat_pq, {solkat_all_pq.shape[0]} rows', self.sett.log_name,  1, self.sett.show_debug_prints)
+            solkat      = pl.read_parquet(f'{self.sett.preprep_path}/solkat.parquet')
+            solkat_gdf  = gpd.read_file(  f'{self.sett.preprep_path}/solkat_gdf.geojson')
 
-            bsblso_bfs_numbers = get_bfs_from_ktnr([11,12,13], self.sett.data_path, self.sett.log_name)
-            bsblso_bfs_numbers_TF = all([bfs in bsblso_bfs_numbers for bfs in self.sett.bfs_numbers])
-            if (bsblso_bfs_numbers_TF) & (os.path.exists(f'{self.sett.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson')):
-                solkat_all_geo = gpd.read_file(f'{self.sett.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson')
-            else:  
-                solkat_all_geo = gpd.read_file(f'{self.sett.data_path}/input_split_data_geometry/solkat_geo.geojson')
-            checkpoint_to_logfile(f'import solkat_geo, {solkat_all_geo.shape[0]} rows', self.sett.log_name,  1, self.sett.show_debug_prints)    
+            # (all shifted so seperate method preprep_solkat_adjust_for_missing_egids)
+            if False: 
+                # solkat_all_pq = pd.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_pq.parquet')
+                solkat_all_pq = pl.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_pq.parquet')
+                # checkpoint_to_logfile(f'import solkat_pq, {solkat_all_pq.shape[0]} rows', self.sett.log_name,  1, self.sett.show_debug_prints)
+
+                bsblso_bfs_numbers = get_bfs_from_ktnr([11,12,13], self.sett.data_path, self.sett.log_name)
+                bsblso_bfs_numbers_TF = all([bfs in bsblso_bfs_numbers for bfs in self.sett.bfs_numbers])
+                if (bsblso_bfs_numbers_TF) & (os.path.exists(f'{self.sett.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson')):
+                    solkat_all_geo = gpd.read_file(f'{self.sett.data_path}/input_split_data_geometry/solkat_bsblso_geo.geojson')
+                else:  
+                    solkat_all_geo = gpd.read_file(f'{self.sett.data_path}/input_split_data_geometry/solkat_geo.geojson')
+                checkpoint_to_logfile(f'import solkat_geo, {solkat_all_geo.shape[0]} rows', self.sett.log_name,  1, self.sett.show_debug_prints)    
             
 
-            # minor transformations to str (with removing nan values)
-            solkat_all_geo['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
-            print('transform solkat_geo')
-            
-            solkat_all_pq['DF_UID'] = solkat_all_pq['DF_UID'].astype(str)    
-            solkat_all_pq['SB_UUID'] = solkat_all_pq['SB_UUID'].astype(str)
-
-            # solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].fillna('NAN').astype(str)
-            solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].fillna(0).astype(int).astype(str)
-            solkat_all_pq.loc[solkat_all_pq['GWR_EGID'] == '0', 'GWR_EGID'] = 'NAN'
-
-            solkat_all_pq.rename(columns={'GWR_EGID': 'EGID'}, inplace=True)
-            solkat_all_pq = solkat_all_pq.dropna(subset=['DF_UID'])
-            
-            solkat_all_pq['EGID_count'] = solkat_all_pq.groupby('EGID')['EGID'].transform('count')
-            
-            
-            
-            # add omitted EGIDs to SOLKAT ---------------------------------------------------------------------------------
-            # old version, no EGIDs matched to solkat
-            """
-            if not self.sett.SOLKAT_match_missing_EGIDs_to_solkat_TF:
-                solkat_v1 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
-                solkat_v1_wgeo = solkat_v1.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID') # merge geometry for later use
-                solkat_v1_gdf = gpd.GeoDataFrame(solkat_v1_wgeo, geometry='geometry')
-                solkat, solkat_gdf = copy.deepcopy(solkat_v1), copy.deepcopy(solkat_v1_gdf)
-            elif self.sett.SOLKAT_match_missing_EGIDs_to_solkat_TF:
-            """
-            
-            # the solkat df has missing EGIDs, for example row houses where the entire roof is attributed to one EGID. Attempt to 
-            # 1 - add roof (perfectly overlapping roofpartitions) to solkat for all the EGIDs within the unions shape
-            # 2- reduce the FLAECHE for all theses partitions by dividing it through the number of EGIDs in the union shape
-            print_to_logfile('\nMatch missing EGIDs to solkat (where gwrEGIDs overlapp solkat shape but are not present as a single solkat_row)', self.sett.summary_name)
-            cols_adjust_for_missEGIDs_to_solkat = self.sett.SOLKAT_cols_adjust_for_missEGIDs_to_solkat
-
-            solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
-            solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
-            solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
-            # solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
-            solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == 'NAN', ['EGID', 'SB_UUID']]
-
-
-            # create mapping of solkatEGIDs and missing gwrEGIDs 
-            # union all shapes with the same EGID 
-            solkat_union_v2EGID = solkat_v2_gdf.groupby('EGID').agg({
-                'geometry': lambda x: unary_union(x),  # Combine all geometries into one MultiPolygon
-                'DF_UID': lambda x: '_'.join(map(str, x))  # Concatenate DF_UID values as a single string
-                }).reset_index()
-            solkat_union_v2EGID = gpd.GeoDataFrame(solkat_union_v2EGID, geometry='geometry')
-            
-
-            # match gwrEGID through sjoin to solkat
-            solkat_union_v2EGID = solkat_union_v2EGID.rename(columns = {'EGID': 'EGID_old_solkat'})  # rename EGID colum because gwr_EGIDs are now matched to union_shapes
-            solkat_union_v2EGID.set_crs(gwr_gdf.crs, allow_override=True, inplace=True)
-            join_gwr_solkat_union = gpd.sjoin(solkat_union_v2EGID, gwr_gdf, how='left')
-            join_gwr_solkat_union.rename(columns = {'EGID': 'EGID_gwradded'}, inplace = True)
-            checkpoint_to_logfile(f'nrows \n\tsolkat_all_pq: {solkat_all_pq.shape[0]}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf.shape[0]} (remove EGID.NANs)\n\tsolkat_union_v2EGID: {solkat_union_v2EGID.shape[0]}\t\tjoin_gwr_solkat_union: {join_gwr_solkat_union.shape[0]}', self.sett.log_name, 3, self.sett.show_debug_prints)
-            checkpoint_to_logfile(f'nEGID \n\tsolkat_all_pq: {solkat_all_pq["EGID"].nunique()}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf["EGID"].nunique()} (remove EGID.NANs)\n\tsolkat_union_v2EGID_EGID_old: {solkat_union_v2EGID["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_old: {join_gwr_solkat_union["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_gwradded: {join_gwr_solkat_union["EGID_gwradded"].nunique()}', self.sett.log_name, 3, self.sett.show_debug_prints)
-
-
-            # check EGID mapping case by case, add missing gwrEGIDs to solkat -------------------
-            EGID_old_solkat_list = join_gwr_solkat_union['EGID_old_solkat'].unique()
-            new_solkat_append_list = []
-            add_solkat_counter, add_solkat_partition = 1, 4
-            print_counter_max, i_print = 50, 0
-            # n_egid, egid = 0, EGID_old_solkat_list[0]
-            for n_egid, egid in enumerate(EGID_old_solkat_list):
-
-                egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
-                egid_join_union = egid_join_union.reset_index(drop = True)
-
-                # find cases for SB_UUID proxy
-                # if ('egid_proxy' in egid) & (not all(egid_join_union['EGID_gwradded'].isna())):
-                #     print(f'negid {n_egid}, egid {egid}, has proxy EGID, but gwr EGIDs found in union shape, skipping proxy handling')
-
-                if all(egid_join_union['EGID_gwradded'].isna()):  
-                    # no overlapp between solkat and any GWR => skip
-                    continue
-                                        
-                # Shapes of building that will not be included given GWR filter settings
-                elif any(egid_join_union['EGID_gwradded'].isna()):  
-                    solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                    # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
-
-                elif all(egid_join_union['EGID_gwradded'] != np.nan): 
-
-                    # cases
-                    case1_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid)
-                    case2_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid)
-                    case3_TF = (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].isna())
-                    case4_TF = (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list())
-                    case5_TF = (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list())
-
-                    # "Best" case (unless step above applies): Shapes of building that only has 1 GWR EGID
-                    if case1_TF:
-                        solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                        # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
-                        
-                    # Not best case but for consistency better to keep individual solkatEGIs matches (otherwise missmatch of newer buildings with old shape partitions possible)
-                    # edit: Because also roofs with GWR_EGID == NAN are considered with SB_UUID proxy, make sense to also overwrite solkat EGID for this case
-                    elif case2_TF:
-                        solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                        # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
-                        solkat_subdf['EGID'] = egid_join_union['EGID_gwradded'].values[0]
-
-                    elif case3_TF:
-                        print(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column')
-
-                    # Intended case: Shapes of building that has multiple GWR EGIDs within the shape boundaries
-                    elif case4_TF:
-                        
-                        solkat_subdf_addedEGID_list = []
-                        n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
-                        for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
-                            
-                            # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
-                            solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                            # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
-                            solkat_addedEGID['EGID'] = egid_to_add
-                            
-                            #extend the DF_UID with some numbers to have truely unique DF_UIDs
-                            if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
-                                str_suffix = str(n+1).zfill(5)
-                                if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
-                                    solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
-                                elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
-                                    solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
-
-                            # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
-                            for col in cols_adjust_for_missEGIDs_to_solkat:
-                                solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
-                            
-                            solkat_subdf_addedEGID_list.append(solkat_addedEGID)
-                        
-                        # concat all EGIDs within the same shape that were previously missing
-                        solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
-                        
-                    # Error case: Shapes of building that has multiple gwrEGIDs but does not overlap with the assigned / identical solkatEGID. 
-                    # 5a (discontinued because of 5b) Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID 
-                    # being placed in another shape (not necessarily though, just not in the egid_join_union)
-                    # 5b edit: because nan in GWR_EGID of solkat have been replaced with SB_UUID as a proxy for coherent EGID union shapes, this case now apprears more often and
-                    # must be dealt differently. Take roof shape(s), overwrite the proxyEGID (for shape union) with the gwr EGIDs within the union shape. then follow same steps 
-                    # as in case4. Because EGID_old_solkat is overwritten with EGID_gwradded, no special subcase is needed wether EGID_old_solkat is a "proper" EGID or a proxyEGID
-                    # using SB_UUID.
+                # # minor transformations to str (with removing nan values)
+                # solkat_all_geo['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
+                # print('transform solkat_geo')
                 
-                    elif case5_TF:
-                        # 5b case
-                        solkat_subdf_addedEGID_list = []
+                # solkat_all_pq['DF_UID'] = solkat_all_pq['DF_UID'].astype(str)    
+                # solkat_all_pq['SB_UUID'] = solkat_all_pq['SB_UUID'].astype(str)
 
-                        n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
-                        for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+                # # solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].fillna('NAN').astype(str)
+                # solkat_all_pq['GWR_EGID'] = solkat_all_pq['GWR_EGID'].fillna(0).astype(int).astype(str)
+                # solkat_all_pq.loc[solkat_all_pq['GWR_EGID'] == '0', 'GWR_EGID'] = 'NAN'
+
+                # solkat_all_pq.rename(columns={'GWR_EGID': 'EGID'}, inplace=True)
+                # solkat_all_pq = solkat_all_pq.dropna(subset=['DF_UID'])
+                
+                # solkat_all_pq['EGID_count'] = solkat_all_pq.groupby('EGID')['EGID'].transform('count')
+
+                # minor transformations to str (with removing nan values)
+                solkat_all_geo['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
+                
+                solkat_all_pq = solkat_all_pq.with_columns(
+                    pl.col('DF_UID').cast(pl.Utf8),
+                    pl.col('SB_UUID').cast(pl.Utf8),
+                )
+                solkat_all_pq = solkat_all_pq.with_columns(
+                    pl.when(pl.col('GWR_EGID').is_null())
+                    .then(0)
+                    .otherwise(pl.col('GWR_EGID').cast(pl.Int64).cast(pl.Utf8))
+                    .alias('GWR_EGID')  
+                )
+                solkat_all_pq = solkat_all_pq.with_columns(
+                    pl.when(pl.col('GWR_EGID') == '0')
+                    .then(pl.lit('NAN'))
+                    .otherwise(pl.col('GWR_EGID'))  
+                    .alias('GWR_EGID')
+                )
+                solkat_all_pq = solkat_all_pq.rename({'GWR_EGID': 'EGID'})
+                solkat_all_pq = solkat_all_pq.filter(pl.col('DF_UID').is_not_null())
+                solkat_all_pq = solkat_all_pq.with_columns(
+                    pl.col('EGID').count().over('EGID').alias('EGID_count')
+                )
+                
+
+                
+                
+                # add omitted EGIDs to SOLKAT ---------------------------------------------------------------------------------
+                # old version, no EGIDs matched to solkat
+                """
+                if not self.sett.SOLKAT_match_missing_EGIDs_to_solkat_TF:
+                    solkat_v1 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
+                    solkat_v1_wgeo = solkat_v1.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID') # merge geometry for later use
+                    solkat_v1_gdf = gpd.GeoDataFrame(solkat_v1_wgeo, geometry='geometry')
+                    solkat, solkat_gdf = copy.deepcopy(solkat_v1), copy.deepcopy(solkat_v1_gdf)
+                elif self.sett.SOLKAT_match_missing_EGIDs_to_solkat_TF:
+                """
+                
+                # the solkat df has missing EGIDs, for example row houses where the entire roof is attributed to one EGID. Attempt to 
+                # 1 - add roof (perfectly overlapping roofpartitions) to solkat for all the EGIDs within the unions shape
+                # 2- reduce the FLAECHE for all theses partitions by dividing it through the number of EGIDs in the union shape
+                print_to_logfile('\nMatch missing EGIDs to solkat (where gwrEGIDs overlapp solkat shape but are not present as a single solkat_row)', self.sett.summary_name)
+                cols_adjust_for_missEGIDs_to_solkat = self.sett.SOLKAT_cols_adjust_for_missEGIDs_to_solkat
+
+                # solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
+                solkat_v2 = solkat_all_pq.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers)).to_pandas()
+                solkat_v2_wgeo = solkat_v2.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
+                solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
+                # solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
+                solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == 'NAN', ['EGID', 'SB_UUID']]
+
+
+                # create mapping of solkatEGIDs and missing gwrEGIDs 
+                # union all shapes with the same EGID 
+                solkat_union_v2EGID = solkat_v2_gdf.groupby('EGID').agg({
+                    'geometry': lambda x: unary_union(x),  # Combine all geometries into one MultiPolygon
+                    'DF_UID': lambda x: '_'.join(map(str, x))  # Concatenate DF_UID values as a single string
+                    }).reset_index()
+                solkat_union_v2EGID = gpd.GeoDataFrame(solkat_union_v2EGID, geometry='geometry')
+                
+
+                # match gwrEGID through sjoin to solkat
+                solkat_union_v2EGID = solkat_union_v2EGID.rename(columns = {'EGID': 'EGID_old_solkat'})  # rename EGID colum because gwr_EGIDs are now matched to union_shapes
+                solkat_union_v2EGID.set_crs(gwr_gdf.crs, allow_override=True, inplace=True)
+                join_gwr_solkat_union = gpd.sjoin(solkat_union_v2EGID, gwr_gdf, how='left')
+                join_gwr_solkat_union.rename(columns = {'EGID': 'EGID_gwradded'}, inplace = True)
+
+                # transform to polars for easier handling
+                solkat_v2_pl = pl.from_pandas(solkat_v2_gdf.drop(columns=['geometry']))
+                
+                join_gwr_pl  = pl.from_pandas(join_gwr_solkat_union.drop(columns=['geometry']))
+                checkpoint_to_logfile(f'nrows \n\tsolkat_all_pq: {solkat_all_pq.shape[0]}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf.shape[0]} (remove EGID.NANs)\n\tsolkat_union_v2EGID: {solkat_union_v2EGID.shape[0]}\t\tjoin_gwr_solkat_union: {join_gwr_solkat_union.shape[0]}', self.sett.log_name, 3, self.sett.show_debug_prints)
+                checkpoint_to_logfile(f'nEGID \n\tsolkat_all_pq: {solkat_all_pq["EGID"].n_unique()}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf["EGID"].nunique()} (remove EGID.NANs)\n\tsolkat_union_v2EGID_EGID_old: {solkat_union_v2EGID["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_old: {join_gwr_solkat_union["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_gwradded: {join_gwr_solkat_union["EGID_gwradded"].nunique()}', self.sett.log_name, 3, self.sett.show_debug_prints)
+
+
+                # check EGID mapping case by case, add missing gwrEGIDs to solkat -------------------
+                EGID_old_solkat_list = list( join_gwr_solkat_union['EGID_old_solkat'].unique() )
+                new_solkat_append_list = []
+                add_solkat_counter, add_solkat_partition = 1, 4
+                print_counter_max, i_print = 50, 0
+                # n_egid, egid = 0, EGID_old_solkat_list[0]
+
+                # assign dtypes to avoid int - float confusion
+                solkat_v2_pl = solkat_v2_pl.with_columns(
+                    pl.col('DF_UID').cast(pl.Utf8),
+                    pl.col('DF_NUMMER').cast(pl.Utf8),
+                    pl.col('DATUM_ERSTELLUNG').cast(pl.Utf8),
+                    pl.col('DATUM_AENDERUNG').cast(pl.Utf8),
+                    pl.col('SB_UUID').cast(pl.Utf8),
+                    pl.col('SB_OBJEKTART').cast(pl.Utf8),
+                    pl.col('SB_DATUM_ERSTELLUNG').cast(pl.Utf8),
+                    pl.col('SB_DATUM_AENDERUNG').cast(pl.Utf8),
+                    pl.col('KLASSE').cast(pl.Utf8),
+                    pl.col('FLAECHE').cast(pl.Float64),
+                    pl.col('AUSRICHTUNG').cast(pl.Float64),
+                    pl.col('NEIGUNG').cast(pl.Float64),
+                    pl.col('MSTRAHLUNG').cast(pl.Float64),
+                    pl.col('GSTRAHLUNG').cast(pl.Float64),
+                    pl.col('STROMERTRAG').cast(pl.Float64),
+                    pl.col('STROMERTRAG_SOMMERHALBJAHR').cast(pl.Float64),
+                    pl.col('STROMERTRAG_WINTERHALBJAHR').cast(pl.Float64),
+                    pl.col('WAERMEERTRAG').cast(pl.Float64),
+                    pl.col('DUSCHGAENGE').cast(pl.Float64),
+                    pl.col('DG_HEIZUNG').cast(pl.Float64),
+                    pl.col('DG_WAERMEBEDARF').cast(pl.Float64),
+                    pl.col('BEDARF_WARMWASSER').cast(pl.Float64),
+                    pl.col('BEDARF_HEIZUNG').cast(pl.Float64),
+                    pl.col('FLAECHE_KOLLEKTOREN').cast(pl.Float64),
+                    pl.col('VOLUMEN_SPEICHER').cast(pl.Float64),
+                    pl.col('EGID').cast(pl.Utf8),
+                    pl.col('BFS_NUMMER').cast(pl.Utf8),
+                    pl.col('EGID_count').cast(pl.Int64),
+                )
+                for n_egid, egid in enumerate(EGID_old_solkat_list):
+
+                    # egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
+                    # egid_join_union = egid_join_union.reset_index(drop = True)
+                    egid_join_union = join_gwr_pl.filter(pl.col('EGID_old_solkat') == egid)
+
+                    # find cases for SB_UUID proxy
+                    # if ('egid_proxy' in egid) & (not all(egid_join_union['EGID_gwradded'].isna())):
+                    #     print(f'negid {n_egid}, egid {egid}, has proxy EGID, but gwr EGIDs found in union shape, skipping proxy handling')
+
+                    # if all(egid_join_union['EGID_gwradded'].isna()):  
+                    if all(egid_join_union['EGID_gwradded'].is_null()):
+                        # no overlapp between solkat and any GWR => skip
+                        continue
+                                            
+                    # Shapes of building that will not be included given GWR filter settings
+                    # elif any(egid_join_union['EGID_gwradded'].isna()):
+                    elif any(egid_join_union['EGID_gwradded'].is_null()):
+                        # solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                        solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                        # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+
+                    elif all(egid_join_union['EGID_gwradded'] != np.nan): 
+
+                        # cases
+                        # case1_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] == egid)
+                        # case2_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].values[0] != egid)
+                        # case3_TF = (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].isna())
+                        # case4_TF = (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list())
+                        # case5_TF = (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list())
+                        case1_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].first() == egid)
+                        case2_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].first() != egid)
+                        case3_TF = (egid_join_union.shape[0] > 1) & any(egid_join_union['EGID_gwradded'].is_null())
+                        case4_TF = (egid_join_union.shape[0] > 1) & (egid in egid_join_union['EGID_gwradded'].to_list())
+                        case5_TF = (egid_join_union.shape[0] > 1) & (egid not in egid_join_union['EGID_gwradded'].to_list())
+
+                        # "Best" case (unless step above applies): Shapes of building that only has 1 GWR EGID
+                        if case1_TF:
+                            # solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                            solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+
                             
-                            # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
-                            solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                            # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
-                            solkat_addedEGID['EGID'] = egid_to_add
+                        # Not best case but for consistency better to keep individual solkatEGIs matches (otherwise missmatch of newer buildings with old shape partitions possible)
+                        # edit: Because also roofs with GWR_EGID == NAN are considered with SB_UUID proxy, make sense to also overwrite solkat EGID for this case
+                        elif case2_TF:
+                            # solkat_subdf = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                            # solkat_subdf['DF_UID_solkat'] = solkat_subdf['DF_UID']
+                            # solkat_subdf['EGID'] = egid_join_union['EGID_gwradded'].values[0]
+                            solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                            solkat_subdf = solkat_subdf.with_columns(
+                                pl.lit(egid_join_union['EGID_gwradded'].item()).alias('EGID')   
+                            )
+
+                        elif case3_TF:
+                            print(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column')
+
+                        # Intended case: Shapes of building that has multiple GWR EGIDs within the shape boundaries
+                        elif case4_TF:
                             
-                            #extend the DF_UID with some numbers to have truely unique DF_UIDs
-                            if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
-                                str_suffix = str(n+1).zfill(5)
-                                if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
-                                    solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
-                                elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
-                                    solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
-
-                            # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
-                            for col in cols_adjust_for_missEGIDs_to_solkat:
-                                solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
-                            
-                            solkat_subdf_addedEGID_list.append(solkat_addedEGID)
-                        
-                        # concat all EGIDs within the same shape that were previously missing
-                        solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
-                        
-                            
-                            # 5a case (discontinued)
-                        if False: 
-                            # else: 
-
-
-                            # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
-                            gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
-                            # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
-                            gwrEGID_row['EGID_gwradded'] = egid
-                            egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
-
-                            # next follow all steps as in "Intended Case" above (solkat_shape with solkatEGID and gwrEGIDs)
                             solkat_subdf_addedEGID_list = []
                             n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
-                            
                             for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
-
+                                
                                 # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
-                                solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
-                                solkat_addedEGID['EGID'] = egid_to_add
+                                # solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                # # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                # solkat_addedEGID['EGID'] = egid_to_add
+                                solkat_addedEGID = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                                solkat_addedEGID = solkat_addedEGID.with_columns(
+                                    pl.lit(egid_to_add).alias('EGID')   
+                                )
                                 
                                 #extend the DF_UID with some numbers to have truely unique DF_UIDs
                                 if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
-                                    str_suffix = str(n+1).zfill(3)
-                                    if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
-                                        solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
-                                    elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
-                                        solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+                                    str_suffix = str(n+1).zfill(5)
+                                    if isinstance(solkat_addedEGID['DF_UID'].item(), str):
+                                        # solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                        solkat_addedEGID = solkat_addedEGID.with_columns(
+                                            pl.col('DF_UID').apply(lambda x: f'{x}{str_suffix}').alias('DF_UID')
+                                        )
+                                    elif isinstance(solkat_addedEGID['DF_UID'].item(), int):   
+                                        # solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+                                        solkat_addedEGID = solkat_addedEGID.with_columns(
+                                            pl.col('DF_UID').apply(lambda x: int(f'{x}{str_suffix}')).alias('DF_UID')   
+                                        )
 
                                 # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
                                 for col in cols_adjust_for_missEGIDs_to_solkat:
-                                    solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                    # solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                    solkat_addedEGID = solkat_addedEGID.with_columns(
+                                        (pl.col(col) / egid_join_union.shape[0]).alias(col)
+                                    )
                                 
-                                # shrink topology to see which partitions are affected by EGID extensions
-                                # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
-
                                 solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                                del solkat_addedEGID
+
                             
                             # concat all EGIDs within the same shape that were previously missing
-                            solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
-
-
-                    else: 
-                        if i_print < print_counter_max:
-                            print(f'ERROR: EGID {egid:14}: not fitting into any case (1 to 5) for adjusting faulty SOLKAT EGIDs by matching shape to GWR_EGIDs')
-                            i_print += 1
-                        elif i_print == print_counter_max:
-                            print(f'ERROR: EGID {egid:14}: {print_counter_max}+ ... more cases not fitting into any case (1 to 5) for adjusting faulty SOLKAT EGIDs by matching shape to GWR_EGIDs')
-                            i_print += 1
-
-
-                if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
-                    checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition', self.sett.log_name, 3, self.sett.show_debug_prints)
+                            # solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+                            solkat_subdf = pl.concat(solkat_subdf_addedEGID_list)
+                            
+                        # Error case: Shapes of building that has multiple gwrEGIDs but does not overlap with the assigned / identical solkatEGID. 
+                        # 5a (discontinued because of 5b) Not proper solution, but best for now: add matching gwrEGID to solkatEGID selection, despite the acutall gwrEGID 
+                        # being placed in another shape (not necessarily though, just not in the egid_join_union)
+                        # 5b edit: because nan in GWR_EGID of solkat have been replaced with SB_UUID as a proxy for coherent EGID union shapes, this case now apprears more often and
+                        # must be dealt differently. Take roof shape(s), overwrite the proxyEGID (for shape union) with the gwr EGIDs within the union shape. then follow same steps 
+                        # as in case4. Because EGID_old_solkat is overwritten with EGID_gwradded, no special subcase is needed wether EGID_old_solkat is a "proper" EGID or a proxyEGID
+                        # using SB_UUID.
                     
-                # merge all solkat partitions to new solkat df
-                new_solkat_append_list.append(solkat_subdf) 
+                        elif case5_TF:
+                            # 5b case
+                            solkat_subdf_addedEGID_list = []
 
-            new_solkat_gdf = gpd.GeoDataFrame(pd.concat(new_solkat_append_list, ignore_index=True), geometry='geometry')
-            new_solkat = new_solkat_gdf.drop(columns = ['geometry'])
-            checkpoint_to_logfile(f'Extended solkat_df by {new_solkat.shape[0] - solkat_v2_gdf.shape[0]} rows (before matching: {solkat_v2_gdf.shape[0]}, after: {new_solkat.shape[0]} rows)', self.sett.summary_name, 3, self.sett.show_debug_prints)
+                            n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                            for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+                                
+                                # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                                # solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                # # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                # solkat_addedEGID['EGID'] = egid_to_add
+                                solkat_addedEGID = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                                solkat_addedEGID = solkat_addedEGID.with_columns(
+                                    pl.lit(egid_to_add).alias('EGID')
+                                )
+                                
+                                #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                                if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
+                                    str_suffix = str(n+1).zfill(5)
+                                    if isinstance(solkat_addedEGID['DF_UID'].item(), str):
+                                        # solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                        solkat_addedEGID = solkat_addedEGID.with_columns(
+                                            pl.col('DF_UID').apply(lambda x: f'{x}{str_suffix}').alias('DF_UID')
+                                        )
+                                    elif isinstance(solkat_addedEGID['DF_UID'].item(), int):   
+                                        # solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+                                        solkat_addedEGID = solkat_addedEGID.with_columns(
+                                            pl.col('DF_UID').apply(lambda x: int(f'{x}{str_suffix}')).alias('DF_UID')
+                                        )
+                                                                                
 
-            solkat, solkat_gdf = copy.deepcopy(new_solkat), copy.deepcopy(new_solkat_gdf)      
+                                # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                                for col in cols_adjust_for_missEGIDs_to_solkat:
+                                    # solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                    solkat_addedEGID = solkat_addedEGID.with_columns(
+                                        (pl.col(col) / egid_join_union.shape[0]).alias(col)
+                                    )
+                                
+                                solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                                del solkat_addedEGID
+                            
+                            # concat all EGIDs within the same shape that were previously missing
+                            # solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+                            solkat_subdf = pl.concat(solkat_subdf_addedEGID_list)
+                            
+                                
+                                # 5a case (discontinued)
+                            if False: 
+                                # else: 
+
+
+                                # attach a copy of one solkatEGID partition and set the EGID to the gwrEGID
+                                gwrEGID_row = copy.deepcopy(egid_join_union.iloc[0])
+                                # solkat_addedEGID['DF_UID_solkat'] = solkat_addedEGID['DF_UID']
+                                gwrEGID_row['EGID_gwradded'] = egid
+                                egid_join_union = pd.concat([egid_join_union, gwrEGID_row.to_frame().T], ignore_index=True)
+
+                                # next follow all steps as in "Intended Case" above (solkat_shape with solkatEGID and gwrEGIDs)
+                                solkat_subdf_addedEGID_list = []
+                                n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
+                                
+                                for n, egid_to_add in enumerate(egid_join_union['EGID_gwradded'].unique()):
+
+                                    # add all partitions given the "old EGID" & change EGID to the acutal identifier (if not egid_to_add in EGID_old_solkat_list:)
+                                    solkat_addedEGID = copy.deepcopy(solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == egid,])
+                                    solkat_addedEGID['EGID'] = egid_to_add
+                                    
+                                    #extend the DF_UID with some numbers to have truely unique DF_UIDs
+                                    if self.sett.SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique:
+                                        str_suffix = str(n+1).zfill(3)
+                                        if isinstance(solkat_addedEGID['DF_UID'].iloc[0], str):
+                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: f'{x}{str_suffix}')
+                                        elif isinstance(solkat_addedEGID['DF_UID'].iloc[0], int):   
+                                            solkat_addedEGID['DF_UID'] = solkat_addedEGID['DF_UID'].apply(lambda x: int(f'{x}{str_suffix}'))
+
+                                    # divide certain columns by the number of EGIDs in the union shape (e.g. FLAECHE)
+                                    for col in cols_adjust_for_missEGIDs_to_solkat:
+                                        solkat_addedEGID[col] =  solkat_addedEGID[col] / egid_join_union.shape[0]
+                                    
+                                    # shrink topology to see which partitions are affected by EGID extensions
+                                    # solkat_addedEGID['geometry'] =solkat_addedEGID['geometry'].buffer(-0.5, resolution=16)
+
+                                    solkat_subdf_addedEGID_list.append(solkat_addedEGID)
+                                
+                                # concat all EGIDs within the same shape that were previously missing
+                                solkat_subdf = pd.concat(solkat_subdf_addedEGID_list, ignore_index=True)
+
+
+                        else: 
+                            if i_print < print_counter_max:
+                                print(f'ERROR: EGID {egid:14}: not fitting into any case (1 to 5) for adjusting faulty SOLKAT EGIDs by matching shape to GWR_EGIDs')
+                                i_print += 1
+                            elif i_print == print_counter_max:
+                                print(f'ERROR: EGID {egid:14}: {print_counter_max}+ ... more cases not fitting into any case (1 to 5) for adjusting faulty SOLKAT EGIDs by matching shape to GWR_EGIDs')
+                                i_print += 1
+
+
+                    if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
+                        checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition', self.sett.log_name, 3, self.sett.show_debug_prints)
+                        
+                    # merge all solkat partitions to new solkat df
+                    new_solkat_append_list.append(solkat_subdf) 
+                    del solkat_subdf
+
+                # new_solkat_gdf = gpd.GeoDataFrame(pd.concat(new_solkat_append_list, ignore_index=True), geometry='geometry')
+                # new_solkat = new_solkat_gdf.drop(columns = ['geometry'])
+                new_solkat_pl = pl.concat(new_solkat_append_list)
+                new_solkat = new_solkat_pl
+
+                new_solkat_pd = new_solkat_pl.to_pandas()
+                new_solkat_gdf = new_solkat_pd.merge(solkat_all_geo[['DF_UID', 'geometry']], how = 'left', on = 'DF_UID')
+                new_solkat_gdf = gpd.GeoDataFrame(new_solkat_gdf, geometry='geometry')
+                
+                checkpoint_to_logfile(f'Extended solkat_df by {new_solkat.shape[0] - solkat_v2_gdf.shape[0]} rows (before matching: {solkat_v2_gdf.shape[0]}, after: {new_solkat.shape[0]} rows)', self.sett.summary_name, 3, self.sett.show_debug_prints)
+
+                # solkat, solkat_gdf = copy.deepcopy(new_solkat), copy.deepcopy(new_solkat_gdf)      
+                solkat, solkat_gdf = new_solkat.clone(), new_solkat_gdf.copy()      
+                del new_solkat, new_solkat_gdf, solkat_v2, solkat_v2_gdf, solkat_union_v2EGID, join_gwr_solkat_union, join_gwr_pl,
             
 
             # SOLKAT_MONTH ====================
@@ -1068,10 +1661,9 @@ class DataAggScenario:
                 pl.col('SB_UUID').cast(pl.Utf8),
                 pl.col('DF_UID').cast(pl.Utf8)
             ])
-            solkat_all_pl = pl.from_pandas(solkat_all_pq)
-            solkat_month_all_pl = solkat_month_all_pl.join(solkat_all_pl.select(['DF_UID', 'BFS_NUMMER']), on='DF_UID', how='left')
+            solkat_month_all_pl = solkat_month_all_pl.join(solkat_all_pq.select(['DF_UID', 'BFS_NUMMER']), on='DF_UID', how='left')
             solkat_month_pl = solkat_month_all_pl.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers))
-            solkat_month = solkat_month_pl.to_pandas()
+            solkat_month = solkat_month_pl.clone()
 
 
 
@@ -1080,32 +1672,61 @@ class DataAggScenario:
 
 
             # GRID_NODE ====================
-            Map_egid_dsonode = pd.read_excel(f'{get_primeo_path()}/Daten_Primeo_x_UniBasel_V2.0.xlsx')
+            if 'scicore' in self.sett.data_path:
+                # Map_egid_dsonode = pd.read_excel(f'{self.sett.data_path}/input_TOBEDELETED/Daten_Primeo_x_UniBasel_V2.0.xlsx')
+                Map_egid_dsonode = pl.read_csv(f'{self.sett.data_path}/input_TOBEDELETED/Daten_Primeo_x_UniBasel_V2.0.csv', separator=';',     null_values=["#N/A"])
+            else:
+                # Map_egid_dsonode = pd.read_excel(f'{get_dso_path()}/Daten_Primeo_x_UniBasel_V2.0.xlsx')
+                Map_egid_dsonode = pl.read_csv(f'{get_dso_path()}/Daten_Primeo_x_UniBasel_V2.0.csv', separator=';',     null_values=["#N/A"])
+
             # transformations
-            Map_egid_dsonode.rename(columns={'ID_Trafostation': 'grid_node', 'Trafoleistung_kVA': 'kVA_threshold'}, inplace=True)
-            Map_egid_dsonode['EGID'] = Map_egid_dsonode['EGID'].astype(str)
-            Map_egid_dsonode['grid_node'] = Map_egid_dsonode['grid_node'].astype(str)
+            # Map_egid_dsonode.rename(columns={'ID_Trafostation': 'grid_node', 'Trafoleistung_kVA': 'kVA_threshold'}, inplace=True)
+            # Map_egid_dsonode['EGID'] = Map_egid_dsonode['EGID'].astype(str)
+            # Map_egid_dsonode['grid_node'] = Map_egid_dsonode['grid_node'].astype(str)
+            Map_egid_dsonode.filter(pl.col('Trafoleistung_kVA').is_null()).select(pl.col('ID_Trafostation')).unique()
+            Map_egid_dsonode = Map_egid_dsonode.rename({'ID_Trafostation': 'grid_node', 'Trafoleistung_kVA': 'kVA_threshold'})
+            Map_egid_dsonode = Map_egid_dsonode.filter(~pl.col('kVA_threshold').is_null())
+            Map_egid_dsonode = Map_egid_dsonode.with_columns([
+                pl.col('EGID').cast(pl.Utf8),
+                pl.col('grid_node').cast(pl.Utf8),
+                pl.col('kVA_threshold').cast(pl.Float64)
+            ])
 
-            egid_counts = Map_egid_dsonode['EGID'].value_counts()
-            multip_egid_dsonode = egid_counts[egid_counts > 1].index
+            # egid_counts = Map_egid_dsonode['EGID'].value_counts()
+            # multip_egid_dsonode = egid_counts[egid_counts > 1].index
+            # single_egid_dsonode = []
+
+            # for egid in multip_egid_dsonode:
+            #     subegid = Map_egid_dsonode.loc[Map_egid_dsonode['EGID'] == egid,]
+
+            #     if subegid['grid_node'].nunique() == 1:
+            #         single_egid_dsonode.append([egid, subegid['grid_node'].iloc[0], subegid['kVA_threshold'].iloc[0]])
+            #     elif subegid['grid_node'].nunique() > 1:
+            #         subegid = subegid.loc[subegid['kVA_threshold'] == subegid['kVA_threshold'].max(),]
+            #         single_egid_dsonode.append([egid, subegid['grid_node'].iloc[0], subegid['kVA_threshold'].iloc[0]])
+            egid_counts = Map_egid_dsonode.group_by("EGID").len().rename({"len": "n"})
+            multip_egid_dsonode = egid_counts.filter(pl.col("n") > 1)["EGID"].to_list()
             single_egid_dsonode = []
-            egid = multip_egid_dsonode[1]
             for egid in multip_egid_dsonode:
-                subegid = Map_egid_dsonode.loc[Map_egid_dsonode['EGID'] == egid,]
+                subegid = Map_egid_dsonode.filter(pl.col("EGID") == egid)
+                if subegid["grid_node"].n_unique() == 1:
+                    row = {'EGID': egid, 'grid_node': subegid["grid_node"].first(), 'kVA_threshold': subegid["kVA_threshold"].first()}
+                elif subegid["grid_node"].n_unique() > 1:
+                    subegid = subegid.filter(pl.col("kVA_threshold") == subegid["kVA_threshold"].max())
+                    row = {'EGID': egid, 'grid_node': subegid["grid_node"].first(), 'kVA_threshold': subegid["kVA_threshold"].first()}
+                single_egid_dsonode.append(row)
+            # single_egid_dsonode_df = pd.DataFrame(single_egid_dsonode, columns = ['EGID', 'grid_node', 'kVA_threshold'])
+            single_egid_dsonode = pl.DataFrame(single_egid_dsonode, schema = ['EGID', 'grid_node', 'kVA_threshold'])
 
-                if subegid['grid_node'].nunique() == 1:
-                    single_egid_dsonode.append([egid, subegid['grid_node'].iloc[0], subegid['kVA_threshold'].iloc[0]])
-                elif subegid['grid_node'].nunique() > 1:
-                    subegid = subegid.loc[subegid['kVA_threshold'] == subegid['kVA_threshold'].max(),]
-                    single_egid_dsonode.append([egid, subegid['grid_node'].iloc[0], subegid['kVA_threshold'].iloc[0]])
 
-            single_egid_dsonode_df = pd.DataFrame(single_egid_dsonode, columns = ['EGID', 'grid_node', 'kVA_threshold'])
             # drop duplicates and append single_egid_dsonode_df
-            Map_egid_dsonode.drop(Map_egid_dsonode[Map_egid_dsonode['EGID'].isin(multip_egid_dsonode)].index, inplace = True)
-            Map_egid_dsonode = pd.concat([Map_egid_dsonode, single_egid_dsonode_df], ignore_index=True)
+            # Map_egid_dsonode.drop(Map_egid_dsonode[Map_egid_dsonode['EGID'].isin(multip_egid_dsonode)].index, inplace = True)
+            # Map_egid_dsonode = pd.concat([Map_egid_dsonode, single_egid_dsonode_df], ignore_index=True)
+            Map_egid_dsonode = Map_egid_dsonode.filter(~pl.col("EGID").is_in(multip_egid_dsonode)).vstack(single_egid_dsonode)
 
             # create gdf of all EGIDs with grid nodes for visualization
-            gwr_dsonode_gdf = gwr_all_building_gdf.merge(Map_egid_dsonode, how = 'left', on = 'EGID')
+            Map_egid_dsonode_pd = Map_egid_dsonode.to_pandas()
+            gwr_dsonode_gdf = gwr_all_building_gdf.merge(Map_egid_dsonode_pd, how = 'left', on = 'EGID')
             if gwr_dsonode_gdf['grid_node'].isna().any():
                 gwr_dsonode_gdf = gwr_dsonode_gdf.loc[~gwr_dsonode_gdf['grid_node'].isna()]
 
@@ -1113,6 +1734,7 @@ class DataAggScenario:
             Map_solkatdfuid_egid = solkat_gdf.loc[:,['DF_UID', 'DF_NUMMER', 'SB_UUID', 'EGID']].copy()
             Map_solkatdfuid_egid.rename(columns = {'GWR_EGID': 'EGID'}, inplace = True)
             Map_solkatdfuid_egid = Map_solkatdfuid_egid.loc[Map_solkatdfuid_egid['EGID'] != '']
+            Map_solkatdfuid_egid = pl.from_pandas(Map_solkatdfuid_egid)
 
 
             # MAP: egid > pv ---------------------------------------------------------------------------------
@@ -1201,11 +1823,12 @@ class DataAggScenario:
             checkpoint_to_logfile(f'Mapping egid_pvid: {round(gwregid_pvid["EGID"].isna().sum() / gwregid_pvid.shape[0] *100,2)} % of pv rows ({gwregid_pvid.shape[0]}) are missing EGID', self.sett.log_name, 6, self.sett.show_debug_prints)
             # Map_egid_pv = gwregid_pvid.loc[gwregid_pvid['EGID'].notna(), ['EGID', 'xtf_id']].copy()
             Map_egid_pv = gwregid_pvid[['EGID', 'xtf_id']].copy()
+            Map_egid_pv = pl.from_pandas(Map_egid_pv)
 
 
             # CHECK SELECTION: - OMITTED SPATIAL POINTS / POLYS ---------------------------------------------------------------------------------
             print_to_logfile('\nnumber of omitted buildings because EGID is (not) / present in all of GWR / Solkat / PV / Grid_Node', self.sett.summary_name)
-            print_to_logfile(f'>gwr settings: \n n bfs_numbers: {len(self.sett.bfs_numbers)}, \n year_range: {self.sett.year_range}, \n building class GKLAS: {self.sett.GWR_GKLAS}, \n building status GSTAT: {self.sett.GWR_GSTAT}, \n year of construction GBAUJ: {self.sett.GWR_GBAUJ_minmax}', self.sett.summary_name)
+            print_to_logfile(f'>gwr settings: \n n bfs_numbers: {len(self.sett.bfs_numbers)}, \n year_range: {self.sett.year_range}, \n building class GKLAS: {self.sett.GWR_GKLAS}, \n building status GSTAT: {self.sett.GWR_GSTAT}, \n year of construction GBAUJ: (discontinued)', self.sett.summary_name)
             omitt_gwregid_gdf = copy.deepcopy(gwr_gdf.loc[~gwr_gdf['EGID'].isin(solkat_gdf['EGID'])])
             checkpoint_to_logfile(f'omitt_gwregid_gdf (gwr not in solkat): {omitt_gwregid_gdf.shape[0]} rows ({round((omitt_gwregid_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique: {gwr_gdf["EGID"].nunique()})', self.sett.summary_name, 2, True)
 
@@ -1219,8 +1842,9 @@ class DataAggScenario:
             omitt_gwregid_gridnode_gdf = copy.deepcopy(gwr_gdf.loc[~gwr_gdf['EGID'].isin(Map_egid_dsonode['EGID'])])
             checkpoint_to_logfile(f'omitt_gwregid_gridnode_gdf (gwr not in gridnode): {omitt_gwregid_gridnode_gdf.shape[0]} rows ({round((omitt_gwregid_gridnode_gdf.shape[0]/gwr_gdf.shape[0])*100, 2)}%), gwr[EGID].unique: {gwr_gdf["EGID"].nunique()})', self.sett.summary_name, 2, True)
 
-            omitt_gridnodeegid_gwr_df = copy.deepcopy(Map_egid_dsonode.loc[~Map_egid_dsonode['EGID'].isin(gwr_gdf['EGID'])])
-            checkpoint_to_logfile(f'omitt_gridnodeegid_gwr_df (gridnode not in gwr): {omitt_gridnodeegid_gwr_df.shape[0]} rows ({round((omitt_gridnodeegid_gwr_df.shape[0]/Map_egid_dsonode.shape[0])*100, 2)}%), gridnode[EGID].unique: {Map_egid_dsonode["EGID"].nunique()})', self.sett.summary_name, 2, True)
+            # omitt_gridnodeegid_gwr_df = copy.deepcopy(Map_egid_dsonode.loc[~Map_egid_dsonode['EGID'].isin(gwr_gdf['EGID'])])
+            omitt_gridnodeegid_gwr_df = Map_egid_dsonode.filter(~pl.col('EGID').is_in(gwr_gdf['EGID']))
+            checkpoint_to_logfile(f'omitt_gridnodeegid_gwr_df (gridnode not in gwr): {omitt_gridnodeegid_gwr_df.shape[0]} rows ({round((omitt_gridnodeegid_gwr_df.shape[0]/Map_egid_dsonode.shape[0])*100, 2)}%), gridnode[EGID].unique: {Map_egid_dsonode["EGID"].n_unique()})', self.sett.summary_name, 2, True)
             
 
             # CHECK SELECTION: - PRINTS TO SUMMARY LOG FILE ---------------------------------------------------------------------------------
@@ -1237,7 +1861,8 @@ class DataAggScenario:
             df_to_export_names  = ['pv', 'solkat', 'solkat_month', 'Map_egid_dsonode', 'Map_solkatdfuid_egid', 'Map_egid_pv', ]
             df_to_export_list   = [ pv,   solkat,   solkat_month,   Map_egid_dsonode,   Map_solkatdfuid_egid,   Map_egid_pv , ]
             for i, df in enumerate(df_to_export_list):
-                df.to_parquet(f'{self.sett.preprep_path}/{df_to_export_names[i]}.parquet')
+                # df.to_parquet(f'{self.sett.preprep_path}/{df_to_export_names[i]}.parquet')
+                df.write_parquet(f'{self.sett.preprep_path}/{df_to_export_names[i]}.parquet')
                 # df.to_csv(f'{self.sett.preprep_path}/{df_to_export_names[i]}.csv', sep=';', index=False)
                 checkpoint_to_logfile(f'{df_to_export_names[i]} exported to prepreped data', self.sett.log_name, 1, self.sett.show_debug_prints)
 
@@ -1708,11 +2333,11 @@ if __name__ == '__main__':
             name_dir_export = 'preprep_debug',
             # kt_numbers = [13, 12, 11], # BL, BS, SO
             bfs_numbers = [
-                2761, 2768,
-                2546,  	 # Grenchen,  	
+                2641, 2615, 
                            ],
-            year_range = [2022, 2023],
-            GWR_GKLAS = ['1110', ],  # '1121'],
+            year_range = [2022, 2024],
+            split_data_geometry_AND_slow_api = False,
+            GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
 
@@ -1725,7 +2350,7 @@ if __name__ == '__main__':
                 2546,  	 # Grenchen,  	
                            ],
             year_range = [2015, 2024],
-            split_data_geometry_AND_slow_api = True,
+            split_data_geometry_AND_slow_api = False,
             GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
         ),
