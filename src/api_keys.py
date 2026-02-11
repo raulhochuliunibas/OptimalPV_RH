@@ -8,6 +8,6 @@ def get_entsoe_key():
     entsoe_key = 'cd6ec157-f8db-47ff-a2ea-87e7ac8416c8'
     return entsoe_key
 
-def get_primeo_path():
+def get_dso_path():
     primeo_path = 'Q:/_shared/Projekt - Optimal PV Expantionspaths'
     return primeo_path

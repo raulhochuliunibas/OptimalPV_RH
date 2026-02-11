@@ -67,9 +67,12 @@ class PVAllocScenario_Settings:
                                                     ])
     mini_sub_model_TF: bool                     = False
     mini_sub_model_grid_nodes: List[str]        = field(default_factory=lambda: [
-                                                                                #  '295',
-                                                                                 '265', 
-                                                                                 '341', '345', 
+                                                                    #ew nodes
+                                                                    '524', 
+                                                                    '743',
+                                                                    '724', 
+                                                                    # regular nodes problematic
+                                                                    '81', '867', '79',
                                                                                  ]) 
     mini_sub_model_ngridnodes: int              = 6
     mini_sub_model_nEGIDs: int                  = 30
@@ -118,7 +121,7 @@ class PVAllocScenario_Settings:
     GWRspec_GSTAT: List[str]                            = field(default_factory=lambda: [
                                                                 # '1001', # GSTAT - 1001: in planing
                                                                 # '1002', # GSTAT - 1002: construction right granted 
-                                                                '1003', # GSTAT - 1003: in construction
+                                                                # '1003', # GSTAT - 1003: in construction
                                                                 '1004', # GSTAT - 1004: fully constructed, existing buildings
                                                                 ])    
     GWRspec_GKLAS: List[str]                            = field(default_factory=lambda: [
@@ -547,7 +550,7 @@ class PVAllocScenario_Settings:
         self.T0_prediction: str                 = f'{self.T0_year_prediction}-01-01 00:00:00'  
         # GBAUJ_min, GBAUJ_max = 1920, self.T0_year_prediction-1
         # self.GWRspec_GBAUJ_minmax: List[int]    = field(default_factory=lambda: [GBAUJ_min, GBAUJ_max])
-        self.GWRspec_GBAUJ_minmax[0] = 1920
+        # self.GWRspec_GBAUJ_minmax[0] = 1920
         self.GWRspec_GBAUJ_minmax[1] = self.T0_year_prediction-1
 
 
@@ -1459,8 +1462,8 @@ class PVAllocScenario:
             topo_node_df = topo_node_df.join(topo_filter_egid, on='EGID', how='left')
 
             # export node_subdf
-            topo_node_subdf.write_parquet(f'{self.sett.optim_path}/topo_node_subdf.parquet')
-            topo_node_df.write_parquet(f'{self.sett.optim_path}/topo_node_df.parquet')
+            # topo_node_subdf.write_parquet(f'{self.sett.optim_path}/topo_node_subdf.parquet')
+            # topo_node_df.write_parquet(f'{self.sett.optim_path}/topo_node_df.parquet')
 
 
             # Grid node OPTIMIZATION ======================
@@ -1624,6 +1627,7 @@ class PVAllocScenario:
             npv_df_list.append(npv_df_part)
         npv_df = pl.concat(npv_df_list)
         npv_df.write_parquet(f'{self.sett.optim_path}/npv_df.parquet')
+        npv_df.write_csv(f'{self.sett.optim_path}/npv_df.csv') if self.sett.export_csvs else None
 
 
         # ALLOCATION ALGORITHM -----------------------------------------------------------------------------    
@@ -2556,7 +2560,7 @@ class PVAllocScenario:
 
 
                 # dsonodes data -------
-                dsonodes_df  = pd.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
+                dsonsodes_df  = pd.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
                 dsonodes_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/dsonodes_gdf.geojson')
 
 
@@ -2597,6 +2601,7 @@ class PVAllocScenario:
             # > Case 2 EGID in GWR but not in Map: more problematic; EGID "close" to next node => Match to nearest node; EGID "far away" => drop EGID
             gwr_wo_node = gwr.loc[~gwr['EGID'].isin(Map_egid_dsonode['EGID'].unique()),]
             Map_egid_dsonode_appendings =[]
+            
                 
             for egid in gwr_wo_node['EGID']:
                 egid_point = gwr_gdf.loc[gwr_gdf['EGID'] == egid, 'geometry'].iloc[0]
@@ -4496,6 +4501,7 @@ class PVAllocScenario:
                     pl.col('info_source').first().alias('info_source'),
                     pl.col('grid_node').first().alias('grid_node'),
                     pl.col('demand_kW').first().alias('demand_kW'),
+
                     pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
                     pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                     pl.col('radiation').sum().alias('radiation'),
@@ -5324,10 +5330,8 @@ class PVAllocScenario:
                 picked_egid              = npv_pick['EGID'].values[0]
                 picked_power             = npv_pick['pred_instPower'].values[0]
                 df_uid_winst             = npv_pick['df_uid_winst'].values[0]
-                # picked_flaeche           = npv_pick['opt_FLAECHE'].values[0]
                 picked_flaeche           = npv_pick['FLAECHE'].values[0]
-                # picked_dfuidPower        = npv_pick['dfuidPower'].values[0]
-                # picked_share_pvprod_used = npv_pick['share_pvprod_used'].values[0]
+                picked_npv               = npv_pick['NPV_uid'].values[0]
                 picked_demand_kW         = npv_pick['demand_kW'].values[0]
                 picked_poss_pvprod       = npv_pick['poss_pvprod_kW'].values[0]
                 picked_pvprod_kW         = npv_pick['pvprod_kW'].values[0]
@@ -5335,22 +5339,24 @@ class PVAllocScenario:
                 picked_netfeedin_kW      = npv_pick['netfeedin_kW'].values[0]
                 picked_netdemand_kW      = npv_pick['netdemand_kW'].values[0]
 
+                picked_grid_node         = topo[picked_egid]['grid_node']
+
                 topo_pick_df = npv_pick
                 
             elif isinstance(npv_pick, pd.Series):
                 picked_egid  = npv_pick['EGID']
                 picked_power = npv_pick['pred_instPower']
                 df_uid_winst = npv_pick['df_uid_winst']
-                # picked_flaeche           = npv_pick['opt_FLAECHE']
                 picked_flaeche = npv_pick['FLAECHE']
-                # picked_dfuidPower        = npv_pick['dfuidPower']
-                # picked_share_pvprod_used = npv_pick['share_pvprod_used']
+                picked_npv               = npv_pick['NPV_uid']
                 picked_demand_kW         = npv_pick['demand_kW']
                 picked_poss_pvprod       = npv_pick['poss_pvprod_kW']
                 picked_pvprod_kW         = npv_pick['pvprod_kW']
                 picked_selfconsum_kW     = npv_pick['selfconsum_kW']
                 picked_netfeedin_kW      = npv_pick['netfeedin_kW']
                 picked_netdemand_kW      = npv_pick['netdemand_kW']
+
+                picked_grid_node         = topo[picked_egid]['grid_node']
 
                 topo_pick_df = pd.DataFrame(npv_pick).T
 
@@ -5411,14 +5417,21 @@ class PVAllocScenario:
                 topo_pick_df.loc[idx, 'info_source'] = '       alloc_algorithm'                       if flaeche_ratio > 0.0 else ''
                 topo_pick_df.loc[idx, 'BeginOp'] =             str(m)                                 if flaeche_ratio > 0.0 else ''
                 topo_pick_df.loc[idx, 'iter_round'] =          i_m                                    if flaeche_ratio > 0.0 else -1
+                topo_pick_df.loc[idx, 'NPV_uid'] =             picked_npv                             if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'grid_node'] =           picked_grid_node                       if flaeche_ratio > 0.0 else ''
                 topo_pick_df.loc[idx, 'xtf_id'] =              df_uid_winst                           if flaeche_ratio > 0.0 else ''
+                topo_pick_df.loc[idx, 'dfuidPower'] =          dfuid_inst_power                       if flaeche_ratio > 0.0 else 0.0
                 topo_pick_df.loc[idx, 'demand_kW'] =           picked_demand_kW                       if flaeche_ratio > 0.0 else 0.0
-                topo_pick_df.loc[idx, 'dfuidPower'] =          flaeche_ratio * dfuid_inst_power       if flaeche_ratio > 0.0 else 0.0
-                topo_pick_df.loc[idx, 'poss_pvprod'] =         flaeche_ratio * picked_poss_pvprod     if flaeche_ratio > 0.0 else 0.0
-                topo_pick_df.loc[idx, 'pvprod_kW'] =           flaeche_ratio * picked_pvprod_kW       if flaeche_ratio > 0.0 else 0.0
-                topo_pick_df.loc[idx, 'selfconsum_kW'] =       flaeche_ratio * picked_selfconsum_kW   if flaeche_ratio > 0.0 else 0.0
-                topo_pick_df.loc[idx, 'netfeedin_kW'] =        flaeche_ratio * picked_netfeedin_kW    if flaeche_ratio > 0.0 else 0.0
-                topo_pick_df.loc[idx, 'netdemand_kW'] =        flaeche_ratio * picked_netdemand_kW    if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'poss_pvprod'] =         picked_poss_pvprod                     if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'pvprod_kW'] =           picked_pvprod_kW                       if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'selfconsum_kW'] =       picked_selfconsum_kW                   if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'netfeedin_kW'] =        picked_netfeedin_kW                    if flaeche_ratio > 0.0 else 0.0
+                topo_pick_df.loc[idx, 'netdemand_kW'] =        picked_netdemand_kW                    if flaeche_ratio > 0.0 else 0.0
+
+                if 'OptimExpa' in subdir_path:
+                    topo_pick_df.loc[idx, 'grid_optim_inst_order'] = npv_pick.loc[npv_pick['EGID'] == picked_egid, 'grid_optim_inst_order'].values[0] 
+
+
             
             topo_pick_df = topo_pick_df.loc[topo_pick_df['inst_TF'] == True].copy()
             pred_inst_df = pd.concat([pred_inst_df, topo_pick_df], ignore_index=True)
@@ -5474,20 +5487,20 @@ if __name__ == '__main__':
         return replace(default_scen, **kwargs)
 
     # mini scenario dev + debug
-    bfs_mini_name = 'pvalloc_2nbf_10y_compare2'
+    bfs_mini_name = 'pvalloc_2nbf_10y_compare3'
     pvalloc_mini_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_test_DEFAULT',
             bfs_numbers                                          = [
                                                         2641, 2615,
                                                                     ],         
-            mini_sub_model_TF                                    = False,
+            mini_sub_model_TF                                    = True,
             mini_sub_model_by_X                                  = 'by_gridnode',
+            mini_sub_model_ngridnodes                            = 8,
             mini_sub_model_grid_nodes                            = [
-                                                                    #ew nodes
-                                                                    '524', 
-                                                                    '743',
-                                                                    #   '724', 
-                                                                    # regular nodes problematic
-                                                                    '81', '867', '79',
+                                                                    '514', 
+                                                                    '511', 
+                                                                    '412', 
+                                                                    '411', 
+                                                                    '415', 
                                                                     ],
             mini_sub_model_nEGIDs                                = 500,
             create_gdf_export_of_topology                        = True,
@@ -5496,29 +5509,7 @@ if __name__ == '__main__':
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
             months_prediction                                    = 120,
-            GWRspec_building_cols                                = [
-                                                            'EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
-                                                            'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
-                                                            'GEBF', 'GAREA', 
-                                                            'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
-                                                            # 'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2'
-                                                        ],
-
             TECspec_add_heatpump_demand_TF                       = True,   
-            TECspec_heatpump_months_factor                       = [
-                                                                    (10, 7.0),
-                                                                    (11, 7.0), 
-                                                                    (12, 7.0), 
-                                                                    (1 , 7.0), 
-                                                                    (2 , 7.0), 
-                                                                    (3 , 7.0), 
-                                                                    (4 , 7.0), 
-                                                                    (5 , 7.0),     
-                                                                    (6 , 1.0), 
-                                                                    (7 , 1.0), 
-                                                                    (8 , 1.0), 
-                                                                    (9 , 1.0),
-                                                                    ], 
             ALGOspec_topo_subdf_partitioner                      = 250, 
             ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
             ALGOspec_subselec_filter_method   = 'pooled',
@@ -5554,20 +5545,6 @@ if __name__ == '__main__':
         months_lookback                                      = 12,
         months_prediction                                    = 360,
         TECspec_add_heatpump_demand_TF                       = True,
-        TECspec_heatpump_months_factor                       = [
-                                                                (10, 7.0),
-                                                                (11, 7.0), 
-                                                                (12, 7.0), 
-                                                                (1 , 7.0), 
-                                                                (2 , 7.0), 
-                                                                (3 , 7.0), 
-                                                                (4 , 7.0), 
-                                                                (5 , 7.0),     
-                                                                (6 , 1.0), 
-                                                                (7 , 1.0), 
-                                                                (8 , 1.0), 
-                                                                (9 , 1.0),
-                                                                ],
         ALGOspec_topo_subdf_partitioner                      = 250,
         ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
         CSTRspec_ann_capacity_growth                         = 0.1,
@@ -5586,16 +5563,9 @@ if __name__ == '__main__':
 
 
     bfs_mini_scen_list = [ 
-    #     make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
-    #         # bfs_numbers                     = bfs_mini_list,
-    #         run_pvalloc_initalization_TF    = True,
-    #         run_pvalloc_mcalgorithm_TF      = True,
-    #         run_gridoptimized_orderinst_TF  = False,
-    #         run_gridoptimized_expansion_TF  = False,
-    #     ), 
 
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_gridopt_max',
-            # bfs_numbers                     = bfs_mini_list,
+            bfs_numbers                     = bfs_mini_list,
             # run_pvalloc_initalization_TF    = True,
             run_pvalloc_mcalgorithm_TF      = False,
             run_gridoptimized_orderinst_TF  = True,
@@ -5603,7 +5573,14 @@ if __name__ == '__main__':
             # OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
             OPTIMspecs_gridnode_subsample           = 'max_node', 
             OPTEXPApecs_apply_gridoptim_order_TF     = True,
+        ), 
 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
+            # bfs_numbers                     = bfs_mini_list,
+            run_pvalloc_initalization_TF    = True,
+            run_pvalloc_mcalgorithm_TF      = True,
+            run_gridoptimized_orderinst_TF  = False,
+            run_gridoptimized_expansion_TF  = False,
         ), 
     ]
  

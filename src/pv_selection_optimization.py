@@ -244,7 +244,9 @@ def optimize_pv_selection_pulp(
     cumulative_limit_kWh: Optional[float] = None,
     objective: str = 'maximize_count',
     time_limit_sec: Optional[int] = 300,
-    verbose: bool = True
+    verbose: bool = True,
+    verbose_pulp_msg: bool = False,
+    print_model_summary: bool = True,
 ) -> Tuple[List[str], Dict]:
     """
     Exact optimization using PuLP (Mixed Integer Linear Programming).
@@ -333,8 +335,75 @@ def optimize_pv_selection_pulp(
     # Solve the problem
     if verbose:
         print(f"  Solving optimization problem...")
+
+        if print_model_summary:
+            try:
+                def _iter_affine_terms(expr):
+                    try:
+                        items = list(expr.items())
+                    except Exception:
+                        items = []
+                    terms = []
+                    for var, coeff in items:
+                        name = getattr(var, 'name', str(var))
+                        try:
+                            coeff_f = float(coeff)
+                        except Exception:
+                            coeff_f = coeff
+                        terms.append((name, coeff_f))
+                    return terms
+
+                def _summarize_affine(expr, max_terms=6):
+                    terms = _iter_affine_terms(expr)
+                    # sort by absolute coefficient descending for better signal
+                    try:
+                        terms_sorted = sorted(terms, key=lambda t: abs(t[1]) if isinstance(t[1], (int, float)) else 0, reverse=True)
+                    except Exception:
+                        terms_sorted = terms
+                    shown = terms_sorted[:max_terms]
+                    parts = [f"{coeff:g}*{name}" for name, coeff in [(n, c) for (n, c) in shown]]
+                    more = len(terms_sorted) - len(shown)
+                    tail = f" (+{more} more)" if more > 0 else ""
+                    # constant term if present
+                    const = getattr(expr, 'constant', 0)
+                    if const:
+                        parts.append(f"{const:g}")
+                    return " + ".join(parts) + tail
+
+                def _sense_symbol(sense_val):
+                    # PuLP uses: -1 (<=), 0 (==), 1 (>=)
+                    try:
+                        return { -1: "<=", 0: "==", 1: ">=" }.get(int(getattr(sense_val, 'value', sense_val)), "?")
+                    except Exception:
+                        return "?"
+
+                # Collect counts
+                n_vars = len(prob.variables())
+                n_cons = len(getattr(prob, 'constraints', {}))
+                obj_str = _summarize_affine(prob.objective, max_terms=8)
+                print("\n  Model summary (truncated):")
+                print(f"    Variables: {n_vars}")
+                print(f"    Constraints: {n_cons}")
+                print(f"    Objective: {obj_str}")
+
+                # Show a few constraints
+                cons_items = list(getattr(prob, 'constraints', {}).items())
+                max_show = min(4    , len(cons_items))
+                if max_show:
+                    print(f"    Sample constraints (first {max_show}):")
+                    for i in range(max_show):
+                        cname, c = cons_items[i]
+                        expr = getattr(c, 'e', c)
+                        lhs = _summarize_affine(expr, max_terms=6)
+                        rhs = getattr(c, 'constant', None)
+                        sense = _sense_symbol(getattr(c, 'sense', None))
+                        rhs_part = f" {sense} {rhs:g}" if isinstance(rhs, (int, float, np.floating)) else f" {sense} ?"
+                        print(f"      {cname}: {lhs}{rhs_part}")
+            except Exception as _print_err:
+                # Avoid failing the solve due to summary printing
+                print(f"    (Model summary unavailable: {type(_print_err).__name__})")
     
-    solver = PULP_CBC_CMD(msg=verbose, timeLimit=time_limit_sec)
+    solver = PULP_CBC_CMD(msg=verbose_pulp_msg, timeLimit=time_limit_sec)
     prob.solve(solver)
     
     # Extract results

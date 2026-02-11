@@ -508,14 +508,8 @@ if True:
     XLRG_scen_list = [
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}_max', 
                 bfs_numbers                       = XLRG_bfs_list,
-
         ),
 
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}_max', 
-                bfs_numbers                       = XLRG_bfs_list,
-
-
-        ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{XLRG_bfs_name}_max_1hll',
                 bfs_numbers                       = XLRG_bfs_list,
                 GRIDspec_node_1hll_closed_TF      = True,
