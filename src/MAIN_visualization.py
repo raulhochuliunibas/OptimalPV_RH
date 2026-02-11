@@ -52,7 +52,7 @@ class Visual_Settings:
     remove_old_plots_in_visualization: bool      = False
     remove_old_csvs_in_visualization: bool       = False
     export_only_agg_comparison_plots: bool       = False
-    MC_subdir_for_plot: str                      = '*MC*1'
+    MC_subdir_for_plot: str                      = 'zMC1*'
     mc_plots_individual_traces: bool             = True
     cut_timeseries_to_zoom_hour: bool            = False
     add_day_night_HOY_bands: bool                = False
@@ -4841,6 +4841,7 @@ class Visualization:
                         # gwr_all_building_df  = pd.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_all_building_df.parquet')
                         gwr_all_building_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_all_building_gdf.geojson')
                         outtopo_subdf_paths = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/outtopo_time_subdf/outtopo_subdf_*.parquet')
+                        Map_egid_dsonode = pd.read_parquet(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/Map_egid_dsonode.parquet')
 
                         egid_list, inst_TF_list, info_source_list, BeginOp_list, TotalPower_list, bfs_list = [], [], [], [], [], []
                         gklas_list, heating_system_list, gwaerzh1, gwaerzh2, node_list, demand_type_list   = [], [], [], [], [], []
@@ -5000,6 +5001,10 @@ class Visualization:
                         outtopo_gdf = gwr_all_building_gdf.loc[gwr_all_building_gdf['EGID'].isin(outtopo_egid_list)].copy()
                         outtopo_gdf = outtopo_gdf.to_crs('EPSG:4326')
                         outtopo_gdf['geometry'] = outtopo_gdf['geometry'].apply(self.flatten_geometry)
+                        outtopo_gdf = outtopo_gdf.merge(Map_egid_dsonode[['EGID', 'grid_node']], on='EGID', how='left')
+                        
+                        outtopo_gdf['hover_text'] = outtopo_gdf.apply(lambda row: f"EGID: {row['EGID']}<br>grid_node: {row['grid_node']}<br>gklas: {row['GKLAS']}<br>gbauj: {row['GBAUJ']}<br>gstat: {row['GSTAT']}<br>gkat: {row['GKAT']}<br>gwaerzh1/2: {row['GWAERZH1']}, -", axis=1)
+                        
 
                         # Add out sample points to map
                         fig_topoegid.add_trace(go.Scattermapbox(lat=outtopo_gdf.geometry.y,lon=outtopo_gdf.geometry.x, mode='markers',
@@ -5009,6 +5014,8 @@ class Visualization:
                                     opacity = map_topo_egid_specs['point_opacity'], 
                                 ), 
                                 name = 'EGIDs out of sample',
+                                text=outtopo_gdf['hover_text'],
+                                hoverinfo='text'
                         ))
  
                     
@@ -8047,13 +8054,14 @@ if __name__ == '__main__':
                 # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                # 'pvalloc_2nbf_10y_compare2_max',
-                'pvalloc_29nbfs_30y5_max',
+                'pvalloc_2nbf_10y_compare2_gridopt_max',
+                # 'pvalloc_16nbfs_RUR_max',
+                # 'pvalloc_16nbfs_RUR_max_gridoptim',
             ],
             # plot_show                          = False,
             # remove_old_plot_scen_directories   = True,  
             # remove_old_plots_in_visualization  = True,  
-            remove_old_csvs_in_visualization   = True,
+            # remove_old_csvs_in_visualization   = True,
             # reduce_information_content         = True,
 
             # save_plot_by_scen_directory        = False, 
@@ -8075,6 +8083,19 @@ if __name__ == '__main__':
             # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
             # plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
             # plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
+
+            # plot_ind_line_productionHOY_per_EGID_TF        = [True,      True,       False]  ,
+            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_map_topo_egid_TF                      = [True,      True,       False]  ,
+            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            # # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            # plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
+            # # plot_ind_hist_NPV_freepartitions_TF             = [True,      True,       False],
+
+            # plot_ind_line_productionHOY_per_node_byiter_TF = [True,      True,      False],
+
             ), 
 
 
@@ -8083,7 +8104,6 @@ if __name__ == '__main__':
 
     for visual_scen in visualization_list:
         visual_class = Visualization(visual_scen)
-        visual_class.export_cmd_GridOptim_parallel_HPC('pvalloc_29nbfs_30y5_max')
         visual_class.plot_ALL()
  
     print('end MAIN_visualization.py')
