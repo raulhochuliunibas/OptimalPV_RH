@@ -531,7 +531,8 @@ class PVAllocScenario_Settings:
     OPTIMspecs_gridnode_subsample: str                = 'all_nodes_pyparallel', # 'max_node' / 'all_nodes_pyparallel / 'all_nodes_loop'/ 'custom-> grid_node: str'
     # OPTIMspecs_solving_method: str                    = 'greedy'       # 'greedy' / 'pulp'
     OPTIMspecs_solving_method: List[str]              = field(default_factory=lambda: [
-                                                    'greedy', 'pulp',
+                                                    # 'greedy', 
+                                                    'pulp',
                                                     ])
     OPTIMspecs_greedy_selection_strategy: str         = 'peak_efficient'       # # - 'peak_efficient': Select houses with lowest peak contribution|  - 'energy_max': Select houses with highest energy contribution|  - 'random': Random selection (for baseline comparison)| # endregion
     OPTIMspecs_peak_ext_limit_kW: float               = 0
@@ -567,6 +568,18 @@ class PVAllocScenario:
         self.sett.calib_model_coefs        = os.path.join(self.sett.data_path, 'calibration', self.sett.ALGOspec_calib_estim_dir_name)
 
 
+    # ------------------------------------------------------------------------------------------------------
+    # EXECUTE PVALLOC SCENARIO
+    # ------------------------------------------------------------------------------------------------------
+    def RUN_pvalloc_scenario(self,):
+        if self.sett.run_pvalloc_initalization_TF:
+            self.run_pvalloc_initialization()
+        if self.sett.run_pvalloc_mcalgorithm_TF:
+            self.run_pvalloc_mcalgorithm()
+        if self.sett.run_gridoptimized_orderinst_TF:
+            self.run_gridoptimized_orderinst()
+        if self.sett.run_gridoptimized_expansion_TF:
+            self.run_gridoptimized_expansion()
 
 
     # ------------------------------------------------------------------------------------------------------
@@ -1604,7 +1617,6 @@ class PVAllocScenario:
         chapter_to_logfile(f'end MAIN_pvalloc_GridOptim_Orderinst for : {self.sett.name_dir_export}', self.sett.log_name, overwrite_file=True)
 
                 
-
     def run_gridoptimized_expansion(self):
 
         # SETUP -----------------------------------------------------------------------------
@@ -5621,22 +5633,7 @@ if __name__ == '__main__':
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
         
-        # sleep_range = list(range(10, 61, 5))
-        # sleep_time = np.random.choice(sleep_range)
-        # time.sleep(sleep_time)
-
-        if pvalloc_class.sett.run_pvalloc_initalization_TF:
-            pvalloc_class.run_pvalloc_initialization()
-        
-        if pvalloc_class.sett.run_pvalloc_mcalgorithm_TF:
-            pvalloc_class.run_pvalloc_mcalgorithm()
-
-        if pvalloc_class.sett.run_gridoptimized_orderinst_TF:
-            pvalloc_class.run_gridoptimized_orderinst()
-
-        if pvalloc_class.sett.run_gridoptimized_expansion_TF:
-            pvalloc_class.run_gridoptimized_expansion()
-        
+        pvalloc_class.RUN_pvalloc_scenario()
 
 
     print('... end of <MAIN_pvallocation.py> ...')

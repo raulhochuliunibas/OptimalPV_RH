@@ -23,17 +23,6 @@ if __name__ == "__main__":
             scen_class.sett.slurm_full_id        = slurm_full_id
             scen_class.sett.pvalloc_scen_index   = pvalloc_scen_index
     
-            if scen_class.sett.run_pvalloc_initalization_TF:
-                scen_class.run_pvalloc_initialization()
-
-            if scen_class.sett.run_pvalloc_mcalgorithm_TF:
-                scen_class.run_pvalloc_mcalgorithm()
-
-            if scen_class.sett.run_gridoptimized_orderinst_TF:
-                scen_class.run_gridoptimized_orderinst()
-
-            if scen_class.sett.run_gridoptimized_expansion_TF:
-                scen_class.run_gridoptimized_expansion()
-        
+            scen_class.RUN_pvalloc_scenario()
         print('done')
         
