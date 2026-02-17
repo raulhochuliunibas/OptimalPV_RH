@@ -242,7 +242,7 @@ def optimize_pv_selection_pulp(
     egid_to_idx: Dict[str, int],
     peak_limit_kW: float,
     cumulative_limit_kWh: Optional[float] = None,
-    objective: str = 'maximize_count',
+    objective: str = 'lex_min_excess_max_energy',
     time_limit_sec: Optional[int] = 300,
     verbose: bool = True,
     verbose_pulp_msg: bool = False,
@@ -280,7 +280,7 @@ def optimize_pv_selection_pulp(
         Results and statistics
     """
     try:
-        from pulp import LpProblem, LpMaximize, LpVariable, lpSum, LpStatus, PULP_CBC_CMD
+        from pulp import LpProblem, LpMaximize, LpMinimize, LpVariable, lpSum, LpStatus, PULP_CBC_CMD
     except ImportError:
         raise ImportError("PuLP is not installed. Install with: pip install pulp")
     
@@ -289,7 +289,7 @@ def optimize_pv_selection_pulp(
         print(f"  Objective: {objective}")
         print(f"  Peak limit: {peak_limit_kW:.2f} kW")
         if cumulative_limit_kWh:
-            print(f"  Cumulative limit: {cumulative_limit_kWh:.2f} kWh")
+            print(f"  Cumulative exceedance limit: {cumulative_limit_kWh:.2f} kWh (over peak only)")
         print(f"  Time limit: {time_limit_sec} seconds")
     
     start_time = time.time()
@@ -300,42 +300,36 @@ def optimize_pv_selection_pulp(
     
     # Calculate annual energy for each EGID
     annual_energy = np.sum(feedin_matrix, axis=1)
-    
-    # Create the optimization problem
-    prob = LpProblem("PV_Selection", LpMaximize)
+
+    prob1 = LpProblem("PV_Selection_MinExcess", LpMinimize)
     
     # Decision variables: binary selection for each EGID
     select = [LpVariable(f"select_{idx}", cat='Binary') for idx in range(n_egids)]
-    
-    # Objective function
-    if objective == 'maximize_count':
-        # Maximize number of selected houses
-        prob += lpSum(select)
-    elif objective == 'maximize_energy':
-        # Maximize total energy
-        prob += lpSum([select[idx] * annual_energy[idx] for idx in range(n_egids)])
-    else:
-        raise ValueError(f"Unknown objective: {objective}")
-    
-    # Constraint 1: Peak feed-in limit (for each hour)
+
+    # Auxiliary variables: hourly exceedance over peak (kWh per hour)
+    exceed = [LpVariable(f"exceed_hour_{hour}", lowBound=0) for hour in range(n_hours)]
+
+    # Stage 1: minimize cumulative exceedance over peak limit
     if verbose:
-        print(f"  Adding {n_hours} peak constraints...")
-    
+        print(f"  Adding {n_hours} exceedance constraints...")
+
     for hour in range(n_hours):
         hour_feedin = lpSum([select[idx] * feedin_matrix[idx, hour] for idx in range(n_egids)])
-        prob += hour_feedin <= peak_limit_kW, f"Peak_constraint_hour_{hour}"
-    
-    # Constraint 2: Cumulative feed-in limit (optional)
+        # exceed[hour] >= hour_feedin - peak_limit_kW
+        prob1 += hour_feedin - peak_limit_kW <= exceed[hour], f"Exceed_def_hour_{hour}"
+
+    # Optional: enforce a hard cap on cumulative exceedance
     if cumulative_limit_kWh is not None:
         if verbose:
-            print(f"  Adding cumulative constraint...")
-        total_energy = lpSum([select[idx] * annual_energy[idx] for idx in range(n_egids)])
-        prob += total_energy <= cumulative_limit_kWh, "Cumulative_constraint"
+            print(f"  Adding hard cap on cumulative exceedance...")
+        prob1 += lpSum(exceed) <= cumulative_limit_kWh, "Cumulative_exceed_cap"
+
+    # Objective for stage 1: minimize total exceedance
+    prob1 += lpSum(exceed)
     
     # Solve the problem
     if verbose:
-        print(f"  Solving optimization problem...")
-
+        print("  Solving stage 1 (minimize exceedance)...")
         if print_model_summary:
             try:
                 def _iter_affine_terms(expr):
@@ -378,16 +372,16 @@ def optimize_pv_selection_pulp(
                         return "?"
 
                 # Collect counts
-                n_vars = len(prob.variables())
-                n_cons = len(getattr(prob, 'constraints', {}))
-                obj_str = _summarize_affine(prob.objective, max_terms=8)
+                n_vars = len(prob1.variables())
+                n_cons = len(getattr(prob1, 'constraints', {}))
+                obj_str = _summarize_affine(prob1.objective, max_terms=8)
                 print("\n  Model summary (truncated):")
                 print(f"    Variables: {n_vars}")
                 print(f"    Constraints: {n_cons}")
                 print(f"    Objective: {obj_str}")
 
                 # Show a few constraints
-                cons_items = list(getattr(prob, 'constraints', {}).items())
+                cons_items = list(getattr(prob1, 'constraints', {}).items())
                 max_show = min(4    , len(cons_items))
                 if max_show:
                     print(f"    Sample constraints (first {max_show}):")
@@ -404,14 +398,49 @@ def optimize_pv_selection_pulp(
                 print(f"    (Model summary unavailable: {type(_print_err).__name__})")
     
     solver = PULP_CBC_CMD(msg=verbose_pulp_msg, timeLimit=time_limit_sec)
-    prob.solve(solver)
+    prob1.solve(solver)
     
-    # Extract results
-    selected_indices = [idx for idx in range(n_egids) if select[idx].varValue > 0.5]
+    # Best exceedance found
+    best_exceed_kWh = sum(v.varValue for v in exceed)
+
+
+
+    # Stage 2: maximize energy given minimal exceedance
+    prob2 = LpProblem("PV_Selection_MaxEnergy", LpMaximize)
+
+    # Re-add exceedance definitions
+    for hour in range(n_hours):
+        hour_feedin = lpSum([select[idx] * feedin_matrix[idx, hour] for idx in range(n_egids)])
+        prob2 += hour_feedin - peak_limit_kW <= exceed[hour], f"Exceed_def_hour_{hour}"
+
+    # Fix cumulative exceedance to the minimal value found
+    prob2 += lpSum(exceed) <= best_exceed_kWh, "Fix_min_exceed"
+
+    # Objective for stage 2: maximize total energy
+    prob2 += lpSum([select[idx] * annual_energy[idx] for idx in range(n_egids)])
+
+    if verbose:
+        print("  Solving stage 2 (maximize energy at minimal exceedance)...")
+    prob2.solve(solver)
+
+    # Extract results from stage 2
+    selected_indices = [idx for idx in range(n_egids) if select[idx].varValue and select[idx].varValue > 0.5]
     selected_egids = [idx_to_egid[idx] for idx in selected_indices]
     
     # Calculate final statistics
-    final_hourly_feedin = np.sum(feedin_matrix[selected_indices, :], axis=0)
+    final_hourly_feedin = np.sum(feedin_matrix[selected_indices, :], axis=0) if len(selected_indices) > 0 else np.zeros(n_hours)
+
+    # Final exceedance based on solution
+    final_excess_kWh = float(np.sum(np.clip(final_hourly_feedin - peak_limit_kW, 0, None)))
+
+    # Build ordered list: selected first by energy desc, then remaining by energy desc
+    energies = annual_energy.tolist()
+    selected_sorted = sorted(selected_indices, key=lambda i: energies[i], reverse=True)
+    remaining_indices = [i for i in range(n_egids) if i not in selected_indices]
+    remaining_sorted = sorted(remaining_indices, key=lambda i: energies[i], reverse=True)
+    ordered_indices = selected_sorted + remaining_sorted
+    ordered_egids = [idx_to_egid[i] for i in ordered_indices]
+    selection_order = {idx_to_egid[i]: (pos + 1) for pos, i in enumerate(ordered_indices)}
     
     results = {
         'selected_egids': selected_egids,
@@ -425,9 +454,12 @@ def optimize_pv_selection_pulp(
         'cumulative_limit_kWh': cumulative_limit_kWh,
         'cumulative_utilization': np.sum(final_hourly_feedin) / cumulative_limit_kWh if cumulative_limit_kWh and len(selected_indices) > 0 else None,
         'optimization_time_sec': time.time() - start_time,
-        'objective': objective,
-        'solver_status': LpStatus[prob.status],
+        'objective': 'lex_min_excess_max_energy',
+        'solver_status': LpStatus[prob2.status],
         'final_hourly_feedin': final_hourly_feedin,
+        'final_excess_kWh': final_excess_kWh,
+        'ordered_egids': ordered_egids,
+        'selection_order': selection_order,
     }
     
     if verbose:
@@ -435,11 +467,9 @@ def optimize_pv_selection_pulp(
         print(f"  Solver status: {results['solver_status']}")
         print(f"  Selected: {results['n_selected']} / {results['n_total']} houses ({results['selection_rate']*100:.1f}%)")
         print(f"  Final peak: {results['final_peak_kW']:.2f} kW (limit: {peak_limit_kW:.2f} kW, {results['peak_utilization']*100:.1f}% utilized)")
-        print(f"  Final cumulative: {results['final_cumulative_kWh']:.2f} kWh", end='')
-        if cumulative_limit_kWh:
-            print(f" (limit: {cumulative_limit_kWh:.2f} kWh, {results['cumulative_utilization']*100:.1f}% utilized)")
-        else:
-            print(" (no limit)")
+        print(f"  Final cumulative: {results['final_cumulative_kWh']:.2f} kWh | Excess over peak: {results['final_excess_kWh']:.2f} kWh")
+        if verbose:
+            print("  Installation order preview (top 5):", ordered_egids[:5])
     
     return selected_egids, results
 
