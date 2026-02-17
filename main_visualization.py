@@ -109,6 +109,7 @@ visualization_list = [
             
             plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
             plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_map_topo_egid_TF                      = [True,      True,       False]  ,
             plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
             plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
             plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 

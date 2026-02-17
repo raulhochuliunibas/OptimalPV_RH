@@ -266,14 +266,14 @@ class Visual_Settings:
         'run_selected_plot_parts': [
                                 'map',  
                                 'timeseries', 
-                                'summary', 
-                                'econ_func', 
+                                # 'summary', 
+                                # 'econ_func', 
                                 'joint_scatter', 
 
                                 # 'all_combo_TS', 
                                 # 'actual_inst_TS',
                                 'outsample_TS',
-                                'recalc_opt_inst',
+                                # 'recalc_opt_inst',
                                 ],
         'traces_in_timeseries_plot': [
                                     'full_partition_combo', 
@@ -4076,7 +4076,7 @@ class Visualization:
                             constrcapa = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/constrcapa.parquet')
                             constrcapa = constrcapa.loc[constrcapa['year'] >= self.pvalloc_scen.T0_year_prediction].copy()
                             constrcapa['n_inter'] = range(1, len(constrcapa) + 1)
-                            fig_agg.add_trace(go.Scatter(x=constrcapa['n_inter'], y=constrcapa['constr_capacity_kw'], name='EP2050+ Inst.Cap. (kW)', mode='lines+markers', line=dict(color='darkred', width=3, dash='dash'), marker=dict(symbol='star',), ))
+                            fig_agg.add_trace(go.Scatter(x=constrcapa['n_inter'], y=constrcapa['constr_capacity_kw'], name='EP2050+ Inst.Cap. (kW)', mode='lines', line=dict(color='darkred', width=3, dash='dash') )) # , marker=dict(symbol='star',), ))
 
 
                     # girdnode_df: transform and prep ------------------
@@ -5857,6 +5857,7 @@ class Visualization:
 
                                     # traces partition time series ==============================
                                     fig_rfpart_ts = go.Figure()
+                                    rfpart_ts_list = []
                                     summary_agg_egids_list = []
 
                                     # all possible combinations ------------------------------
@@ -6028,6 +6029,8 @@ class Visualization:
                                                                 line=dict(width=1.5),
                                                                 # hovertemplate=f"EGID: {egid}<br>df_uid_combo: {df_uid_combo_str}<br>FLAECHE: {topo_agg_egid['FLAECHE'].values[0]:3}, STROMERTRAG: {topo_agg_egid['STROMERTRAG'].values[0]:3}, AUSRICHTUNG: {topo_agg_egid['AUSRICHTUNG'].values[0]:3}<br> {col}: %{{y:.2f}}<extra></extra>"
                                                             ))
+                                                            
+ 
                                     checkpoint_to_logfile(f'--> i_scen: {i_scen}, i_egid: {i_egid};/{len(selected_egid)} end calc all poss combinations', self.visual_sett.log_name) if checkpoint_print_TF else None
 
 
@@ -6649,7 +6652,8 @@ class Visualization:
 
 
                                                 # add trace to timeseries plot ----------------------------------------------
-                                                name_str = f"---- RECALCULATED PV: EGID: {egid}, TotalPower: {round(max_dfuid_df['TotalPower'][0], 3)}, info_source: {max_dfuid_df['info_source'][0]} {20*'-'}, "
+                                                # name_str = f"---- RECALCULATED PV: EGID: {egid}, TotalPower: {round(max_dfuid_df['TotalPower'][0], 3)}, info_source: {max_dfuid_df['info_source'][0]} {20*'-'}, "
+                                                name_str = f"---- RECALCULATED PV:"
 
                                                 if 'recalc_pv_inst' in plot_mapline_specs['traces_in_timeseries_plot']:
                                                     fig_rfpart_ts.add_trace(go.Scatter(x= [None, ], y = [None,] , mode = 'lines', 
@@ -6701,10 +6705,18 @@ class Visualization:
                                                             name=f"{col:<25} - {agg_method}: {agg_round_value}",
                                                             line=dict(
                                                                 width=2.5,
-                                                                dash = 'dot'
+                                                                # dash = 'solid'
                                                                 ),
                                                             opacity = 0.6,
                                                         ))
+                                                        row = {
+                                                            'EGID': [egid for i in range(len(max_dfuid_df_plot))],
+                                                            'col': [col for i in range(len(max_dfuid_df_plot))],
+                                                            'value': max_dfuid_df_plot[col].to_list(),
+                                                            't_int': max_dfuid_df_plot['t_int'].to_list(),
+                                                        }
+                                                        t_int_array_daynight_bands = copy.deepcopy(max_dfuid_df_plot['t_int'])
+                                                        rfpart_ts_list.append(pd.DataFrame(row))
                                                     
                                                 # add traces for jscatter
                                                 if topo[egid]['pv_inst']['info_source'] == 'pv_df':
@@ -6916,7 +6928,7 @@ class Visualization:
                                     ))
 
 
-                                    # add recalculated values
+                                    # add  values
                                     if (col in ['demand_kW', 'poss_pvprod_kW', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW', 'selfconsum_pvprod_ratio', 'breakeven' ] ):
                                         # y_val = round(max_dfuid_hist[col][0],4)
                                         y_val = round(summary_agg_egids[col][0],4)
@@ -6977,105 +6989,85 @@ class Visualization:
                                 fig_rfpart_map.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_maprfcombo.html')    
                                 
 
-                            # timesieres for combo of poss_prod, installation + optimized calculation 
-                            fig_rfpart_ts = self.set_default_fig_zoom_hour(fig_rfpart_ts, self.visual_sett.default_zoom_hour)
-                            fig_rfpart_ts = self.add_scen_name_to_plot(fig_rfpart_ts, scen, self.pvalloc_scen)
-    
-                            if self.visual_sett.add_day_night_HOY_bands:
-                                fig_rfpart_ts = self.add_day_night_bands_HOY_plot(fig_rfpart_ts, t_int_array_daynight_bands)
+                        # timesieres for combo of poss_prod, installation + optimized calculation 
+                        fig_rfpart_ts = self.set_default_fig_zoom_hour(fig_rfpart_ts, self.visual_sett.default_zoom_hour)
+                        fig_rfpart_ts = self.add_scen_name_to_plot(fig_rfpart_ts, scen, self.pvalloc_scen)
 
-                            fig_rfpart_ts.update_layout(
-                                xaxis_title = 't - Hours', 
-                                yaxis_title = 'kW', 
-                                title = f"Roof Partitions Time Series for EGID: {egid}, n_partitions: {len(topo[egid]['solkat_partitions'])} info_source: {topo[egid]['pv_inst']['info_source']}",
-                                template = 'plotly_white',
-                            )
-                            if 'timeseries' in plot_mapline_specs['run_selected_plot_parts']:   
-                                if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
-                                    if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
-                                        fig_rfpart_ts.show()
-                                    elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
-                                        fig_rfpart_ts.show() if i_scen == 0 else None
-                            if self.visual_sett.save_plot_by_scen_directory:
-                                fig_rfpart_ts.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_timeseries.html')
-                            else:
-                                fig_rfpart_ts.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_timeseries.html')
-                    
+                        if self.visual_sett.add_day_night_HOY_bands:
+                            fig_rfpart_ts = self.add_day_night_bands_HOY_plot(fig_rfpart_ts, t_int_array_daynight_bands)
 
-                            # economic function optim installation
-                            fig_econfunc.update_layout(
-                                title=f'Economic Comparison for EGID: {egid} ',
-                                xaxis_title='System Size (kWp)',
-                                yaxis_title='Value (CHF/kWh)',
-                                legend=dict(x=0.99, y=0.99),
-                                template='plotly_white'
-                            )
-                            # if 'recalc_pvdf' in plot_mapline_specs['run_selected_plot_parts']:
-                            #     if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
-                            #         if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
-                            #             fig_econfunc.show()
-                            #         elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
-                            #             fig_econfunc.show() if i_scen == 0 else None
-                            if self.visual_sett.save_plot_by_scen_directory:
-                                fig_econfunc.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_econfunc.html')
-                            else:
-                                fig_econfunc.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_econfunc.html')
+                        fig_rfpart_ts.update_layout(
+                            xaxis_title = 't - Hours', 
+                            yaxis_title = 'kW', 
+                            title = f"Roof Partitions Time Series for EGID: {egid}, n_partitions: {len(topo[egid]['solkat_partitions'])} info_source: {topo[egid]['pv_inst']['info_source']}",
+                            template = 'plotly_white',
+                        )
+                        if 'timeseries' in plot_mapline_specs['run_selected_plot_parts']:   
+                            if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
+                                if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                    fig_rfpart_ts.show()
+                                elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                    fig_rfpart_ts.show() if i_scen == 0 else None
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig_rfpart_ts.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_timeseries.html')
+                        else:
+                            fig_rfpart_ts.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_timeseries.html')
+
+                        # export csv for rfpart_ts
+                        export_plot_data_df = pd.concat(rfpart_ts_list)
+                        os.makedirs(f'{self.visual_sett.visual_static_export_path}', exist_ok=True)
+                        export_df_name         = 'export_rfpart_ts_EGID'
+                        export_df_name_scenlen = f'{export_df_name}{len(self.pvalloc_scen_list)}scen'
+                        if os.path.exists(f'{self.visual_sett.visual_static_export_path}/{export_df_name_scenlen}.csv'):
+                            n_agg_plots = len(glob.glob(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen*.csv'))
+                            os.rename(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', 
+                                    f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen_{n_agg_plots}nplot.csv')
+                        export_plot_data_df.to_csv(f'{self.visual_sett.visual_static_export_path}/{export_df_name}{len(self.pvalloc_scen_list)}scen.csv', index=False)
+                        print_to_logfile(f'\texport: {export_df_name}{len(self.pvalloc_scen_list)}scen.csv', self.visual_sett.log_name)
+
+                        # economic function optim installation
+                        fig_econfunc.update_layout(
+                            title=f'Economic Comparison for EGID: {egid} ',
+                            xaxis_title='System Size (kWp)',
+                            yaxis_title='Value (CHF/kWh)',
+                            legend=dict(x=0.99, y=0.99),
+                            template='plotly_white'
+                        )
+                        # if 'recalc_pvdf' in plot_mapline_specs['run_selected_plot_parts']:
+                        #     if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
+                        #         if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                        #             fig_econfunc.show()
+                        #         elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                        #             fig_econfunc.show() if i_scen == 0 else None
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig_econfunc.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_econfunc.html')
+                        else:
+                            fig_econfunc.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_econfunc.html')
 
                        
-                            # barplot annual summary aggregates
-                            fig_rfpart_summary = self.add_scen_name_to_plot(fig_rfpart_summary, scen, self.pvalloc_scen)
-                            fig_rfpart_summary.update_layout(
-                                title = f'Roof Partitions Summary for EGID: {egid}',
-                                xaxis_title = 'Columns',
-                                yaxis_title = 'kWh / (other)',
-                                template = 'plotly_white',
-                                barmode = 'group',
-                                xaxis2=dict(
-                                    showticklabels=False,  # Hide ticks and labels for the secondary x-axis
-                                    overlaying='x',  # Overlay on the main x-axis
-                                ),
-                            )
-                            if 'summary' in plot_mapline_specs['run_selected_plot_parts']:
-                                if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
-                                    if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
-                                        fig_rfpart_summary.show()
-                                    elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
-                                        fig_rfpart_summary.show() if i_scen == 0 else None
-                            if self.visual_sett.save_plot_by_scen_directory:
-                                fig_rfpart_summary.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_summary.html')
-                            else:
-                                fig_rfpart_summary.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_summary.html')
-
-
-                    # # fig jscatter
-                    # if 'recalc_opt_inst' in plot_mapline_specs['run_selected_plot_parts']:
-                    #     jsctr_scen_df = pd.DataFrame({
-                    #         'EGID': egid_jsctr_list, 'TotalPower': TotalPower_jsctr_list, 'RecalcPower': RecalcPowe_jsctr_list, 
-                    #         'sum_FLAECHE': sum_FLAECHE_list, 'max_opt_FLAECHE': max_optFLAECHE_list})
-                        
-                    #     fig_instpwr_jsctr.add_trace(go.Scatter(
-                    #         x=jsctr_scen_df['TotalPower'], 
-                    #         y=jsctr_scen_df['RecalcPower'],
-                    #         mode='markers+text',
-                    #         text=jsctr_scen_df['EGID'],
-                    #         textposition='top center',
-                    #         customdata=jsctr_scen_df[['EGID', 'TotalPower', 'RecalcPower', 'sum_FLAECHE', 'max_opt_FLAECHE']].values,
-                    #         hovertemplate=(
-                    #             "EGID: %{customdata[0]}<br>"
-                    #             "TotalPower: %{customdata[1]:.2f} kW<br>"
-                    #             "RecalcPower: %{customdata[2]:.2f} kW<br>"
-                    #             "sum_FLAECHE: %{customdata[3]:.2f} m²<br>"
-                    #             "max_opt_FLAECHE: %{customdata[4]:.2f} m²<br>"
-                    #             "<extra></extra>"
-                    #         ),
-                    #         marker=dict(
-                    #             size=10 + 4*i_recalc_interest_rate,
-                    #             opacity=0.2,
-                    #         ),
-                    #         name=f'{scen} - interest_rate: {recalc_interest_rate}',
-                    #         showlegend=True
-                    #     ))                   
-
+                        # barplot annual summary aggregates
+                        fig_rfpart_summary = self.add_scen_name_to_plot(fig_rfpart_summary, scen, self.pvalloc_scen)
+                        fig_rfpart_summary.update_layout(
+                            title = f'Roof Partitions Summary for EGID: {egid}',
+                            xaxis_title = 'Columns',
+                            yaxis_title = 'kWh / (other)',
+                            template = 'plotly_white',
+                            barmode = 'group',
+                            xaxis2=dict(
+                                showticklabels=False,  # Hide ticks and labels for the secondary x-axis
+                                overlaying='x',  # Overlay on the main x-axis
+                            ),
+                        )
+                        if 'summary' in plot_mapline_specs['run_selected_plot_parts']:
+                            if self.visual_sett.plot_show and self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[1]:
+                                if self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                    fig_rfpart_summary.show()
+                                elif not self.visual_sett.plot_ind_mapline_prodHOY_EGIDrfcombo_TF[2]:
+                                    fig_rfpart_summary.show() if i_scen == 0 else None
+                        if self.visual_sett.save_plot_by_scen_directory:
+                            fig_rfpart_summary.write_html(f'{self.visual_sett.visual_path}/{scen}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_summary.html')
+                        else:
+                            fig_rfpart_summary.write_html(f'{self.visual_sett.visual_path}/{scen}___plot_ind_mapline_prodHOY_EGID{egid}_summary.html')
 
 
                     # agg economic function optim installation
@@ -8054,7 +8046,7 @@ if __name__ == '__main__':
                 # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_2nbf_10y_compare2_gridopt_max',
+                'pvalloc_16nbfs_RUR_max',
                 # 'pvalloc_16nbfs_RUR_max',
                 # 'pvalloc_16nbfs_RUR_max_gridoptim',
             ],
@@ -8065,16 +8057,17 @@ if __name__ == '__main__':
             # reduce_information_content         = True,
 
             # save_plot_by_scen_directory        = False, 
-            # cut_timeseries_to_zoom_hour        = True,
-            # add_day_night_HOY_bands            = True,
+            cut_timeseries_to_zoom_hour        = True,
+            add_day_night_HOY_bands            = True,
             default_map_zoom                   = 10,
             default_map_center                 = [47.46, 7.58],
 
 
             # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
-            # plot_ind_var_summary_stats_TF                   = [True,      True,      False], 
-            # plot_ind_line_productionHOY_per_EGID_TF        = [True,      True,       False]  ,
-            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            # plot_ind_var_summary_stats_TF                   = [True,      True,      False],
+            plot_ind_mapline_prodHOY_EGIDrfcombo_TF        = [True,      True,       False]  ,
+            plot_ind_line_productionHOY_per_EGID_TF        = [True,      True,       False]  ,
+            plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
             # plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,       False],
             # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
             # plot_ind_map_topo_egid_TF                      = [True,      True,       False]  ,
@@ -8087,8 +8080,8 @@ if __name__ == '__main__':
             # plot_ind_line_productionHOY_per_EGID_TF        = [True,      True,       False]  ,
             # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
             # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
-            plot_ind_map_topo_egid_TF                      = [True,      True,       False]  ,
-            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            # plot_ind_map_topo_egid_TF                      = [True,      True,       False]  ,
+            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
             # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
             # # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
             # plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
