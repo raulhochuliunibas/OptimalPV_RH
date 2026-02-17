@@ -857,7 +857,7 @@ class DataAggScenario:
 
 
             # # SOLKAT ====================
-            solkat_all_pq = pl.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_pq.parquet')
+            solkat_allCH_pq = pl.read_parquet(f'{self.sett.data_path}/input_split_data_geometry/solkat_pq.parquet')
 
             # bsblso_bfs_numbers = get_bfs_from_ktnr([11,12,13], self.sett.data_path, self.sett.log_name)
             # bsblso_bfs_numbers_TF = all([bfs in bsblso_bfs_numbers for bfs in self.sett.bfs_numbers])
@@ -869,6 +869,8 @@ class DataAggScenario:
             checkpoint_to_logfile(f'import solkat_geo, {solkat_all_geo.shape[0]} rows', self.sett.log_name,  1, self.sett.show_debug_prints)    
 
             # minor transformations to str (with removing nan values)
+            # bsblso_bfs = get_bfs_from_ktnr([11, 12, 13], self.sett.data_path, self.sett.log_name) 
+            solkat_all_pq = solkat_allCH_pq.filter(pl.col('BFS_NUMMER').is_in(list(solkat_all_geo['BFS_NUMMER'].unique()) ))
             solkat_all_geo['DF_UID'] = solkat_all_geo['DF_UID'].astype(str)
             
             solkat_all_pq = solkat_all_pq.with_columns(
@@ -897,23 +899,26 @@ class DataAggScenario:
             solkat_all_pq.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers))
 
             solkat_all_dfuid = solkat_all_pq['DF_UID'].unique().to_list()
-            stepsize = 200
+            stepsize = 500
             tranche_counter = 0
             for i in range(0, len(solkat_all_dfuid), stepsize):
-                tranche_counter += 1
-                solkat_sub = solkat_all_pq.filter(pl.col('DF_UID').is_in(solkat_all_dfuid[i:i+stepsize]))
-                solkat_sub_pd = solkat_sub.to_pandas()
-                solkat_subgdf = solkat_all_geo.merge(solkat_sub_pd, how='inner', on='DF_UID')
-                solkat_subgdf = gpd.GeoDataFrame(solkat_subgdf, geometry='geometry')
 
-                # remove all date columns
-                solkat_subgdf = solkat_subgdf.drop(columns=solkat_subgdf.select_dtypes(include=["datetime64[ns]", "datetime64[ms, UTC]"]).columns)
+                # if tranche_counter < 50:
+                if True:
+                    checkpoint_to_logfile(f'partition solkat_sub {i} to {i+stepsize} of {len(solkat_all_dfuid)} unique DF_UIDs', self.sett.log_name, 5, self.sett.show_debug_prints) if i < 3 else None
+                    tranche_counter += 1
+                    solkat_sub = solkat_all_pq.filter(pl.col('DF_UID').is_in(solkat_all_dfuid[i:i+stepsize]))
+                    solkat_sub_pd = solkat_sub.to_pandas()
+                    solkat_subgdf = solkat_all_geo[['DF_UID', 'geometry']].merge(solkat_sub_pd, how='inner', on='DF_UID')
+                    solkat_subgdf = gpd.GeoDataFrame(solkat_subgdf, geometry='geometry')
 
-                with open(f'{self.sett.preprep_path}/solkat_partitioned_tranche_{tranche_counter}.geojson', 'w') as f:
-                    f.write(solkat_subgdf.to_json())
-                
-                del solkat_sub, solkat_subgdf
-            del solkat_all_pq, solkat_all_geo
+                    # remove all date columns
+                    solkat_subgdf = solkat_subgdf.drop(columns=solkat_subgdf.select_dtypes(include=["datetime64[ns]", "datetime64[ms, UTC]"]).columns)
+
+                    with open(f'{self.sett.preprep_path}/solkat_partitioned_tranche_{tranche_counter}.geojson', 'w') as f:
+                        f.write(solkat_subgdf.to_json())
+                    
+                    del solkat_sub, solkat_subgdf
             
             # add omitted EGIDs to SOLKAT ---------------------------------------------------------------------------------
 
@@ -925,7 +930,9 @@ class DataAggScenario:
 
 
             solkat_subgdf_paths = glob.glob(f'{self.sett.preprep_path}/solkat_partitioned_tranche_*.geojson')
-            for path in solkat_subgdf_paths:
+            for i_path, path in enumerate(solkat_subgdf_paths):
+                tranche_int = int(path.split('solkat_partitioned_tranche_')[-1].split('.geojson')[0])
+                file_name = os.path.split(path)[-1].split('.geojson')[0]
                 solkat_v2_gdf = gpd.read_file(path)
 
                 # # solkat_v2 = copy.deepcopy(solkat_all_pq[solkat_all_pq['BFS_NUMMER'].isin(self.sett.bfs_numbers)])
@@ -955,12 +962,19 @@ class DataAggScenario:
                 solkat_v2_pl = pl.from_pandas(solkat_v2_gdf.drop(columns=['geometry']))
                 
                 join_gwr_pl  = pl.from_pandas(join_gwr_solkat_union.drop(columns=['geometry']))
-                checkpoint_to_logfile(f'nrows \n\tsolkat_all_pq: {solkat_all_pq.shape[0]}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf.shape[0]} (remove EGID.NANs)\n\tsolkat_union_v2EGID: {solkat_union_v2EGID.shape[0]}\t\tjoin_gwr_solkat_union: {join_gwr_solkat_union.shape[0]}', self.sett.log_name, 3, self.sett.show_debug_prints)
-                checkpoint_to_logfile(f'nEGID \n\tsolkat_all_pq: {solkat_all_pq["EGID"].n_unique()}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf["EGID"].nunique()} (remove EGID.NANs)\n\tsolkat_union_v2EGID_EGID_old: {solkat_union_v2EGID["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_old: {join_gwr_solkat_union["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_gwradded: {join_gwr_solkat_union["EGID_gwradded"].nunique()}', self.sett.log_name, 3, self.sett.show_debug_prints)
+                if i_path < 20: 
+                    checkpoint_to_logfile(f'nrows \n\tsolkat_all_pq: {solkat_all_pq.shape[0]}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf.shape[0]} (remove EGID.NANs)\n\tsolkat_union_v2EGID: {solkat_union_v2EGID.shape[0]}\t\tjoin_gwr_solkat_union: {join_gwr_solkat_union.shape[0]}', self.sett.log_name, 3, self.sett.show_debug_prints)
+                    checkpoint_to_logfile(f'nEGID \n\tsolkat_all_pq: {solkat_all_pq["EGID"].n_unique()}\t\t\tsolkat_v2_gdf: {solkat_v2_gdf["EGID"].nunique()} (remove EGID.NANs)\n\tsolkat_union_v2EGID_EGID_old: {solkat_union_v2EGID["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_old: {join_gwr_solkat_union["EGID_old_solkat"].nunique()}\tjoin_gwr_solkat_union_EGID_gwradded: {join_gwr_solkat_union["EGID_gwradded"].nunique()}', self.sett.log_name, 3, self.sett.show_debug_prints)
 
 
                 # check EGID mapping case by case, add missing gwrEGIDs to solkat -------------------
-                EGID_old_solkat_list = list( join_gwr_solkat_union['EGID_old_solkat'].unique() )
+                EGID_old_solkat_list = [
+                    egid
+                    for egid in join_gwr_solkat_union['EGID_old_solkat'].unique()
+                    if egid != 'NAN'
+                ]
+                # EGID_old_solkat_list = [egid in list(join_gwr_solkat_union['EGID_old_solkat'].unique() ) if egid != 'NAN' ]
+
                 new_solkat_append_list = []
                 add_solkat_counter, add_solkat_partition = 1, 4
                 print_counter_max, i_print = 50, 0
@@ -970,12 +984,12 @@ class DataAggScenario:
                 solkat_v2_pl = solkat_v2_pl.with_columns(
                     pl.col('DF_UID').cast(pl.Utf8),
                     pl.col('DF_NUMMER').cast(pl.Utf8),
-                    pl.col('DATUM_ERSTELLUNG').cast(pl.Utf8),
-                    pl.col('DATUM_AENDERUNG').cast(pl.Utf8),
+                    # pl.col('DATUM_ERSTELLUNG').cast(pl.Utf8),
+                    # pl.col('DATUM_AENDERUNG').cast(pl.Utf8),
                     pl.col('SB_UUID').cast(pl.Utf8),
                     pl.col('SB_OBJEKTART').cast(pl.Utf8),
-                    pl.col('SB_DATUM_ERSTELLUNG').cast(pl.Utf8),
-                    pl.col('SB_DATUM_AENDERUNG').cast(pl.Utf8),
+                    # pl.col('SB_DATUM_ERSTELLUNG').cast(pl.Utf8),
+                    # pl.col('SB_DATUM_AENDERUNG').cast(pl.Utf8),
                     pl.col('KLASSE').cast(pl.Utf8),
                     pl.col('FLAECHE').cast(pl.Float64),
                     pl.col('AUSRICHTUNG').cast(pl.Float64),
@@ -1158,42 +1172,63 @@ class DataAggScenario:
                             elif i_print == print_counter_max:
                                 print(f'ERROR: EGID {egid:14}: {print_counter_max}+ ... more cases not fitting into any case (1 to 5) for adjusting faulty SOLKAT EGIDs by matching shape to GWR_EGIDs')
                                 i_print += 1
-
-
-                    if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
-                        checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition', self.sett.log_name, 3, self.sett.show_debug_prints)
                         
                     # merge all solkat partitions to new solkat df
                     new_solkat_append_list.append(solkat_subdf) 
 
-                # concat all new solkat partitions  
-                solkat_postadjust_pl = pl.concat(new_solkat_append_list)
-                solkat_postadjust_pd = solkat_postadjust_pl.to_pandas()
-                solkat_postadjust_gdf = solkat_postadjust_pd.merge(solkat_v2_gdf[['DF_UID', 'geometry']], how='left', on='DF_UID')
+                    if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
+                        checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition', self.sett.log_name, 3, self.sett.show_debug_prints)
 
-                # export adjusted solkat
-                solkat_postadjust_pl.write_parquet(f'{self.sett.preprep_path}/solkat_postadjust_tranche_{tranche_counter}.parquet')   
-                with open(f'{self.sett.preprep_path}/solkat_postadjust_tranche_{tranche_counter}.geojson', 'w') as f:
-                    solkat_postadjust_gdf.to_file(f, driver='GeoJSON')
-                    
-                del solkat_v2_gdf, solkat_subdf, solkat_postadjust_pl, solkat_postadjust_pd, solkat_postadjust_gdf
+                
+                if len(new_solkat_append_list) > 0:
+                    print(f'ADJUST: {file_name}.geojson successfully') if i_path < 500 else None
+                    # concat all new solkat partitions  
+                    solkat_postadjust_pl =  pl.concat(new_solkat_append_list)
+                    solkat_postadjust_pd = solkat_postadjust_pl.to_pandas()
+                    solkat_postadjust_gdf = solkat_postadjust_pd.merge(solkat_v2_gdf[['DF_UID', 'geometry']], how='left', on='DF_UID')
+                    solkat_postadjust_gdf = gpd.GeoDataFrame(solkat_postadjust_gdf, geometry='geometry')
+
+                    # export adjusted solkat
+                    solkat_postadjust_pl.write_parquet(f'{self.sett.preprep_path}/solkat_postadjust_tranche_{tranche_int}.parquet')   
+                    if i_path < 50 :
+                        solkat_postadjust_pl.write_csv(f'{self.sett.preprep_path}/solkat_postadjust_tranche_{tranche_int}.csv')
+
+                    with open(f'{self.sett.preprep_path}/solkat_postadjust_tranche_{tranche_int}.geojson', 'w') as f:
+                        f.write(solkat_postadjust_gdf.to_json())
+
+                    # solkat_postadjust_pl.write_parquet(f'{path.split(".geojson")[0]}.parquet')   
+                    # with open(f'{file_name}', 'w') as f:
+                    #     f.write(solkat_postadjust_gdf.to_json())
+                        
+                    del solkat_v2_gdf, solkat_subdf, solkat_postadjust_pl, solkat_postadjust_pd, solkat_postadjust_gdf
+                
+                elif len(new_solkat_append_list) == 0:
+                    # os.rename()
+                    os.rename(path, f'{self.sett.preprep_path}/x_NO_GWR_MATCH__{file_name}.geojson')
+                    print(f'"remove / adjust: {file_name}.geojson, not overlapp with gwr') if i_path < 500 else None
     
 
+
             # concate partitioned files after adjustment ---------------------------------------------------------------------------------
+            # PARQUET
             solkat_postadjust_pl_paths = glob.glob(f'{self.sett.preprep_path}/solkat_postadjust_tranche_*.parquet')
             solkat_postadjust_list = []
             for path in solkat_postadjust_pl_paths:
                 solkat_postadjust_pl = pl.read_parquet(path)
+                print(f'import {path.split("preprep_scen__temp_to_be_renamed")[-1]} shape: {solkat_postadjust_pl.shape}')
                 solkat_postadjust_list.append(solkat_postadjust_pl)
                 del solkat_postadjust_pl
 
             solkat_pl_final = pl.concat(solkat_postadjust_list)
             solkat_pl_final.write_parquet(f'{self.sett.preprep_path}/solkat.parquet')
 
-            # for file in solkat_postadjust_pl_paths:
-            #     os.remove(file)
+            # remove adjusted / non-covered solkat_sub 
+            solkat_postadjust_csv_paths = glob.glob(f'{self.sett.preprep_path}/solkat_postadjust_tranche_*.csv')
+            remove_paths = solkat_postadjust_pl_paths # + solkat_postadjust_csv_paths 
+            for file in remove_paths:
+                os.remove(file)
             
-
+            # GEOJSON
             solkat_postadjust_gdf_paths = glob.glob(f'{self.sett.preprep_path}/solkat_postadjust_tranche_*.geojson')
             solkat_postadjust_gdf_list = []
             for path in solkat_postadjust_gdf_paths:
@@ -1204,11 +1239,15 @@ class DataAggScenario:
             solkat_gdf_final = pd.concat(solkat_postadjust_gdf_list, ignore_index=True)
             solkat_gdf_final = gpd.GeoDataFrame(solkat_gdf_final, geometry='geometry')
             with open(f'{self.sett.preprep_path}/solkat_gdf.geojson', 'w') as f:
-                solkat_gdf_final.to_file(f, driver='GeoJSON')
+                f.write(solkat_gdf_final.to_json())
 
-            # for file in solkat_postadjust_gdf_paths:
-            #     os.remove(file)
-            
+            # remove adjusted / non-covered solkat_sub
+            no_gwr_match_paths = glob.glob(f'{self.sett.preprep_path}/x_NO_GWR_MATCH__solkat_partitioned_tranche_*.geojson')
+            solkat_partitioned_gdf_paths = glob.glob(f'{self.sett.preprep_path}/solkat_partitioned_tranche_*.geojson')
+
+            remove_paths = solkat_postadjust_gdf_paths + no_gwr_match_paths + solkat_partitioned_gdf_paths
+            for file in remove_paths:
+                os.remove(file)
 
 
         def preprep_local_data_AND_spatial_mappings(self):
@@ -1661,7 +1700,7 @@ class DataAggScenario:
                 pl.col('SB_UUID').cast(pl.Utf8),
                 pl.col('DF_UID').cast(pl.Utf8)
             ])
-            solkat_month_all_pl = solkat_month_all_pl.join(solkat_all_pq.select(['DF_UID', 'BFS_NUMMER']), on='DF_UID', how='left')
+            solkat_month_all_pl = solkat_month_all_pl.join(solkat.select(['DF_UID', 'BFS_NUMMER']), on='DF_UID', how='left')
             solkat_month_pl = solkat_month_all_pl.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers))
             solkat_month = solkat_month_pl.clone()
 
