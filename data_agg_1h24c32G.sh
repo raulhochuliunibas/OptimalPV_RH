@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --job-name=data24h24c64G                   #This is the name of your job
+#SBATCH --job-name=data1h24c32G                   #This is the name of your job
 #SBATCH --cpus-per-task=24                  #This is the number of cores reserved
-#SBATCH --mem-per-cpu=64G              #This is the memory reserved per core.
-#Total memory reserved: 1536GB
+#SBATCH --mem-per-cpu=32G              #This is the memory reserved per core.
+#Total memory reserved: 1152GB
 
 # Are you sure that you need THAT much memory?
 
-#SBATCH --time=24:00:00        #This is the time that your task will run
+#SBATCH --time=01:00:00        #This is the time that your task will run
 #SBATCH --qos=1day           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
