@@ -242,7 +242,7 @@ def optimize_pv_selection_pulp(
     egid_to_idx: Dict[str, int],
     peak_limit_kW: float,
     cumulative_limit_kWh: Optional[float] = None,
-    objective: str = 'lex_min_excess_max_energy',
+    objective: str = 'maximize_energy',
     time_limit_sec: Optional[int] = 300,
     verbose: bool = True,
     verbose_pulp_msg: bool = False,
@@ -280,7 +280,7 @@ def optimize_pv_selection_pulp(
         Results and statistics
     """
     try:
-        from pulp import LpProblem, LpMaximize, LpMinimize, LpVariable, lpSum, LpStatus, PULP_CBC_CMD
+        from pulp import LpProblem, LpMaximize, LpVariable, lpSum, LpStatus, PULP_CBC_CMD
     except ImportError:
         raise ImportError("PuLP is not installed. Install with: pip install pulp")
     
@@ -289,7 +289,7 @@ def optimize_pv_selection_pulp(
         print(f"  Objective: {objective}")
         print(f"  Peak limit: {peak_limit_kW:.2f} kW")
         if cumulative_limit_kWh:
-            print(f"  Cumulative exceedance limit: {cumulative_limit_kWh:.2f} kWh (over peak only)")
+            print(f"  Cumulative limit (unused in strict peak mode): {cumulative_limit_kWh:.2f} kWh")
         print(f"  Time limit: {time_limit_sec} seconds")
     
     start_time = time.time()
@@ -301,143 +301,45 @@ def optimize_pv_selection_pulp(
     # Calculate annual energy for each EGID
     annual_energy = np.sum(feedin_matrix, axis=1)
 
-    prob1 = LpProblem("PV_Selection_MinExcess", LpMinimize)
-    
+    # Build single-stage MILP: maximize energy under strict peak limit
+    prob = LpProblem("PV_Selection", LpMaximize)
+
     # Decision variables: binary selection for each EGID
     select = [LpVariable(f"select_{idx}", cat='Binary') for idx in range(n_egids)]
 
-    # Auxiliary variables: hourly exceedance over peak (kWh per hour)
-    exceed = [LpVariable(f"exceed_hour_{hour}", lowBound=0) for hour in range(n_hours)]
+    # Objective
+    if objective == 'maximize_energy':
+        prob += lpSum([select[idx] * annual_energy[idx] for idx in range(n_egids)])
+    else:
+        prob += lpSum(select)
 
-    # Stage 1: minimize cumulative exceedance over peak limit
+    # Strict per-hour peak constraints
     if verbose:
-        print(f"  Adding {n_hours} exceedance constraints...")
-
+        print(f"  Adding {n_hours} strict peak constraints...")
     for hour in range(n_hours):
         hour_feedin = lpSum([select[idx] * feedin_matrix[idx, hour] for idx in range(n_egids)])
-        # exceed[hour] >= hour_feedin - peak_limit_kW
-        prob1 += hour_feedin - peak_limit_kW <= exceed[hour], f"Exceed_def_hour_{hour}"
+        prob += hour_feedin <= peak_limit_kW, f"Peak_constraint_hour_{hour}"
 
-    # Optional: enforce a hard cap on cumulative exceedance
-    if cumulative_limit_kWh is not None:
-        if verbose:
-            print(f"  Adding hard cap on cumulative exceedance...")
-        prob1 += lpSum(exceed) <= cumulative_limit_kWh, "Cumulative_exceed_cap"
-
-    # Objective for stage 1: minimize total exceedance
-    prob1 += lpSum(exceed)
-    
-    # Solve the problem
-    if verbose:
-        print("  Solving stage 1 (minimize exceedance)...")
-        if print_model_summary:
-            try:
-                def _iter_affine_terms(expr):
-                    try:
-                        items = list(expr.items())
-                    except Exception:
-                        items = []
-                    terms = []
-                    for var, coeff in items:
-                        name = getattr(var, 'name', str(var))
-                        try:
-                            coeff_f = float(coeff)
-                        except Exception:
-                            coeff_f = coeff
-                        terms.append((name, coeff_f))
-                    return terms
-
-                def _summarize_affine(expr, max_terms=6):
-                    terms = _iter_affine_terms(expr)
-                    # sort by absolute coefficient descending for better signal
-                    try:
-                        terms_sorted = sorted(terms, key=lambda t: abs(t[1]) if isinstance(t[1], (int, float)) else 0, reverse=True)
-                    except Exception:
-                        terms_sorted = terms
-                    shown = terms_sorted[:max_terms]
-                    parts = [f"{coeff:g}*{name}" for name, coeff in [(n, c) for (n, c) in shown]]
-                    more = len(terms_sorted) - len(shown)
-                    tail = f" (+{more} more)" if more > 0 else ""
-                    # constant term if present
-                    const = getattr(expr, 'constant', 0)
-                    if const:
-                        parts.append(f"{const:g}")
-                    return " + ".join(parts) + tail
-
-                def _sense_symbol(sense_val):
-                    # PuLP uses: -1 (<=), 0 (==), 1 (>=)
-                    try:
-                        return { -1: "<=", 0: "==", 1: ">=" }.get(int(getattr(sense_val, 'value', sense_val)), "?")
-                    except Exception:
-                        return "?"
-
-                # Collect counts
-                n_vars = len(prob1.variables())
-                n_cons = len(getattr(prob1, 'constraints', {}))
-                obj_str = _summarize_affine(prob1.objective, max_terms=8)
-                print("\n  Model summary (truncated):")
-                print(f"    Variables: {n_vars}")
-                print(f"    Constraints: {n_cons}")
-                print(f"    Objective: {obj_str}")
-
-                # Show a few constraints
-                cons_items = list(getattr(prob1, 'constraints', {}).items())
-                max_show = min(4    , len(cons_items))
-                if max_show:
-                    print(f"    Sample constraints (first {max_show}):")
-                    for i in range(max_show):
-                        cname, c = cons_items[i]
-                        expr = getattr(c, 'e', c)
-                        lhs = _summarize_affine(expr, max_terms=6)
-                        rhs = getattr(c, 'constant', None)
-                        sense = _sense_symbol(getattr(c, 'sense', None))
-                        rhs_part = f" {sense} {rhs:g}" if isinstance(rhs, (int, float, np.floating)) else f" {sense} ?"
-                        print(f"      {cname}: {lhs}{rhs_part}")
-            except Exception as _print_err:
-                # Avoid failing the solve due to summary printing
-                print(f"    (Model summary unavailable: {type(_print_err).__name__})")
-    
+    # Solve
     solver = PULP_CBC_CMD(msg=verbose_pulp_msg, timeLimit=time_limit_sec)
-    prob1.solve(solver)
-    
-    # Best exceedance found
-    best_exceed_kWh = sum(v.varValue for v in exceed)
-
-
-
-    # Stage 2: maximize energy given minimal exceedance
-    prob2 = LpProblem("PV_Selection_MaxEnergy", LpMaximize)
-
-    # Re-add exceedance definitions
-    for hour in range(n_hours):
-        hour_feedin = lpSum([select[idx] * feedin_matrix[idx, hour] for idx in range(n_egids)])
-        prob2 += hour_feedin - peak_limit_kW <= exceed[hour], f"Exceed_def_hour_{hour}"
-
-    # Fix cumulative exceedance to the minimal value found
-    prob2 += lpSum(exceed) <= best_exceed_kWh, "Fix_min_exceed"
-
-    # Objective for stage 2: maximize total energy
-    prob2 += lpSum([select[idx] * annual_energy[idx] for idx in range(n_egids)])
-
     if verbose:
-        print("  Solving stage 2 (maximize energy at minimal exceedance)...")
-    prob2.solve(solver)
+        print("  Solving optimization problem...")
+    prob.solve(solver)
 
-    # Extract results from stage 2
+    # Extract results
     selected_indices = [idx for idx in range(n_egids) if select[idx].varValue and select[idx].varValue > 0.5]
     selected_egids = [idx_to_egid[idx] for idx in selected_indices]
     
     # Calculate final statistics
     final_hourly_feedin = np.sum(feedin_matrix[selected_indices, :], axis=0) if len(selected_indices) > 0 else np.zeros(n_hours)
 
-    # Final exceedance based on solution
-    final_excess_kWh = float(np.sum(np.clip(final_hourly_feedin - peak_limit_kW, 0, None)))
-
     # Build ordered list: selected first by energy desc, then remaining by energy desc
     energies = annual_energy.tolist()
     selected_sorted = sorted(selected_indices, key=lambda i: energies[i], reverse=True)
+    
     remaining_indices = [i for i in range(n_egids) if i not in selected_indices]
     remaining_sorted = sorted(remaining_indices, key=lambda i: energies[i], reverse=True)
+
     ordered_indices = selected_sorted + remaining_sorted
     ordered_egids = [idx_to_egid[i] for i in ordered_indices]
     selection_order = {idx_to_egid[i]: (pos + 1) for pos, i in enumerate(ordered_indices)}
@@ -454,12 +356,13 @@ def optimize_pv_selection_pulp(
         'cumulative_limit_kWh': cumulative_limit_kWh,
         'cumulative_utilization': np.sum(final_hourly_feedin) / cumulative_limit_kWh if cumulative_limit_kWh and len(selected_indices) > 0 else None,
         'optimization_time_sec': time.time() - start_time,
-        'objective': 'lex_min_excess_max_energy',
-        'solver_status': LpStatus[prob2.status],
+        'objective': objective,
+        'solver_status': LpStatus[prob.status],
         'final_hourly_feedin': final_hourly_feedin,
-        'final_excess_kWh': final_excess_kWh,
         'ordered_egids': ordered_egids,
         'selection_order': selection_order,
+        'selected_sorted': selected_sorted,
+        'remaining_sorted': remaining_sorted,
     }
     
     if verbose:
@@ -467,11 +370,11 @@ def optimize_pv_selection_pulp(
         print(f"  Solver status: {results['solver_status']}")
         print(f"  Selected: {results['n_selected']} / {results['n_total']} houses ({results['selection_rate']*100:.1f}%)")
         print(f"  Final peak: {results['final_peak_kW']:.2f} kW (limit: {peak_limit_kW:.2f} kW, {results['peak_utilization']*100:.1f}% utilized)")
-        print(f"  Final cumulative: {results['final_cumulative_kWh']:.2f} kWh | Excess over peak: {results['final_excess_kWh']:.2f} kWh")
+        print(f"  Final cumulative: {results['final_cumulative_kWh']:.2f} kWh")
         if verbose:
             print("  Installation order preview (top 5):", ordered_egids[:5])
     
-    return selected_egids, results
+    return selection_order, results
 
 
 def run_pv_selection_optimization(

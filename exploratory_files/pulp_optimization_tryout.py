@@ -17,10 +17,11 @@ pv_profiles = {
     "PV2": np.random.uniform(0, 6, 24),
     "PV3": np.random.uniform(0, 4, 24),
     "PV4": np.random.uniform(0, 9, 24),
+    "PV5": np.random.uniform(0, 3, 24),
 }
 
 # Grid node capacity (MW) for each hour
-grid_capacity = np.full(24, 12.5)
+grid_capacity = np.full(24, 13)
 
 # -------------------------
 # Model
@@ -57,7 +58,7 @@ for h in hours:
     )
 
 # Only 2 PV systems allowed
-model += pulp.lpSum(x[pv] for pv in pv_profiles) <= 3
+model += pulp.lpSum(x[pv] for pv in pv_profiles) <=5
 
 # -------------------------
 # Solve
@@ -84,6 +85,19 @@ print(f'pv1-3: {sum(pv_profiles["PV1"]) + sum(pv_profiles["PV2"]) + sum(pv_profi
 print(f'pv1,4: {sum(pv_profiles["PV1"]) + sum(pv_profiles["PV4"])} MW')
 print(f'pv2,4: {sum(pv_profiles["PV2"]) + sum(pv_profiles["PV4"])} MW')
 
+# Determine selection order based on total energy among selected PVs
+selected_pvs = [pv for pv in pv_profiles ]
+pv_sums = {pv: float(np.sum(pv_profiles[pv])) for pv in selected_pvs}
+ordered = sorted(selected_pvs, key=lambda pv: pv_sums[pv], reverse=True)
+pv_order = {pv: i + 1 for i, pv in enumerate(ordered)}
+
+if ordered:
+    print("\nSelection order (1 = highest total energy among selected):")
+    for i, pv in enumerate(ordered, start=1):
+        print(f"  {i}. {pv} ({pv_sums[pv]:.1f} MW)")
+else:
+    print("\nNo PV systems selected.")
+
 fig = go.Figure()
 for pv in pv_profiles:
     fig.add_trace(go.Scatter(x=list(hours), 
@@ -91,7 +105,7 @@ for pv in pv_profiles:
                                 mode='lines+markers',
                                 stackgroup="one",     # enables stacking
                                 line=dict(width=2), 
-                                name=f'pv: {pv}, x: {int(x[pv].value())}, sum: {sum(pv_profiles[pv]):.1f} MW'))
+                                name=f'pv: {pv}, x: {int(x[pv].value())}, order: {pv_order.get(pv, "-")}, sum: {sum(pv_profiles[pv]):.1f} MW'))
 fig.add_trace(go.Scatter(x=list(hours), 
                          y=grid_capacity,
                             mode='lines',

@@ -1496,12 +1496,12 @@ class PVAllocScenario:
                 # Run optimization
                 if method == 'greedy':
                     print('OptExpa', f'start "greedy" optimization node:{gridnode_subsample}') #, datetime.datetime.now(), np.nan, '-')
-                    selected_egids, results = optimize_pv_selection_greedy(
+                    selection_order, results = optimize_pv_selection_greedy(
                         feedin_matrix, egid_to_idx, peak_limit_kW, selection_strategy = selection_strategy
                     )
                 elif method == 'pulp':
                     print('OptExpa', f'start "pulp" optimization node:{gridnode_subsample}') #, datetime.datetime.now(), np.nan, '-')
-                    selected_egids, results = optimize_pv_selection_pulp(
+                    selection_order, results = optimize_pv_selection_pulp(
                         feedin_matrix, egid_to_idx, peak_limit_kW, 
                     )
                 else:
@@ -1511,13 +1511,22 @@ class PVAllocScenario:
                 results['preparation_stats'] = prep_stats
                 
                 # Create installation order mapping from selected_egids sequence
+                selection_order_egids = [k for k, v in selection_order.items()]
+                selection_order_inst  = [v for k, v in selection_order.items()]
                 inst_order_df = pl.DataFrame({
-                    'EGID': selected_egids,
-                    'grid_optim_inst_order': list(range(1, len(selected_egids) + 1))
+                    'EGID':                  selection_order_egids,
+                    'grid_optim_inst_order': selection_order_inst
                 })
+
+                egid_within_limit = results['selected_sorted']
+                # egid_outside_limit = results['remaining_sorted']
+                inst_order_df = inst_order_df.with_columns([
+                    pl.lit('within_limit').when(pl.col('EGID').is_in(egid_within_limit)).otherwise('outside_limit').alias('selection_category')
+                ])
+
                 
                 # Filter original dataframe to selected EGIDs and sort by selection order
-                node_subdf_order_selected = topo_node_subdf.filter(pl.col('EGID').is_in(selected_egids)).join(
+                node_subdf_order_selected = topo_node_subdf.filter(pl.col('EGID').is_in(selection_order_egids)).join(
                     inst_order_df, on='EGID', how='left'
                 ).sort('grid_optim_inst_order')
 
@@ -1541,10 +1550,15 @@ class PVAllocScenario:
                     pl.col('netdemand_kW').sum().alias('netdemand_kW'),
                 ])
 
+
+                # export
                 grid_optorder_df = node_select_df
                 grid_optorder_df.write_parquet(f'{self.sett.optim_path}/grid_optorder/grid_optorder_df_{method}_node{gridnode_subsample}.parquet')
                 if self.sett.export_csvs:
                     grid_optorder_df.write_csv(f'{self.sett.optim_path}/grid_optorder/grid_optorder_df_{method}_node{gridnode_subsample}.csv')
+                
+                with open(f'{self.sett.optim_path}/optim_results.txt', 'w') as f:
+                    f.write(results.to_json())
 
 
         def multiple_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, gridprem_ts, topo, rfr_model, encoder):
@@ -2459,6 +2473,7 @@ class PVAllocScenario:
                 # filtering for self.sett.GWR_specs
                 gwr = gwr.loc[(gwr['GSTAT'].isin(self.sett.GWRspec_GSTAT)) &
                             (gwr['GKLAS'].isin(self.sett.GWRspec_GKLAS)) 
+                            # exclude GBAUJ, because missing in a lot of instances -> droped observations predominantly in rural areas
                             # (gwr['GBAUJ'] >= self.sett.GWRspec_GBAUJ_minmax[0]) &
                             # (gwr['GBAUJ'] <= self.sett.GWRspec_GBAUJ_minmax[1])
                             ]
