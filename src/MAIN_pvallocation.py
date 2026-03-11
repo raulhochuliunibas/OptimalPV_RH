@@ -33,7 +33,7 @@ import multiprocessing as mp
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr, add_static_topo_data_to_subdf
-from src.pv_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
+from src.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
 
 
 # settings
@@ -5558,52 +5558,15 @@ if __name__ == '__main__':
         # 2768, 2769,
     ]    
 
-
-    pvalloc_Xnbfs_ARE_30y_DEFAULT = PVAllocScenario_Settings(
-        name_dir_export ='pvalloc_29nbfs_30y_DEFAULT',
-        bfs_numbers                                          = [
-            # RURAL 
-            2612, 2889, 2883, 2621, 2622,
-            2620, 2615, 2614, 2616, 2480,
-            2617, 2611, 2788, 2619, 2783, 2477, 
-            # SUBURBAN
-            2613, 2782, 2618, 2786, 2785, 
-            2772, 2761, 2743, 2476, 2768,
-            # URBAN
-            2773, 2769, 2770,
-                ],
-        create_gdf_export_of_topology                        = True,
-        export_csvs                                          = False,
-        T0_year_prediction                                   = 2024,
-        months_lookback                                      = 12,
-        months_prediction                                    = 360,
-        TECspec_add_heatpump_demand_TF                       = True,
-        ALGOspec_topo_subdf_partitioner                      = 250,
-        ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
-        CSTRspec_ann_capacity_growth                         = 0.1,
-        ALGOspec_subselec_filter_method                      = 'pooled',
-        CSTRspec_capacity_type                               = 'ep2050_zerobasis',
-
-    ) 
-    LRG_bfs_name = 'pvalloc_29nbfs_30y5'
-    RUR_bfs_name = 'pvalloc_16nbfs_RUR'
-    RUR_bfs_list =[
-        # RURAL
-        2612, 2889, 2883, 2621, 2622,
-        2620, 2615, 2614, 2616, 2480,
-        2617, 2611, 2788, 2619, 2783, 2477, 
-    ]
-
-
     bfs_mini_scen_list = [ 
 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     run_pvalloc_initalization_TF    = True,
-        #     run_pvalloc_mcalgorithm_TF      = True,
-        #     run_gridoptimized_orderinst_TF  = False,
-        #     run_gridoptimized_expansion_TF  = False,
-        # ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
+            bfs_numbers                     = bfs_mini_list,
+            run_pvalloc_initalization_TF    = True,
+            run_pvalloc_mcalgorithm_TF      = True,
+            run_gridoptimized_orderinst_TF  = False,
+            run_gridoptimized_expansion_TF  = False,
+        ), 
         
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_gridopt_max',
             bfs_numbers                     = bfs_mini_list,
@@ -5617,40 +5580,69 @@ if __name__ == '__main__':
         ), 
 
     ]
- 
-    LRG_scen_list = [
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max', 
-            export_csvs                     = True,
 
-            run_pvalloc_initalization_TF    = False,
-            run_pvalloc_mcalgorithm_TF      = False,
-            # run_gridoptimized_orderinst_TF  = True,
-            run_gridoptimized_expansion_TF  = True,
+    
+    mini_dev_scen_list = [ 
+
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max_gridoptim',
+            bfs_numbers                     = bfs_mini_list,
+            run_pvalloc_initalization_TF          = True,
+            run_pvalloc_mcalgorithm_TF            = False,
+            run_gridoptimized_orderinst_TF        = True,
+            run_gridoptimized_expansion_TF        = True,
+            OPTIMspecs_gridnode_subsample         = 'all_nodes_pyparallel', 
+            OPTEXPApecs_apply_gridoptim_order_TF  = True,
+            ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max_gridoptim_1hll',
+            bfs_numbers                     = bfs_mini_list,
+            run_pvalloc_initalization_TF               = True,
+            run_pvalloc_mcalgorithm_TF                 = False,
+            run_gridoptimized_orderinst_TF             = True,
+            run_gridoptimized_expansion_TF             = True,
+            OPTIMspecs_gridnode_subsample              = 'all_nodes_pyparallel', 
+            OPTEXPApecs_apply_gridoptim_order_TF       = True,
             
-            OPTIMspecs_solving_method          = ['pulp'], 
-            # OPTIMspecs_gridnode_subsample      = '731',
-            # OPTIMspecs_gridnode_subsample      = 'all_nodes_pyparallel',
-            # OPTIMspecs_gridnode_subsample      = ['411', '19', '918' ],
-            OPTIMspecs_gridnode_subsample      = ['411', '19', '918' ],
+            GRIDspec_node_1hll_closed_TF               = True,
+            ), 
+
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
+            bfs_numbers                     = bfs_mini_list,
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max_1hll',
+            bfs_numbers                     = bfs_mini_list,
+                GRIDspec_node_1hll_closed_TF      = True,
         ),
 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max_sCs4p6',
+            bfs_numbers                     = bfs_mini_list,
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs4p6',
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max_1hll_sCs4p6',
+            bfs_numbers                     = bfs_mini_list,
+                        GRIDspec_node_1hll_closed_TF      = True,
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs4p6',
+        ),
+
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max__preprep_before_Feb26',
+            bfs_numbers                     = bfs_mini_list,
+            name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26',
+            GWRspec_building_cols           = ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                                                'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                                                'GEBF', 'GAREA', 
+                                                'GWAERZH1', 'GENH1',],
+
+
+
+        ),
+
+
     ]
-
-    DEV_scen_list = [
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{RUR_bfs_name}_max_gridoptim', 
-                                 bfs_numbers                       = RUR_bfs_list,
-                                 run_pvalloc_initalization_TF    = False,
-                                 run_pvalloc_mcalgorithm_TF      = False,
-                                 run_gridoptimized_orderinst_TF  = False,
-                                 run_gridoptimized_expansion_TF  = True,
-                                 OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
-                                 OPTEXPApecs_apply_gridoptim_order_TF     = True,
-                                 ),
-    ]
+ 
 
 
-
-    pvalloc_scen_list = bfs_mini_scen_list
+    pvalloc_scen_list = mini_dev_scen_list  
 
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)
