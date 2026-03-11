@@ -4081,6 +4081,7 @@ class Visualization:
 
                     # girdnode_df: transform and prep ------------------
                     gridnode_df_by_iter_list, agg_bynode_df_by_iter_list = [] , []
+                    print(f'** processing gridnode_df for scen {scen} **\n** n_paths: {len(gridnode_df_paths)} **')
                     for path in gridnode_df_paths:
                         n_iter = int(path.split('gridnode_df_')[1].split('.parquet')[0])
                         
@@ -4090,6 +4091,9 @@ class Visualization:
                             pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
                         ])
                         gridnode_df = gridnode_df.sort("t_int", descending=False)
+                        print(f'\tprocessing iter {n_iter} from path: {path}')
+                        print(f'\t shape gridnode_df: {gridnode_df.shape}')
+                        
 
                         # calc holding capacity
                         gridnode_df = gridnode_df.with_columns([
@@ -4312,7 +4316,15 @@ class Visualization:
                             'feedin_atnode_kW',
                             'TotalPower',
                         ]]
-                    tmp_df.loc[:,['n_EGID_pvinst', 'ratio_EGID_pvinst']] = topo_df_iter.loc[:,['n_EGID_pvinst', 'ratio_EGID_pvinst']].to_numpy()
+                    # Align by 'n_iter' to avoid length mismatch when assigning
+                    try:
+                        tmp_df = tmp_df.merge(
+                            topo_df_iter[['n_iter', 'n_EGID_pvinst', 'ratio_EGID_pvinst']],
+                            on='n_iter', how='left'
+                        )
+                    except Exception as e:
+                        print(f"Error merging topo_df_iter with gridnode_df_by_iter_pd for scen {scen}: {e}")
+
                     tmp_df.loc[:, 'scen'] = scen
 
                     export_plot_data_list.append(tmp_df)
@@ -8048,7 +8060,7 @@ if __name__ == '__main__':
             pvalloc_include_pattern_list = [
                 'pvalloc_16nbfs_RUR_max',
                 # 'pvalloc_16nbfs_RUR_max',
-                # 'pvalloc_16nbfs_RUR_max_gridoptim',
+                'pvalloc_16nbfs_RUR_max_gridoptim',
             ],
             # plot_show                          = False,
             # remove_old_plot_scen_directories   = True,  
@@ -8065,9 +8077,9 @@ if __name__ == '__main__':
 
             # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
             # plot_ind_var_summary_stats_TF                   = [True,      True,      False],
-            plot_ind_mapline_prodHOY_EGIDrfcombo_TF        = [True,      True,       False]  ,
-            plot_ind_line_productionHOY_per_EGID_TF        = [True,      True,       False]  ,
-            plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            # plot_ind_mapline_prodHOY_EGIDrfcombo_TF        = [True,      True,       False]  ,
+            # plot_ind_line_productionHOY_per_EGID_TF        = [True,      True,       False]  ,
+            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
             # plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,       False],
             # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
             # plot_ind_map_topo_egid_TF                      = [True,      True,       False]  ,
@@ -8079,7 +8091,7 @@ if __name__ == '__main__':
 
             # plot_ind_line_productionHOY_per_EGID_TF        = [True,      True,       False]  ,
             # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
-            # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
             # plot_ind_map_topo_egid_TF                      = [True,      True,       False]  ,
             # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
             # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
