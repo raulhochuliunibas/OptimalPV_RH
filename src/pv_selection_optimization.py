@@ -336,13 +336,16 @@ def optimize_pv_selection_pulp(
     # Build ordered list: selected first by energy desc, then remaining by energy desc
     energies = annual_energy.tolist()
     selected_sorted = sorted(selected_indices, key=lambda i: energies[i], reverse=True)
-    
-    remaining_indices = [i for i in range(n_egids) if i not in selected_indices]
-    remaining_sorted = sorted(remaining_indices, key=lambda i: energies[i], reverse=True)
 
-    ordered_indices = selected_sorted + remaining_sorted
-    ordered_egids = [idx_to_egid[i] for i in ordered_indices]
-    selection_order = {idx_to_egid[i]: (pos + 1) for pos, i in enumerate(ordered_indices)}
+    remaining_indices = [i for i in range(n_egids) if i not in selected_indices]
+    remaining_sorted  = sorted(remaining_indices, key=lambda i: energies[i], reverse=True)
+    remaining_egids   = [idx_to_egid[i] for i in remaining_sorted]
+
+    ordered_indices   = selected_sorted + remaining_sorted
+    ordered_egids     = [idx_to_egid[i] for i in ordered_indices]
+    selection_order   = {idx_to_egid[i]: (pos + 1) for pos, i in enumerate(ordered_indices)}
+    
+    elapsed = int(time.time() - start_time)
     
     results = {
         'selected_egids': selected_egids,
@@ -355,18 +358,17 @@ def optimize_pv_selection_pulp(
         'final_cumulative_kWh': np.sum(final_hourly_feedin),
         'cumulative_limit_kWh': cumulative_limit_kWh,
         'cumulative_utilization': np.sum(final_hourly_feedin) / cumulative_limit_kWh if cumulative_limit_kWh and len(selected_indices) > 0 else None,
-        'optimization_time_sec': time.time() - start_time,
+            'optimization_time_sec': f"{elapsed//3600:02}:{(elapsed%3600)//60:02}:{elapsed%60:02} (hh:mm:ss)", 
         'objective': objective,
         'solver_status': LpStatus[prob.status],
         'final_hourly_feedin': final_hourly_feedin,
         'ordered_egids': ordered_egids,
         'selection_order': selection_order,
-        'selected_sorted': selected_sorted,
-        'remaining_sorted': remaining_sorted,
+        'remaining_egids': remaining_egids,
     }
     
     if verbose:
-        print(f"\nOptimization completed in {results['optimization_time_sec']:.2f} seconds")
+        print(f"\nOptimization completed in {results['optimization_time_sec']} seconds")
         print(f"  Solver status: {results['solver_status']}")
         print(f"  Selected: {results['n_selected']} / {results['n_total']} houses ({results['selection_rate']*100:.1f}%)")
         print(f"  Final peak: {results['final_peak_kW']:.2f} kW (limit: {peak_limit_kW:.2f} kW, {results['peak_utilization']*100:.1f}% utilized)")

@@ -110,8 +110,8 @@ class PVAllocScenario_Settings:
                                                             'EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
                                                             'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
                                                             'GEBF', 'GAREA', 
-                                                            'GWAERZH1', 'GENH1', 'GWAERSCEH1', 'GWAERDATH1',
-                                                            # 'GWAERZH2', 'GENH2', 'GWAERSCEH2', 'GWAERDATH2'
+                                                            'GWAERZH1', 'GENH1',   # 'GWAERSCEH1', 'GWAERDATH1',
+                                                            'GWAERZH2', 'GENH2',   #'GWAERSCEH2', 'GWAERDATH2'
                                                         ])
     
     GWRspec_dwelling_cols: List[str]                    = field(default_factory=list)
@@ -538,7 +538,7 @@ class PVAllocScenario_Settings:
     OPTIMspecs_peak_ext_limit_kW: float               = 0
     OPTIMspecs_cumulative_limit_kWh: float            = 0
     
-    OPTEXPApecs_apply_gridoptim_order_TF: bool         = False  # similar to ALGOspec_subselec_filter_criteria, npv_df is sorted, such that min(grid_optim_inst_order) rows are always picked first. 
+    OPTEXPApecs_apply_gridoptim_order_TF: bool         = True  # similar to ALGOspec_subselec_filter_criteria, npv_df is sorted, such that min(grid_optim_inst_order) rows are always picked first. 
     OPTEXPApecs_solving_method: str                    = 'pulp'       # 'greedy' / 'pulp'
     
 
@@ -1518,11 +1518,16 @@ class PVAllocScenario:
                     'grid_optim_inst_order': selection_order_inst
                 })
 
-                egid_within_limit = results['selected_sorted']
+                egid_within_limit = results['selected_egids']
                 # egid_outside_limit = results['remaining_sorted']
                 inst_order_df = inst_order_df.with_columns([
-                    pl.lit('within_limit').when(pl.col('EGID').is_in(egid_within_limit)).otherwise('outside_limit').alias('selection_category')
-                ])
+                    pl.when(pl.col('EGID').is_in(egid_within_limit))
+                    .then(pl.lit('within_limit'))
+                    .otherwise(pl.lit('outside_limit'))
+                    .alias('selection_category')
+                    ])
+                #     pl.lit('within_limit').when(pl.col('EGID').is_in(egid_within_limit)).otherwise('outside_limit').alias('selection_category')
+                # ])
 
                 
                 # Filter original dataframe to selected EGIDs and sort by selection order
@@ -1557,8 +1562,9 @@ class PVAllocScenario:
                 if self.sett.export_csvs:
                     grid_optorder_df.write_csv(f'{self.sett.optim_path}/grid_optorder/grid_optorder_df_{method}_node{gridnode_subsample}.csv')
                 
+
                 with open(f'{self.sett.optim_path}/optim_results.txt', 'w') as f:
-                    f.write(results.to_json())
+                    f.write(str(results))
 
 
         def multiple_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, gridprem_ts, topo, rfr_model, encoder):
@@ -5591,9 +5597,17 @@ if __name__ == '__main__':
 
     bfs_mini_scen_list = [ 
 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     run_pvalloc_initalization_TF    = True,
+        #     run_pvalloc_mcalgorithm_TF      = True,
+        #     run_gridoptimized_orderinst_TF  = False,
+        #     run_gridoptimized_expansion_TF  = False,
+        # ), 
+        
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_gridopt_max',
             bfs_numbers                     = bfs_mini_list,
-            # run_pvalloc_initalization_TF    = True,
+            run_pvalloc_initalization_TF    = False,
             run_pvalloc_mcalgorithm_TF      = False,
             run_gridoptimized_orderinst_TF  = True,
             run_gridoptimized_expansion_TF  = True,
@@ -5602,13 +5616,6 @@ if __name__ == '__main__':
             OPTEXPApecs_apply_gridoptim_order_TF     = True,
         ), 
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
-            # bfs_numbers                     = bfs_mini_list,
-            run_pvalloc_initalization_TF    = True,
-            run_pvalloc_mcalgorithm_TF      = True,
-            run_gridoptimized_orderinst_TF  = False,
-            run_gridoptimized_expansion_TF  = False,
-        ), 
     ]
  
     LRG_scen_list = [
