@@ -23,10 +23,77 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 # ------------------------------------------------------------------------------------------------------
+# find max sample region within DSO network
+preprep_path = r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI"
+
+dsonodes_df         = pl.read_parquet(f'{preprep_path}/dsonodes_df.parquet')
+Map_egid_dsonode    = pl.read_parquet(f'{preprep_path}/Map_egid_dsonode.parquet')
+gwr_all_building_df = pl.read_parquet(f'{preprep_path}/gwr_all_building_df.parquet')
+
+gm_shp              = gpd.read_file(f'{preprep_path}/gm_shp_gdf.geojson')
+
+merge = Map_egid_dsonode.join(gwr_all_building_df, left_on='EGID', right_on='EGID', how='inner')    
+ALLDSO_bfs_list = [int(bfs) for bfs in list(merge['GGDENR'].unique()) ]
+
+RUR_bfs_list =[
+    # RURAL
+    2612, 2889, 2883, 2621, 2622,
+    2620, 2615, 2614, 2616, 2480,
+    2617, 2611, 2788, 2619, 2783, 2477, 
+]
+SUB_bfs_list = [
+    # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
+    2613, 2782, 2618, 2786, 2785, 
+    2772, 2761, 2743, 2476, 2768,
+]
+# v5 -> T0_prediction: 2024
+LRG_bfs_list = [
+    # RURAL 
+    2612, 2889, 2883, 2621, 2622,
+    2620, 2615, 2614, 2616, 2480,
+    2617, 2611, 2788, 2619, 2783, 2477, 
+    # SUBURBAN
+    2613, 2782, 2618, 2786, 2785, 
+    2772, 2761, 2743, 2476, 2768,
+    # URBAN
+    2773, 2769, 2770,
+    ]
+XLRG_bfs_list = [
+    # RURAL 
+    2612, 2889, 2883, 2621, 2622,
+    2620, 2615, 2614, 2616, 2480,
+    2617, 2611, 2788, 2619, 2783, 2477, 
+    # SUBURBAN
+    2613, 2782, 2618, 2786, 2785, 
+    2772, 2761, 2743, 2476, 2768,
+    2471, 2481, 2775, 2764, 2771, 
+    2763, 2473, 2475, 2474, 2472, 
+    2478, 2830, 2766, 2767, 2774, 
+    # URBAN
+    2773, 2769, 2770,
+    2762, 2765, 
+    ]
+
+sample_lists = {
+    'RUR': RUR_bfs_list,
+    'SUB': SUB_bfs_list,
+    'LRG': LRG_bfs_list,
+    'XLRG': XLRG_bfs_list,
+    'ALLDSO': ALLDSO_bfs_list,
+}
+
+for k, v in sample_lists.items():
+    model_sample = gm_shp.loc[gm_shp['BFS_NUMMER'].isin(v), ]
+    model_sample.to_file(f'{preprep_path}/model_sample_2_{k}.geojson', driver='GeoJSON')
+    print(f'exported model_sample_{k}.geojson')
+
+
+
+# ------------------------------------------------------------------------------------------------------
 # parquet to csv
 path_list = [
-    r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\npv_df.parquet",
-    r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\pred_inst_df.parquet",
+    # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\npv_df.parquet",
+    # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\pred_inst_df.parquet",
 ]
 for pq_path in path_list:
     file_name = pq_path.split('\\')[-1].split('.parquet')[0]

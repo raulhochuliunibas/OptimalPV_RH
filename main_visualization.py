@@ -28,15 +28,24 @@ visualization_list = [
             pvalloc_exclude_pattern_list = [
                 '*.txt','*old_vers*',
             ], 
-            pvalloc_include_pattern_list = [            
-                'pvalloc_29nbfs_30y_max',
-                'pvalloc_29nbfs_30y_max_1hll',
-                'pvalloc_29nbfs_30y_gridoptim_max',
-                'pvalloc_29nbfs_30y_gridoptim_max_1hll',
+            pvalloc_include_pattern_list = [       
+                'pvalloc_29nbfs_30y2*',
+                
+                # 'pvalloc_16nbfs_RUR_max_gridoptim',
+                # 'pvalloc_16nbfs_RUR_max_gridoptim_1hll',
+                # 'pvalloc_16nbfs_RUR_max',
+                # 'pvalloc_16nbfs_RUR_max_1hll',
+                # 'pvalloc_16nbfs_RUR_max_sCs4p6',
+                # 'pvalloc_16nbfs_RUR_max_1hll_sCs4p6',
+
+                # 'pvalloc_29nbfs_30y_max',
+                # 'pvalloc_29nbfs_30y_max_1hll',
+                # 'pvalloc_29nbfs_30y_gridoptim_max',
+                # 'pvalloc_29nbfs_30y_gridoptim_max_1hll',
                 # 'pvalloc_29nbfs_30y_rnd',
                 # 'pvalloc_29nbfs_30y_rnd_1hll',
-                'pvalloc_29nbfs_30y_max_sCs4p6',
-                'pvalloc_29nbfs_30y_max_1hll_sCs4p6',               
+                # 'pvalloc_29nbfs_30y_max_sCs4p6',
+                # 'pvalloc_29nbfs_30y_max_1hll_sCs4p6',               
             ],
             
             # export_only_agg_comparison_plots   = True,# <===
