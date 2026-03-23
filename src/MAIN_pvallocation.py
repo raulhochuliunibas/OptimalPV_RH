@@ -167,6 +167,7 @@ class PVAllocScenario_Settings:
                                                                                     'class1', 
                                                                                     #  'class2',
                                                                                         ])  # 'class1', 'class2', 'class3', 'class4'
+    CSTRspec_ep2050_rescale_fact: int                   = 1.0,
     CSTRspec_ep2050_capa_dict: Dict[str, float]         = field(default_factory=lambda: {
         'ep2050_zerobasis':{
             'pvcapa_total': {
@@ -335,7 +336,7 @@ class PVAllocScenario_Settings:
     ALGOspec_subselec_filter_criteria: str                      = None  # 'southfacing_1spec' / 'eastwestfacing_3spec' / 'southwestfacing_2spec'
                                                                         # edit: new a tuple of order filtering, basically install inst on EGIDs with this filter_tag == True first
                                                                         # df_tag_south_nr  df_tag_south_1r  eastwest_2r  eastwest_nr
-    ALGOspec_subselec_filter_method: str                        = 'pooled'  # 'ordered' / 'pooled'
+    ALGOspec_subselec_filter_method: str                        = 'pooled'  # 'ordered' / 'pooled',   # 'ordered': filter criteria are applied in order of ALGOspec_subselec_filter_criteria list, 'pooled': all filter criteria are applied at once and inst are selected from the pool of EGIDs that fulfill any of the filter criteria
     # drop cols in subdf (safe disk space)                                                                    
     ALGOspec_drop_cols_topo_time_subdf_list: List[str]          = field(default_factory=lambda: [
                                                                        'index', 'timestamp', 'rad_direct', 'rad_diffuse', 'temperature', 
@@ -3271,9 +3272,10 @@ class PVAllocScenario:
 
 
             # adjust allCH capa to sample size
-            GSTAT_adj_list   = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GSTAT_list']
-            GKLAS_adj_list   = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GKLAS_list']
-            classes_adj_list = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['classes_adj_list']
+            GSTAT_adj_list      = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GSTAT_list']
+            GKLAS_adj_list      = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GKLAS_list']
+            classes_adj_list    = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['classes_adj_list']
+            epzb_scaling_factor = self.sett.CSTRspec_ep2050_rescale_fact
 
             nEGIDs_all_CH = gwr_allch_summary \
                 .filter( 
@@ -3289,7 +3291,7 @@ class PVAllocScenario:
             nEGIDs_SAMPLE = len(topo)
             
             epzb_capa_df['ratio_sample_allCH'] = nEGIDs_SAMPLE / nEGIDs_all_CH
-            epzb_capa_df['epzb_capa_sample_kw'] = epzb_capa_df['epzb_capa_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1) * epzb_capa_df['ratio_sample_allCH']
+            epzb_capa_df['epzb_capa_sample_kw'] = epzb_capa_df['epzb_capa_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1) * epzb_capa_df['ratio_sample_allCH'] * epzb_scaling_factor
             epzb_capa_df['constr_capacity_kw'] = epzb_capa_df['epzb_capa_sample_kw']
             constrcapa_epzb = epzb_capa_df[['date', 'year', 'month', 'constr_capacity_kw']]
 
@@ -3326,7 +3328,7 @@ class PVAllocScenario:
                 fig.add_trace(go.Scatter(x=constrcapa_hist_month['date'], y=constrcapa_hist_month['constr_capacity_kw'], mode='lines+markers', name='Monthly Hist. based', line=dict(dash='dot')))
                 fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=constrcapa_hist_year['constr_capacity_kw'], mode='lines+markers', name='constrcapa - Yearly Hist. based (Sample)'))
 
-                for r in [0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2]:
+                for r in [0.05, 0.075, 0.1, 0.125, 0.15,]:
                     adj_hist_year = []
                     for i,y in enumerate(capa_years_prediction):
                         val = sum_TP_kW_lookback * (1 + r)**(i+1)
@@ -3351,7 +3353,7 @@ class PVAllocScenario:
                     legend_title='Legend',
                     template='plotly_white',
                 )
-                fig.write_html(f'{self.sett.name_dir_export_path}/construction_capacity_over_time.html')
+                fig.write_html(f'{self.sett.name_dir_export_path}/construction_capacity_over_time_{self.sett.name_dir_export}.html')
 
             # fig.show()
 
@@ -5558,6 +5560,8 @@ if __name__ == '__main__':
         # 2768, 2769,
     ]    
 
+
+
     bfs_mini_scen_list = [ 
 
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
@@ -5566,6 +5570,14 @@ if __name__ == '__main__':
             run_pvalloc_mcalgorithm_TF      = True,
             run_gridoptimized_orderinst_TF  = False,
             run_gridoptimized_expansion_TF  = False,
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}__max_epzb0_75',
+            bfs_numbers                     = bfs_mini_list,
+            run_pvalloc_initalization_TF    = True,
+            run_pvalloc_mcalgorithm_TF      = True,
+            run_gridoptimized_orderinst_TF  = False,
+            run_gridoptimized_expansion_TF  = False,
+            CSTRspec_ep2050_rescale_fact    = 0.75,
         ), 
         
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_gridopt_max',
@@ -5642,7 +5654,7 @@ if __name__ == '__main__':
  
 
 
-    pvalloc_scen_list = mini_dev_scen_list  
+    pvalloc_scen_list = bfs_mini_scen_list  
 
     for pvalloc_scen in pvalloc_scen_list:
         pvalloc_class = PVAllocScenario(pvalloc_scen)

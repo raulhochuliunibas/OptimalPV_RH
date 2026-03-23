@@ -67,7 +67,7 @@ if True:
         export_csvs                                          = False,
         T0_year_prediction                                   = 2024,
         months_lookback                                      = 12,
-        months_prediction                                    = 360,
+        months_prediction                                    = 240,
         TECspec_add_heatpump_demand_TF                       = True,
         ALGOspec_topo_subdf_partitioner                      = 250,
         ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
@@ -89,7 +89,7 @@ if True:
         2613, 2782, 2618, 2786, 2785, 
         2772, 2761, 2743, 2476, 2768,
     ]
-    LRG_bfs_name = 'pvalloc_29nbfs_30y3'
+    LRG_bfs_name = 'pvalloc_29nbfs_LRG'
     # v5 -> T0_prediction: 2024
     LRG_bfs_list = [
         # RURAL 
@@ -102,7 +102,7 @@ if True:
         # URBAN
         2773, 2769, 2770,
         ]
-    XLRG_bfs_name = 'pvalloc_46nbfs_30y'
+    XLRG_bfs_name = 'pvalloc_46nbfs_XLRG'
     XLRG_bfs_list = [
         # RURAL 
         2612, 2889, 2883, 2621, 2622,
@@ -119,7 +119,7 @@ if True:
         2762, 2765, 
         ]
     
-    X2XL_bfs_name = 'pvalloc_59nbfs_30y'
+    X2XL_bfs_name = 'pvalloc_59nbfs_XXL'
     X2XL_bfs_list = [
         # RURAL 
         2612, 2889, 2883, 2621, 2622,
@@ -140,7 +140,7 @@ if True:
         2829, 2831, 
     ]
 
-    ALLDSO_bfs_name = 'pvalloc_79nbfs_30y'
+    ALLDSO_bfs_name = 'pvalloc_79nbfs_ALLDSO'
     ALLDSO_bfs_list = [
         # RURAL 
         2612, 2889, 2883, 2621, 2622,
@@ -358,18 +358,25 @@ if True:
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max', 
         ),
 
-        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_gridoptim_max', 
-            # run_pvalloc_initalization_TF    = True,
-            run_pvalloc_initalization_TF    = False,
-            run_pvalloc_mcalgorithm_TF      = False,
-            run_gridoptimized_orderinst_TF  = True,
-            run_gridoptimized_expansion_TF  = True,
-            OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
-            OPTEXPApecs_apply_gridoptim_order_TF     = True,
-        ),
+        # make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_gridoptim_max', 
+        #     # run_pvalloc_initalization_TF    = True,
+        #     run_pvalloc_initalization_TF    = False,
+        #     run_pvalloc_mcalgorithm_TF      = False,
+        #     run_gridoptimized_orderinst_TF  = True,
+        #     run_gridoptimized_expansion_TF  = True,
+        #     OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
+        #     OPTEXPApecs_apply_gridoptim_order_TF     = True,
+        # ),
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_rnd',
                         ALGOspec_inst_selection_method    = 'random',
-        ),  
+        ),
+
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_epzb0_75', 
+                      CSTRspec_ep2050_rescale_fact     = 0.75,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_epzb0_50', 
+                      CSTRspec_ep2050_rescale_fact     = 0.50,
+        ),
 
 
         make_scenario(pvalloc_Xnbfs_ARE_30y_DEFAULT, f'{LRG_bfs_name}_max_sAs2p0',
