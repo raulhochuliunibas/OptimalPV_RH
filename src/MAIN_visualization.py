@@ -449,6 +449,9 @@ class Visualization:
         for scen in self.pvalloc_scen_list:
             print_to_logfile(f'- {scen}', self.visual_sett.log_name)
 
+        print_to_logfile('\n\n', self.visual_sett.log_name)
+
+
 
 
 
@@ -4081,8 +4084,8 @@ class Visualization:
 
                     # girdnode_df: transform and prep ------------------
                     gridnode_df_by_iter_list, agg_bynode_df_by_iter_list = [] , []
-                    print(f'** processing gridnode_df for scen {scen} **\n** n_paths: {len(gridnode_df_paths)} **')
-                    for path in gridnode_df_paths:
+                    print(f'** processing gridnode_df for scen {scen} **\n** n_paths: {len(gridnode_df_paths)} **') if i_scen == 0 else None
+                    for i_path, path in enumerate( gridnode_df_paths ):
                         n_iter = int(path.split('gridnode_df_')[1].split('.parquet')[0])
                         
                         # taken 1:1 from plot_ind_line_productionHOY_per_node() ==========
@@ -4091,8 +4094,9 @@ class Visualization:
                             pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
                         ])
                         gridnode_df = gridnode_df.sort("t_int", descending=False)
-                        print(f'\tprocessing iter {n_iter} from path: {path}')
-                        print(f'\t shape gridnode_df: {gridnode_df.shape}')
+                        if i_path < 5: 
+                            print(f'\t\t processing iter {n_iter} from path: {path}') 
+                            print(f'\t\t shape gridnode_df: {gridnode_df.shape}, rows / 8760: {gridnode_df.shape[0] / 8760:.2f} ')
                         
 
                         # calc holding capacity
@@ -8058,9 +8062,7 @@ if __name__ == '__main__':
                 # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_16nbfs_RUR_max',
-                # 'pvalloc_16nbfs_RUR_max',
-                'pvalloc_16nbfs_RUR_max_gridoptim',
+                'pvalloc_2nbf_10y_compare3_*max*',
             ],
             # plot_show                          = False,
             # remove_old_plot_scen_directories   = True,  
