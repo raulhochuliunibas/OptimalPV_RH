@@ -5543,7 +5543,7 @@ if __name__ == '__main__':
 
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
-            months_prediction                                    = 120,
+            months_prediction                                    = 30,
             TECspec_add_heatpump_demand_TF                       = True,   
             ALGOspec_topo_subdf_partitioner                      = 250, 
             ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
