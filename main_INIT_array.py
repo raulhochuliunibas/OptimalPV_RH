@@ -78,8 +78,8 @@ if True:
 
     ) 
     pvalloc_Xnbfs_ARE_20y_OLDPREPREP = PVAllocScenario_Settings(
-        name_dir_export ='pvalloc_29nbfs_20y_OLDPREPREP',
-        name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26',
+        name_dir_export ='pvalloc_29nbfs_20y_prepFeb26',
+        name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI__before_Feb26',
 
         GWRspec_building_cols             = ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
                                              'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
@@ -355,14 +355,14 @@ if True:
     ]
 
     DEV_OLDpreprep__scen_list = [
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{RUR_bfs_name}_max_OLDpreprep', 
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{RUR_bfs_name}_max_prepFeb26', 
                       bfs_numbers                       = RUR_bfs_list,
         ),
         # make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{RUR_bfs_name}_max_1hll', 
         #               bfs_numbers                       = RUR_bfs_list,
         #               GRIDspec_node_1hll_closed_TF      = True,
         # ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{RUR_bfs_name}_gridoptim_max_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{RUR_bfs_name}_gridoptim_max_prepFeb26',
                       bfs_numbers                       = RUR_bfs_list,
                       run_pvalloc_initalization_TF      = True,
                       run_pvalloc_mcalgorithm_TF        = False,
@@ -371,21 +371,21 @@ if True:
                       OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel', 
                       OPTEXPApecs_apply_gridoptim_order_TF     = True,
                 ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{RUR_bfs_name}_max_sCs4p6_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{RUR_bfs_name}_max_sCs4p6_prepFeb26',
                         bfs_numbers                       = RUR_bfs_list,
                         GRIDspec_apply_prem_tiers_TF      = True,
                         GRIDspec_subsidy_name             = 'Cs4p6',
         ),
 
 
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{SUB_bfs_name}_max_OLDpreprep', 
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{SUB_bfs_name}_max_prepFeb26', 
                       bfs_numbers                       = SUB_bfs_list,
         ),
         # make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{SUB_bfs_name}_max_1hll', 
         #               bfs_numbers                       = SUB_bfs_list,
         #               GRIDspec_node_1hll_closed_TF      = True,
         # ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{SUB_bfs_name}_gridoptim_max_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{SUB_bfs_name}_gridoptim_max_prepFeb26',
                       bfs_numbers                       = SUB_bfs_list,
                       run_pvalloc_initalization_TF      = True,
                       run_pvalloc_mcalgorithm_TF        = False,
@@ -394,20 +394,20 @@ if True:
                       OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel', 
                       OPTEXPApecs_apply_gridoptim_order_TF     = True,
                 ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{SUB_bfs_name}_max_sCs4p6_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{SUB_bfs_name}_max_sCs4p6_prepFeb26',
                         bfs_numbers                       = SUB_bfs_list,
                         GRIDspec_apply_prem_tiers_TF      = True,
                         GRIDspec_subsidy_name             = 'Cs4p6',
         ),
 
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{LRG_bfs_name}_max_OLDpreprep', 
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{LRG_bfs_name}_max_prepFeb26', 
                       bfs_numbers                       = LRG_bfs_list,
         ),
         # make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{LRG_bfs_name}_max_1hll', 
         #               bfs_numbers                       = LRG_bfs_list,
         #               GRIDspec_node_1hll_closed_TF      = True,
         # ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{LRG_bfs_name}_gridoptim_max_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{LRG_bfs_name}_gridoptim_max_prepFeb26',
                       bfs_numbers                       = LRG_bfs_list,
                       run_pvalloc_initalization_TF      = True,
                       run_pvalloc_mcalgorithm_TF        = False,
@@ -416,42 +416,42 @@ if True:
                       OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel', 
                       OPTEXPApecs_apply_gridoptim_order_TF     = True,
                 ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{LRG_bfs_name}_max_sCs4p6_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{LRG_bfs_name}_max_sCs4p6_prepFeb26',
                         bfs_numbers                       = LRG_bfs_list,
                         GRIDspec_apply_prem_tiers_TF      = True,
                         GRIDspec_subsidy_name             = 'Cs4p6',
         ),
 
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{XLRG_bfs_name}_max_OLDpreprep', 
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{XLRG_bfs_name}_max_prepFeb26', 
                       bfs_numbers                       = XLRG_bfs_list,
         ),
         # make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{XLRG_bfs_name}_max_1hll', 
         #               bfs_numbers                       = XLRG_bfs_list,
         #               GRIDspec_node_1hll_closed_TF      = True,
         # ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{XLRG_bfs_name}_gridoptim_max_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{XLRG_bfs_name}_gridoptim_max_prepFeb26',
                       bfs_numbers                       = XLRG_bfs_list,
                       run_pvalloc_initalization_TF      = True,
                       run_pvalloc_mcalgorithm_TF        = False,
                       run_gridoptimized_orderinst_TF    = True,
                       run_gridoptimized_expansion_TF    = True,
-                      OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel_OLDpreprep', 
+                      OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel_prepFeb26', 
                       OPTEXPApecs_apply_gridoptim_order_TF     = True,
         ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{XLRG_bfs_name}_max_sCs4p6_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{XLRG_bfs_name}_max_sCs4p6_prepFeb26',
                         bfs_numbers                       = XLRG_bfs_list,
                         GRIDspec_apply_prem_tiers_TF      = True,
                         GRIDspec_subsidy_name             = 'Cs4p6',
         ),
 
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{X2XL_bfs_name}_max_OLDpreprep', 
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{X2XL_bfs_name}_max_prepFeb26', 
                       bfs_numbers                       = X2XL_bfs_list,
         ),
         # make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{X2XL_bfs_name}_max_1hll', 
         #               bfs_numbers                       = X2XL_bfs_list,
         #               GRIDspec_node_1hll_closed_TF      = True,
         # ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{X2XL_bfs_name}_gridoptim_max_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{X2XL_bfs_name}_gridoptim_max_prepFeb26',
                       bfs_numbers                       = X2XL_bfs_list,
                       run_pvalloc_initalization_TF      = True,
                       run_pvalloc_mcalgorithm_TF        = False,
@@ -460,15 +460,16 @@ if True:
                       OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel', 
                       OPTEXPApecs_apply_gridoptim_order_TF     = True,
                 ),
-        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{X2XL_bfs_name}_max_sCs4p6_OLDpreprep',
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV_{X2XL_bfs_name}_max_sCs4p6_prepFeb26',
                         bfs_numbers                       = X2XL_bfs_list,
                         GRIDspec_apply_prem_tiers_TF      = True,
                         GRIDspec_subsidy_name             = 'Cs4p6',
         ),
 
     ]
-    # DEV_scen_list = DEV_newpreprep__scen_list + DEV_OLDpreprep__scen_list
-    DEV_scen_list = DEV_newpreprep__scen_list
+    
+    DEV_scen_list = DEV_newpreprep__scen_list + DEV_OLDpreprep__scen_list
+    # DEV_scen_list = DEV_newpreprep__scen_list
 
 
     RUR_scen_list = [
@@ -514,7 +515,7 @@ if True:
     ]
 
 
-    LRG_scen_list_asdf = [
+    LRG_scen_list = [
 
         make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max', 
         ),
@@ -603,7 +604,7 @@ if True:
         ),
    ]
     
-    LRG_scen_list = [
+    LRG__max_1hll__scen_list = [
         
      make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_gridoptim_max', 
             # run_pvalloc_initalization_TF    = True,

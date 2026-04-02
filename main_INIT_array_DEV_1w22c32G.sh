@@ -16,7 +16,7 @@
 #SBATCH --error=stdouterr_files/myrun.e%A_%a
 
 #You selected an array of jobs from 1 to 6 with 6 simultaneous jobs
-#SBATCH --array=1-20%20
+#SBATCH --array=1-40%40
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT
 #SBATCH --mail-user=raul.hochuli@unibas.ch        #You will be notified via email when your task ends or fails
 
@@ -44,6 +44,6 @@ export SLURM_ARRAY_JOB_ID_ENV=$SLURM_ARRAY_JOB_ID
 
 #add your command lines below
 #############################
-$(head -$SLURM_ARRAY_TASK_ID main_INIT_array_DEV_20task.cmd| tail -1)
+$(head -$SLURM_ARRAY_TASK_ID main_INIT_array_DEV_40task.cmd| tail -1)
 
 
