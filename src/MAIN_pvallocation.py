@@ -1557,6 +1557,9 @@ class PVAllocScenario:
                 ])
 
 
+                # Map roof spec filter tags back to node_select_df 
+                node_select_df = node_select_df.join(topo_filter_egid, on='EGID', how='left')
+
                 # export
                 grid_optorder_df = node_select_df
                 grid_optorder_df.write_parquet(f'{self.sett.optim_path}/grid_optorder/grid_optorder_df_{method}_node{gridnode_subsample}.parquet')
@@ -1566,34 +1569,6 @@ class PVAllocScenario:
 
                 with open(f'{self.sett.optim_path}/optim_results.txt', 'w') as f:
                     f.write(str(results))
-
-
-        def multiple_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, gridprem_ts, topo, rfr_model, encoder):
-            """
-            Process multiple grid optimizations for a list of grid nodes in PARALLEL
-            """
-
-            n_workers = min(mp.cpu_count() - 1, len(gridnode_subsample))
-            print(f'Processing {len(gridnode_subsample)} grid nodes with {n_workers} threads')
-
-            def _call_for_node(node):
-                # Calls your original method; file writes to optim_path and grid_optorder remain unchanged
-                self.single_gridoptimized_orderinst(node, topo_df, topo_time_paths, gridprem_ts, topo, rfr_model, encoder)
-
-            futures = {}
-            with ThreadPoolExecutor(max_workers=n_workers) as ex:
-                for node in gridnode_subsample:
-                    futures[ex.submit(_call_for_node, node)] = node
-
-                completed = 0
-                for fut in as_completed(futures):
-                    node = futures[fut]
-                    try:
-                        fut.result()
-                        completed += 1
-                        print(f'Completed node: {node} ({completed}/{len(gridnode_subsample)})')
-                    except Exception as e:
-                        print(f'Error processing node {node}: {e}')
 
 
         # RUN OPTIMIZATION -----------------------------------------------------------------------------
@@ -5564,25 +5539,25 @@ if __name__ == '__main__':
 
     bfs_mini_scen_list = [ 
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
-            bfs_numbers                     = bfs_mini_list,
-            run_pvalloc_initalization_TF    = True,
-            run_pvalloc_mcalgorithm_TF      = True,
-            run_gridoptimized_orderinst_TF  = False,
-            run_gridoptimized_expansion_TF  = False,
-        ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}__max_epzb0_75',
-            bfs_numbers                     = bfs_mini_list,
-            run_pvalloc_initalization_TF    = True,
-            run_pvalloc_mcalgorithm_TF      = True,
-            run_gridoptimized_orderinst_TF  = False,
-            run_gridoptimized_expansion_TF  = False,
-            CSTRspec_ep2050_rescale_fact    = 0.75,
-        ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     run_pvalloc_initalization_TF    = True,
+        #     run_pvalloc_mcalgorithm_TF      = True,
+        #     run_gridoptimized_orderinst_TF  = False,
+        #     run_gridoptimized_expansion_TF  = False,
+        # ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}__max_epzb0_75',
+        #     bfs_numbers                     = bfs_mini_list,
+        #     run_pvalloc_initalization_TF    = True,
+        #     run_pvalloc_mcalgorithm_TF      = True,
+        #     run_gridoptimized_orderinst_TF  = False,
+        #     run_gridoptimized_expansion_TF  = False,
+        #     CSTRspec_ep2050_rescale_fact    = 0.75,
+        # ), 
         
         make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_gridopt_max',
             bfs_numbers                     = bfs_mini_list,
-            run_pvalloc_initalization_TF    = False,
+            run_pvalloc_initalization_TF    = True,
             run_pvalloc_mcalgorithm_TF      = False,
             run_gridoptimized_orderinst_TF  = True,
             run_gridoptimized_expansion_TF  = True,
