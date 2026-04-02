@@ -43,6 +43,8 @@ class DataAggScenario_Settings:
     rerun_localimport_and_mappings: bool = True               # F: use existi ng parquet files, T: recreate parquet files in data prep
     reextend_fixed_data: bool = True               # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again
 
+    debug__EGID_gwradded_isnull_continues_TF: bool = True
+
     GWR_building_cols: List[str]    = field(default_factory=lambda: ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE',
                                             'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
                                             'GANZWHG',
@@ -908,6 +910,14 @@ class DataAggScenario:
                     checkpoint_to_logfile(f'partition solkat_sub {i} to {i+stepsize} of {len(solkat_all_dfuid)} unique DF_UIDs', self.sett.log_name, 5, self.sett.show_debug_prints) if i < 3 else None
                     tranche_counter += 1
                     solkat_sub = solkat_all_pq.filter(pl.col('DF_UID').is_in(solkat_all_dfuid[i:i+stepsize]))
+
+                    # DEBUGGING ----------------------------------
+                    df_uids = ['10225999', '10226000']
+                    tf = [tg in solkat_all_dfuid[i:i+stepsize] for tg in df_uids]
+                    if any(tf):
+                        print(f'found in tranche: {tranche_counter}; between {i} and {i+stepsize} of {len(solkat_all_dfuid)} unique DF_UIDs; {tf}')
+                    # DEBUGGING ----------------------------------
+
                     solkat_sub_pd = solkat_sub.to_pandas()
                     solkat_subgdf = solkat_all_geo[['DF_UID', 'geometry']].merge(solkat_sub_pd, how='inner', on='DF_UID')
                     solkat_subgdf = gpd.GeoDataFrame(solkat_subgdf, geometry='geometry')
@@ -941,6 +951,22 @@ class DataAggScenario:
                 # solkat_v2_gdf = gpd.GeoDataFrame(solkat_v2_wgeo, geometry='geometry')
                 # # solkat_v2_gdf = solkat_v2_gdf[solkat_v2_gdf['EGID'] != 'NAN']
                 # solkat_v2_gdf.loc[solkat_v2_gdf['EGID'] == 'NAN', ['EGID', 'SB_UUID']]
+
+                # DEBUGGING ----------------------------------
+                debug_egids = [ '390449',   ] #'390484' ]
+                debug_dfuids = ['10225999', ] #'10226000']
+                debug_egid_break = [egid in debug_egids for egid in solkat_v2_gdf['EGID'].unique()]
+                debug_dfuid_break = [dfuid in debug_dfuids for dfuid in solkat_v2_gdf['DF_UID'].unique()]
+
+                if any(debug_egid_break) & any(debug_dfuid_break):
+                    print('break for debug')
+                    [tf in solkat_v2_gdf['EGID'].unique() for tf in debug_egids]
+                    [tf in solkat_v2_gdf['DF_UID'].unique() for tf in debug_dfuids]
+                    solkat_v2_gdf.loc[solkat_v2_gdf['EGID'].isin(debug_egids) | solkat_v2_gdf['DF_UID'].isin(debug_dfuids), ['EGID', 'DF_UID']]
+                    
+
+                # DEBUGGING ----------------------------------
+
 
 
                 # create mapping of solkatEGIDs and missing gwrEGIDs 
@@ -1012,6 +1038,16 @@ class DataAggScenario:
                     pl.col('EGID_count').cast(pl.Int64),
                 )
                 for n_egid, egid in enumerate(EGID_old_solkat_list):
+                    
+                    # DEBUGGING ----------------------------------
+                    egid_join_union = join_gwr_pl.filter(pl.col('EGID_old_solkat') == egid)
+                    df_uids_in_union = egid_join_union['DF_UID'].unique().to_list()
+
+                    if any([tf == egid for tf in debug_egids]) & any([dfuid in df_uids_in_union for dfuid in debug_dfuids]):
+                        print(f'break for debug, n_egid {n_egid}, egid {egid}')
+                        [tf == egid for tf in join_gwr_solkat_union['EGID_old_solkat'].unique()]
+                        join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid]
+                    # DEBUGGING ----------------------------------
 
                     # egid_join_union = join_gwr_solkat_union.loc[join_gwr_solkat_union['EGID_old_solkat'] == egid,]
                     # egid_join_union = egid_join_union.reset_index(drop = True)
@@ -1022,7 +1058,7 @@ class DataAggScenario:
                     #     print(f'negid {n_egid}, egid {egid}, has proxy EGID, but gwr EGIDs found in union shape, skipping proxy handling')
 
                     # if all(egid_join_union['EGID_gwradded'].isna()):  
-                    if all(egid_join_union['EGID_gwradded'].is_null()):
+                    if all(egid_join_union['EGID_gwradded'].is_null()) & self.sett.debug__EGID_gwradded_isnull_continues_TF:
                         # no overlapp between solkat and any GWR => skip
                         continue
                                             
@@ -2369,29 +2405,49 @@ if __name__ == '__main__':
     dataagg_scen_list = [
 
         DataAggScenario_Settings(
-            name_dir_export = 'preprep_debug',
+            name_dir_export = 'preprep_debug__EGID_added_continue_TRUE',
             # kt_numbers = [13, 12, 11], # BL, BS, SO
             bfs_numbers = [
-                2641, 2615, 
+                2614, 2615, # RUR
+                2761, 2785,       # SUB
                            ],
             year_range = [2022, 2024],
             split_data_geometry_AND_slow_api = False,
             GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+            debug__EGID_gwradded_isnull_continues_TF = True,
+        ),
+        DataAggScenario_Settings(
+            name_dir_export = 'preprep_debug__EGID_added_continue_FALSE',
+            # kt_numbers = [13, 12, 11], # BL, BS, SO
+            bfs_numbers = [
+                2614, 2615, # RUR
+                2761, 2785,       # SUB
+                           ],
+            year_range = [2022, 2024],
+            split_data_geometry_AND_slow_api = False,
+            GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+            debug__EGID_gwradded_isnull_continues_TF = False,
         ),
 
+
         DataAggScenario_Settings(
-            name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI',
+            name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26',
             # kt_numbers = [13, 12, 11], # BL, BS, SO
             kt_numbers = [13, 11],
             bfs_numbers = [
-                2761, 2768,
+                # 2761, 2768,
                 2546,  	 # Grenchen,  	
                            ],
             year_range = [2015, 2024],
             split_data_geometry_AND_slow_api = False,
             GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+            debug__EGID_gwradded_isnull_continues_TF = False,
         ),
 
 
