@@ -439,7 +439,8 @@ class Visualization:
                 os.remove(file)
 
         if self.visual_sett.remove_old_csvs_in_visualization:
-            old_files = glob.glob(f'{self.visual_sett.visual_path}/*.csv')
+            # old_files = glob.glob(f'{self.visual_sett.visual_path}/*.csv')
+            old_files = glob.glob(f'{self.visual_sett.visual_static_export_path}/*.csv')
             for file in old_files:
                 os.remove(file)
 
@@ -464,9 +465,6 @@ class Visualization:
             self.plot_ind_var_summary_stats, 
             self.plot_demand_profiles,
             self.plot_ind_hist_pvcapaprod_sanitycheck, 
-            # self.plot_ind_boxp_radiation_rng_sanitycheck, 
-            self.plot_ind_charac_omitted_gwr, 
-            self.plot_ind_line_meteo_radiation, 
 
             # mc algorithm plots
             self.plot_ind_line_installedCap, 
@@ -483,11 +481,20 @@ class Visualization:
             self.plot_ind_map_topo_egid_incl_gridarea, 
             self.plot_ind_mapline_prodHOY_EGIDrfcombo, 
 
-            self.plot_ind_jsctr_ausricht_flaech_newinst,
-            self.plot_ind_lineband_contcharact_newinst,
             self.plot_ind_hist_contcharact_newinst,
             self.plot_ind_bar_catgcharact_newinst,
             self.plot_ind_summary_stats_by_node,
+
+            # not relevant / used
+            self.plot_ind_charac_omitted_gwr, 
+            self.plot_ind_line_meteo_radiation, 
+            
+            self.plot_ind_jsctr_ausricht_flaech_newinst,
+            self.plot_ind_lineband_contcharact_newinst,
+
+            # not yet / no longer working
+            # self.plot_ind_boxp_radiation_rng_sanitycheck, 
+
 
 
         ]
@@ -3417,7 +3424,8 @@ class Visualization:
                             # taken 1:1 from algo_update_gridnode_AND_gridprem_POLARS() =============================================
                             subdf_updated = subdf.clone()
                             cols_to_update = [ 'info_source', 'inst_TF', 'share_pvprod_used', 'dfuidPower' ]                                      
-                            subdf_updated = subdf_updated.drop(cols_to_update)                      
+
+                            subdf_updated = subdf_updated.drop(cols_to_update, strict = False)  # drop cols to update if they already exist in subdf to avoid duplicate columns after merge
 
                             checkpoint_to_logfile('gridprem > subdf: start pandas.merge subdf w Map_infosource_egid', self.sett.log_name, 0, self.sett.show_debug_prints) if print_checkpoint_statements else None
                             subdf_updated = subdf_updated.join(Map_pvinfo_topo_egid[['EGID', 'df_uid',] + cols_to_update], on=['EGID', 'df_uid'], how='left')         
@@ -7507,8 +7515,11 @@ class Visualization:
                     # GBAUJ into bins
                     if True: 
                         topo_df_catg_raw = topo_df_catg_raw.with_columns(
-                            pl.when(pl.col("GBAUJ") == "").then(pl.lit(0)).otherwise(pl.col("GBAUJ").cast(pl.Int32)).alias("GBAUJ_int")
-                        )
+                            pl.col("GBAUJ")
+                            .cast(pl.Int32, strict=False)  # converts invalid values to null
+                            .fill_null(0)
+                            .alias("GBAUJ_int")
+                        )                        
                         bins = np.linspace(1900, 2030, 14)  # 13 bins => 14 edges
                         labels = [f"{int(bins[i])}-{int(bins[i+1]-1)}" for i in range(len(bins)-1)]
 

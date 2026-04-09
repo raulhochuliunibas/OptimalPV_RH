@@ -23,84 +23,160 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 # ------------------------------------------------------------------------------------------------------
-# find max sample region within DSO network
-preprep_path = r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI"
+# parquet to csv
+if True:
+    path_list = [
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\npv_df.parquet",
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\pred_inst_df.parquet",
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\zMC1\pred_npv_inst_by_M\npv_df_1.parquet", 
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet"
+        
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet", 
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet", 
+        # r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI\gwr_all_building_df.parquet", 
+        # r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI\gwr.parquet", 
+        # r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr.parquet", 
+        # r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr_all_building_df.parquet", 
 
-dsonodes_df         = pl.read_parquet(f'{preprep_path}/dsonodes_df.parquet')
-Map_egid_dsonode    = pl.read_parquet(f'{preprep_path}/Map_egid_dsonode.parquet')
-gwr_all_building_df = pl.read_parquet(f'{preprep_path}/gwr_all_building_df.parquet')
+        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_gridoptim_max\zMC1_OptimExpa\npv_df.parquet",
+        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_gridoptim_max\zMC1_OptimExpa\pred_npv_inst_by_M\pred_inst_df_2.parquet",
+        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_gridoptim_max\zMC1_OptimExpa\pred_npv_inst_by_M\pred_inst_df_1.parquet",
+        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_npv_inst_by_M\pred_inst_df_2.parquet",
+        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet" ,       
 
-gm_shp              = gpd.read_file(f'{preprep_path}/gm_shp_gdf.geojson')
-
-merge = Map_egid_dsonode.join(gwr_all_building_df, left_on='EGID', right_on='EGID', how='inner')    
-ALLDSO_bfs_list = [int(bfs) for bfs in list(merge['GGDENR'].unique()) ]
-
-RUR_bfs_list =[
-    # RURAL
-    2612, 2889, 2883, 2621, 2622,
-    2620, 2615, 2614, 2616, 2480,
-    2617, 2611, 2788, 2619, 2783, 2477, 
-]
-SUB_bfs_list = [
-    # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
-    2613, 2782, 2618, 2786, 2785, 
-    2772, 2761, 2743, 2476, 2768,
-]
-# v5 -> T0_prediction: 2024
-LRG_bfs_list = [
-    # RURAL 
-    2612, 2889, 2883, 2621, 2622,
-    2620, 2615, 2614, 2616, 2480,
-    2617, 2611, 2788, 2619, 2783, 2477, 
-    # SUBURBAN
-    2613, 2782, 2618, 2786, 2785, 
-    2772, 2761, 2743, 2476, 2768,
-    # URBAN
-    2773, 2769, 2770,
     ]
-XLRG_bfs_list = [
-    # RURAL 
-    2612, 2889, 2883, 2621, 2622,
-    2620, 2615, 2614, 2616, 2480,
-    2617, 2611, 2788, 2619, 2783, 2477, 
-    # SUBURBAN
-    2613, 2782, 2618, 2786, 2785, 
-    2772, 2761, 2743, 2476, 2768,
-    2471, 2481, 2775, 2764, 2771, 
-    2763, 2473, 2475, 2474, 2472, 
-    2478, 2830, 2766, 2767, 2774, 
-    # URBAN
-    2773, 2769, 2770,
-    2762, 2765, 
-    ]
+    for pq_path in path_list:
+        file_name = pq_path.split('\\')[-1].split('.parquet')[0]
+        csv_path = "\\".join(pq_path.split('\\')[0:-1])
+        # csv_path = 'C:\Models\OptimalPV_RH\data\pvalloc'
 
-sample_lists = {
-    'RUR': RUR_bfs_list,
-    'SUB': SUB_bfs_list,
-    'LRG': LRG_bfs_list,
-    'XLRG': XLRG_bfs_list,
-    'ALLDSO': ALLDSO_bfs_list,
-}
+        df  = pd.read_parquet(pq_path)
+        if any( [tag in pq_path for tag in ['OLDpreprep', 'COPYpreprep_used_untilFeb26',] ] ):
+            export_path = f'{csv_path}\{file_name}_OLDpreprep.csv'
+        else:
+            export_path = f'{csv_path}\{file_name}.csv'
 
-for k, v in sample_lists.items():
-    model_sample = gm_shp.loc[gm_shp['BFS_NUMMER'].isin(v), ]
-    model_sample.to_file(f'{preprep_path}/model_sample_2_{k}.geojson', driver='GeoJSON')
-    print(f'exported model_sample_{k}.geojson')
+        df.to_csv(export_path)
+        df.to_excel(export_path.replace('.csv', '.xlsx'), index=False)
+
+
+# ------------------------------------------------------------------------------------------------------
+# check SUB_max results with new and old preprep
+
+solkat_pl               = pl.read_parquet(  r"C:\Models\OptimalPV_RH\data\input_split_data_geometry\solkat_pq.parquet")
+
+npv_df                  = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet")
+npv_df_OLD              = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet")
+
+topo                    = json.load(open(  r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\topo_egid.json"))
+topo_OLD                = json.load(open(  r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\topo_egid.json"))
+
+solkat_gdf_in_topo      = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\topo_spatial_data\solkat_gdf_in_topo.geojson")
+solkat_gdf_in_topo_OLD  = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\topo_spatial_data\solkat_gdf_in_topo.geojson")
+
+gwr                     = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26\gwr.parquet")
+gwr_OLD                 = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr.parquet")
+
+gwr_all_building_df     = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26\gwr_all_building_df.parquet")
+gwr_all_building_df_OLD = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr_all_building_df.parquet")
+
+solkat_gdf              = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26\solkat_gdf.geojson")
+solkat_gdf_OLD          = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\solkat_gdf.geojson")
+
+
+print(f"\n\n{'NEW':<30.30} {'':>6} | OLD                                       "  )
+print(f"{'npv_df shape':<30.30} {npv_df.shape[0]:>6} | {'npv_df_OLD shape':<30.30} {npv_df_OLD.shape[0]:>6}  | "  )
+# print(f"{'topo:':<30.30} {len(topo.keys()):>6} | {'topo_OLD:':<30.30} {len(topo_OLD.keys()):>6}  | {len(topo_OLD.keys())/len(topo.keys()):.2%} "  )
+# print(f"{'solkat_in_topo shape':<30.30} {solkat_gdf_in_topo.shape[0]:>6} | {'solkat_in_topo_OLD shape':<30.30} {solkat_gdf_in_topo_OLD.shape[0]:>6}  | {solkat_gdf_in_topo_OLD.shape[0]/solkat_gdf_in_topo.shape[0]:.2%} "  )
+print(f"{'gwr shape':<30.30} {gwr.shape[0]:>6} | {'gwr_OLD shape':<30.30} {gwr_OLD.shape[0]:>6}  | {gwr_OLD.shape[0]/gwr.shape[0]:.2%} "  )
+print(f"{'gwr_all_building_df shape':<30.30} {gwr_all_building_df.shape[0]:>6} | {'gwr_all_building_df_OLD shape':<30.30} {gwr_all_building_df_OLD.shape[0]:>6}  | {gwr_all_building_df_OLD.shape[0]/gwr_all_building_df.shape[0]:.2%} "  )
+print(f"{'solkat shape':<30.30} {solkat_gdf.shape[0]:>6} | {'solkat_OLD shape':<30.30} {solkat_gdf_OLD.shape[0]:>6}  | {solkat_gdf_OLD.shape[0]/solkat_gdf.shape[0]:.2%} "  )
+print(f"{'solkat unique':<30.30} {solkat_gdf['EGID'].nunique():>6} | {'solkat_OLD unique':<30.30} {solkat_gdf_OLD['EGID'].nunique():>6}  | {solkat_gdf_OLD['EGID'].nunique()/solkat_gdf['EGID'].nunique():.2%} "  )
+
+# single case analysis
+egid = '390437'
+sb_uuid = solkat_gdf.loc[solkat_gdf['EGID'] == egid, 'SB_UUID'].values[0]
+
+solkat_gdf.columns
+# solkat_gdf.loc[solkat_gdf['EGID'] == egid, ['DF_UID', 'DF_NUMMER', 'SB_UUID', 'SB_OBJEKTART', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
+solkat_gdf.loc[solkat_gdf['EGID'] == egid, ['EGID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
+solkat_gdf_in_topo.loc[solkat_gdf_in_topo['EGID'] == egid, ['EGID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
+
+solkat_gdf_in_topo.loc[solkat_gdf_in_topo['SB_UUID'] == sb_uuid, ['EGID', 'SB_UUID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
+solkat_pl.filter(pl.col('SB_UUID') == sb_uuid).select([ 'SB_UUID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]).to_pandas()
+
+
+solkat_gdf.shape
+
 
 
 
 # ------------------------------------------------------------------------------------------------------
-# parquet to csv
-path_list = [
-    # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\npv_df.parquet",
-    # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\pred_inst_df.parquet",
-]
-for pq_path in path_list:
-    file_name = pq_path.split('\\')[-1].split('.parquet')[0]
-    csv_path = "\\".join(pq_path.split('\\')[0:-1])
+# find max sample region within DSO network
+if False: 
+    preprep_path = r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI"
 
-    df  = pd.read_parquet(pq_path)
-    df.to_csv(f'{csv_path}/{file_name}.csv')
+    dsonodes_df         = pl.read_parquet(f'{preprep_path}/dsonodes_df.parquet')
+    Map_egid_dsonode    = pl.read_parquet(f'{preprep_path}/Map_egid_dsonode.parquet')
+    gwr_all_building_df = pl.read_parquet(f'{preprep_path}/gwr_all_building_df.parquet')
+
+    gm_shp              = gpd.read_file(f'{preprep_path}/gm_shp_gdf.geojson')
+
+    merge = Map_egid_dsonode.join(gwr_all_building_df, left_on='EGID', right_on='EGID', how='inner')    
+    ALLDSO_bfs_list = [int(bfs) for bfs in list(merge['GGDENR'].unique()) ]
+
+    RUR_bfs_list =[
+        # RURAL
+        2612, 2889, 2883, 2621, 2622,
+        2620, 2615, 2614, 2616, 2480,
+        2617, 2611, 2788, 2619, 2783, 2477, 
+    ]
+    SUB_bfs_list = [
+        # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
+        2613, 2782, 2618, 2786, 2785, 
+        2772, 2761, 2743, 2476, 2768,
+    ]
+    # v5 -> T0_prediction: 2024
+    LRG_bfs_list = [
+        # RURAL 
+        2612, 2889, 2883, 2621, 2622,
+        2620, 2615, 2614, 2616, 2480,
+        2617, 2611, 2788, 2619, 2783, 2477, 
+        # SUBURBAN
+        2613, 2782, 2618, 2786, 2785, 
+        2772, 2761, 2743, 2476, 2768,
+        # URBAN
+        2773, 2769, 2770,
+        ]
+    XLRG_bfs_list = [
+        # RURAL 
+        2612, 2889, 2883, 2621, 2622,
+        2620, 2615, 2614, 2616, 2480,
+        2617, 2611, 2788, 2619, 2783, 2477, 
+        # SUBURBAN
+        2613, 2782, 2618, 2786, 2785, 
+        2772, 2761, 2743, 2476, 2768,
+        2471, 2481, 2775, 2764, 2771, 
+        2763, 2473, 2475, 2474, 2472, 
+        2478, 2830, 2766, 2767, 2774, 
+        # URBAN
+        2773, 2769, 2770,
+        2762, 2765, 
+        ]
+
+    sample_lists = {
+        'RUR': RUR_bfs_list,
+        'SUB': SUB_bfs_list,
+        'LRG': LRG_bfs_list,
+        'XLRG': XLRG_bfs_list,
+        'ALLDSO': ALLDSO_bfs_list,
+    }
+
+    for k, v in sample_lists.items():
+        model_sample = gm_shp.loc[gm_shp['BFS_NUMMER'].isin(v), ]
+        model_sample.to_file(f'{preprep_path}/model_sample_2_{k}.geojson', driver='GeoJSON')
+        print(f'exported model_sample_{k}.geojson')
+
 
 # ------------------------------------------------------------------------------------------------------
 

@@ -16,7 +16,7 @@ class static_plotter_class:
         self.data_path = os.path.join('C:',os.sep, 'Models', 'OptimalPV_RH', 'data')
         self.dir_path = os.path.join('C:',os.sep, 'Models', 'OptimalPV_RH', 'data', 'visualization_static_wpaper')
         self.scen_default_color_map = {
-            'pvalloc_29nbfs_30y5_max': (200, 50, 50),
+            'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
             'scenario2': (50, 200, 50),
             'scenario3': (50, 50, 200),
             'scenario4': (200, 200, 50),
@@ -70,13 +70,13 @@ class static_plotter_class:
                     alpha=self.line_opacity,
                 )
 
-        plt.xlabel('t (hours)')
+        plt.xlabel('t (hours of year)')
         plt.ylabel('Feed-in loss at node (kW)')
         plt.title('Aggregated Feed-in Loss (hourly)')
         plt.legend()
         plt.tight_layout()
         # plt.show()
-        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=200)
+        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=500)
 
 
     def plot_productionHOY_per_node_byiter(self, 
@@ -85,6 +85,7 @@ class static_plotter_class:
                                            hours_incl_list,
                                            iter_incl_list,
                                            export_name,
+                                           daynightbands = None,
                                            plot_width_func = None,
                                              plot_height_func = None,
                                              ):
@@ -93,6 +94,12 @@ class static_plotter_class:
         df = pd.read_csv(file_path)
         plot_width = self.plot_width if plot_width_func is None else plot_width_func
         plot_height = self.plot_height if plot_height_func is None else plot_height_func
+
+        band_settings = None
+        if daynightbands is True:
+            band_settings = {}
+        elif isinstance(daynightbands, dict):
+            band_settings = daynightbands.copy()
 
         np.random.seed(42) 
         scen_not_default = [scen for scen in scen_incl_list if scen not in self.scen_default_color_map.keys()]
@@ -124,6 +131,48 @@ class static_plotter_class:
                     alpha=self.line_opacity,
                     estimator=None
                     )
+
+        if band_settings is not None:
+            day_start_hour = int(band_settings.get('day_start_hour', 7))
+            day_end_hour = int(band_settings.get('day_end_hour', 19))
+            day_color = band_settings.get('day_color', '#fff7cc')
+            night_color = band_settings.get('night_color', '#e6f0ff')
+            band_alpha = float(band_settings.get('alpha', 0.25))
+
+            if day_start_hour < day_end_hour:
+                df_bands = df.loc[
+                    (df['scen'].isin(scen_incl_list)) &
+                    (df['t_int'].isin(hours_incl_list)) &
+                    (df['iter'].isin(iter_incl_list)),
+                    :
+                ]
+
+                if not df_bands.empty:
+                    t_min = int(df_bands['t_int'].min())
+                    t_max = int(df_bands['t_int'].max())
+
+                    def is_day_hour(t_val):
+                        hour_of_day = ((int(t_val) - 1) % 24) + 1
+                        return day_start_hour <= hour_of_day < day_end_hour
+
+                    ax = plt.gca()
+                    segment_start = t_min
+                    prev_is_day = is_day_hour(t_min)
+
+                    for t_val in range(t_min + 1, t_max + 1):
+                        curr_is_day = is_day_hour(t_val)
+                        if curr_is_day != prev_is_day:
+                            segment_color = day_color if prev_is_day else night_color
+                            ax.axvspan(segment_start - 0.5, t_val - 0.5, color=segment_color, alpha=band_alpha, zorder=0, linewidth=0)
+                            segment_start = t_val
+                            prev_is_day = curr_is_day
+
+                    segment_color = day_color if prev_is_day else night_color
+                    ax.axvspan(segment_start - 0.5, t_max + 0.5, color=segment_color, alpha=band_alpha, zorder=0, linewidth=0)
+
+                    for line in ax.lines:
+                        line.set_zorder(3)
+
         plt.xlabel('t (hours)')
         plt.ylabel('Feed-in loss at node (kW)')
         plt.title('Hourly Feed-in Loss by Iteration')
@@ -164,6 +213,10 @@ class static_plotter_class:
             ].copy()
             scen_color = (plot_color_map[scen][0] / 255, plot_color_map[scen][1] / 255, plot_color_map[scen][2] / 255)
 
+            # unit conversion (kWh to MWh)
+            df_plot[y_col] = df_plot[y_col] / 1000
+            scen_label = scen.split('pvalloc_29nbfs_')[-1]
+
 
             if not df_plot.empty:
                 sns.lineplot(
@@ -171,20 +224,21 @@ class static_plotter_class:
                     x='n_iter',
                     y=y_col,
                     color=scen_color,
-                    label=scen,
+                    # label=scen,
+                    label=scen_label,
                     marker='o',
                     linewidth=1.5,
                     alpha=self.line_opacity,
                 )
 
-        plt.xlabel('Model Iterations ')
-        plt.ylabel(f'Aggregated {y_label} (kWh)')
-        plt.title(f'Agg. {y_label} over Model Iterations')
+        plt.xlabel('Model Iterations (Future Years)')
+        plt.ylabel(f'Aggregated {y_label} (MWh)')
+        plt.title(f'Agg. {y_label}')
 
         plt.legend()
         plt.tight_layout()
         # plt.show()
-        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=200)
+        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=500)
 
 
     def plot_ind_hist_contcharact_newinst(self,
@@ -228,7 +282,7 @@ class static_plotter_class:
             if not df_plot.empty:
                 # Loop through each column to create side-by-side histograms
                 scen_short_str = scen.split('pvalloc_')[-1]
-                # replace('pvalloc_29nbfs_30y5_max', '
+                # replace('pvalloc_29nbfs_LRG2_max', '
                 for col_idx, x_col in enumerate(x_col_incl_list):
                     sns.histplot(
                         data=df_plot,
@@ -252,7 +306,7 @@ class static_plotter_class:
         
         plt.tight_layout()
         # plt.show()
-        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=200)
+        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=500)
         plt.close()
         
 
@@ -262,6 +316,7 @@ class static_plotter_class:
                                           iter_incl_list,
                                           x_col_incl_dict,
                                           export_name,
+                                          crop_right_x = None,
                                           plot_width_func = None,
                                           plot_height_func = None,
                                           ):
@@ -341,17 +396,19 @@ class static_plotter_class:
                 plt.xlabel('Iteration')
                 plt.ylabel('Count')
                 plt.title(f'{col_name}')
-                plt.legend(title='Category')
+                plt.legend(title = None)
                 
                 # Set x-axis to show only integers
                 ax = plt.gca()
                 ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+                if crop_right_x is not None:
+                    ax.set_xlim(right=crop_right_x)
                 
                 plt.tight_layout()
                 # plt.show() 
                 # Save with unique name for each scenario-column combination
                 export_file = f'{export_name}_{scen}_{col_name}.png'
-                plt.savefig(os.path.join(self.dir_path, export_file), dpi=200)
+                plt.savefig(os.path.join(self.dir_path, export_file), dpi=500)
                 plt.close()
 
 
@@ -428,7 +485,7 @@ class static_plotter_class:
                 legend.set_title('Scenario / Iteration')
 
         plt.tight_layout()
-        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=200)
+        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=500)
         plt.close()
     
     
@@ -599,7 +656,7 @@ class static_plotter_class:
                 plt.title(f'Individual Demand Profiles ({suffix.strip("_")})')
                 plt.legend()
                 plt.tight_layout()
-                plt.savefig(os.path.join(self.dir_path, f"{export_name}{suffix}.png"), dpi=200)
+                plt.savefig(os.path.join(self.dir_path, f"{export_name}{suffix}.png"), dpi=500)
                 plt.close() 
 
         # export single values
@@ -611,6 +668,8 @@ class static_plotter_class:
 
     def get_single_values(self, 
                           csv_file,
+                          scen_incl_list,
+                          n_iter_range_list,
  ):
         
         file_path = os.path.join(self.dir_path, csv_file)
@@ -619,37 +678,30 @@ class static_plotter_class:
 
 
         df_comp = df.loc[
-            (df['scen'].isin([
-                'pvalloc_29nbfs_30y5_max_1hll',
-                'pvalloc_29nbfs_30y5_max_1hll_sCs4p6',
-                ])) & 
-            (df['n_iter'].isin([
-                30,
-            ])),
+            (df['scen'].isin(scen_incl_list
+                )) & 
+            (df['n_iter'].isin(n_iter_range_list
+                )),
             :].copy()
         
-        df_comp
-        BU_loss     = df_comp.loc[df_comp['scen'] == 'pvalloc_29nbfs_30y5_max_1hll', 'feedin_atnode_loss_kW'].values[0]
-        Cs4p6_loss  = df_comp.loc[df_comp['scen'] == 'pvalloc_29nbfs_30y5_max_1hll_sCs4p6', 'feedin_atnode_loss_kW'].values[0]
+        for scen in scen_incl_list:
 
-        print_str = f'BU_loss: {round(BU_loss,1)} kWh/y, Cs4p6_loss: {round(Cs4p6_loss,1)} kWh/y, (BU-Cs4p6) / BU ratio: {round((BU_loss - Cs4p6_loss) / BU_loss,4)*100} %'
-        print(f'\n{print_str}\n')
-        with open (os.path.join(self.dir_path, "loss_comparison_single_values.txt"), 'w') as f:
-            f.write('BU:    pvalloc_29nbfs_30y5_max_1hll\n')
-            f.write('Cs4p6: pvalloc_29nbfs_30y5_max_1hll_sCs4p6\n')
-            f.write(f'\n{print_str}\n')
+            # print losses
+            scen_loss = df_comp.loc[df_comp['scen'] == scen, 'feedin_atnode_loss_kW'].values[0]
+            print_str = f'{scen} loss: {round(scen_loss,1)} kWh/y'
+            print(f'\n{print_str}\n')
+            
+            with open (os.path.join(self.dir_path, "loss_comparison_single_values.txt"), 'a') as f:
+                f.write(f'{print_str}\n')
 
-        
-        topo_path = os.path.join('C:',os.sep, 'Models', 'OptimalPV_RH', 'data', 'pvalloc', 'pvalloc_29nbfs_30y5_max', 'topo_egid.json')  
-        topo = json.load(open(topo_path))
+            # # print topo egid count
+            # topo_path = os.path.join('C:',os.sep, 'Models', 'OptimalPV_RH', 'data', 'pvalloc', scen , 'topo_egid.json')
+            # topo = json.load(open(topo_path))
 
-        print_str = f'BU_n_topo_egid: {len(topo)}'
-        print(f'\n{print_str}\n')
-        with open (os.path.join(self.dir_path, "loss_comparison_single_values.txt"), 'a') as f:
-            f.write(f'\n{print_str}\n')
-
-
-
+            # print_str = f'{scen} topo_egid_count: {len(topo)}'
+            # print(f'\n{print_str}\n')
+            # with open (os.path.join(self.dir_path, "loss_comparison_single_values.txt"), 'a') as f:
+            #     f.write(f'{print_str}\n')
 
 
 
@@ -706,102 +758,117 @@ class static_plotter_class:
         plt.legend(title='Scenario', bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
 
-        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=200)
+        plt.savefig(os.path.join(self.dir_path, f'{export_name}.png'), dpi=500)
         plt.close()
 
     
 if __name__ == "__main__":
 
-    png_files = glob.glob(os.path.join('C:',os.sep, 'Models', 'OptimalPV_RH', 'data', 'visualization_static_wpaper', '*.png'))
+    # png_files = glob.glob(os.path.join('C:',os.sep, 'Models', 'OptimalPV_RH', 'data', 'visualization_static_wpaper', '*.png'))
     # for png_file in png_files:
     #     os.remove(png_file)
 
     # demand and single values
-    if False:
+    if True:
         plotter = static_plotter_class()
-        plotter.get_single_values(
-            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
-            # scen_incl_list=[
-            #     'pvalloc_29nbfs_30y5_max_1hll',
-            #     'pvalloc_29nbfs_30y5_max_1hll_sCs4p6',
-            #     ],
-            # n_iter_range_list=[30,],
-            # export_name='loss_comparison',
-        )
+        # plotter.get_single_values(
+        #     csv_file='plot_agg_line_PVproduction___export_plot_data___14scen.csv',
+        #     scen_incl_list=[
+        #     #     'pvalloc_29nbfs_LRG2_max_1hll',
+        #     #     'pvalloc_29nbfs_LRG2_max_1hll_sCs4p6',
+        #            'DEV_pvalloc_29nbfs_LRG_max_OLDpreprep',
+        #            'DEV_pvalloc_29nbfs_LRG_max_sCs4p6_OLDpreprep',
+        #         ],
+        #         n_iter_range_list=[20,],
+        # )
 
-
+        # print('\n--- demand profiles ---')
         # plotter.plot_ind_line_demand(
-        #     name_dir_export='pvalloc_29nbfs_30y5_max',
+        #     name_dir_export='DEV2_pvalloc_16nbfs_RUR_max',
         #     hours_incl_list=list(range(4920, 4920 + 7*24)),
         #     export_name='example_demand_BU',
         #     n_egids_by_group = {
-        #         'sfh_sub_hpT': (30, 'SFH', 'Suburban',  'heatpump'),
-        #         'mfh_rur_hpT': (30, 'MFH', 'Rural',     'heatpump'),
-        #         # 'sfh_sub_hpF': (0, 'SFH', 'Suburban',  'no_heatpump'),
-        #         # 'mfh_rur_hpF': (0, 'MFH', 'Rural',     'no_heatpump'),
-        #         # 'sfh_rur_hpF': (0, 'SFH', 'Rural',     'no_heatpump'),
-        #         # 'sfh_rur_hpT': (0, 'SFH', 'Rural',     'heatpump'),
+        #         'sfh_rur_hpT': (1, 'SFH', 'Rural',     'heatpump'),
+        #         'sfh_rur_hpF': (1, 'SFH', 'Rural',     'no_heatpump'),
+        #         # 'sfh_sub_hpT': (0, 'SFH', 'Suburban',  'heatpump'),
         #         # 'sfh_urb_hpF': (0, 'SFH', 'Urban',     'no_heatpump'),
         #         # 'sfh_urb_hpT': (0, 'SFH', 'Urban',     'heatpump'),
-        #         # 'mfh_sub_hpF': (0, 'MFH', 'Suburban',  'no_heatpump'),
+        #         # 'sfh_sub_hpF': (0, 'SFH', 'Suburban',  'no_heatpump'),
+
+        #         # 'mfh_rur_hpT': (1, 'MFH', 'Rural',     'heatpump'),
+        #         # 'mfh_rur_hpF': (1, 'MFH', 'Rural',     'no_heatpump'),
         #         # 'mfh_sub_hpT': (0, 'MFH', 'Suburban',  'heatpump'),
-        #         # 'mfh_urb_hpF': (0, 'MFH', 'Urban',     'no_heatpump'),
+        #         # 'mfh_sub_hpF': (0, 'MFH', 'Suburban',  'no_heatpump'),
         #         # 'mfh_urb_hpT': (0, 'MFH', 'Urban',     'heatpump'),
+        #         # 'mfh_urb_hpF': (0, 'MFH', 'Urban',     'no_heatpump'),
         #                      },
-        #     select_egids = [
-        #         '101221005', # MFH, Rural, heatpump
-        #         '245048874', # SFH, Suburban, heatpump
-        #     ],
-        #     export_plots=True,
+        #     # select_egids = [
+        #     #     # '101221005', # MFH, Rural, heatpump
+        #     #     # '245048874', # SFH, Suburban, heatpump
+        #     # ],
+        #     # export_plots=False,
+
         #     plot_width_func=4,
         #     plot_height_func=4,
         # )
+        # print('-')
+
 
     
-    # # BU case
+    # BU case
     if True: 
+
+        bu_loss_height = 5.8
+        bu_loss_width = 4
+
+
         plotter = static_plotter_class()
+        print('\n--- BU case ---')
+        # print('- plot_productionHOY_per_node')
         # plotter.plot_productionHOY_per_node(
         #     # csv_file='plot_agg_line_productionHOY_per_node___export_plot_data___1scen.csv',
-        #     csv_file='plot_agg_line_productionHOY_per_node___export_plot_data___31scen.csv',
-        #     scen_incl_list=['pvalloc_29nbfs_30y5_max',],
+        #     csv_file='plot_agg_line_productionHOY_per_node___export_plot_data___17scen.csv',
+        #     scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
         #     hours_incl_list=list(range(4920, 4920 + 7*24)),
-        #     export_name='line_PVHOY_bu_loss'
+        #     export_name='line_PVHOY_bu_loss',
+        #     plot_height_func = bu_loss_height,
+        #     plot_width_func  = bu_loss_width,
         # )
-        plotter.plot_productionHOY_per_node_byiter(
-            csv_file='plot_agg_line_productionHOY_per_node_byiter___export_plot_data___1scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max',],
-            hours_incl_list=list(range(4920, 4920 + 7*24)),
-            iter_incl_list=['5', '6', '7', 'end_iter'],
-            export_name='line_PVHOY_bu_loss_byiter',
-            plot_height_func = 4, 
-            plot_width_func =  4,
-
-        )
-        plotter.plot_PVproduction_line(
-            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max',],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
-            export_name='line_PVproduction_bu_loss',
-            y_col='feedin_atnode_loss_kW',
-            y_label='Feed-in Loss',
-            plot_height_func = 4, 
-            plot_width_func = 4
-
-        )
-        plotter.plot_ind_hist_contcharact_newinst(
-            csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___1scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max',],
-            iter_incl_list=[1, 4,],
-            x_col_incl_list=['FLAECHE', 'GAREA'],
-            export_name='hist_contcharact_newinst_bu',
-            plot_height_func = 3, 
-            plot_width_func =  9,
-        )
+        # print('- plot_productionHOY_per_node_byiter')
+        # plotter.plot_productionHOY_per_node_byiter(
+        #     csv_file='plot_agg_line_productionHOY_per_node_byiter___export_plot_data___17scen.csv',
+        #     scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
+        #     hours_incl_list=list(range(4920 + 3*24, 4920 + 6*24)),
+        #     iter_incl_list=['5', '6', '7', ], #'end_iter'],
+        #     export_name='line_PVHOY_bu_loss_byiter',
+        #     daynightbands = True,
+        #     plot_height_func = bu_loss_height,
+        #     plot_width_func  = bu_loss_width,
+        #     )
+        # print('- plot_PVproduction_line')
+        # plotter.plot_PVproduction_line(
+        #     # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+        #     csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
+        #     scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
+        #     n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+        #     export_name='line_PVproduction_bu_loss',
+        #     y_col='feedin_atnode_loss_kW',
+        #     y_label='Feed-in Loss',
+        #     plot_height_func = bu_loss_height,
+        #     plot_width_func  = bu_loss_width,
+        # )
+        # plotter.plot_ind_hist_contcharact_newinst(
+        #     csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___17scen.csv',
+        #     scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
+        #     iter_incl_list=[1, 3, 5],
+        #     x_col_incl_list=['FLAECHE', 'GAREA'],
+        #     export_name='hist_contcharact_newinst_bu',
+        #     plot_height_func = 3, 
+        #     plot_width_func =  8.5,
+        # )
         plotter.plot_ind_line_catgcharact_newinst(
-            csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___1scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max',],
+            csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
             iter_incl_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, ],
             x_col_incl_dict={
                 'GKLAS': {
@@ -817,8 +884,8 @@ if __name__ == "__main__":
                     'urban':['Urban',]
                             },
                 'heatpump_TF': {
-                    'with HP':['heatpump',],
-                    'without HP':['no_heatpump',]
+                    'HP':['heatpump',],
+                    'no HP':['no_heatpump',]
                             }, 
                 'filter_tag': {
                     'east-west': ['eastwest_80pr', 'eastwest_70pr'],
@@ -826,30 +893,356 @@ if __name__ == "__main__":
                 },
             },
             export_name='line_catgcharact_newinst_bu',
-            plot_height_func = 4, 
+            plot_height_func = 2.85, 
             # plot_width_func = 2.5,
-            plot_width_func =4,
+            plot_width_func =2.4,
         )
 
-    # all casses loss appendix
+
+    # ABC comparison 
     if True: 
+        # comparison_PVproduction_height = 4
+        # comparison_PVproduction_width = 8.5
+        comparison_PVproduction_height = 5.8
+        comparison_PVproduction_width = 4
+
+        
+        plotter = static_plotter_class()
+        # plotter.line_opacity = 0.6 
+        plotter.scen_default_color_map = {
+            # 'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            # 'scenario2': (50, 200, 50), 'scenario3': (50, 50, 200), 'scenario4': (200, 200, 50),
+
+            # 'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            # 'pvalloc_29nbfs_LRG2_max_sAs4p0': (50, 200, 50),
+            # 'pvalloc_29nbfs_LRG2_max_sBs0p8': (50, 50, 200),
+            # 'pvalloc_29nbfs_LRG2_max_sCs2p8': (200, 200, 50),
+            'pvalloc_29nbfs_LRG2_max': (200, 50, 50),      # red (keep)
+            'pvalloc_29nbfs_LRG2_max_sAs4p0': (60, 120, 200),  # strong blue
+            'pvalloc_29nbfs_LRG2_max_sBs0p8': (60, 160, 90),   # green (less neon)
+            'pvalloc_29nbfs_LRG2_max_sCs2p8': (200, 140, 40),  # orange (instead of yellow)
+        }
+        plotter.plot_width  = comparison_PVproduction_width
+        plotter.plot_height = comparison_PVproduction_height
+
+        plotter.plot_PVproduction_line(
+            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
+            scen_incl_list=[
+                'pvalloc_29nbfs_LRG2_max',
+                'pvalloc_29nbfs_LRG2_max_sAs4p0',
+                'pvalloc_29nbfs_LRG2_max_sBs0p8',
+                'pvalloc_29nbfs_LRG2_max_sCs2p8',
+                ],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+            export_name='line_PVproduction_buABC_loss',
+            y_col='feedin_atnode_loss_kW',
+            y_label='Feed-in Loss',
+        )
+        plotter.plot_PVproduction_line(
+            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
+            scen_incl_list=[
+                'pvalloc_29nbfs_LRG2_max',
+                'pvalloc_29nbfs_LRG2_max_sAs4p0',
+                'pvalloc_29nbfs_LRG2_max_sBs0p8',
+                'pvalloc_29nbfs_LRG2_max_sCs2p8',
+                ],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+            # export_name='line_PVproduction_buABC_loss',
+            # y_col='feedin_atnode_loss_kW',
+            # y_label='Feed-in Loss',
+            export_name='line_PVproduction_buABC_feedin',
+            y_col='feedin_atnode_kW',
+            y_label='Feedin',
+        )
+
+
+        plotter.plot_ind_hist_contcharact_newinst(
+            csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max_sCs2p8',],
+            iter_incl_list=[1, 3, 5],
+            x_col_incl_list=['FLAECHE', 'GAREA'],
+            export_name='hist_contcharact_newinst_C',
+            plot_height_func = 3, 
+            plot_width_func =  8.5,
+        )
+        plotter.plot_ind_line_catgcharact_newinst(
+            csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max_sCs2p8',],
+            iter_incl_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, ],
+            x_col_incl_dict={
+                'GKLAS': {
+                    # 'single-family':['1110',], 
+                    # 'multi-family':['1121', '1122', ]
+                    '1 apart.':['1110',],
+                    '2 apart.':['1121', ],
+                    '3+ apart.':['1122', ]
+                        },
+                'are_typ': {
+                    'rural':['Rural',],
+                    'suburban':['Suburban',],
+                    'urban':['Urban',]
+                            },
+                'heatpump_TF': {
+                    'HP':['heatpump',],
+                    'no HP':['no_heatpump',]
+                            }, 
+                'filter_tag': {
+                    'east-west': ['eastwest_80pr', 'eastwest_70pr'],
+                    'south': ['south_50pr', 'south_40pr'],
+                },
+            },
+            export_name='line_catgcharact_newinst_C',
+            plot_height_func = 2.85, 
+            # plot_width_func = 2.5,
+            plot_width_func =2.4,
+        )
+
+    # 1HLL comparison
+    if True: 
+        # comparison_PVproduction_height = 4
+        # comparison_PVproduction_width = 8.5
+        comparison_PVproduction_height = 5.8
+        comparison_PVproduction_width = 4
+
+        
+        plotter = static_plotter_class()
+        # plotter.line_opacity = 0.6 
+        plotter.scen_default_color_map = {
+            # 'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            # 'scenario2': (50, 200, 50), 'scenario3': (50, 50, 200), 'scenario4': (200, 200, 50),
+
+            # 'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            # 'pvalloc_29nbfs_LRG2_max_sAs4p0': (50, 200, 50),
+            # 'pvalloc_29nbfs_LRG2_max_sBs0p8': (50, 50, 200),
+            # 'pvalloc_29nbfs_LRG2_max_sCs2p8': (200, 200, 50),
+            'pvalloc_29nbfs_LRG2_max':              (200, 50, 50),      # red (keep)
+            'pvalloc_29nbfs_LRG2_max_1hll':         (230, 140, 140),  # soft pastel red
+            'pvalloc_29nbfs_LRG2_max_1hll_sAs4p0':  (140, 180, 230),  # pastel blue
+            'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8':  (150, 210, 170),  # pastel green
+            'pvalloc_29nbfs_LRG2_max_1hll_sCs2p8':  (240, 200, 140),  # pastel orange
+        }
+        plotter.plot_width  = comparison_PVproduction_width
+        plotter.plot_height = comparison_PVproduction_height
+
+        plotter.plot_PVproduction_line(
+            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen_ADJ.csv',
+            scen_incl_list=[
+                'pvalloc_29nbfs_LRG2_max', 
+                'pvalloc_29nbfs_LRG2_max_1hll', 
+                'pvalloc_29nbfs_LRG2_max_1hll_sAs4p0',
+                'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8',
+                'pvalloc_29nbfs_LRG2_max_1hll_sCs2p8',
+                ],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+            export_name='line_PVproduction_buABC_1hll_loss',
+            y_col='feedin_atnode_loss_kW',
+            y_label='Feed-in Loss',
+        )
+        plotter.plot_PVproduction_line(
+            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen_ADJ.csv',
+            scen_incl_list=[
+                'pvalloc_29nbfs_LRG2_max', 
+                'pvalloc_29nbfs_LRG2_max_1hll', 
+                'pvalloc_29nbfs_LRG2_max_1hll_sAs4p0',
+                'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8',
+                'pvalloc_29nbfs_LRG2_max_1hll_sCs2p8',
+                ],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+            # export_name='line_PVproduction_buABC_loss',
+            # y_col='feedin_atnode_loss_kW',
+            # y_label='Feed-in Loss',
+            export_name='line_PVproduction_buAB_1hll_feedin',
+            y_col='feedin_atnode_kW',
+            y_label='Feedin',
+        )
+
+
+    # ABC + gridoptim comparison 
+    if True: 
+        # comparison_PVproduction_height = 4
+        # comparison_PVproduction_width = 8.5
+        comparison_PVproduction_height = 5.8
+        comparison_PVproduction_width = 4
+
+        
+        plotter = static_plotter_class()
+        # plotter.line_opacity = 0.6 
+        plotter.scen_default_color_map = {
+            # 'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            # 'scenario2': (50, 200, 50), 'scenario3': (50, 50, 200), 'scenario4': (200, 200, 50),
+
+            # 'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            # 'pvalloc_29nbfs_LRG2_max_sAs4p0': (50, 200, 50),
+            # 'pvalloc_29nbfs_LRG2_max_sBs0p8': (50, 50, 200),
+            # 'pvalloc_29nbfs_LRG2_max_sCs2p8': (200, 200, 50),
+            'pvalloc_29nbfs_LRG2_max': (200, 50, 50),      # red (keep)
+            'pvalloc_29nbfs_LRG2_max_sAs4p0': (60, 120, 200),  # strong blue
+            'pvalloc_29nbfs_LRG2_max_sBs0p8': (60, 160, 90),   # green (less neon)
+            'pvalloc_29nbfs_LRG2_max_sCs2p8': (200, 140, 40),  # orange (instead of yellow)
+            'pvalloc_29nbfs_LRG2_gridoptim_max': (120, 60, 200)      # purple
+
+        }
+        plotter.plot_width  = comparison_PVproduction_width
+        plotter.plot_height = comparison_PVproduction_height
+
+        plotter.plot_PVproduction_line(
+            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
+            scen_incl_list=[
+                'pvalloc_29nbfs_LRG2_max',
+                'pvalloc_29nbfs_LRG2_gridoptim_max',
+                # 'pvalloc_29nbfs_LRG2_max_sAs4p0',
+                # 'pvalloc_29nbfs_LRG2_max_sBs0p8',
+                'pvalloc_29nbfs_LRG2_max_sCs2p8',
+                ],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+            export_name='line_PVproduction_buABCgridopt_loss',
+            y_col='feedin_atnode_loss_kW',
+            y_label='Feed-in Loss',
+        )
+        plotter.plot_PVproduction_line(
+            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
+            scen_incl_list=[
+                'pvalloc_29nbfs_LRG2_max',
+                'pvalloc_29nbfs_LRG2_gridoptim_max',
+                # 'pvalloc_29nbfs_LRG2_max_sAs4p0',
+                # 'pvalloc_29nbfs_LRG2_max_sBs0p8',
+                'pvalloc_29nbfs_LRG2_max_sCs2p8',
+                ],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+            # export_name='line_PVproduction_buABC_loss',
+            # y_col='feedin_atnode_loss_kW',
+            # y_label='Feed-in Loss',
+            export_name='line_PVproduction_buABCgridopt_feedin',
+            y_col='feedin_atnode_kW',
+            y_label='Feedin',
+        )
+
+    # comparison loss 1hll cases
+    if False: 
         plotter = static_plotter_class()
         plotter.line_opacity = 0.6 
         plotter.scen_default_color_map = {
-            'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            'pvalloc_29nbfs_30y5_max_sAs2p0': (50, 200, 50),
-            'pvalloc_29nbfs_30y5_max_sAs4p0': (50, 50, 200),
-            'pvalloc_29nbfs_30y5_max_sAs6p0': (200, 200, 50),
+            # 'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            # # 'pvalloc_29nbfs_LRG2_max_sAs2p0': (50, 200, 50),
+            # # 'pvalloc_29nbfs_LRG2_max_sAs4p0': (50, 50, 200),
+            # 'pvalloc_29nbfs_LRG2_max_sAs6p0': (200, 200, 50),
 
-            'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            'pvalloc_29nbfs_30y5_max_sBs0p4': (50, 200, 50),
-            'pvalloc_29nbfs_30y5_max_sBs0p6': (50, 50, 200),
-            'pvalloc_29nbfs_30y5_max_sBs0p8': (200, 200, 50),
+            # 'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            # # 'pvalloc_29nbfs_LRG2_max_sBs0p4': (50, 200, 50),
+            # # 'pvalloc_29nbfs_LRG2_max_sBs0p6': (50, 50, 200),
+            # 'pvalloc_29nbfs_LRG2_max_sBs0p8': (200, 200, 50),
             
-            'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            'pvalloc_29nbfs_30y5_max_sCs2p4': (50, 200, 50),
-            'pvalloc_29nbfs_30y5_max_sCs4p6': (50, 50, 200),
-            'pvalloc_29nbfs_30y5_max_sCs6p8': (200, 200, 50),
+            # 'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            # # 'pvalloc_29nbfs_LRG2_max_sCs2p4': (50, 200, 50),
+            # # 'pvalloc_29nbfs_LRG2_max_sCs4p6': (50, 50, 200),
+            # 'pvalloc_29nbfs_LRG2_max_sCs6p8': (200, 200, 50),
+
+            'pvalloc_29nbfs_LRG2_max_1hll': (200, 50, 50),
+            'pvalloc_29nbfs_LRG2_max_1hll_sAs6p0': (50, 200, 50),
+            'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8': (50, 50, 200),
+            'pvalloc_29nbfs_LRG2_max_1hll_sCs4p6': (200, 200, 50),
+            'pvalloc_29nbfs_LRG2_max_1hll_sCs6p8': (200, 200, 50),
+        }
+        plotter.plot_width_func=9,
+        plotter.plot_height_func=comparison_PVproduction_height,
+
+        plotter.plot_PVproduction_line(
+            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
+            scen_incl_list=[
+                'pvalloc_29nbfs_LRG2_max_1hll',
+                'pvalloc_29nbfs_LRG2_max_1hll_sAs6p0',
+                'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8',
+                'pvalloc_29nbfs_LRG2_max_1hll_sCs4p6',
+                ],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+            export_name='line_PVproduction_buABC_loss_1hll',
+            y_col='feedin_atnode_loss_kW',
+            y_label='Feed-in Loss',
+        )
+
+
+    # compmarison production 1hll cases 
+    if False:
+        plotter = static_plotter_class()
+        plotter.line_opacity = 0.6 
+        plotter.scen_default_color_map = {
+            
+            'pvalloc_29nbfs_LRG2_max': (180, 60, 60),        # muted red
+            'pvalloc_29nbfs_LRG2_max_1hll': (220, 100, 100),    # light red
+
+            # --- Scheme A (greens / yellow-green gradient) ---
+            # 'pvalloc_29nbfs_LRG2_max_sAs2p0_1hll': (60, 150, 90),   # teal-green
+            'pvalloc_29nbfs_LRG2_max_sAs6p0_': (90, 180, 60),   # green
+            'pvalloc_29nbfs_LRG2_max_1hll_sAs6p0': (180, 180, 60),  # yellow-green
+            # --- Scheme B (blues / cyan gradient) ---
+            # 'pvalloc_29nbfs_LRG2_max_sBs0p4_1hll': (70, 130, 180),  # steel blue
+            'pvalloc_29nbfs_LRG2_max_sBs0p8': (60, 160, 200),  # cyan-blue
+            'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8': (40, 190, 190),  # turquoise
+            # --- Scheme C (purple / magenta gradient) ---
+            # 'pvalloc_29nbfs_LRG2_max_sCs2p4_1hll': (200, 70, 120),  # rose-magenta
+            'pvalloc_29nbfs_LRG2_max_sCs4p6': (170, 80, 150),  # magenta-purple
+            'pvalloc_29nbfs_LRG2_max_1hll_sCs4p6': (140, 90, 180),  # soft purple
+        }
+        plotter.plot_width_func=9,
+        plotter.plot_height_func=comparison_PVproduction_height,
+
+
+        plotter.plot_PVproduction_line(
+            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
+            scen_incl_list=[
+                'pvalloc_29nbfs_LRG2_max',
+                'pvalloc_29nbfs_LRG2_max_1hll',
+                # 'pvalloc_29nbfs_LRG2_max_sAs2p0',
+                # 'pvalloc_29nbfs_LRG2_max_sAs4p0',
+                'pvalloc_29nbfs_LRG2_max_sAs6p0',
+                'pvalloc_29nbfs_LRG2_max_1hll_sAs6p0',
+                
+                # 'pvalloc_29nbfs_LRG2_max_sBs0p4',
+                # 'pvalloc_29nbfs_LRG2_max_sBs0p6',
+                'pvalloc_29nbfs_LRG2_max_sBs0p8',
+                'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8',
+                
+                # 'pvalloc_29nbfs_LRG2_max_sCs2p4',
+                'pvalloc_29nbfs_LRG2_max_sCs4p6',
+                'pvalloc_29nbfs_LRG2_max_1hll_sCs4p6',
+                # 'pvalloc_29nbfs_LRG2_max_sCs6p8',
+                
+                ],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+            export_name='buAC_feedin_w+wo1hll_line',
+            y_col='feedin_atnode_kW',
+            y_label='Production',
+        )
+
+
+
+    # all casses loss APPENDIX
+    if False: 
+        plotter = static_plotter_class()
+        plotter.line_opacity = 0.6 
+        plotter.scen_default_color_map = {
+            'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            'pvalloc_29nbfs_LRG2_max_sAs2p0': (50, 200, 50),
+            'pvalloc_29nbfs_LRG2_max_sAs4p0': (50, 50, 200),
+            'pvalloc_29nbfs_LRG2_max_sAs6p0': (200, 200, 50),
+
+            'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            'pvalloc_29nbfs_LRG2_max_sBs0p4': (50, 200, 50),
+            'pvalloc_29nbfs_LRG2_max_sBs0p6': (50, 50, 200),
+            'pvalloc_29nbfs_LRG2_max_sBs0p8': (200, 200, 50),
+            
+            'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            'pvalloc_29nbfs_LRG2_max_sCs2p4': (50, 200, 50),
+            'pvalloc_29nbfs_LRG2_max_sCs4p6': (50, 50, 200),
+            'pvalloc_29nbfs_LRG2_max_sCs6p8': (200, 200, 50),
         }
         plotter.plot_width_func=9,
         plotter.plot_height_func=4.5,
@@ -857,12 +1250,12 @@ if __name__ == "__main__":
 
         plotter.plot_PVproduction_line(
             # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
             scen_incl_list=[
-                'pvalloc_29nbfs_30y5_max',
-                'pvalloc_29nbfs_30y5_max_sAs2p0',
-                'pvalloc_29nbfs_30y5_max_sAs4p0',
-                'pvalloc_29nbfs_30y5_max_sAs6p0',
+                'pvalloc_29nbfs_LRG2_max',
+                'pvalloc_29nbfs_LRG2_max_sAs2p0',
+                'pvalloc_29nbfs_LRG2_max_sAs4p0',
+                'pvalloc_29nbfs_LRG2_max_sAs6p0',
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
             export_name='line_PVproduction_A_loss',
@@ -871,12 +1264,12 @@ if __name__ == "__main__":
         )
         plotter.plot_PVproduction_line(
             # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
             scen_incl_list=[
-                'pvalloc_29nbfs_30y5_max',
-                'pvalloc_29nbfs_30y5_max_sBs0p4',
-                'pvalloc_29nbfs_30y5_max_sBs0p6',
-                'pvalloc_29nbfs_30y5_max_sBs0p8',
+                'pvalloc_29nbfs_LRG2_max',
+                'pvalloc_29nbfs_LRG2_max_sBs0p4',
+                'pvalloc_29nbfs_LRG2_max_sBs0p6',
+                'pvalloc_29nbfs_LRG2_max_sBs0p8',
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
             export_name='line_PVproduction_B_loss',
@@ -885,12 +1278,12 @@ if __name__ == "__main__":
         )
         plotter.plot_PVproduction_line(
             # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
             scen_incl_list=[
-                'pvalloc_29nbfs_30y5_max',
-                'pvalloc_29nbfs_30y5_max_sCs2p4',
-                'pvalloc_29nbfs_30y5_max_sCs4p6',
-                'pvalloc_29nbfs_30y5_max_sCs6p8',
+                'pvalloc_29nbfs_LRG2_max',
+                'pvalloc_29nbfs_LRG2_max_sCs2p4',
+                'pvalloc_29nbfs_LRG2_max_sCs4p6',
+                'pvalloc_29nbfs_LRG2_max_sCs6p8',
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
             export_name='line_PVproduction_C_loss',
@@ -899,14 +1292,13 @@ if __name__ == "__main__":
         )
 
 
-
         # plotter.plot_ind_hist_contcharact_allscen(
-        #     csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___31scen.csv',
+        #     csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___17scen.csv',
         #     scen_incl_list=[
-        #         'pvalloc_29nbfs_30y5_max',
-        #         # 'pvalloc_29nbfs_30y5_max_sAs2p0',
-        #         # 'pvalloc_29nbfs_30y5_max_sAs4p0',
-        #         'pvalloc_29nbfs_30y5_max_sAs6p0',
+        #         'pvalloc_29nbfs_LRG2_max',
+        #         # 'pvalloc_29nbfs_LRG2_max_sAs2p0',
+        #         # 'pvalloc_29nbfs_LRG2_max_sAs4p0',
+        #         'pvalloc_29nbfs_LRG2_max_sAs6p0',
         #         ],
         #     iter_incl_list=[1,3,],
         #     x_col_incl_list=['FLAECHE', 'GAREA'],
@@ -916,31 +1308,31 @@ if __name__ == "__main__":
         #     plot_height_func = 5,
         # )
 
-    # all casses charac comperison appendix
-    if True:
+    # all casses charac comperison APPENDX
+    if False:
         plotter = static_plotter_class()
         plotter.line_opacity = 0.6 
         plotter.scen_default_color_map = {
-            'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            'pvalloc_29nbfs_30y5_max_sAs2p0': (50, 200, 50),
-            'pvalloc_29nbfs_30y5_max_sAs4p0': (50, 50, 200),
-            'pvalloc_29nbfs_30y5_max_sAs6p0': (200, 200, 50),
+            'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            'pvalloc_29nbfs_LRG2_max_sAs2p0': (50, 200, 50),
+            'pvalloc_29nbfs_LRG2_max_sAs4p0': (50, 50, 200),
+            'pvalloc_29nbfs_LRG2_max_sAs6p0': (200, 200, 50),
 
-            'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            'pvalloc_29nbfs_30y5_max_sBs0p4': (50, 200, 50),
-            'pvalloc_29nbfs_30y5_max_sBs0p6': (50, 50, 200),
-            'pvalloc_29nbfs_30y5_max_sBs0p8': (200, 200, 50),
+            'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            'pvalloc_29nbfs_LRG2_max_sBs0p4': (50, 200, 50),
+            'pvalloc_29nbfs_LRG2_max_sBs0p6': (50, 50, 200),
+            'pvalloc_29nbfs_LRG2_max_sBs0p8': (200, 200, 50),
             
-            'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            'pvalloc_29nbfs_30y5_max_sCs2p4': (50, 200, 50),
-            'pvalloc_29nbfs_30y5_max_sCs4p6': (50, 50, 200),
-            'pvalloc_29nbfs_30y5_max_sCs6p8': (200, 200, 50),
+            'pvalloc_29nbfs_LRG2_max': (200, 50, 50),
+            'pvalloc_29nbfs_LRG2_max_sCs2p4': (50, 200, 50),
+            'pvalloc_29nbfs_LRG2_max_sCs4p6': (50, 50, 200),
+            'pvalloc_29nbfs_LRG2_max_sCs6p8': (200, 200, 50),
         }
         cont_charc_widht = 9
         cont_charc_height = 2
         plotter.plot_ind_hist_contcharact_newinst(
-            csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___31scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max_sAs6p0',],
+            csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max_sAs6p0',],
             iter_incl_list=[1, 4,],
             x_col_incl_list=['FLAECHE', 'GAREA'],
             export_name='hist_contcharact_newinst_A',
@@ -948,8 +1340,8 @@ if __name__ == "__main__":
             plot_height_func=cont_charc_height
         )      
         plotter.plot_ind_hist_contcharact_newinst(
-            csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___31scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max_sBs0p8',],
+            csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max_sBs0p8',],
             iter_incl_list=[1, 4,],
             x_col_incl_list=['FLAECHE', 'GAREA'],
             export_name='hist_contcharact_newinst_B',
@@ -957,8 +1349,8 @@ if __name__ == "__main__":
             plot_height_func=cont_charc_height
         )
         plotter.plot_ind_hist_contcharact_newinst(
-            csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___31scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max_sCs6p8',],
+            csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max_sCs6p8',],
             iter_incl_list=[1, 4,],
             x_col_incl_list=['FLAECHE', 'GAREA'],
             export_name='hist_contcharact_newinst_C',
@@ -970,8 +1362,8 @@ if __name__ == "__main__":
         catg_charc_widht = 4
         catg_charc_height = 2.75
         plotter.plot_ind_line_catgcharact_newinst(
-            csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___31scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max_sAs6p0',],
+            csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max_sAs6p0',],
             iter_incl_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, ],
             x_col_incl_dict={
                 'GKLAS': {
@@ -1000,8 +1392,8 @@ if __name__ == "__main__":
             plot_height_func=catg_charc_height
         )
         plotter.plot_ind_line_catgcharact_newinst(
-            csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___31scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max_sBs0p8',],
+            csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max_sBs0p8',],
             iter_incl_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, ],
             x_col_incl_dict={
                 'GKLAS': {
@@ -1030,8 +1422,8 @@ if __name__ == "__main__":
             plot_height_func=catg_charc_height
         )
         plotter.plot_ind_line_catgcharact_newinst(
-            csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___31scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_30y5_max_sCs6p8',],
+            csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max_sCs6p8',],
             iter_incl_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, ],
             x_col_incl_dict={
                 'GKLAS': {
@@ -1061,23 +1453,23 @@ if __name__ == "__main__":
         )
 
     # all casses production appendix
-    if True:
+    if False:
         plotter = static_plotter_class()
         plotter.line_opacity = 0.6 
         plotter.scen_default_color_map = {
-            'pvalloc_29nbfs_30y5_max': (180, 60, 60),        # muted red
+            'pvalloc_29nbfs_LRG2_max': (180, 60, 60),        # muted red
             # --- Scheme A (greens / yellow-green gradient) ---
-            'pvalloc_29nbfs_30y5_max_sAs2p0': (60, 150, 90),   # teal-green
-            'pvalloc_29nbfs_30y5_max_sAs4p0': (90, 180, 60),   # green
-            'pvalloc_29nbfs_30y5_max_sAs6p0': (180, 180, 60),  # yellow-green
+            'pvalloc_29nbfs_LRG2_max_sAs2p0': (60, 150, 90),   # teal-green
+            'pvalloc_29nbfs_LRG2_max_sAs4p0': (90, 180, 60),   # green
+            'pvalloc_29nbfs_LRG2_max_sAs6p0': (180, 180, 60),  # yellow-green
             # --- Scheme B (blues / cyan gradient) ---
-            'pvalloc_29nbfs_30y5_max_sBs0p4': (70, 130, 180),  # steel blue
-            'pvalloc_29nbfs_30y5_max_sBs0p6': (60, 160, 200),  # cyan-blue
-            'pvalloc_29nbfs_30y5_max_sBs0p8': (40, 190, 190),  # turquoise
+            'pvalloc_29nbfs_LRG2_max_sBs0p4': (70, 130, 180),  # steel blue
+            'pvalloc_29nbfs_LRG2_max_sBs0p6': (60, 160, 200),  # cyan-blue
+            'pvalloc_29nbfs_LRG2_max_sBs0p8': (40, 190, 190),  # turquoise
             # --- Scheme C (purple / magenta gradient) ---
-            'pvalloc_29nbfs_30y5_max_sCs2p4': (140, 90, 180),  # soft purple
-            'pvalloc_29nbfs_30y5_max_sCs4p6': (170, 80, 150),  # magenta-purple
-            'pvalloc_29nbfs_30y5_max_sCs6p8': (200, 70, 120),  # rose-magenta
+            'pvalloc_29nbfs_LRG2_max_sCs2p4': (140, 90, 180),  # soft purple
+            'pvalloc_29nbfs_LRG2_max_sCs4p6': (170, 80, 150),  # magenta-purple
+            'pvalloc_29nbfs_LRG2_max_sCs6p8': (200, 70, 120),  # rose-magenta
         }
         plotter.plot_width_func=9,
         plotter.plot_height_func=4.5,
@@ -1085,20 +1477,20 @@ if __name__ == "__main__":
 
         plotter.plot_PVproduction_line(
             # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
             scen_incl_list=[
-                'pvalloc_29nbfs_30y5_max',
-                # 'pvalloc_29nbfs_30y5_max_sAs2p0',
-                # 'pvalloc_29nbfs_30y5_max_sAs4p0',
-                'pvalloc_29nbfs_30y5_max_sAs6p0',
+                'pvalloc_29nbfs_LRG2_max',
+                # 'pvalloc_29nbfs_LRG2_max_sAs2p0',
+                # 'pvalloc_29nbfs_LRG2_max_sAs4p0',
+                'pvalloc_29nbfs_LRG2_max_sAs6p0',
                 
-                # 'pvalloc_29nbfs_30y5_max_sBs0p4',
-                # 'pvalloc_29nbfs_30y5_max_sBs0p6',
-                'pvalloc_29nbfs_30y5_max_sBs0p8',
+                # 'pvalloc_29nbfs_LRG2_max_sBs0p4',
+                # 'pvalloc_29nbfs_LRG2_max_sBs0p6',
+                'pvalloc_29nbfs_LRG2_max_sBs0p8',
                 
-                # 'pvalloc_29nbfs_30y5_max_sCs2p4',
-                # 'pvalloc_29nbfs_30y5_max_sCs4p6',
-                'pvalloc_29nbfs_30y5_max_sCs6p8',
+                # 'pvalloc_29nbfs_LRG2_max_sCs2p4',
+                # 'pvalloc_29nbfs_LRG2_max_sCs4p6',
+                'pvalloc_29nbfs_LRG2_max_sCs6p8',
                 
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
@@ -1109,151 +1501,8 @@ if __name__ == "__main__":
 
 
 
-    # comparison loss max cases
-    comparison_PVproduction_height = 4
-    if True: 
-        plotter = static_plotter_class()
-        plotter.line_opacity = 0.6 
-        plotter.scen_default_color_map = {
-            # 'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sAs2p0': (50, 200, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sAs4p0': (50, 50, 200),
-            # 'pvalloc_29nbfs_30y5_max_sAs6p0': (200, 200, 50),
 
-            # 'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sBs0p4': (50, 200, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sBs0p6': (50, 50, 200),
-            # 'pvalloc_29nbfs_30y5_max_sBs0p8': (200, 200, 50),
-            
-            # 'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sCs2p4': (50, 200, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sCs4p6': (50, 50, 200),
-            # 'pvalloc_29nbfs_30y5_max_sCs6p8': (200, 200, 50),
-
-            'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            'pvalloc_29nbfs_30y5_max_sAs6p0': (50, 200, 50),
-            'pvalloc_29nbfs_30y5_max_sBs0p8': (50, 50, 200),
-            'pvalloc_29nbfs_30y5_max_sCs6p8': (200, 200, 50),
-        }
-        plotter.plot_width_func=9,
-        plotter.plot_height_func=comparison_PVproduction_height,
-
-        plotter.plot_PVproduction_line(
-            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
-            scen_incl_list=[
-                'pvalloc_29nbfs_30y5_max',
-                'pvalloc_29nbfs_30y5_max_sAs6p0',
-                'pvalloc_29nbfs_30y5_max_sBs0p8',
-                'pvalloc_29nbfs_30y5_max_sCs6p8',
-                ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
-            export_name='line_PVproduction_buABC_loss',
-            y_col='feedin_atnode_loss_kW',
-            y_label='Feed-in Loss',
-        )
-
-    # comparison loss 1hll cases
-    if True: 
-        plotter = static_plotter_class()
-        plotter.line_opacity = 0.6 
-        plotter.scen_default_color_map = {
-            # 'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sAs2p0': (50, 200, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sAs4p0': (50, 50, 200),
-            # 'pvalloc_29nbfs_30y5_max_sAs6p0': (200, 200, 50),
-
-            # 'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sBs0p4': (50, 200, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sBs0p6': (50, 50, 200),
-            # 'pvalloc_29nbfs_30y5_max_sBs0p8': (200, 200, 50),
-            
-            # 'pvalloc_29nbfs_30y5_max': (200, 50, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sCs2p4': (50, 200, 50),
-            # # 'pvalloc_29nbfs_30y5_max_sCs4p6': (50, 50, 200),
-            # 'pvalloc_29nbfs_30y5_max_sCs6p8': (200, 200, 50),
-
-            'pvalloc_29nbfs_30y5_max_1hll': (200, 50, 50),
-            'pvalloc_29nbfs_30y5_max_1hll_sAs6p0': (50, 200, 50),
-            'pvalloc_29nbfs_30y5_max_1hll_sBs0p8': (50, 50, 200),
-            'pvalloc_29nbfs_30y5_max_1hll_sCs4p6': (200, 200, 50),
-            'pvalloc_29nbfs_30y5_max_1hll_sCs6p8': (200, 200, 50),
-        }
-        plotter.plot_width_func=9,
-        plotter.plot_height_func=comparison_PVproduction_height,
-
-        plotter.plot_PVproduction_line(
-            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
-            scen_incl_list=[
-                'pvalloc_29nbfs_30y5_max_1hll',
-                'pvalloc_29nbfs_30y5_max_1hll_sAs6p0',
-                'pvalloc_29nbfs_30y5_max_1hll_sBs0p8',
-                'pvalloc_29nbfs_30y5_max_1hll_sCs4p6',
-                ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
-            export_name='line_PVproduction_buABC_loss_1hll',
-            y_col='feedin_atnode_loss_kW',
-            y_label='Feed-in Loss',
-        )
-
-
-    # compmarison production 1hll cases 
-    if True:
-        plotter = static_plotter_class()
-        plotter.line_opacity = 0.6 
-        plotter.scen_default_color_map = {
-            
-            'pvalloc_29nbfs_30y5_max': (180, 60, 60),        # muted red
-            'pvalloc_29nbfs_30y5_max_1hll': (220, 100, 100),    # light red
-
-            # --- Scheme A (greens / yellow-green gradient) ---
-            # 'pvalloc_29nbfs_30y5_max_sAs2p0_1hll': (60, 150, 90),   # teal-green
-            'pvalloc_29nbfs_30y5_max_sAs6p0_': (90, 180, 60),   # green
-            'pvalloc_29nbfs_30y5_max_1hll_sAs6p0': (180, 180, 60),  # yellow-green
-            # --- Scheme B (blues / cyan gradient) ---
-            # 'pvalloc_29nbfs_30y5_max_sBs0p4_1hll': (70, 130, 180),  # steel blue
-            'pvalloc_29nbfs_30y5_max_sBs0p8': (60, 160, 200),  # cyan-blue
-            'pvalloc_29nbfs_30y5_max_1hll_sBs0p8': (40, 190, 190),  # turquoise
-            # --- Scheme C (purple / magenta gradient) ---
-            # 'pvalloc_29nbfs_30y5_max_sCs2p4_1hll': (200, 70, 120),  # rose-magenta
-            'pvalloc_29nbfs_30y5_max_sCs4p6': (170, 80, 150),  # magenta-purple
-            'pvalloc_29nbfs_30y5_max_1hll_sCs4p6': (140, 90, 180),  # soft purple
-        }
-        plotter.plot_width_func=9,
-        plotter.plot_height_func=comparison_PVproduction_height,
-
-
-        plotter.plot_PVproduction_line(
-            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-            csv_file='plot_agg_line_PVproduction___export_plot_data___31scen.csv',
-            scen_incl_list=[
-                'pvalloc_29nbfs_30y5_max',
-                'pvalloc_29nbfs_30y5_max_1hll',
-                # 'pvalloc_29nbfs_30y5_max_sAs2p0',
-                # 'pvalloc_29nbfs_30y5_max_sAs4p0',
-                'pvalloc_29nbfs_30y5_max_sAs6p0',
-                'pvalloc_29nbfs_30y5_max_1hll_sAs6p0',
-                
-                # 'pvalloc_29nbfs_30y5_max_sBs0p4',
-                # 'pvalloc_29nbfs_30y5_max_sBs0p6',
-                'pvalloc_29nbfs_30y5_max_sBs0p8',
-                'pvalloc_29nbfs_30y5_max_1hll_sBs0p8',
-                
-                # 'pvalloc_29nbfs_30y5_max_sCs2p4',
-                'pvalloc_29nbfs_30y5_max_sCs4p6',
-                'pvalloc_29nbfs_30y5_max_1hll_sCs4p6',
-                # 'pvalloc_29nbfs_30y5_max_sCs6p8',
-                
-                ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
-            export_name='buAC_feedin_w+wo1hll_line',
-            y_col='feedin_atnode_kW',
-            y_label='Production',
-        )
-
-
-print('end')
+print('\n*********************\n******** end ********\n*********************\n\n')
 
 
 

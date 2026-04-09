@@ -77,6 +77,7 @@ if True:
         CSTRspec_capacity_type                               = 'ep2050_zerobasis',
 
     ) 
+
     pvalloc_Xnbfs_ARE_20y_OLDPREPREP = PVAllocScenario_Settings(
         name_dir_export ='pvalloc_29nbfs_20y_prepFeb26',
         name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI__before_Feb26',
@@ -112,8 +113,49 @@ if True:
         CSTRspec_ann_capacity_growth                         = 0.1,
         ALGOspec_subselec_filter_method                      = 'pooled',
         CSTRspec_capacity_type                               = 'ep2050_zerobasis',
+    ) 
+
+    pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll = PVAllocScenario_Settings(
+        name_dir_export ='pvalloc_29nbfs_20y_prepFeb26',
+        name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI__before_Feb26',
+
+        GWRspec_building_cols             = ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                                             'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                                             'GEBF', 'GAREA', 
+                                             'GWAERZH1', 'GENH1',],
+        bfs_numbers                    = [
+            # RURAL 
+            2612, 2889, 2883, 2621, 2622,
+            2620, 2615, 2614, 2616, 2480,
+            2617, 2611, 2788, 2619, 2783, 2477, 
+            # SUBURBAN
+            2613, 2782, 2618, 2786, 2785, 
+            2772, 2761, 2743, 2476, 2768,
+            # URBAN
+            2773, 2769, 2770,
+                ],
+        run_pvalloc_initalization_TF    = True,
+        run_pvalloc_mcalgorithm_TF      = True,
+        run_gridoptimized_orderinst_TF  = False,
+        run_gridoptimized_expansion_TF  = False,
+
+        create_gdf_export_of_topology                        = True,
+        export_csvs                                          = False,
+        T0_year_prediction                                   = 2024,
+        months_lookback                                      = 12,
+        months_prediction                                    = 240,
+        TECspec_add_heatpump_demand_TF                       = True,
+        ALGOspec_topo_subdf_partitioner                      = 250,
+        ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
+        CSTRspec_ann_capacity_growth                         = 0.1,
+        ALGOspec_subselec_filter_method                      = 'pooled',
+        CSTRspec_capacity_type                               = 'ep2050_zerobasis',
+
+        OPTIMspecs_gridnode_subsample                        = 'all_nodes_pyparallel', 
+        OPTEXPApecs_apply_gridoptim_order_TF                 = True,
 
     ) 
+
     RUR_bfs_name = 'pvalloc_16nbfs_RUR'
     RUR_bfs_list =[
         # RURAL
@@ -127,7 +169,7 @@ if True:
         2613, 2782, 2618, 2786, 2785, 
         2772, 2761, 2743, 2476, 2768,
     ]
-    LRG_bfs_name = 'pvalloc_29nbfs_LRG'
+    LRG_bfs_name = 'pvalloc_29nbfs_LRG2'
     # v5 -> T0_prediction: 2024
     LRG_bfs_list = [
         # RURAL 
@@ -522,7 +564,7 @@ if True:
 
         make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_gridoptim_max', 
             # run_pvalloc_initalization_TF    = True,
-            run_pvalloc_initalization_TF    = False,
+            run_pvalloc_initalization_TF    = True,
             run_pvalloc_mcalgorithm_TF      = False,
             run_gridoptimized_orderinst_TF  = True,
             run_gridoptimized_expansion_TF  = True,
@@ -603,119 +645,185 @@ if True:
                         GRIDspec_subsidy_name             = 'Cs6p8',
         ),
    ]
-    
-    LRG__max_1hll__scen_list = [
-        
-     make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_gridoptim_max', 
+
+    LRG_OLDpreprep__scen_list = [
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max', 
+        ),
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_gridoptim_max', 
             # run_pvalloc_initalization_TF    = True,
-            run_pvalloc_initalization_TF    = False,
+            run_pvalloc_initalization_TF    = True,
             run_pvalloc_mcalgorithm_TF      = False,
             run_gridoptimized_orderinst_TF  = True,
             run_gridoptimized_expansion_TF  = True,
             OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
             OPTEXPApecs_apply_gridoptim_order_TF     = True,
         ),
-    ]
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_epzb0_75', 
+                      CSTRspec_ep2050_rescale_fact     = 0.75,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_epzb0_50', 
+                      CSTRspec_ep2050_rescale_fact     = 0.50,
+        ),
+
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sAs2p0',
+                        GRIDspec_subsidy_name             = 'As2p0',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sAs4p0',
+                        GRIDspec_subsidy_name             = 'As4p0',    
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sAs6p0',
+                        GRIDspec_subsidy_name             = 'As6p0',
+        ),
+
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sBs0p4',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Bs0p4',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sBs0p6',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Bs0p6',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sBs0p8',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Bs0p8',
+        ),
+
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sCs2p4',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs2p4',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sCs2p6',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs2p6',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sCs2p8',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs2p8',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sCs4p4',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs4p4',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sCs4p6',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs4p6',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sCs4p8',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs4p8',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sCs6p4',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs6p4',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sCs6p6',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs6p6',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'{LRG_bfs_name}_max_sCs6p8',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs6p8',
+        ),
+   ]
     
-    # LRG__max_1hll__scen_list = [
 
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        # ),  
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_gridoptim_max_1hll',
-        #     # run_pvalloc_initalization_TF    = True,                      
-        #     run_pvalloc_initalization_TF    = False,                      
-        #     run_pvalloc_mcalgorithm_TF      = False,
-        #     run_gridoptimized_orderinst_TF  = True,
-        #     run_gridoptimized_expansion_TF  = True,
-        #     OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
-        #     OPTEXPApecs_apply_gridoptim_order_TF     = True,
+    LRG_OLDpreprep_1hll__scen_list = [
+        
 
-        #     GRIDspec_node_1hll_closed_TF      = True,
-        # ),  
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_rnd_1hll',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll', 
+        ),
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_gridoptim_max_1hll', 
+            # run_pvalloc_initalization_TF    = True,
+            run_pvalloc_initalization_TF    = True,
+            run_pvalloc_mcalgorithm_TF      = False,
+            run_gridoptimized_orderinst_TF  = True,
+            run_gridoptimized_expansion_TF  = True,
+            OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
+            OPTEXPApecs_apply_gridoptim_order_TF     = True,
+        ),
+        # make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_rnd',
         #                 ALGOspec_inst_selection_method    = 'random',
-        # ),  
-
-
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sAs2p0',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'As2p0',
-        # ),  
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sAs4p0',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'As4p0',
-        # ),
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sAs6p0',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'As6p0',
         # ),
 
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sBs0p4',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Bs0p4',
-        # ),
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sBs0p6',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Bs0p6',
-        # ),
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sBs0p8',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Bs0p8',
-        # ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_epzb0_75', 
+                      CSTRspec_ep2050_rescale_fact     = 0.75,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_epzb0_50', 
+                      CSTRspec_ep2050_rescale_fact     = 0.50,
+        ),
 
 
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sCs2p4',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Cs2p4',
-        # ),
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sCs2p6',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Cs2p6',
-        # ),
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sCs2p8',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Cs2p8',
-        # ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sAs2p0',
+                        GRIDspec_subsidy_name             = 'As2p0',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sAs4p0',
+                        GRIDspec_subsidy_name             = 'As4p0',    
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sAs6p0',
+                        GRIDspec_subsidy_name             = 'As6p0',
+        ),
 
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sCs4p4',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Cs4p4',
-        # ),
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sCs4p6',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Cs4p6',
-        # ),
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sCs4p8',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Cs4p8',
-        # ),
 
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sCs6p4',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Cs6p4',
-        # ),
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sCs6p6',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Cs6p6',
-        # ),
-        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'{LRG_bfs_name}_max_1hll_sCs6p8',
-        #                 GRIDspec_node_1hll_closed_TF      = True,
-        #                 GRIDspec_apply_prem_tiers_TF      = True,
-        #                 GRIDspec_subsidy_name             = 'Cs6p8',
-        # ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sBs0p4',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Bs0p4',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sBs0p6',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Bs0p6',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sBs0p8',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Bs0p8',
+        ),
+
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sCs2p4',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs2p4',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sCs2p6',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs2p6',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sCs2p8',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs2p8',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sCs4p4',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs4p4',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sCs4p6',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs4p6',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sCs4p8',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs4p8',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sCs6p4',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs6p4',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sCs6p6',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs6p6',
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP_1hll, f'{LRG_bfs_name}_max_1hll_sCs6p8',
+                        GRIDspec_apply_prem_tiers_TF      = True,
+                        GRIDspec_subsidy_name             = 'Cs6p8',
+        ),
+
+
+]
     
          
     
@@ -964,13 +1072,15 @@ def get_subscen_list(sub_scen_str = 'test'):
     elif sub_scen_str == 'RUR_and_SUB':
         return RUR_scen_list + SUB_scen_list
     elif sub_scen_str == 'LRG':
-        return LRG_scen_list
+        # return LRG_scen_list
+        return LRG_OLDpreprep__scen_list
     elif sub_scen_str == 'XLRG':
         return XLRG_scen_list
     elif sub_scen_str == 'XLRG_final':
         return XLRG_final_scen_list
     elif sub_scen_str == 'DEV':
-        return DEV_scen_list
+        # return DEV_scen_list
+        return LRG_OLDpreprep_1hll__scen_list
     else:
         return []
     
