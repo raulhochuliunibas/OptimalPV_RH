@@ -1,14 +1,11 @@
 import os
 import sys
-from dataclasses import replace
-from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
-from src.MAIN_visualization import Visual_Settings, Visualization
-from main_INIT_array import get_subscen_list
+from src.MAIN_pvallocation import  PVAllocScenario
+from HPC_scenario_runs.main_INIT_array import get_subscen_list
 
 if __name__ == "__main__":
 
-    pvalloc_scen_list = get_subscen_list('LRG')
-    # pvalloc_scen_list = get_subscen_list('LRG_final')
+    pvalloc_scen_list = get_subscen_list('SUB')
 
     slurm_job_id = os.environ.get('SLURM_ARRAY_JOB_ID_ENV', 'unknown')
     slurm_array_id = os.environ.get('SLURM_ARRAY_TASK_ID_ENV', 'unknown')
