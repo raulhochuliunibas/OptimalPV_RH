@@ -38,23 +38,29 @@ if True:
         # r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr.parquet", 
         # r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr_all_building_df.parquet", 
 
-        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_gridoptim_max\zMC1_OptimExpa\npv_df.parquet",
-        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_gridoptim_max\zMC1_OptimExpa\pred_npv_inst_by_M\pred_inst_df_2.parquet",
-        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_gridoptim_max\zMC1_OptimExpa\pred_npv_inst_by_M\pred_inst_df_1.parquet",
-        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_npv_inst_by_M\pred_inst_df_2.parquet",
-        r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet" ,       
-
-    ]
+        # r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_gridoptim_max\zMC1_OptimExpa\npv_df.parquet",
+        # r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_gridoptim_max\zMC1_OptimExpa\pred_npv_inst_by_M\pred_inst_df_2.parquet",
+        # r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_gridoptim_max\zMC1_OptimExpa\pred_npv_inst_by_M\pred_inst_df_1.parquet",
+        # r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_npv_inst_by_M\pred_inst_df_2.parquet",
+        # r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet" ,       
+        
+        r"C:\Models\OptimalPV_RH\data\pvalloc\DEV2_pvalloc_16nbfs_RUR_max\zMC1\npv_df.parquet",
+        r"C:\Models\OptimalPV_RH\data\pvalloc\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_inst_df.parquet",
+        r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_16nbfs_RUR_max_prepFeb26\zMC1\npv_df.parquet",
+        r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_16nbfs_RUR_max_prepFeb26\zMC1\pred_inst_df.parquet",
+        ]
+    
     for pq_path in path_list:
+        scen_name = pq_path.split('\\')[-3]
         file_name = pq_path.split('\\')[-1].split('.parquet')[0]
-        csv_path = "\\".join(pq_path.split('\\')[0:-1])
-        # csv_path = 'C:\Models\OptimalPV_RH\data\pvalloc'
+        # csv_path = "\\".join(pq_path.split('\\')[0:-1])
+        csv_path = 'C:\Models\OptimalPV_RH\data\pvalloc'
 
         df  = pd.read_parquet(pq_path)
         if any( [tag in pq_path for tag in ['OLDpreprep', 'COPYpreprep_used_untilFeb26',] ] ):
-            export_path = f'{csv_path}\{file_name}_OLDpreprep.csv'
+            export_path = f'{csv_path}\{scen_name}_{file_name}_OLDpreprep.csv'
         else:
-            export_path = f'{csv_path}\{file_name}.csv'
+            export_path = f'{csv_path}\{scen_name}_{file_name}.csv'
 
         df.to_csv(export_path)
         df.to_excel(export_path.replace('.csv', '.xlsx'), index=False)

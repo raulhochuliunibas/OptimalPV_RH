@@ -1,0 +1,12 @@
+\begin{{tabular}}{{|l c  c }}
+    \hline
+    \textbf{{Summary}}      & \textbf{{Sample}}     & \textbf{{Avail.Sample}}        & \textbf{{All CH}} \\
+    \hline
+    n Municipalities        & {n_municipalities}    & {alldso_municipalities}        & -    \\
+    n All Buildings         & {n_houses}            & {alldso_houses}                & -    \\
+    n Resid. Houses         & {n_egids}             & {alldso_egids}                 & -    \\
+    n Grid Nodes            & {n_grid_nodes}        & {alldso_grid_nodes}            & -    \\
+    Total Roof Surface(m2)  & {total_roof_surface}  & {alldso_total_roof_surface}    & -    \\
+    Capacty 2050 (MW)       & {capacity_mw_2050}    & -                              & -    \\
+    \hline       
+\end{{tabular}}

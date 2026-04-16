@@ -27,6 +27,25 @@ class static_plotter_class:
         self.show_plt_TF = False
 
 
+    def write_latex_from_template(self,
+                                template_file,
+                                export_file,
+                                replacements):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        template_path = template_file if os.path.isabs(template_file) else os.path.join(script_dir, template_file)
+        export_path = export_file if os.path.isabs(export_file) else os.path.join(self.dir_path, export_file)
+
+        with open(template_path, 'r', encoding='utf-8') as f:
+            template_text = f.read()
+
+        filled_text = template_text.format(**replacements)
+
+        with open(export_path, 'w', encoding='utf-8') as f:
+            f.write(filled_text)
+
+        print(f'LaTeX file written: {export_path}')
+
+
     def plot_productionHOY_per_node(self, 
                                     csv_file, 
                                     scen_incl_list,
@@ -216,6 +235,10 @@ class static_plotter_class:
             # unit conversion (kWh to MWh)
             df_plot[y_col] = df_plot[y_col] / 1000
             scen_label = scen.split('pvalloc_29nbfs_')[-1]
+            if y_col == 'feedin_atnode_taken_kW':
+                df_plot[y_col] = df_plot[y_col] / 1000
+
+
 
 
             if not df_plot.empty:
@@ -232,7 +255,10 @@ class static_plotter_class:
                 )
 
         plt.xlabel('Model Iterations (Future Years)')
-        plt.ylabel(f'Aggregated {y_label} (MWh)')
+        if y_col == 'feedin_atnode_taken_kW':
+            plt.ylabel(f'Aggregated {y_label} (GWh)')
+        else:
+            plt.ylabel(f'Aggregated {y_label} (MWh)')
         plt.title(f'Agg. {y_label}')
 
         plt.legend()
@@ -313,9 +339,10 @@ class static_plotter_class:
     def plot_ind_line_catgcharact_newinst(self, 
                                           csv_file,
                                           scen_incl_list,
-                                          iter_incl_list,
+                                        #   iter_incl_list,
                                           x_col_incl_dict,
                                           export_name,
+                                          iter_incl_list=[1, 2, 3, 4, 5, 6, 7,  ],
                                           crop_right_x = None,
                                           plot_width_func = None,
                                           plot_height_func = None,
@@ -703,6 +730,171 @@ class static_plotter_class:
             # with open (os.path.join(self.dir_path, "loss_comparison_single_values.txt"), 'a') as f:
             #     f.write(f'{print_str}\n')
 
+    def SustFuturePresent_miscellaneous(self, 
+                                        scen = 'pvalloc_29nbfs_LRG2_max',
+                                        npv_hist_width = 3.85,
+                                        npv_hist_height= 3.4,
+                                        npv_hist_xrange = (-1e4, 4.75e4),
+                                        ):
+        # get npv_df histogramm
+        if True: 
+            npv_df = pd.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'npv_df.parquet'))
+
+            if 'NPV_uid_before_subsidy' not in npv_df.columns:
+                print("Column 'NPV_uid_before_subsidy' not found in npv_df.")
+                return
+
+            df_plot = npv_df.loc[npv_df['NPV_uid_before_subsidy'].notna(), ['NPV_uid_before_subsidy']].copy()
+            if df_plot.empty:
+                print("No values found in 'NPV_uid_before_subsidy' for histogram.")
+                return
+
+            mean_val = df_plot['NPV_uid_before_subsidy'].mean()
+            median_val = df_plot['NPV_uid_before_subsidy'].median()
+            viridis_palette = sns.color_palette("viridis", n_colors=6)
+
+            plt.figure(figsize=(npv_hist_width, npv_hist_height))
+            ax = sns.histplot(
+                data=df_plot,
+                x='NPV_uid_before_subsidy',
+                bins=40,
+                kde=False,
+                color=viridis_palette[3],
+                alpha=0.75,
+                linewidth=0.1
+            )
+            ax.axvline(mean_val, color=viridis_palette[2], linestyle='--', linewidth=1.5, label=f'Mean: {mean_val:,.0f}')
+            ax.axvline(median_val, color=viridis_palette[1], linestyle='-', linewidth=1.5, label=f'Median: {median_val:,.0f}')
+            if len(npv_hist_xrange) == 2:
+                ax.set_xlim(npv_hist_xrange[0], npv_hist_xrange[1])
+            plt.xlabel('NPV before subsidy (CHF)')
+            plt.ylabel('Count')
+            plt.title('Distribution of NPV before Subsidy')
+            plt.legend(title=None)
+            plt.tight_layout()
+            # plt.show()
+            plt.savefig(os.path.join(self.dir_path, f'{scen}_npv_df_hist.png'), dpi=500)
+            plt.close()
+        
+
+        # get data for data table
+
+        if True:
+            topo = json.load(open(os.path.join(self.data_path, 'pvalloc', scen, 'topo_egid.json')))
+            
+            topo_gwr_summary_list = []
+            for k, v in topo.items():
+                topo_gwr_summary_list.append({
+                    'EGID':           k,
+                    'grid_node':      v['grid_node'],
+                    'bfs':            v['gwr_info']['bfs'],
+                    'garea':          v['gwr_info']['garea'],
+                    'heating_system': v['gwr_info']['heating_system'],
+                })
+            topo_gwr_summary_df = pd.DataFrame(topo_gwr_summary_list)
+            
+            topo_solkat_summary_list = []
+            for k, v in topo.items():
+                for k_solkat, v_solkat in v.get('solkat_partitions', {}).items():
+                    topo_solkat_summary_list.append({
+                       'EGID': k,
+                       'duid': k_solkat,
+                       'FLAECHE': v_solkat['FLAECHE'],
+                       'STROMERTRAG': v_solkat['STROMERTRAG'],
+                   }) 
+            topo_solkat_summary_df = pd.DataFrame(topo_solkat_summary_list)
+
+            constrcapa = pd.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'constrcapa.parquet'))
+
+            n_municipalities    = topo_gwr_summary_df['bfs'].nunique()
+            n_egids            = topo_gwr_summary_df.shape[0]
+            n_grid_nodes        = topo_gwr_summary_df['grid_node'].nunique()
+            total_roof_surface  = topo_solkat_summary_df['FLAECHE'].sum()
+            capacity_mw_2050    = list(constrcapa['constr_capacity_kw'])[-1] / 1000
+
+            # ALLDSO sample! 
+            ALLDSO_bfs_list = [
+                # RURAL 
+                2612, 2889, 2883, 2621, 2622,
+                2620, 2615, 2614, 2616, 2480,
+                2617, 2611, 2788, 2619, 2783, 2477, 
+                2790, 2426, 2428, 2893, 
+                2885, 2852, 2491, 2502, 2499,
+                2585,
+                # SUBURBAN
+                2613, 2782, 2618, 2786, 2785, 
+                2772, 2761, 2743, 2476, 2768,
+                2471, 2481, 2775, 2764, 2771, 
+                2763, 2473, 2475, 2474, 2472, 
+                2478, 2830, 2766, 2767, 2774, 
+                2422, 2792, 2787, 2789, 2479, 
+                2834, 2833, 
+                2579, 2582, 2586, 2500, 2501, 
+                2493, 2497, 2495, 2584, 2573, 
+                2572, 2576, 2583,
+                # URBAN
+                2773, 2769, 2770,
+                2762, 2765, 
+                2829, 2831, 
+                2581,
+            ]
+
+            LRG_bfs_list = [
+            # RURAL 
+            2612, 2889, 2883, 2621, 2622,
+            2620, 2615, 2614, 2616, 2480,
+            2617, 2611, 2788, 2619, 2783, 2477, 
+            # SUBURBAN
+            2613, 2782, 2618, 2786, 2785, 
+            2772, 2761, 2743, 2476, 2768,
+            # URBAN
+            2773, 2769, 2770,
+            ]
+
+            preprep_gwr_all_buildilngs = pd.read_parquet(r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr_all_building_df.parquet")
+            preprep_gwr                = pd.read_parquet(r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr.parquet")
+            dsonodes_df                = pd.read_parquet(r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\dsonodes_df.parquet")
+            solkat                     = pd.read_parquet(r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\solkat.parquet")
+            
+            preprep_gwr['GGDENR'] = preprep_gwr['GGDENR'].astype(int)
+            solkat['BFS_NUMMER'] = solkat['BFS_NUMMER'].astype(int)
+
+
+            # LRG specific
+            n_houses = preprep_gwr_all_buildilngs.loc[preprep_gwr_all_buildilngs['BFS_NO'].isin(LRG_bfs_list),'EGID'].nunique()
+            n_egids_check = preprep_gwr.loc[preprep_gwr['GGDENR'].isin(LRG_bfs_list),'EGID'].nunique()
+
+            # ALLDSO specific
+            alldso_houses = preprep_gwr_all_buildilngs.loc[preprep_gwr_all_buildilngs['BFS_NO'].isin(ALLDSO_bfs_list),'EGID'].nunique()
+            alldso_egids = preprep_gwr.loc[preprep_gwr['GGDENR'].isin(ALLDSO_bfs_list),'EGID'].nunique()
+            alldso_grid_nodes = dsonodes_df['grid_node'].nunique()
+            alldso_total_roof_surface = solkat.loc[solkat['BFS_NUMMER'].isin(ALLDSO_bfs_list), 'FLAECHE'].sum()
+
+
+
+            print(f'n egids from topo: {n_egids}, from gwr: {n_egids_check}')
+            def fmt(n):
+                return f"{n:,}".replace(",", "'")
+            replacements = {
+                "n_municipalities":         fmt(n_municipalities),
+                "n_houses":                 fmt(n_houses),
+                "n_egids":                  fmt(n_egids),
+                "n_grid_nodes":             fmt(n_grid_nodes),
+                "total_roof_surface":       fmt(round(total_roof_surface, 1)),
+                "capacity_mw_2050":         fmt(round(capacity_mw_2050, 1)),
+                "alldso_municipalities":    fmt(len(ALLDSO_bfs_list)),
+                "alldso_houses":            fmt(alldso_houses),
+                "alldso_egids":             fmt(alldso_egids),
+                "alldso_grid_nodes":        fmt(alldso_grid_nodes),
+                "alldso_total_roof_surface": fmt(round(alldso_total_roof_surface, 1)),
+                }
+
+            plotter.write_latex_from_template(
+                template_file="latex_table_template.txt",
+                export_file="summary_stats.txt",
+                replacements=replacements,
+            )
+
 
 
 
@@ -780,39 +972,38 @@ if __name__ == "__main__":
         #            'DEV_pvalloc_29nbfs_LRG_max_sCs4p6_OLDpreprep',
         #         ],
         #         n_iter_range_list=[20,],
+
         # )
+        plotter.SustFuturePresent_miscellaneous()
 
-        # print('\n--- demand profiles ---')
-        # plotter.plot_ind_line_demand(
-        #     name_dir_export='DEV2_pvalloc_16nbfs_RUR_max',
-        #     hours_incl_list=list(range(4920, 4920 + 7*24)),
-        #     export_name='example_demand_BU',
-        #     n_egids_by_group = {
-        #         'sfh_rur_hpT': (1, 'SFH', 'Rural',     'heatpump'),
-        #         'sfh_rur_hpF': (1, 'SFH', 'Rural',     'no_heatpump'),
-        #         # 'sfh_sub_hpT': (0, 'SFH', 'Suburban',  'heatpump'),
-        #         # 'sfh_urb_hpF': (0, 'SFH', 'Urban',     'no_heatpump'),
-        #         # 'sfh_urb_hpT': (0, 'SFH', 'Urban',     'heatpump'),
-        #         # 'sfh_sub_hpF': (0, 'SFH', 'Suburban',  'no_heatpump'),
+        print('\n--- demand profiles ---')
+        plotter.plot_ind_line_demand(
+            name_dir_export='DEV_pvalloc_10nbfs_SUB_max_OLDpreprep',
+            hours_incl_list=list(range(4920, 4920 + 7*24)),
+            export_name='example_demand_BU',
+            n_egids_by_group = {
+                'sfh_rur_hpT': (1, 'SFH', 'Rural',     'heatpump'),
+                'sfh_rur_hpF': (1, 'SFH', 'Rural',     'no_heatpump'),
+                # 'sfh_sub_hpT': (0, 'SFH', 'Suburban',  'heatpump'),
+                # 'sfh_urb_hpF': (0, 'SFH', 'Urban',     'no_heatpump'),
+                # 'sfh_urb_hpT': (0, 'SFH', 'Urban',     'heatpump'),
+                # 'sfh_sub_hpF': (0, 'SFH', 'Suburban',  'no_heatpump'),
 
-        #         # 'mfh_rur_hpT': (1, 'MFH', 'Rural',     'heatpump'),
-        #         # 'mfh_rur_hpF': (1, 'MFH', 'Rural',     'no_heatpump'),
-        #         # 'mfh_sub_hpT': (0, 'MFH', 'Suburban',  'heatpump'),
-        #         # 'mfh_sub_hpF': (0, 'MFH', 'Suburban',  'no_heatpump'),
-        #         # 'mfh_urb_hpT': (0, 'MFH', 'Urban',     'heatpump'),
-        #         # 'mfh_urb_hpF': (0, 'MFH', 'Urban',     'no_heatpump'),
-        #                      },
-        #     # select_egids = [
-        #     #     # '101221005', # MFH, Rural, heatpump
-        #     #     # '245048874', # SFH, Suburban, heatpump
-        #     # ],
-        #     # export_plots=False,
-
-        #     plot_width_func=4,
-        #     plot_height_func=4,
-        # )
-        # print('-')
-
+                # 'mfh_rur_hpT': (1, 'MFH', 'Rural',     'heatpump'),
+                # 'mfh_rur_hpF': (1, 'MFH', 'Rural',     'no_heatpump'),
+                # 'mfh_sub_hpT': (0, 'MFH', 'Suburban',  'heatpump'),
+                # 'mfh_sub_hpF': (0, 'MFH', 'Suburban',  'no_heatpump'),
+                # 'mfh_urb_hpT': (0, 'MFH', 'Urban',     'heatpump'),
+                # 'mfh_urb_hpF': (0, 'MFH', 'Urban',     'no_heatpump'),
+                             },
+            # select_egids = [
+            #     '101221005', # MFH, Rural, heatpump
+            #     '245048874', # SFH, Suburban, heatpump
+            # ],
+            # export_plots=False,
+            plot_width_func=4,
+            plot_height_func=4,
+        )
 
     
     # BU case
@@ -822,54 +1013,54 @@ if __name__ == "__main__":
         bu_loss_width = 4
 
 
+        print('- plot_productionHOY_per_node')
+        plotter.plot_productionHOY_per_node(
+            # csv_file='plot_agg_line_productionHOY_per_node___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_productionHOY_per_node___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
+            hours_incl_list=list(range(4920 + 3*24, 4920 + 6*24)),
+            export_name='line_PVHOY_bu_loss',
+            plot_height_func = bu_loss_height,
+            plot_width_func  = bu_loss_width,
+        )
         plotter = static_plotter_class()
         print('\n--- BU case ---')
-        # print('- plot_productionHOY_per_node')
-        # plotter.plot_productionHOY_per_node(
-        #     # csv_file='plot_agg_line_productionHOY_per_node___export_plot_data___1scen.csv',
-        #     csv_file='plot_agg_line_productionHOY_per_node___export_plot_data___17scen.csv',
-        #     scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
-        #     hours_incl_list=list(range(4920, 4920 + 7*24)),
-        #     export_name='line_PVHOY_bu_loss',
-        #     plot_height_func = bu_loss_height,
-        #     plot_width_func  = bu_loss_width,
-        # )
-        # print('- plot_productionHOY_per_node_byiter')
-        # plotter.plot_productionHOY_per_node_byiter(
-        #     csv_file='plot_agg_line_productionHOY_per_node_byiter___export_plot_data___17scen.csv',
-        #     scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
-        #     hours_incl_list=list(range(4920 + 3*24, 4920 + 6*24)),
-        #     iter_incl_list=['5', '6', '7', ], #'end_iter'],
-        #     export_name='line_PVHOY_bu_loss_byiter',
-        #     daynightbands = True,
-        #     plot_height_func = bu_loss_height,
-        #     plot_width_func  = bu_loss_width,
-        #     )
-        # print('- plot_PVproduction_line')
-        # plotter.plot_PVproduction_line(
-        #     # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-        #     csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
-        #     scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
-        #     n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
-        #     export_name='line_PVproduction_bu_loss',
-        #     y_col='feedin_atnode_loss_kW',
-        #     y_label='Feed-in Loss',
-        #     plot_height_func = bu_loss_height,
-        #     plot_width_func  = bu_loss_width,
-        # )
-        # plotter.plot_ind_hist_contcharact_newinst(
-        #     csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___17scen.csv',
-        #     scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
-        #     iter_incl_list=[1, 3, 5],
-        #     x_col_incl_list=['FLAECHE', 'GAREA'],
-        #     export_name='hist_contcharact_newinst_bu',
-        #     plot_height_func = 3, 
-        #     plot_width_func =  8.5,
-        # )
+        print('- plot_productionHOY_per_node_byiter')
+        plotter.plot_productionHOY_per_node_byiter(
+            csv_file='plot_agg_line_productionHOY_per_node_byiter___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
+            hours_incl_list=list(range(4920 + 3*24, 4920 + 6*24)),
+            iter_incl_list=['5', '6', '7', ], #'end_iter'],
+            export_name='line_PVHOY_bu_loss_byiter',
+            daynightbands = True,
+            plot_height_func = bu_loss_height,
+            plot_width_func  = bu_loss_width,
+            )
+        print('- plot_PVproduction_line')
+        plotter.plot_PVproduction_line(
+            # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+            csv_file='plot_agg_line_PVproduction___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
+            export_name='line_PVproduction_bu_loss',
+            y_col='feedin_atnode_loss_kW',
+            y_label='Feed-in Loss',
+            plot_height_func = bu_loss_height,
+            plot_width_func  = bu_loss_width,
+        )
+        plotter.plot_ind_hist_contcharact_newinst(
+            csv_file='plot_agg_hist_contcharact_newinst___export_plot_data___17scen.csv',
+            scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
+            iter_incl_list=[1, 3, 5],
+            x_col_incl_list=['FLAECHE', 'GAREA'],
+            export_name='hist_contcharact_newinst_bu',
+            plot_height_func = 3, 
+            plot_width_func =  8.5,
+        )
         plotter.plot_ind_line_catgcharact_newinst(
             csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___17scen.csv',
             scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
-            iter_incl_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, ],
+            # iter_incl_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, ],
             x_col_incl_dict={
                 'GKLAS': {
                     # 'single-family':['1110',], 
@@ -921,6 +1112,7 @@ if __name__ == "__main__":
             'pvalloc_29nbfs_LRG2_max_sAs4p0': (60, 120, 200),  # strong blue
             'pvalloc_29nbfs_LRG2_max_sBs0p8': (60, 160, 90),   # green (less neon)
             'pvalloc_29nbfs_LRG2_max_sCs2p8': (200, 140, 40),  # orange (instead of yellow)
+            'pvalloc_29nbfs_LRG2_max_sCs4p6': (100, 180, 180),  # turquoise (instead of yellow)
         }
         plotter.plot_width  = comparison_PVproduction_width
         plotter.plot_height = comparison_PVproduction_height
@@ -933,6 +1125,7 @@ if __name__ == "__main__":
                 'pvalloc_29nbfs_LRG2_max_sAs4p0',
                 'pvalloc_29nbfs_LRG2_max_sBs0p8',
                 'pvalloc_29nbfs_LRG2_max_sCs2p8',
+                # 'pvalloc_29nbfs_LRG2_max_sCs4p6',
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
             export_name='line_PVproduction_buABC_loss',
@@ -947,13 +1140,14 @@ if __name__ == "__main__":
                 'pvalloc_29nbfs_LRG2_max_sAs4p0',
                 'pvalloc_29nbfs_LRG2_max_sBs0p8',
                 'pvalloc_29nbfs_LRG2_max_sCs2p8',
+                # 'pvalloc_29nbfs_LRG2_max_sCs4p6',
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
             # export_name='line_PVproduction_buABC_loss',
             # y_col='feedin_atnode_loss_kW',
             # y_label='Feed-in Loss',
             export_name='line_PVproduction_buABC_feedin',
-            y_col='feedin_atnode_kW',
+            y_col='feedin_atnode_taken_kW',
             y_label='Feedin',
         )
 
@@ -970,7 +1164,7 @@ if __name__ == "__main__":
         plotter.plot_ind_line_catgcharact_newinst(
             csv_file='plot_agg_bar_catgcharact_newinst___export_plot_data___17scen.csv',
             scen_incl_list=['pvalloc_29nbfs_LRG2_max_sCs2p8',],
-            iter_incl_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, ],
+            # iter_incl_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, ],
             x_col_incl_dict={
                 'GKLAS': {
                     # 'single-family':['1110',], 
@@ -1022,6 +1216,7 @@ if __name__ == "__main__":
             'pvalloc_29nbfs_LRG2_max_1hll_sAs4p0':  (140, 180, 230),  # pastel blue
             'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8':  (150, 210, 170),  # pastel green
             'pvalloc_29nbfs_LRG2_max_1hll_sCs2p8':  (240, 200, 140),  # pastel orange
+            'pvalloc_29nbfs_LRG2_max_1hll_sCs4p6':  (180, 220, 220),  # pastel turquoise    
         }
         plotter.plot_width  = comparison_PVproduction_width
         plotter.plot_height = comparison_PVproduction_height
@@ -1032,9 +1227,10 @@ if __name__ == "__main__":
             scen_incl_list=[
                 'pvalloc_29nbfs_LRG2_max', 
                 'pvalloc_29nbfs_LRG2_max_1hll', 
-                'pvalloc_29nbfs_LRG2_max_1hll_sAs4p0',
-                'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8',
+                # 'pvalloc_29nbfs_LRG2_max_1hll_sAs4p0',
+                # 'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8',
                 'pvalloc_29nbfs_LRG2_max_1hll_sCs2p8',
+                'pvalloc_29nbfs_LRG2_max_1hll_sCs4p6',
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
             export_name='line_PVproduction_buABC_1hll_loss',
@@ -1047,9 +1243,10 @@ if __name__ == "__main__":
             scen_incl_list=[
                 'pvalloc_29nbfs_LRG2_max', 
                 'pvalloc_29nbfs_LRG2_max_1hll', 
-                'pvalloc_29nbfs_LRG2_max_1hll_sAs4p0',
-                'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8',
+                # 'pvalloc_29nbfs_LRG2_max_1hll_sAs4p0',
+                # 'pvalloc_29nbfs_LRG2_max_1hll_sBs0p8',
                 'pvalloc_29nbfs_LRG2_max_1hll_sCs2p8',
+                'pvalloc_29nbfs_LRG2_max_1hll_sCs4p6',
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
             # export_name='line_PVproduction_buABC_loss',
@@ -1083,6 +1280,7 @@ if __name__ == "__main__":
             'pvalloc_29nbfs_LRG2_max_sAs4p0': (60, 120, 200),  # strong blue
             'pvalloc_29nbfs_LRG2_max_sBs0p8': (60, 160, 90),   # green (less neon)
             'pvalloc_29nbfs_LRG2_max_sCs2p8': (200, 140, 40),  # orange (instead of yellow)
+            'pvalloc_29nbfs_LRG2_max_sCs4p6': (100, 180, 180),  # turquoise (instead of yellow)
             'pvalloc_29nbfs_LRG2_gridoptim_max': (120, 60, 200)      # purple
 
         }
@@ -1119,7 +1317,7 @@ if __name__ == "__main__":
             # y_col='feedin_atnode_loss_kW',
             # y_label='Feed-in Loss',
             export_name='line_PVproduction_buABCgridopt_feedin',
-            y_col='feedin_atnode_kW',
+            y_col='feedin_atnode_taken_kW',
             y_label='Feedin',
         )
 
@@ -1218,7 +1416,7 @@ if __name__ == "__main__":
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
             export_name='buAC_feedin_w+wo1hll_line',
-            y_col='feedin_atnode_kW',
+            y_col='feedin_atnode_taken_kW',
             y_label='Production',
         )
 
@@ -1495,7 +1693,7 @@ if __name__ == "__main__":
                 ],
             n_iter_range_list=[4, 5, 6, 7, 8, 9, 10,],
             export_name='line_PVproduction_buABC_feedin',
-            y_col='feedin_atnode_kW',
+            y_col='feedin_atnode_taken_kW',
             y_label='Production',
         )
 

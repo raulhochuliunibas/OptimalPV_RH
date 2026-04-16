@@ -99,6 +99,10 @@ src/api_keys/*
 docs/**
 progress_notes/**
 
+# ignore publications htmls folder (outputs, keep csv and other reports in repo)
+paper_publication/*htmls/**
+paper_publication/*/*/*.png
+
 
 
 # --------------------------------------------------------------------------------------------
