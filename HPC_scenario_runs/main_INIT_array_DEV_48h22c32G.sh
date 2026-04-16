@@ -44,7 +44,7 @@ export SLURM_ARRAY_JOB_ID_ENV=$SLURM_ARRAY_JOB_ID
 
 #add your command lines below
 #############################
-
-$(head -$SLURM_ARRAY_TASK_ID main_INIT_array_DEV_20task.cmd| tail -1)
+export PYTHONPATH="$HOME/OptimalPV_RH:$PYTHONPATH"
+$(head -$SLURM_ARRAY_TASK_ID HPC_scenario_runs/main_INIT_array_DEV_20task.cmd| tail -1)
 
 

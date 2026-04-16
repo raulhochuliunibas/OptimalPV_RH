@@ -38,6 +38,7 @@ source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 
 #add your command lines below
 #############################
+export PYTHONPATH="$HOME/OptimalPV_RH:$PYTHONPATH"
 python src/calibration_array_by_bfs_concat.py
 
 

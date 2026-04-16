@@ -38,4 +38,5 @@ source $HOME/OptimalPV_RH/.venv_optimalpv_rh/bin/activate
 
 #add your command lines below
 #############################
-python main_visualization.py
+export PYTHONPATH="$HOME/OptimalPV_RH:$PYTHONPATH"
+python HPC_scenario_runs/main_visualization.py

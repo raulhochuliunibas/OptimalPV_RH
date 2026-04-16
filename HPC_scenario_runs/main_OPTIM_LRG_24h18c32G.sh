@@ -42,7 +42,8 @@ export SLURM_ARRAY_JOB_ID_ENV=$SLURM_ARRAY_JOB_ID
 
 #add your command lines below
 #############################
-python main_OPTIM_LRG.py
+export PYTHONPATH="$HOME/OptimalPV_RH:$PYTHONPATH"
+python HPC_scenario_runs/main_OPTIM_LRG.py
 
 
 

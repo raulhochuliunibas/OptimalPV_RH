@@ -41,6 +41,7 @@ export SLURM_JOB_ID_ENV=$SLURM_JOB_ID
 
 #add your command lines below
 #############################
-$(head -$SLURM_ARRAY_TASK_ID calib_ary_bfs_launch_5nbfs.cmd | tail -1)
+export PYTHONPATH="$HOME/OptimalPV_RH:$PYTHONPATH"
+$(head -$SLURM_ARRAY_TASK_ID HPC_scenario_runs/calib_ary_bfs_launch_5nbfs.cmd | tail -1)
 
 
