@@ -332,7 +332,7 @@ class Visual_Settings:
             # ('NEIGUNG_share_used',      10, ),
             ], 
         'n_cols_catg_charact': 2,
-        'max_n_rows_catg_charact': 2, 
+        'max_n_rows_catg_charact': 8, 
         'cols_catg_charact_inst': [
             'GKLAS',
             # 'GSTAT',
@@ -4306,14 +4306,14 @@ class Visualization:
                             agg_bynode_subdf = agg_bynode_df_by_iter.filter(pl.col('grid_node') == node).to_pandas()
                             fig_agg.add_trace(go.Scatter(x=agg_bynode_subdf['n_iter'], y=agg_bynode_subdf['feedin_atnode_loss_kW'], name=f'node {node} loss_kW', mode='lines+markers', line=dict(color=unique_node_color_map[node], width=1,), marker=dict(symbol='cross',), opacity=opacity_value, stackgroup=scen,))
 
-                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['n_EGID_pvinst'],                          name='n pvinst insample',               mode='lines+markers', line=dict(color=color_pal[color_pal_idx-4],),                 marker=dict(symbol='circle',),  ))                    
-                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=gridnode_df_by_iter['TotalPower'],                      name='TotalPower',                      mode='lines+markers', line=dict(color=color_pal[color_pal_idx-6],),                 marker=dict(symbol='circle',),  ))                    
-                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],                      name='ratio n pvinst cumulative',       mode='lines+markers', line=dict(color=color_pal[color_pal_idx-5],),                 marker=dict(symbol='circle',), yaxis = 'y2'  ))                    
-
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['feedin_atnode_loss_kW'],           name='Total feedin_atnode_loss_kW',     mode='lines',         line=dict(color=color_pal[color_pal_idx-3],),                 marker=dict(symbol='cross',),   ))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['demand_atnode_kW'] / 10,           name='Total demand_atnode_kW (1/10)',   mode='lines',         line=dict(color=color_pal[color_pal_idx-2],),                 marker=dict(symbol='cross',),   ))
-                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['feedin_atnode_kW'],                name='Total feedin_atnode_kW',          mode='lines',         line=dict(color=color_pal[color_pal_idx-1],),                 marker=dict(symbol='cross',),   ))
                     fig_agg.add_trace(go.Scatter(x=[None,], y=[None,], name=scen, opacity=0, ))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['demand_atnode_kW'] / 10,           name='Total demand_atnode_kW (1/10)',   mode='lines',         line=dict(color=color_pal[color_pal_idx-1],),                 marker=dict(symbol='cross',),   ))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['feedin_atnode_taken_kW'],          name='Total feedin_atnode_taken_kW',    mode='lines',         line=dict(color=color_pal[color_pal_idx-2],),                 marker=dict(symbol='cross',),   ))
+                    fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['feedin_atnode_loss_kW'],           name='Total feedin_atnode_loss_kW',     mode='lines',         line=dict(color=color_pal[color_pal_idx-3],),                 marker=dict(symbol='cross',),   ))
+                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['n_EGID_pvinst'],                          name='n pvinst insample',               mode='lines+markers', line=dict(color=color_pal[color_pal_idx-4],),                 marker=dict(symbol='circle',),  ))                    
+                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],                      name='ratio n pvinst cumulative',       mode='lines+markers', line=dict(color=color_pal[color_pal_idx-5],),                 marker=dict(symbol='circle',), yaxis = 'y2'  ))                    
+                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=gridnode_df_by_iter['TotalPower'],                      name='TotalPower',                      mode='lines+markers', line=dict(color=color_pal[color_pal_idx-6],),                 marker=dict(symbol='circle',),  ))                    
+
                     # fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['feedin_atnode_taken_kW'],          name='Total feedin_atnode_taken_kW',    mode='lines',         line=dict(color=color_pal[color_pal_idx-3],),                 marker=dict(symbol='cross',),   ))
                     # fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_loss_ratio'],            name='netfeedin_loss_ratio',            mode='lines',         line=dict(color=color_pal[color_pal_idx-5],),                 marker=dict(symbol='circle',),  yaxis = 'y2'))
                     # fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['holding_capacity_mean_of_mean'],   name='Holding Capac mean of mean',      mode='lines+markers', line=dict(color=color_pal[color_pal_idx-7],),                 marker=dict(symbol='diamond',), yaxis = 'y2'))
@@ -4324,6 +4324,7 @@ class Visualization:
                         [
                             'n_iter',
                             'feedin_atnode_loss_kW',
+                            'feedin_atnode_taken_kW',
                             'demand_atnode_kW',
                             'feedin_atnode_kW',
                             'TotalPower',
@@ -8068,24 +8069,35 @@ if __name__ == '__main__':
 
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
-                '*.txt',
-                '*old_vers*', 
+                '*.txt', '*old_vers*', 
                 # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_2nbf_10y_compare3_*max*',
+                'debug_4nodes_max',
+                'debug_4nodes_max_wGBAUJminmax',
+                'debug_4nodes_max__preprep_before_Feb26',
             ],
             # plot_show                          = False,
-            # remove_old_plot_scen_directories   = True,  
-            # remove_old_plots_in_visualization  = True,  
+            remove_old_plot_scen_directories   = True,  
+            remove_old_plots_in_visualization  = True,  
             # remove_old_csvs_in_visualization   = True,
             # reduce_information_content         = True,
 
-            # save_plot_by_scen_directory        = False, 
+            save_plot_by_scen_directory        = False, 
             cut_timeseries_to_zoom_hour        = True,
             add_day_night_HOY_bands            = True,
             default_map_zoom                   = 10,
             default_map_center                 = [47.46, 7.58],
+
+            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            # plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,      False],
+            # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+
+            # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
+            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
 
 
             # -- def plot_ALL_mcalgorithm(self,): --------- [run plot,  show plot,  show all scen] ---------
@@ -8104,7 +8116,7 @@ if __name__ == '__main__':
 
             # plot_ind_line_productionHOY_per_EGID_TF        = [True,      True,       False]  ,
             # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
-            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
             # plot_ind_map_topo_egid_TF                      = [True,      True,       False]  ,
             # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
             # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 

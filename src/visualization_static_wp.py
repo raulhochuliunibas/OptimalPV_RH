@@ -380,48 +380,49 @@ class static_plotter_class:
                 # For each iteration, aggregate the data
                 for iter_val in df_scen_col['iter'].unique():
                     df_iter = df_scen_col[df_scen_col['iter'] == iter_val]
-                    
+                    total_count = df_iter['count'].sum()
+
                     # Aggregate each defined group
                     for label, categories_list in category_groups.items():
                         count_sum = df_iter[df_iter['category'].isin(categories_list)]['count'].sum()
                         plot_data.append({
                             'iter': iter_val,
                             'group': label,
-                            'count': count_sum
+                            'share': count_sum / total_count if total_count > 0 else 0
                         })
-                    
+
                     # Calculate "rest" for categories not in the dict
                     rest_count = df_iter[~df_iter['category'].isin(all_included_categories)]['count'].sum()
                     if rest_count > 0:
                         plot_data.append({
                             'iter': iter_val,
                             'group': 'rest',
-                            'count': rest_count
+                            'share': rest_count / total_count if total_count > 0 else 0
                         })
-                
+
                 # Convert to DataFrame
                 df_plot = pd.DataFrame(plot_data)
-                
+
                 if df_plot.empty:
                     continue
-                
+
                 # Create the plot
                 plt.figure(figsize=(plot_width, plot_height))
-                
+
                 # Plot each group as a line
                 for group in df_plot['group'].unique():
                     df_group = df_plot[df_plot['group'] == group]
                     sns.lineplot(
                         data=df_group,
                         x='iter',
-                        y='count',
+                        y='share',
                         label=group,
                         marker='o',
                         linewidth=1.5
                     )
-                
+
                 plt.xlabel('Iteration')
-                plt.ylabel('Count')
+                plt.ylabel('Share')
                 plt.title(f'{col_name}')
                 plt.legend(title = None)
                 
@@ -977,33 +978,34 @@ if __name__ == "__main__":
         plotter.SustFuturePresent_miscellaneous()
 
         print('\n--- demand profiles ---')
-        plotter.plot_ind_line_demand(
-            name_dir_export='DEV_pvalloc_10nbfs_SUB_max_OLDpreprep',
-            hours_incl_list=list(range(4920, 4920 + 7*24)),
-            export_name='example_demand_BU',
-            n_egids_by_group = {
-                'sfh_rur_hpT': (1, 'SFH', 'Rural',     'heatpump'),
-                'sfh_rur_hpF': (1, 'SFH', 'Rural',     'no_heatpump'),
-                # 'sfh_sub_hpT': (0, 'SFH', 'Suburban',  'heatpump'),
-                # 'sfh_urb_hpF': (0, 'SFH', 'Urban',     'no_heatpump'),
-                # 'sfh_urb_hpT': (0, 'SFH', 'Urban',     'heatpump'),
-                # 'sfh_sub_hpF': (0, 'SFH', 'Suburban',  'no_heatpump'),
+        # plotter.plot_ind_line_demand(
+        #     name_dir_export='DEV_pvalloc_10nbfs_SUB_max_OLDpreprep',
+        # #     name_dir_export='pvalloc_29nbfs_LRG2_max',
+        #     hours_incl_list=list(range(4920, 4920 + 7*24)),
+        #     export_name='example_demand_BU',
+        #     n_egids_by_group = {
+        #         'sfh_rur_hpT': (1, 'SFH', 'Rural',     'heatpump'),
+        #         'sfh_rur_hpF': (1, 'SFH', 'Rural',     'no_heatpump'),
+        #         # 'sfh_sub_hpT': (0, 'SFH', 'Suburban',  'heatpump'),
+        #         # 'sfh_urb_hpF': (0, 'SFH', 'Urban',     'no_heatpump'),
+        #         # 'sfh_urb_hpT': (0, 'SFH', 'Urban',     'heatpump'),
+        #         # 'sfh_sub_hpF': (0, 'SFH', 'Suburban',  'no_heatpump'),
 
-                # 'mfh_rur_hpT': (1, 'MFH', 'Rural',     'heatpump'),
-                # 'mfh_rur_hpF': (1, 'MFH', 'Rural',     'no_heatpump'),
-                # 'mfh_sub_hpT': (0, 'MFH', 'Suburban',  'heatpump'),
-                # 'mfh_sub_hpF': (0, 'MFH', 'Suburban',  'no_heatpump'),
-                # 'mfh_urb_hpT': (0, 'MFH', 'Urban',     'heatpump'),
-                # 'mfh_urb_hpF': (0, 'MFH', 'Urban',     'no_heatpump'),
-                             },
-            # select_egids = [
-            #     '101221005', # MFH, Rural, heatpump
-            #     '245048874', # SFH, Suburban, heatpump
-            # ],
-            # export_plots=False,
-            plot_width_func=4,
-            plot_height_func=4,
-        )
+        #         # 'mfh_rur_hpT': (1, 'MFH', 'Rural',     'heatpump'),
+        #         # 'mfh_rur_hpF': (1, 'MFH', 'Rural',     'no_heatpump'),
+        #         # 'mfh_sub_hpT': (0, 'MFH', 'Suburban',  'heatpump'),
+        #         # 'mfh_sub_hpF': (0, 'MFH', 'Suburban',  'no_heatpump'),
+        #         # 'mfh_urb_hpT': (0, 'MFH', 'Urban',     'heatpump'),
+        #         # 'mfh_urb_hpF': (0, 'MFH', 'Urban',     'no_heatpump'),
+        #                      },
+        #     # select_egids = [
+        #     #     '101221005', # MFH, Rural, heatpump
+        #     #     '245048874', # SFH, Suburban, heatpump
+        #     # ],
+        #     # export_plots=False,
+        #     plot_width_func=4,
+        #     plot_height_func=4,
+        # )
 
     
     # BU case
