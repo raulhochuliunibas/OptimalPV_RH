@@ -92,7 +92,6 @@ class PVAllocScenario_Settings:
     T0_year_prediction: int                     = 2024                          # year for the prediction of the future construction capacity
     # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
     months_lookback: int                        = 12                           # number of months to look back for the prediction of the future construction capacity
-    months_prediction: int                      = 12                         # number of months to predict the future construction capacity
     
     recreate_topology: bool                     = True
     recalc_economics_topo_df: bool              = True
@@ -131,7 +130,8 @@ class PVAllocScenario_Settings:
                                                                 # '1276', # GKLAS - 1276: structure for animal keeping (most likely still one owner)
                                                                 # '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
                                                                 ])
-    GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2999])     # GBAUJ_max value is replaced later with T0_year_prediction
+    GWRspec_GBAUJ_minmax: List[int]                     = field(default_factory=lambda: [1950, 2024])     # GBAUJ_max value is replaced later with T0_year_prediction
+    apply_GWRspec_GBAUJ_minmax_TF: bool                 = False
     
 
     # weather_specs
@@ -145,6 +145,7 @@ class PVAllocScenario_Settings:
     WEAspec_flat_diffuse_rad_factor: int                = 1
 
     # constr_capacity_specs
+    months_prediction: int                      = 12                         # number of months to predict the future construction capacity
     CSTRspec_capacity_type: str                         ='ep2050_zerobasis' # hist_constr_capa_year / hist_constr_capa_month / ep2050_zerobasis
     # CSTRspec_iter_time_unit: str                        = 'year'   # month (not really feasible), year
     CSTRspec_ann_capacity_growth: float                 = 0.05
@@ -263,7 +264,9 @@ class PVAllocScenario_Settings:
     TECspec_estim_pvinst_cost_correctionfactor: float       = 1
     TECspec_opt_max_flaeche_factor: float                   = 1.5
     TECspec_add_heatpump_demand_TF: bool                    = True   
-    TECspec_heatpump_indicator: List[str]                   = field(default_factory=lambda: ['7400', '7410'] )
+    TECspec_heatpump_indicator: List[str]                   = field(default_factory=lambda: ['7410',    # '7410' heatpump for 1 building, 
+                                                                                            #  '7411'     # '7411' heatpump for multiple buildings, 
+                                                                                             ] ) 
     TECspec_heatpump_months_factor: List[tuple]             = field(default_factory=lambda: [
                                                             (9 ,  2.0),                                                            
                                                             (10,  4.0),
@@ -1024,9 +1027,19 @@ class PVAllocScenario:
                                                                            
 
             # CLEAN UP interim files of MC run ==========
+            # topo_time_subdf
             files_to_remove_paths =  glob.glob(f'{self.sett.mc_iter_path}/topo_subdf_*.parquet')
             for f in files_to_remove_paths:
                 os.remove(f)
+            
+            # all CSVs in pred_gridprem_node_by_M
+            gridnode_gridprem_by_M_paths = glob.glob(f'{self.sett.mc_iter_path}/pred_gridprem_node_by_M/*.csv')
+            for path in files_to_remove_paths:
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    print(f'Failed to remove obsolete CSV file in: {path}. Error: {e}')
+            
 
             mc_iter_time = datetime.datetime.now() - start_mc_iter
             subchapter_to_logfile(f'END MC{mc_iter:0{max_digits}}, runtime: {mc_iter_time} (hh:mm:ss.s)', self.sett.log_name)
@@ -2453,12 +2466,19 @@ class PVAllocScenario:
                 gwr.loc[gwr['GBAUJ'] == '', 'GBAUJ'] = 0  # transform GBAUJ to apply filter and transform back
                 gwr['GBAUJ'] = gwr['GBAUJ'].astype(int)
                 # filtering for self.sett.GWR_specs
-                gwr = gwr.loc[(gwr['GSTAT'].isin(self.sett.GWRspec_GSTAT)) &
-                            (gwr['GKLAS'].isin(self.sett.GWRspec_GKLAS)) 
-                            # exclude GBAUJ, because missing in a lot of instances -> droped observations predominantly in rural areas
-                            # (gwr['GBAUJ'] >= self.sett.GWRspec_GBAUJ_minmax[0]) &
-                            # (gwr['GBAUJ'] <= self.sett.GWRspec_GBAUJ_minmax[1])
-                            ]
+                if self.sett.apply_GWRspec_GBAUJ_minmax_TF:
+                    gwr = gwr.loc[(gwr['GSTAT'].isin(self.sett.GWRspec_GSTAT)) &
+                                (gwr['GKLAS'].isin(self.sett.GWRspec_GKLAS)) &
+                                (gwr['GBAUJ'] >= self.sett.GWRspec_GBAUJ_minmax[0]) &  # exclude GBAUJ, because missing in a lot of instances -> droped observations predominantly in rural areas
+                                (gwr['GBAUJ'] <= self.sett.GWRspec_GBAUJ_minmax[1])
+                                ]
+                elif not self.sett.apply_GWRspec_GBAUJ_minmax_TF:
+                    gwr = gwr.loc[(gwr['GSTAT'].isin(self.sett.GWRspec_GSTAT)) &
+                                (gwr['GKLAS'].isin(self.sett.GWRspec_GKLAS)) 
+                                # exclude GBAUJ, because missing in a lot of instances -> droped observations predominantly in rural areas
+                                # (gwr['GBAUJ'] >= self.sett.GWRspec_GBAUJ_minmax[0]) &
+                                # (gwr['GBAUJ'] <= self.sett.GWRspec_GBAUJ_minmax[1])
+                                ]
                 gwr['GBAUJ'] = gwr['GBAUJ'].astype(str)
                 gwr.loc[gwr['GBAUJ'] == '0', 'GBAUJ'] = ''
                 # because not all buldings have dwelling information, need to remove dwelling columns and rows again (remove duplicates where 1 building had multiple dwellings)
@@ -2837,7 +2857,7 @@ class PVAllocScenario:
                         gwaerzh1  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH1')][0]
                         gwaerzh2  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH2')][0]
                         genh2     = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GENH2')][0]
-                        if any([gwaerzh_genh in self.sett.TECspec_heatpump_indicator for gwaerzh_genh in [gwaerzh1, gwaerzh2, ]]):
+                        if any([tech in self.sett.TECspec_heatpump_indicator for tech in [gwaerzh1, gwaerzh2, ]]):
                             heating_system = 'heatpump'
                         else:
                             heating_system = 'no_heatpump'
@@ -3257,13 +3277,21 @@ class PVAllocScenario:
                     (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
                     (pl.col('GKLAS').is_in(GKLAS_adj_list)) ) \
                 .select('nEGID').sum().item()
-            # nEGIDs_all_SAMPLE = gwr_all_building_df \
-            #     .filter( 
-            #         (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
-            #         (pl.col('GKLAS').is_in(GKLAS_adj_list)) ) \
-            #     .select('EGID').count().item()
-            # nEGIDs_all_SAMPLE / nEGIDs_all_CH
-            nEGIDs_SAMPLE = len(topo)
+
+            # nEGIDs_SAMPLE = len(topo)
+            nEGIDs_SAMPLE = gwr_allch_summary \
+                .filter( 
+                    (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
+                    (pl.col('GKLAS').is_in(GKLAS_adj_list)) & 
+                    (pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers)) ) \
+                .select('nEGID').sum().item()
+            # identical coutcome
+            # gwr_in_scenbfs = gwr_all_building_df.filter(
+            #     (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
+            #     (pl.col('GKLAS').is_in(GKLAS_adj_list)) & 
+            #     (pl.col('GGDENR').is_in(self.sett.bfs_numbers))
+            #     )
+            # gwr_in_scenbfs.shape[0]
             
             epzb_capa_df['ratio_sample_allCH'] = nEGIDs_SAMPLE / nEGIDs_all_CH
             epzb_capa_df['epzb_capa_sample_kw'] = epzb_capa_df['epzb_capa_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1) * epzb_capa_df['ratio_sample_allCH'] * epzb_scaling_factor
@@ -3776,12 +3804,26 @@ class PVAllocScenario:
 
 
         def sanity_check_cleanup_obsolete_data(self,):
+
+            # remove topo_time_subdf in Sanity Check Allocation
             topo_time_paths_in_sanity_dir = glob.glob(f'{self.sett.sanity_check_path}/topo_subdf*.parquet')
             for path in topo_time_paths_in_sanity_dir:
                 try: 
                     os.remove(path)
                 except Exception as e:
                     print(f'Failed to remove obsolete topo subdf file in sanity dir: {path}. Error: {e}')
+
+
+            # remove CSVs in  topo_time_subdf 
+            topo_time_paths_csvs = glob.glob(f'{self.sett.name_dir_export_path}/topo_time_subdf/*topo_subdf*.csv')
+            topo_time_paths_csvs = topo_time_paths_csvs[:-1]
+            for path in topo_time_paths_csvs: 
+                try: 
+                    os.remove(path)
+                except Exception as e:
+                    print(f'Failed to remove obsolete topo subdf.CSV file in: {path}. Error: {e}')
+
+
 
  
     # MC ALGORITHM ---------------------------------------------------------------------------
@@ -5497,7 +5539,7 @@ if __name__ == '__main__':
         return replace(default_scen, **kwargs)
 
     # mini scenario dev + debug
-    bfs_mini_name = 'pvalloc_2nbf_10y_compare3'
+    bfs_mini_name = 'debug_5nbfs'
     pvalloc_mini_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_test_DEFAULT',
             bfs_numbers                                          = [
                                                         2641, 2615,
@@ -5518,7 +5560,7 @@ if __name__ == '__main__':
 
             T0_year_prediction                                   = 2022,
             months_lookback                                      = 12,
-            months_prediction                                    = 30,
+            months_prediction                                    = 240,
             TECspec_add_heatpump_demand_TF                       = True,   
             ALGOspec_topo_subdf_partitioner                      = 250, 
             ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
@@ -5533,6 +5575,7 @@ if __name__ == '__main__':
         2762, 2771, 
         # critical nodes - ew 
         # 2768, 2769,
+        2621,
     ]    
 
 
@@ -5555,15 +5598,80 @@ if __name__ == '__main__':
         #     CSTRspec_ep2050_rescale_fact    = 0.75,
         # ), 
         
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_gridopt_max',
-            bfs_numbers                     = bfs_mini_list,
-            run_pvalloc_initalization_TF    = True,
-            run_pvalloc_mcalgorithm_TF      = False,
-            run_gridoptimized_orderinst_TF  = True,
-            run_gridoptimized_expansion_TF  = True,
-            # OPTIMspecs_gridnode_subsample           = 'all_nodes_pyparallel', 
-            OPTIMspecs_gridnode_subsample           = 'max_node', 
-            OPTEXPApecs_apply_gridoptim_order_TF     = True,
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_NOgbauj',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            name_dir_import                 = 'split_mini_geodata__5nbfs_NOgbauj',
+            # mini_sub_model_TF               = True,
+            # mini_sub_model_grid_nodes      = [
+            #                                 '838',
+            #                                 '842',
+            #                                 '849',
+            #                                 '843',
+            # ],
+            # mini_sub_model_by_X             = 'by_gridnode',
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            name_dir_import                 = 'split_mini_geodata__5nbfs_Wgbauj',
+            # mini_sub_model_TF               = True,
+            # mini_sub_model_grid_nodes      = [
+            #                                 '838',
+            #                                 '842',
+            #                                 '849',
+            #                                 '843',
+            # ],
+            # mini_sub_model_by_X             = 'by_gridnode',
+            apply_GWRspec_GBAUJ_minmax_TF   = True, 
+        ), 
+
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj__preprep_before_Feb26',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            # name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26',
+            name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI__before_Feb26',
+            GWRspec_building_cols           = ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                                                'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                                                'GEBF', 'GAREA', 
+                                                'GWAERZH1', 'GENH1',],
+            # mini_sub_model_TF               = True,
+            # mini_sub_model_grid_nodes      = [
+            #                                 '838',
+            #                                 '842',
+            #                                 '849',
+            #                                 '843',
+            # ],
+            # mini_sub_model_by_X             = 'by_gridnode',
+            
+
+            ),
+            
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj__EGID_gwradded_T',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            name_dir_import                 = 'split_mini_geodata__5nbfs_Wgbauj__EGID_gwradded_T',
+            # mini_sub_model_TF               = True,
+            # mini_sub_model_grid_nodes      = [
+            #                                 '838',
+            #                                 '842',
+            #                                 '849',
+            #                                 '843',
+            # ],
+            # mini_sub_model_by_X             = 'by_gridnode',
+            apply_GWRspec_GBAUJ_minmax_TF   = True, 
         ), 
 
     ]
