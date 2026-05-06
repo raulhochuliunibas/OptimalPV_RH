@@ -39,11 +39,13 @@ class DataAggScenario_Settings:
     bfs_numbers: List[int] = field(default_factory=lambda: [2761,])                                      # list of municipalites to select for allocation (only used if kt_numbers == 0)
     year_range: List[int] = field(default_factory=lambda: [2021, 2022])                             # range of years to import
 
-    split_data_geometry_AND_slow_api: bool = False
+    # split_data_geometry_AND_slow_api: bool = False
+    split_data_geometry: bool = False
+    import_slow_api: bool = False
     rerun_localimport_and_mappings: bool = True               # F: use existi ng parquet files, T: recreate parquet files in data prep
     reextend_fixed_data: bool = True               # F: use existing exentions calculated beforehand, T: recalculate extensions (e.g. pv installation costs per partition) again
 
-    debug__EGID_gwradded_isnull_continues_TF: bool = True
+    debug__EGID_gwradded_isnull_continues_TF: bool = False
 
     GWR_building_cols: List[str]    = field(default_factory=lambda: ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE',
                                             'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ',
@@ -67,7 +69,8 @@ class DataAggScenario_Settings:
                                             '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
                                             ])
     # GBAUJ not applicable because it drops too many houses with GBAUJ: NA, which are still existing, GSTAT: 1004
-    # GWR_GBAUJ_minmax: List[int]     = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
+    GWR_GBAUJ_minmax: List[int]     = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
+    apply_GBAUJ_TF: bool            = False
     GWR_GWAERZH: List[str]          = field(default_factory=lambda: ['7410', '7411',])                       # GWAERZH - 7410: heat pumpt for 1 building, 7411: heat pump for multiple buildings
     GWR_AREtypology : Dict          = field(default_factory=lambda:  {
                                             'Urban': [1, 2, 4, ],
@@ -87,7 +90,7 @@ class DataAggScenario_Settings:
                                             'SFH': ['1110', ],  # GKLAS - 1110: only 1 living space per building
                                             'MFH': [
                                                 '1121',  # GKLAS - 1121: Double-, row houses with each appartment (living unit) having it's own roof;
-                                                '1122',  # GKLAS - 1122: Buildings with three or more appartments
+                                                '   ',  # GKLAS - 1122: Buildings with three or more appartments
                                                 '1276',  # GKLAS - 1276: structure for animal keeping (most likely still one owner)
                                                 '1278',  # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
                                                 ],
@@ -98,7 +101,7 @@ class DataAggScenario_Settings:
 
     SOLKAT_col_partition_union: str = 'SB_UUID'                   # column name used for the union of partitions
     SOLKAT_GWR_EGID_buffer_size: int = 10                          # buffer size in meters for the GWR selection
-    SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique: bool = False
+    SOLKAT_extend_dfuid_for_missing_EGIDs_to_be_unique: bool = False    # False: df_uid can have duplicates in solkat if multiple GWR EGIDs where matched to the same shape. but this way, the geometry shapes can still be matched with the solkat_month etc.
     SOLKAT_cols_adjust_for_missEGIDs_to_solkat: List[str] = field(default_factory=lambda: ['FLAECHE', 'STROMERTRAG', 'GSTRAHLUNG', 'MSTRAHLUNG' ])
     SOLKAT_test_loop_optim_buff_size_TF: bool = False
     SOLKAT_test_loop_optim_buff_arang: List[float] = field(default_factory=lambda: [0, 10, 0.1])
@@ -185,10 +188,11 @@ class DataAggScenario:
 
 
         # RUN DATA AGGREGATION ---------------------------------------------------
-        if self.sett.split_data_geometry_AND_slow_api:
+        if self.sett.split_data_geometry:
             subchapter_to_logfile('pre-prep data: SPLIT DATA GEOMETRY + IMPORT SLOW APIs', self.sett.log_name)
             self.split_data_geometry()
 
+        if self.sett.import_slow_api:
             subchapter_to_logfile('pre-prep data: API GM by EWR MAPPING', self.sett.log_name)
             self.api_pvtarif_gm_ewr_Mapping()
             
@@ -335,19 +339,8 @@ class DataAggScenario:
             
 
 
-            # SUBSET for BSBLSO case ========================================================
+            # SUBSET for BSBLSO + DEBUG case ========================================================
             bsblso_bfs_numbers = get_bfs_from_ktnr([11, 12, 13,], self.sett.data_path, self.sett.log_name)
-
-            # DEBUGGING -------------------
-            checkpoint_to_logfile('subset solkat for bsblso case', self.sett.log_name, 5, self.sett.show_debug_prints)
-            debugbfs_numbers = ['2615', '2614' ]
-            solkat_debugbfs_geo = copy.deepcopy(solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(debugbfs_numbers)])
-            if solkat_debugbfs_geo.shape[0] > 0:
-                with open (f'{self.sett.data_path}/input_split_data_geometry/solkat_debugbfs_geo.geojson', 'w') as f:
-                    f.write(solkat_debugbfs_geo.to_json())
-                checkpoint_to_logfile('-- exported solkat_debugbfs_geo.geojson', self.sett.log_name, 5, self.sett.show_debug_prints)
-            else:
-                print('no rows for debug bfs numbers found in solkat_geo')
 
             # PV -------------------
             checkpoint_to_logfile('subset pv for bsblso case', self.sett.log_name, 5, self.sett.show_debug_prints)
@@ -395,6 +388,56 @@ class DataAggScenario:
             # export
             gwr_bsblso_pq.to_parquet(f'{self.sett.data_path}/input_split_data_geometry/gwr_bsblso_pq.parquet')
             gwr_bsblso_gdf.to_file(f'{self.sett.data_path}/input_split_data_geometry/gwr_bsblso_gdf.geojson', driver='GeoJSON')
+
+
+
+            # DEBUGGING -------------------
+            # SOLKAT
+            checkpoint_to_logfile('subset solkat for bsblso case', self.sett.log_name, 5, self.sett.show_debug_prints)
+            debugbfs_numbers = [
+                '2615', '2614', 
+                '2761', '2785',
+                '2621',
+                ]
+
+            # SOLKAT
+            solkat_debugbfs_geo = copy.deepcopy(solkat_geo.loc[solkat_geo['BFS_NUMMER'].isin(debugbfs_numbers)])
+            if solkat_debugbfs_geo.shape[0] > 0:
+                with open (f'{self.sett.data_path}/input_split_data_geometry/solkat_debugbfs_geo.geojson', 'w') as f:
+                    f.write(solkat_debugbfs_geo.to_json())
+                checkpoint_to_logfile('-- exported solkat_debugbfs_geo.geojson', self.sett.log_name, 5, self.sett.show_debug_prints)
+            else:
+                print('no rows for debug bfs numbers found in solkat_geo')
+            
+            # GWR
+            query_columns = self.sett.GWR_building_cols
+            query_columns_str = ', '.join(query_columns)
+            query_bfs_numbers = ', '.join([str(i) for i in debugbfs_numbers])
+
+            conn = sqlite3.connect(f'{self.sett.data_path}/input/GebWohnRegister.CH/data.sqlite')
+            cur = conn.cursor()
+            cur.execute(f'SELECT {query_columns_str} FROM building WHERE GGDENR IN ({query_bfs_numbers})')
+            sqlrows = cur.fetchall()
+            conn.close()
+            checkpoint_to_logfile('sql query ALL BUILDING done', self.sett.log_name, 5, self.sett.show_debug_prints)
+
+            gwr_debugbfs_pq= pd.DataFrame(sqlrows, columns=query_columns)
+
+            # transform to gdf
+            def gwr_to_gdf(df):
+                df = df.loc[(df['GKODE'] != '') & (df['GKODN'] != '')]
+                df[['GKODE', 'GKODN']] = df[['GKODE', 'GKODN']].astype(float)
+                df['geometry'] = df.apply(lambda row: Point(row['GKODE'], row['GKODN']), axis=1)
+                gdf = gpd.GeoDataFrame(df, geometry='geometry')
+                gdf.crs = 'EPSG:2056'
+                return gdf
+            gwr_debugbfs_gdf = gwr_to_gdf(gwr_debugbfs_pq)
+
+            # export
+            gwr_debugbfs_pq.to_parquet(f'{self.sett.data_path}/input_split_data_geometry/gwr_debugbfs_pq.parquet')
+            gwr_debugbfs_gdf.to_file(f'{self.sett.data_path}/input_split_data_geometry/gwr_debugbfs_gdf.geojson', driver='GeoJSON')
+
+
 
 
             # Copy Log File to input_split_data_geometry folder
@@ -731,11 +774,15 @@ class DataAggScenario:
             gwr_mrg2 = gwr_mrg1.filter(
                 pl.col("GKLAS").is_in(self.sett.GWR_GKLAS)
             )
-            # gwr_mrg3 = gwr_mrg2.filter(
-            #     (pl.col("GBAUJ") >= self.sett.GWR_GBAUJ_minmax[0]) &
-            #     (pl.col("GBAUJ") <= self.sett.GWR_GBAUJ_minmax[1])
-            # )
-            gwr = gwr_mrg2
+            if self.sett.apply_GBAUJ_TF: 
+                gwr_mrg3 = gwr_mrg2.filter(
+                    (pl.col("GBAUJ") >= self.sett.GWR_GBAUJ_minmax[0]) &
+                    (pl.col("GBAUJ") <= self.sett.GWR_GBAUJ_minmax[1])
+                )
+                gwr = gwr_mrg3
+
+            else:
+                gwr = gwr_mrg2
             
             checkpoint_to_logfile(f'check gwr AFTER filtering: {gwr["EGID"].n_unique()} unique EGIDs in gwr.shape {gwr.shape}, {round((gwr["EGID"].n_unique() )/gwr_mrg.shape[0],2)*100} %', self.sett.log_name, 3, True)
             print_to_logfile('\n', self.sett.summary_name)
@@ -805,7 +852,7 @@ class DataAggScenario:
             gwr_all_building_gdf = gwr_to_gdf(gwr_all_building_df_pd)
             gwr_all_building_gdf.to_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson', driver='GeoJSON')
 
-            if self.sett.split_data_geometry_AND_slow_api:
+            if self.sett.split_data_geometry:
                 gwr_gdf.to_file(f'{self.sett.data_path}/input_split_data_geometry/gwr_gdf.geojson', driver='GeoJSON')
 
 
@@ -841,6 +888,10 @@ class DataAggScenario:
 
             # AGGREGATION + EXPORT --------------------------------------
             gwr_allch_raw = gwr_allch_raw.rename({'GGDENR':'BFS_NUMMER'})
+            gwr_allch_raw = gwr_allch_raw.with_columns(
+                pl.when(pl.col('GAREA') == '').then(None).otherwise(pl.col('GAREA')).cast(pl.Float64).alias('GAREA')
+            )
+
             gwr_allch_summary = gwr_allch_raw.group_by(['BFS_NUMMER', 'GSTAT', 'GKLAS']).agg([
                 pl.col('EGID').count().alias('nEGID'),
                 pl.col('GAREA').sum().alias('GAREA'),
@@ -2404,50 +2455,105 @@ class DataAggScenario:
 if __name__ == '__main__':
     dataagg_scen_list = [
 
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_debug__EGID_added_continue_TRUE',
+        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
+        #     bfs_numbers = [
+        #         2614, 2615, # RUR
+        #         2761, 2785,       # SUB
+        #                    ],
+        #     year_range = [2022, 2024],
+        #     split_data_geometry_AND_slow_api = False,
+        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+        #     debug__EGID_gwradded_isnull_continues_TF = True,
+        # ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_debug__EGID_added_continue_FALSE',
+        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
+        #     bfs_numbers = [
+        #         2614, 2615, # RUR
+        #         2761, 2785,       # SUB
+        #                    ],
+        #     year_range = [2022, 2024],
+        #     split_data_geometry_AND_slow_api = False,
+        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+        #     debug__EGID_gwradded_isnull_continues_TF = False,
+        # ),
+
+
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'split_mini_geodata__5nbfs_NOgbauj',
+        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
+        #     bfs_numbers = [
+        #         2614, 2615, # RUR
+        #         2761, 2785,       # SUB
+        #         2621,
+        #                    ],
+        #     year_range = [2022, 2024],
+        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+        #     # split_data_geometry = True, 
+        #     # apply_GBAUJ_TF = True, 
+        #     debug__EGID_gwradded_isnull_continues_TF = False,
+        # ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'split_mini_geodata__5nbfs_Wgbauj',
+        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
+        #     bfs_numbers = [
+        #         2614, 2615, # RUR
+        #         2761, 2785,       # SUB
+        #         2621,
+        #                    ],
+        #     year_range = [2022, 2024],
+        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+        #     # split_data_geometry = True, 
+        #     apply_GBAUJ_TF = True, 
+        #     debug__EGID_gwradded_isnull_continues_TF = False,
+        # ),
+
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'split_mini_geodata__5nbfs_Wgbauj__EGID_gwradded_T',
+        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
+        #     bfs_numbers = [
+        #         2614, 2615, # RUR
+        #         2761, 2785,       # SUB
+        #         2621,
+        #                    ],
+        #     year_range = [2022, 2024],
+        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+        #     # split_data_geometry = True, 
+        #     apply_GBAUJ_TF = True, 
+        #     debug__EGID_gwradded_isnull_continues_TF = True,
+        # ),
+
+
+
         DataAggScenario_Settings(
-            name_dir_export = 'preprep_debug__EGID_added_continue_TRUE',
-            # kt_numbers = [13, 12, 11], # BL, BS, SO
-            bfs_numbers = [
-                2614, 2615, # RUR
-                2761, 2785,       # SUB
-                           ],
-            year_range = [2022, 2024],
-            split_data_geometry_AND_slow_api = False,
-            GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-
-            debug__EGID_gwradded_isnull_continues_TF = True,
-        ),
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_debug__EGID_added_continue_FALSE',
-            # kt_numbers = [13, 12, 11], # BL, BS, SO
-            bfs_numbers = [
-                2614, 2615, # RUR
-                2761, 2785,       # SUB
-                           ],
-            year_range = [2022, 2024],
-            split_data_geometry_AND_slow_api = False,
-            GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-
-            debug__EGID_gwradded_isnull_continues_TF = False,
-        ),
-
-
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26',
+            name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__May26',
             # kt_numbers = [13, 12, 11], # BL, BS, SO
             kt_numbers = [13, 11],
-            bfs_numbers = [
-                # 2761, 2768,
-                2546,  	 # Grenchen,  	
-                           ],
+            # bfs_numbers = [
+                # 2614, 2615, # RUR
+                # 2761, 2785,       # SUB
+                # 2621,
+                        #    ],
             year_range = [2015, 2024],
-            split_data_geometry_AND_slow_api = False,
+            # year_range = [2022, 2024],
+            split_data_geometry = True,
             GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
             SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
 
             debug__EGID_gwradded_isnull_continues_TF = False,
+            apply_GBAUJ_TF = False
         ),
 
 
