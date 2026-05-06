@@ -18,6 +18,38 @@ if True:
         return replace(default_scen, **kwargs)
 
 
+    pvalloc_mini_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_test_DEFAULT',
+            bfs_numbers                                          = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+                                                                    ],         
+            # mini_sub_model_TF                                    = True,
+            # mini_sub_model_by_X                                  = 'by_gridnode',
+            # mini_sub_model_ngridnodes                            = 8,
+            # mini_sub_model_grid_nodes                            = [
+            #                                                         '514', 
+            #                                                         '511', 
+            #                                                         '412', 
+            #                                                         '411', 
+            #                                                         '415', 
+            #                                                         ],
+            # mini_sub_model_nEGIDs                                = 500,
+            create_gdf_export_of_topology                        = True,
+            export_csvs                                          = False,
+
+            T0_year_prediction                                   = 2024,
+            months_lookback                                      = 12,
+            months_prediction                                    = 240,
+            TECspec_add_heatpump_demand_TF                       = True,   
+            ALGOspec_topo_subdf_partitioner                      = 250, 
+            ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
+            ALGOspec_subselec_filter_method                      = 'pooled',
+            CSTRspec_capacity_type                               = 'ep2050_zerobasis', 
+    )
+
+
+
     pvalloc_2nbfs_test_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_test_DEFAULT',
             bfs_numbers                                          = [
                                                                     # critical nodes - max npv
@@ -47,7 +79,7 @@ if True:
 
     pvalloc_Xnbfs_ARE_20y_DEFAULT = PVAllocScenario_Settings(
         name_dir_export = 'pvalloc_29nbfs_20y_DEFAULT',
-        name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26', 
+        name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID__May26', 
         bfs_numbers                                          = [
             # RURAL 
             2612, 2889, 2883, 2621, 2622,
@@ -75,6 +107,7 @@ if True:
         CSTRspec_ann_capacity_growth                         = 0.1,
         ALGOspec_subselec_filter_method                      = 'pooled',
         CSTRspec_capacity_type                               = 'ep2050_zerobasis',
+        CSTRspec_ep2050_rescale_fact                         = 0.5,
 
     ) 
 
@@ -163,6 +196,9 @@ if True:
         2617, 2611, 2788, 2619, 2783, 2477, 
     ]
     SUB_bfs_name = 'pvalloc_10nbfs_SUB'
+    SUB_bfs_name_MFHhp = 'pvalloc_SUB_MFHheatpump'
+    SUB_bfs_name_SFHhp = 'pvalloc_SUB_SFHheatpump'
+
     SUB_bfs_list = [
         # SUBURBAN - Breitenbach, Brislach, Himmelried, Grellingen, Duggingen, Pfeffingen, Aesch, Dornach
         2613, 2782, 2618, 2786, 2785, 
@@ -256,6 +292,206 @@ if True:
         ),
     ]
     
+    DEV_debug_scen_list = [
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs_NOgbauj__preprep_NOgbauj',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            name_dir_import                 = 'split_mini_geodata__5nbfs_NOgbauj',
+            apply_GWRspec_GBAUJ_minmax_TF   = False, 
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs_Wgbauj__preprep_NOgbauj',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            name_dir_import                 = 'split_mini_geodata__5nbfs_NOgbauj',
+            apply_GWRspec_GBAUJ_minmax_TF   = True, 
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs_Wgbauj__preprep_Wgbauj',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            name_dir_import                 = 'split_mini_geodata__5nbfs_Wgbauj',
+            apply_GWRspec_GBAUJ_minmax_TF   = True,
+        ),
+
+
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_NOgbauj__preprep_before_Feb26',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI__before_Feb26',
+            apply_GWRspec_GBAUJ_minmax_TF   = False, 
+            GWRspec_building_cols           = ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                                                'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                                                'GEBF', 'GAREA', 
+                                                'GWAERZH1', 'GENH1',],
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj__preprep_before_Feb26',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI__before_Feb26',
+            apply_GWRspec_GBAUJ_minmax_TF   = True, 
+            GWRspec_building_cols           = ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+                                                'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+                                                'GEBF', 'GAREA', 
+                                                'GWAERZH1', 'GENH1',],
+        ),
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj__EGID_gwradded_T',
+            bfs_numbers                     = [
+                2614, 2615, # RUR
+                2761, 2785, # SUB
+                2621,
+            ], 
+            name_dir_import                 = 'split_mini_geodata__5nbfs_Wgbauj__EGID_gwradded_T',
+            apply_GWRspec_GBAUJ_minmax_TF   = True, 
+        )
+
+    ]
+
+    DEV_newpreprep_SUB__scen_list = [
+        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_MFHhp}_max_epzb0_75', 
+        #               bfs_numbers                       = SUB_bfs_list,
+        #               TECspec_heatpump_indicator        = ['7410', '7411'],
+        #               CSTRspec_ep2050_rescale_fact      = 0.75,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_MFHhp}_max_epzb0_2', 
+        #               bfs_numbers                       = SUB_bfs_list,
+        #               TECspec_heatpump_indicator        = ['7410', '7411'],
+        #               CSTRspec_ep2050_rescale_fact      = 0.2,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_MFHhp}_max_epzb0_1', 
+        #               bfs_numbers                       = SUB_bfs_list,
+        #               TECspec_heatpump_indicator        = ['7410', '7411'],
+        #               CSTRspec_ep2050_rescale_fact      = 0.1,
+        # ),
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_MFHhp}_max', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_MFHhp}_max_epzb1', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+                      CSTRspec_ep2050_rescale_fact      = 1.0,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_MFHhp}_max_epzb0_5', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+                      CSTRspec_ep2050_rescale_fact      = 0.5,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_MFHhp}_max_hist_constrgr0_05', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.05,                         
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_MFHhp}_max_hist_constrgr0_01', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.01,                         
+        ),
+        
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_SFHhp}_max', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_SFHhp}_max_epzb1', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+                      CSTRspec_ep2050_rescale_fact      = 1.0,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_SFHhp}_max_epzb0_5', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+                      CSTRspec_ep2050_rescale_fact      = 0.5,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_SFHhp}_max_hist_constrgr0_05', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.05,                         
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{SUB_bfs_name_SFHhp}_max_hist_constrgr0_01', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.01,                         
+        ),
+
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_MFHhp}_max_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_MFHhp}_max_epzb1_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+                      CSTRspec_ep2050_rescale_fact      = 1.0,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_MFHhp}_max_epzb0_5_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+                      CSTRspec_ep2050_rescale_fact      = 0.5,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_MFHhp}_max_hist_constrgr0_05_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.05,                         
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_MFHhp}_max_hist_constrgr0_01_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', '7411'],
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.01,                         
+        ),
+        
+
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_SFHhp}_max_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_SFHhp}_max_epzb1_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+                      CSTRspec_ep2050_rescale_fact      = 1.0,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_SFHhp}_max_epzb0_5_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+                      CSTRspec_ep2050_rescale_fact      = 0.5,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_SFHhp}_max_hist_constrgr0_05_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.05,                         
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_OLDPREPREP, f'DEV2_{SUB_bfs_name_SFHhp}_max_hist_constrgr0_01_beforeFeb26', 
+                      bfs_numbers                       = SUB_bfs_list,
+                      TECspec_heatpump_indicator        = ['7410', ],
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.01,                         
+        ),
+
+
+
+    ]
+
     DEV_newpreprep__scen_list = [
 
         make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{RUR_bfs_name}_max', 
@@ -306,6 +542,38 @@ if True:
         make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{LRG_bfs_name}_max', 
                       bfs_numbers                       = LRG_bfs_list,
         ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{LRG_bfs_name}_max_epzb1', 
+                      bfs_numbers                       = LRG_bfs_list,
+                      CSTRspec_ep2050_rescale_fact      = 1.0,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{LRG_bfs_name}_max_epzb0_75', 
+                      bfs_numbers                       = LRG_bfs_list,
+                      CSTRspec_ep2050_rescale_fact      = 0.75,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{LRG_bfs_name}_max_epzb0_5', 
+                      bfs_numbers                       = LRG_bfs_list,
+                      CSTRspec_ep2050_rescale_fact      = 0.5,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{LRG_bfs_name}_max_epzb0_2', 
+                      bfs_numbers                       = LRG_bfs_list,
+                      CSTRspec_ep2050_rescale_fact      = 0.2,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{LRG_bfs_name}_max_epzb0_1', 
+                      bfs_numbers                       = LRG_bfs_list,
+                      CSTRspec_ep2050_rescale_fact      = 0.1,
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{LRG_bfs_name}_max_hist_constrgr0_05', 
+                      bfs_numbers                       = LRG_bfs_list,
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.05,                         
+        ),
+        make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{LRG_bfs_name}_max_hist_constrgr0_01', 
+                      bfs_numbers                       = LRG_bfs_list,
+                      CSTRspec_capacity_type            = 'hist_constr_capa_year',
+                      CSTRspec_ann_capacity_growth      = 0.01,                         
+        ),
+
+
         make_scenario(pvalloc_Xnbfs_ARE_20y_DEFAULT, f'DEV2_{LRG_bfs_name}_max_1hll', 
                       bfs_numbers                       = LRG_bfs_list,
                       GRIDspec_node_1hll_closed_TF      = True,
@@ -488,7 +756,7 @@ if True:
     ]
     
     # DEV_scen_list = DEV_newpreprep__scen_list + DEV_OLDpreprep__scen_list
-    DEV_scen_list = DEV_newpreprep__scen_list
+    DEV_scen_list = DEV_debug_scen_list
 
 
     RUR_scen_list = [
@@ -1063,7 +1331,7 @@ def get_subscen_list(sub_scen_str = 'test'):
     elif sub_scen_str == 'XLRG_final':
         return XLRG_final_scen_list
     elif sub_scen_str == 'DEV':
-        return DEV_scen_list
+        return DEV_newpreprep_SUB__scen_list
     else:
         return []
     
