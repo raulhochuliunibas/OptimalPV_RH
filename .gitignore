@@ -17,6 +17,9 @@ venv*
 .env_optimalpv_rh**
 
 
+# ignore files in exploratory comparisons
+exploratory_files/active/comparison_SUB_before_after_Feb26/*
+
 # ignore all model visualization files
 data/visualization/*
 data/visualizations/*

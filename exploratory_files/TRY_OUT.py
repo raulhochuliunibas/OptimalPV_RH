@@ -23,8 +23,219 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 # ------------------------------------------------------------------------------------------------------
+# save deprecated / faulty topo file
+topo_sub = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_sub.json", 'r'))
+topo_rur = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_DEV2_pvalloc_16nbfs_RUR_max.json", 'r'))
+topo_sub_befFeb26 = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_sub_beforeFeb26.json", 'r'))
+topo_rur_befFeb26 = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_rur_beforeFeb26.json", 'r'))
+
+constrcapa_sub = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_sub.parquet")
+constrcapa_rur = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_rur.parquet")
+constrcapa_sub_befFeb26 = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_sub_beforeFeb26.parquet")
+constrcapa_rur_befFeb26 = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_rur_beforeFeb26.parquet")
+
+gridnode_df_rur = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_rur.parquet")
+gridnode_df_sub = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_sub.parquet")
+gridnode_df_rur_befFeb26 = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_rur_beforeFeb26.parquet")
+gridnode_df_sub_befFeb26 = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_sub_beforeFeb26.parquet")
+
+
+def n_gridnode_in_topo_scen(topo):
+    return pd.Series( [v['grid_node'] for v in topo.values()]).nunique()
+
+n_gridnode_sub = n_gridnode_in_topo_scen(topo_sub)
+n_gridnode_rur = n_gridnode_in_topo_scen(topo_rur)
+n_gridnode_sub_befFeb26 = n_gridnode_in_topo_scen(topo_sub_befFeb26)
+n_gridnode_rur_befFeb26 = n_gridnode_in_topo_scen(topo_rur_befFeb26)
+
+def summary_gridthreshold_scen(gridnode_df, t='t_1', round_decimal = 4):
+    summary = (
+        round(gridnode_df.filter(pl.col('t') == t).select(pl.col(['kW_threshold'])).min()['kW_threshold'][0],  round_decimal),
+        round(gridnode_df.filter(pl.col('t') == t).select(pl.col(['kW_threshold'])).median()['kW_threshold'][0], round_decimal),
+        round(gridnode_df.filter(pl.col('t') == t).select(pl.col(['kW_threshold'])).mean()['kW_threshold'][0], round_decimal),
+        round(gridnode_df.filter(pl.col('t') == t).select(pl.col(['kW_threshold'])).max()['kW_threshold'][0], round_decimal),
+    )
+    return summary
+summary_gridthresh_sub = summary_gridthreshold_scen(gridnode_df_sub)
+summary_gridthresh_rur = summary_gridthreshold_scen(gridnode_df_rur)
+summary_gridthresh_sub_befFeb26 = summary_gridthreshold_scen(gridnode_df_sub_befFeb26)
+summary_gridthresh_rur_befFeb26 = summary_gridthreshold_scen(gridnode_df_rur_befFeb26)
+
+def nEGID_in_iter1(topo, date_iter1 = '2024-12-31'):
+    return len([k for k, v in topo.items() if v['pv_inst']['BeginOp'] ==  date_iter1]) # and v['pv_inst']['info_source'] == 'alloc_algorithm'])
+nEGID_iter1_sub = nEGID_in_iter1(topo_sub)
+nEGID_iter1_rur = nEGID_in_iter1(topo_rur)
+nEGID_iter1_sub_befFeb26 = nEGID_in_iter1(topo_sub_befFeb26)
+nEGID_iter1_rur_befFeb26 = nEGID_in_iter1(topo_rur_befFeb26)
+
+def capacity_in_iter(topo, date_iter1 = '2024-12-31'):
+        return sum([v['pv_inst']['TotalPower'] for k, v in topo.items() if v['pv_inst']['BeginOp'] ==  date_iter1 ]) #and v['pv_inst']['info_source'] == 'alloc_algorithm'])    
+instCap_iter1_sub = capacity_in_iter(topo_sub)
+instCap_iter1_rur = capacity_in_iter(topo_rur)
+instCap_iter1_sub_befFeb26 = capacity_in_iter(topo_sub_befFeb26)
+instCap_iter1_rur_befFeb26 = capacity_in_iter(topo_rur_befFeb26)
+
+
+scens = {
+    'SUB': {
+        'nEGID': len(topo_sub.keys()),
+        'n_grid_node': n_gridnode_sub,
+        'constracapa_kw': constrcapa_sub["constr_capacity_kw"][0],
+        'summary_grid_tresh': summary_gridthresh_sub,
+        'n_EGID_iter1': nEGID_iter1_sub,
+        'instCap_iter1': instCap_iter1_sub,
+    },
+    'RUR': {
+        'nEGID': len(topo_rur.keys()),
+        'n_grid_node': n_gridnode_rur,
+        'constracapa_kw': constrcapa_rur["constr_capacity_kw"][0],
+        'summary_grid_tresh': summary_gridthresh_rur,
+        'n_EGID_iter1': nEGID_iter1_rur,
+        'instCap_iter1': instCap_iter1_rur,
+    },
+    'SUB_befFeb26': {
+        'nEGID': len(topo_sub_befFeb26.keys()),
+        'n_grid_node': n_gridnode_sub_befFeb26,
+        'constracapa_kw': constrcapa_sub_befFeb26["constr_capacity_kw"][0],
+        'summary_grid_tresh': summary_gridthresh_sub_befFeb26,
+        'n_EGID_iter1': nEGID_iter1_sub_befFeb26,
+        'instCap_iter1': instCap_iter1_sub_befFeb26,
+    },
+    'RUR_befFeb26': {
+        'nEGID': len(topo_rur_befFeb26.keys()),
+        'n_grid_node': n_gridnode_rur_befFeb26,
+        'constracapa_kw': constrcapa_rur_befFeb26["constr_capacity_kw"][0],
+        'summary_grid_tresh': summary_gridthresh_rur_befFeb26,
+        'n_EGID_iter1': nEGID_iter1_rur_befFeb26,
+        'instCap_iter1': instCap_iter1_rur_befFeb26,
+    },
+}
+
+
+row_list = []
+for scen in [
+    ('abs', 'SUB', '__'),
+    # ('abs', 'RUR', '__'),
+    # ('compare', 'RUR', 'SUB'),
+    ('abs', 'SUB_befFeb26', '__'),
+    # ('abs', 'RUR_befFeb26', '__'),
+    # ('compare', 'RUR_befFeb26', 'SUB_befFeb26'),
+    ('compare', 'SUB_befFeb26', 'SUB'),
+]:
+    
+    if scen[0] == 'abs':
+        row = {
+            'scen' : scen[1],
+            'nEGID': scens[scen[1]]['nEGID'],
+            'n_grid_node': scens[scen[1]]['n_grid_node'],
+            'constracapa_kw': scens[scen[1]]['constracapa_kw'],
+            # 'min_gridthresh': scens[scen[1]]['summary_grid_tresh'][0],
+            # 'med_gridthresh': scens[scen[1]]['summary_grid_tresh'][1],
+            'mean_gridthresh': scens[scen[1]]['summary_grid_tresh'][2],
+            # 'max_gridthresh': scens[scen[1]]['summary_grid_tresh'][3],
+            'n_EGID_iter1': scens[scen[1]]['n_EGID_iter1'],
+            'instCap_iter1': scens[scen[1]]['instCap_iter1'],
+        }
+    elif scen[0] == 'compare':
+        row = {
+            'scen' : f'{scen[1]} / {scen[2]}',
+            'nEGID': scens[scen[1]]['nEGID'] / scens[scen[2]]['nEGID'],
+            'n_grid_node': scens[scen[1]]['n_grid_node'] / scens[scen[2]]['n_grid_node'],
+            'constracapa_kw': scens[scen[1]]['constracapa_kw'] / scens[scen[2]]['constracapa_kw'],
+            # 'min_gridthresh': scens[scen[1]]['summary_grid_tresh'][0] / scens[scen[2]]['summary_grid_tresh'][0],
+            # 'med_gridthresh': scens[scen[1]]['summary_grid_tresh'][1] / scens[scen[2]]['summary_grid_tresh'][1],
+            'mean_gridthresh': scens[scen[1]]['summary_grid_tresh'][2] / scens[scen[2]]['summary_grid_tresh'][2],
+            # 'max_gridthresh': scens[scen[1]]['summary_grid_tresh'][3] / scens[scen[2]]['summary_grid_tresh'][3],            
+            'n_EGID_iter1': scens[scen[1]]['n_EGID_iter1'] / scens[scen[2]]['n_EGID_iter1'],
+            'instCap_iter1': scens[scen[1]]['instCap_iter1'] / scens[scen[2]]['instCap_iter1'],
+        }
+    row_list.append(row)
+
+summary_df = pl.DataFrame(row_list)
+
+egid = '390391'
+topo_sub[egid]
+topo_sub_befFeb26[egid]
+topo_sub[egid]['gwr_info']
+topo_sub_befFeb26[egid]['gwr_info']
+
+topo_sub[egid]['gwr_info']
+topo_sub_befFeb26[egid]['gwr_info']
+
+topo_sub[egid]['pv_inst']
+topo_sub_befFeb26[egid]['pv_inst']
+
+topo_sub[egid]['solkat_partitions']
+topo_sub_befFeb26[egid]['solkat_partitions']
+
+solkat = gpd.read_file(r"C:\Users\hocrau00\Downloads\solkat_gdf_in_topo_sub.geojson")
+solkat.loc[solkat['EGID'] == egid, ['df_uid', 'EGID', 'STROMERTRAG','FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', ]]
+solkat.loc[solkat['EGID'] == egid, ['FLAECHE',]] / 10
+
+solkat_raw = pl.read_parquet(r"C:\Models\OptimalPV_RH\data\preprep\preprep_debugApr26\solkat.parquet")
+solkat_raw.filter(pl.col('DF_UID') == '10225986').select(pl.col(['FLAECHE', ])).item() / 10
+
+
+rows_list = []
+for egid in  [
+    '390391', 
+    '390392', 
+    '390394', 
+    '390398', 
+    '390400', 
+    '390402', 
+    '390404', 
+
+    # '390416' , 
+    # '390426', '390403', 
+    # '390405', '390417',
+    # '390427'
+      ]:
+    row = {
+        'scen': 'SUB',
+        'egid': egid,
+        'genh1' : topo_sub[egid]['gwr_info']['genh1'],
+        'genh2' : topo_sub[egid]['gwr_info']['genh2'],
+        'gwaerzh1' : topo_sub[egid]['gwr_info']['gwaerzh1'],
+        'gwaerzh2' : topo_sub[egid]['gwr_info']['gwaerzh2'],
+        'heating_system' : topo_sub[egid]['gwr_info']['heating_system'],
+        'garea': topo_sub[egid]['gwr_info']['garea'],
+    }
+    rows_list.append(row)
+    row_befFeb26 = {
+        'scen': 'SUB_befFeb26',
+        'egid': egid,
+        'genh1' : topo_sub_befFeb26[egid]['gwr_info']['genh1'],
+        'genh2' : topo_sub_befFeb26[egid]['gwr_info']['genh2'],
+        'gwaerzh1' : topo_sub_befFeb26[egid]['gwr_info']['gwaerzh1'],
+        'gwaerzh2' : topo_sub_befFeb26[egid]['gwr_info']['gwaerzh2'],
+        'heating_system' : topo_sub_befFeb26[egid]['gwr_info']['heating_system'],
+        'garea': topo_sub_befFeb26[egid]['gwr_info']['garea'],
+    }
+    rows_list.append(row_befFeb26)
+
+neighborhood = pl.DataFrame(rows_list)
+
+
+rows_check_gwaerzh7400_list = []
+for k, v in topo_sub.items():
+    gwaerzh1 = v['gwr_info']['gwaerzh1']
+    # gwaerzh2 = v['gwr_info']['gwaerzh2']
+    gwaerzh2 = False
+    if ( (gwaerzh1 == '7400') or (gwaerzh2 == '7400') ):
+        row = {
+            'scen': 'SUB',
+            'egid': k,
+            'gwaerzh1' : gwaerzh1,
+            'gwaerzh2' : gwaerzh2,
+        }
+        rows_check_gwaerzh7400_list.append(row)
+check_gwaerzh7400_df = pl.DataFrame(rows_check_gwaerzh7400_list)
+
+
+# ------------------------------------------------------------------------------------------------------
 # parquet to csv
-if True:
+if False:
     path_list = [
         # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\npv_df.parquet",
         # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_16nbfs_RUR_max_gridoptim\zMC1_OptimExpa\pred_inst_df.parquet",
@@ -44,10 +255,10 @@ if True:
         # r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_npv_inst_by_M\pred_inst_df_2.parquet",
         # r"C:\Users\hocrau00\Downloads\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet" ,       
         
-        r"C:\Models\OptimalPV_RH\data\pvalloc\DEV2_pvalloc_16nbfs_RUR_max\zMC1\npv_df.parquet",
-        r"C:\Models\OptimalPV_RH\data\pvalloc\DEV2_pvalloc_16nbfs_RUR_max\zMC1\pred_inst_df.parquet",
-        r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_16nbfs_RUR_max_prepFeb26\zMC1\npv_df.parquet",
-        r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_16nbfs_RUR_max_prepFeb26\zMC1\pred_inst_df.parquet",
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_2nbf_10y_compare3_max\zMC1\npv_df.parquet",
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_2nbf_10y_compare3_max\zMC1\pred_inst_df.parquet",
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_2nbf_10y_compare3_max__preprep_before_Feb26\zMC1\npv_df.parquet",
+        # r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_2nbf_10y_compare3_max__preprep_before_Feb26\zMC1\pred_inst_df.parquet",
         ]
     
     for pq_path in path_list:
@@ -62,57 +273,199 @@ if True:
         else:
             export_path = f'{csv_path}\{scen_name}_{file_name}.csv'
 
-        df.to_csv(export_path)
+        # df.to_csv(export_path)
         df.to_excel(export_path.replace('.csv', '.xlsx'), index=False)
 
 
 # ------------------------------------------------------------------------------------------------------
+
+if False:
+    scen_list = [
+        'debug_4nodes_max__preprep_before_Feb26', 
+        'debug_4nodes_max_wGBAUJminmax', 
+    ]
+
+    scen = scen_list[1]
+    topo_df_comp_rows = []
+    for scen in scen_list: 
+        path_to_scen = os.path.join(os.getcwd(), 'data', 'pvalloc', scen )
+
+        topo = json.load(open(os.path.join(path_to_scen, 'topo_egid.json'), 'r'))
+
+        topo_df_rows = []
+        for k, v in topo.items():
+            for k_solkat, v_solkat in v['solkat_partitions'].items():
+                row = {
+                    'scen':             scen, 
+                    'EGID':             k,
+                    'BFS_NUMMER':       v['gwr_info']['bfs'],
+                    'GKLAS':            v['gwr_info']['gklas'],
+                    'GBAUJ':            v['gwr_info']['gbauj'],
+                    'GAREA':            v['gwr_info']['garea'],
+                    'dfuid':            k_solkat,
+                    'FLAECHE':          v_solkat['FLAECHE'],
+                    'STROMERTRAG':      v_solkat['STROMERTRAG'],
+                }
+                topo_df_rows.append(row)
+                topo_df_comp_rows.append(row)
+
+        # topo_df = pl.DataFrame(topo_df_rows)
+
+    topo_comp_df = pl.DataFrame(topo_df_comp_rows)
+
+    topo_max = topo_comp_df.filter(pl.col('scen') == 'debug_4nodes_max__preprep_before_Feb26')
+    topo_wgbauj = topo_comp_df.filter(pl.col('scen') == 'debug_4nodes_max_wGBAUJminmax')
+
+                                
+
+    # FIND DIFFERENCES 
+    agg = (
+        topo_comp_df
+        .group_by(['scen', 'EGID'])
+        .agg([
+            pl.col('FLAECHE').sum().alias('FLAECHE_sum'),
+            pl.col('STROMERTRAG').sum().alias('STROMERTRAG_sum'),
+            pl.col('dfuid').count().alias('n_partitions')
+        ])
+    )
+    pivot = agg.pivot(
+        values=['FLAECHE_sum', 'STROMERTRAG_sum', 'n_partitions'],
+        index='EGID',
+        columns='scen'
+    )
+    pivot = pivot.with_columns([
+        (pl.col('FLAECHE_sum_debug_4nodes_max_wGBAUJminmax') -
+        pl.col('FLAECHE_sum_debug_4nodes_max__preprep_before_Feb26')
+        ).alias('delta_FLAECHE'),
+
+        (pl.col('STROMERTRAG_sum_debug_4nodes_max_wGBAUJminmax') -
+        pl.col('STROMERTRAG_sum_debug_4nodes_max__preprep_before_Feb26')
+        ).alias('delta_STROMERTRAG'),
+    ])
+    tol = 1e-6
+    egids_null_or_small = (
+        pivot
+        .filter(
+            pl.col('delta_FLAECHE').is_null() |
+            (pl.col('delta_FLAECHE').abs() > tol)
+        )
+        .select('EGID')
+    )
+
+    # EXPORT EGIDS WITH DIFFERENCES or missing in a df
+    egids_diff__null_or_small = pivot.filter(pl.col('EGID').is_in(egids_null_or_small['EGID']))
+    egids_diff__null_or_small.write_csv(os.path.join(os.getcwd(), 'data', 'pvalloc', 'egids_diff__null_or_small.csv'))
+    egids_diff__null_or_small.write_excel(os.path.join(os.getcwd(), 'data', 'pvalloc', 'egids_diff__null_or_small.xlsx'))
+
+
+    only_in_1_df = (
+        topo_max.select('EGID').unique()
+        .join(topo_wgbauj.select('EGID').unique(), on='EGID', how='anti')
+    )
+    only_in_2_df = (
+        topo_wgbauj.select('EGID').unique()
+        .join(topo_max.select('EGID').unique(), on='EGID', how='anti')
+    )
+    only_once = list(only_in_1_df['EGID']) + list(only_in_2_df['EGID']) 
+    egids_diff__missing = topo_comp_df.filter(pl.col('EGID').is_in(only_once))
+    egids_diff__missing.write_csv(os.path.join(os.getcwd(), 'data', 'pvalloc', 'egids_diff__missing.csv'))
+    egids_diff__missing.write_excel(os.path.join(os.getcwd(), 'data', 'pvalloc', 'egids_diff__missing.xlsx'))
+
+
+
+
+
+
+# ------------------------------------------------------------------------------------------------------
+if False:
+        # check scens for individual numbers
+        scen_list = [
+            'DEV2_pvalloc_16nbfs_RUR_max', 
+            'DEV_pvalloc_16nbfs_RUR_max_prepFeb26', 
+        ]
+        egids_to_check = [
+            # '2129223',
+            '190630208',
+        ]
+        df_uids = [
+            # 10855180, 
+            10853811, 
+            10853812, 
+        ]
+        for scen in scen_list: 
+            for egid in egids_to_check:
+                print(egid)
+                solkat = pd.read_parquet(os.path.join(os.getcwd(), 'data', 'input_split_data_geometry', 'solkat_pq.parquet'))
+                solkat.dtypes
+                solkat_dfuids = solkat.loc[solkat['DF_UID'].isin(df_uids), ['DF_UID', 'GWR_EGID', 'SB_UUID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', ]]
+                solkat_dfuids
+                divided_flaeche_str = ''
+
+                for denom in [5, 4, 3, 2, 1]:
+                    f'denom: {denom}; flaeche {solkat_dfuids["FLAECHE"].sum() / denom}'
+                    print(f'denom: {denom}; flaeche {solkat_dfuids["FLAECHE"].sum() / denom}')
+
+                solkat_scen_new = pd.read_parquet(os.path.join(os.getcwd(), 'data', 'preprep', 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26', 'solkat.parquet'))
+                solkat_scen_dfuids_new = solkat_scen_new.loc[solkat_scen_new['DF_UID'].isin([str(int(dfuid)) for dfuid in df_uids]), ['DF_UID', 'EGID', 'SB_UUID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', ]]
+                solkat_scen_dfuids_new
+                gwr_new = pd.read_parquet(os.path.join(os.getcwd(), 'data', 'preprep', 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26', 'gwr.parquet'))
+                gwr_new.loc[gwr_new['EGID'].isin(['388682', '388683','388684', '388681']), ['EGID', 'GSTAT', 'GKLAS', 'GBAUJ', ]]
+
+
+                solkat_scen_old = pd.read_parquet(os.path.join(os.getcwd(), 'data', 'preprep', 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26', 'solkat.parquet'))
+                solkat_scen_dfuids_old = solkat_scen_old.loc[solkat_scen_old['DF_UID'].isin([str(int(dfuid)) for dfuid in df_uids]), ['DF_UID', 'EGID', 'SB_UUID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'BFS_NUMMER', ]]
+                solkat_scen_dfuids_old
+                gwr_old = pd.read_parquet(os.path.join(os.getcwd(), 'data', 'preprep', 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26', 'gwr.parquet'))
+                gwr_old.loc[gwr_old['EGID'].isin(['388682', '388683','388684', '388681']), ['EGID', 'GSTAT', 'GKLAS', 'GBAUJ', ]]
+
+
+# ------------------------------------------------------------------------------------------------------
 # check SUB_max results with new and old preprep
+if False:
+    solkat_pl               = pl.read_parquet(  r"C:\Models\OptimalPV_RH\data\input_split_data_geometry\solkat_pq.parquet")
 
-solkat_pl               = pl.read_parquet(  r"C:\Models\OptimalPV_RH\data\input_split_data_geometry\solkat_pq.parquet")
+    npv_df                  = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet")
+    npv_df_OLD              = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet")
 
-npv_df                  = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet")
-npv_df_OLD              = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\zMC1\pred_npv_inst_by_M\pred_inst_df_1.parquet")
+    topo                    = json.load(open(  r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\topo_egid.json"))
+    topo_OLD                = json.load(open(  r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\topo_egid.json"))
 
-topo                    = json.load(open(  r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\topo_egid.json"))
-topo_OLD                = json.load(open(  r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\topo_egid.json"))
+    solkat_gdf_in_topo      = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\topo_spatial_data\solkat_gdf_in_topo.geojson")
+    solkat_gdf_in_topo_OLD  = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\topo_spatial_data\solkat_gdf_in_topo.geojson")
 
-solkat_gdf_in_topo      = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max\topo_spatial_data\solkat_gdf_in_topo.geojson")
-solkat_gdf_in_topo_OLD  = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\pvalloc\DEV_pvalloc_10nbfs_SUB_max_OLDpreprep\topo_spatial_data\solkat_gdf_in_topo.geojson")
+    gwr                     = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26\gwr.parquet")
+    gwr_OLD                 = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr.parquet")
 
-gwr                     = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26\gwr.parquet")
-gwr_OLD                 = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr.parquet")
+    gwr_all_building_df     = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26\gwr_all_building_df.parquet")
+    gwr_all_building_df_OLD = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr_all_building_df.parquet")
 
-gwr_all_building_df     = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26\gwr_all_building_df.parquet")
-gwr_all_building_df_OLD = pl.read_parquet( r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\gwr_all_building_df.parquet")
-
-solkat_gdf              = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26\solkat_gdf.geojson")
-solkat_gdf_OLD          = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\solkat_gdf.geojson")
-
-
-print(f"\n\n{'NEW':<30.30} {'':>6} | OLD                                       "  )
-print(f"{'npv_df shape':<30.30} {npv_df.shape[0]:>6} | {'npv_df_OLD shape':<30.30} {npv_df_OLD.shape[0]:>6}  | "  )
-# print(f"{'topo:':<30.30} {len(topo.keys()):>6} | {'topo_OLD:':<30.30} {len(topo_OLD.keys()):>6}  | {len(topo_OLD.keys())/len(topo.keys()):.2%} "  )
-# print(f"{'solkat_in_topo shape':<30.30} {solkat_gdf_in_topo.shape[0]:>6} | {'solkat_in_topo_OLD shape':<30.30} {solkat_gdf_in_topo_OLD.shape[0]:>6}  | {solkat_gdf_in_topo_OLD.shape[0]/solkat_gdf_in_topo.shape[0]:.2%} "  )
-print(f"{'gwr shape':<30.30} {gwr.shape[0]:>6} | {'gwr_OLD shape':<30.30} {gwr_OLD.shape[0]:>6}  | {gwr_OLD.shape[0]/gwr.shape[0]:.2%} "  )
-print(f"{'gwr_all_building_df shape':<30.30} {gwr_all_building_df.shape[0]:>6} | {'gwr_all_building_df_OLD shape':<30.30} {gwr_all_building_df_OLD.shape[0]:>6}  | {gwr_all_building_df_OLD.shape[0]/gwr_all_building_df.shape[0]:.2%} "  )
-print(f"{'solkat shape':<30.30} {solkat_gdf.shape[0]:>6} | {'solkat_OLD shape':<30.30} {solkat_gdf_OLD.shape[0]:>6}  | {solkat_gdf_OLD.shape[0]/solkat_gdf.shape[0]:.2%} "  )
-print(f"{'solkat unique':<30.30} {solkat_gdf['EGID'].nunique():>6} | {'solkat_OLD unique':<30.30} {solkat_gdf_OLD['EGID'].nunique():>6}  | {solkat_gdf_OLD['EGID'].nunique()/solkat_gdf['EGID'].nunique():.2%} "  )
-
-# single case analysis
-egid = '390437'
-sb_uuid = solkat_gdf.loc[solkat_gdf['EGID'] == egid, 'SB_UUID'].values[0]
-
-solkat_gdf.columns
-# solkat_gdf.loc[solkat_gdf['EGID'] == egid, ['DF_UID', 'DF_NUMMER', 'SB_UUID', 'SB_OBJEKTART', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
-solkat_gdf.loc[solkat_gdf['EGID'] == egid, ['EGID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
-solkat_gdf_in_topo.loc[solkat_gdf_in_topo['EGID'] == egid, ['EGID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
-
-solkat_gdf_in_topo.loc[solkat_gdf_in_topo['SB_UUID'] == sb_uuid, ['EGID', 'SB_UUID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
-solkat_pl.filter(pl.col('SB_UUID') == sb_uuid).select([ 'SB_UUID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]).to_pandas()
+    solkat_gdf              = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI_Apr26\solkat_gdf.geojson")
+    solkat_gdf_OLD          = gpd.read_file(   r"C:\Models\OptimalPV_RH\data\preprep\preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26\solkat_gdf.geojson")
 
 
-solkat_gdf.shape
+    print(f"\n\n{'NEW':<30.30} {'':>6} | OLD                                       "  )
+    print(f"{'npv_df shape':<30.30} {npv_df.shape[0]:>6} | {'npv_df_OLD shape':<30.30} {npv_df_OLD.shape[0]:>6}  | "  )
+    # print(f"{'topo:':<30.30} {len(topo.keys()):>6} | {'topo_OLD:':<30.30} {len(topo_OLD.keys()):>6}  | {len(topo_OLD.keys())/len(topo.keys()):.2%} "  )
+    # print(f"{'solkat_in_topo shape':<30.30} {solkat_gdf_in_topo.shape[0]:>6} | {'solkat_in_topo_OLD shape':<30.30} {solkat_gdf_in_topo_OLD.shape[0]:>6}  | {solkat_gdf_in_topo_OLD.shape[0]/solkat_gdf_in_topo.shape[0]:.2%} "  )
+    print(f"{'gwr shape':<30.30} {gwr.shape[0]:>6} | {'gwr_OLD shape':<30.30} {gwr_OLD.shape[0]:>6}  | {gwr_OLD.shape[0]/gwr.shape[0]:.2%} "  )
+    print(f"{'gwr_all_building_df shape':<30.30} {gwr_all_building_df.shape[0]:>6} | {'gwr_all_building_df_OLD shape':<30.30} {gwr_all_building_df_OLD.shape[0]:>6}  | {gwr_all_building_df_OLD.shape[0]/gwr_all_building_df.shape[0]:.2%} "  )
+    print(f"{'solkat shape':<30.30} {solkat_gdf.shape[0]:>6} | {'solkat_OLD shape':<30.30} {solkat_gdf_OLD.shape[0]:>6}  | {solkat_gdf_OLD.shape[0]/solkat_gdf.shape[0]:.2%} "  )
+    print(f"{'solkat unique':<30.30} {solkat_gdf['EGID'].nunique():>6} | {'solkat_OLD unique':<30.30} {solkat_gdf_OLD['EGID'].nunique():>6}  | {solkat_gdf_OLD['EGID'].nunique()/solkat_gdf['EGID'].nunique():.2%} "  )
+
+    # single case analysis
+    egid = '390437'
+    sb_uuid = solkat_gdf.loc[solkat_gdf['EGID'] == egid, 'SB_UUID'].values[0]
+
+    solkat_gdf.columns
+    # solkat_gdf.loc[solkat_gdf['EGID'] == egid, ['DF_UID', 'DF_NUMMER', 'SB_UUID', 'SB_OBJEKTART', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
+    solkat_gdf.loc[solkat_gdf['EGID'] == egid, ['EGID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
+    solkat_gdf_in_topo.loc[solkat_gdf_in_topo['EGID'] == egid, ['EGID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
+
+    solkat_gdf_in_topo.loc[solkat_gdf_in_topo['SB_UUID'] == sb_uuid, ['EGID', 'SB_UUID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]]
+    solkat_pl.filter(pl.col('SB_UUID') == sb_uuid).select([ 'SB_UUID', 'KLASSE', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', 'MSTRAHLUNG', 'GSTRAHLUNG','STROMERTRAG',]).to_pandas()
+
+
+    solkat_gdf.shape
 
 
 
