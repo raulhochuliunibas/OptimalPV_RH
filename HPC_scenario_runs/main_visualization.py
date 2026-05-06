@@ -1,5 +1,11 @@
 
-from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
+import sys
+from pathlib import Path
+
+# Add parent directory to path to find src module
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# from src.MAIN_pvallocation import PVAllocScenario_Settings, PVAllocScenario
 from src.MAIN_visualization import Visual_Settings, Visualization
 
 
@@ -25,16 +31,33 @@ visualization_list = [
 
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
-                '*.txt','*old_vers*',
+                '*.txt',
             ], 
             pvalloc_include_pattern_list = [      
-                'pvalloc_29nbfs_LRG2_max',
-                'DEV2_pvalloc_16nbfs_RUR_max', 
-                'DEV2_pvalloc_16nbfs_RUR_max_sCs4p6', 
-                'DEV2_pvalloc_16nbfs_RUR_gridoptim_max', 
-                'DEV2_pvalloc_10nbfs_SUB_max', 
-                'DEV2_pvalloc_10nbfs_SUB_max_sCs4p6', 
-                'DEV2_pvalloc_10nbfs_SUB_gridoptim_max', 
+                'DEV2_pvalloc_16nbfs_RUR_max',
+                # 'DEV2_pvalloc_16nbfs_RUR_max_1hll', 
+                # 'DEV2_pvalloc_16nbfs_RUR_gridoptim_max', 
+                # 'DEV2_pvalloc_16nbfs_RUR_max_sCs4p6', 
+                'x_DEV2_pvalloc_10nbfs_SUB_max_11_old_vers', 
+                # 'DEV2_pvalloc_10nbfs_SUB_max_1hll', 
+                # 'DEV2_pvalloc_10nbfs_SUB_gridoptim_max', 
+                # 'DEV2_pvalloc_10nbfs_SUB_max_sCs4p6', 
+                # 'DEV2_pvalloc_29nbfs_LRG2_max' , 
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_1hll', 
+                # 'DEV2_pvalloc_29nbfs_LRG2_gridoptim_max', 
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_sCs4p6',
+
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb1',
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb0_75',
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb0_5',
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb0_1',
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb1',
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_hist_constr', 
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_hist_constrgr0_05', 
+                # 'DEV2_pvalloc_29nbfs_LRG2_max_hist_constrgr0_01', 
+
+                'DEV_pvalloc_10nbfs_SUB_max_prepFeb26', 
+                'DEV_pvalloc_16nbfs_RUR_max_prepFeb26', 
                 ],
 
             cut_timeseries_to_zoom_hour        = True,
@@ -46,6 +69,7 @@ visualization_list = [
                 'n_top_loss_nodes': 0,
                 },
             
+            plot_ind_line_installedCap_TF                   = [True,      True,       False]    ,
             plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
             plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,      False],
             # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],

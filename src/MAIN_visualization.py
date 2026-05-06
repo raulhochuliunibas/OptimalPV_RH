@@ -2080,6 +2080,20 @@ class Visualization:
                     'Inferno': pc.sequential.Inferno, 'Magma': pc.sequential.Magma, 'Plasma': pc.sequential.Plasma,
                 }     
 
+                fig_agg_color_palettes = [
+                    'Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar',
+                    'Teal', 'Magenta', 'Plotly3', 'Viridis', 'Turbo', 'Blackbody', 'Bluered', 
+                    'Aggrnyl', 'Agsunset', 'Rainbow', 'Burg', 'Cividis', 'Inferno', 'Magma', 'Plasma',
+                    
+                    'Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar',
+                    'Teal', 'Magenta', 'Plotly3', 'Viridis', 'Turbo', 'Blackbody', 'Bluered', 
+                    'Aggrnyl', 'Agsunset', 'Rainbow', 'Burg', 'Cividis', 'Inferno', 'Magma', 'Plasma',
+
+                    'Blues', 'Greens', 'Reds', 'Oranges', 'Purples', 'Greys', 'Mint', 'solar',
+                    'Teal', 'Magenta', 'Plotly3', 'Viridis', 'Turbo', 'Blackbody', 'Bluered', 
+                    'Aggrnyl', 'Agsunset', 'Rainbow', 'Burg', 'Cividis', 'Inferno', 'Magma', 'Plasma',
+                ]
+
                 fig_agg_pmonth = go.Figure()
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
@@ -2119,6 +2133,7 @@ class Visualization:
                     instcomp_df = instcomp_df.loc[instcomp_df['BFS_NUMMER'].isin([str(str_nr) for str_nr in self.pvalloc_scen.bfs_numbers])]
     
 
+                    gwr_all_building_gdf.drop(columns=['index_right', ], inplace=True, errors='ignore')
                     gwr_buff_select_BUT_year = copy.deepcopy(gwr_all_building_gdf)
                     gwr_buff_select_BUT_year = gwr_buff_select_BUT_year.loc[(gwr_buff_select_BUT_year['GGDENR'].isin(self.pvalloc_scen.bfs_numbers)) &
                                                                             (gwr_buff_select_BUT_year['GSTAT'].isin(self.pvalloc_scen.GWRspec_GSTAT)) & 
@@ -2199,22 +2214,20 @@ class Visualization:
                         # plot ----------------
                         fig1 = go.Figure()
 
-                        fig1.add_trace(go.Scatter(x=capa_month_built['BeginOp_month'], y=capa_month_built['TotalPower'], line = dict(color = 'deepskyblue'), name='built (month)', mode='lines+markers'))
-                        fig1.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'], line = dict(color = 'cornflowerblue'), name='predicted (month)', mode='lines+markers'))
-                        fig1.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'], line = dict(color = 'navy'),name='built + predicted (month)', mode='lines+markers'))
-
-                        fig1.add_trace(go.Scatter(x=capa_cumm_month_df['BeginOp_month'], y=capa_cumm_month_df['Cumm_TotalPower'], line = dict(color ='blue'), name='cumulative built (month)', mode='lines+markers'))
-
-                        fig1.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'], y=capa_year_built['TotalPower'], line = dict(color = 'lightgreen'), name='built (year)', mode='lines+markers'))
-                        fig1.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'], y=capa_year_predicted['TotalPower'], line = dict(color = 'limegreen'), name='predicted (year)', mode='lines+markers'))
-                        fig1.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'], line = dict(color = 'forestgreen'), name='built + predicted (year)', mode='lines+markers',))
-
-                        fig1.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'], line = dict(color ='purple'), name='cumulative built (year)', mode='lines+markers'))
-
-                        fig1.add_trace(go.Scatter(x=instcomp_month_df['BeginOp_month'], y=instcomp_month_df['TotalPower'], line = dict(color = 'orange'), name='pv_df (blw 30kwp month)', mode='lines+markers'))
-                        fig1.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['TotalPower'], line = dict(color = 'darkorange'), name='pv_df (blw 30kwp year)', mode='lines+markers'))
-                        fig1.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['Cumm_TotalPower'], line = dict(color = 'orangered'), name='pv_df (blw 30kwp cumulative)', mode='lines+markers'))
-                        fig1.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['growth_cumm_TotalPower'], line = dict(color = 'orangered'), name='pv_df (blw 30kwp growth)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_month_built['BeginOp_month'],      y=capa_month_built['TotalPower'],             line = dict(color = 'deepskyblue'),     name='built (month)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'],  y=capa_month_predicted['TotalPower'],         line = dict(color = 'cornflowerblue'),  name='predicted (month)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'],         y=capa_month_df['TotalPower'],                line = dict(color = 'navy'),            name='built + predicted (month)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_cumm_month_df['BeginOp_month'],    y=capa_cumm_month_df['Cumm_TotalPower'],      line = dict(color = 'blue'),            name='cumulative built (month)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=[None, ],                               y=[None, ],                                   line = dict(color = 'white'),           name='-',                         mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'],        y=capa_year_built['TotalPower'],              line = dict(color = 'lightgreen'),      name='built (year)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'],    y=capa_year_predicted['TotalPower'],          line = dict(color = 'limegreen'),       name='predicted (year)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'],           y=capa_year_df['TotalPower'],                 line = dict(color = 'forestgreen'),     name='built + predicted (year)', mode='lines+markers',))
+                        fig1.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'],      y=capa_cumm_year_df['Cumm_TotalPower'],       line = dict(color = 'purple'),          name='cumulative built (year)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=[None, ],                               y=[None, ],                                   line = dict(color = 'white'),           name='-',                         mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=instcomp_month_df['BeginOp_month'],     y=instcomp_month_df['TotalPower'],            line = dict(color = 'orange'),          name='pv_df raw (blw 30kwp month)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'],       y=instcomp_year_df['TotalPower'],             line = dict(color = 'darkorange'),      name='pv_df raw (blw 30kwp year)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'],       y=instcomp_year_df['Cumm_TotalPower'],        line = dict(color = 'orangered'),       name='pv_df raw (blw 30kwp cumulative)', mode='lines+markers'))
+                        fig1.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'],       y=instcomp_year_df['growth_cumm_TotalPower'], line = dict(color = 'orangered'),       name='pv_df raw (blw 30kwp growth)', mode='lines+markers'))
 
                         fig1.update_layout(
                             xaxis_title='Time',
@@ -2337,9 +2350,12 @@ class Visualization:
 
                     # plot add aggregated - line: Installed Capacity per Year ===========================
                     if self.visual_sett.plot_ind_line_installedCap_TF[0]:  #['plot_ind_line_installedCap_per_month']:
-                    
-                        color_allscen_list = [list(trace_color_dict.keys())[i_scen] for i_scen in range(len(self.pvalloc_scen_list))]
-                        color_palette = trace_color_dict[list(trace_color_dict.keys())[i_scen]]
+                        
+                        color_pal = trace_color_dict[fig_agg_color_palettes[i_scen]]
+                        color_pal_idx = len(color_pal)
+
+                        # color_allscen_list = [list(trace_color_dict.keys())[i_scen] for i_scen in range(len(self.pvalloc_scen_list))]
+                        # color_palette = trace_color_dict[list(trace_color_dict.keys())[i_scen]]
 
                         # fig_agg_pmonth.add_trace(go.Scatter(x=[0,], y=[0,],  name=f'',opacity=1, ))
                         fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],  name='',opacity=0, ))
@@ -2347,14 +2363,14 @@ class Visualization:
 
                         # fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_built['BeginOp_month'], y=capa_month_built['TotalPower'],          opacity = 0.75, line = dict(color = color_palette[0+0]),    name='-- built (month)', mode='lines+markers'))
                         # fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_predicted['BeginOp_month'], y=capa_month_predicted['TotalPower'],  opacity = 0.75, line = dict(color = color_palette[0+1]),    name='-- predicted (month)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],                opacity = 0.75, line = dict(color = color_palette[0+2]),    name='-- built + predicted (month)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_month_df['BeginOp_month'], y=capa_month_df['TotalPower'],                opacity = 0.75, line = dict(color = color_pal[color_pal_idx - 2]),    name='-- built + predicted (month)', mode='lines+markers'))
                         # fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_built['BeginOp_year'], y=capa_year_built['TotalPower'],             opacity = 0.75, line = dict(color = color_palette[0+2]),    name='-- built (year)', mode='lines+markers'))
                         # fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_predicted['BeginOp_year'], y=capa_year_predicted['TotalPower'],     opacity = 0.75, line = dict(color = color_palette[0+3]),    name='-- predicted (year)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'],                   opacity = 0.75, line = dict(color = color_palette[0+5]),    name='-- built + predicted (year)', mode='lines+markers',))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'],    opacity = 0.75, line = dict(color = color_palette[0+4]),    name='-- cumulative built + pred (year)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=instcomp_month_df['BeginOp_month'], y=instcomp_month_df['TotalPower'],        opacity = 0.75, line = dict(color = color_palette[0+5]),    name='-- pv_df (blw 30kwp month)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['TotalPower'],           opacity = 0.75, line = dict(color = color_palette[0+6]),    name='-- pv_df (blw 30kwp year)', mode='lines+markers'))
-                        fig_agg_pmonth.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['Cumm_TotalPower'],      opacity = 0.75, line = dict(color = color_palette[0+0]),    name='-- pv_df (blw 30kwp cumulative)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_year_df['BeginOp_year'], y=capa_year_df['TotalPower'],                   opacity = 0.75, line = dict(color = color_pal[color_pal_idx - 5]),    name='-- built + predicted (year)', mode='lines+markers',))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=capa_cumm_year_df['BeginOp_year'], y=capa_cumm_year_df['Cumm_TotalPower'],    opacity = 0.75, line = dict(color = color_pal[color_pal_idx - 4]),    name='-- cumulative built + pred (year)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=instcomp_month_df['BeginOp_month'], y=instcomp_month_df['TotalPower'],        opacity = 0.75, line = dict(color = color_pal[color_pal_idx - 5]),    name='-- pv_df (blw 30kwp month)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['TotalPower'],           opacity = 0.75, line = dict(color = color_pal[color_pal_idx - 6]),    name='-- pv_df (blw 30kwp year)', mode='lines+markers'))
+                        fig_agg_pmonth.add_trace(go.Scatter(x=instcomp_year_df['BeginOp_year'], y=instcomp_year_df['Cumm_TotalPower'],      opacity = 0.75, line = dict(color = color_pal[color_pal_idx - 7]),    name='-- pv_df (blw 30kwp cumulative)', mode='lines+markers'))
                         
                         # export plot add aggregated - line: Installed Capacity per Year 
                         if i_scen == len(self.pvalloc_scen_list)-1:
@@ -4060,7 +4076,8 @@ class Visualization:
                     trange_prediction = pd.read_parquet(f'{self.visual_sett.mc_data_path}/trange_prediction.parquet')
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
                     gridnode_df_main    = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
-                    
+                    constrcapa =  pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/constrcapa.parquet')
+                                        
 
                     # select nodes to for stacking ------------------
                     loss_nodes = gridnode_df_main.group_by('grid_node').agg([
@@ -4079,15 +4096,17 @@ class Visualization:
                     })
 
 
-                    # add EP2050 capacity ------------------
-                    if self.pvalloc_scen.CSTRspec_capacity_type == 'ep2050_zerobasis':
-                        if not CSTRspec_capacity_type_added_TF:
-                            CSTRspec_capacity_type_added_TF = True
+                    # add constracapa  capacity ------------------
+                    constrcapa = constrcapa.merge(trange_prediction[['date', 'n_iter']] , on='date', how='left')
+                    constrcapa = constrcapa.loc[ ~ constrcapa['n_iter'].isna()]
+                    # if self.pvalloc_scen.CSTRspec_capacity_type == 'ep2050_zerobasis':
+                    #     if not CSTRspec_capacity_type_added_TF:
+                    #         CSTRspec_capacity_type_added_TF = True
 
-                            constrcapa = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/constrcapa.parquet')
-                            constrcapa = constrcapa.loc[constrcapa['year'] >= self.pvalloc_scen.T0_year_prediction].copy()
-                            constrcapa['n_inter'] = range(1, len(constrcapa) + 1)
-                            fig_agg.add_trace(go.Scatter(x=constrcapa['n_inter'], y=constrcapa['constr_capacity_kw'], name='EP2050+ Inst.Cap. (kW)', mode='lines', line=dict(color='darkred', width=3, dash='dash') )) # , marker=dict(symbol='star',), ))
+                    #         constrcapa = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/constrcapa.parquet')
+                    #         constrcapa = constrcapa.loc[constrcapa['year'] >= self.pvalloc_scen.T0_year_prediction].copy()
+                    #         constrcapa['n_inter'] = range(1, len(constrcapa) + 1)
+                    #         fig_agg.add_trace(go.Scatter(x=constrcapa['n_inter'], y=constrcapa['constr_capacity_kw'], name='EP2050+ Inst.Cap. (kW)', mode='lines', line=dict(color='darkred', width=3, dash='dash') )) # , marker=dict(symbol='star',), ))
 
 
                     # girdnode_df: transform and prep ------------------
@@ -4311,8 +4330,10 @@ class Visualization:
                     fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['feedin_atnode_taken_kW'],          name='Total feedin_atnode_taken_kW',    mode='lines',         line=dict(color=color_pal[color_pal_idx-2],),                 marker=dict(symbol='cross',),   ))
                     fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['feedin_atnode_loss_kW'],           name='Total feedin_atnode_loss_kW',     mode='lines',         line=dict(color=color_pal[color_pal_idx-3],),                 marker=dict(symbol='cross',),   ))
                     fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['n_EGID_pvinst'],                          name='n pvinst insample',               mode='lines+markers', line=dict(color=color_pal[color_pal_idx-4],),                 marker=dict(symbol='circle',),  ))                    
-                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],                      name='ratio n pvinst cumulative',       mode='lines+markers', line=dict(color=color_pal[color_pal_idx-5],),                 marker=dict(symbol='circle',), yaxis = 'y2'  ))                    
-                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=gridnode_df_by_iter['TotalPower'],                      name='TotalPower',                      mode='lines+markers', line=dict(color=color_pal[color_pal_idx-6],),                 marker=dict(symbol='circle',),  ))                    
+                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=gridnode_df_by_iter['TotalPower'],                      name='TotalPower',                      mode='lines+markers', line=dict(color=color_pal[color_pal_idx-5],),                 marker=dict(symbol='circle',),  ))                    
+                    fig_agg.add_trace(go.Scatter(x=constrcapa['n_iter'],          y=constrcapa['constr_capacity_kw'],                       name='ConstrCapa (kW)',                 mode='lines+markers', line=dict(color=color_pal[color_pal_idx-6],),                 marker=dict(symbol='circle',),  ))                    
+                    fig_agg.add_trace(go.Scatter(x=topo_df_iter['n_iter'],        y=topo_df_iter['ratio_EGID_pvinst'],                      name='ratio n pvinst cumulative',       mode='lines+markers', line=dict(color=color_pal[color_pal_idx-7],),                 marker=dict(symbol='circle',), yaxis = 'y2'  ))                    
+
 
                     # fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['feedin_atnode_taken_kW'],          name='Total feedin_atnode_taken_kW',    mode='lines',         line=dict(color=color_pal[color_pal_idx-3],),                 marker=dict(symbol='cross',),   ))
                     # fig_agg.add_trace(go.Scatter(x=gridnode_df_by_iter['n_iter'], y=gridnode_df_by_iter['netfeedin_loss_ratio'],            name='netfeedin_loss_ratio',            mode='lines',         line=dict(color=color_pal[color_pal_idx-5],),                 marker=dict(symbol='circle',),  yaxis = 'y2'))
@@ -8073,9 +8094,9 @@ if __name__ == '__main__':
                 # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                'debug_4nodes_max',
-                'debug_4nodes_max_wGBAUJminmax',
-                'debug_4nodes_max__preprep_before_Feb26',
+                'DEV2_pvalloc_16nbfs_RUR_max',
+                # 'debug_4nodes_max_wGBAUJminmax',
+                # 'debug_4nodes_max__preprep_before_Feb26',
             ],
             # plot_show                          = False,
             remove_old_plot_scen_directories   = True,  
