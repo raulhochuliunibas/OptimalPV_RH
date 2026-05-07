@@ -65,8 +65,8 @@ class DataAggScenario_Settings:
                                             '1110', # GKLAS - 1110: only 1 living space per building
                                             '1121', # GKLAS - 1121: Double-, row houses with each appartment (living unit) having it's own roof;
                                             '1122', # GKLAS - 1122: Buildings with three or more appartments
-                                            '1276', # GKLAS - 1276: structure for animal keeping (most likely still one owner)
-                                            '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
+                                            # '1276', # GKLAS - 1276: structure for animal keeping (most likely still one owner)
+                                            # '1278', # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
                                             ])
     # GBAUJ not applicable because it drops too many houses with GBAUJ: NA, which are still existing, GSTAT: 1004
     GWR_GBAUJ_minmax: List[int]     = field(default_factory=lambda: [1920, 2022])                       # GBAUJ_minmax: range of years of construction
@@ -90,7 +90,7 @@ class DataAggScenario_Settings:
                                             'SFH': ['1110', ],  # GKLAS - 1110: only 1 living space per building
                                             'MFH': [
                                                 '1121',  # GKLAS - 1121: Double-, row houses with each appartment (living unit) having it's own roof;
-                                                '   ',  # GKLAS - 1122: Buildings with three or more appartments
+                                                '1122',  # GKLAS - 1122: Buildings with three or more appartments
                                                 '1276',  # GKLAS - 1276: structure for animal keeping (most likely still one owner)
                                                 '1278',  # GKLAS - 1278: structure for agricultural use (not anmial or plant keeping use, e.g. barns, machinery storage, silos),
                                                 ],
@@ -1786,8 +1786,11 @@ class DataAggScenario:
             solkat_month_all_pl = solkat_month_all_pl.with_columns([
                 pl.col('SB_UUID').cast(pl.Utf8),
                 pl.col('DF_UID').cast(pl.Utf8)
-            ])
-            solkat_month_all_pl = solkat_month_all_pl.join(solkat.select(['DF_UID', 'BFS_NUMMER']), on='DF_UID', how='left')
+            ])  
+
+            solkat_bfs_mapping = solkat.group_by('DF_UID').agg(pl.first('BFS_NUMMER').alias('BFS_NUMMER'))  # major fix, this probably causes a larger overestimation in pvallocation -> duplicates in solkat caused duplicates in 
+
+            solkat_month_all_pl = solkat_month_all_pl.join(solkat_bfs_mapping.select(['DF_UID', 'BFS_NUMMER']), on='DF_UID', how='left')
             solkat_month_pl = solkat_month_all_pl.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers))
             solkat_month = solkat_month_pl.clone()
 
@@ -2455,6 +2458,39 @@ class DataAggScenario:
 if __name__ == '__main__':
     dataagg_scen_list = [
 
+
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__May26',
+        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
+        #     kt_numbers = [13, 11],
+        #     # bfs_numbers = [
+        #         # 2614, 2615, # RUR
+        #         # 2761, 2785,       # SUB
+        #         # 2621,
+        #                 #    ],
+        #     year_range = [2015, 2024],
+        #     # year_range = [2022, 2024],
+        #     split_data_geometry = True,
+        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+        #     debug__EGID_gwradded_isnull_continues_TF = False,
+        #     apply_GBAUJ_TF = False
+        # ),
+
+
+
+        DataAggScenario_Settings(
+            name_dir_export = 'debug_bfs2761',
+            bfs_numbers = [
+                2761, # SUB
+            ],
+            year_range = [2022, 2023],
+        ),
+
+
+
+
         # DataAggScenario_Settings(
         #     name_dir_export = 'preprep_debug__EGID_added_continue_TRUE',
         #     # kt_numbers = [13, 12, 11], # BL, BS, SO
@@ -2537,57 +2573,7 @@ if __name__ == '__main__':
 
 
 
-        DataAggScenario_Settings(
-            name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__May26',
-            # kt_numbers = [13, 12, 11], # BL, BS, SO
-            kt_numbers = [13, 11],
-            # bfs_numbers = [
-                # 2614, 2615, # RUR
-                # 2761, 2785,       # SUB
-                # 2621,
-                        #    ],
-            year_range = [2015, 2024],
-            # year_range = [2022, 2024],
-            split_data_geometry = True,
-            GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
-            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
 
-            debug__EGID_gwradded_isnull_continues_TF = False,
-            apply_GBAUJ_TF = False
-        ),
-
-
-
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'preprep_BL_22to23_extSolkatEGID_aggrfarms',
-        #     kt_numbers = [13,],
-        #     year_range = [2022, 2023],
-        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'preprep_BL_22to23_extSolkatEGID_singlehouse',
-        #     kt_numbers = [13,],
-        #     year_range = [2022, 2023],
-        #     GWR_GKLAS = ['1110', ],  # '1121'],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
-
-
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_aggrfarms',
-        #     kt_numbers = [13, 11],
-        #     year_range = [2022, 2023],
-        #     GWR_GKLAS = ['1110', '1121', '1122', '1276', '1278', ],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'preprep_BLSO_22to23_extSolkatEGID_singlehouse',
-        #     kt_numbers = [13, 11],
-        #     year_range = [2022, 2023],
-        #     GWR_GKLAS = ['1110', ],  # '1121'],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-        # ),
 
         ]
 
