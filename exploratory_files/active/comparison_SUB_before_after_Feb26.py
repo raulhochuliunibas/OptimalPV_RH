@@ -24,29 +24,50 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # ------------------------------------------------------------------------------------------------------
 # save deprecated / faulty topo file
-topo_sub = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_sub.json", 'r'))
-topo_rur = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_DEV2_pvalloc_16nbfs_RUR_max.json", 'r'))
+topo_sub = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_sub_mfhhp.json", 'r'))
+topo_rur = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_sub_sfhhp.json", 'r'))
+
 topo_sub_befFeb26 = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_sub_beforeFeb26.json", 'r'))
 topo_rur_befFeb26 = json.load(open(r"C:\Users\hocrau00\Downloads\topo_egid_rur_beforeFeb26.json", 'r'))
 
-constrcapa_sub = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_sub.parquet")
-constrcapa_rur = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_rur.parquet")
+
+constrcapa_sub = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_sub_mfhhp.parquet")
+constrcapa_rur = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_sub_sfhhp.parquet")
+
 constrcapa_sub_befFeb26 = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_sub_beforeFeb26.parquet")
 constrcapa_rur_befFeb26 = pd.read_parquet(r"C:\Users\hocrau00\Downloads\constrcapa_rur_beforeFeb26.parquet")
 
-gridnode_df_rur = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_rur.parquet")
-gridnode_df_sub = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_sub.parquet")
+
+gridnode_df_rur = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_sub_mfhhp.parquet")
+gridnode_df_sub = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_sub_sfhhp.parquet")
+
 gridnode_df_rur_befFeb26 = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_rur_beforeFeb26.parquet")
 gridnode_df_sub_befFeb26 = pl.read_parquet(r"C:\Users\hocrau00\Downloads\gridnode_df_sub_beforeFeb26.parquet")
 
 
+npv_sub = pd.read_parquet(r"C:\Users\hocrau00\Downloads\npv_df_sub_mfhhp.parquet")
+npv_rur = pd.read_parquet(r"C:\Users\hocrau00\Downloads\npv_df_sub_sfhhp.parquet")
+npv_sub_befFeb26 = pd.read_parquet(r"C:\Users\hocrau00\Downloads\npv_df_sub_beforeFeb26.parquet")
+
+pred_inst_sub = pd.read_parquet(r"C:\Users\hocrau00\Downloads\pred_inst_df_sub_mfhhp.parquet")
+pred_inst_rur = pd.read_parquet(r"C:\Users\hocrau00\Downloads\pred_inst_df_sub_sfhhp.parquet")
+npv_sub_befFeb26 = pd.read_parquet(r"C:\Users\hocrau00\Downloads\pred_inst_df_sub_beforeFeb26.parquet")
+
+
+
 def n_gridnode_in_topo_scen(topo):
     return pd.Series( [v['grid_node'] for v in topo.values()]).nunique()
-
 n_gridnode_sub = n_gridnode_in_topo_scen(topo_sub)
 n_gridnode_rur = n_gridnode_in_topo_scen(topo_rur)
 n_gridnode_sub_befFeb26 = n_gridnode_in_topo_scen(topo_sub_befFeb26)
 n_gridnode_rur_befFeb26 = n_gridnode_in_topo_scen(topo_rur_befFeb26)
+
+def n_heatpumps_in_topo_scen(topo):
+    return sum( [v['gwr_info']['heating_system'] == 'heatpump' for k, v in topo.items()])
+n_heatpumps_sub = n_heatpumps_in_topo_scen(topo_sub)
+n_heatpumps_rur = n_heatpumps_in_topo_scen(topo_rur)
+n_heatpumps_sub_befFeb26 = n_heatpumps_in_topo_scen(topo_sub_befFeb26)
+n_heatpumps_rur_befFeb26 = n_heatpumps_in_topo_scen(topo_rur_befFeb26)
 
 def summary_gridthreshold_scen(gridnode_df, t='t_1', round_decimal = 4):
     summary = (
@@ -75,7 +96,8 @@ instCap_iter1_rur = capacity_in_iter(topo_rur)
 instCap_iter1_sub_befFeb26 = capacity_in_iter(topo_sub_befFeb26)
 instCap_iter1_rur_befFeb26 = capacity_in_iter(topo_rur_befFeb26)
 
-
+# CHECK overall numbers between scen ------------------------------------------------
+# region overall summary
 scens = {
     'SUB': {
         'nEGID': len(topo_sub.keys()),
@@ -101,26 +123,27 @@ scens = {
         'n_EGID_iter1': nEGID_iter1_sub_befFeb26,
         'instCap_iter1': instCap_iter1_sub_befFeb26,
     },
-    'RUR_befFeb26': {
-        'nEGID': len(topo_rur_befFeb26.keys()),
-        'n_grid_node': n_gridnode_rur_befFeb26,
-        'constracapa_kw': constrcapa_rur_befFeb26["constr_capacity_kw"][0],
-        'summary_grid_tresh': summary_gridthresh_rur_befFeb26,
-        'n_EGID_iter1': nEGID_iter1_rur_befFeb26,
-        'instCap_iter1': instCap_iter1_rur_befFeb26,
-    },
+    # 'RUR_befFeb26': {
+    #     'nEGID': len(topo_rur_befFeb26.keys()),
+    #     'n_grid_node': n_gridnode_rur_befFeb26,
+    #     'constracapa_kw': constrcapa_rur_befFeb26["constr_capacity_kw"][0],
+    #     'summary_grid_tresh': summary_gridthresh_rur_befFeb26,
+    #     'n_EGID_iter1': nEGID_iter1_rur_befFeb26,
+    #     'instCap_iter1': instCap_iter1_rur_befFeb26,
+    # },
 }
 
 
 row_list = []
 for scen in [
     ('abs', 'SUB', '__'),
-    # ('abs', 'RUR', '__'),
-    # ('compare', 'RUR', 'SUB'),
+    ('abs', 'RUR', '__'),
+    ('compare', 'RUR', 'SUB'),
     ('abs', 'SUB_befFeb26', '__'),
     # ('abs', 'RUR_befFeb26', '__'),
     # ('compare', 'RUR_befFeb26', 'SUB_befFeb26'),
     ('compare', 'SUB_befFeb26', 'SUB'),
+    ('compare', 'SUB_befFeb26', 'RUR'),
 ]:
     
     if scen[0] == 'abs':
@@ -153,41 +176,69 @@ for scen in [
 
 summary_df = pl.DataFrame(row_list)
 
-egid = '390391'
-topo_sub[egid]
-topo_sub_befFeb26[egid]
-topo_sub[egid]['gwr_info']
-topo_sub_befFeb26[egid]['gwr_info']
+#endregion  
 
-topo_sub[egid]['gwr_info']
-topo_sub_befFeb26[egid]['gwr_info']
 
-topo_sub[egid]['pv_inst']
-topo_sub_befFeb26[egid]['pv_inst']
 
-topo_sub[egid]['solkat_partitions']
-topo_sub_befFeb26[egid]['solkat_partitions']
+# CHECK individual EGIDs accross scen ------------------------------------------------
+# region egid comparison
+egid_debug = '390391'
+# topo_sub[egid]
+# topo_sub_befFeb26[egid]
+# topo_sub[egid]['gwr_info']
+# topo_sub_befFeb26[egid]['gwr_info']
 
-solkat = gpd.read_file(r"C:\Users\hocrau00\Downloads\solkat_gdf_in_topo_sub.geojson")
-solkat.loc[solkat['EGID'] == egid, ['df_uid', 'EGID', 'STROMERTRAG','FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', ]]
-solkat.loc[solkat['EGID'] == egid, ['FLAECHE',]] / 10
+topo_sub[egid_debug]['gwr_info']
+topo_sub[egid_debug]['grid_node']['bfs']
+# topo_sub_befFeb26[egid]['gwr_info']
 
-solkat_raw = pl.read_parquet(r"C:\Models\OptimalPV_RH\data\preprep\preprep_debugApr26\solkat.parquet")
-solkat_raw.filter(pl.col('DF_UID') == '10225986').select(pl.col(['FLAECHE', ])).item() / 10
+# topo_sub[egid]['pv_inst']
+# topo_sub_befFeb26[egid]['pv_inst']
+
+topo_sub[egid_debug]['solkat_partitions']
+topo_sub_befFeb26[egid_debug]['solkat_partitions']
+
+# solkat = gpd.read_file(r"C:\Users\hocrau00\Downloads\solkat_gdf_in_topo_sub.geojson")
+# solkat.loc[solkat['EGID'] == egid, ['df_uid', 'EGID', 'STROMERTRAG','FLAECHE', 'AUSRICHTUNG', 'NEIGUNG', ]]
+# solkat.loc[solkat['EGID'] == egid, ['FLAECHE',]] / 10
+
+# solkat_raw = pl.read_parquet(r"C:\Models\OptimalPV_RH\data\preprep\preprep_debugApr26\solkat.parquet")
+solkat_raw = pl.read_parquet(r"C:\Users\hocrau00\Downloads\solkat_may26.parquet")
+solkat_raw.filter(pl.col('DF_UID') == '10226008').select(pl.col(['FLAECHE', ])).sum()
+solkat_raw.filter(pl.col('EGID') == egid_debug).select(pl.col(['FLAECHE', ]))
+solkat_raw.filter(pl.col('EGID') == egid_debug)
+egid_debug in list(solkat_raw['EGID'])
+
+
+solkat_raw.filter(pl.col('EGID') == egid_debug ).select(pl.col(['EGID', 'DF_UID', 'FLAECHE', ]))
+solkat_raw.filter(pl.col('DF_UID') == '10225986').select(pl.col(['EGID', 'DF_UID', 'FLAECHE', ]))
+
+npv_sub_befFeb26.columns
+cols = [
+    # 'elecpri_Rp_kWh', 'pvtarif_Rp_kWh', 'TotalPower',
+    'FLAECHE', 'demand_kW', 'selfconsum_kW', 'netfeedin_kW', 
+    # 'econ_inc_chf', 'econ_spend_chf', 
+    'NPV_uid']
+npv_sub.loc[npv_sub['EGID'] == egid_debug, cols]
+npv_rur.loc[npv_rur['EGID'] == egid_debug, cols]
+npv_sub_befFeb26.loc[npv_sub_befFeb26['EGID'] == egid_debug, cols]
+
+len([k for k, v in topo_sub.items() if v['gwr_info']['bfs'] ==  '2761'])
+
 
 
 rows_list = []
 for egid in  [
     '390391', 
-    '390392', 
-    '390394', 
-    '390398', 
-    '390400', 
-    '390402', 
-    '390404', 
+    # '390392', 
+    # '390394', 
+    # '390398', 
+    # '390400', 
+    # '390402', 
+    # '390404', 
 
-    # '390416' , 
-    # '390426', '390403', 
+    '390416' , 
+    '390426', '390403', 
     # '390405', '390417',
     # '390427'
       ]:
@@ -215,6 +266,11 @@ for egid in  [
     rows_list.append(row_befFeb26)
 
 neighborhood = pl.DataFrame(rows_list)
+
+
+#endregion
+
+
 
 
 rows_check_gwaerzh7400_list = []

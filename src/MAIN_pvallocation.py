@@ -5542,23 +5542,27 @@ if __name__ == '__main__':
     bfs_mini_name = 'debug_5nbfs'
     pvalloc_mini_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_2nbfs_test_DEFAULT',
             bfs_numbers                                          = [
-                                                        2641, 2615,
+                                                        # 2641, 2615,
+                                                        2761,
                                                                     ],         
             mini_sub_model_TF                                    = True,
             mini_sub_model_by_X                                  = 'by_gridnode',
-            mini_sub_model_ngridnodes                            = 8,
+            mini_sub_model_ngridnodes                            = 3,
             mini_sub_model_grid_nodes                            = [
-                                                                    '514', 
-                                                                    '511', 
-                                                                    '412', 
-                                                                    '411', 
-                                                                    '415', 
+                                                                    '3', 
+                                                                    '16', 
+                                                                    '28', 
+                                                                    # '514', 
+                                                                    # '511', 
+                                                                    # '412', 
+                                                                    # '411', 
+                                                                    # '415', 
                                                                     ],
-            mini_sub_model_nEGIDs                                = 500,
+            mini_sub_model_nEGIDs                                = 1000,
             create_gdf_export_of_topology                        = True,
             export_csvs                                          = True,
 
-            T0_year_prediction                                   = 2022,
+            T0_year_prediction                                   = 2024,
             months_lookback                                      = 12,
             months_prediction                                    = 240,
             TECspec_add_heatpump_demand_TF                       = True,   
@@ -5582,13 +5586,13 @@ if __name__ == '__main__':
 
     bfs_mini_scen_list = [ 
 
-        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}_max',
-        #     bfs_numbers                     = bfs_mini_list,
-        #     run_pvalloc_initalization_TF    = True,
-        #     run_pvalloc_mcalgorithm_TF      = True,
-        #     run_gridoptimized_orderinst_TF  = False,
-        #     run_gridoptimized_expansion_TF  = False,
-        # ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_node3_16_18_max',
+            name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID__May26',
+            run_pvalloc_initalization_TF    = True,
+            run_pvalloc_mcalgorithm_TF      = True,
+            run_gridoptimized_orderinst_TF  = False,
+            run_gridoptimized_expansion_TF  = False,
+        ), 
         # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}__max_epzb0_75',
         #     bfs_numbers                     = bfs_mini_list,
         #     run_pvalloc_initalization_TF    = True,
@@ -5598,81 +5602,81 @@ if __name__ == '__main__':
         #     CSTRspec_ep2050_rescale_fact    = 0.75,
         # ), 
         
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_NOgbauj',
-            bfs_numbers                     = [
-                2614, 2615, # RUR
-                2761, 2785, # SUB
-                2621,
-            ], 
-            name_dir_import                 = 'split_mini_geodata__5nbfs_NOgbauj',
-            # mini_sub_model_TF               = True,
-            # mini_sub_model_grid_nodes      = [
-            #                                 '838',
-            #                                 '842',
-            #                                 '849',
-            #                                 '843',
-            # ],
-            # mini_sub_model_by_X             = 'by_gridnode',
-        ), 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj',
-            bfs_numbers                     = [
-                2614, 2615, # RUR
-                2761, 2785, # SUB
-                2621,
-            ], 
-            name_dir_import                 = 'split_mini_geodata__5nbfs_Wgbauj',
-            # mini_sub_model_TF               = True,
-            # mini_sub_model_grid_nodes      = [
-            #                                 '838',
-            #                                 '842',
-            #                                 '849',
-            #                                 '843',
-            # ],
-            # mini_sub_model_by_X             = 'by_gridnode',
-            apply_GWRspec_GBAUJ_minmax_TF   = True, 
-        ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_NOgbauj',
+        #     bfs_numbers                     = [
+        #         2614, 2615, # RUR
+        #         2761, 2785, # SUB
+        #         2621,
+        #     ], 
+        #     name_dir_import                 = 'split_mini_geodata__5nbfs_NOgbauj',
+        #     # mini_sub_model_TF               = True,
+        #     # mini_sub_model_grid_nodes      = [
+        #     #                                 '838',
+        #     #                                 '842',
+        #     #                                 '849',
+        #     #                                 '843',
+        #     # ],
+        #     # mini_sub_model_by_X             = 'by_gridnode',
+        # ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj',
+        #     bfs_numbers                     = [
+        #         2614, 2615, # RUR
+        #         2761, 2785, # SUB
+        #         2621,
+        #     ], 
+        #     name_dir_import                 = 'split_mini_geodata__5nbfs_Wgbauj',
+        #     # mini_sub_model_TF               = True,
+        #     # mini_sub_model_grid_nodes      = [
+        #     #                                 '838',
+        #     #                                 '842',
+        #     #                                 '849',
+        #     #                                 '843',
+        #     # ],
+        #     # mini_sub_model_by_X             = 'by_gridnode',
+        #     apply_GWRspec_GBAUJ_minmax_TF   = True, 
+        # ), 
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj__preprep_before_Feb26',
-            bfs_numbers                     = [
-                2614, 2615, # RUR
-                2761, 2785, # SUB
-                2621,
-            ], 
-            # name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26',
-            name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI__before_Feb26',
-            GWRspec_building_cols           = ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
-                                                'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
-                                                'GEBF', 'GAREA', 
-                                                'GWAERZH1', 'GENH1',],
-            # mini_sub_model_TF               = True,
-            # mini_sub_model_grid_nodes      = [
-            #                                 '838',
-            #                                 '842',
-            #                                 '849',
-            #                                 '843',
-            # ],
-            # mini_sub_model_by_X             = 'by_gridnode',
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj__preprep_before_Feb26',
+        #     bfs_numbers                     = [
+        #         2614, 2615, # RUR
+        #         2761, 2785, # SUB
+        #         2621,
+        #     ], 
+        #     # name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI-COPYpreprep_used_untilFeb26',
+        #     name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI__before_Feb26',
+        #     GWRspec_building_cols           = ['EGID', 'GDEKT', 'GGDENR', 'GKODE', 'GKODN', 'GKSCE', 
+        #                                         'GSTAT', 'GKAT', 'GKLAS', 'GBAUJ', 'GBAUM', 'GBAUP', 'GABBJ', 'GANZWHG', 
+        #                                         'GEBF', 'GAREA', 
+        #                                         'GWAERZH1', 'GENH1',],
+        #     # mini_sub_model_TF               = True,
+        #     # mini_sub_model_grid_nodes      = [
+        #     #                                 '838',
+        #     #                                 '842',
+        #     #                                 '849',
+        #     #                                 '843',
+        #     # ],
+        #     # mini_sub_model_by_X             = 'by_gridnode',
             
 
-            ),
+        #     ),
             
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj__EGID_gwradded_T',
-            bfs_numbers                     = [
-                2614, 2615, # RUR
-                2761, 2785, # SUB
-                2621,
-            ], 
-            name_dir_import                 = 'split_mini_geodata__5nbfs_Wgbauj__EGID_gwradded_T',
-            # mini_sub_model_TF               = True,
-            # mini_sub_model_grid_nodes      = [
-            #                                 '838',
-            #                                 '842',
-            #                                 '849',
-            #                                 '843',
-            # ],
-            # mini_sub_model_by_X             = 'by_gridnode',
-            apply_GWRspec_GBAUJ_minmax_TF   = True, 
-        ), 
+        # make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_5nbfs__preprep_Wgbauj__EGID_gwradded_T',
+        #     bfs_numbers                     = [
+        #         2614, 2615, # RUR
+        #         2761, 2785, # SUB
+        #         2621,
+        #     ], 
+        #     name_dir_import                 = 'split_mini_geodata__5nbfs_Wgbauj__EGID_gwradded_T',
+        #     # mini_sub_model_TF               = True,
+        #     # mini_sub_model_grid_nodes      = [
+        #     #                                 '838',
+        #     #                                 '842',
+        #     #                                 '849',
+        #     #                                 '843',
+        #     # ],
+        #     # mini_sub_model_by_X             = 'by_gridnode',
+        #     apply_GWRspec_GBAUJ_minmax_TF   = True, 
+        # ), 
 
     ]
 
