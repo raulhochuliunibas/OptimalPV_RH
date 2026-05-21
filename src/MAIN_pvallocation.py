@@ -297,7 +297,7 @@ class PVAllocScenario_Settings:
                                                             #     '245057295', '245057294', '245011456', '391379', '391377'
                                                             # ])
     CHECKspec_n_EGIDs_of_alloc_algorithm: int               = 20
-    CHECKspec_n_iterations_before_sanitycheck: int          = 1
+    CHECKspec_n_iterations_before_sanitycheck: int          = 2
     # endregion
 
     # PART II: settings for MC algorithm --------------------
@@ -388,6 +388,13 @@ class PVAllocScenario_Settings:
                                                                 })
     GRIDspec_node_1hll_closed_TF: bool                         = False       # F: installations can still be built in grid nodes that have > 1 HOY Lost Load, T: no installations in circuits which have just 1 hour of lost load in the grid_updating stage. 
     GRIDspec_subsidy_name: str                                 = 'default_subsidy'   # 'subsidy_name' / None
+    
+    # peak-shaving settings
+    GRID_peak_shaving_enabled_tupl: tuple                         = (False, 9999, 1 )         # (Enable/disable peak-shaving feature, node HC ratio threshold for peak-shaving activation (e.g. 0.9  = 90%), production reduction factor during peak-shaving (e.g. 0.7 = 70% of production))
+    # GRID_peak_shaving_enabled_TF: bool                          = False                # Enable/disable peak-shaving feature
+    # GRID_peak_shaving_node_criticality_threshold: float          = 0.9                 # Node HC ratio threshold (e.g., 0.9 = 90%)
+    # GRID_peak_shaving_production_factor: float                   = 0.7                 # Production reduction factor (e.g., 0.7 = 70% of production)
+    
     GRIDspec_subsidy_filtag_node_schemes: Dict[str, float]     = field(default_factory=lambda: {
 
         # new naming convention ---------------------------------------
@@ -755,7 +762,7 @@ class PVAllocScenario:
             self.algo_update_gridnode_AND_gridprem_POLARS(self.sett.sanity_check_path, i_m, m)
 
             if self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
-                self.algo_update_npv_df_RFR(self.sett.sanity_check_path, i_m, m)
+                self.algo_update_npv_df_RFR(self.sett.sanity_check_path, i_m, m, rfr_model, encoder)
                 self.algo_select_AND_adjust_topology_RFR(self.sett.sanity_check_path, i_m, m)
             else:
                 print_to_logfile('ERROR: specified "ALGOspec_pvinst_size_calculation" is not available', self.sett.log_name)
@@ -957,7 +964,7 @@ class PVAllocScenario:
                             start_time_update_npv = datetime.datetime.now()
                             print_to_logfile('- START update npv', self.sett.log_name)
                             if self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
-                                self.algo_update_npv_df_RFR(self.sett.mc_iter_path, i_m, m)
+                                self.algo_update_npv_df_RFR(self.sett.mc_iter_path, i_m, m, rfr_model, encoder)
                             else:
                                 break
 
@@ -3311,7 +3318,7 @@ class PVAllocScenario:
             epzb_capa_df['ratio_sample_allCH'] = nEGIDs_SAMPLE / nEGIDs_all_CH
             epzb_capa_df['epzb_capa_sample_kw'] = epzb_capa_df['epzb_capa_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1) * epzb_capa_df['ratio_sample_allCH'] * epzb_scaling_factor
             epzb_capa_df['constr_capacity_kw'] = epzb_capa_df['epzb_capa_sample_kw']
-            constrcapa_epzb = epzb_capa_df[['date', 'year', 'month', 'constr_capacity_kw']]
+            constrcapa_epzb = epzb_capa_df[['date', 'year', 'month', 'constr_capacity_kw', 'epzb_capa_kw', 'class1', 'class2', 'class3', 'class4']].copy()
 
             
             # PLOT  COMPARISON  ----------------------------------------------------------------------------
@@ -4585,6 +4592,71 @@ class PVAllocScenario:
                     (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                 ])
 
+                # Apply per-house (per-EGID) peak-shaving when in later iterations (i_m > 1).
+                # This shifts the withholding to the individual-house level so node aggregation
+                # later sums already reflect shaved production. When not applied, we still
+                # provide the pre-peak-shave column for consistency.
+                GRID_peak_shave_TF          = self.sett.GRID_peak_shaving_enabled_tupl[0]
+                GRID_peak_shave_crit_level  = self.sett.GRID_peak_shaving_enabled_tupl[1]
+                GRID_peak_shave_reduct_fact = self.sett.GRID_peak_shaving_enabled_tupl[2]
+
+                if i_m > 1 and GRID_peak_shave_TF:
+
+                    # join gridnode_df to agg_egids, to find critical hours
+                    gridnode_df = pl.read_parquet(f'{subdir_path}/gridnode_df.parquet')
+                    gridnode_df.columns
+ 
+                    agg_egids = agg_egids.join(gridnode_df[['grid_node', 't', 'max_demand_feedin_atnode_kW', 'kW_threshold']], on=['grid_node', 't'], how='left')                  
+                    agg_egids = agg_egids.with_columns([
+                        (pl.col('max_demand_feedin_atnode_kW') / pl.col('kW_threshold')).alias('HC_ratio'), 
+                    ])
+
+                    # apply peak shaving in relevant hours
+                    agg_egids = (
+                        agg_egids
+                        .with_columns(
+                            pl.col('netfeedin_kW').alias('netfeedin_prepeakshave_kW')
+                        )
+                        .with_columns([
+                            pl.when(
+                                (pl.col('HC_ratio').is_not_null()) &
+                                (pl.col('HC_ratio') > GRID_peak_shave_crit_level)
+                            )
+                            .then(
+                                pl.col('netfeedin_prepeakshave_kW') *
+                                pl.lit(GRID_peak_shave_reduct_fact)
+                            )
+                            .otherwise(pl.col('netfeedin_prepeakshave_kW'))
+                            .alias('netfeedin_kW'),
+
+                            pl.when(
+                                (pl.col('HC_ratio').is_not_null()) &
+                                (pl.col('HC_ratio') > GRID_peak_shave_crit_level)
+                            )
+                            .then(
+                                pl.col('netfeedin_prepeakshave_kW') *
+                                (pl.lit(1.0) - pl.lit(GRID_peak_shave_reduct_fact))
+                            )
+                            .otherwise(0.0)
+                            .alias('peak_shaved_kW')
+                        ])
+                    )
+
+
+                    # cleanup helper cols
+                    for col in ['max_demand_feedin_atnode_kW', 'kW_threshold', 'HC_ratio']:
+                        if col in agg_egids.columns:
+                            agg_egids = agg_egids.drop(col)
+
+                else:
+                    # keep prepeak column for consistent downstream processing
+                    agg_egids = agg_egids.with_columns([
+                        pl.col('netfeedin_kW').alias('netfeedin_prepeakshave_kW'),
+                        pl.lit(0.0).alias('peak_shaved_kW')
+                    ])
+
+                    
+
                 # (for visualization later) -----
                 # only select egids for grid_node mentioned above
                 agg_egids_all_list.append(agg_egids)
@@ -4599,7 +4671,9 @@ class PVAllocScenario:
                 pl.col('demand_kW').sum().alias('demand_kW'),
                 pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                 pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                pl.col('netfeedin_prepeakshave_kW').sum().alias('netfeedin_prepeakshave_kW'),
                 pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                pl.col('peak_shaved_kW').sum().alias('peak_shaved_kW'),
                 pl.col('netdemand_kW').sum().alias('netdemand_kW'), 
                 pl.col('radiation').sum().alias('radiation'),
                 ])
@@ -4639,7 +4713,9 @@ class PVAllocScenario:
                 pl.col('demand_kW').sum().alias('demand_kW'),
                 pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                 pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                pl.col('netfeedin_prepeakshave_kW').sum().alias('netfeedin_prepeakshave_kW'),
                 pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                pl.col('peak_shaved_kW').sum().alias('peak_shaved_kW'),
                 pl.col('netdemand_kW').sum().alias('netdemand_kW'),
                 pl.col('radiation').sum().alias('radiation'),
             ])
@@ -4852,7 +4928,7 @@ class PVAllocScenario:
 
 
 
-        def algo_update_npv_df_RFR(self, subdir_path: str, i_m: int, m):
+        def algo_update_npv_df_RFR(self, subdir_path: str, i_m: int, m, rfr_model, encoder):
             """
                 This function estimates the installation size of all houses in sample, based on a previously run statistical model calibration. 
                 This stat model coefficients are imported and used to determine the most realistic installation size chose for the house
@@ -4868,11 +4944,21 @@ class PVAllocScenario:
             gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    
             topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
 
-            rfr_model = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_model.pkl')
-            encoder   = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_encoder.pkl')
-
             node_1hll_closed_dict     = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r')) 
             node_subsidy_monitor_dict = json.load(open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'r'))
+
+            GRID_peak_shave_TF          = self.sett.GRID_peak_shaving_enabled_tupl[0]
+            GRID_peak_shave_crit_level  = self.sett.GRID_peak_shaving_enabled_tupl[1]
+            GRID_peak_shave_reduct_fact = self.sett.GRID_peak_shaving_enabled_tupl[2]
+
+            gridnode_df_peakshave = None
+            if i_m > 1 and GRID_peak_shave_TF:
+                gridnode_df_peakshave = pl.read_parquet(f'{subdir_path}/gridnode_df.parquet').select([
+                    'grid_node',
+                    't',
+                    'max_demand_feedin_atnode_kW',
+                    'kW_threshold',
+                ])
                     
 
             # import topo_time_subdfs -----------------------------------------------------
@@ -5162,6 +5248,70 @@ class PVAllocScenario:
                             (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                         ])
 
+                        # Apply per-household peak shaving for later iterations so NPV reflects withheld feed-in.
+                        if i_m > 1 and GRID_peak_shave_TF and gridnode_df_peakshave is not None:
+                            egid_agg = egid_agg.join(gridnode_df_peakshave, on=['grid_node', 't'], how='left')
+                            egid_agg = egid_agg.with_columns([
+                                (pl.col('max_demand_feedin_atnode_kW') / pl.col('kW_threshold')).alias('HC_ratio'), 
+                            ])
+                            # apply peak shaving in relevant hours
+                            egid_agg = (
+                                egid_agg
+                                .with_columns(
+                                    pl.col('netfeedin_kW').alias('netfeedin_prepeakshave_kW')
+                                )
+                                .with_columns([
+                                    pl.when(
+                                        (pl.col('HC_ratio').is_not_null()) &
+                                        (pl.col('HC_ratio') > GRID_peak_shave_crit_level)
+                                    )
+                                    .then(
+                                        pl.col('netfeedin_prepeakshave_kW') *
+                                        pl.lit(GRID_peak_shave_reduct_fact)
+                                    )
+                                    .otherwise(pl.col('netfeedin_prepeakshave_kW'))
+                                    .alias('netfeedin_kW'),
+
+                                    pl.when(
+                                        (pl.col('HC_ratio').is_not_null()) &
+                                        (pl.col('HC_ratio') > GRID_peak_shave_crit_level)
+                                    )
+                                    .then(
+                                        pl.col('netfeedin_prepeakshave_kW') *
+                                        (pl.lit(1.0) - pl.lit(GRID_peak_shave_reduct_fact))
+                                    )
+                                    .otherwise(0.0)
+                                    .alias('peak_shaved_kW')
+                                ])
+                            )
+                            # egid_agg = egid_agg.with_columns([
+                            #     (pl.col('max_demand_feedin_atnode_kW') / pl.col('kW_threshold')).alias('HC_ratio'),
+                            #     pl.col('netfeedin_kW').alias('netfeedin_prepeakshave_kW'),
+                            # ])
+                            # egid_agg = egid_agg.with_columns([
+                            #     pl.when(
+                            #         (pl.col('HC_ratio').is_not_null()) & (pl.col('HC_ratio') > GRID_peak_shave_crit_level)
+                            #     )
+                            #     .then(pl.col('netfeedin_prepeakshave_kW') * pl.lit(GRID_peak_shave_reduct_fact))
+                            #     .otherwise(pl.col('netfeedin_prepeakshave_kW'))
+                            #     .alias('netfeedin_kW'),
+                            #     pl.when(
+                            #         (pl.col('HC_ratio').is_not_null()) & (pl.col('HC_ratio') > GRID_peak_shave_crit_level)
+                            #     )
+                            #     .then(pl.col('netfeedin_prepeakshave_kW') * (pl.lit(1.0) - pl.lit(GRID_peak_shave_reduct_fact)))
+                            #     .otherwise(0.0)
+                            #     .alias('peak_shaved_kW'),
+                            # ])
+
+                            for col in ['max_demand_feedin_atnode_kW', 'kW_threshold', 'HC_ratio']:
+                                if col in egid_agg.columns:
+                                    egid_agg = egid_agg.drop(col)
+                        else:
+                            egid_agg = egid_agg.with_columns([
+                                pl.col('netfeedin_kW').alias('netfeedin_prepeakshave_kW'),
+                                pl.lit(0.0).alias('peak_shaved_kW'),
+                            ])
+
                         # calc econ spend/inc chf
                         egid_agg = egid_agg.with_columns([
                             ((pl.col("netfeedin_kW") * pl.col("pvtarif_Rp_kWh")) / 100 + (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf")
@@ -5205,7 +5355,9 @@ class PVAllocScenario:
                             pl.col('demand_kW').sum().alias('demand_kW'),
                             pl.col('pvprod_kW').sum().alias('pvprod_kW'),
                             pl.col('selfconsum_kW').sum().alias('selfconsum_kW'),
+                            pl.col('netfeedin_prepeakshave_kW').sum().alias('netfeedin_prepeakshave_kW'),
                             pl.col('netfeedin_kW').sum().alias('netfeedin_kW'),
+                            pl.col('peak_shaved_kW').sum().alias('peak_shaved_kW'),
                             pl.col('netdemand_kW').sum().alias('netdemand_kW'),
                             pl.col('econ_inc_chf').sum().alias('econ_inc_chf'),
                             pl.col('econ_spend_chf').sum().alias('econ_spend_chf'),
@@ -5573,7 +5725,7 @@ if __name__ == '__main__':
                                                                     # '411', 
                                                                     # '415', 
                                                                     ],
-            mini_sub_model_nEGIDs                                = 1000,
+            mini_sub_model_nEGIDs                                = 500,
             create_gdf_export_of_topology                        = True,
             export_csvs                                          = True,
 
@@ -5601,12 +5753,29 @@ if __name__ == '__main__':
 
     bfs_mini_scen_list = [ 
 
-        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_node3_16_18_max',
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_node3_16_18_max_noPS',
             name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID__May26',
             run_pvalloc_initalization_TF    = True,
             run_pvalloc_mcalgorithm_TF      = True,
             run_gridoptimized_orderinst_TF  = False,
             run_gridoptimized_expansion_TF  = False,
+            GRID_peak_shaving_enabled_tupl  = (False, 99, 1), 
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_node3_16_18_max_PS99_1',
+            name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID__May26',
+            run_pvalloc_initalization_TF    = True,
+            run_pvalloc_mcalgorithm_TF      = True,
+            run_gridoptimized_orderinst_TF  = False,
+            run_gridoptimized_expansion_TF  = False,
+            GRID_peak_shaving_enabled_tupl  = (True, 99, 1), 
+        ), 
+        make_scenario(pvalloc_mini_DEFAULT, name_dir_export ='debug_node3_16_18_max_PS09_07',
+            name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID__May26',
+            run_pvalloc_initalization_TF    = True,
+            run_pvalloc_mcalgorithm_TF      = True,
+            run_gridoptimized_orderinst_TF  = False,
+            run_gridoptimized_expansion_TF  = False,
+            GRID_peak_shaving_enabled_tupl  = (True, 0.9, 0.7),
         ), 
         # make_scenario(pvalloc_mini_DEFAULT, name_dir_export =f'{bfs_mini_name}__max_epzb0_75',
         #     bfs_numbers                     = bfs_mini_list,
