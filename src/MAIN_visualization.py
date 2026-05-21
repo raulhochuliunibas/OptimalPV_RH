@@ -332,7 +332,7 @@ class Visual_Settings:
             # ('NEIGUNG_share_used',      10, ),
             ], 
         'n_cols_catg_charact': 2,
-        'max_n_rows_catg_charact': 8, 
+        'max_n_rows_catg_charact': 20, 
         'cols_catg_charact_inst': [
             'GKLAS',
             # 'GSTAT',
@@ -599,6 +599,26 @@ class Visualization:
                 elif geom.geom_type == 'MultiPolygon':
                     return MultiPolygon([self.flatten_geometry(poly) for poly in geom.geoms])
             return geom
+
+        def _set_mc_data_path_or_skip(self, scen):
+            mc_pattern = f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}'
+            mc_paths = sorted(glob.glob(mc_pattern))
+
+            if len(mc_paths) == 0:
+                print_to_logfile(
+                    f'\tSKIP scen (missing MC folder): {scen} | pattern: {self.visual_sett.MC_subdir_for_plot}',
+                    self.visual_sett.log_name
+                )
+                return False
+
+            if len(mc_paths) > 1:
+                print_to_logfile(
+                    f'\tINFO multiple MC folders for {scen}; using first sorted match: {os.path.basename(mc_paths[0])}',
+                    self.visual_sett.log_name
+                )
+
+            self.visual_sett.mc_data_path = mc_paths[0]
+            return True
 
         def export_cmd_GridOptim_parallel_HPC(self, name_dir_export): 
 
@@ -2096,7 +2116,8 @@ class Visualization:
 
                 fig_agg_pmonth = go.Figure()
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
@@ -2431,7 +2452,8 @@ class Visualization:
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
 
                     # setup + import ----------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0] # take first path if multiple apply, so code can still run properlyrly
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     gridnode_df = pl.read_parquet(f'{self.visual_sett.mc_data_path}/gridnode_df.parquet')
@@ -2606,7 +2628,8 @@ class Visualization:
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
 
                     # setup + import ----------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0] # take first path if multiple apply, so code can still run properlyrly
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     iter_to_plot = [ 1, 2, 3, 4, 5, 6, 7, 8]
@@ -2732,7 +2755,8 @@ class Visualization:
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
 
                     # setup + import --------------------------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
@@ -3355,7 +3379,8 @@ class Visualization:
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
 
                     # setup + import --------------------------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     topo = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
@@ -4072,7 +4097,8 @@ class Visualization:
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
 
                     # setup + import --------------------------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     gridnode_df_paths = glob.glob(f'{self.visual_sett.mc_data_path}/pred_gridprem_node_by_M/gridnode_df_*.parquet')
@@ -4426,7 +4452,8 @@ class Visualization:
                 scen_filter_tags_list = []
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     # setup + import ----------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
                     exclude_filter_tags = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['exclude_filter_tags']
                     nbins               = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['nbins']
@@ -4455,7 +4482,8 @@ class Visualization:
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     # setup + import ----------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
                     exclude_filter_tags = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['exclude_filter_tags']
                     nbins               = self.visual_sett.plot_ind_hist_NPV_freepartitions_specs['nbins']
@@ -4599,7 +4627,8 @@ class Visualization:
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     # setup + import ----------
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     gridprem_ts = pd.read_parquet(f'{self.visual_sett.mc_data_path}/gridprem_ts.parquet')
@@ -4666,7 +4695,8 @@ class Visualization:
                 checkpoint_to_logfile('plot_ind_line_gridPremium_structure', self.visual_sett.log_name)
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     # setup + import ----------
@@ -4727,7 +4757,8 @@ class Visualization:
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                         
-                        self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                        if not self._set_mc_data_path_or_skip(scen):
+                            continue
                         self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                         # setup + import ----------
@@ -4880,7 +4911,8 @@ class Visualization:
 
                     # get pvinst_gdf ----------------
                     if True: 
-                        self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                        if not self._set_mc_data_path_or_skip(scen):
+                            continue
 
                         # import
                         gwr_gdf =       gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
@@ -5112,7 +5144,8 @@ class Visualization:
 
                     # get pvinst_gdf ----------------
                     if True: 
-                        self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                        if not self._set_mc_data_path_or_skip(scen):
+                            continue
 
                         # import
                         gwr_gdf         = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
@@ -5432,7 +5465,8 @@ class Visualization:
                 checkpoint_to_logfile('plot_ind_map_node_connections', self.visual_sett.log_name)
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
 
                     # import
                     gwr_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
@@ -5626,7 +5660,8 @@ class Visualization:
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
 
                     TECspec_self_consumption_ifapplicable = self.pvalloc_scen.TECspec_self_consumption_ifapplicable
 
@@ -7203,7 +7238,8 @@ class Visualization:
                 # color dict ----------
                 global_color_iter_rows = []
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     list_pred_inst_df = glob.glob(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/pred_inst_df*.parquet')
                     iter_list = [int(os.path.basename(f).split('pred_inst_df_')[1].split('.parquet')[0]) for f in list_pred_inst_df]
                     max_iter = max(iter_list)
@@ -7221,7 +7257,8 @@ class Visualization:
                 # Plots ----------------------------------------
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     list_pred_inst_df = glob.glob(f'{self.visual_sett.mc_data_path}/pred_npv_inst_by_M/pred_inst_df*.parquet')
                     iter_list = [int(os.path.basename(f).split('pred_inst_df_')[1].split('.parquet')[0]) for f in list_pred_inst_df]
                     max_iter = max(iter_list)
@@ -7309,7 +7346,8 @@ class Visualization:
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     # setup + import ----------
@@ -7470,7 +7508,8 @@ class Visualization:
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen):
+                        continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
                     # setup + import ----------
@@ -7755,7 +7794,8 @@ class Visualization:
                     global_color_rows = []
                     for i_scen, scen in enumerate(self.pvalloc_scen_list):
                         self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
-                        self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                        if not self._set_mc_data_path_or_skip(scen):
+                            continue
 
                         # import
                         topo         = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
@@ -7823,7 +7863,8 @@ class Visualization:
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen}/{self.visual_sett.MC_subdir_for_plot}')[0]
+                    if not self._set_mc_data_path_or_skip(scen):
+                        continue
 
                     # import
                     topo         = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
