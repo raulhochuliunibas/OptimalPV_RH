@@ -1,0 +1,24 @@
+\section*{Loss and Net Subsidy Summary}
+
+\subsection*{Feed-in Loss by Scenario and Iteration}
+\begin{tabular}{llll}
+\toprule
+Iteration & 4 & 6 & 8 \\
+Scenario &  &  &  \\
+\midrule
+pvalloc\_29nbfs\_LRG2\_max & 0.0 & 25.3 & 1'449.8 \\
+pvalloc\_29nbfs\_LRG2\_max\_sCs2p8 & 0.0 & 9.8 & 143.7 \\
+\bottomrule
+\end{tabular}
+
+
+\subsection*{Net Subsidy by Scenario and Iteration}
+\begin{tabular}{llll}
+\toprule
+Iteration & 4 & 6 & 8 \\
+Scenario &  &  &  \\
+\midrule
+pvalloc\_29nbfs\_LRG2\_max & -14'004'096 CHF & -19'374'890 CHF & -25'570'519 CHF \\
+pvalloc\_29nbfs\_LRG2\_max\_sCs2p8 & 0 CHF & 0 CHF & 0 CHF \\
+\bottomrule
+\end{tabular}
