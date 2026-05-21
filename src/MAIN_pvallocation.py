@@ -742,6 +742,13 @@ class PVAllocScenario:
         trange_prediction_df = pd.read_parquet(f'{self.sett.name_dir_export_path}/trange_prediction.parquet')
         trange_prediction = [str(m.date()) for m in trange_prediction_df['date']]
 
+        # Load models once before loop to avoid repeated memory allocation
+        if self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
+            rfr_model = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_model.pkl')
+            encoder   = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_encoder.pkl')
+        else:
+            rfr_model, encoder = None, None
+
         for i_m, m in enumerate(trange_prediction[0:self.sett.CHECKspec_n_iterations_before_sanitycheck]):
             i_m = i_m + 1
             print_to_logfile(f'\n-- month {m} -- sanity check -- {self.sett.name_dir_export} --', self.sett.log_name)
@@ -907,6 +914,13 @@ class PVAllocScenario:
             trange_prediction_df = pd.read_parquet(f'{self.sett.mc_iter_path}/trange_prediction.parquet')
             trange_prediction = [m.date() for m in trange_prediction_df['date']]
             constrcapa = pd.read_parquet(f'{self.sett.mc_iter_path}/constrcapa.parquet')
+
+            # Load models once before loop to avoid repeated memory allocation
+            if self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
+                rfr_model = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_model.pkl')
+                encoder   = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_encoder.pkl')
+            else:
+                rfr_model, encoder = None, None
 
             for i_m, m in enumerate(trange_prediction):
                 i_m = i_m + 1    
@@ -1774,6 +1788,7 @@ class PVAllocScenario:
     # ======================================================================================================
     
     # AUXILIARY ---------------------------------------------------------------------------
+
     def export_pvalloc_scen_settings(self):
             """
             Input:
