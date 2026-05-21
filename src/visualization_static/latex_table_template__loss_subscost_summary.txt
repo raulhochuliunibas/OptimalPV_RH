@@ -1,0 +1,7 @@
+\section*{{Loss and Net Subsidy Summary}}
+
+\subsection*{{Feed-in Loss by Scenario and Iteration}}
+{loss_table}
+
+\subsection*{{Net Subsidy by Scenario and Iteration}}
+{net_subsidy_table}

@@ -1,4 +1,4 @@
-from calibration_class import Calibration_Settings, Calibration
+from src.calibration_randomforestreg.calibration_class import Calibration_Settings, Calibration
 
 if __name__ == '__main__':
     preprep_list = [
