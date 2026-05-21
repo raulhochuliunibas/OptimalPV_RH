@@ -31,33 +31,33 @@ visualization_list = [
 
         Visual_Settings(
             pvalloc_exclude_pattern_list = [
-                '*.txt',
+                '*.txt', "*old_vers*",
             ], 
             pvalloc_include_pattern_list = [      
-                'DEV2_pvalloc_16nbfs_RUR_max',
-                # 'DEV2_pvalloc_16nbfs_RUR_max_1hll', 
-                # 'DEV2_pvalloc_16nbfs_RUR_gridoptim_max', 
-                # 'DEV2_pvalloc_16nbfs_RUR_max_sCs4p6', 
-                'x_DEV2_pvalloc_10nbfs_SUB_max_11_old_vers', 
-                # 'DEV2_pvalloc_10nbfs_SUB_max_1hll', 
-                # 'DEV2_pvalloc_10nbfs_SUB_gridoptim_max', 
-                # 'DEV2_pvalloc_10nbfs_SUB_max_sCs4p6', 
-                # 'DEV2_pvalloc_29nbfs_LRG2_max' , 
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_1hll', 
-                # 'DEV2_pvalloc_29nbfs_LRG2_gridoptim_max', 
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_sCs4p6',
+                'pvalloc_29nbfs_LRG2_max', 
+                
+                'pvalloc_29nbfs_LRG2_rnd', 
+                'pvalloc_29nbfs_LRG2_max_1hll', 
 
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb1',
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb0_75',
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb0_5',
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb0_1',
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_epzb1',
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_hist_constr', 
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_hist_constrgr0_05', 
-                # 'DEV2_pvalloc_29nbfs_LRG2_max_hist_constrgr0_01', 
+                'pvalloc_29nbfs_LRG2_gridoptim_max',
 
-                'DEV_pvalloc_10nbfs_SUB_max_prepFeb26', 
-                'DEV_pvalloc_16nbfs_RUR_max_prepFeb26', 
+                'pvalloc_29nbfs_LRG2_max_sAs6p0',
+                'pvalloc_29nbfs_LRG2_max_sBs0p8',
+            
+                'pvalloc_29nbfs_LRG2_max_sCs*p6',
+                'pvalloc_29nbfs_LRG2_max_sCs*p8',
+
+                'pvalloc_29nbfs_LRG2_max_epzb1', 
+                'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_1',
+                'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_2',
+                'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_3',
+
+                'pvalloc_29nbfs_LRG2_max_pksh', 
+                'pvalloc_29nbfs_LRG2_max_pksh991', 
+
+                'pvalloc_29nbfs_LRG2_max_pksh_sCs2p8', 
+                'pvalloc_29nbfs_LRG2_max_pksh_sCs4p8', 
+                'pvalloc_29nbfs_LRG2_max_pksh_sCs6p8', 
                 ],
 
             cut_timeseries_to_zoom_hour        = True,
@@ -69,20 +69,61 @@ visualization_list = [
                 'n_top_loss_nodes': 0,
                 },
             
-            plot_ind_line_installedCap_TF                   = [True,      True,       False]    ,
-            plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
-            plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,      False],
-            # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],
-            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            # plot_ind_line_installedCap_TF                   = [True,      True,       False]    ,
+            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            # plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,      False],
+            # # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],
+            # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
 
-            # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
-            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
-            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
-            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            # # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
+            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
 
             # plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
 
             # plot_ind_hist_cols_HOYagg_per_EGID_TF         = [True,      True,      False],
+            ), 
+
+        Visual_Settings(
+            pvalloc_exclude_pattern_list = [
+                '*.txt', "*old_vers*",
+            ], 
+            pvalloc_include_pattern_list = [      
+                'pvalloc_29nbfs_LRG2_max', 
+                
+                'pvalloc_29nbfs_LRG2_max_1hll', 
+
+                'pvalloc_29nbfs_LRG2_max_sAs6p0',
+                'pvalloc_29nbfs_LRG2_max_sBs0p8',
+            
+                'pvalloc_29nbfs_LRG2_max_sCs*p6',
+                'pvalloc_29nbfs_LRG2_max_sCs*p8',
+
+                'pvalloc_29nbfs_LRG2_max_epzb1', 
+                'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_1',
+                'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_2',
+                'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_3',
+
+                'pvalloc_29nbfs_LRG2_max_pksh', 
+
+                'pvalloc_29nbfs_LRG2_max_pksh_sCs2p8', 
+                'pvalloc_29nbfs_LRG2_max_pksh_sCs4p8', 
+                'pvalloc_29nbfs_LRG2_max_pksh_sCs6p8', 
+                ],
+
+            cut_timeseries_to_zoom_hour        = True,
+            add_day_night_HOY_bands            = True,
+            save_plot_by_scen_directory        = False, 
+
+            plot_ind_line_PVproduction_bynode_specs  = {
+                'select_nodes_stacked_traces': [], 
+                'n_top_loss_nodes': 0,
+                },
+
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+
             ), 
 
 ]

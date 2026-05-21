@@ -7358,6 +7358,7 @@ class Visualization:
                 
                     topo         = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
                     pred_inst_df = pl.read_parquet( f'{self.visual_sett.mc_data_path}/pred_inst_df.parquet')
+                    npv_df       = pl.read_parquet( f'{self.visual_sett.mc_data_path}/npv_df.parquet')
 
 
                     # add iter_round col if missing
@@ -7402,6 +7403,12 @@ class Visualization:
                         pl.col('AUSRICHTUNG_share_used').sum().alias('AUSRICHTUNG_share_used'),
                         pl.col('NEIGUNG_share_used').sum().alias('NEIGUNG_share_used'),
                         pl.col('AUSRICHTUNG').mean().alias('AUSRICHTUNG_mean'),
+
+                        pl.col('dfuidPower').sum().alias('dfuidPower'),
+                        pl.col('demand_kW').first().alias('demand_kW'),
+                        pl.col('pvprod_kW').first().alias('pvprod_kW'),
+                        pl.col('selfconsum_kW').first().alias('selfconsum_kW'),
+                        pl.col('NPV_uid').first().alias('NPV_uid'),
                     ])
 
                     # add iter_color_map
@@ -7457,12 +7464,28 @@ class Visualization:
                                 col=subplot_col,
                             )
 
-                        # append export plot data
-                            # if i_col == 0:
-                        tmp_df = df_plot.loc[:,['iter_round','GAREA', 'FLAECHE' ]].copy()
-                        tmp_df.loc[:,'scen'] = scen
 
-                        export_plot_data_list.append(tmp_df)
+                    # add npv data to tmp_df
+                    cols_to_join = ['pred_instPower', 'estim_pvinstcost_chf', 'NPV_uid_before_subsidy', 'subs_nodeHC_chf', 'pena_nodeHC_chf', 'NPV_uid', 'econ_inc_chf', 'econ_spend_chf']
+                    cols_in_npvdfforjoin = [col for col in cols_to_join if col in npv_df.columns]
+                    if len(cols_in_npvdfforjoin) > 0:
+                        df_plot_npv = pl.DataFrame(df_plot).join(
+                            npv_df.select(['EGID',] + cols_in_npvdfforjoin),
+                            on =['EGID',],
+                            how='left',
+                        ).to_pandas()
+                    else:
+                        df_plot_npv = df_plot.to_pandas()
+                     
+                    # append export plot data
+                    pred_inst_cols_to_csv = ['EGID', 'iter_round','GAREA', 'FLAECHE', 'dfuidPower', 'demand_kW', 'pvprod_kW', 'selfconsum_kW']
+                    cols_in_npvdfforjoin = [col for col in cols_in_npvdfforjoin]
+                    tmp_df = df_plot_npv[pred_inst_cols_to_csv + cols_in_npvdfforjoin]
+                    # tmp_df.loc[:,'scen'] = scen
+                    tmp_df = tmp_df.assign(scen=scen)
+
+
+                    export_plot_data_list.append(tmp_df)
 
 
 
@@ -7508,7 +7531,7 @@ class Visualization:
 
                 for i_scen, scen in enumerate(self.pvalloc_scen_list):
                     
-                    self.visual_sett.mc_data_path = glob.glob(f'{self.visual_sett.data_path}/pvalloc/{scen):
+                    if not self._set_mc_data_path_or_skip(scen):
                         continue
                     self.get_pvalloc_sett_output(pvalloc_scen_name = scen)
 
@@ -7520,7 +7543,8 @@ class Visualization:
                 
                     topo         = json.load(open(f'{self.visual_sett.mc_data_path}/topo_egid.json', 'r'))
                     pred_inst_df = pl.read_parquet( f'{self.visual_sett.mc_data_path}/pred_inst_df.parquet')
-                    npv_df       = pl.read_parquet( f'{self.visual_sett.mc_data_path}/npv_df.parquet')
+                    npv_df       = pl.read_parquet( os.path.join(self.visual_sett.mc_data_path, 'pred_npv_inst_by_M', 'npv_df_1.parquet'))
+                    # npv_df       = pl.read_parquet( os.path.join(self.visual_sett.data_path, 'pvalloc', scen, 'zMC1', 'pred_npv_inst_by_M', 'npv_df_1.parquet'))
 
                     pred_inst_df = pred_inst_df.with_columns([
                         pl.col('iter_round').cast(pl.Int64).alias('iter_round'),
@@ -8138,7 +8162,8 @@ if __name__ == '__main__':
                 # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                'DEV2_pvalloc_16nbfs_RUR_max',
+                'pvalloc_29nbfs_LRG2_max',
+                # 'DEV2_pvalloc_16nbfs_RUR_max',
                 # 'debug_4nodes_max_wGBAUJminmax',
                 # 'debug_4nodes_max__preprep_before_Feb26',
             ],
@@ -8154,14 +8179,15 @@ if __name__ == '__main__':
             default_map_zoom                   = 10,
             default_map_center                 = [47.46, 7.58],
 
+            # plot_ind_line_installedCap_TF                   = [True,      True,       False]    ,
             # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
             # plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,      False],
-            # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],
-            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            # # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],
+            # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
 
-            # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
-            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
-            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            # # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
+            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
             plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
 
 
