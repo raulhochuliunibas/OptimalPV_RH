@@ -254,15 +254,18 @@ class PVAllocScenario_Settings:
                                                         ])    
     
     # tech_economic_specs
-    TECspec_self_consumption_ifapplicable: float            = 1.0
-    TECspec_interest_rate: float                            = 0.01
-    TECspec_pvtarif_year: int                               = 2022
-    TECspec_pvtarif_col: List[str]                          = field(default_factory=lambda: ['energy1', ])  # 'energy1', 'eco1'
+    TECspec_KEVflatsubs: float                              = 0.3
     TECspec_generic_pvtarif_Rp_kWh: float                   = None 
+    TECspec_generic_elecpri_Rp_kWh: float                   = None 
+
+    # TECspec_pvtarif_year: int                               = 2023
+    # TECspec_elecpri_year: int                               = 2023
+    TECspec_interest_rate: float                            = 0.015
+    TECspec_self_consumption_ifapplicable: float            = 1.0
+    TECspec_pvtarif_col: List[str]                          = field(default_factory=lambda: ['energy1', ])  # 'energy1', 'eco1'
     TECspec_pvprod_calc_method: str                         = 'method2.2'
     TECspec_panel_efficiency: float                         = 0.21
     TECspec_inverter_efficiency: int                        = 0.8
-    TECspec_elecpri_year: int                               = 2022
     TECspec_elecpri_category: str                           = 'H4'
     TECspec_invst_maturity: int                             = 25
     TECspec_kWpeak_per_m2: float                            = 0.2
@@ -571,7 +574,10 @@ class PVAllocScenario_Settings:
         # GBAUJ_min, GBAUJ_max = 1920, self.T0_year_prediction-1
         # self.GWRspec_GBAUJ_minmax: List[int]    = field(default_factory=lambda: [GBAUJ_min, GBAUJ_max])
         # self.GWRspec_GBAUJ_minmax[0] = 1920
-        self.GWRspec_GBAUJ_minmax[1] = self.T0_year_prediction-1
+        self.GWRspec_GBAUJ_minmax[1] = self.T0_year_prediction - 1
+        self.TECspec_pvtarif_year    = self.T0_year_prediction - 1
+        self.TECspec_elecpri_year    = self.T0_year_prediction - 1
+
 
 
 class PVAllocScenario:
@@ -1014,6 +1020,10 @@ class PVAllocScenario:
 
                         npv_df = npv_df.filter(~pl.col('EGID').is_in(closed_nodes_egid)).clone()
                         # npv_df = copy.deepcopy(npv_df.loc[~npv_df['EGID'].isin(closed_nodes_egid)])
+
+                    #  remove all EGIDs with negative NPV ----------------
+                    npv_df = npv_df.filter(pl.col('NPV') > 0).clone()
+
                         
                     npv_df_empty_TF = npv_df.shape[0] == 0
                     if npv_df_empty_TF:
@@ -1866,11 +1876,12 @@ class PVAllocScenario:
             > formatted string of the time difference between start and end time in hh:mm:ss.s format.
         """
         timediff = end_time - start_time
-        hours = timediff.seconds // 3600
-        minutes = (timediff.seconds // 60) % 60
-        seconds = timediff.seconds % 60
+        total_seconds = int(timediff.total_seconds())
+        hours = total_seconds // 3600
+        minutes = (total_seconds // 60) % 60
+        seconds = total_seconds % 60
         milliseconds = timediff.microseconds // 1000
-        formatted_time = f"{hours:2}:{minutes:02}:{seconds:02}.{milliseconds:03}"
+        formatted_time = f"{hours:2}:{minutes:02}:{seconds:02}.{milliseconds:03} (hh:mm:ss.s)"
 
         return formatted_time
 
@@ -2820,120 +2831,139 @@ class PVAllocScenario:
 
                 # add pvtarif --------
                 bfs_of_egid = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0]
-                if self.sett.TECspec_generic_pvtarif_Rp_kWh == None:
+                if self.sett.TECspec_generic_pvtarif_Rp_kWh is None:
                     pvtarif_egid = sum([pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), col].sum() for col in pvtarif_col])
+
+                    pvtarif_sub = pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid)]
+                    if pvtarif_sub.shape[0] == 1:
+                        ewr_info = {
+                            'nrElcom': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'nrElcom'].iloc[0],
+                            'name': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'nomEw'].iloc[0],
+                            'energy1': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'energy1'].sum()     if 'energy1' in pvtarif_col else 0.0,
+                            'eco1': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'eco1'].sum()           if 'eco1' in pvtarif_col else 0.0,
+                        }
+                    elif pvtarif_sub.shape[0] > 1:
+                        ewr_info = {
+                            'nrElcom': pvtarif_sub['nrElcom'].unique().tolist(),
+                            'name': pvtarif_sub['nomEw'].unique().tolist(),
+                            'energy1': pvtarif_sub['energy1'].mean()    if 'energy1' in pvtarif_col else 0.0,
+                            'eco1': pvtarif_sub['eco1'].mean()          if 'eco1' in pvtarif_col else 0.0,
+                        }
+                    
+                        # checkpoint_to_logfile(f'multiple pvtarif data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
+                        CHECK_egid_with_problems.append((egid, 'multiple pvtarif data'))
+
+
                 elif self.sett.TECspec_generic_pvtarif_Rp_kWh is not None:
                     pvtarif_egid = self.sett.TECspec_generic_pvtarif_Rp_kWh
-                    
-
-
-                pvtarif_sub = pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid)]
-                if pvtarif_sub.empty:
-                    checkpoint_to_logfile(f'ERROR: no pvtarif data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
-                    ewr_info = {}
-                    CHECK_egid_with_problems.append((egid, 'no pvtarif data'))
-                elif pvtarif_sub.shape[0] == 1:
                     ewr_info = {
-                        'nrElcom': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'nrElcom'].iloc[0],
-                        'name': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'nomEw'].iloc[0],
-                        'energy1': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'energy1'].sum()     if 'energy1' in pvtarif_col else 0.0,
-                        'eco1': pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), 'eco1'].sum()           if 'eco1' in pvtarif_col else 0.0,
-                    }
-                elif pvtarif_sub.shape[0] > 1:
-                    ewr_info = {
-                        'nrElcom': pvtarif_sub['nrElcom'].unique().tolist(),
-                        'name': pvtarif_sub['nomEw'].unique().tolist(),
-                        'energy1': pvtarif_sub['energy1'].mean()    if 'energy1' in pvtarif_col else 0.0,
-                        'eco1': pvtarif_sub['eco1'].mean()          if 'eco1' in pvtarif_col else 0.0,
+                        'nrElcom': '-',
+                        'name': 'generic pvtarif',
+                        'energy1': '-',
+                        'eco1': '-',
                     }
                 
-                    # checkpoint_to_logfile(f'multiple pvtarif data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
-                    CHECK_egid_with_problems.append((egid, 'multiple pvtarif data'))
+                else: 
+                    checkpoint_to_logfile(f'ERROR: no RWD or generic pvtarif  data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
+                    ewr_info = {}
+                    CHECK_egid_with_problems.append((egid, 'no pvtarif data or generic tarif'))
+
 
 
                 # add elecpri --------
                 elecpri_egid = {}
                 elecpri_info = {}
 
-                mask_bfs = np.isin(elecpri_npry[:, elecpri.columns.get_loc('bfs_number')], [bfs_of_egid,]) 
-                mask_year = np.isin(elecpri_npry[:, elecpri.columns.get_loc('year')],    self.sett.TECspec_elecpri_year)
-                mask_cat = np.isin(elecpri_npry[:, elecpri.columns.get_loc('category')], self.sett.TECspec_elecpri_category)
+                if self.sett.TECspec_generic_elecpri_Rp_kWh is None:
 
-                if sum(mask_bfs & mask_year & mask_cat) < 1:
-                    checkpoint_to_logfile(f'ERROR: no elecpri data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
-                    CHECK_egid_with_problems.append((egid, 'no elecpri data'))
-                elif sum(mask_bfs & mask_year & mask_cat) > 1:
-                    checkpoint_to_logfile(f'ERROR: multiple elecpri data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
-                    CHECK_egid_with_problems.append((egid, 'multiple elecpri data'))
-                elif sum(mask_bfs & mask_year & mask_cat) == 1:
-                    energy =   elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('energy')].sum()
-                    grid =     elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('grid')].sum()
-                    aidfee =   elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('aidfee')].sum()
-                    taxes =    elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('taxes')].sum()
-                    fixcosts = elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('fixcosts')].sum()
+                    mask_bfs = np.isin(elecpri_npry[:, elecpri.columns.get_loc('bfs_number')], [bfs_of_egid,]) 
+                    mask_year = np.isin(elecpri_npry[:, elecpri.columns.get_loc('year')],    self.sett.TECspec_elecpri_year)
+                    mask_cat = np.isin(elecpri_npry[:, elecpri.columns.get_loc('category')], self.sett.TECspec_elecpri_category)
 
-                    elecpri_egid = energy + grid + aidfee + taxes # + fixcosts
+                    if sum(mask_bfs & mask_year & mask_cat) < 1:
+                        checkpoint_to_logfile(f'ERROR: no elecpri data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
+                        CHECK_egid_with_problems.append((egid, 'no elecpri data'))
+                    elif sum(mask_bfs & mask_year & mask_cat) > 1:
+                        checkpoint_to_logfile(f'ERROR: multiple elecpri data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
+                        CHECK_egid_with_problems.append((egid, 'multiple elecpri data'))
+                    elif sum(mask_bfs & mask_year & mask_cat) == 1:
+                        energy =   elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('energy')].sum()
+                        grid =     elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('grid')].sum()
+                        aidfee =   elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('aidfee')].sum()
+                        taxes =    elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('taxes')].sum()
+                        fixcosts = elecpri_npry[(mask_bfs & mask_year & mask_cat), elecpri.columns.get_loc('fixcosts')].sum()
+
+                        elecpri_egid = energy + grid + aidfee + taxes # + fixcosts
+                        elecpri_info = {
+                            'energy': energy,
+                            'grid': grid,
+                            'aidfee': aidfee,
+                            'taxes': taxes,
+                            'fixcosts': fixcosts,
+                        }
+
+                elif self.sett.TECspec_generic_elecpri_Rp_kWh is not None:
+                    elecpri_egid = self.sett.TECspec_generic_elecpri_Rp_kWh
                     elecpri_info = {
-                        'energy': energy,
-                        'grid': grid,
-                        'aidfee': aidfee,
-                        'taxes': taxes,
-                        'fixcosts': fixcosts,
+                        'energy': '- (generic elecpri)',
+                        'grid': '- (generic elecpri)',
+                        'aidfee': '- (generic elecpri)',
+                        'taxes': '- (generic elecpri)',
+                        'fixcosts': '- (generic elecpri)',
                     }
 
-
-                    # add GWR --------
-                    if all([col in gwr.columns for col in ['GWAERZH2', 'GENH2']]):
-                        gwaerzh1  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH1')][0]
-                        gwaerzh2  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH2')][0]
-                        genh2     = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GENH2')][0]
-                        if any([tech in self.sett.TECspec_heatpump_indicator for tech in [gwaerzh1, gwaerzh2, ]]):
-                            heating_system = 'heatpump'
-                        else:
-                            heating_system = 'no_heatpump'
+                # add GWR --------
+                if all([col in gwr.columns for col in ['GWAERZH2', 'GENH2']]):
+                    gwaerzh1  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH1')][0]
+                    gwaerzh2  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH2')][0]
+                    genh2     = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GENH2')][0]
+                    if any([tech in self.sett.TECspec_heatpump_indicator for tech in [gwaerzh1, gwaerzh2, ]]):
+                        heating_system = 'heatpump'
                     else:
-                        gwaerzh1  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH1')][0]
-                        gwaerzh2  = None
-                        genh2     = None
-                        if any([gwaerzh1 in self.sett.TECspec_heatpump_indicator]):
-                            heating_system = 'heatpump'
-                        else:
-                            heating_system = 'no_heatpump'
+                        heating_system = 'no_heatpump'
+                else:
+                    gwaerzh1  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GWAERZH1')][0]
+                    gwaerzh2  = None
+                    genh2     = None
+                    if any([gwaerzh1 in self.sett.TECspec_heatpump_indicator]):
+                        heating_system = 'heatpump'
+                    else:
+                        heating_system = 'no_heatpump'
 
 
-                    gwr_info ={
-                        'bfs':            gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0],
-                        'gklas':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GKLAS')][0],
-                        'garea':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GAREA')][0],
-                        'gstat':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GSTAT')][0],
-                        'gbauj':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GBAUJ')][0],
-                        'are_typ':        gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('ARE_typ')][0],
-                        'sfhmfh_typ':     gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('sfhmfh_typ')][0],
-                        'genh1':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GENH1')][0],   
-                        'genh2':          genh2, 
-                        'gwaerzh1':       gwaerzh1,
-                        'gwaerzh2':       gwaerzh2,
-                        'heating_system': heating_system,
-                    }
-                    
+                gwr_info ={
+                    'bfs':            gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0],
+                    'gklas':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GKLAS')][0],
+                    'garea':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GAREA')][0],
+                    'gstat':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GSTAT')][0],
+                    'gbauj':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GBAUJ')][0],
+                    'are_typ':        gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('ARE_typ')][0],
+                    'sfhmfh_typ':     gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('sfhmfh_typ')][0],
+                    'genh1':          gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GENH1')][0],   
+                    'genh2':          genh2, 
+                    'gwaerzh1':       gwaerzh1,
+                    'gwaerzh2':       gwaerzh2,
+                    'heating_system': heating_system,
+                }
+                
 
-                    # add demand type --------
-                    demand_arch_typ         = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('arch_typ')][0]
-                    demand_elec_pGAREA  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('demand_elec_pGAREA')][0]
+                # add demand type --------
+                demand_arch_typ         = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('arch_typ')][0]
+                demand_elec_pGAREA  = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('demand_elec_pGAREA')][0]
 
 
-                    # add grid node --------
-                    if isinstance(Map_egid_dsonode.loc[egid, 'grid_node'], str):
-                        grid_node = Map_egid_dsonode.loc[egid, 'grid_node']
-                    elif isinstance(Map_egid_dsonode.loc[egid, 'grid_node'], pd.Series):
-                        grid_node = Map_egid_dsonode.loc[egid, 'grid_node'].iloc[0]
+                # add grid node --------
+                if isinstance(Map_egid_dsonode.loc[egid, 'grid_node'], str):
+                    grid_node = Map_egid_dsonode.loc[egid, 'grid_node']
+                elif isinstance(Map_egid_dsonode.loc[egid, 'grid_node'], pd.Series):
+                    grid_node = Map_egid_dsonode.loc[egid, 'grid_node'].iloc[0]
 
-                    
-                    # add subsidy (placeholder) --------
-                    subsidy_egid = {
-                        'dfuid_subsidy_fix_chf': 0.0, 
-                        'node_subsidy_fix_chf': 0.0,
-                    }
+                
+                # add subsidy (placeholder) --------
+                subsidy_egid = {
+                    'dfuid_subsidy_fix_chf': 0.0, 
+                    'node_subsidy_fix_chf': 0.0,
+                }
 
                         
 
@@ -3159,8 +3189,7 @@ class PVAllocScenario:
             gwr_all_building_df = pl.read_parquet(f'{self.sett.name_dir_import_path}/gwr_all_building_df.parquet')
             pv = df_list[df_names.index('pv')]
             Map_egid_pv = df_list[df_names.index('Map_egid_pv')]
-
-
+            topo_keys = list(topo.keys())
 
             # # debugging -------------------
             # pv          = pl.read_parquet(r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_29nbfs_LRG2_max\pv.parquet").to_pandas()
@@ -3179,6 +3208,7 @@ class PVAllocScenario:
             #     2773, 2769, 2770,
             #     ]]
             # # debugging -------------------
+
             # subset pv to EGIDs in TOPO, and LOOKBACK period of pvalloc settings
             pv_sub = copy.deepcopy(pv)
             del_cols = ['MainCategory', 'SubCategory', 'PlantCategory']
@@ -5468,7 +5498,8 @@ class PVAllocScenario:
                         estim_instcost_chftotal(pd.Series([10, 20, 30, 40, 50, 60, 70]))
 
                         annual_cashflow = (egid_agg["econ_inc_chf"].sum() - egid_agg["econ_spend_chf"].sum())
-                        installation_cost = estim_instcost_chftotal(pred_instPower)
+                        installation_cost = estim_instcost_chftotal(pred_instPower) * (1-self.sett.TECspec_KEVflatsubs)
+                        
                                
                         discount_factor = np.array([(1 + self.sett.TECspec_interest_rate)**-i for i in range(1, self.sett.TECspec_invst_maturity + 1)])
                         disc_cashflow = annual_cashflow * np.sum(discount_factor)
@@ -5598,8 +5629,7 @@ class PVAllocScenario:
 
             #  remove all EGIDs with pv ----------------
             egid_without_pv = [k for k,v in topo.items() if not v['pv_inst']['inst_TF']]
-            npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'].isin(egid_without_pv)])
-
+            npv_df = copy.deepcopy(npv_df.loc[npv_df['EGID'].isin(egid_without_pv)])         
 
 
             #  remove all closed nodes EGIDs if applicable ----------------
@@ -5608,7 +5638,6 @@ class PVAllocScenario:
                 closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
 
                 npv_df = copy.deepcopy(npv_df.loc[~npv_df['EGID'].isin(closed_nodes_egid)])
-
 
 
             #  SUBSELECTION FILTER specific scenarios ----------------
@@ -5646,7 +5675,6 @@ class PVAllocScenario:
                 npv_df = copy.deepcopy(npv_df.loc[npv_df['grid_optim_inst_order'] == min_grid_optim_inst_order])
 
                     
-       
 
             # SELECTION BY METHOD ---------------
             # set random seed
