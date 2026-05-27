@@ -441,6 +441,14 @@ class PVAllocScenario_Settings:
             'subs_nodeHC_chf_tuples':(0.5,   0.0), 
             'pena_nodeHC_chf_tuples':(0.95,  0.0), 
         },
+        'As8p0':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 8000.0),
+                ('filter_tag__eastwest_70pr', 8000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.5,   0.0), 
+            'pena_nodeHC_chf_tuples':(0.95,  0.0), 
+        },
 
         'Bs0p4':{
             'subs_filter_tags_chf_tuples': [
@@ -543,6 +551,30 @@ class PVAllocScenario_Settings:
             'subs_nodeHC_chf_tuples':(0.7,   0.0),
             'pena_nodeHC_chf_tuples':(0.90,  8000.0), 
         },       
+        'Cs8p4':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 8000.0),
+                ('filter_tag__eastwest_70pr', 8000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  4000.0), 
+        },
+        'Cs8p6':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 8000.0),
+                ('filter_tag__eastwest_70pr', 8000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  6000.0), 
+        },
+        'Cs8p8':{
+            'subs_filter_tags_chf_tuples': [
+                ('filter_tag__eastwest_80pr', 8000.0),
+                ('filter_tag__eastwest_70pr', 8000.0),
+            ],
+            'subs_nodeHC_chf_tuples':(0.7,   0.0),
+            'pena_nodeHC_chf_tuples':(0.90,  8000.0), 
+        },
     })
     # endregion
 

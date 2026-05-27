@@ -115,7 +115,6 @@ if True:
     # endregion
 
     # region: Sub Scenario Init ------------------------------------------------
-    # endregion
 
 
     pvalloc_test_DEFAULT = PVAllocScenario_Settings(name_dir_export ='pvalloc_test_DEFAULT',
@@ -155,31 +154,23 @@ if True:
 
 
     pvalloc_Xnbfs_DEFAULT = PVAllocScenario_Settings(
-        name_dir_export = 'pvalloc_DEFAULT',
-        name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID__May26', 
-        bfs_numbers                                          = [
-            # RURAL 
-            2612, 2889, 2883, 2621, 2622,
-            2620, 2615, 2614, 2616, 2480,
-            2617, 2611, 2788, 2619, 2783, 2477, 
-            # SUBURBAN
-            2613, 2782, 2618, 2786, 2785, 
-            2772, 2761, 2743, 2476, 2768,
-            # URBAN
-            2773, 2769, 2770,
-                ],
+        name_dir_export                 = 'pvalloc_DEFAULT',
+        name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID__May26', 
+        bfs_numbers                     = LRG_bfs_list,
+
         run_pvalloc_initalization_TF    = True,
         run_pvalloc_mcalgorithm_TF      = True,
         run_gridoptimized_orderinst_TF  = False,
         run_gridoptimized_expansion_TF  = False,
 
-        create_gdf_export_of_topology                        = True,
-        export_csvs                                          = False,
-        T0_year_prediction                                   = 2024,
-        months_prediction                                    = 360,
-        ALGOspec_topo_subdf_partitioner                      = 250,
+        create_gdf_export_of_topology   = True,
+        export_csvs                     = False,
+        T0_year_prediction              = 2024,
+        months_prediction               = 360,
+        ALGOspec_topo_subdf_partitioner = 250,
     ) 
 
+    # endregion
 
 
 # ==============================
@@ -241,7 +232,6 @@ if True:
     LRG_constrcapa_scen_list = [
 
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max', 
-                      bfs_numbers                      = LRG_bfs_list, 
         ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max_epzb1', 
                       bfs_numbers                      = LRG_bfs_list, 
@@ -289,75 +279,87 @@ if True:
                       OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel', 
                       OPTEXPApecs_apply_gridoptim_order_TF     = True,
                     ),
-        
     ]
 
 
     LRG_subsidy_scen_list = [ 
 
-
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sAs2p0',
-                        GRIDspec_subsidy_name             = 'As2p0',
-        ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sAs4p0',
-                        GRIDspec_subsidy_name             = 'As4p0',    
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_subsidy_name             = 'As4p0',
         ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sAs6p0',
-                        GRIDspec_subsidy_name             = 'As6p0',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_subsidy_name             = 'As6p0',
         ),
-
+        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sAs8p0',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_subsidy_name             = 'As8p0',
+        ),
 
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sBs0p4',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Bs0p4',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Bs0p4',
         ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sBs0p6',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Bs0p6',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Bs0p6',
         ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sBs0p8',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Bs0p8',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Bs0p8',
         ),
 
-
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs2p4',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Cs2p4',
-        ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs2p6',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Cs2p6',
-        ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs2p8',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Cs2p8',
-        ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs4p4',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Cs4p4',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Cs4p4',
         ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs4p6',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Cs4p6',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Cs4p6',
         ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs4p8',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Cs4p8',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Cs4p8',
         ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs6p4',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Cs6p4',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Cs6p4',
         ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs6p6',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Cs6p6',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Cs6p6',
         ),
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs6p8',
-                        GRIDspec_apply_prem_tiers_TF      = True,
-                        GRIDspec_subsidy_name             = 'Cs6p8',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Cs6p8',
         ),
-   ]
+        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs8p4',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Cs8p4',
+        ),
+        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs8p6',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Cs8p6',
+        ),
+        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_sCs8p8',
+                                        bfs_numbers                      = LRG_bfs_list,
+                                        GRIDspec_apply_prem_tiers_TF      = True,
+                                        GRIDspec_subsidy_name             = 'Cs8p8',
+        ),
+        
+    ]
 
     LRG_scen_APPEND_list = [
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_epzb1', 
@@ -418,7 +420,8 @@ def get_subscen_list(sub_scen_str = 'test'):
     elif sub_scen_str == 'RUR_and_SUB':
         return RUR_scen_list + SUB_scen_list
     elif sub_scen_str == 'LRG':
-        return LRG_constrcapa_scen_list
+        return LRG_subsidy_scen_list
+    
     # elif sub_scen_str == 'XLRG':
         # return XLRG_scen_list
     # elif sub_scen_str == 'XLRG_final':
