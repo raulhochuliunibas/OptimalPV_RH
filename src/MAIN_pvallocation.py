@@ -89,9 +89,6 @@ class PVAllocScenario_Settings:
                                                     # '245057989', '245060059', '3030694', '3030905', '3031761', '3032150', '3033714', 
                                                     # '3075084', '386736', '432600', '432638', '432671', '432683', '432701', '432729', '434178',
                                                     ])
-    T0_year_prediction: int                     = 2024                          # year for the prediction of the future construction capacity
-    # T0_prediction: str                          = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
-    months_lookback: int                        = 12                           # number of months to look back for the prediction of the future construction capacity
     
     recreate_topology: bool                     = True
     recalc_economics_topo_df: bool              = True
@@ -145,29 +142,16 @@ class PVAllocScenario_Settings:
     WEAspec_flat_diffuse_rad_factor: int                = 1
 
     # constr_capacity_specs
-    months_prediction: int                      = 12                         # number of months to predict the future construction capacity
-    CSTRspec_capacity_type: str                         ='ep2050_zerobasis' # hist_constr_capa_year / hist_constr_capa_month / ep2050_zerobasis
+    T0_year_prediction: int                             = 2024                          # year for the prediction of the future construction capacity
+    # T0_prediction: str                                = f'{T0_year_prediction}-01-01 00:00:00'         # start date for the prediction of the future construction capacity
+    months_prediction: int                              = 360                         # number of months to predict the future construction capacity
+
+    months_lookback: int                                = 24                           # number of months to look back for the prediction of the future construction capacity
+    CSTRspec_capacity_type: str                         ='adj_hist_to_ep2050' # adj_hist_to_ep2050 / ep2050_zerobasis / hist_constr_capa_year >> discarded: hist_constr_capa_month
     # CSTRspec_iter_time_unit: str                        = 'year'   # month (not really feasible), year
     CSTRspec_ann_capacity_growth: float                 = 0.05
     CSTRspec_constr_capa_overshoot_fact: int            = 1
-    CSTRspec_month_constr_capa_tuples: List[tuple]      = field(default_factory=lambda: [
-                                                            (1,  0.04), 
-                                                            (2,  0.04), 
-                                                            (3,  0.04), 
-                                                            (4,  0.06),
-                                                            (5,  0.06), 
-                                                            (6,  0.06), 
-                                                            (7,  0.1), 
-                                                            (8,  0.1),
-                                                            (9,  0.1), 
-                                                            (10, 0.1), 
-                                                            (11, 0.14), 
-                                                            (12, 0.16)
-                                                        ])
-    CSTRspec_ep2050_share_inst_classes: List[str]       = field(default_factory=lambda: [
-                                                                                    'class1', 
-                                                                                    #  'class2',
-                                                                                        ])  # 'class1', 'class2', 'class3', 'class4'
+    
     CSTRspec_ep2050_rescale_fact: int                   = 1.0,
     CSTRspec_ep2050_capa_dict: Dict[str, float]         = field(default_factory=lambda: {
         'ep2050_zerobasis':{
@@ -243,7 +227,31 @@ class PVAllocScenario_Settings:
 
 
     })
+    CSTRspec_ep2050_share_inst_classes: List[str]       = field(default_factory=lambda: [
+                                                                                    'class1', 
+                                                                                    #  'class2',
+                                                                                        ])  # 'class1', 'class2', 'class3', 'class4'
+    CSTRspec_histadj_dict: Dict[str, float]             = field(default_factory=lambda: {
+        'adj_months_lookback': 24, 
+        'adjann_capacity_growth': 0.25,
+        'rescale_epzb2050_target': 1.0,
+        'adj_target_margin': 0.05,
+    })
 
+    CSTRspec_month_constr_capa_tuples: List[tuple]      = field(default_factory=lambda: [
+                                                            (1,  0.04), 
+                                                            (2,  0.04), 
+                                                            (3,  0.04), 
+                                                            (4,  0.06),
+                                                            (5,  0.06), 
+                                                            (6,  0.06), 
+                                                            (7,  0.1), 
+                                                            (8,  0.1),
+                                                            (9,  0.1), 
+                                                            (10, 0.1), 
+                                                            (11, 0.14), 
+                                                            (12, 0.16)
+                                                        ])    
     
     # tech_economic_specs
     TECspec_self_consumption_ifapplicable: float            = 1.0
@@ -3146,14 +3154,31 @@ class PVAllocScenario:
 
 
             # IMPORT ----------------------------------------------------------------------------
+
             gwr_allch_summary = pl.read_parquet(f'{self.sett.name_dir_import_path}/gwr_all_ch_summary.parquet')
             gwr_all_building_df = pl.read_parquet(f'{self.sett.name_dir_import_path}/gwr_all_building_df.parquet')
-
             pv = df_list[df_names.index('pv')]
             Map_egid_pv = df_list[df_names.index('Map_egid_pv')]
 
-            topo_keys = list(topo.keys())
 
+
+            # # debugging -------------------
+            # pv          = pl.read_parquet(r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_29nbfs_LRG2_max\pv.parquet").to_pandas()
+            # Map_egid_pv = pd.read_parquet(r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_29nbfs_LRG2_max\Map_egid_pv.parquet")
+            # topo = json.load(open(r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_29nbfs_LRG2_max\topo_egid.json", 'r')   )
+            # topo_keys = list(topo.keys())
+            # self.sett.bfs_numbers =  [str(bfs) for bfs in [
+            #     # RURAL 
+            #     2612, 2889, 2883, 2621, 2622,
+            #     2620, 2615, 2614, 2616, 2480,
+            #     2617, 2611, 2788, 2619, 2783, 2477, 
+            #     # SUBURBAN
+            #     2613, 2782, 2618, 2786, 2785, 
+            #     2772, 2761, 2743, 2476, 2768,
+            #     # URBAN
+            #     2773, 2769, 2770,
+            #     ]]
+            # # debugging -------------------
             # subset pv to EGIDs in TOPO, and LOOKBACK period of pvalloc settings
             pv_sub = copy.deepcopy(pv)
             del_cols = ['MainCategory', 'SubCategory', 'PlantCategory']
@@ -3173,169 +3198,210 @@ class PVAllocScenario:
 
 
             # HISTORIC CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
-            capacity_growth = self.sett.CSTRspec_ann_capacity_growth
-            month_constr_capa_tuples = self.sett.CSTRspec_month_constr_capa_tuples
-            sum_TP_kW_lookback = pv_sub['TotalPower'].sum()
-
-            
-            # if self.sett.CSTRspec_iter_time_unit == 'month':
-            # per month (defacto discarded because runtime takes too long)
-            if True:
-                trange_prediction_m = pd.date_range(start=(T0 + pd.DateOffset(days=1)), end=end_prediction, freq='ME')
-                # trange_prediction = pd.date_range(start=T0, end=end_prediction, freq='MS')
-                constrcapa_hist_month = pd.DataFrame({'date': trange_prediction_m, 'year': trange_prediction_m.year, 'month': trange_prediction_m.month})
-                
-                capa_years_prediction = trange_prediction_m.year.unique()
-                i, y = 0, capa_years_prediction[0]
-                for i,y in enumerate(capa_years_prediction):
-
-                    TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
-                    for m, TP_m in month_constr_capa_tuples:
-                        constrcapa_hist_month.loc[(constrcapa_hist_month['year'] == y) & 
-                                    (constrcapa_hist_month['month'] == m), 'constr_capacity_kw'] = TP_y * TP_m
-
-            # per year
-            # elif self.sett.CSTRspec_iter_time_unit == 'year':
             if True: 
+                capacity_growth = self.sett.CSTRspec_ann_capacity_growth
+                month_constr_capa_tuples = self.sett.CSTRspec_month_constr_capa_tuples
+                n_years_lookback = len(months_lookback) / 12
+                sum_TP_kW_lookback = pv_sub['TotalPower'].sum() / n_years_lookback
+
+                # per year
+                # elif self.sett.CSTRspec_iter_time_unit == 'year':
                 constrcapa_hist_year = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
 
                 capa_years_prediction = trange_prediction.year.unique()
                 for i,y in enumerate(capa_years_prediction):
                     TP_y = sum_TP_kW_lookback * (1 + capacity_growth)**(i+1)
                     constrcapa_hist_year.loc[(constrcapa_hist_year['year'] == y), 'constr_capacity_kw'] = TP_y 
-                
+             
             
 
             # EP2050+ CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
-            
-            # extract ep2050 settings data
-            def build_eb2050_pvcapa_df(ep2050_zerobasis_dict):
-                capa_year_values = ep2050_zerobasis_dict['pvcapa_total']
-                share_year_values = ep2050_zerobasis_dict['share_instclass']
-                
-                capa_years =  [int(year) for year in capa_year_values.keys()]
-                share_years = [int(year) for year in share_year_values.keys()]
-                
-                # Define the full year range from min to max year
-                min_year_int = min(capa_years)
-                max_year_int = max(capa_years)
-                epzb_year_range = [year for year in range(min_year_int, max_year_int + 1)]
+            if True:
+                # extract ep2050 settings data
+                def build_eb2050_pvcapa_df(ep2050_zerobasis_dict):
+                    capa_year_values = ep2050_zerobasis_dict['pvcapa_total']
+                    share_year_values = ep2050_zerobasis_dict['share_instclass']
+                    
+                    capa_years =  [int(year) for year in capa_year_values.keys()]
+                    share_years = [int(year) for year in share_year_values.keys()]
+                    
+                    # Define the full year range from min to max year
+                    min_year_int = min(capa_years)
+                    max_year_int = max(capa_years)
+                    epzb_year_range = [year for year in range(min_year_int, max_year_int + 1)]
 
-                epzb_capa_value_list = []
-                class1to4_tuple_list = []
-                for year in epzb_year_range: 
-                    if year in capa_years:
-                        capa_value = capa_year_values[str(year)]
-                    else:
-                        lower_year = max([y for y in capa_years if y < year])
-                        upper_year = min([y for y in capa_years if y > year])
-                        lower_value = capa_year_values[str(lower_year)]
-                        upper_value = capa_year_values[str(upper_year)]
+                    epzb_capa_value_list = []
+                    class1to4_tuple_list = []
+                    for year in epzb_year_range: 
+                        if year in capa_years:
+                            capa_value = capa_year_values[str(year)]
+                        else:
+                            lower_year = max([y for y in capa_years if y < year])
+                            upper_year = min([y for y in capa_years if y > year])
+                            lower_value = capa_year_values[str(lower_year)]
+                            upper_value = capa_year_values[str(upper_year)]
 
-                        capa_value = lower_value + (upper_value - lower_value) * ((year - lower_year) / (upper_year - lower_year))
-                    epzb_capa_value_list.append(capa_value)
+                            capa_value = lower_value + (upper_value - lower_value) * ((year - lower_year) / (upper_year - lower_year))
+                        epzb_capa_value_list.append(capa_value)
 
-                    if year in share_years:
-                        class1to4_tuple = (
-                            share_year_values[str(year)]['class1'],
-                            share_year_values[str(year)]['class2'],
-                            share_year_values[str(year)]['class3'],
-                            share_year_values[str(year)]['class4'],
-                        )
-                    elif year <= max(share_years) and year >= min(share_years):
-                        lower_year = max([y for y in share_years if y < year])
-                        # upper_year1 = min([y for y in share_years if y > year else max(share_years)])
-                        upper_year = min([y for y in share_years if y > year], default=max(share_years))
-                        lower_tuple = (
-                            share_year_values[str(lower_year)]['class1'],
-                            share_year_values[str(lower_year)]['class2'],
-                            share_year_values[str(lower_year)]['class3'],
-                            share_year_values[str(lower_year)]['class4'],
-                        )
-                        upper_tuple = (
-                            share_year_values[str(upper_year)]['class1'],
-                            share_year_values[str(upper_year)]['class2'],
-                            share_year_values[str(upper_year)]['class3'],
-                            share_year_values[str(upper_year)]['class4'],
-                        )
-                        class1to4_tuple = tuple(
-                            lower + (upper - lower) * ((year - lower_year) / (upper_year - lower_year))
-                            for lower, upper in zip(lower_tuple, upper_tuple)
-                        )
-                    elif year > max(share_years):
-                        class1to4_tuple = (
-                            share_year_values[str(max(share_years))]['class1'],
-                            share_year_values[str(max(share_years))]['class2'],
-                            share_year_values[str(max(share_years))]['class3'],
-                            share_year_values[str(max(share_years))]['class4'],
-                        )
-                    class1to4_tuple_list.append(class1to4_tuple)
+                        if year in share_years:
+                            class1to4_tuple = (
+                                share_year_values[str(year)]['class1'],
+                                share_year_values[str(year)]['class2'],
+                                share_year_values[str(year)]['class3'],
+                                share_year_values[str(year)]['class4'],
+                            )
+                        elif year <= max(share_years) and year >= min(share_years):
+                            lower_year = max([y for y in share_years if y < year])
+                            # upper_year1 = min([y for y in share_years if y > year else max(share_years)])
+                            upper_year = min([y for y in share_years if y > year], default=max(share_years))
+                            lower_tuple = (
+                                share_year_values[str(lower_year)]['class1'],
+                                share_year_values[str(lower_year)]['class2'],
+                                share_year_values[str(lower_year)]['class3'],
+                                share_year_values[str(lower_year)]['class4'],
+                            )
+                            upper_tuple = (
+                                share_year_values[str(upper_year)]['class1'],
+                                share_year_values[str(upper_year)]['class2'],
+                                share_year_values[str(upper_year)]['class3'],
+                                share_year_values[str(upper_year)]['class4'],
+                            )
+                            class1to4_tuple = tuple(
+                                lower + (upper - lower) * ((year - lower_year) / (upper_year - lower_year))
+                                for lower, upper in zip(lower_tuple, upper_tuple)
+                            )
+                        elif year > max(share_years):
+                            class1to4_tuple = (
+                                share_year_values[str(max(share_years))]['class1'],
+                                share_year_values[str(max(share_years))]['class2'],
+                                share_year_values[str(max(share_years))]['class3'],
+                                share_year_values[str(max(share_years))]['class4'],
+                            )
+                        class1to4_tuple_list.append(class1to4_tuple)
 
-                epzb_capa_df = pd.DataFrame({
-                    'date': [pd.to_datetime(f'{year}-12-31') for year in epzb_year_range],
-                    'year': epzb_year_range, 
-                    'month': [int(12) for i in epzb_year_range],
-                    'epzb_capa_GW': epzb_capa_value_list, 
-                    'epzb_capa_kw': [value * 1e6 for value in epzb_capa_value_list],
-                    'class1': [t[0] for t in class1to4_tuple_list],
-                    'class2': [t[1] for t in class1to4_tuple_list],
-                    'class3': [t[2] for t in class1to4_tuple_list],
-                    'class4': [t[3] for t in class1to4_tuple_list],
-                })
+                    epzb_capa_df = pd.DataFrame({
+                        'date': [pd.to_datetime(f'{year}-12-31') for year in epzb_year_range],
+                        'year': epzb_year_range, 
+                        'month': [int(12) for i in epzb_year_range],
+                        'epzb_capa_GW': epzb_capa_value_list, 
+                        'epzb_capa_kw': [value * 1e6 for value in epzb_capa_value_list],
+                        'class1': [t[0] for t in class1to4_tuple_list],
+                        'class2': [t[1] for t in class1to4_tuple_list],
+                        'class3': [t[2] for t in class1to4_tuple_list],
+                        'class4': [t[3] for t in class1to4_tuple_list],
+                    })
 
-                return epzb_capa_df
+                    return epzb_capa_df
                            
-            epzb_capa_df = build_eb2050_pvcapa_df(self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis'])
+                epzb_capa_df = build_eb2050_pvcapa_df(self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis'])
 
 
-            # adjust allCH capa to sample size
-            GSTAT_adj_list      = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GSTAT_list']
-            GKLAS_adj_list      = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GKLAS_list']
-            classes_adj_list    = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['classes_adj_list']
-            epzb_scaling_factor = self.sett.CSTRspec_ep2050_rescale_fact
+                # adjust allCH capa to sample size
+                GSTAT_adj_list      = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GSTAT_list']
+                GKLAS_adj_list      = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['GKLAS_list']
+                classes_adj_list    = self.sett.CSTRspec_ep2050_capa_dict['ep2050_zerobasis']['CHcapa_adjustment_filter']['classes_adj_list']
+                epzb_scaling_factor = self.sett.CSTRspec_ep2050_rescale_fact
 
-            nEGIDs_all_CH = gwr_allch_summary \
-                .filter( 
-                    (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
-                    (pl.col('GKLAS').is_in(GKLAS_adj_list)) ) \
-                .select('nEGID').sum().item()
+                nEGIDs_all_CH = gwr_allch_summary \
+                    .filter( 
+                        (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
+                        (pl.col('GKLAS').is_in(GKLAS_adj_list)) ) \
+                    .select('nEGID').sum().item()
 
-            # nEGIDs_SAMPLE = len(topo)
-            nEGIDs_SAMPLE = gwr_allch_summary \
-                .filter( 
-                    (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
-                    (pl.col('GKLAS').is_in(GKLAS_adj_list)) & 
-                    (pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers)) ) \
-                .select('nEGID').sum().item()
-            # identical coutcome
-            # gwr_in_scenbfs = gwr_all_building_df.filter(
-            #     (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
-            #     (pl.col('GKLAS').is_in(GKLAS_adj_list)) & 
-            #     (pl.col('GGDENR').is_in(self.sett.bfs_numbers))
-            #     )
-            # gwr_in_scenbfs.shape[0]
-            
-            epzb_capa_df['ratio_sample_allCH'] = nEGIDs_SAMPLE / nEGIDs_all_CH
-            epzb_capa_df['epzb_capa_sample_kw'] = epzb_capa_df['epzb_capa_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1) * epzb_capa_df['ratio_sample_allCH'] * epzb_scaling_factor
-            epzb_capa_df['constr_capacity_kw'] = epzb_capa_df['epzb_capa_sample_kw']
-            constrcapa_epzb = epzb_capa_df[['date', 'year', 'month', 'constr_capacity_kw', 'epzb_capa_kw', 'class1', 'class2', 'class3', 'class4']].copy()
+                # nEGIDs_SAMPLE = len(topo)
+                nEGIDs_SAMPLE = gwr_allch_summary \
+                    .filter( 
+                        (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
+                        (pl.col('GKLAS').is_in(GKLAS_adj_list)) & 
+                        (pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers)) ) \
+                    .select('nEGID').sum().item()
+                # identical coutcome
+                # gwr_in_scenbfs = gwr_all_building_df.filter(
+                #     (pl.col('GSTAT').is_in(GSTAT_adj_list)) & 
+                #     (pl.col('GKLAS').is_in(GKLAS_adj_list)) & 
+                #     (pl.col('GGDENR').is_in(self.sett.bfs_numbers))
+                #     )
+                # gwr_in_scenbfs.shape[0]
+                
+                epzb_capa_df['ratio_sample_allCH'] = nEGIDs_SAMPLE / nEGIDs_all_CH
+                epzb_capa_df['epzb_capa_sample_kw'] = epzb_capa_df['epzb_capa_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1) * epzb_capa_df['ratio_sample_allCH'] 
+                epzb_capa_df['constr_capacity_kw'] = epzb_capa_df['epzb_capa_sample_kw'] * epzb_scaling_factor
+                constrcapa_epzb = epzb_capa_df[['date', 'year', 'month', 'constr_capacity_kw', 'epzb_capa_kw', 'class1', 'class2', 'class3', 'class4']].copy()
+                
 
-            
-            # PLOT  COMPARISON  ----------------------------------------------------------------------------
-
-            # plot total power over time
+            # ADJUSTED HISTORIC CAPACITY ASSIGNMENT ----------------------------------------------------------------------------
             if True: 
-                pv_plot['BeginningOfOperation'] = pd.to_datetime(pv_plot['BeginningOfOperation'])
-                pv_plot.set_index('BeginningOfOperation', inplace=True)
+                n_adj_months_lookback  = self.sett.CSTRspec_histadj_dict['adj_months_lookback']
+                adjann_capacity_growth = self.sett.CSTRspec_histadj_dict['adjann_capacity_growth']
+                adj_target_margin      = self.sett.CSTRspec_histadj_dict['adj_target_margin']
+                adj_capa_asym_2050 = constrcapa_epzb.loc[epzb_capa_df['year'] == 2050, 'constr_capacity_kw'].values[0]
 
-                # Resample by week, month, and year and calculate the sum of TotalPower
-                monthly_sum = pv_plot['TotalPower'].resample('ME').sum()
-                yearly_sum = pv_plot['TotalPower'].resample('YE').sum()
+
+                adj_start_loockback = T0 - pd.DateOffset(months=n_adj_months_lookback) #+ pd.DateOffset(hours=1)
+                adj_months_lookback = pd.date_range(start=adj_start_loockback, end=T0, freq='ME').to_period('M')
+
+                # subset pv to EGIDs in TOPO, and LOOKBACK period of pvalloc settings
+                pv_sub = copy.deepcopy(pv)
+                del_cols = ['MainCategory', 'SubCategory', 'PlantCategory']
+                pv_sub.drop(columns=del_cols, inplace=True)
+
+                pv_sub = pv_sub.merge(Map_egid_pv, how='left', on='xtf_id')
+                pv_sub = pv_sub.loc[pv_sub['EGID'].isin(topo_keys)]
+
+                pv_sub['BeginningOfOperation'] = pd.to_datetime(pv_sub['BeginningOfOperation'])
+                pv_sub['MonthPeriod'] = pv_sub['BeginningOfOperation'].dt.to_period('M')
+                pv_sub_idx = pv_sub['MonthPeriod'].isin(adj_months_lookback)        # <= different than hist capa!
+                if pv_sub_idx.sum() >= 1:
+                    pv_sub = pv_sub.loc[pv_sub_idx]
+                elif pv_sub_idx.sum() < 1: 
+                    pv_sub = pv_sub.loc[pv_sub['MonthPeriod'] == max(pv_sub['MonthPeriod'])]
+
+                n_years_lookback = len(adj_months_lookback) / 12
+                sum_TP_kW_lookback = pv_sub['TotalPower'].sum() / n_years_lookback
+
+                constrcapa_adjhist_year = pd.DataFrame({'date': trange_prediction, 'year': trange_prediction.year, 'month': trange_prediction.month})
+
+
+                def capa_sigmoid_func(
+                        n_year, 
+                        growth_rate     = adjann_capacity_growth,
+                        capa_target     = adj_capa_asym_2050,
+                        target_margin   = adj_target_margin ,
+                        capa_hist_start = sum_TP_kW_lookback, 
+                        ):                 
+                    capa_target2 = capa_target * (1 + target_margin)
+                    capa_init = (capa_target2 - capa_hist_start) / capa_hist_start
+                    constrcapa_adj_val = capa_target2 / (1 + capa_init * np.exp(-growth_rate * n_year))
+
+                    return constrcapa_adj_val
+
+                capa_years_prediction = trange_prediction.year.unique()
+                for i,y in enumerate(capa_years_prediction):   
+                    # constrcapa_adj_lastyear = constrcapa_adjhist_year.loc[constrcapa_adjhist_year['year'] == y-1, 'constr_capacity_kw'].values[0] if i > 0 else sum_TP_kW_lookback
+                    # constrcapa_adj_now = constrcapa_adj_lastyear * ((adj_capa_asym_2050 / constrcapa_adj_lastyear) ** adjann_capacity_growth )
+                    # constrcapa_adjhist_year.loc[(constrcapa_adjhist_year['year'] == y), 'constr_capacity_kw'] = constrcapa_adj_now
+                    constrcapa_adj_val = capa_sigmoid_func(n_year = i + 1  )
+                    constrcapa_adjhist_year.loc[(constrcapa_adjhist_year['year'] == y), 'constr_capacity_kw'] = constrcapa_adj_val
+
+
+
+            # PLOT  COMPARISON  ----------------------------------------------------------------------------
+            # plot total power over time
+            pv_plot['BeginningOfOperation'] = pd.to_datetime(pv_plot['BeginningOfOperation'])
+            pv_plot.set_index('BeginningOfOperation', inplace=True)
+
+            # Resample by week, month, and year and calculate the sum of TotalPower
+            monthly_sum = pv_plot['TotalPower'].resample('ME').sum()
+            yearly_sum = pv_plot['TotalPower'].resample('YE').sum()
+
+            if True: 
 
                 fig = go.Figure()
+                export_csv_columns_list = []
                 # add historic traces
                 fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name='Hist. Built Capa. in Sample ---------------- ', opacity=0.0))
-                fig.add_trace(go.Scatter(x=monthly_sum.index, y=monthly_sum.values, mode='lines+markers', name='Monthly Built', line=dict(dash='dot')))
+                # fig.add_trace(go.Scatter(x=monthly_sum.index, y=monthly_sum.values, mode='lines+markers', name='Monthly Built', line=dict(dash='dot')))
                 fig.add_trace(go.Scatter(x=yearly_sum.index, y=yearly_sum.values, mode='lines+markers', name='Yearly Built'))
                 
                 # add historically based constr capcacity 
@@ -3350,24 +3416,68 @@ class PVAllocScenario:
                     annotation_text="Lookback period",
                     annotation_position="top left",
                 )
-                fig.add_trace(go.Scatter(x=constrcapa_hist_month['date'], y=constrcapa_hist_month['constr_capacity_kw'], mode='lines+markers', name='Monthly Hist. based', line=dict(dash='dot')))
+                # fig.add_trace(go.Scatter(x=constrcapa_hist_month['date'], y=constrcapa_hist_month['constr_capacity_kw'], mode='lines+markers', name='Monthly Hist. based', line=dict(dash='dot')))
                 fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=constrcapa_hist_year['constr_capacity_kw'], mode='lines+markers', name='constrcapa - Yearly Hist. based (Sample)'))
+                export_csv_columns_list.append(pd.DataFrame({'date': constrcapa_hist_year['date'], 
+                                                             'constr_capacity_kw_HIST': constrcapa_hist_year['constr_capacity_kw']}))
 
-                for r in [0.05, 0.075, 0.1, 0.125, 0.15,]:
-                    adj_hist_year = []
+                for r in [0.05, 0.075, 0.1, 0.125, 0.15, 0.16, 0.17,  0.2]:
+                    loop_hist_year = []
                     for i,y in enumerate(capa_years_prediction):
                         val = sum_TP_kW_lookback * (1 + r)**(i+1)
-                        adj_hist_year.append(val)
-                    fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=adj_hist_year, mode='lines+markers', name=f'Yearly Hist. based + {int(r*100)}% p.a.', line=dict(dash='dot')))
-                    
+                        loop_hist_year.append(val)
+                    fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=loop_hist_year, mode='lines+markers', name=f'Yearly Hist. based + {int(r*100)}% p.a.', line=dict(dash='dot')))
+                    export_csv_columns_list.append(pd.DataFrame({'date': constrcapa_hist_year['date'], 
+                                                                 f'constr_capacity_kw_Hist_r{r}': loop_hist_year}))
+                            
 
                 # add EP2050 based constr capacity
                 classes_str = ', '.join(classes_adj_list) if len(classes_adj_list) > 1 else classes_adj_list[0]
                 fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name='EP2050 Based Future Capa. ---------------- ', opacity=0.0))
                 fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name=f'Adj_factor: {round(nEGIDs_SAMPLE / nEGIDs_all_CH,2) } - {nEGIDs_SAMPLE} nEGIDs in Sample / {nEGIDs_all_CH} nEGIDs allCH', opacity=0.0))
-                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_kw']/10, mode='lines+markers', name='allCH capacity kW (1/10)',))
-                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'], mode='lines+markers', name='Yearly EP2050 based (Sample, all classes)',))
-                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'] * epzb_capa_df[classes_adj_list].sum(axis=1), mode='lines+markers', name=f'constrcapa - size_class_adjusted ({classes_str})',))
+                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_kw']/1000, mode='lines+markers', name='allCH capacity kW (1/1000)',))
+                # fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'], mode='lines+markers', name='Yearly EP2050 based (Sample, all classes)',))
+
+                rescale_epzb2050 = [0.1, 0.25, 0.5, 0.75, 1.0]
+                for rescale in rescale_epzb2050:               
+                    fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'] * rescale, mode='lines+markers', name=f'constrcapa - EP2050 based, rescale: {rescale}'))
+                    export_csv_columns_list.append(pd.DataFrame({'date': epzb_capa_df['date'], 
+                                                                 f'constr_capacity_kw_EP2050_rescale{rescale}': epzb_capa_df['epzb_capa_sample_kw'] * rescale}))
+                    
+                fig.add_trace(go.Scatter(x=epzb_capa_df['date'], y=epzb_capa_df['epzb_capa_sample_kw'],           mode='lines+markers', name=f'constrcapa - size_class_adjusted ({classes_str})',))
+
+
+                # add adjusted historic capacity
+                fig.add_trace(go.Scatter(x=[T0, ], y=[None, ], mode='lines', name='ADJU Hist. to EPZB2050. ---------------- ', opacity=0.0))
+                fig.add_vrect(
+                    x0=adj_start_loockback, 
+                    x1=T0,
+                    fillcolor="darkturquoise",
+                    opacity=0.3,
+                    layer="below",
+                    line_width=0,
+                    annotation_text="Adj lookback period",
+                    annotation_position="bottom left",
+                )
+
+                refactor_histadjust =  [
+                    # 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                    # 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                    # 1.0, 1.2, 1.4, 1.6, 1.8, 2.0
+                    # 0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0,
+                    # 5.0, 7.5, 10.0, 12.5, 15.0, 20.0
+                    0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.9, 
+                    ]
+                for refactor in refactor_histadjust: 
+                    loop_adj_hist_year = []
+                    for i,y in enumerate(capa_years_prediction):
+                        val = capa_sigmoid_func(n_year = i + 1 , growth_rate = refactor,capa_target = adj_capa_asym_2050, )
+                        # val_lastyear = constrcapa_adjhist_year.loc[constrcapa_adjhist_year['year'] == y-1, 'constr_capacity_kw'].values[0] if i > 0 else sum_TP_kW_lookback
+                        # val = val_lastyear * (adj_capa_asym_2050 / val_lastyear) ** r
+                        loop_adj_hist_year.append(val)
+                    fig.add_trace(go.Scatter(x=constrcapa_hist_year['date'], y=loop_adj_hist_year, mode='lines+markers', name=f'Adj. Hist. based refact {refactor}', line=dict(dash='dot')))
+                    export_csv_columns_list.append(pd.DataFrame({'date': constrcapa_hist_year['date'], 
+                                                                 f'constr_capacity_kw_AdjHist_refact{refactor}': loop_adj_hist_year}))
 
 
                 # update layout + export
@@ -3379,17 +3489,42 @@ class PVAllocScenario:
                     template='plotly_white',
                 )
                 fig.write_html(f'{self.sett.name_dir_export_path}/construction_capacity_over_time_{self.sett.name_dir_export}.html')
+                # fig.show()
 
-            # fig.show()
+                # crop dfs to match one date range for csv export
+                # trange_csv = 
+                min_date_range_hist, max_date_range_hist = min( constrcapa_adjhist_year['date'] ), max( constrcapa_adjhist_year['date'] )
+                max_date_range_epzb = max( epzb_capa_df['date'] )
+                start_date_csv = min_date_range_hist
+                end_date_csv   = min( max_date_range_hist, max_date_range_epzb) 
+
+                constracapa_comparison_df = None
+                for df in export_csv_columns_list:
+                    df = df.copy()
+                    df['date'] = pd.to_datetime(df['date'])
+                    df = df.loc[(df['date'] >= start_date_csv) & (df['date'] <= end_date_csv)]
+
+                    if constracapa_comparison_df is None:
+                        constracapa_comparison_df = df
+                    else:
+                        constracapa_comparison_df = constracapa_comparison_df.merge(df, on='date', how='inner')
+
+                constracapa_comparison_df = constracapa_comparison_df.sort_values('date').reset_index(drop=True)
+                constracapa_comparison_df.to_csv(f'{self.sett.name_dir_export_path}/constracapa_comparison.csv', index=False)
+
+
+            # EXPORT COMPARISON CSV  ----------------------------------------------------------------------------
+
 
 
             # SELECTION + PRINTs to LOGFILE ----------------------------------------------------------------------------
-            if self.sett.CSTRspec_capacity_type == 'hist_constr_capa_month':
-                constrcapa = constrcapa_hist_month.copy()
-            elif self.sett.CSTRspec_capacity_type == 'hist_constr_capa_year':
+            if self.sett.CSTRspec_capacity_type == 'hist_constr_capa_year':
                 constrcapa = constrcapa_hist_year.copy()
             elif self.sett.CSTRspec_capacity_type == 'ep2050_zerobasis':
                 constrcapa = constrcapa_epzb.copy()
+            elif self.sett.CSTRspec_capacity_type == 'adj_hist_to_ep2050':
+                constrcapa = constrcapa_adjhist_year.copy()
+                
         
 
             checkpoint_to_logfile(f'constr_capacity month lookback, between :                {months_lookback[0]} to {months_lookback[-1]}', self.sett.log_name, 0)
@@ -5729,9 +5864,8 @@ if __name__ == '__main__':
             create_gdf_export_of_topology                        = True,
             export_csvs                                          = True,
 
-            T0_year_prediction                                   = 2024,
-            months_lookback                                      = 12,
-            months_prediction                                    = 240,
+            # T0_year_prediction                                   = 2024,
+            months_prediction                                    = 480,
             TECspec_add_heatpump_demand_TF                       = True,   
             ALGOspec_topo_subdf_partitioner                      = 250, 
             ALGOspec_inst_selection_method                       = 'max_npv',     # 'random', max_npv', 'prob_weighted_npv'
