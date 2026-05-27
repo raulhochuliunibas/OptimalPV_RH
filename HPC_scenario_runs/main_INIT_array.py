@@ -361,6 +361,7 @@ if True:
         
     ]
 
+
     LRG_scen_APPEND_list = [
         make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_epzb1', 
                       CSTRspec_ep2050_rescale_fact     = 1.0,
@@ -427,7 +428,7 @@ def get_subscen_list(sub_scen_str = 'test'):
     # elif sub_scen_str == 'XLRG_final':
     #     return XLRG_final_scen_list
     elif sub_scen_str == 'DEV':
-        return LRG_scen_APPEND_list # + XLRG_scen_list
+        return LRG_constrcapa_scen_list + LRG_subsidy_scen_list
     else:
         return []
     
