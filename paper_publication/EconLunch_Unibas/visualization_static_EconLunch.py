@@ -258,7 +258,7 @@ if __name__ == "__main__":
 
     # Inst Charact Comparison plots ===========================================================
 
-    if False: 
+    if True: 
         contcharacht_csv_file = 'plot_agg_hist_contcharact_newinst___export_plot_data___18scen.csv'
         # bu_contcharact_height   = 3 
         # bu_contcharact_width    = 8.5
