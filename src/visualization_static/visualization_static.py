@@ -88,7 +88,7 @@ class static_plotter_class:
     
 
 
-    # SCENARIO - based plots ====================================================================== 
+    # SCENARIO - based plots, tables + data ====================================================================== 
     def plot_ind_line_demand(self,
                              name_dir_export ,
                              hours_incl_list,
@@ -852,7 +852,28 @@ class static_plotter_class:
         # plt.show()
         self._save_figure(os.path.join(self.dir_path_export, 'gridnode_feedin_threshold_HOY.png'), plot_width, plot_height)
         plt.close()
-                                                
+
+    def copy_standalone_graphs_to_presentation_dir(self, 
+                                                  graphs_list =[
+                                                      'bfe_ep2050_netz_MNA_notitle.PNG', 
+                                                      'calib_rfr2_predvsactual.png', 
+                                                      'EGID_solkat_example.png', 
+                                                      'eth_summerschool_scenario_agg_notitle.png', 
+                                                      'grid-levels 1.png', 
+                                                      'grid-levels.png', 
+                                                      'newspaper_header2_optimalpv.png', 
+                                                      'pvinstcost_table.png', 
+                                                      'wp_topo_DSO_example_1_3.png', 
+                                                      'wp_topo_DSO_grid_large_example_1_3.png', 
+                                                      'wp_topo_roof_solkat_1_3.png', 
+                                                      ]
+                                                    ):
+        for graph in graphs_list:
+            src_path = os.path.join(self.paper_path, '0_standalone_graphs', graph) 
+            dst_path = os.path.join(self.dir_path_export, graph)
+            if os.path.exists(src_path):
+                shutil.copy(src_path, dst_path)
+                print(f'Copied {graph} to {dst_path}')                                              
     
 
     # AGG CSV - based plots ======================================================================
@@ -1424,10 +1445,13 @@ if __name__ == "__main__":
         }
 
 
+    # SCEN - individual tables + data ======================================================================
+    plotter.cop
 
-    # SCEN - based plots ======================================================================
+    # SCEN - individual plots  ======================================================================
+
     # demand and single values
-    if True:
+    if False:
 
 
         # plotter.NPVhist_DataSampleSummary()
@@ -1495,6 +1519,9 @@ if __name__ == "__main__":
             y_label='Aggregated Loss (MWh)',
             title='Agg. Loss',
             )
+
+
+    # Inst Charact Comparison plots ===========================================================
 
 
     print('\n*********************\n******** end ********\n*********************\n\n')
