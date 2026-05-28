@@ -158,11 +158,11 @@
 \useoutertheme[subsection=false]{miniframes}
 
 % color footer
-\setbeamercolor{author in head/foot}{fg=white,      bg=unibasmint}
-\setbeamercolor{title in head/foot}{fg=white,       bg=unibasmint}
-\setbeamercolor{date in head/foot}{fg=white,        bg=unibasmint}
-\setbeamercolor{section in head/foot}{fg=white,     bg=unibasmint}
-\setbeamercolor{subsection in head/foot}{fg=white,  bg=unibasmint}
+\setbeamercolor{author in head/foot}{fg=white,      bg=unibasmintdark}
+\setbeamercolor{title in head/foot}{fg=white,       bg=unibasmintdark}
+\setbeamercolor{date in head/foot}{fg=white,        bg=unibasmintdark}
+\setbeamercolor{section in head/foot}{fg=white,     bg=unibasmintdark}
+\setbeamercolor{subsection in head/foot}{fg=white,  bg=unibasmintdark}
 % \setbeamercolor{author in head/foot}{fg=black,      bg=unibasmint}
 % \setbeamercolor{title in head/foot}{fg=black,       bg=unibasmint}
 % \setbeamercolor{date in head/foot}{fg=black,        bg=unibasmint}
@@ -209,6 +209,7 @@
 % \href{https://www.sueddeutsche.de/wirtschaft/erneuerbare-energien-solarbranche-ausbau-erneuerbarer-energien-ist-buergerwille-dpa.urn-newsml-dpa-com-20090101-260404-930-907053}{https://www.sueddeutsche.de/wirtschaft/erneuerbare-energien-solarbranche-ausbau-erneuerbarer-energien-ist-buergerwille-dpa.urn-newsml-dpa-com-20090101-260404-930-907053}
 % https://www.pilotonline.com/2026/04/21/renewable-energies-global-electricity-demand/
 % https://www.nytimes.com/2013/11/11/business/energy-environment/solar-power-begins-to-shine-as-environmental-benefits-pay-off.html
+
 \end{frame}
 
 
@@ -409,20 +410,21 @@ Increasing PV deployment outpaces grid infrastructure (globally).
 \section{Model} 
 
 % =======================================
-\begin{frame}{Model Structure - 3 Agents }
+\begin{frame}{Simulation Framework - 3 Agents }
 \hypertarget{mod_structure_agents}{}
 
 \begin{columns}
     \begin{column}{0.49\textwidth}    
-    \textcolor{red}{Demand}
-    \begin{itemize}
-        \item Archetype profiles (single/multi family, rural / urban) scaled by living area (\cite{swissstore2022}). 
-        \item Scaling up winter months for houses with heat pumps.
-    \end{itemize}
-    \textcolor{purple}{Production}
+    \textcolor{violet}{Production}
     \begin{itemize}
         \item Roof partitions and radiation yield production potential.
         \item Calibrated random forest assigns installation size \hyperlink{appendix_randomforest_scatterplot}{\beamerreturnbutton{App. RFR}}.
+    \end{itemize}
+
+    \textcolor{red}{Demand}
+    \begin{itemize}
+        \item 6 Archetype profiles scaled by living area (\cite{swissstore2022}). 
+        \item Scaling up winter months for houses with heat pumps.
     \end{itemize}
     \textcolor{unibasgreydark}{Investments}
     \begin{itemize}
@@ -450,7 +452,7 @@ Increasing PV deployment outpaces grid infrastructure (globally).
 
 
 % =====================================================
-\begin{frame}{Model Structure - Allocation Process}
+\begin{frame}{Allocation Process}
 
 \begin{columns}
 
@@ -625,44 +627,50 @@ Increasing PV deployment outpaces grid infrastructure (globally).
 \section{Results} 
 
 % =======================================
-\begin{frame}{Results - Grid-Related Losses}
+\begin{frame}{\strut PV-Induced Excess Feedin}
 
-\begin{minipage}{0.492\textwidth}
+\begin{minipage}{0.322\textwidth}
   \centering
   \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVHOY_bu_loss_byiter.png}
+    \includegraphics[width=1.005\textwidth]{figures/gridnode_feedin_threshold_HOY.png}
   }
 \end{minipage}\hfill
-\begin{minipage}{0.492\textwidth}
+\begin{minipage}{0.322\textwidth}
   \centering
   \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bu_loss.png}
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bau_excfeedin.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.322\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bau_feedin.png}
   }
 \end{minipage}
 \end{frame}
 
 % =======================================
-\begin{frame}{Losses With Different Subsidies}
+\begin{frame}{\strut Different Subsidies}
 \begin{minipage}{0.492\textwidth}
   \centering
   \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_buABC_loss.png}
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bauABC_excfeedin.png}
   }
 \end{minipage}\hfill
 \begin{minipage}{0.492\textwidth}
   \centering
   \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_buABC_feedin.png}
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bauABC_feedin.png}
   }
 \end{minipage}
 \end{frame}
 
 % =======================================
-\begin{frame}{"Grid Optimal Expansion"}
+\begin{frame}{\strut Grid Optimal Expansion}
 \begin{minipage}{0.492\textwidth}
   \centering
   \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_gridoptim_loss.png}
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_gridoptim_excfeedin.png}
   }
 \end{minipage}\hfill
 \begin{minipage}{0.492\textwidth}
@@ -674,11 +682,11 @@ Increasing PV deployment outpaces grid infrastructure (globally).
 \end{frame}
 
 % =======================================
-\begin{frame}{DSO Intervention }
+\begin{frame}{\strut DSO Intervention }
 \begin{minipage}{0.492\textwidth}
   \centering
   \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_DSOreact_loss.png}
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_DSOreact_excfeedin.png}
   }
 \end{minipage}\hfill
 \begin{minipage}{0.492\textwidth}
@@ -688,86 +696,6 @@ Increasing PV deployment outpaces grid infrastructure (globally).
   }
 \end{minipage}
 \end{frame}
-
-
-% =======================================
-% \begin{frame}{Characteristics of New Installations}
-\begin{frame}{}
-
-% Left Column
-\begin{minipage}{0.479\textwidth}
-% default (LRG2\_max) \\
-Characteristics Default  \\
-  \centering
-  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_bu_pvalloc_29nbfs_LRG2_max.png}
-  \vspace{-0.011cm}
-  %
-  % 2x2 matrix for categorical plots
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_GKLAS.png}
-    }
-  \end{minipage}\hfill
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_heatpump_TF.png}
-    }
-  \end{minipage}
-  \vspace{-0.121cm}
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_are_typ.png}
-    }
-  \end{minipage}\hfill
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_filter_tag.png}
-    }
-  \end{minipage}
-\end{minipage}
-%
-% Right Column 
-\begin{minipage}{0.479\textwidth}
-% Subsidy B (LRG\_max\_sBs0p8) \\
-Characteristics Subsidy B \\
-\centering
-  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_bu_pvalloc_29nbfs_LRG2_max.png}
-  \vspace{-0.011cm}
-  %
-  % 2x2 matrix for categorical plots
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_GKLAS.png}
-    }
-  \end{minipage}\hfill
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_heatpump_TF.png}
-    }
-  \end{minipage}
-  \vspace{-0.121cm}
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_are_typ.png}
-    }
-  \end{minipage}\hfill
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_filter_tag.png}
-    }
-  \end{minipage}
-\end{minipage}
-
-\end{frame}
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -828,7 +756,88 @@ Characteristics Subsidy B \\
 \renewcommand{\bibfont}{\normalsize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Appendix} 
+
+% =======================================
+% \begin{frame}{Characteristics of New Installations}
+\begin{frame}{}
+
+% Left Column
+\begin{minipage}{0.479\textwidth}
+% default (LRG2\_max) \\
+Business as Usual  \\
+  \centering
+  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_bu_pvalloc_29nbfs_LRG2_max.png}
+  \vspace{-0.011cm}
+  %
+  % 2x2 matrix for categorical plots
+  \begin{minipage}{0.49\textwidth}
+    \centering
+    \makebox[0pt][c]{%
+      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_GKLAS.png}
+    }
+  \end{minipage}\hfill
+  \begin{minipage}{0.49\textwidth}
+    \centering
+    \makebox[0pt][c]{%
+      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_heatpump_TF.png}
+    }
+  \end{minipage}
+  \vspace{-0.121cm}
+  \begin{minipage}{0.49\textwidth}
+    \centering
+    \makebox[0pt][c]{%
+      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_are_typ.png}
+    }
+  \end{minipage}\hfill
+  \begin{minipage}{0.49\textwidth}
+    \centering
+    \makebox[0pt][c]{%
+      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_filter_tag.png}
+    }
+  \end{minipage}
+\end{minipage}
+%
+% Right Column 
+\begin{minipage}{0.479\textwidth}
+% Subsidy B (LRG\_max\_sBs0p8) \\
+Subsidy B \\
+\centering
+  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_bu_pvalloc_29nbfs_LRG2_max.png}
+  \vspace{-0.011cm}
+  %
+  % 2x2 matrix for categorical plots
+  \begin{minipage}{0.49\textwidth}
+    \centering
+    \makebox[0pt][c]{%
+      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_GKLAS.png}
+    }
+  \end{minipage}\hfill
+  \begin{minipage}{0.49\textwidth}
+    \centering
+    \makebox[0pt][c]{%
+      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_heatpump_TF.png}
+    }
+  \end{minipage}
+  \vspace{-0.121cm}
+  \begin{minipage}{0.49\textwidth}
+    \centering
+    \makebox[0pt][c]{%
+      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_are_typ.png}
+    }
+  \end{minipage}\hfill
+  \begin{minipage}{0.49\textwidth}
+    \centering
+    \makebox[0pt][c]{%
+      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_filter_tag.png}
+    }
+  \end{minipage}
+\end{minipage}
+
+\end{frame}
+
+
 
 % =======================================
 \begin{frame}{Appendix: Model Grid Analysis EP2050+}
