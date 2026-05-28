@@ -1053,7 +1053,7 @@ class PVAllocScenario:
                         # npv_df = copy.deepcopy(npv_df.loc[~npv_df['EGID'].isin(closed_nodes_egid)])
 
                     #  remove all EGIDs with negative NPV ----------------
-                    npv_df = npv_df.filter(pl.col('NPV') > 0).clone()
+                    npv_df = npv_df.filter(pl.col('NPV_uid') > 0).clone()
 
                         
                     npv_df_empty_TF = npv_df.shape[0] == 0
