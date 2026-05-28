@@ -28,6 +28,7 @@ venv*
 
 paper_publication/SustainableFutureLunch_Unibas/**
 paper_publication/SustainableFutureLunch_Unibas/*.pdf
+# paper_publication/EconLunch_Unibas/figures/**
 
 
 
@@ -55,6 +56,11 @@ progress_notes/**
 # --------------------------------------------------------------------------------------------
 # DATA
 # --------------------------------------------------------------------------------------------
+
+
+# ignore all static visualization plots, not csvs
+data/visualization/*
+paper_publication/EconLunch_Unibas/figures/plot_agg_hist_contcharact_newinst___export_plot_data___18scen.csv
 
 
 # ignore all model visualization files
