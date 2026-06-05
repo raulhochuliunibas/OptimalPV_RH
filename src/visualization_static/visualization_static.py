@@ -95,6 +95,7 @@ class static_plotter_class:
                                                       'grid-levels 1.png', 
                                                       'grid-levels.png', 
                                                       'newspaper_header2_optimalpv.png', 
+                                                      'newspaper_header3.png',
                                                       'pvinstcost_table.png', 
                                                       'wp_topo_DSO_example_1_3.png', 
                                                       'wp_topo_DSO_grid_large_example_1_3.png', 
