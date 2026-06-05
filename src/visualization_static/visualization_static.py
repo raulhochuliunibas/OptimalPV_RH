@@ -1239,7 +1239,7 @@ class static_plotter_class:
         print(f'Worst peak week1 Date end:\t{worst_peakweek1_date_end}')
         print(f'total loss peak1:\t\t{worst_peak_df["feedin_atnode_loss_kW"].sum():.1f} kWh')
         print(f'Average loss p House peak1:\t{worst_peak_df["feedin_atnode_loss_kW"].sum() / negid_worstnode:.1f} kWh')
-        residual_demand = worst_peak_df["max_demand_feedin_atnode_k W"].sum() - worst_peak_df["selfconsum_kW"].sum()
+        residual_demand = worst_peak_df["max_demand_feedin_atnode_kW"].sum() - worst_peak_df["selfconsum_kW"].sum()
         print(f'Average demand p House peak1:\t{residual_demand / negid_worstnode:.1f} kWh')
         
         
