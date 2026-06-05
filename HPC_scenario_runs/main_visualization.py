@@ -34,6 +34,130 @@ visualization_list = [
                 '*.txt', "*old_vers*",
             ], 
             pvalloc_include_pattern_list = [      
+                'pvalloc_LRG3_max',
+                'pvalloc_LRG3_max_epzb1',
+                'pvalloc_LRG3_max_epzb025',
+                'pvalloc_LRG3_max_hist01',
+                'pvalloc_LRG3_max_elecpri60rp',
+                'pvalloc_LRG3_max_elecpri15rp',
+                'pvalloc_LRG3_rnd',
+                'pvalloc_LRG3_max_1hll',
+                'pvalloc_LRG3_max_gridoptim',
+                'pvalloc_LRG3_max_pksh',
+                'pvalloc_LRG3_max_nokev', 
+
+
+                'pvalloc_LRG3_max_sAs4p0',
+                'pvalloc_LRG3_max_sAs6p0',
+                'pvalloc_LRG3_max_sAs8p0',
+
+                'pvalloc_LRG3_max_sBs0p4',
+                'pvalloc_LRG3_max_sBs0p6',
+                'pvalloc_LRG3_max_sBs0p8',
+
+                'pvalloc_LRG3_max_sCs4p4',
+                'pvalloc_LRG3_max_sCs4p6',
+                'pvalloc_LRG3_max_sCs4p8',
+                'pvalloc_LRG3_max_sCs6p4',
+                'pvalloc_LRG3_max_sCs6p6',
+                'pvalloc_LRG3_max_sCs6p8',
+                'pvalloc_LRG3_max_sCs8p4',
+                'pvalloc_LRG3_max_sCs8p6',
+                'pvalloc_LRG3_max_sCs8p8',
+
+                ],
+
+            cut_timeseries_to_zoom_hour        = True,
+            add_day_night_HOY_bands            = True,
+            save_plot_by_scen_directory        = False, 
+
+            plot_ind_line_PVproduction_bynode_specs  = {
+                'select_nodes_stacked_traces': [], 
+                'n_top_loss_nodes': 0,
+                },
+            
+            plot_ind_line_installedCap_TF                   = [True,      True,       False]    ,
+            plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,      False],
+            # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+
+            # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
+            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+                # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+                # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+
+            # plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
+
+            # plot_ind_hist_cols_HOYagg_per_EGID_TF         = [True,      True,      False],
+            ), 
+        Visual_Settings(
+            pvalloc_exclude_pattern_list = [
+                '*.txt', "*old_vers*",
+            ], 
+            pvalloc_include_pattern_list = [      
+                'pvalloc_LRG3_max',
+                # 'pvalloc_LRG3_max_gridoptim',
+                # 'pvalloc_LRG3_gridoptim_max',
+
+                'pvalloc_LRG3_max_sAs4p0',
+                'pvalloc_LRG3_max_sAs6p0',
+                'pvalloc_LRG3_max_sAs8p0',
+
+                'pvalloc_LRG3_max_sBs0p4',
+                'pvalloc_LRG3_max_sBs0p6',
+                'pvalloc_LRG3_max_sBs0p8',
+
+                'pvalloc_LRG3_max_sCs4p4',
+                'pvalloc_LRG3_max_sCs4p6',
+                'pvalloc_LRG3_max_sCs4p8',
+                'pvalloc_LRG3_max_sCs6p4',
+                'pvalloc_LRG3_max_sCs6p6',
+                'pvalloc_LRG3_max_sCs6p8',
+                'pvalloc_LRG3_max_sCs8p4',
+                'pvalloc_LRG3_max_sCs8p6',
+                'pvalloc_LRG3_max_sCs8p8',
+
+                ],
+
+            cut_timeseries_to_zoom_hour        = True,
+            add_day_night_HOY_bands            = True,
+            save_plot_by_scen_directory        = False, 
+
+            plot_ind_line_PVproduction_bynode_specs  = {
+                'select_nodes_stacked_traces': [], 
+                'n_top_loss_nodes': 0,
+                },
+            
+            # plot_ind_line_installedCap_TF                   = [True,      True,       False]    ,
+            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            # plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,      False],
+            # # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],
+            # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+
+            # # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
+            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+
+            # plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
+
+            # plot_ind_hist_cols_HOYagg_per_EGID_TF         = [True,      True,      False],
+            ), 
+
+  
+]
+
+
+
+
+EconLunch_plots = [
+
+        Visual_Settings(
+            pvalloc_exclude_pattern_list = [
+                '*.txt', "*old_vers*",
+            ], 
+            pvalloc_include_pattern_list = [      
                 'pvalloc_29nbfs_LRG2_max', 
                 
                 'pvalloc_29nbfs_LRG2_rnd', 
@@ -69,20 +193,20 @@ visualization_list = [
                 'n_top_loss_nodes': 0,
                 },
             
-            # plot_ind_line_installedCap_TF                   = [True,      True,       False]    ,
-            # plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
-            # plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,      False],
-            # # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],
-            # plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
+            plot_ind_line_installedCap_TF                   = [True,      True,       False]    ,
+            plot_ind_line_productionHOY_per_node_TF         = [True,      True,      False],
+            plot_ind_line_productionHOY_per_node_byiter_TF  = [True,      True,      False],
+            # plot_ind_line_productionHOY_per_EGID_TF         = [True,      True,      False],
+            plot_ind_line_PVproduction_TF                   = [True,      True,       False]    , 
 
-            # # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
-            # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
-            # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
-            # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
+            # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
+            plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
 
-            # plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
+            plot_ind_summary_stats_by_node_TF               = [True,      True,       True],
 
-            # plot_ind_hist_cols_HOYagg_per_EGID_TF         = [True,      True,      False],
+            plot_ind_hist_cols_HOYagg_per_EGID_TF         = [True,      True,      False],
             ), 
 
         Visual_Settings(

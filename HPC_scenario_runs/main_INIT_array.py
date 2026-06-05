@@ -9,7 +9,9 @@ from src.MAIN_visualization import Visual_Settings, Visualization
 # Default Sub-Scenarios 
 # ==============================
 if True: 
-    def make_scenario(default_scen, name_dir_export, bfs_numbers=None, **overrides):
+    def make_scenario(default_scen, name_dir_export=None, bfs_numbers=None, **overrides):
+        if name_dir_export is None:
+            name_dir_export = default_scen.name_dir_export
         kwargs = {'name_dir_export': name_dir_export}
         if bfs_numbers is not None:
             kwargs['bfs_numbers'] = bfs_numbers
@@ -178,7 +180,7 @@ if True:
 # ==============================
 if True: 
     test_scen_list = [
-        make_scenario(pvalloc_test_DEFAULT,
+        make_scenario(pvalloc_test_DEFAULT, 'pvalloc_test_DEFAULT'
         ),
     ]
     
@@ -231,54 +233,57 @@ if True:
 
     LRG_constrcapa_scen_list = [
 
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max', 
-        ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max_epzb1', 
-                      bfs_numbers                      = LRG_bfs_list, 
-                      CSTRspec_capacity_type           = 'ep2050_zerobasis',
-                      CSTRspec_ep2050_rescale_fact     = 1.0,
-        ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max_epzb025', 
-                      bfs_numbers                      = LRG_bfs_list, 
-                      CSTRspec_capacity_type           = 'ep2050_zerobasis',
-                      CSTRspec_ep2050_rescale_fact     = 0.25,
-        ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max_epzb025', 
-                      bfs_numbers                      = LRG_bfs_list, 
-                      CSTRspec_capacity_type           = 'ep2050_zerobasis',
-                      CSTRspec_ep2050_rescale_fact     = 0.25,
-        ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max_hist01', 
-                      bfs_numbers                      = LRG_bfs_list, 
-                      CSTRspec_capacity_type           = 'hist_constr_capa_year',
-                      CSTRspec_ann_capacity_growth     = 0.1,
-        ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max_elecpri60rp', 
-                      bfs_numbers                      = LRG_bfs_list, 
-                      TECspec_generic_elecpri_Rp_kWh   = 60.0,
-        ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max_elecpri15rp', 
-                      bfs_numbers                      = LRG_bfs_list, 
-                      TECspec_generic_elecpri_Rp_kWh   = 15.0,
-        ),
+        # make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max', 
+        # ),
+        # make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_epzb1', 
+        #               bfs_numbers                      = LRG_bfs_list, 
+        #               CSTRspec_capacity_type           = 'ep2050_zerobasis',
+        #               CSTRspec_ep2050_rescale_fact     = 1.0,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_epzb025', 
+        #               bfs_numbers                      = LRG_bfs_list, 
+        #               CSTRspec_capacity_type           = 'ep2050_zerobasis',
+        #               CSTRspec_ep2050_rescale_fact     = 0.25,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_hist01', 
+        #               bfs_numbers                      = LRG_bfs_list, 
+        #               CSTRspec_capacity_type           = 'hist_constr_capa_year',
+        #               CSTRspec_ann_capacity_growth     = 0.1,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_elecpri60rp', 
+        #               bfs_numbers                      = LRG_bfs_list, 
+        #               TECspec_generic_elecpri_Rp_kWh   = 60.0,
+        # ),
+        # make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_elecpri15rp', 
+        #               bfs_numbers                      = LRG_bfs_list, 
+        #               TECspec_generic_elecpri_Rp_kWh   = 15.0,
+        # ),
         
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_rnd', 
+        # make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_rnd', 
+        #               bfs_numbers                      = LRG_bfs_list, 
+        #               ALGOspec_inst_selection_method   = 'random',
+        # ),
+        # make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_1hll', 
+        #               bfs_numbers                      = LRG_bfs_list, 
+        #               GRIDspec_node_1hll_closed_TF     = True, 
+        # ),
+        # make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_gridoptim', 
+        #               bfs_numbers                      = LRG_bfs_list, 
+        #               run_pvalloc_initalization_TF     = True,
+        #               run_pvalloc_mcalgorithm_TF       = False,
+        #               run_gridoptimized_orderinst_TF   = True,
+        #               run_gridoptimized_expansion_TF   = True,
+        #               OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel', 
+        #               OPTEXPApecs_apply_gridoptim_order_TF     = True,
+        # ),
+        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_pksh',
                       bfs_numbers                      = LRG_bfs_list, 
-                      ALGOspec_inst_selection_method   = 'random',
+                      GRID_peak_shaving_enabled_tupl  = (True, 0.7, 0.7),
         ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max_1hll', 
+        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{LRG_bfs_name}_max_nokev',
                       bfs_numbers                      = LRG_bfs_list, 
-                      GRIDspec_node_1hll_closed_TF     = True, 
+                      TECspec_KEVflatsubs              = 0.0,    
         ),
-        make_scenario(pvalloc_Xnbfs_DEFAULT, f'{pvalloc_Xnbfs_DEFAULT}_max_gridoptim', 
-                      bfs_numbers                      = LRG_bfs_list, 
-                      run_pvalloc_initalization_TF     = True,
-                      run_pvalloc_mcalgorithm_TF       = False,
-                      run_gridoptimized_orderinst_TF   = True,
-                      run_gridoptimized_expansion_TF   = True,
-                      OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel', 
-                      OPTEXPApecs_apply_gridoptim_order_TF     = True,
-                    ),
     ]
 
 
@@ -421,7 +426,7 @@ def get_subscen_list(sub_scen_str = 'test'):
     elif sub_scen_str == 'RUR_and_SUB':
         return RUR_scen_list + SUB_scen_list
     elif sub_scen_str == 'LRG':
-        return LRG_subsidy_scen_list
+        return LRG_constrcapa_scen_list
     
     # elif sub_scen_str == 'XLRG':
         # return XLRG_scen_list
