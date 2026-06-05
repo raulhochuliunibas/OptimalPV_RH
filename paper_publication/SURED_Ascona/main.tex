@@ -1,12 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\documentclass[10pt, aspectration=169]{beamer}
+\documentclass[10pt, aspectratio=169]{beamer}
 \usepackage[many]{tcolorbox}
-% \usetheme{Copenhagen}
-\usetheme{Frankfurt}
-\setbeamercovered{transparent=30}
+\usetheme{metropolis}
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
-\usepackage{times}
 \usepackage[T1]{fontenc}
 \usepackage{array}
 \usepackage{booktabs}
@@ -22,7 +19,10 @@
 \usepackage{booktabs,threeparttable}
 \usepackage{adjustbox}
 \usepackage{tikz}
-% \usepackage{natbib}
+\usetikzlibrary{calc}
+\usepackage{geometry}
+\usepackage{appendixnumberbeamer}
+
 
 % DEFINE COLORPALETTE
 \newcommand{\cmark}{\ding{51}}%
@@ -35,7 +35,7 @@
 \definecolor{unibasred}{RGB}{210,5,55}
 \definecolor{unibaspink}{RGB}{235,130,155}
 \definecolor{unibasgrey}{RGB}{190,195,200}
-\definecolor{unibasmintdark}{RGB}{0,110,110} 
+\definecolor{unibasmintdark}{RGB}{0,110,110}
 \definecolor{unibasblack}{RGB}{0,0,0}
 \definecolor{unibaswhite}{RGB}{255,255,255}
 
@@ -47,858 +47,703 @@
 \definecolor{capacity_expansion}{RGB}{162, 216, 216}
 
 
-\useinnertheme{circles}
+% -------------------------------------------------------
+% METROPOLIS COLOR SETUP
+% -------------------------------------------------------
+% \setbeamercolor{normal text}{fg=unibasanthr, bg=white}
+% \setbeamercolor{alerted text}{fg=unibasred}
+% \setbeamercolor{example text}{fg=unibasmintdark}
+
+% \setbeamercolor{frametitle}{bg=unibasmintlight, fg=unibasmintdark}
+% \setbeamercolor{title separator}{fg=unibasmintdark}
+% \setbeamercolor{progress bar}{fg=unibasmintdark, bg=unibasgrey}
+
+% \setbeamercolor{block title}{bg=unibasmintdark, fg=unibasmint}
+% \setbeamercolor{block body}{bg=unibasmintlight, fg=unibasanthr}
+% \setbeamercolor{block title alerted}{bg=unibasred, fg=white}
+% \setbeamercolor{block body alerted}{bg=unibasmintlight!50, fg=unibasanthr}
+
+% \setbeamercolor{title}{fg=unibasmintdark}
+% \setbeamercolor{subtitle}{fg=unibasgreydark}
+% \setbeamercolor{author}{fg=unibasanthr}
+% \setbeamercolor{institute}{fg=unibasgreydark}
+% \setbeamercolor{date}{fg=unibasgreydark}
+
+% \setbeamercolor{section in toc}{fg=unibasmintdark}
+% \setbeamercolor{subsection in toc}{fg=unibasgreydark}
+
+% \setbeamercolor{itemize item}{fg=unibasmintdark}
+% \setbeamercolor{itemize subitem}{fg=unibasmintmid}
+% \setbeamercolor{itemize subsubitem}{fg=unibasgreydark}
+% \setbeamercolor{enumerate item}{fg=unibasmintdark}
+
+% \setbeamercolor{button}{bg=unibasmint, fg=unibasanthr}
+
+% footer / standout
+\setbeamercolor{footline}{fg=unibasgreydark, bg=white}
+
+% -------------------------------------------------------
+% METROPOLIS FONT / STYLE OPTIONS
+% -------------------------------------------------------
+\metroset{
+  titleformat        = regular,
+  titleformat frame  = regular,
+  sectionpage        = none,
+  numbering          = fraction,
+  progressbar        = frametitle,
+  block              = fill
+}
+
 \usefonttheme[onlymath]{serif}
 \setbeamertemplate{caption}[numbered]
-\usepackage{graphicx}
 
 
+% % -------------------------------------------------------
+% % BLOCK ENVIRONMENT COLORS (inside block/alertblock)
+% % -------------------------------------------------------
+% \AtBeginEnvironment{block}{%
+%   \setbeamercolor{itemize item}{fg=unibasmintdark}
+%   \setbeamercolor{itemize subitem}{fg=unibasmintmid}
+%   \setbeamercolor{enumerate item}{fg=unibasmintdark}
+%   \setbeamercolor{item projected}{fg=white, bg=unibasmintdark}
+% }
+
+% \AtBeginEnvironment{alertblock}{%
+%   \setbeamercolor{itemize item}{fg=unibasred}
+%   \setbeamercolor{enumerate item}{fg=unibasred}
+%   \setbeamercolor{item projected}{fg=white, bg=unibasred}
+% }
+
+% -------------------------------------------------------
+% CITATIONS
+% -------------------------------------------------------
+\usepackage[backend=biber, style=apa, maxbibnames=999, minbibnames=1,
+            maxcitenames=1, mincitenames=1, uniquelist=true]{biblatex}
+\addbibresource{optimalpv_conf.bib}
+\AtBeginBibliography{\small}
+% \hypersetup{colorlinks=true,
+%             citecolor=unibasmintmid,
+%             linkcolor=unibasmintdark,
+%             urlcolor=unibasmintdark}
+
+% -------------------------------------------------------
+% BACKUP FRAME COUNTER
+% -------------------------------------------------------
 \newcommand{\backupbegin}{
-	\newcounter{framenumberappendix}
-	\setcounter{framenumberappendix}{\value{framenumber}}
+  \newcounter{framenumberappendix}
+  \setcounter{framenumberappendix}{\value{framenumber}}
 }
 \newcommand{\backupend}{
-	\addtocounter{framenumberappendix}{-\value{framenumber}}
-	\addtocounter{framenumber}{\value{framenumberappendix}} 
+  \addtocounter{framenumberappendix}{-\value{framenumber}}
+  \addtocounter{framenumber}{\value{framenumberappendix}}
 }
 
-\AtBeginEnvironment{block}{%
-	\setbeamercolor{itemize item}{         fg=black}
-	\setbeamercolor{itemize subitem}{      fg=black}
-	\setbeamercolor{itemize subsubitem}{   fg=black}
-	\setbeamercolor{enumerate item}{       fg=unibasmint, bg=unibasmintdark}
-	\setbeamercolor{enumerate subitem}{    fg=unibasmintdark}
-	\setbeamercolor{enumerate subsubitem}{ fg=unibasmintdark}
-	\setbeamercolor{item projected}{       fg=white, bg=unibasmintdark}
-}
-
-\AtBeginEnvironment{alertblock}{%
-    \setbeamercolor{itemize item}{fg=      black}
-    \setbeamercolor{itemize subitem}{      fg=black}
-	\setbeamercolor{itemize subsubitem}{   fg=black}
-	\setbeamercolor{enumerate item}{       fg=unibasmint, bg=red}
-	\setbeamercolor{enumerate subitem}{    fg=unibasmintdark}
-	\setbeamercolor{enumerate subsubitem}{ fg=unibasmintdark}
-	\setbeamercolor{item projected}{       fg=white, bg=unibasmintdark}
-}
-
-
-% SET CITATION
-%\usepackage[backend = biber, style = apa, maxbibnames=999, minbibnames = 1, maxcitenames=2, mincitenames=1, uniquelist=true]{biblatex}
-\usepackage[backend = biber, style = apa, maxbibnames=999, minbibnames = 1, maxcitenames=1, mincitenames=1, uniquelist=true]{biblatex}
-
-\addbibresource{proposal_raulhochuli_bib.bib}
-\AtBeginBibliography{\small}
-\hypersetup{colorlinks = true, 
-            citecolor = unibasmintmid, 
-            linkcolor = white, 
-            urlcolor = unibasmintdark}
-
-% % SET BEAMER COLOR
-\setbeamercolor*{structure}{                        fg=unibasmint,bg=unibasblack}
-\setbeamercolor*{palette primary}{use=structure,    fg=unibasblack,bg=structure.fg}
-\setbeamercolor*{palette secondary}{use=structure,  fg=white,bg=structure.fg!75!black}
-\setbeamercolor*{palette tertiary}{use=structure,   fg=white,bg=structure.fg!50!black}
-\setbeamercolor*{palette quaternary}{               fg=black,bg=white}
-\setbeamercolor*{item projected}{                   fg=black,bg=unibasmint!80}
-\setbeamercolor*{block title example}{              fg=black,bg=unibasmint}
-\setbeamercolor{title}{bg=white,                    fg=unibasmintdark}
-
-\setbeamercolor{button}{bg=unibasmint,fg=black}
-\setbeamercolor{section in toc}{fg=unibasmintdark,bg=white} %Here we adjust colors for table of contents
-\setbeamercolor{subsection in toc}{fg=unibasgreydark,bg=white}
-\setbeamercolor{block title}{bg=unibasmintdark,fg=unibasmint}  %Here I changed color of the block! See Slide 3
-\setbeamercolor{itemize item}{fg=black}
-\setbeamercolor{itemize subitem}{fg=black}
-\setbeamercolor{itemize subsubitem}{fg=unibasmintdark}
-\setbeamercolor{frametitle}{bg=white,fg=unibasmintdark}
-
-
-\setbeamertemplate{blocks}[rounded][shadow=false] %Here I make bullet points as circles; Here I make rounded blocks with shadow
-\setbeamertemplate{itemize item}[circle]
-\setbeamertemplate{itemize subitem}{$-$}
-\setbeamertemplate{itemize subsubitem}[triangle]
-
-% SET TITLEPAGE LAYOUT
-\setbeamertemplate{title page}
-{
-    \begin{beamercolorbox}[sep=8pt,center,shadow=false,rounded=false]{title}
-        \usebeamerfont{title}\inserttitle\par%
-        \ifx\insertsubtitle\@empty%
-        \else%
-            \vskip0.25em%
-            {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}%
-        \fi%     
-    \end{beamercolorbox}%
-    \vskip1em\par
-    \begin{beamercolorbox}[sep=8pt,center]{author}
-        \usebeamerfont{author}\insertauthor
-    \end{beamercolorbox}
-    \begin{beamercolorbox}[sep=8pt,center]{institute}
-        \usebeamerfont{institute}\insertinstitute
-    \end{beamercolorbox}
-    \begin{beamercolorbox}[sep=8pt,center]{date}
-        \usebeamerfont{date}\insertdate
-    \end{beamercolorbox}
-}
-
-
-% shift all titles per slide a bit downwords
-\makeatletter
-\setbeamertemplate{frametitle}{
-  \vspace{0.12cm}% Increase this value as needed
-  \insertframetitle
-}
-\makeatother  
-
-% navigation bar
-\useoutertheme{infolines}      
-\setbeamertemplate{headline}[default]
-\setbeamertemplate{navigation symbols}{}
-\useoutertheme[subsection=false]{miniframes}
-
-% color footer
-\setbeamercolor{author in head/foot}{fg=white,      bg=unibasmintdark}
-\setbeamercolor{title in head/foot}{fg=white,       bg=unibasmintdark}
-\setbeamercolor{date in head/foot}{fg=white,        bg=unibasmintdark}
-\setbeamercolor{section in head/foot}{fg=white,     bg=unibasmintdark}
-\setbeamercolor{subsection in head/foot}{fg=white,  bg=unibasmintdark}
-% \setbeamercolor{author in head/foot}{fg=black,      bg=unibasmint}
-% \setbeamercolor{title in head/foot}{fg=black,       bg=unibasmint}
-% \setbeamercolor{date in head/foot}{fg=black,        bg=unibasmint}
-% \setbeamercolor{section in head/foot}{fg=black,     bg=unibasmint}
-% \setbeamercolor{subsection in head/foot}{fg=black,  bg=unibasmint}
-% \setbeamercolor*{palette primary}{fg=black,   bg=unibasmint}
-% \setbeamercolor*{palette secondary}{fg=black, bg=unibasmint}
-% \setbeamercolor*{palette tertiary}{fg=black,  bg=unibasmint}
-% \setbeamercolor*{palette quaternary}{fg=black,bg=unibasmint}
-
-
-% Title page %***************************************************************
-\title[Improved Residential PV Expansion]{Decisions at the Grid's Edge: \\ An Improved Spatial PV Expansion in Swiss Residences}
-
+% -------------------------------------------------------
+% TITLE INFO
+% -------------------------------------------------------
+\title[Improved Residential PV Expansion]{Decisions at the Grid's Edge}
+\subtitle{An Improved Spatial PV Expansion in Swiss Residences}
 \author{Raul Hochuli}
-\institute[University of Basel]{University of Basel, Faculty of Business and Economics, } 
-\date[May 2026]{May 2026}
-\titlegraphic{\includegraphics[width=2.3cm]{UniBas_Logo.jpg}}
-
+\institute{University of Basel, Faculty of Business and Economics}
+\date{June 2026}
+% \titlegraphic{\includegraphics[width=2.3cm]{UniBas_Logo.jpg}}
 
 
 %*******************************************************************************
-\begin{document}  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%******************************************************************************
+\begin{document}
+%*******************************************************************************
 
-% =======================================
+% -------------------------------------------------------
 \begin{frame}
-    \maketitle
+  \maketitle
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Motivation \& Literature} 
+\section{Motivation \& Literature}
 
-% =======================================
-\begin{frame}{}
+% -------------------------------------------------------
+\begin{frame}{Motivation}
   \centering
   \makebox[0pt][c]{%
-    \includegraphics[width=1.1\textwidth]{figures/newspaper_header2_optimalpv.png}
+    \includegraphics[width=0.9841\textwidth]{paper_publication/SSES_StGallen/newspaper_header3.png}
   }
-% \href{https://www.nzz.ch/schweiz/der-solarboom-bringt-das-stromnetz-an-den-anschlag-ld.1728398}{https://www.nzz.ch/schweiz/der-solarboom-bringt-das-stromnetz-an-den-anschlag-ld.1728398}
-% \href{https://www.nzz.ch/wirtschaft/die-deutsche-energiewende-geht-voran-jetzt-will-katharina-reiche-die-spielregeln-aendern-ld.1930553}{https://www.nzz.ch/wirtschaft/die-deutsche-energiewende-geht-voran-jetzt-will-katharina-reiche-die-spielregeln-aendern-ld.1930553}
-% \href{https://www.spiegel.de/wirtschaft/soziales/katherina-reiche-wirtschaftsministerin-plant-massive-einschnitte-fuer-erneuerbare-energien-a-c8d3fb96-2d80-41c4-9ff4-dc7a82f9019e}{https://www.spiegel.de/wirtschaft/soziales/katherina-reiche-wirtschaftsministerin-plant-massive-einschnitte-fuer-erneuerbare-energien-a-c8d3fb96-2d80-41c4-9ff4-dc7a82f9019e}
-% \href{https://www.sueddeutsche.de/wirtschaft/erneuerbare-energien-solarbranche-ausbau-erneuerbarer-energien-ist-buergerwille-dpa.urn-newsml-dpa-com-20090101-260404-930-907053}{https://www.sueddeutsche.de/wirtschaft/erneuerbare-energien-solarbranche-ausbau-erneuerbarer-energien-ist-buergerwille-dpa.urn-newsml-dpa-com-20090101-260404-930-907053}
-% https://www.pilotonline.com/2026/04/21/renewable-energies-global-electricity-demand/
-% https://www.nytimes.com/2013/11/11/business/energy-environment/solar-power-begins-to-shine-as-environmental-benefits-pay-off.html
-
+\vspace{-0.25cm}
+  \begin{block}{Research Contribution}
+    \begin{enumerate}
+      \item \textbf{Problem quantification} $\rightarrow$\textit{Build an extensive data based model simulation that estimates how soon and when solar PV expansion causes "grid-problems".}
+      \vspace{-0.101cm}
+      \item \textbf{Economic response} $\rightarrow$ \textit{2nd-best solution: Simple subsidy adjustments might delay grid congestion for a more efficient outcome.}
+      \vspace{-0.101cm}
+      \item \textbf{Not included} $\rightarrow$ \textit{Local battery storage is not included in the simulation, but considered in post-analysis.}
+    \end{enumerate}
+  \end{block}
 \end{frame}
 
-
-\begin{frame}{About PV...}
+% -------------------------------------------------------
+\begin{frame}{About PV}
 \centering
-
-% ---------- COLORS (Cividis reordered: yellow -> blue) ----------
-% \definecolor{card1}{RGB}{197,223,240}
-% \definecolor{card2}{RGB}{151,189,210}
-% \definecolor{card3}{RGB}{110,152,178}
-% \definecolor{card4}{RGB}{74,114,145}
-% \definecolor{card5}{RGB}{37,75,111}
-% \definecolor{card6}{RGB}{0,32,76}
-% \definecolor{bottomcard}{RGB}{45,55,60}
-
-% \definecolor{card1}{RGB}{165,200,220}  % Drivers & Acceptance (brightest)
-% \definecolor{card2}{RGB}{125,165,190}  % Smart Meters
-% \definecolor{card3}{RGB}{90,130,160}   % Optimal Inst. Placement
-% \definecolor{card4}{RGB}{55,95,130}    % Goals & Scenarios
-% \definecolor{card5}{RGB}{25,60,95}     % Grid Effects
-% \definecolor{card6}{RGB}{0,25,60}      % Grid Cost Estimates (darkest)
-% \definecolor{bottomcard}{RGB}{45,55,60}
-\definecolor{card1}{RGB}{165,200,220}  % Drivers & Acceptance (brightest)
-\definecolor{card4}{RGB}{125,165,190}    % Goals & Scenarios
-\definecolor{card2}{RGB}{90,130,160}  % Smart Meters
-\definecolor{card5}{RGB}{55,95,130}     % Grid Effects
-\definecolor{card3}{RGB}{25,60,95}   % Optimal Inst. Placement
-\definecolor{card6}{RGB}{0,25,60}      % Grid Cost Estimates (darkest)
+\definecolor{card1}{RGB}{165,200,220}
+\definecolor{card2}{RGB}{125,165,190}
+\definecolor{card3}{RGB}{90,130,160}
+\definecolor{card4}{RGB}{55,95,130}
+\definecolor{card5}{RGB}{25,60,95}
+\definecolor{card6}{RGB}{0,25,60}
 \definecolor{bottomcard}{RGB}{45,55,60}
 
-\begin{tikzpicture}[scale=0.95, transform shape, xshift=-0.8cm]
+\pgfmathsetmacro{\dx}{2.8}   
+\pgfmathsetmacro{\barleft}{-1.25}          % t1 left edge (half of 2.5cm card)
+\pgfmathsetmacro{\barright}{4.1*\dx + 1.2} % s2 right edge
+\pgfmathsetmacro{\barwidth}{(\barright - \barleft)}
+\pgfmathsetmacro{\barcenter}{(\barleft + \barright)/2}
 
+
+\begin{tikzpicture}[xscale=0.96, yscale=0.96, transform shape, xshift=-0.8cm]
+\newcommand{\cardwidth}{2.0cm}
 \tikzset{
-topiccard/.style={
-    rounded corners=7pt,
-    minimum width=2.8cm,
-    minimum height=3.0cm,
+  topiccard/.style={
+    rounded corners=6pt,
+    minimum width=2.5cm,
+    minimum height=3.3cm,
     align=left,
     text=white,
     font=\small
+  },
+  smallcard/.style={
+    rounded corners=6pt,
+    minimum width=2.4cm,
+    minimum height=0.9cm,
+    align=left,
+    text=white,
+    font=\small
+  }
 }
-}
 
-% =====================================================
-% LOWER ROW
-% =====================================================
-
-\node[topiccard, fill=card1] (b1) at (0,0)
+% MAIN ROW
+\node[topiccard, fill=card3] (t1) at (0*\dx, 0)
 {
-\begin{minipage}{2.3cm}
+\begin{minipage}{\cardwidth}
 \raggedright
-{\bfseries Drivers \& Acceptance}
-
-\vspace{0.15cm}
+{\bfseries Goals \& Scenarios}\\
+\vspace{0.1cm}
 \scriptsize
-Socio-Economics {\tiny \cite{muller2020}}\\
-\vspace{0.1534cm}
-Adverse perception {\tiny \cite{sutterlin2017, cousse2020}}
+37.5 GW by 2050 \hyperlink{appendix_res_targets}{\beamerreturnbutton{\tiny{Targets}}}\\
+\hfill{\tiny\cite{bfe_ep2050_2020}}
 \end{minipage}
 };
 
-\node[topiccard, fill=card2] (b2) at (3.2,0)
+\node[topiccard, fill=card4, fill opacity = 0.25, text opacity = 0.95] (t2) at (1*\dx, 0)
 {
-\begin{minipage}{2.3cm}
+\begin{minipage}{\cardwidth}
 \raggedright
-{\bfseries Smart Meters}
-
-\vspace{0.15cm}
+{\bfseries Grid Cost Estimates}\\
+\vspace{0.1cm}
 \scriptsize
-Operational by 2050 (2028 at 80\%) {\tiny \cite{bfe_smartgridroadmap2015, elcom_smartmeter_2026}}\\
-\vspace{0.1534cm}
-Reading meters only
+LV: CHF 600m pa until 2050\\
+\hfill{\tiny\cite{bfe_ep2050_netz2022}}\\
+\vspace{0.05cm}
+Poss. underestimation \hyperlink{appendix_model_grid_analysis}{\beamerreturnbutton{\tiny{Grid Analysis}}}
 \end{minipage}
 };
 
-\node[topiccard, fill=card3] (b3) at (6.4,0)
+\node[topiccard, fill=card5, fill opacity = 0.25, text opacity = 0.95] (t3) at (2*\dx, 0)
 {
-\begin{minipage}{2.3cm}
+\begin{minipage}{\cardwidth}
 \raggedright
-{\bfseries Grid Cost Estimates}
-
-\vspace{0.15cm}
+{\bfseries Drivers \& Acceptance}\\
+\vspace{0.1cm}
 \scriptsize
-Low-Voltage: CHF 600m pa until 2050  {\tiny \cite{bfe_ep2050_netz2022}} \\
-\vspace{0.1534cm}
-Possible underestimation \hyperlink{appendix_model_grid_analysis}{\beamerreturnbutton{\tiny {Grid Analysis}}}
+Key Factors\\
+\hfill{\tiny\cite{muller2020}}\\
+\vspace{0.05cm}
+Reluctance\\
+\hfill{\tiny\cite{sutterlin2017, cousse2020}}
 \end{minipage}
 };
 
-% =====================================================
-% TOP ROW
-% =====================================================
-
-\node[topiccard, fill=card4] (t1) at (1.6,3.2)
+\node[topiccard, fill=card6] (t4) at (3*\dx, 0)
 {
-\begin{minipage}{2.3cm}
+\begin{minipage}{\cardwidth}
 \raggedright
-{\bfseries Goals \& Scenarios}
-
-\vspace{0.15cm}
+{\bfseries Future / Optimal Inst.}\\
+\vspace{0.1cm}
 \scriptsize
-37.5 GW by 2050 \hyperlink{appendix_res_targets}{\beamerreturnbutton{\tiny {Targets}}} {\tiny \cite{bfe_ep2050_2020}}\\
-% \hyperlink{appendix_res_targets}{\beamerreturnbutton{App.Targets}}\\
-\vspace{0.1534cm}
-67 TWh/y potential {\tiny \cite{vese_pvpower2021}}
+NPV Proxy\\
+\hfill{\tiny\cite{arguello2018}}\\
+\vspace{0.05cm}
+MV grid\\
+\hfill{\tiny\cite{gupta2021}}\\
+\vspace{0.05cm}
+Biodiversity a.o.\\
+\hfill{\tiny\cite{hermoso2023}}
 \end{minipage}
 };
 
-\node[topiccard, fill=card5] (t2) at (4.8,3.2)
+% STACKED PAIR
+\node[smallcard, fill=card2, fill opacity = 0.25, text opacity = 0.95] (s1) at (4.1*\dx, 0.801)
 {
-\begin{minipage}{2.3cm}
+\begin{minipage}{\cardwidth}
 \raggedright
-{\bfseries Grid Effects}
-
-\vspace{0.15cm}
+{\bfseries Grid Effects}\\
+\vspace{0.05cm}
 \scriptsize
-Hosting capacity {\tiny \cite{ismael2019, mulenga2020}}\\
-\vspace{0.1534cm}
-Penetration limits {\tiny \cite{tevar2019}}
+Penetration limits\\
+\hfill{\tiny\cite{tevar2019}}
 \end{minipage}
 };
 
-\node[topiccard, fill=card6] (t3) at (8.0,3.2)
+\node[smallcard, fill=card2, fill opacity = 0.25, text opacity = 0.95] (s2) at (4.1*\dx, -0.801)
 {
-\begin{minipage}{2.3cm}
+\begin{minipage}{\cardwidth}
 \raggedright
-{\bfseries Optimal Inst. Placement}
-
-\vspace{0.15cm}
+{\bfseries Smart Meters}\\
+\vspace{0.05cm}
 \scriptsize
-Mid-level grid {\tiny \cite{gupta2021}}\\
-\vspace{0.1534cm}
-Biodiversity \& proximity {\tiny \cite{hermoso2023}}
+Rollout 2028 at 80\%\\
+\hfill{\tiny\cite{elcom_smartmeter_2026}}
 \end{minipage}
 };
 
-% =====================================================
 % BOTTOM SUMMARY CARD
-% =====================================================
-
 \node[
-rounded corners=8pt,
-fill=bottomcard,
-minimum width=10.8cm,
-minimum height=0.85cm,
-text=white,
-align=center
-] (bottom) at (4.0,-2.6)
+  rounded corners=8pt,
+  fill=bottomcard,
+  minimum width=\barwidth cm,
+  minimum height=0.65cm,
+  text=white,
+  align=center
+] (bottom) at (\barcenter, -2.15)
 {
-Increasing PV deployment outpaces grid infrastructure (globally).
-% \\ 
-% When is this problem becoming critical? How to address it economically?
+  \small Increasing PV deployment outpaces grid infrastructure (globally).
 };
 
-
-% =====================================================
-% PERFECT VERTICAL CONNECTION LINES (CARD -> BOTTOM BAR)
-% =====================================================
-
-\foreach \n in {b1,b2,b3,t1,t2,t3}
+% CONNECTION LINES
+\foreach \n in {t1,t2,t3,t4}
 {
-    \draw[gray!60, thick]
-    (\n.south) -- (\n.south |- bottom.north);
+  \draw[gray!60, thick]
+  (\n.south) -- (\n.south |- bottom.north);
 }
+
+\draw[gray!60, thick]
+  (s2.south) -- (s2.south |- bottom.north);
 
 \end{tikzpicture}
 
-\end{frame}
-
-
-% =======================================
-\begin{frame}{About PV...}
-
-\centering
+\vspace{0.01cm}
 \makebox[0pt][c]{%
-\includegraphics[width=0.91\textwidth]{figures/grid-levels.png}
+  \includegraphics[width=0.751\textwidth]{SSES_StGallen/figures/grid-levels.png}
 }
-
-\vspace{0.32cm}
-\begin{block}{Research Contribution - A Swiss Case Study}
-\begin{enumerate}
-    \item \textbf{Problem quantification}: 
-    \begin{itemize}
-        \item Create highly detailed spatial model to estimate PV-induced effects in larger LV grid (incl. roof specifics + individual "decision making").
-    \end{itemize}
-    \vspace{0.1cm}
-    \item \textbf{Economic response}: 
-    \begin{itemize}
-        \item \textcolor{unibasgreydark}{1st-best) Congestion pricing for externality (not feasible in practice)}
-        \item 2nd-best) Simple subsidy adjustments, focusing on grid capacity
-    \end{itemize}
-\end{enumerate}
-\end{block}
-
 \end{frame}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Model} 
+\section{Model}
 
-% =======================================
-\begin{frame}{Simulation Framework - 3 Agents }
+% -------------------------------------------------------
+\begin{frame}{Model Simulation - 3 Agents}
 \hypertarget{mod_structure_agents}{}
 
-\begin{columns}
-    \begin{column}{0.49\textwidth}    
-    \textcolor{violet}{Production}
-    \begin{itemize}
-        \item Roof partitions and radiation yield production potential.
-        \item Calibrated random forest assigns installation size \hyperlink{appendix_randomforest_scatterplot}{\beamerreturnbutton{App. RFR}}.
-    \end{itemize}
+\begin{columns}[t]
 
-    \textcolor{red}{Demand}
-    \begin{itemize}
-        \item 6 Archetype profiles scaled by living area (\cite{swissstore2022}). 
-        \item Scaling up winter months for houses with heat pumps.
-    \end{itemize}
-    \textcolor{unibasgreydark}{Investments}
-    \begin{itemize}
-        \item General cost assumption of PV calculator (\cite{energieschweiz2023} \hyperlink{appendix_cost_function}{\beamerreturnbutton{App. Cost}})
-    \end{itemize}
-    \vspace{0.1875cm}
+\begin{column}{0.49\textwidth}
+  \only<1->{\textcolor[RGB]{128,0,128}{Production}
+  \vspace{-0.0961cm}
+  \begin{itemize}
+    \item Roof partitions and radiation time series yield production potential.
+    \vspace{-0.0961cm} 
+    \item Calibrated random forest assigns installation size \hyperlink{appendix_randomforest_scatterplot}{\beamerreturnbutton{App. RFR}}.
+  \end{itemize}}
+  \only<2->{\textcolor[RGB]{204,85,0}{Demand} ($\rightarrow$ \textcolor[RGB]{0,70,127}{Feed-in})
+  \vspace{-0.0961cm}
+  \begin{itemize}
+    \item 6 Archetype profiles scaled by living area (\cite{swissstore2022}).
+    \vspace{-0.0961cm}
+    \item Heat pumps: Scaling up winter months.
+  \end{itemize}}
+  \only<3->{\textcolor{unibasgreydark}{Investments}
+  \vspace{-0.0961cm}
+  \begin{itemize}
+    \item General cost assumption of PV calculator (\cite{energieschweiz2023} \hyperlink{appendix_cost_function}{\beamerreturnbutton{App. Cost}})
+  \end{itemize}
+  % $\rightarrow NPV_{i} = -Inv_{i} + \sum_{t}^{25}\frac{SelfCons_{i,t} P_{elec,t} + Feedin_{i,t} P_{pv,t}}{(1+r)^t}$}
+  }
+  \vspace{0.35cm}
+  \only<4->{$\rightarrow NPV_{i} = -Inv_{i} + \sum_{t}^{25}\frac{SelfCons_{i,t} + Feedin_{i,t} }{(1+r)^t}$
+  }
+  \vfill
+\end{column}
 
-    $\rightarrow NPV_{i} = -Inv_{i} + \sum_{t}^{25}\frac{Sav_{i,t} + Feed_{i,t}}{(1+r)^t}$     
-    \end{column}
-    
-    \begin{column}{0.49\textwidth}    
-        \begin{figure}
-            \centering
-            \includegraphics[width=0.61\linewidth]{figures/EGID_solkat_example.png}
-            \label{fig:placeholder}
-        \end{figure}
-        \begin{figure}
-            \centering
-            \includegraphics[width=0.91\linewidth]{figures/EGID_HOY_profile.png}
-            \label{fig:placeholder}
-        \end{figure}
-    \end{column}
+\begin{column}{0.49\textwidth}
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.481\linewidth]{SSES_StGallen/figures/EGID_solkat_example.png}
+  \end{figure}
+  \vspace{-0.2cm}
+  \begin{figure}
+    \centering
+    \only<1>{\includegraphics[width=0.91\linewidth]{SSES_StGallen/figures/plot_EGID_HOY_pvprod.png}}%
+    \only<2>{\includegraphics[width=0.91\linewidth]{SSES_StGallen/figures/plot_EGID_HOY_pvprod_demand.png}}%
+    \only<3->{\includegraphics[width=0.91\linewidth]{SSES_StGallen/figures/plot_EGID_HOY_pvprod_demand_feedin.png}}%
+  \end{figure}
+\end{column}
+
 \end{columns}
 \end{frame}
 
-
-% =====================================================
+% -------------------------------------------------------
 \begin{frame}{Allocation Process}
+\hypertarget{mod_allocation_process}{}
 
-\begin{columns}
+\begin{columns}[t]
 
-% LEFT COLUMN
 \begin{column}{0.49\textwidth}
+  \textbf{Allocation process}
+  \begin{itemize}
+    \item NPV defines installation "order" (similar to \cite{arguello2018},
+      \hyperlink{appendix_npv_hist_sensitivity}{\beamerreturnbutton{App. NPV}}).
+    \item Scaled, adjusted, annual ``construction budget'' (\cite{bfe_ep2050_2020}) until 2050.
+  \end{itemize}
 
-\textbf{Allocation process}
-
-\begin{itemize}
-    % \item Installation "order" defined by NPV.
-    \item NPV defines installation "order".
-    \item Scaled, annual "construction budget" (\cite{bfe_ep2050_2020}) until 2050.
-\end{itemize}
-
-\vspace{-0.2cm}
-
-\begin{figure}
+  \vspace{-0.2cm}
+  \begin{figure}
     \centering
-    \includegraphics[width=0.84\linewidth]{figures/pvalloc_29nbfs_LRG2_max_npv_df_hist.png}
-\end{figure}
-
+    \includegraphics[width=0.84\linewidth]{SSES_StGallen/figures/NPVhist_LRG3_max.png}
+  \end{figure}
 \end{column}
 
-
-% RIGHT COLUMN
 \begin{column}{0.49\textwidth}
-
-\textbf{Subsidy adjustment}
-
-\begin{itemize}
+  \textbf{Subsidy adjustment}
+  \begin{itemize}
     \item Subsidy budget given to operator (transparent criteria)
     \item 3 types (A: roof orientation, B: grid specific, C: combination)
-\end{itemize}
+  \end{itemize}
 
-% \vspace{0.3cm}
+  \[
+    \rightarrow NPV_{i,X} = NPV_{i} + S_{i,X} - R_{i,X}
+  \]
 
-% \textbf{Decision rule}
-
-\[
-\rightarrow NPV_{i,X} = NPV_{i} + S_{i,X} - R_{i,X}
-\]
-
-\vspace{0.3cm}
-
-\centering
-\footnotesize
-\begin{tabular}{|l| c c c c|}
+  \vspace{0.3cm}
+  \centering
+  \footnotesize
+  \begin{tabular}{|l| c c c c|}
     \hline
-    & $S=0$ & 2000 & 4000 & 6000 \\
+    & $S=0$ & 4000 & 6000 & 8000 \\
     \hline
-    $R=0$    & BU & \cellcolor{scenA_table} & \cellcolor{scenA_table} A & \cellcolor{scenA_table} \\
-    4000     & \cellcolor{scenB_table} & \cellcolor{scenC_table} & \cellcolor{scenC_table} & \cellcolor{scenC_table} \\
-    6000     & \cellcolor{scenB_table} B & \cellcolor{scenC_table} & \cellcolor{scenC_table} C & \cellcolor{scenC_table} \\
-    8000     & \cellcolor{scenB_table} & \cellcolor{scenC_table} & \cellcolor{scenC_table} & \cellcolor{scenC_table} \\
+    $R=0$ & BU & \cellcolor{scenA_table} & \cellcolor{scenA_table} A & \cellcolor{scenA_table} \\
+    4000  & \cellcolor{scenB_table} & \cellcolor{scenC_table} & \cellcolor{scenC_table} & \cellcolor{scenC_table} \\
+    6000  & \cellcolor{scenB_table} B & \cellcolor{scenC_table} & \cellcolor{scenC_table} C & \cellcolor{scenC_table} \\
+    8000  & \cellcolor{scenB_table} & \cellcolor{scenC_table} & \cellcolor{scenC_table} & \cellcolor{scenC_table} \\
     \hline
-\end{tabular}
-
+  \end{tabular}
 \end{column}
 
 \end{columns}
 \end{frame}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Data} 
+\section{Data}
 
-
-
-% =======================================
+% -------------------------------------------------------
 \begin{frame}{Data}
 
+\begin{columns}[t]
+\begin{column}{0.48\textwidth}
 
-% ----------- Summary Table -----------
-\centering
-\textbf{Summary}\\
-\vspace{0.2cm}
-
-{\scriptsize
-\setlength{\tabcolsep}{3.5pt}
-\renewcommand{\arraystretch}{1.15}
-
-\begin{tabular}{|l c  c c |}
+  \centering\textbf{Summary}\\
+  \vspace{0.2cm}
+  {\scriptsize
+  \setlength{\tabcolsep}{3.5pt}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{l c c c}
     \hline
-    \textbf{Summary}      & \textbf{Sample}     & \textbf{Avail.Sample}        & \textbf{All CH} \\
+    \textbf{Parameter} & \textbf{Sample} & \textbf{Avail.} & \textbf{All CH} \\
     \hline
-    n Municipalities        & 28    & 79        & 2'133    \\
-    n All Buildings         & 44'354            & 132'018              & 3'090'962    \\
-    n Resid. Houses         & 21'599             & 47'900               & 1'716'194    \\
-    n Grid Nodes            & 391        & 1'113            & -    \\
-    Inst. Capacity 2024 (MW) & 20.6  & 79.0    & 2'450.1 \\
-    Capacty 2050 (MW)       & 115.6  & 739.5    & 17'313.8    \\
-    \hline       
-\end{tabular}
+    n Municipalities         & 28     & 79      & 2'133     \\
+    n All Buildings          & 44'354 & 132'018 & 3'090'962 \\
+    n Resid. Houses          & 21'599 & 47'900  & 1'716'194 \\
+    n Grid Nodes             & 391    & 1'113   & --        \\
+    Inst. Cap. 2024 (MW)     & 20.6   & 79.0    & 2'450.1   \\
+    Capacity 2050 (MW)       & 115.6  & 739.5   & 17'313.8  \\
+    \hline
+  \end{tabular}
+  }
 
-}
+\end{column}
+\begin{column}{0.48\textwidth}
 
-\vspace{0.6cm}
-
-% ----------- Data Sources Table -----------
-\centering
-\textbf{Data Sources}\\
-\vspace{0.2cm}
-
-{\scriptsize
-\setlength{\tabcolsep}{3.5pt}
-\renewcommand{\arraystretch}{1.15}
-
-\begin{tabular}{|l l l|} %p{1cm}|}
+  \centering\textbf{Data Sources}\\
+  \vspace{0.2cm}
+  {\scriptsize
+  \setlength{\tabcolsep}{3.5pt}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{l l l}
     \hline
     \textbf{Category} & \textbf{Description} & \textbf{Ref.} \\
     \hline
-    Rooftop Data 
-        & Roof surface, orientation, tilt
-        & [1] \\
-        
-    Building Data 
-        & Building type, heating tech, existing inst.  prices / tariffs
-        & [2--5] \\
-                
-    Grid Infrastructure 
-        & Nodes, connections + capacity
-        & (NDA) \\
-        
-    Other Data
-        & Demand, costs assumptions, capacity targets, radiation
-        & [6--9] \\
-        
-    Computing Infrastructure
-        & High Performance Cluster for model run
-        & [10] \\
+    Rooftop Data      & Roof surface, orientation, tilt             & [1]     \\
+    Building Data     & Type, heating, prices/tariffs               & [2--5]  \\
+    Grid Infra.       & Nodes, connections + capacity               & (NDA)   \\
+    Other Data        & Demand, costs, targets, radiation           & [6--9]  \\
+    Computing         & HPC cluster for model run                   & [10]    \\
     \hline
-\end{tabular}
-
-\vspace{0.2cm}
-}
-
-\vspace{0.2cm}
-{\tiny
-\begin{minipage}{\linewidth}
-\raggedright
-[1]: \cite{solkat2023}\par
-[2--5]: \cite{gwr2025, elec_prod2024, vese_pvtarif2023, elcom2023}\par
-[6--9]: \cite{swissstore2022,  energieschweiz2023, bfe_ep2050_2020, meteoblue2023}\par
-[10]: \cite{hpc_scicore2026}\par
-\end{minipage}
-
-}\end{frame}
-
-% % =======================================
-% \begin{frame}{Data}
-% \begin{minipage}{0.323\textwidth}
-%   \centering
-%   \makebox[0pt][c]{%
-%     \includegraphics[width=1.005\textwidth]{figures/wp_topo_roof_solkat_1_3.png}
-%   }
-% \end{minipage}\hfill
-% \begin{minipage}{0.323\textwidth}
-%   \centering
-%   \makebox[0pt][c]{%
-%     \includegraphics[width=1.005\textwidth]{figures/wp_topo_DSO_example_1_3.png}
-%   }
-% \end{minipage}
-% \begin{minipage}{0.323\textwidth}
-%   \centering
-%   \makebox[0pt][c]{%
-%     \includegraphics[width=1.005\textwidth]{figures/wp_topo_DSO_grid_large_example_1_3.png}
-%   }
-% \end{minipage}
-% \end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Results} 
-
-% =======================================
-\begin{frame}{\strut PV-Induced Excess Feedin}
-
-\begin{minipage}{0.322\textwidth}
-  \centering
-  \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/gridnode_feedin_threshold_HOY.png}
+  \end{tabular}
+  \vspace{0.2cm}
   }
-\end{minipage}\hfill
-\begin{minipage}{0.322\textwidth}
-  \centering
-  \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bau_excfeedin.png}
-  }
-\end{minipage}\hfill
-\begin{minipage}{0.322\textwidth}
-  \centering
-  \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bau_feedin.png}
-  }
-\end{minipage}
-\end{frame}
 
-% =======================================
-\begin{frame}{\strut Different Subsidies}
-\begin{minipage}{0.492\textwidth}
-  \centering
-  \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bauABC_excfeedin.png}
+  {\tiny
+  \raggedright
+  [1]: \cite{solkat2023}\par
+  [2--5]: \cite{gwr2025, elec_prod2024, vese_pvtarif2023, elcom2023}\par
+  [6--9]: \cite{swissstore2022, energieschweiz2023, bfe_ep2050_2020, meteoblue2023}\par
+  [10]: \cite{hpc_scicore2026}\par
   }
-\end{minipage}\hfill
-\begin{minipage}{0.492\textwidth}
-  \centering
-  \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bauABC_feedin.png}
-  }
-\end{minipage}
-\end{frame}
 
-% =======================================
-\begin{frame}{\strut Grid Optimal Expansion}
-\begin{minipage}{0.492\textwidth}
-  \centering
-  \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_gridoptim_excfeedin.png}
-  }
-\end{minipage}\hfill
-\begin{minipage}{0.492\textwidth}
-  \centering
-  \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_gridoptim_feedin.png}
-  }
-\end{minipage}
-\end{frame}
-
-% =======================================
-\begin{frame}{\strut DSO Intervention }
-\begin{minipage}{0.492\textwidth}
-  \centering
-  \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_DSOreact_excfeedin.png}
-  }
-\end{minipage}\hfill
-\begin{minipage}{0.492\textwidth}
-  \centering
-  \makebox[0pt][c]{%
-    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_DSOreact_feedin.png}
-  }
-\end{minipage}
+\end{column}
+\end{columns}
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Outlook} 
+\section{Results}
 
-% =======================================
+% -------------------------------------------------------
+\begin{frame}{PV-Induced Excess Feed-in}
+\begin{minipage}{0.322\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/gridnode_feedin_threshold_HOY.png}
+\end{minipage}\hfill
+\begin{minipage}{0.322\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_bau_excfeedin.png}
+\end{minipage}\hfill
+\begin{minipage}{0.322\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_bau_feedin.png}
+\end{minipage}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Different Subsidies}
+\begin{minipage}{0.48\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_bauABC_excfeedin.png}
+\end{minipage}\hfill
+\begin{minipage}{0.48\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_bauABC_feedin.png}
+\end{minipage}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Grid Optimal Expansion}
+\begin{minipage}{0.48\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_gridoptim_excfeedin.png}
+\end{minipage}\hfill
+\begin{minipage}{0.48\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_gridoptim_feedin.png}
+\end{minipage}
+\end{frame}
+
+
+% -------------------------------------------------------
+\begin{frame}{Worst Week in Worst Node}
+\begin{minipage}{0.48\textwidth}
+  \centering
+  \vspace{0.3cm}
+  {\small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Parameter} & \textbf{Value} \\
+    \midrule
+    % Worst node                       & 751 \\
+    n Houses                         & 379 \\
+    Peak week start                  & 2025-07-12 \\
+    Peak week end                    & 2025-07-13 \\
+    Total excess feed-in             & 5'970.7 kWh \\
+    Avg.\ excess feed-in p.\ house   & 15.8 kWh \\
+    Tesla Powerwall (\cite{tesla2026})  & 13.5 kWh\\
+    Tesla Powerwall (\cite{tesla2026})  & 13.5 kWh\\
+    Avg.\ demand p.\ house           & kWh\\
+    \bottomrule
+  \end{tabular}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.48\textwidth}
+  \centering\includegraphics[width=\textwidth]{paper_publication/SSES_StGallen/worstnode_worstweek_pegid_pvalloc_LRG3_max.png}
+\end{minipage}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{DSO Interventions}
+\begin{minipage}{0.48\textwidth}
+  \centering\includegraphics[width=\textwidth]{paper_publication/SSES_StGallen/line_PVproduction_DSOreact_excfeedin.png}
+\end{minipage}\hfill
+\begin{minipage}{0.48\textwidth}
+  \centering\includegraphics[width=\textwidth]{paper_publication/SSES_StGallen/line_PVproduction_DSOreact_feedin.png}
+\end{minipage}
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Outlook}
+
+% -------------------------------------------------------
 \begin{frame}{Conclusion}
-% \textbf{Summary}
-\begin{block}{Research Contribution}
+
+  \begin{block}{Research Contribution}
     \begin{enumerate}
-        \item \textbf{Problem quantification}: 
-        \begin{itemize}
-            % \item Create highly detailed spatial model to estimate PV-induced effects in larger LV grid (incl. roof specifics + individual "decision making").
-            %(incl. roof specifics production profiles + individual "decision making").
-            \item \textcolor{unibasgreydark}{\textit{Problems will arise in the next couple of years might scale up fast, dependent on the growth rate of newly installed capacity}}
-        \end{itemize}
-        \vspace{0.1cm}
-        \item \textbf{Economic response}: 
-        \begin{itemize}
-            % \item \textcolor{unibasgreydark}{1st-best) Congestion pricing for externality (not feasible in practice)}
-            % \item 2nd-best) Simple subsidy adjustments, focusing on grid capacity
-            \item \textcolor{unibasgreydark}{\textit{Simple subsidy adjustments might delay grid congestion by a few years and overall size and could be even as good as a social planner's allocation. }}
-        \end{itemize}
+      \item \textbf{Problem quantification} $\rightarrow$\textit{Problems will arise in the next couple of years and might scale up fast, dependent on the growth rate of newly installed capacity.}
+      \vspace{0.1cm}
+      \item \textbf{Economic response} $\rightarrow$ \textit{Simple subsidy adjustments might delay grid congestion by a few years and could be even as good as a social planner's allocation.}
     \end{enumerate}
-\end{block}
+  \end{block}
 
-\textbf{Outlook}
-\begin{itemize}
-    % \item Comparison to "optimal installation schedule" (*in progress)
-    % \item Allow for peak-shaving by grid operator
-    % \item Use RTP instead of TOU prices for electricity self consumption.
-    \item Cost comparison of subsidy spending (*in progress)
-    \item Recalibrate future construction capacity (*in progress)
-\end{itemize}
+  \textbf{Outlook}
+  \begin{itemize}
+    \item Post calculation: battery capacity for "worst week" in "worst node" (in progress).
+    \item Cost comparison of subsidy spending to grid reinforcements in most affected nodes.
+  \end{itemize}
 
-\textbf{Postponed}
-\begin{itemize}
-    \item Add battery investment and battery usage to the model 
+  \textbf{Postponed}
+  \begin{itemize}
+    \item Add battery investment and battery usage to the model
     \begin{itemize}
-        \item Optimized for household consumption 
-        \item Grid serving (quasi-obligatory for a PV installations)
+      \item Optimized for household consumption vs.\ grid serving (quasi-obligatory for PV installations)
     \end{itemize}
-    \item  More sophisticated pricing schemes (actual congestion pricing)
-\end{itemize}
+  \end{itemize}
 
 \end{frame}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \section{References}
+\section*{Appendix}
+\appendix
+\backupbegin
 
-% =======================================
-\renewcommand{\bibfont}{\footnotesize}
-\begin{frame}[allowframebreaks]{References}
-\printbibliography
-
-\end{frame}
-\renewcommand{\bibfont}{\normalsize}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section*{Appendix} 
-
-% =======================================
-% \begin{frame}{Characteristics of New Installations}
-\begin{frame}{}
-
-% Left Column
-\begin{minipage}{0.479\textwidth}
-% default (LRG2\_max) \\
-Business as Usual  \\
-  \centering
-  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_bu_pvalloc_29nbfs_LRG2_max.png}
-  \vspace{-0.011cm}
-  %
-  % 2x2 matrix for categorical plots
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_GKLAS.png}
-    }
-  \end{minipage}\hfill
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_heatpump_TF.png}
-    }
-  \end{minipage}
-  \vspace{-0.121cm}
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_are_typ.png}
-    }
-  \end{minipage}\hfill
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_filter_tag.png}
-    }
-  \end{minipage}
+% -------------------------------------------------------
+\begin{frame}{Appendix: NPV Sensitivity --- Electricity Prices}
+\hypertarget{appendix_npv_hist_sensitivity}{}
+\begin{minipage}{0.48\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/pvalloc_LRG3_max_elecpri15RP_npv_df_hist.png}
+\end{minipage}\hfill
+\begin{minipage}{0.48\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/pvalloc_LRG3_max_elecpri60RP_npv_df_hist.png}
 \end{minipage}
-%
-% Right Column 
-\begin{minipage}{0.479\textwidth}
-% Subsidy B (LRG\_max\_sBs0p8) \\
-Subsidy B \\
 \centering
-  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_bu_pvalloc_29nbfs_LRG2_max.png}
-  \vspace{-0.011cm}
-  %
-  % 2x2 matrix for categorical plots
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_GKLAS.png}
-    }
-  \end{minipage}\hfill
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_heatpump_TF.png}
-    }
-  \end{minipage}
-  \vspace{-0.121cm}
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_are_typ.png}
-    }
-  \end{minipage}\hfill
-  \begin{minipage}{0.49\textwidth}
-    \centering
-    \makebox[0pt][c]{%
-      \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_sBs0p8_filter_tag.png}
-    }
-  \end{minipage}
-\end{minipage}
-
+\hyperlink{mod_allocation_process}{\beamerreturnbutton{back}}
 \end{frame}
 
+% -------------------------------------------------------
+\begin{frame}{Appendix: High Spatial Resolution at Large Scale}
+\begin{minipage}{0.323\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/wp_topo_roof_solkat_1_3.png}
+\end{minipage}\hfill
+\begin{minipage}{0.323\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/wp_topo_DSO_example_1_3.png}
+\end{minipage}\hfill
+\begin{minipage}{0.323\textwidth}
+  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/wp_topo_DSO_grid_large_example_1_3.png}
+\end{minipage}
+\end{frame}
 
+% -------------------------------------------------------
+\begin{frame}{}
+\begin{minipage}{0.479\textwidth}
+  Business as Usual\\
+  \centering
+  \includegraphics[width=1.0\textwidth]{paper_publication/SSES_StGallen/hist_contcharact_newinst_bu_pvalloc_LRG3_max.png}
+  \vspace{-0.311cm}
+  \begin{minipage}{0.49\textwidth}
+    \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{SSES_StGallen/figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_GKLAS.png}}
+  \end{minipage}\hfill
+  \begin{minipage}{0.49\textwidth}
+    \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{SSES_StGallen/figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_heatpump_TF.png}}
+  \end{minipage}
+  \vspace{-0.311cm}
+  \begin{minipage}{0.49\textwidth}
+    \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{SSES_StGallen/figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_are_typ.png}}
+  \end{minipage}\hfill
+  \begin{minipage}{0.49\textwidth}
+    \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{SSES_StGallen/figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_filter_tag.png}}
+  \end{minipage}
+\end{minipage}
+\begin{minipage}{0.479\textwidth}
+  Subsidy B\\
+  \centering
+  \includegraphics[width=1.0\textwidth]{paper_publication/SSES_StGallen/hist_contcharact_newinst_bu_pvalloc_LRG3_max.png}
+  \vspace{-0.311cm}
+  \begin{minipage}{0.49\textwidth}
+    \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{SSES_StGallen/figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_sBs0p8_GKLAS.png}}
+  \end{minipage}\hfill
+  \begin{minipage}{0.49\textwidth}
+    \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{SSES_StGallen/figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_sBs0p8_heatpump_TF.png}}
+  \end{minipage}
+  \vspace{-0.311cm}
+  \begin{minipage}{0.49\textwidth}
+    \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{SSES_StGallen/figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_sBs0p8_are_typ.png}}
+  \end{minipage}\hfill
+  \begin{minipage}{0.49\textwidth}
+    \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{SSES_StGallen/figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_sBs0p8_filter_tag.png}}
+  \end{minipage}
+\end{minipage}
+\end{frame}
 
-% =======================================
+% -------------------------------------------------------
 \begin{frame}{Appendix: Model Grid Analysis EP2050+}
 \hypertarget{appendix_model_grid_analysis}{}
 \vspace{-\baselineskip}
 \begin{figure}
-    \centering
-    \includegraphics[width=0.8\textwidth]{figures/bfe_ep2050_netz_MNA_notitle.PNG}
+  \centering
+  \includegraphics[width=0.8\textwidth]{SSES_StGallen/figures/bfe_ep2050_netz_MNA_notitle.PNG}
 \end{figure}
 \vspace{-\baselineskip}
-\small
-\centering
-\textit{Comparison between the real (left) and homogeneous model assumed grid
-topology \cite{bfe_ep2050_netz2022}} \hyperlink{back}{\beamerreturnbutton{Literature}}
-
+\small\centering
+\textit{Comparison between the real (left) and homogeneous model assumed grid topology \cite{bfe_ep2050_netz2022}}
+\hyperlink{back}{\beamerreturnbutton{Literature}}
 \end{frame}
 
-% =======================================
+% -------------------------------------------------------
 \begin{frame}{Appendix: Calibrated Random Forest}
 \hypertarget{appendix_randomforest_scatterplot}{}
 \vspace{-\baselineskip}
 \begin{figure}
-    \centering
-    \includegraphics[width=0.6\textwidth]{figures/calib_rfr2_predvsactual.png}
+  \centering
+  \includegraphics[width=0.56\textwidth]{SSES_StGallen/figures/calib_rfr2_predvsactual.png}
 \end{figure}
 \vspace{-\baselineskip}
-\small
-\centering
-\textit{Scatterplot for actual and predicted installation sizes (incl 45 degree diagonal) of calibrated random forest regression on 61270 Swiss houses with a PV installation, between 20 to 70 percent an available roof partition used.}\hyperlink{mod_structure_agents}{\beamerreturnbutton{back}}
-
+\small\centering
+\textit{Scatterplot for actual and predicted installation sizes (incl.\ 45° diagonal) of calibrated random forest regression on 61270 Swiss houses with a PV installation, between 20 to 70 percent of available roof partition used.}
+\hyperlink{mod_structure_agents}{\beamerreturnbutton{back}}
 \end{frame}
 
-% =======================================
+% -------------------------------------------------------
 \begin{frame}{Appendix: Interpolated Cost Function}
 \hypertarget{appendix_cost_function}{}
 \vspace{-\baselineskip}
 \begin{figure}
-    \centering
-    \includegraphics[width=0.6\textwidth]{figures/pvinstcost_table.png}
+  \centering
+  \includegraphics[width=0.56\textwidth]{SSES_StGallen/figures/pvinstcost_table.png}
 \end{figure}
 \vspace{-\baselineskip}
-\small
-\centering
-\textit{Intrapolation approximation function (green, only on small scale installations) based on
-cost assumptions in the technical model appendix of energieschweiz.}\hyperlink{mod_structure_agents}{\beamerreturnbutton{back}}
-
+\small\centering
+\textit{Interpolation approximation function (green, only on small scale installations) based on cost assumptions in the technical model appendix of energieschweiz.}
+\hyperlink{mod_structure_agents}{\beamerreturnbutton{back}}
 \end{frame}
 
-% =======================================
+% -------------------------------------------------------
 \begin{frame}{Appendix: RES Targets 2050 Switzerland}
 \hypertarget{appendix_res_targets}{}
 \vspace{-\baselineskip}
 \begin{figure}
-    \centering
-    \includegraphics[width=0.7\textwidth]{figures/eth_summerschool_scenario_agg_notitle.png}
+  \centering
+  \includegraphics[width=0.56\textwidth]{SSES_StGallen/figures/eth_summerschool_scenario_agg_notitle.png}
 \end{figure}
 \vspace{-\baselineskip}
-\small
-\centering
-\textit{}\hyperlink{motivation_relevance}{\beamerreturnbutton{back}}
+\hyperlink{motivation_relevance}{\beamerreturnbutton{back}}
 \end{frame}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\bibfont}{\footnotesize}
+\begin{frame}[allowframebreaks]{References}
+  \printbibliography
+\end{frame}
 
 \end{document}
