@@ -24,57 +24,105 @@ if __name__ == "__main__":
     plotter.scen_default_color_map = {
         'pvalloc_29nbfs_LRG2_max':          (200, 50, 50),      # red (keep)
     
-        'pvalloc_29nbfs_LRG2_max_epzb1':                (230, 140, 140),  # soft pastel red
-        'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_1':    (60, 180, 60),                # bright green           
-        'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_3':    (150, 220, 150),               # warm light orange (instead of yellow)
+        # 'pvalloc_29nbfs_LRG2_max_epzb1':                (230, 140, 140),  # soft pastel red
+        # 'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_1':    (60, 180, 60),                # bright green           
+        # 'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_3':    (150, 220, 150),               # warm light orange (instead of yellow)
 
-        'pvalloc_29nbfs_LRG2_max_sAs6p0':   (60, 120, 200),  # strong blue
-        'pvalloc_29nbfs_LRG2_max_sBs0p8':   (60, 160, 90),   # green (less neon)
-        'pvalloc_29nbfs_LRG2_max_sCs2p8':   (200, 140, 40),  # orange (instead of yellow)
+        # 'pvalloc_29nbfs_LRG2_max_sAs8p0':   (60, 120, 200),  # strong blue
+        # 'pvalloc_29nbfs_LRG2_max_sBs0p8':   (60, 160, 90),   # green (less neon)
+        # 'pvalloc_29nbfs_LRG2_max_sCs6p8':   (200, 140, 40),  # orange (instead of yellow)
 
         'pvalloc_29nbfs_LRG2_max_1hll':     (100, 180, 180),  # turquoise (instead of yellow)
         'pvalloc_29nbfs_LRG2_max_pksh':      (0, 80, 80),  # dark teal (instead of cyan)
         
-        'pvalloc_29nbfs_LRG2_gridoptim_max':    (140, 60, 180),    # bright purple
-        # 'pvalloc_29nbfs_LRG2_gridoptim_max':    (160, 120, 180),    # lavendar
-        # 'pvalloc_29nbfs_LRG2_gridoptim_max':    (180, 140, 190),    # lilac
+        'pvalloc_29nbfs_LRG2_max_gridoptim_max':    (140, 60, 180),    # bright purple
+        # # 'pvalloc_LRG3_gridoptim_max':    (160, 120, 180),    # lavendar
+        # # 'pvalloc_LRG3_gridoptim_max':    (180, 140, 190),    # lilac
+
+        'pvalloc_LRG3_max':          (200, 50, 50),      # red (keep)    
+        'pvalloc_LRG3_max_epzb1':                (230, 140, 140),  # soft pastel red
+        'pvalloc_LRG3_max_histcnstrcapgr0_1':    (60, 180, 60),                # bright green           
+        'pvalloc_LRG3_max_histcnstrcapgr0_3':    (150, 220, 150),               # warm light orange (instead of yellow)
+        'pvalloc_LRG3_max_sAs8p0':   (60, 120, 200),  # strong blue
+        'pvalloc_LRG3_max_sBs0p8':   (60, 160, 90),   # green (less neon)
+        'pvalloc_LRG3_max_sCs6p8':   (200, 140, 40),  # orange (instead of yellow)
+        'pvalloc_LRG3_max_1hll':     (100, 180, 180),  # turquoise (instead of yellow)
+        'pvalloc_LRG3_max_pksh':      (0, 80, 80),  # dark teal (instead of cyan)
+        'pvalloc_LRG3_max_gridoptim':    (140, 60, 180),    # bright purple
+        # 'pvalloc_LRG3_gridoptim_max':    (160, 120, 180),    # lavendar
+        # 'pvalloc_LRG3_gridoptim_max':    (180, 140, 190),    # lilac
     }
     plotter.simple_scen_name_mapping = {
         'pvalloc_29nbfs_LRG2_max':              'Business-as-usual',
-        'pvalloc_29nbfs_LRG2_max_sAs6p0':       'Subsidy A (6000, 0)',
-        'pvalloc_29nbfs_LRG2_max_sBs0p8':       'Subsidy B (0, 8000)',
-        'pvalloc_29nbfs_LRG2_max_sCs2p8':       'Subsidy C (2000, 8000)',
+        'pvalloc_29nbfs_LRG2_max_sAs8p0':       'Sub. A (6000, 0)',
+        'pvalloc_29nbfs_LRG2_max_sBs0p8':       'Sub. B (0, 8000)',
+        'pvalloc_29nbfs_LRG2_max_sCs6p8':       'Sub. C (2000, 8000)',
         'pvalloc_29nbfs_LRG2_max_1hll':         'DSO node closing',
         'pvalloc_29nbfs_LRG2_max_pksh':         'DSO peak shaving',
         'pvalloc_29nbfs_LRG2_gridoptim_max':    'Grid-optimized',
+     
+        'pvalloc_LRG3_max':              'Business-as-usual',
+        'pvalloc_LRG3_max_sAs8p0':       'Sub. A (8000, 0)',
+        'pvalloc_LRG3_max_sBs0p8':       'Sub. B (0, 8000)',
+        'pvalloc_LRG3_max_sCs6p8':       'Sub. C (6000, 8000)',
+        'pvalloc_LRG3_max_1hll':         'DSO node closing',
+        'pvalloc_LRG3_max_pksh':         'DSO peak shaving',
+        'pvalloc_LRG3_max_gridoptim':    'Grid-optimized',
     }
 
 
+    # plotter.copy_standalone_graphs_to_presentation_dir()
+
     # SCEN - individual tables + data ======================================================================
-    plotter.copy_standalone_graphs_to_presentation_dir()
+    if True: 
+        
+        # plotter.plot_width      = 6.3
+        # plotter.plot_height     = 3.6
+        plotter.plot_width      = 4.1
+        plotter.plot_height     = 2.4
+
+        # plotter.plot_EGID_pvprod_demand_HOY(export_name = 'plot_EGID_HOY_pvprod',
+        #                                     plot_cols_incl_list= ['pvprod_kW'],)
+        # plotter.plot_EGID_pvprod_demand_HOY(export_name = 'plot_EGID_HOY_pvprod_demand',
+        #                                     plot_cols_incl_list= ['pvprod_kW', 'demand_kW'],)
+        # plotter.plot_EGID_pvprod_demand_HOY(export_name = 'plot_EGID_HOY_pvprod_demand_feedin',
+        #                                 plot_cols_incl_list= ['pvprod_kW', 'demand_kW', 'netfeedin_kW'],)
+
+
         # plotter.get_single_values(
         #     csv_file='plot_agg_line_PVproduction___export_plot_data___14scen.csv',
         #     scen_incl_list=[
-        #     #     'pvalloc_29nbfs_LRG2_max_1hll',
-        #     #     'pvalloc_29nbfs_LRG2_max_1hll_sCs4p6',
+        #     #     'pvalloc_LRG3_max_1hll',
+        #     #     'pvalloc_LRG3_max_1hll_sCs4p6',
         #            'DEV_pvalloc_29nbfs_LRG_max_OLDpreprep',
         #            'DEV_pvalloc_29nbfs_LRG_max_sCs4p6_OLDpreprep',
         #         ],
         #         n_iter_range_list=[20,],
 
         # )
+        
 
-        # plotter.NPVhist_DataSampleSummary()
+        plotter.plot_width      = 4
+        plotter.plot_height     = 4
+        plotter.NPVhist( scen = 'pvalloc_LRG3_max',             export_name='NPVhist_LRG3_max', title= 'NPV Distribution 30Rp/kWh',  npv_hist_xrange=(-15e3, 45e3), )
+
+        plotter.plot_width      = 2.8
+        plotter.plot_height     = 5.0
+        plotter.NPVhist( scen = 'pvalloc_LRG3_max',             export_name='NPVhist_LRG3_max_31Rp', title= 'NPV Dist. (default 31.9 Rp/kWh)',  npv_hist_xrange=(-15e3, 45e3), )
+        plotter.NPVhist( scen = 'pvalloc_LRG3_max_elecpri15RP', export_name='NPVhist_LRG3_max_15Rp',   title= 'NPV Dist. (15Rp/kWh)',  npv_hist_xrange=(-15e3, 45e3), )
+        plotter.NPVhist( scen = 'pvalloc_LRG3_max_elecpri60RP', export_name='NPVhist_LRG3_max_60Rp',   title= 'NPV Dist. (60Rp/kWh)',  npv_hist_xrange=(-15e3, 12e4), )
+        
+        # plotter.DataSampleSummary()
 
         # plotter.Loss_Subscost_Summary(
-        #     scen_list = ['pvalloc_29nbfs_LRG2_max', 
-        #                  'pvalloc_29nbfs_LRG2_max_sCs2p8',
+        #     scen_list = ['pvalloc_LRG3_max', 
+        #                  'pvalloc_LRG3_max_sCs6p8',
         #     ], 
         #     n_iter_list = [4, 6, 8, ],
         # )
 
 
-
+    print('-')
     # SCEN - individual plots  ======================================================================
     
     def plot_gridnode_HOY_wrapper(plotter , plot_width = 8, plot_height = 4):
@@ -87,10 +135,10 @@ if __name__ == "__main__":
 
         # HOY
         plotter_func.scen_default_color_map = {
-            'pvalloc_29nbfs_LRG2_max':          rgb_red,      # red (keep)
+            'pvalloc_LRG3_max':          rgb_red,      # red (keep)
         }
         plotter_func.simple_scen_name_mapping = {
-            'pvalloc_29nbfs_LRG2_max': 'Business-as-usual',
+            'pvalloc_LRG3_max': 'Business-as-usual',
         }
         plotter_func.plot_gridnode_HOY( 
             hours_incl_list=list(range(4920 + 3*24, 4920 + 5*24)),
@@ -100,9 +148,9 @@ if __name__ == "__main__":
 
         # Exceed Feedin 
         plotter_func.plot_PVproduction_line(
-            csv_file='plot_agg_line_PVproduction___export_plot_data___21scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, ],
+            csv_file='plot_agg_line_PVproduction___export_plot_data___24scen.csv',
+            scen_incl_list=['pvalloc_LRG3_max',],
+            n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
             export_name='line_PVproduction_bau_excfeedin',
             y_col='feedin_atnode_loss_kW',
             y_scaling= 1e6, 
@@ -112,12 +160,12 @@ if __name__ == "__main__":
 
         # Taken Production  
         plotter_func.scen_default_color_map = {
-            'pvalloc_29nbfs_LRG2_max':          rgb_green,
+            'pvalloc_LRG3_max':          rgb_green,
         }
         plotter_func.plot_PVproduction_line(
-            csv_file='plot_agg_line_PVproduction___export_plot_data___21scen.csv',
-            scen_incl_list=['pvalloc_29nbfs_LRG2_max',],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, ],
+            csv_file='plot_agg_line_PVproduction___export_plot_data___24scen.csv',
+            scen_incl_list=['pvalloc_LRG3_max',],
+            n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
             export_name='line_PVproduction_bau_feedin',
             y_col='feedin_atnode_taken_kW',
             y_scaling= 1e6,
@@ -125,61 +173,68 @@ if __name__ == "__main__":
             title='Agg. Feed-in',
         )
     
-    # plot_gridnode_HOY_wrapper(plotter, plot_width= 3.2, plot_height= 5.3)
+    plot_gridnode_HOY_wrapper(plotter, plot_width= 3.2, plot_height= 5.3)
 
 
-
+    print('-')
     # AGG CSV - based plots ======================================================================
-    PVprod_csv_file = 'plot_agg_line_PVproduction___export_plot_data___21scen.csv'
-    if False: 
+    PVprod_csv_file = 'plot_agg_line_PVproduction___export_plot_data___24scen.csv'
+
+    def plot_PVprod_wrapper(plotter_func, plot_width = 8, plot_height = 4):
         
-        # print('- BU: plot_PVproduction_line')
-        # plotter.plot_PVproduction_line(
-        #     # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
+        plotter_func = plotter.copy()
+        plotter_func.plot_width  = plot_width
+        plotter_func.plot_height = plot_height
+
+        # plotter_func.plot_PVproduction_line(
         #     csv_file= PVprod_csv_file,
-        #     scen_incl_list=['pvalloc_29nbfs_LRG2_max',
-        #                     # 'pvalloc_29nbfs_LRG2_max_epzb1', 
-        #                     'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_1',
-        #                     # 'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_2',
-        #                     'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_3',
-        #                     ],
-        #     n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12],
-        #     export_name='line_PVproduction_bu_loss',
+        #     scen_incl_list=['pvalloc_LRG3_max',],
+        #     n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
+        #     export_name='line_PVproduction_bau_excfeedin',
         #     y_col='feedin_atnode_loss_kW',
         #     y_scaling= 1e6, 
-        #     y_label='Agg. Excess Feed-in (GWh)'
+        #     y_label='Agg. Excess Feed-in (GWh)',
         #     title='Agg. Exc Feedin',
         # )
-
-        
+        # plotter_func.plot_PVproduction_line(
+        #     csv_file= PVprod_csv_file,
+        #     scen_incl_list=['pvalloc_LRG3_max',],
+        #     n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
+        #     export_name='line_PVproduction_bau_feedin',
+        #     y_col='feedin_atnode_taken_kW',
+        #     y_scaling= 1e6,
+        #     y_label='Aggregated Feed-in (GWh)',
+        #     title='Agg. Feed-in',
+        # ) 
+    
 
         print(' = SUBs case =====================')
-        plotter.plot_PVproduction_line(
+        plotter_func.plot_PVproduction_line(
             csv_file= PVprod_csv_file,
             scen_incl_list=[
-                'pvalloc_29nbfs_LRG2_max',
-                'pvalloc_29nbfs_LRG2_max_sAs6p0',
-                'pvalloc_29nbfs_LRG2_max_sBs0p8',
-                'pvalloc_29nbfs_LRG2_max_sCs2p8',
-                # 'pvalloc_29nbfs_LRG2_max_sCs4p6',
+                'pvalloc_LRG3_max',
+                'pvalloc_LRG3_max_sAs8p0',
+                'pvalloc_LRG3_max_sBs0p8',
+                'pvalloc_LRG3_max_sCs6p8',
+                # 'pvalloc_LRG3_max_sCs4p6',
                 ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, ],
+            n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
             export_name='line_PVproduction_bauABC_excfeedin',
             y_col='feedin_atnode_loss_kW',
             y_scaling= 1e6 ,
             y_label='Agg. Excess Feed-in (GWh)',
             title='Agg. Exc Feedin',
         )
-        plotter.plot_PVproduction_line(
+        plotter_func.plot_PVproduction_line(
             csv_file= PVprod_csv_file,
             scen_incl_list=[
-                'pvalloc_29nbfs_LRG2_max',
-                'pvalloc_29nbfs_LRG2_max_sAs6p0',
-                'pvalloc_29nbfs_LRG2_max_sBs0p8',
-                'pvalloc_29nbfs_LRG2_max_sCs2p8',
-                # 'pvalloc_29nbfs_LRG2_max_sCs4p6',
+                'pvalloc_LRG3_max',
+                'pvalloc_LRG3_max_sAs8p0',
+                'pvalloc_LRG3_max_sBs0p8',
+                'pvalloc_LRG3_max_sCs6p8',
+                # 'pvalloc_LRG3_max_sCs4p6',
                 ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, ],
+            n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
             export_name='line_PVproduction_bauABC_feedin',
             y_col='feedin_atnode_taken_kW',
             y_scaling= 1e6,    
@@ -190,32 +245,32 @@ if __name__ == "__main__":
 
 
         print(' = GridOptim case =====================')
-        plotter.plot_PVproduction_line(
+        plotter_func.plot_PVproduction_line(
             csv_file= PVprod_csv_file,
             scen_incl_list=[
-                'pvalloc_29nbfs_LRG2_max',
-                'pvalloc_29nbfs_LRG2_max_sBs0p8',
-                'pvalloc_29nbfs_LRG2_max_sCs2p8',
-                # 'pvalloc_29nbfs_LRG2_max_sCs4p6',
-                'pvalloc_29nbfs_LRG2_gridoptim_max',
+                'pvalloc_LRG3_max',
+                'pvalloc_LRG3_max_sBs0p8',
+                'pvalloc_LRG3_max_sCs6p8',
+                # 'pvalloc_LRG3_max_sCs4p6',
+                'pvalloc_LRG3_max_gridoptim',
                 ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, ],
+            n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
             export_name='line_PVproduction_gridoptim_excfeedin',
             y_col='feedin_atnode_loss_kW',
             y_scaling= 1e6,
             y_label='Agg. Excess Feed-in (GWh)',
             title='Agg. Exc Feedin',
         )
-        plotter.plot_PVproduction_line(
+        plotter_func.plot_PVproduction_line(
             csv_file= PVprod_csv_file,
             scen_incl_list=[
-                'pvalloc_29nbfs_LRG2_max',
-                'pvalloc_29nbfs_LRG2_max_sBs0p8',
-                'pvalloc_29nbfs_LRG2_max_sCs2p8',
-                # 'pvalloc_29nbfs_LRG2_max_sCs4p6',
-                'pvalloc_29nbfs_LRG2_gridoptim_max',
+                'pvalloc_LRG3_max',
+                'pvalloc_LRG3_max_sBs0p8',
+                'pvalloc_LRG3_max_sCs6p8',
+                # 'pvalloc_LRG3_max_sCs4p6',
+                'pvalloc_LRG3_max_gridoptim',
                 ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, ],
+            n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
             export_name='line_PVproduction_gridoptim_feedin',
             y_col='feedin_atnode_taken_kW',
             y_scaling= 1e6,    
@@ -223,30 +278,40 @@ if __name__ == "__main__":
             title='Agg. Feed-in',
         )
 
+    plot_PVprod_wrapper(plotter, plot_width= 4.8, plot_height= 5.3)
+
+    PVprod_csv_file = 'plot_agg_line_PVproduction___export_plot_data___21scen.csv'
+    print('-')
+    def plot_PVprod_wrapper_DSO(plotter_func, plot_width = 8, plot_height = 4):
+        
+        plotter_func = plotter.copy()
+        plotter_func.plot_width  = plot_width
+        plotter_func.plot_height = plot_height
+
 
         print(' = DSO react case =====================')
-        plotter.plot_PVproduction_line(
+        plotter_func.plot_PVproduction_line(
             csv_file= PVprod_csv_file,
             scen_incl_list=[
                 'pvalloc_29nbfs_LRG2_max',
                 'pvalloc_29nbfs_LRG2_max_1hll',
                 'pvalloc_29nbfs_LRG2_max_pksh',
                 ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, ],
+            n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
             export_name='line_PVproduction_DSOreact_excfeedin',
             y_col='feedin_atnode_loss_kW',
             y_scaling= 1e6,
             y_label='Agg. Excess Feed-in (GWh)',
             title='Agg. Exc Feedin',
         )
-        plotter.plot_PVproduction_line(
+        plotter_func.plot_PVproduction_line(
             csv_file= PVprod_csv_file,
             scen_incl_list=[
                 'pvalloc_29nbfs_LRG2_max',
                 'pvalloc_29nbfs_LRG2_max_1hll',
                 'pvalloc_29nbfs_LRG2_max_pksh',
                 ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, ],
+            n_iter_range_list=[5,  6, 7, 8, 9, 10, 11, 12, ],
             export_name='line_PVproduction_DSOreact_feedin',
             y_col='feedin_atnode_taken_kW',
             y_scaling= 1e6,    
@@ -254,32 +319,32 @@ if __name__ == "__main__":
             title='Agg. Feed-in',
         )
 
-
+    plot_PVprod_wrapper_DSO(plotter, plot_width= 4.8, plot_height= 5.3)
 
 
     # Inst Charact Comparison plots ===========================================================
 
-    if False: 
-        contcharacht_csv_file = 'plot_agg_hist_contcharact_newinst___export_plot_data___18scen.csv'
+    if True: 
+        contcharacht_csv_file = 'plot_agg_hist_contcharact_newinst___export_plot_data___23scen.csv'
         # bu_contcharact_height   = 3 
         # bu_contcharact_width    = 8.5
-        bu_contcharact_height   = 2.2 
+        bu_contcharact_height   = 1.9
         bu_contcharact_width    = 4.8
 
-        catgcharacht_csv_file = 'plot_agg_bar_catgcharact_newinst___export_plot_data___18scen.csv'
+        catgcharacht_csv_file = 'plot_agg_bar_catgcharact_newinst___export_plot_data___23scen.csv'
         # bu_catgcharact_height   = 2.85
         # bu_catgcharact_width    = 2.4
-        bu_catgcharact_height   = 2.22
+        bu_catgcharact_height   = 1.9
         bu_catgcharact_width    = 2.4
 
         print(' = Charact comparison =====================')
-        plotter = static_plotter_class()
+        # plotter = static_plotter_class()
         plotter.plot_ind_hist_contcharact_newinst(
             csv_file=contcharacht_csv_file,
-            scen_incl_list=['pvalloc_29nbfs_LRG2_max',
-                            # 'pvalloc_29nbfs_LRG2_max_sAs6p0',
-                            'pvalloc_29nbfs_LRG2_max_sBs0p8',
-                            # 'pvalloc_29nbfs_LRG2_max_sCs2p8',
+            scen_incl_list=['pvalloc_LRG3_max',
+                            # 'pvalloc_LRG3_max_sAs8p0',
+                            'pvalloc_LRG3_max_sBs0p8',
+                            # 'pvalloc_LRG3_max_sCs6p8',
                             ],
             iter_incl_list=[1,
                             4 
@@ -292,10 +357,10 @@ if __name__ == "__main__":
         )
         plotter.plot_ind_line_catgcharact_newinst(
             csv_file=catgcharacht_csv_file,
-            scen_incl_list=['pvalloc_29nbfs_LRG2_max',
-                            # 'pvalloc_29nbfs_LRG2_max_sAs6p0',
-                            'pvalloc_29nbfs_LRG2_max_sBs0p8',
-                            # 'pvalloc_29nbfs_LRG2_max_sCs2p8',
+            scen_incl_list=['pvalloc_LRG3_max',
+                            # 'pvalloc_LRG3_max_sAs8p0',
+                            'pvalloc_LRG3_max_sBs0p8',
+                            # 'pvalloc_LRG3_max_sCs6p8',
                             ],
             iter_incl_list=[
                 1, 2, 3, 4, 5, 6, 
@@ -329,4 +394,4 @@ if __name__ == "__main__":
         )
 
 
-    print('\n*********************\n******** end ********\n*********************\n\n')
+    print('\n*********************\n**** end plots SURED ****\n*********************\n\n')

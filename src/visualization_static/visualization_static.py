@@ -84,11 +84,218 @@ class static_plotter_class:
         if plot_width is not None and plot_height is not None:
             fig.set_size_inches(plot_width, plot_height, forward=True)
         plt.savefig(export_path, dpi=self.plot_dpi)
-
     
+
+    def copy_standalone_graphs_to_presentation_dir(self, 
+                                                  graphs_list =[
+                                                      'bfe_ep2050_netz_MNA_notitle.PNG', 
+                                                      'calib_rfr2_predvsactual.png', 
+                                                      'EGID_solkat_example.png', 
+                                                      'eth_summerschool_scenario_agg_notitle.png', 
+                                                      'grid-levels 1.png', 
+                                                      'grid-levels.png', 
+                                                      'newspaper_header2_optimalpv.png', 
+                                                      'pvinstcost_table.png', 
+                                                      'wp_topo_DSO_example_1_3.png', 
+                                                      'wp_topo_DSO_grid_large_example_1_3.png', 
+                                                      'wp_topo_roof_solkat_1_3.png', 
+                                                      'EGID_HOY_profile.png',
+                                                      ]
+                                                    ):
+        for graph in graphs_list:
+            src_path = os.path.join(self.paper_path, '0_standalone_graphs', graph) 
+            dst_path = os.path.join(self.dir_path_export, graph)
+            if os.path.exists(src_path):
+                shutil.copy(src_path, dst_path)
+                print(f'Copied {graph} to {dst_path}')                                              
+
 
 
     # SCENARIO - based plots, tables + data ====================================================================== 
+    def plot_EGID_pvprod_demand_HOY(self, 
+                                export_name = 'plot_EGID_pvprod_demand_HOY',
+                                hours_incl_list=list(range(4920 + 3*24, 4920 + 5*24)),
+                                scen = 'pvalloc_29nbfs_LRG2_max',
+                                egid_plot = None, 
+                                plot_cols_incl_list = None,
+                                title = 'Profiles Single House',
+                                x_label = 't (hours of year)',
+                                y_label = 'kW',
+                                prod_rgb = (185, 150, 215),
+                                feedin_rgb = (120, 170, 235),
+                                demand_rgb = (204, 85, 0),
+                                y_lower_limit = -2,
+                                y_upper_padding = 1.5,
+                                export_plots = True,
+                                daynightbands = True,
+                                plot_width_func=None,
+                                plot_height_func=None,
+    ):
+
+        topo = json.load(open(os.path.join(self.data_path, 'pvalloc', scen, 'topo_egid.json')))
+        egids = list(topo.keys())          
+
+        if egid_plot is None:
+            for egid in egids:
+                if topo[egid]['pv_inst']['info_source'] == 'pv_df':
+                    if len(topo[egid]['solkat_partitions']) > 1:
+                        egid_plot = egid
+                        break
+        
+        subdf_paths = glob.glob(f'{self.data_path}/pvalloc/{scen}/topo_time_subdf/topo_subdf_*.parquet')
+
+        for path in subdf_paths:
+            subdf = pl.read_parquet(path)
+            if egid_plot in subdf['EGID'].unique():
+                egid_subdf = subdf.filter(pl.col('EGID') == egid_plot)
+                break
+        
+        egid_subdf.shape[0]/8760
+        topo[egid_plot]['solkat_partitions']
+
+        egid_subdf.columns
+        egid_agg = egid_subdf.group_by('EGID', 't','t_int').agg([
+            pl.col('df_uid').count().alias('n_dfuid'),
+            pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
+            pl.col('demand_kW').first().alias('demand_kW'),
+            pl.col('pvprod_kW').sum().alias('pvprod_kW'),
+        ])
+
+        # calc selfconsumption
+        egid_agg = egid_agg.sort(['EGID', 't_int'], descending = [False, False])
+
+        selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * 1.0
+
+        egid_agg = egid_agg.with_columns([        
+            selfconsum_expr.alias("selfconsum_kW"),
+            (pl.col("pvprod_kW") - selfconsum_expr).alias("netfeedin_kW"),
+            (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
+        ])
+
+        # PLOT -------------------------------
+        egid_plot_df = (
+            egid_agg
+            .filter(pl.col('t_int').is_in(hours_incl_list))
+            .to_pandas()
+            .sort_values('t_int')
+        )
+
+        if egid_plot_df.empty:
+            print(f'No data found for EGID {egid_plot} in the selected hours.')
+            return
+
+        if plot_cols_incl_list is None:
+            plot_cols_incl_list = ['demand_kW', 'pvprod_kW', 'netfeedin_kW']
+
+        allowed_cols = {'demand_kW', 'pvprod_kW', 'netfeedin_kW'}
+        plot_cols_incl_list = [col for col in plot_cols_incl_list if col in allowed_cols]
+        if not plot_cols_incl_list:
+            raise ValueError('plot_cols_incl_list must include at least one of: demand_kW, pvprod_kW, netfeedin_kW')
+
+        def rgb_to_mpl_color(rgb_value):
+            if not isinstance(rgb_value, (list, tuple, np.ndarray)) or len(rgb_value) != 3:
+                raise ValueError('Expected an RGB tuple/list with exactly 3 values.')
+            rgb_array = np.asarray(rgb_value, dtype=float)
+            if np.nanmax(rgb_array) > 1.0:
+                rgb_array = rgb_array / 255.0
+            return tuple(rgb_array.tolist())
+
+        def build_line_segments(x_vals, y_vals):
+            segments = []
+            for idx in range(len(x_vals) - 1):
+                x0 = float(x_vals[idx])
+                x1 = float(x_vals[idx + 1])
+                y0 = float(y_vals[idx])
+                y1 = float(y_vals[idx + 1])
+                segments.append([(x0, y0), (x1, y1)])
+            return segments
+
+        plot_width = self.plot_width if plot_width_func is None else plot_width_func
+        plot_height = self.plot_height if plot_height_func is None else plot_height_func
+        plt.figure(figsize=(plot_width, plot_height))
+
+        ax = plt.gca()
+        x_values = egid_plot_df['t_int'].to_numpy()
+
+        series_specs = [
+            ('demand_kW', demand_rgb, 'Demand', 1.6, '-'),
+            ('pvprod_kW', prod_rgb, 'PV production', 1.6, '-'),
+            ('netfeedin_kW', feedin_rgb, 'Net feed-in', 1.8, '-'),
+        ]
+
+        for col_name, rgb_value, label, linewidth, linestyle in series_specs:
+            if col_name not in plot_cols_incl_list:
+                continue
+            if col_name not in egid_plot_df.columns:
+                continue
+
+            y_values = egid_plot_df[col_name].to_numpy()
+            segments = build_line_segments(x_values, y_values)
+            if not segments:
+                continue
+
+            collection = LineCollection(
+                segments,
+                colors=[rgb_to_mpl_color(rgb_value)],
+                linewidths=linewidth,
+                linestyles=linestyle,
+                label=label,
+                zorder=3,
+            )
+            ax.add_collection(collection)
+
+        y_columns = [col for col in plot_cols_incl_list if col in egid_plot_df.columns]
+        y_min = float(np.nanmin(egid_plot_df[y_columns].to_numpy()))
+        y_max = float(np.nanmax(egid_plot_df[y_columns].to_numpy()))
+        ax.set_xlim(float(x_values.min()) - 0.5, float(x_values.max()) + 0.5)
+        ax.set_ylim(min(float(y_lower_limit), y_min), y_max + float(y_upper_padding))
+
+        if daynightbands is True:
+            daynightbands = {'day_start_hour': 7, 'day_end_hour': 19}
+
+        if isinstance(daynightbands, dict):
+            day_start_hour = int(daynightbands.get('day_start_hour', 7))
+            day_end_hour = int(daynightbands.get('day_end_hour', 19))
+            day_color = daynightbands.get('day_color', '#fff7cc')
+            night_color = daynightbands.get('night_color', '#e6f0ff')
+            band_alpha = float(daynightbands.get('alpha', 0.25))
+
+            t_min = int(egid_plot_df['t_int'].min())
+            t_max = int(egid_plot_df['t_int'].max())
+
+            def is_day_hour(t_val):
+                hour_of_day = ((int(t_val) - 1) % 24) + 1
+                return day_start_hour <= hour_of_day < day_end_hour
+
+            segment_start = t_min
+            prev_is_day = is_day_hour(t_min)
+
+            for t_val in range(t_min + 1, t_max + 1):
+                curr_is_day = is_day_hour(t_val)
+                if curr_is_day != prev_is_day:
+                    segment_color = day_color if prev_is_day else night_color
+                    ax.axvspan(segment_start - 0.5, t_val - 0.5, color=segment_color, alpha=band_alpha, zorder=0, linewidth=0)
+                    segment_start = t_val
+                    prev_is_day = curr_is_day
+
+            segment_color = day_color if prev_is_day else night_color
+            ax.axvspan(segment_start - 0.5, t_max + 0.5, color=segment_color, alpha=band_alpha, zorder=0, linewidth=0)
+
+        for line in ax.lines:
+            line.set_zorder(4)
+
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(title if title is not None else f'EGID {egid_plot} PV production, demand and net feed-in')
+        plt.legend(title=None)
+        plt.tight_layout()
+        # plt.show() 
+
+        if export_plots:
+            self._save_figure(os.path.join(self.dir_path_export, f'{export_name}.png'), plot_width, plot_height)
+        plt.close()
+
+
     def plot_ind_line_demand(self,
                              name_dir_export ,
                              hours_incl_list,
@@ -301,15 +508,24 @@ class static_plotter_class:
             #     f.write(f'{print_str}\n')
 
 
-    def NPVhist_DataSampleSummary(self, 
+    # def NPVhist_DataSampleSummary(self, 
+    def NPVhist(self, 
                                         scen = 'pvalloc_29nbfs_LRG2_max',
+                                        export_name = None,
                                         npv_hist_width = 3.85,
                                         npv_hist_height= 3.4,
-                                        npv_hist_xrange = (-1e4, 4.75e4),
+                                        npv_hist_xrange = (-1e5, 4.75e5),
+                                        title = 'NPV Distribution',
+                                        x_label = 'NPV (CHF)',
+                                        y_label = 'Count',
+                                        negative_rgb = (214, 39, 40),
+                                        positive_rgb = (31, 119, 180),
+                                        plot_width_func = None,
+                                        plot_height_func = None,
                                         ):
-        # get npv_df histogramm
-        if True: 
-            npv_df = pd.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'npv_df.parquet'))
+
+            # npv_df = pd.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'npv_df.parquet'))
+            npv_df = pd.read_parquet(os.path.join(self.dir_path, f'npv_df_1_{scen}.parquet'))
 
             if 'NPV_uid_before_subsidy' not in npv_df.columns:
                 print("Column 'NPV_uid_before_subsidy' not found in npv_df.")
@@ -322,34 +538,73 @@ class static_plotter_class:
 
             mean_val = df_plot['NPV_uid_before_subsidy'].mean()
             median_val = df_plot['NPV_uid_before_subsidy'].median()
-            viridis_palette = sns.color_palette("viridis", n_colors=6)
 
-            plt.figure(figsize=(npv_hist_width, npv_hist_height))
-            ax = sns.histplot(
-                data=df_plot,
-                x='NPV_uid_before_subsidy',
-                bins=40,
-                kde=False,
-                color=viridis_palette[3],
+            def rgb_to_mpl_color(rgb_value):
+                if not isinstance(rgb_value, (list, tuple, np.ndarray)) or len(rgb_value) != 3:
+                    raise ValueError('Expected an RGB tuple/list with exactly 3 values.')
+                rgb_array = np.asarray(rgb_value, dtype=float)
+                if np.nanmax(rgb_array) > 1.0:
+                    rgb_array = rgb_array / 255.0
+                return tuple(rgb_array.tolist())
+
+            negative_color = rgb_to_mpl_color(negative_rgb)
+            positive_color = rgb_to_mpl_color(positive_rgb)
+
+            plot_width = self.plot_width if plot_width_func is None else plot_width_func
+            plot_height = self.plot_height if plot_height_func is None else plot_height_func
+
+
+            values = df_plot['NPV_uid_before_subsidy'].to_numpy()
+            data_min = float(np.nanmin(values))
+            data_max = float(np.nanmax(values))
+            hist_range = (data_min, data_max)
+            if npv_hist_xrange is not None and len(npv_hist_xrange) == 2:
+                input_min = float(npv_hist_xrange[0])
+                input_max = float(npv_hist_xrange[1])
+                hist_min = max(input_min, data_min)
+                hist_max = min(input_max, data_max)
+                if hist_min < hist_max:
+                    hist_range = (hist_min, hist_max)
+
+            bins = np.linspace(hist_range[0], hist_range[1], 41)
+            counts, bin_edges = np.histogram(values, bins=bins)
+            bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+            bar_colors = [negative_color if center < 0 else positive_color for center in bin_centers]
+
+            plt.figure(figsize=(plot_width, plot_height))
+            ax = plt.gca()
+            ax.bar(
+                bin_edges[:-1],
+                counts,
+                width=np.diff(bin_edges),
+                align='edge',
+                color=bar_colors,
+                edgecolor='white',
+                linewidth=0.2,
                 alpha=0.75,
-                linewidth=0.1
             )
-            ax.axvline(mean_val, color=viridis_palette[2], linestyle='--', linewidth=1.5, label=f'Mean: {mean_val:,.0f}')
-            ax.axvline(median_val, color=viridis_palette[1], linestyle='-', linewidth=1.5, label=f'Median: {median_val:,.0f}')
-            if len(npv_hist_xrange) == 2:
-                ax.set_xlim(npv_hist_xrange[0], npv_hist_xrange[1])
-            plt.xlabel('NPV before subsidy (CHF)')
-            plt.ylabel('Count')
-            plt.title('Distribution of NPV before Subsidy')
+            ax.axvline(0, color='black', linestyle=':', linewidth=1.0, label='Zero')
+            summary_line_color = 'black'
+            ax.axvline(mean_val, color=summary_line_color, linestyle='--', linewidth=1.5, label=f'Mean: {mean_val:,.0f}')
+            ax.axvline(median_val, color=summary_line_color, linestyle='-', linewidth=1.5, label=f'Median: {median_val:,.0f}')
+            ax.set_xlim(hist_range[0], hist_range[1])
+            plt.xlabel(x_label)
+            plt.ylabel(y_label)
+            plt.title(title)
             plt.legend(title=None)
             plt.tight_layout()
             # plt.show()
-            self._save_figure(os.path.join(self.dir_path_export, f'{scen}_npv_df_hist.png'), npv_hist_width, npv_hist_height)
+            if export_name is None:
+                export_file = f'{scen}_npv_df_hist.png'
+            else:
+                export_file = export_name if os.path.splitext(export_name)[1] else f'{export_name}.png'
+            self._save_figure(os.path.join(self.dir_path_export, export_file), plot_width, plot_height)
             plt.close()
         
-
-        # get table for data summary
-        if True:
+    def DataSampleSummary(self, 
+                                        scen = 'pvalloc_29nbfs_LRG2_max',
+                                        ):
+            # get table for data summary
             # SAMPLE ----------------------------------------
             pvalloc_sett = json.load(open(os.path.join(self.data_path, 'pvalloc', scen, 'pvalloc_sett.json')))
             bfs_numbers_sample = pvalloc_sett.get('bfs_numbers')
@@ -585,107 +840,6 @@ class static_plotter_class:
                 replacements=replacements,
             )
 
-
-    def Loss_Subscost_Summary(self,
-                              scen_list = None,
-                              PVprod_csv_file           = 'plot_agg_line_PVproduction___export_plot_data___21scen.csv',
-                              contcharact_csv_file = 'plot_agg_hist_contcharact_newinst___export_plot_data___18scen.csv',
-                              n_iter_list = None):
-        PVprod_file_path      = os.path.join(self.dir_path, PVprod_csv_file)
-        contcaracht_file_path = os.path.join(self.dir_path, contcharact_csv_file)
-
-        self._copy_csv_to_export(PVprod_file_path)
-        self._copy_csv_to_export(contcaracht_file_path)
-        PVprod_df = pd.read_csv(PVprod_file_path)
-        contcharact_df = pd.read_csv(contcaracht_file_path)
-
-        if scen_list is None:
-            scen_list = [
-                scen for scen in PVprod_df['scen'].dropna().unique().tolist()
-                if scen in contcharact_df['scen'].dropna().unique().tolist()
-            ]
-
-        if n_iter_list is None:
-            n_iter_list = sorted(
-                set(PVprod_df['n_iter'].dropna().unique().tolist())
-                .intersection(contcharact_df['n_iter'].dropna().unique().tolist())
-            )
-
-        scen_list = [scen for scen in scen_list if scen in PVprod_df['scen'].unique() and scen in contcharact_df['scen'].unique()]
-        n_iter_list = list(n_iter_list)
-
-        def format_value(value, decimals=0):
-            if pd.isna(value):
-                return '-'
-            if decimals > 0:
-                formatted = f"{value:,.{decimals}f}"
-            else:
-                formatted = f"{value:,.0f}"
-            return formatted.replace(',', "'")
-
-        def build_pivot_table(df, value_cols, aggfunc='sum'):
-            grouped = (
-                df.loc[
-                    df['scen'].isin(scen_list) & df['n_iter'].isin(n_iter_list),
-                    ['scen', 'n_iter'] + value_cols,
-                ]
-                .groupby(['scen', 'n_iter'], as_index=False)
-                .agg(aggfunc)
-            )
-            table = grouped.pivot(index='scen', columns='n_iter', values=value_cols[0])
-            table = table.reindex(index=scen_list, columns=n_iter_list)
-            table.index.name = 'Scenario'
-            table.columns.name = 'Iteration'
-            return table
-
-        loss_table = build_pivot_table(PVprod_df, ['feedin_atnode_loss_kW'])
-        # Scale losses from kW to MWh (divide by 1000)
-        loss_table = loss_table / 1000
-
-        cont_summary = (
-            contcharact_df.loc[
-                contcharact_df['scen'].isin(scen_list) & contcharact_df['iter_round'].isin(n_iter_list),
-                ['scen', 'iter_round', 'subs_nodeHC_chf', 'pena_nodeHC_chf', 'estim_pvinstcost_chf'],
-            ]
-            .groupby(['scen', 'iter_round'], as_index=False)
-            .sum()
-        )
-        # Net subsidy = subsidy received - penalties - 30% of investment costs
-        cont_summary['net_subsidy_chf'] = cont_summary['subs_nodeHC_chf'] - cont_summary['pena_nodeHC_chf'] - (0.3 * cont_summary['estim_pvinstcost_chf'])
-
-        net_subsidy_table = (
-            cont_summary[['scen', 'iter_round', 'net_subsidy_chf']]
-            .pivot(index='scen', columns='iter_round', values='net_subsidy_chf')
-            .reindex(index=scen_list, columns=n_iter_list)
-        )
-        net_subsidy_table.index.name = 'Scenario'
-        net_subsidy_table.columns.name = 'Iteration'
-
-        loss_table_latex = loss_table.apply(lambda col: col.map(lambda value: format_value(value, decimals=1))).to_latex(
-            escape=True,
-            index=True,
-            na_rep='-',
-        )
-        net_subsidy_table_latex = net_subsidy_table.apply(lambda col: col.map(lambda value: format_value(value, decimals=0) + ' CHF' if not pd.isna(value) else '-')).to_latex(
-            escape=True,
-            index=True,
-            na_rep='-',
-        )
-
-        replacements = {
-            'loss_table': loss_table_latex,
-            'net_subsidy_table': net_subsidy_table_latex,
-        }
-
-        self._write_latex_from_template(
-            template_file='latex_table_template__loss_subscost_summary.txt',
-            export_file='loss_subscost_summary.txt',
-            replacements=replacements,
-        )
-
-        print('Loss and net subsidy summary written.')
-
-
     def plot_gridnode_HOY(self, 
                           scen      = 'pvalloc_29nbfs_LRG2_max', 
                           gridnode  = None,
@@ -716,10 +870,12 @@ class static_plotter_class:
 
         # select node with max loss by default
         if gridnode is None:
-            gridnode_to_plot = ( gridnode_iter_df
-                                .filter(pl.col('feedin_atnode_loss_kW') == gridnode_iter_df.get_column('feedin_atnode_loss_kW').max())
-                                .get_column('grid_node').item() 
-                                )
+            gridnode_to_plot = (
+                gridnode_iter_df
+                .sort('feedin_atnode_loss_kW', descending=True)
+                .get_column('grid_node')
+                .item(0)
+            )
             
         else: 
             gridnode_to_plot = gridnode    
@@ -853,28 +1009,376 @@ class static_plotter_class:
         self._save_figure(os.path.join(self.dir_path_export, 'gridnode_feedin_threshold_HOY.png'), plot_width, plot_height)
         plt.close()
 
-    def copy_standalone_graphs_to_presentation_dir(self, 
-                                                  graphs_list =[
-                                                      'bfe_ep2050_netz_MNA_notitle.PNG', 
-                                                      'calib_rfr2_predvsactual.png', 
-                                                      'EGID_solkat_example.png', 
-                                                      'eth_summerschool_scenario_agg_notitle.png', 
-                                                      'grid-levels 1.png', 
-                                                      'grid-levels.png', 
-                                                      'newspaper_header2_optimalpv.png', 
-                                                      'pvinstcost_table.png', 
-                                                      'wp_topo_DSO_example_1_3.png', 
-                                                      'wp_topo_DSO_grid_large_example_1_3.png', 
-                                                      'wp_topo_roof_solkat_1_3.png', 
-                                                      ]
-                                                    ):
-        for graph in graphs_list:
-            src_path = os.path.join(self.paper_path, '0_standalone_graphs', graph) 
-            dst_path = os.path.join(self.dir_path_export, graph)
-            if os.path.exists(src_path):
-                shutil.copy(src_path, dst_path)
-                print(f'Copied {graph} to {dst_path}')                                              
-    
+    def plot_constrcapa_comparison(self,
+                                   scen = 'pvalloc_LRG3_max',
+                                   capa_col_list = [
+                                    #    'constr_capacity_kw_HIST',
+                                    'constr_capacity_kw_EP2050_rescale1.0',
+                                    'constr_capacity_kw_EP2050_rescale0.25', 
+                                    'constr_capacity_kw_AdjHist_refact0.2',
+                                   ],
+                                   year_range=(2016, 2024),
+                                   year_col='date',
+                                   pv_time_col='BeginningOfOperation',
+                                   pv_capacity_col='TotalPower',
+                                   capa_col_label_map=None,
+                                   pv_label='Installed capacity from pv_df',
+                                   export_name = 'constrcapa_comparison.png',
+                                   title='Installed Capacity Comparison',
+                                   x_label='Year',
+                                   y_label='Installed capacity (MW)',
+                                   plot_width=None,
+                                   plot_height=None,
+                                   pv_line_color=(31, 119, 180),
+                                   pv_line_style='-',
+                                   pv_line_width=2.0,
+                                   constr_line_width=1.8,
+                                   legend_title=None,
+                                   ):
+        constrcapa_comparison = pd.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'constrcapa_comparison.parquet'))
+        pv_df = pd.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'pv_df.parquet'))
+
+        def rgb_to_mpl_color(rgb_value):
+            if not isinstance(rgb_value, (list, tuple, np.ndarray)) or len(rgb_value) != 3:
+                raise ValueError('Expected an RGB tuple/list with exactly 3 values.')
+            rgb_array = np.asarray(rgb_value, dtype=float)
+            if np.nanmax(rgb_array) > 1.0:
+                rgb_array = rgb_array / 255.0
+            return tuple(rgb_array.tolist())
+
+        def format_capacity_label(col_name):
+            label = col_name.replace('constr_capacity_kw_', '')
+            label = label.replace('EP2050_', 'EP2050 ')
+            label = label.replace('AdjHist_', 'Adjusted historical ')
+            label = label.replace('rescale', 'rescale ')
+            label = label.replace('_', ' ')
+            return label.strip()
+
+        def resolve_year_series(df, year_column, preferred_time_column=None):
+            if preferred_time_column is not None and preferred_time_column in df.columns:
+                parsed = pd.to_datetime(df[preferred_time_column], errors='coerce')
+                if parsed.notna().any():
+                    return parsed.dt.year
+            if year_column in df.columns:
+                if year_column == 'date':
+                    parsed = pd.to_datetime(df[year_column], errors='coerce')
+                    if parsed.notna().any():
+                        return parsed.dt.year
+                return pd.to_numeric(df[year_column], errors='coerce')
+            if 'BeginningOfOperation' in df.columns:
+                parsed = pd.to_datetime(df['BeginningOfOperation'], errors='coerce')
+                return parsed.dt.year
+            if 'BeginOp' in df.columns:
+                parsed = pd.to_datetime(df['BeginOp'], errors='coerce')
+                return parsed.dt.year
+            if df.index.name == year_column:
+                return pd.to_numeric(df.index, errors='coerce')
+            raise KeyError(f"Could not resolve a year column for '{year_column}' or a date column such as 'BeginningOfOperation'.")
+
+        if year_range is not None and len(year_range) == 2:
+            year_start = int(year_range[0])
+            year_end = int(year_range[1])
+        else:
+            year_start = None
+            year_end = None
+
+        # Prepare PV installed capacity time series from pv_df.
+        if pv_capacity_col not in pv_df.columns:
+            raise KeyError(f"Missing required column '{pv_capacity_col}' in pv_df.")
+
+        pv_years = resolve_year_series(pv_df, year_col, preferred_time_column=pv_time_col)
+        pv_series_df = pv_df.loc[pv_years.notna(), [pv_capacity_col]].copy()
+        pv_series_df['year'] = pv_years[pv_years.notna()].astype(int).to_numpy()
+        if year_start is not None and year_end is not None:
+            pv_series_df = pv_series_df.loc[pv_series_df['year'].between(year_start, year_end)]
+
+        pv_yearly = (
+            pv_series_df
+            .groupby('year', as_index=False)[pv_capacity_col]
+            .sum()
+            .sort_values('year')
+        )
+        pv_yearly['installed_capacity_mw'] = pv_yearly[pv_capacity_col] / 1000.0
+        pv_yearly['installed_capacity_mw'] = pv_yearly['installed_capacity_mw'].cumsum()
+
+        # Prepare comparison dataframe.
+        constr_years = resolve_year_series(constrcapa_comparison, year_col)
+        constr_plot_df = constrcapa_comparison.loc[constr_years.notna()].copy()
+        constr_plot_df['year'] = constr_years[constr_years.notna()].astype(int).to_numpy()
+        if year_start is not None and year_end is not None:
+            constr_plot_df = constr_plot_df.loc[constr_plot_df['year'].between(year_start, year_end)]
+
+        if capa_col_label_map is None:
+            capa_col_label_map = {}
+
+        plot_width = self.plot_width if plot_width is None else plot_width
+        plot_height = self.plot_height if plot_height is None else plot_height
+
+        plt.figure(figsize=(plot_width, plot_height))
+        ax = plt.gca()
+
+        ax.plot(
+            pv_yearly['year'],
+            pv_yearly['installed_capacity_mw'],
+            color=rgb_to_mpl_color(pv_line_color),
+            linestyle=pv_line_style,
+            linewidth=pv_line_width,
+            marker='o',
+            label=pv_label,
+            zorder=3,
+        )
+
+        for col_name in capa_col_list:
+            if col_name not in constr_plot_df.columns:
+                continue
+            label = capa_col_label_map.get(col_name, format_capacity_label(col_name))
+            plot_series = constr_plot_df.groupby('year', as_index=False)[col_name].last().sort_values('year')
+            ax.plot(
+                plot_series['year'],
+                plot_series[col_name] / 1000.0,
+                linewidth=constr_line_width,
+                marker='o',
+                label=label,
+                zorder=2,
+            )
+
+        if year_start is not None and year_end is not None:
+            ax.set_xlim(year_start, year_end)
+
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
+        ax.set_title(title)
+        ax.legend(title=legend_title)
+        plt.tight_layout()
+
+        if export_name is None:
+            export_file = f'{scen}_constrcapa_comparison.png'
+        else:
+            export_file = export_name if os.path.splitext(export_name)[1] else f'{export_name}.png'
+        self._save_figure(os.path.join(self.dir_path_export, export_file), plot_width, plot_height)
+        plt.close()
+
+    def worstnode_worstweek(self,
+                            scen = 'pvalloc_LRG3_max',
+                            title = 'Excess Feedin ("Worst Week")', 
+                            export_name = 'worstnode_worstweek',
+                            gridnode = None,
+                            excess_feedin_pegid = True,
+                            x_label = 'Hour of year',
+                            y_label = 'Excess Feed-in (kW)',
+                            y_scaling = 1.0,
+                            rgb_line = (200, 50, 50), 
+                            plot_width_func = None,
+                            plot_height_func = None,):
+        
+        topo = json.load(open(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'topo_egid.json'), 'r'))
+        gridnode_df = pl.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'gridnode_df.parquet'))
+
+        topo_rows = []
+        for k, v in topo.items():
+            topo_rows.append({
+                'EGID': k,
+                'grid_node': v['grid_node'],
+            })
+        topo_df = pl.DataFrame(topo_rows)
+
+        if gridnode is None:
+            worst_node = (
+                gridnode_df
+                .group_by('grid_node')
+                .agg(pl.col('feedin_atnode_loss_kW').sum().alias('total_loss_kW'))
+                .sort('total_loss_kW', descending=True)
+                .get_column('grid_node')
+                .item(0)
+            )
+        else:
+            worst_node = gridnode
+
+        worst_node_df = (
+            gridnode_df
+            .filter(pl.col('grid_node') == worst_node)
+            .sort('t_int')
+            .to_pandas()
+            .reset_index(drop=True)
+        )
+
+        worst_node_df['loss_7d_kW'] = worst_node_df['feedin_atnode_loss_kW'].rolling(168).sum()
+        worst_idx = worst_node_df['loss_7d_kW'].idxmax()
+
+        worst_start = worst_node_df.loc[worst_idx, 't_int'] - 167
+        worst_end = worst_node_df.loc[worst_idx, 't_int']
+        worst_start_date = pd.Timestamp('2025-01-01') + pd.to_timedelta(int(worst_start) - 1, unit='h')
+        worst_end_date = pd.Timestamp('2025-01-01') + pd.to_timedelta(int(worst_end) - 1, unit='h')
+        worst_loss = worst_node_df.loc[worst_idx, 'loss_7d_kW']
+
+        negid_worstnode = topo_df.filter(pl.col('grid_node') == worst_node).get_column('EGID').count()
+        worst_week_df = worst_node_df.loc[worst_node_df['t_int'].between(worst_start, worst_end)].copy()
+        if negid_worstnode <= 0:
+            raise ValueError(f'No EGIDs mapped to grid node {worst_node}.')
+        
+        if excess_feedin_pegid is True:
+            worst_week_df['feedin_atnode_loss_kW'] = (
+                worst_week_df['feedin_atnode_loss_kW'] / negid_worstnode * y_scaling
+            )
+
+        print(f'Worst node \t\t\t{worst_node}')
+        print(f'nEGID:\t\t\t\t{negid_worstnode}')
+        print(f'Worst week: t_int\t\t{worst_start} to {worst_end}')
+        print(f'Date start:\t\t\t{worst_start_date}')
+        print(f'Date end:\t\t\t{worst_end_date}')
+        print(f'total loss:\t\t\t{worst_loss:.1f} kWh')
+        print(f'Average loss p House:\t\t{worst_loss / negid_worstnode} kWh')
+        # use a timedelta shift to move to the first complete day after the worst-week start
+        worst_peakweek1_date_start = pd.Timestamp(f'{worst_start_date.year}-{worst_start_date.month:02d}-{worst_start_date.day:02d} 00:00:00') + pd.Timedelta(days=1)
+        worst_peakweek1_date_end = worst_peakweek1_date_start + pd.Timedelta(days=1)
+        worst_peakweek1_start = int((worst_peakweek1_date_start - pd.Timestamp('2025-01-01')).total_seconds() / 3600) + 1
+        worst_peakweek1_end = int((worst_peakweek1_date_end - pd.Timestamp('2025-01-01')).total_seconds() / 3600) + 1
+        worst_peak_df = worst_node_df.loc[worst_node_df['t_int'].between(worst_peakweek1_start, worst_peakweek1_end)].copy()
+        print(f'Worst peak week1: t_int\t{worst_peakweek1_start} to {worst_peakweek1_end}')
+        print(f'Worst peak week1 Date start:\t{worst_peakweek1_date_start}')
+        print(f'Worst peak week1 Date end:\t{worst_peakweek1_date_end}')
+        print(f'total loss peak1:\t\t{worst_peak_df["feedin_atnode_loss_kW"].sum():.1f} kWh')
+        print(f'Average loss p House peak1:\t{worst_peak_df["feedin_atnode_loss_kW"].sum() / negid_worstnode:.1f} kWh')
+        residual_demand = worst_peak_df["max_demand_feedin_atnode_kW"].sum() - worst_peak_df["selfconsum_kW"].sum()
+        print(f'Average demand p House peak1:\t{residual_demand / negid_worstnode:.1f} kWh')
+        
+        
+        scen_color = (rgb_line[0] / 255, rgb_line[1] / 255, rgb_line[2] / 255)
+        plot_width = self.plot_width if plot_width_func is None else plot_width_func
+        plot_height = self.plot_height if plot_height_func is None else plot_height_func
+        
+        plt.figure(figsize=(plot_width, plot_height))
+        sns.lineplot(
+            data=worst_week_df,
+            x='t_int',
+            y='feedin_atnode_loss_kW',
+            marker='',
+            color=scen_color,
+            linewidth=1.5,
+            alpha=self.line_opacity,
+            label=f'grid node {worst_node}',
+        )
+
+        # highlight the computed worst peak week range
+        ax = plt.gca()
+        try:
+            ax.axvspan(worst_peakweek1_start - 0.5, worst_peakweek1_end + 0.5, color=scen_color, alpha=0.18, zorder=0)
+        except Exception:
+            # fall back silently if values are invalid
+            pass
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(title)
+        plt.legend(title=None)
+        plt.tight_layout()
+        self._save_figure(
+            os.path.join(self.dir_path_export, f'{export_name}_{scen}.png'),
+            plot_width,
+            plot_height,
+        )
+        # plt.show()
+        plt.close()
+        
+
+    def Loss_Subscost_Summary(self,
+                              scen_list = None,
+                              PVprod_csv_file           = 'plot_agg_line_PVproduction___export_plot_data___21scen.csv',
+                              contcharact_csv_file = 'plot_agg_hist_contcharact_newinst___export_plot_data___18scen.csv',
+                              n_iter_list = None):
+        PVprod_file_path      = os.path.join(self.dir_path, PVprod_csv_file)
+        contcaracht_file_path = os.path.join(self.dir_path, contcharact_csv_file)
+
+        self._copy_csv_to_export(PVprod_file_path)
+        self._copy_csv_to_export(contcaracht_file_path)
+        PVprod_df = pd.read_csv(PVprod_file_path)
+        contcharact_df = pd.read_csv(contcaracht_file_path)
+
+        if scen_list is None:
+            scen_list = [
+                scen for scen in PVprod_df['scen'].dropna().unique().tolist()
+                if scen in contcharact_df['scen'].dropna().unique().tolist()
+            ]
+
+        if n_iter_list is None:
+            n_iter_list = sorted(
+                set(PVprod_df['n_iter'].dropna().unique().tolist())
+                .intersection(contcharact_df['n_iter'].dropna().unique().tolist())
+            )
+
+        scen_list = [scen for scen in scen_list if scen in PVprod_df['scen'].unique() and scen in contcharact_df['scen'].unique()]
+        n_iter_list = list(n_iter_list)
+
+        def format_value(value, decimals=0):
+            if pd.isna(value):
+                return '-'
+            if decimals > 0:
+                formatted = f"{value:,.{decimals}f}"
+            else:
+                formatted = f"{value:,.0f}"
+            return formatted.replace(',', "'")
+
+        def build_pivot_table(df, value_cols, aggfunc='sum'):
+            grouped = (
+                df.loc[
+                    df['scen'].isin(scen_list) & df['n_iter'].isin(n_iter_list),
+                    ['scen', 'n_iter'] + value_cols,
+                ]
+                .groupby(['scen', 'n_iter'], as_index=False)
+                .agg(aggfunc)
+            )
+            table = grouped.pivot(index='scen', columns='n_iter', values=value_cols[0])
+            table = table.reindex(index=scen_list, columns=n_iter_list)
+            table.index.name = 'Scenario'
+            table.columns.name = 'Iteration'
+            return table
+
+        loss_table = build_pivot_table(PVprod_df, ['feedin_atnode_loss_kW'])
+        # Scale losses from kW to MWh (divide by 1000)
+        loss_table = loss_table / 1000
+
+        cont_summary = (
+            contcharact_df.loc[
+                contcharact_df['scen'].isin(scen_list) & contcharact_df['iter_round'].isin(n_iter_list),
+                ['scen', 'iter_round', 'subs_nodeHC_chf', 'pena_nodeHC_chf', 'estim_pvinstcost_chf'],
+            ]
+            .groupby(['scen', 'iter_round'], as_index=False)
+            .sum()
+        )
+        # Net subsidy = subsidy received - penalties - 30% of investment costs
+        cont_summary['net_subsidy_chf'] = cont_summary['subs_nodeHC_chf'] - cont_summary['pena_nodeHC_chf'] - (0.3 * cont_summary['estim_pvinstcost_chf'])
+
+        net_subsidy_table = (
+            cont_summary[['scen', 'iter_round', 'net_subsidy_chf']]
+            .pivot(index='scen', columns='iter_round', values='net_subsidy_chf')
+            .reindex(index=scen_list, columns=n_iter_list)
+        )
+        net_subsidy_table.index.name = 'Scenario'
+        net_subsidy_table.columns.name = 'Iteration'
+
+        loss_table_latex = loss_table.apply(lambda col: col.map(lambda value: format_value(value, decimals=1))).to_latex(
+            escape=True,
+            index=True,
+            na_rep='-',
+        )
+        net_subsidy_table_latex = net_subsidy_table.apply(lambda col: col.map(lambda value: format_value(value, decimals=0) + ' CHF' if not pd.isna(value) else '-')).to_latex(
+            escape=True,
+            index=True,
+            na_rep='-',
+        )
+
+        replacements = {
+            'loss_table': loss_table_latex,
+            'net_subsidy_table': net_subsidy_table_latex,
+        }
+
+        self._write_latex_from_template(
+            template_file='latex_table_template__loss_subscost_summary.txt',
+            export_file='loss_subscost_summary.txt',
+            replacements=replacements,
+        )
+
+        print('Loss and net subsidy summary written.')
+
 
     # AGG CSV - based plots ======================================================================
     def plot_productionHOY_per_node(self, 
@@ -1446,85 +1950,27 @@ if __name__ == "__main__":
 
 
     # SCEN - individual tables + data ======================================================================
-    plotter.cop
+    # plotter.copy_standalone_graphs_to_presentation_dir()
 
     # SCEN - individual plots  ======================================================================
 
-    # demand and single values
-    if False:
+    # plotter.plot_EGID_pvprod_demand_HOY(plot_cols_incl_list= ['pvprod_kW'])
+    # plotter.plot_EGID_pvprod_demand_HOY(plot_cols_incl_list= ['pvprod_kW', 'demand_kW'])
+    # plotter.plot_EGID_pvprod_demand_HOY(plot_cols_incl_list= ['pvprod_kW', 'demand_kW', 'netfeedin_kW'])
 
+    # plotter.NPVhist()
 
-        # plotter.NPVhist_DataSampleSummary()
+    # plotter.plot_gridnode_HOY()
 
-        # plotter.Loss_Subscost_Summary(
-        #     scen_list = ['pvalloc_29nbfs_LRG2_max', 
-        #                  'pvalloc_29nbfs_LRG2_max_sCs2p8',
-        #     ], 
-        #     n_iter_list = [4, 6, 8, ],
-        # )
+    plotter.worstnode_worstweek()
+        
 
-        # plotter.plot_ind_line_demand(
-        #     name_dir_export='DEV_pvalloc_10nbfs_SUB_max_OLDpreprep',
-        # #     name_dir_export='pvalloc_29nbfs_LRG2_max',
-        #     hours_incl_list=list(range(4920, 4920 + 7*24)),
-        #     export_name='example_demand_BU',
-        #     n_egids_by_group = {
-        #         'sfh_rur_hpT': (1, 'SFH', 'Rural',     'heatpump'),
-        #         'sfh_rur_hpF': (1, 'SFH', 'Rural',     'no_heatpump'),
-        #         # 'sfh_sub_hpT': (0, 'SFH', 'Suburban',  'heatpump'),
-        #         # 'sfh_urb_hpF': (0, 'SFH', 'Urban',     'no_heatpump'),
-        #         # 'sfh_urb_hpT': (0, 'SFH', 'Urban',     'heatpump'),
-        #         # 'sfh_sub_hpF': (0, 'SFH', 'Suburban',  'no_heatpump'),
+    # plotter.plot_constrcapa_comparison()
 
-        #         # 'mfh_rur_hpT': (1, 'MFH', 'Rural',     'heatpump'),
-        #         # 'mfh_rur_hpF': (1, 'MFH', 'Rural',     'no_heatpump'),
-        #         # 'mfh_sub_hpT': (0, 'MFH', 'Suburban',  'heatpump'),
-        #         # 'mfh_sub_hpF': (0, 'MFH', 'Suburban',  'no_heatpump'),
-        #         # 'mfh_urb_hpT': (0, 'MFH', 'Urban',     'heatpump'),
-        #         # 'mfh_urb_hpF': (0, 'MFH', 'Urban',     'no_heatpump'),
-        #                      },
-        #     # select_egids = [
-        #     #     '101221005', # MFH, Rural, heatpump
-        #     #     '245048874', # SFH, Suburban, heatpump
-        #     # ],
-        #     # export_plots=False,
-
-        plotter.plot_gridnode_HOY()
-
-
-    # AGG CSV - based plots ======================================================================
-    PVprod_csv_file = 'plot_agg_line_PVproduction___export_plot_data___21scen.csv'
-    bu_loss_height = 5.3
-    bu_loss_width = 4
-    plotter.plot_height = bu_loss_height
-    plotter.plot_width = bu_loss_width
-
-    # BU case HOY
-    if False: 
-
-
-        plotter.plot_PVproduction_line(
-        # csv_file='plot_agg_line_PVproduction___export_plot_data___1scen.csv',
-            csv_file= PVprod_csv_file,
-            scen_incl_list=['pvalloc_29nbfs_LRG2_max',
-                            # 'pvalloc_29nbfs_LRG2_max_epzb1', 
-                            'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_1',
-                            # 'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_2',
-                            'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_3',
-                            ],
-            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12],
-            export_name='line_PVproduction_bu_loss',
-            y_col='feedin_atnode_loss_kW',
-            y_scaling= 1000, 
-            y_label='Aggregated Loss (MWh)',
-            title='Agg. Loss',
-            )
-
-
-    # Inst Charact Comparison plots ===========================================================
 
 
     print('\n*********************\n******** end ********\n*********************\n\n')
+
 
 
 
