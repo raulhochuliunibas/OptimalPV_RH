@@ -116,7 +116,7 @@ class static_plotter_class:
     def plot_EGID_pvprod_demand_HOY(self, 
                                 export_name = 'plot_EGID_pvprod_demand_HOY',
                                 hours_incl_list=list(range(4920 + 3*24, 4920 + 5*24)),
-                                scen = 'pvalloc_29nbfs_LRG2_max',
+                                scen = 'pvalloc_LRG3_max',
                                 egid_plot = None, 
                                 plot_cols_incl_list = None,
                                 title = 'Profiles Single House',

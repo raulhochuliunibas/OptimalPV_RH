@@ -73,7 +73,7 @@ if __name__ == "__main__":
     }
 
 
-    # plotter.copy_standalone_graphs_to_presentation_dir()
+    plotter.copy_standalone_graphs_to_presentation_dir()
 
     # SCEN - individual tables + data ======================================================================
     if True: 
@@ -83,12 +83,12 @@ if __name__ == "__main__":
         plotter.plot_width      = 4.1
         plotter.plot_height     = 2.4
 
-        # plotter.plot_EGID_pvprod_demand_HOY(export_name = 'plot_EGID_HOY_pvprod',
-        #                                     plot_cols_incl_list= ['pvprod_kW'],)
-        # plotter.plot_EGID_pvprod_demand_HOY(export_name = 'plot_EGID_HOY_pvprod_demand',
-        #                                     plot_cols_incl_list= ['pvprod_kW', 'demand_kW'],)
-        # plotter.plot_EGID_pvprod_demand_HOY(export_name = 'plot_EGID_HOY_pvprod_demand_feedin',
-        #                                 plot_cols_incl_list= ['pvprod_kW', 'demand_kW', 'netfeedin_kW'],)
+        plotter.plot_EGID_pvprod_demand_HOY(export_name = 'plot_EGID_HOY_pvprod',
+                                            plot_cols_incl_list= ['pvprod_kW'],)
+        plotter.plot_EGID_pvprod_demand_HOY(export_name = 'plot_EGID_HOY_pvprod_demand',
+                                            plot_cols_incl_list= ['pvprod_kW', 'demand_kW'],)
+        plotter.plot_EGID_pvprod_demand_HOY(export_name = 'plot_EGID_HOY_pvprod_demand_feedin',
+                                        plot_cols_incl_list= ['pvprod_kW', 'demand_kW', 'netfeedin_kW'],)
 
 
         # plotter.get_single_values(
@@ -116,7 +116,7 @@ if __name__ == "__main__":
         plotter.NPVhist( scen = 'pvalloc_LRG3_max_elecpri15RP', export_name='NPVhist_LRG3_max_15Rp',   title= 'NPV Dist. (15Rp/kWh)',  npv_hist_xrange=(-15e3, 45e3), )
         plotter.NPVhist( scen = 'pvalloc_LRG3_max_elecpri60RP', export_name='NPVhist_LRG3_max_60Rp',   title= 'NPV Dist. (60Rp/kWh)',  npv_hist_xrange=(-15e3, 12e4), )
         
-        # plotter.DataSampleSummary()
+        plotter.DataSampleSummary()
 
         # plotter.Loss_Subscost_Summary(
         #     scen_list = ['pvalloc_LRG3_max', 
@@ -419,4 +419,4 @@ if __name__ == "__main__":
         )
 
 
-    print('\n*************************\n**** end plots SURED ****\n*************************\n')
+    print('\n*************************\n**** end plots SSES ****\n*************************\n')
