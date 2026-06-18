@@ -7,6 +7,6 @@
     n Resid. Houses          & {n_egids}             & {alldso_n_egids}               & {allch_n_egids}    \\
     n Grid Nodes             & {n_grid_nodes}        & {alldso_n_grid_nodes}            & -    \\
     Inst. Capacity 2024 (MW) & {pvcapacity_mw_2024}  & {alldso_pvcapacity_mw_2024}    & {allch_pvcapacity_mw_2024} \\
-    Capacty 2050 (MW)        & {pvcapacity_mw_2050}  & {alldso_pvcapacity_mw_2050}    & {allch_pvcapacity_mw_2050}    \\
+    Capacity 2050 (MW)       & {pvcapacity_mw_2050}  & {alldso_pvcapacity_mw_2050}    & {allch_pvcapacity_mw_2050}    \\
     \hline       
 \end{{tabular}}

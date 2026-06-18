@@ -603,7 +603,7 @@ class static_plotter_class:
             plt.close()
         
     def DataSampleSummary(self, 
-                                        scen = 'pvalloc_29nbfs_LRG2_max',
+                                        scen = 'pvalloc_LRG3_max',
                                         ):
             # get table for data summary
             # SAMPLE ----------------------------------------
@@ -1207,10 +1207,9 @@ class static_plotter_class:
         worst_idx = worst_node_df['loss_7d_kW'].idxmax()
 
         worst_start = worst_node_df.loc[worst_idx, 't_int'] - 167
-        worst_end = worst_node_df.loc[worst_idx, 't_int']
+        worst_end   = worst_node_df.loc[worst_idx, 't_int']
         worst_start_date = pd.Timestamp('2025-01-01') + pd.to_timedelta(int(worst_start) - 1, unit='h')
-        worst_end_date = pd.Timestamp('2025-01-01') + pd.to_timedelta(int(worst_end) - 1, unit='h')
-        worst_loss = worst_node_df.loc[worst_idx, 'loss_7d_kW']
+        worst_end_date   = pd.Timestamp('2025-01-01') + pd.to_timedelta(int(worst_end)   - 1, unit='h')
 
         negid_worstnode = topo_df.filter(pl.col('grid_node') == worst_node).get_column('EGID').count()
         worst_week_df = worst_node_df.loc[worst_node_df['t_int'].between(worst_start, worst_end)].copy()
@@ -1222,26 +1221,39 @@ class static_plotter_class:
                 worst_week_df['feedin_atnode_loss_kW'] / negid_worstnode * y_scaling
             )
 
-        print(f'Worst node \t\t\t{worst_node}')
-        print(f'nEGID:\t\t\t\t{negid_worstnode}')
-        print(f'Worst week: t_int\t\t{worst_start} to {worst_end}')
-        print(f'Date start:\t\t\t{worst_start_date}')
-        print(f'Date end:\t\t\t{worst_end_date}')
-        print(f'total loss:\t\t\t{worst_loss:.1f} kWh')
-        print(f'Average loss p House:\t\t{worst_loss / negid_worstnode} kWh')
+        # print(f'Worst week: t_int\t\t{worst_start} to {worst_end}')
+        # print(f'Date start:\t\t\t{worst_start_date}')
+        # print(f'Date end:\t\t\t{worst_end_date}')
+        # print(f'total loss:\t\t\t{worst_loss:.1f} kWh')
+        # print(f'Average loss p House:\t\t{worst_loss / negid_worstnode} kWh')
         # use a timedelta shift to move to the first complete day after the worst-week start
         worst_peakweek1_date_start = pd.Timestamp(f'{worst_start_date.year}-{worst_start_date.month:02d}-{worst_start_date.day:02d} 00:00:00') + pd.Timedelta(days=1)
         worst_peakweek1_date_end = worst_peakweek1_date_start + pd.Timedelta(days=1)
         worst_peakweek1_start = int((worst_peakweek1_date_start - pd.Timestamp('2025-01-01')).total_seconds() / 3600) + 1
         worst_peakweek1_end = int((worst_peakweek1_date_end - pd.Timestamp('2025-01-01')).total_seconds() / 3600) + 1
+        
         worst_peak_df = worst_node_df.loc[worst_node_df['t_int'].between(worst_peakweek1_start, worst_peakweek1_end)].copy()
-        print(f'Worst peak week1: t_int\t{worst_peakweek1_start} to {worst_peakweek1_end}')
-        print(f'Worst peak week1 Date start:\t{worst_peakweek1_date_start}')
-        print(f'Worst peak week1 Date end:\t{worst_peakweek1_date_end}')
-        print(f'total loss peak1:\t\t{worst_peak_df["feedin_atnode_loss_kW"].sum():.1f} kWh')
-        print(f'Average loss p House peak1:\t{worst_peak_df["feedin_atnode_loss_kW"].sum() / negid_worstnode:.1f} kWh')
-        residual_demand = worst_peak_df["max_demand_feedin_atnode_kW"].sum() - worst_peak_df["selfconsum_kW"].sum()
-        print(f'Average demand p House peak1:\t{residual_demand / negid_worstnode:.1f} kWh')
+        worst_peak_loss = worst_peak_df['feedin_atnode_loss_kW'].sum()
+        worst_peak_netdemand = worst_peak_df['netdemand_kW'].sum()
+
+        def _fmt_ch(val, d=1):
+            return f'{val:,.{d}f}'.replace(',', "'")
+
+        self._write_latex_from_template(
+            template_file='latex_table_template__worstnode_worstweek.txt',
+            export_file=f'worstweek_node_peak.txt',
+            replacements={
+                'worst_node':          worst_node,
+                'peak_day_1':          (worst_peakweek1_date_start.strftime('%d.%m.')
+                                        + ' -- '
+                                        + worst_peakweek1_date_end.strftime('%d.%m.')),
+                'total_excess_feedin': _fmt_ch(worst_peak_loss),
+                'n_houses':            negid_worstnode,
+                'avg_feedin_p_house':  _fmt_ch(worst_peak_loss / negid_worstnode),
+                'avg_demand_p_house':  _fmt_ch(worst_peak_netdemand / negid_worstnode),
+                'figure_filename':     f'{export_name}_{scen}.png',
+            },
+        )
         
         
         scen_color = (rgb_line[0] / 255, rgb_line[1] / 255, rgb_line[2] / 255)

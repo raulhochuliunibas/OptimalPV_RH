@@ -60,9 +60,7 @@ progress_notes/**
 
 # ignore all static visualization plots, not csvs
 data/visualization/*
-paper_publication/*/figures/plot_agg_hist_contcharact_newinst___export_plot_data___18scen.csv
-
-
+paper_publication/*/figures/plot_agg_hist_contcharact_newinst___export_plot_data___*scen.csv
 # ignore all model visualization files
 data/visualization/*
 data/visualizations/*

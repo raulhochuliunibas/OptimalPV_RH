@@ -343,13 +343,14 @@ if __name__ == "__main__":
 
     plot_worstweek_wrapper(plotter, plot_width= 4.8, plot_height= 5.2)
 
+    plotter.worstnode_worstweek()
 
 
 
 
     # Inst Charact Comparison plots ===========================================================
 
-    if False: 
+    if True: 
         contcharacht_csv_file = 'plot_agg_hist_contcharact_newinst___export_plot_data___23scen.csv'
         # bu_contcharact_height   = 3 
         # bu_contcharact_width    = 8.5
