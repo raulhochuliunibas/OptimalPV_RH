@@ -1,0 +1,12 @@
+\begin{tabular}{|l c  c c |}
+    \hline
+    \textbf{Summary}       & \textbf{Sample}     & \textbf{Avail.Sample}        & \textbf{All CH} \\
+    \hline
+    n Municipalities         & 28    & 79        & 2'133    \\
+    n All Buildings          & 44'354            & 132'018              & 3'090'962    \\
+    n Resid. Houses          & 21'599             & 47'900               & 1'716'194    \\
+    n Grid Nodes             & 391        & 1'113            & -    \\
+    Inst. Capacity 2024 (MW) & 20.6  & 79.0    & 2'450.1 \\
+    Capacity 2050 (MW)       & 228.6  & 739.5    & 17'313.8    \\
+    \hline       
+\end{tabular}

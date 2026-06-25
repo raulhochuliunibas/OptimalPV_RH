@@ -12,8 +12,11 @@ from src.visualization_static.visualization_static import static_plotter_class
 
 if __name__ == "__main__":
 
+
+    print(f'\n*************************\n**** start plots ****\n-> {os.path.basename(__file__)} \n*************************\n')
+
     plotter = static_plotter_class(
-        export_dir_list = ['paper_publication', 'SSES_StGallen', 'figures'],
+        export_dir_list = ['paper_publication', 'Update_Primeo_June26', 'figures'],
     )
     plotter.line_opacity    = 0.65
     plotter.plot_width      = 4
@@ -429,4 +432,4 @@ if __name__ == "__main__":
         )
 
 
-    print('\n*************************\n**** end plots SSES ****\n*************************\n')
+    print(f'\n*************************\n**** end plots ****\n-> {os.path.basename(__file__)} \n*************************\n')

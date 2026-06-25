@@ -27,8 +27,12 @@ venv*
 # ignore publications htmls folder (outputs, keep csv and other reports in repo)
 
 paper_publication/SustainableFutureLunch_Unibas/**
-paper_publication/SustainableFutureLunch_Unibas/*.pdf
-# paper_publication/EconLunch_Unibas/figures/**
+# paper_publication/SustainableFutureLunch_Unibas/*.pdf
+
+paper_publication/EconLunch_Unibas/figures/*.png
+paper_publication/SURED_Ascona/figures/*.png
+paper_publication/SSES_StGallen/figures/*.png
+# paper_publication/WCERE_Lisabon/figures/*.png
 
 
 
