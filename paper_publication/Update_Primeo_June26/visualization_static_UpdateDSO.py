@@ -25,39 +25,38 @@ if __name__ == "__main__":
     plotter.show_plt_TF     = False
 
     plotter.scen_default_color_map = {
-        'pvalloc_29nbfs_LRG2_max':          (200, 50, 50),      # red (keep)
-    
-        # 'pvalloc_29nbfs_LRG2_max_epzb1':                (230, 140, 140),  # soft pastel red
-        # 'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_1':    (60, 180, 60),                # bright green           
-        # 'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_3':    (150, 220, 150),               # warm light orange (instead of yellow)
+        # 'pvalloc_29nbfs_LRG2_max':                        (200, 50, 50),      # red (keep)
+        'pvalloc_29nbfs_LRG2_max':                          (230, 140, 140),    # soft pastel red
 
-        # 'pvalloc_29nbfs_LRG2_max_sAs8p0':   (60, 120, 200),  # strong blue
-        # 'pvalloc_29nbfs_LRG2_max_sBs0p8':   (60, 160, 90),   # green (less neon)
-        # 'pvalloc_29nbfs_LRG2_max_sCs6p8':   (200, 140, 40),  # orange (instead of yellow)
+        'pvalloc_29nbfs_LRG2_max_1hll':                     (100, 180, 180),    # turquoise (instead of yellow)
+        'pvalloc_29nbfs_LRG2_max_pksh':                     (0, 80, 80),        # dark teal (instead of cyan)
+        'pvalloc_29nbfs_LRG2_max_gridoptim_max':            (140, 60, 180),     # bright purple
+        # 'pvalloc_29nbfs_LRG2_max_epzb1':                  (230, 140, 140),    # soft pastel red
+        # 'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_1':      (60, 180, 60),      # bright green           
+        # 'pvalloc_29nbfs_LRG2_max_histcnstrcapgr0_3':      (150, 220, 150),    # warm light orange (instead of yellow)
+        # 'pvalloc_29nbfs_LRG2_max_sAs8p0':                 (60, 120, 200),     # strong blue
+        # 'pvalloc_29nbfs_LRG2_max_sBs0p8':                 (60, 160, 90),      # green (less neon)
+        # 'pvalloc_29nbfs_LRG2_max_sCs6p8':                 (200, 140, 40),     # orange (instead of yellow)
+        # # 'pvalloc_LRG3_gridoptim_max':                   (160, 120, 180),    # lavendar
+        # # 'pvalloc_LRG3_gridoptim_max':                   (180, 140, 190),    # lilac
 
-        'pvalloc_29nbfs_LRG2_max_1hll':     (100, 180, 180),  # turquoise (instead of yellow)
-        'pvalloc_29nbfs_LRG2_max_pksh':      (0, 80, 80),  # dark teal (instead of cyan)
-        
-        'pvalloc_29nbfs_LRG2_max_gridoptim_max':    (140, 60, 180),    # bright purple
-        # # 'pvalloc_LRG3_gridoptim_max':    (160, 120, 180),    # lavendar
-        # # 'pvalloc_LRG3_gridoptim_max':    (180, 140, 190),    # lilac
-
-        'pvalloc_LRG3_max':                     (200, 50, 50),      # red (keep)    
-        'pvalloc_LRG3_max_epzb1':               (230, 140, 140),  # soft pastel red
-        'pvalloc_LRG3_max_histcnstrcapgr0_1':   (60, 180, 60),                # bright green           
-        'pvalloc_LRG3_max_histcnstrcapgr0_3':   (150, 220, 150),               # warm light orange (instead of yellow)
-        'pvalloc_LRG3_max_sAs8p0':              (60, 120, 200),  # strong blue
-        'pvalloc_LRG3_max_sBs0p8':              (60, 160, 90),   # green (less neon)
-        'pvalloc_LRG3_max_sCs6p8':              (200, 140, 40),  # orange (instead of yellow)
-        'pvalloc_LRG3_max_1hll':                (100, 180, 180),  # turquoise (instead of yellow)
-        'pvalloc_LRG3_max_pksh':                (0, 80, 80),  # dark teal (instead of cyan)
-        'pvalloc_LRG3_max_gridoptim':           (140, 60, 180),    # bright purple
-        'pvalloc_LRG3_max_nokev':               (200, 140, 40),    # bright purple
-        # 'pvalloc_LRG3_gridoptim_max':    (160, 120, 180),    # lavendar
-        # 'pvalloc_LRG3_gridoptim_max':    (180, 140, 190),    # lilac
+        'pvalloc_LRG3_max':                                 (200, 50, 50),      # red (keep)    
+        'pvalloc_LRG3_max_epzb1':                           (230, 140, 140),    # soft pastel red
+        'pvalloc_LRG3_max_histcnstrcapgr0_1':               (60, 180, 60),      # bright green           
+        'pvalloc_LRG3_max_histcnstrcapgr0_3':               (150, 220, 150),    # warm light orange (instead of yellow)
+        'pvalloc_LRG3_max_sAs8p0':                          (60, 120, 200),     # strong blue
+        'pvalloc_LRG3_max_sBs0p8':                          (60, 160, 90),      # green (less neon)
+        'pvalloc_LRG3_max_sCs6p8':                          (200, 140, 40),     # orange (instead of yellow)
+        'pvalloc_LRG3_max_1hll':                            (100, 180, 180),    # turquoise (instead of yellow)
+        'pvalloc_LRG3_max_pksh':                            (0, 80, 80),        # dark teal (instead of cyan)
+        'pvalloc_LRG3_max_gridoptim':                       (140, 60, 180),     # bright purple
+        'pvalloc_LRG3_max_nokev':                           (200, 140, 40),     # bright purple
+        # 'pvalloc_LRG3_gridoptim_max':                     (160, 120, 180),    # lavendar
+        # 'pvalloc_LRG3_gridoptim_max':                     (180, 140, 190),    # lilac
     }
+
     plotter.simple_scen_name_mapping = {
-        'pvalloc_29nbfs_LRG2_max':              'Business-as-usual',
+        'pvalloc_29nbfs_LRG2_max':              'Default old',
         'pvalloc_29nbfs_LRG2_max_sAs8p0':       'Sub. A (6000, 0)',
         'pvalloc_29nbfs_LRG2_max_sBs0p8':       'Sub. B (0, 8000)',
         'pvalloc_29nbfs_LRG2_max_sCs6p8':       'Sub. C (2000, 8000)',
@@ -65,18 +64,83 @@ if __name__ == "__main__":
         'pvalloc_29nbfs_LRG2_max_pksh':         'DSO peak shaving',
         'pvalloc_29nbfs_LRG2_gridoptim_max':    'Grid-optimized',
      
-        'pvalloc_LRG3_max':              'Business-as-usual',
-        'pvalloc_LRG3_max_sAs8p0':       'Sub. A (8000, 0)',
-        'pvalloc_LRG3_max_sBs0p8':       'Sub. B (0, 8000)',
-        'pvalloc_LRG3_max_sCs6p8':       'Sub. C (6000, 8000)',
-        'pvalloc_LRG3_max_1hll':         'DSO node closing',
-        'pvalloc_LRG3_max_pksh':         'DSO peak shaving',
-        'pvalloc_LRG3_max_gridoptim':    'Grid-optimized',
-        'pvalloc_LRG3_max_nokev':        'No Subsidy',
+        'pvalloc_LRG3_max':                      'Default NEW', #Business-as-usual
+        'pvalloc_LRG3_max_sAs8p0':               'Sub. A (8000, 0)',
+        'pvalloc_LRG3_max_sBs0p8':               'Sub. B (0, 8000)',
+        'pvalloc_LRG3_max_sCs6p8':               'Sub. C (6000, 8000)',
+        'pvalloc_LRG3_max_1hll':                 'DSO node closing',
+        'pvalloc_LRG3_max_pksh':                 'DSO peak shaving',
+        'pvalloc_LRG3_max_gridoptim':            'Grid-optimized',
+        'pvalloc_LRG3_max_nokev':                'No Subsidy',
+    }
+    plotter.scen_default_linedash_marker_map = {
+        'pvalloc_LRG3_max':              ('solid',   'o'), 
+        'pvalloc_29nbfs_LRG2_max':       ('dashed' , 'o'),
     }
 
 
-    plotter.copy_standalone_graphs_to_presentation_dir()
+
+
+    # SCENARIO - based plots, tables + data ====================================================================== 
+    # plotter.plot_constrcapa_comparison()
+
+    # plotter.worstnode_worstweek ()
+
+    # plotter.hist_avgloss_pEGID()
+
+
+    # AGG CSV - based plots ======================================================================
+    PVprod_csv_files = [
+    # "C:\Models\OptimalPV_RH\paper_publication\SustainableFutureLunch_Unibas\visualization_static_wp_csvs\plot_agg_line_PVproduction___export_plot_data___31scen_ADJ.csv"
+    'plot_agg_line_PVproduction___export_plot_data___31scen_ADJ.csv', 
+    'plot_agg_line_PVproduction___export_plot_data___26scen.csv', 
+
+    ]
+
+    plotter.plot_PVproduction_line(
+        csv_file= PVprod_csv_files,
+            scen_incl_list=[
+                'pvalloc_LRG3_max',
+                'pvalloc_29nbfs_LRG2_max',
+                ],
+            n_iter_range_list=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ],
+            export_name='line_PVproduction_instCap1',
+            y_col='TotalPower',
+            y_scaling= 1e3,
+            y_label='Capacity (MW)',
+            title='Future Installed Capcity',
+        )
+
+    plotter.plot_PVproduction_line(
+        csv_file= PVprod_csv_files,
+            scen_incl_list=[
+                'pvalloc_LRG3_max',
+                'pvalloc_29nbfs_LRG2_max',
+                ],
+            n_iter_range_list=[4, 5, 6, 7, 8, 9, 10, 11, 12, ],
+            export_name='line_PVproduction_excfeedin1',
+            y_col='feedin_atnode_loss_kW',
+            y_scaling= 1e6,
+            y_label='Agg. Excess Feed-in (GWh)',
+            title='Future Agg. Exc Feedin',
+        )
+    
+
+
+
+
+    print(f'\n*************************\n**** end plots ****\n-> {os.path.basename(__file__)} \n*************************\n')
+
+
+
+
+
+
+
+
+
+if False: 
+    # plotter.copy_standalone_graphs_to_presentation_dir()
 
     # SCEN - individual tables + data ======================================================================
     if True: 
@@ -430,6 +494,3 @@ if __name__ == "__main__":
             plot_height_func = bu_catgcharact_height,
             plot_width_func  = bu_catgcharact_width,
         )
-
-
-    print(f'\n*************************\n**** end plots ****\n-> {os.path.basename(__file__)} \n*************************\n')

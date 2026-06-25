@@ -37,6 +37,7 @@ class static_plotter_class:
             'scenario3': 'Scenario 3',
             'scenario4': 'Scenario 4',
         }
+        self.scen_default_linedash_marker_map = {}
         self.line_opacity = 0.8
         self.plot_width = 8
         self.plot_height = 4
@@ -74,6 +75,16 @@ class static_plotter_class:
 
     def _get_scenario_label(self, scen):
         return self.simple_scen_name_mapping.get(scen, scen)
+
+    def _get_scenario_linedash_marker(self, scen):
+        if scen in self.scen_default_linedash_marker_map:
+            linedash = self.scen_default_linedash_marker_map[scen][0]
+            marker   = self.scen_default_linedash_marker_map[scen][1]
+        else: 
+            linedash = 'solid'
+            marker = ''
+        return linedash, marker
+
 
     def copy(self):
         # Return an isolated clone so wrapper-level mutations do not affect the caller instance.
@@ -1848,9 +1859,23 @@ class static_plotter_class:
                                plot_width_func = None,
                                plot_height_func = None,
                                    ):
-        file_path = os.path.join(self.dir_path, csv_file)
-        self._copy_csv_to_export(file_path)
-        df = pd.read_csv(file_path)
+        if isinstance(csv_file, list) and len(csv_file) > 1:
+            df_list = []
+            for file in csv_file:
+                temp_df = pd.read_csv(os.path.join(self.dir_path, file))
+                df_list.append(temp_df)
+            df = pd.concat(df_list, ignore_index=True)
+
+        elif isinstance(csv_file, list) and len(csv_file) == 1:
+            file_path = csv_file[0]
+            self._copy_csv_to_export(file_path)
+            df = pd.read_csv(file_path)
+
+        else:
+            file_path = os.path.join(self.dir_path, csv_file)
+            self._copy_csv_to_export(file_path)
+            df = pd.read_csv(file_path)
+
         plot_width = self.plot_width if plot_width_func is None else plot_width_func
         plot_height = self.plot_height if plot_height_func is None else plot_height_func
         
@@ -1876,6 +1901,9 @@ class static_plotter_class:
             # get scenario label for legend
             scen_label = self._get_scenario_label(scen)
 
+            # get dash style
+            scen_linedash, scen_marker = self._get_scenario_linedash_marker(scen)
+
 
             if not df_plot.empty:
                 sns.lineplot(
@@ -1883,9 +1911,10 @@ class static_plotter_class:
                     x='n_iter',
                     y=y_col,
                     color=scen_color,
-                    # label=scen,
                     label=scen_label,
-                    marker='o',
+                    marker=scen_marker,
+                    linestyle = scen_linedash,
+                    dashes = [(2,2)], 
                     linewidth=1.5,
                     alpha=self.line_opacity,
                 )

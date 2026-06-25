@@ -22,7 +22,7 @@
       & {total_excess_feedin_3}
       & {total_excess_feedin_4}
       & {total_excess_feedin_5} \\
-    n Houses
+    n h ouses
       & \textcolor{{black}}{{{n_houses_1}}}
       & {n_houses_2}
       & {n_houses_3}
@@ -34,7 +34,7 @@
       & {avg_feedin_p_house_3}
       & {avg_feedin_p_house_4}
       & {avg_feedin_p_house_5} \\
-    Avg.\ demand p.\ house (kWh)
+    Avg.\ remaining demand p.\ house (kWh)
       & \textcolor{{black}}{{{avg_demand_p_house_1}}}
       & {avg_demand_p_house_2}
       & {avg_demand_p_house_3}
