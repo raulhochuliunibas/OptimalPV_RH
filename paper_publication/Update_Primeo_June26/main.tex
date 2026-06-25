@@ -144,9 +144,9 @@
 % \title[Improved Residential PV Expansion]{Decisions at the Grid's Edge}
 \title{Update Primeo}
 \subtitle{Decisions at the Grid's Edge - An Improved Spatial PV Expansion in Swiss Residences}
-\author{Raul Hochuli}
-\institute{University of Basel, Faculty of Business and Economics}
-\date{June 2026}
+\author{Raul Hochuli (raul.hochuli@unibas.ch)}
+\institute{Universität Basel, Wirtschaftswissenschaftliche Fakultät}
+\date{Juni 2026}
 % \titlegraphic{\includegraphics[width=2.3cm]{UniBas_Logo.jpg}}
 
 
@@ -164,112 +164,175 @@
 \section{Adjustments to last Presentation}
 
 % -------------------------------------------------------
-\begin{frame}{Recap \& New Adjustments}
-\begin{itemize}
-    \item Expansion trajectory no longer solely based on EP2050+ but asymptotically approaches this
+\begin{frame}{Übersicht Anpassungen}
+\begin{enumerate}
+
+    \item \textbf{Unrealistische Ausbaukapazität}  \hyperlink{adjusted_res_capacity}{\beamergotobutton{ Angepasste Ausbaukazapität}}
     \begin{itemize}
-        \item \textit{done, still show plot}
+        \item Bisher: Zukünftiger PV Ausbaupfad gemäss Energieperspektive (EP) 2050+ als unrealistische Annahme. 
+        \item \textit{
+            Neu: Startwert basiert auf historischem Wert (2023), anschliessend asymptotische Annäherung an die Zielkapazität EP2050+ bis 2050. 
+            }
     \end{itemize}
-    
-    \item Post-Analyse: Batteriespeicher in den "schlimmsten" Kontenpunkten
+    %
+    \textbf{\item Batteriespeicher gegen Überproduktion} \hyperlink{worstnodesworstweek}{\beamergotobutton{ Überproduktion: Schlimmster Tag in den schlimmsten Trafos}}
     \begin{itemize}
+        \item Bisher: Batteriespeicher wird im Model nicht berücksichtigt (bestehend + zukünftig) aufgrund fehlender Datenquellen und strengen Annahmen zum Ladeverhalten. 
         \item \textit{
-        Erwartungsgemäss erfolgt der grösste Teil der Überproduktion (aufgrund von Trafokapazität nicht aufnehmbar) an einem Sommertag in Netzbereichen mit vielen Häuser. 
-        }
-        \item \textit{
-        Am Ende der Simulation, also bei maximaler Installationsrate, entfallen am "schlimmsten" Tag ca. 15-20 kWh pro Haus in den 5 meist betroffenen Knotenpunkten. Dies könnte mit herkömlichem Heimspeicher zu grossen Teilen aufgefangen werden, das Problem wäre aber ncht genügend die Entladung in den Abend / Morgenzeiten in diesen Tagen. 
-        }
+            % Neu: Vergleich von Überproduktion in den schlimmsten Kontenpunkten zu herkömlicher Speicherkapazität. 
+            Neu: Herkömmlicher Speicher könnte eine 24h Überproduktion evtl. auffangen, jedoch bis zum nächsten Tag nicht genügend entladen. 
+            }
+        % Post-Analyse: Batteriespeicher in den "schlimmsten" Kontenpunkten
+        % Erwartungsgemäss erfolgt der grösste Teil der Überproduktion (aufgrund von Trafokapazität nicht aufnehmbar) an einem Sommertag in Netzbereichen mit vielen Häuser. 
+        % }
+        % \item \textit{
+        % Am Ende der Simulation, also bei maximaler Installationsrate, entfallen am "schlimmsten" Tag ca. 15-20 kWh pro Haus in den 5 meist betroffenen Knotenpunkten. Dies könnte mit herkömlichem Heimspeicher zu grossen Teilen aufgefangen werden, das Problem wäre aber ncht genügend die Entladung in den Abend / Morgenzeiten in diesen Tagen. 
+        % }
     \end{itemize}
-    
-    \item Fehlerbehebung: Unprofitable Häuser (mit negativem NPV) erhielten trotzdem eine PV Installation, wenn auch ganz am Schluss der Simulation
+    %
+    \item \textbf{Effekte von Preisänderungen (Strompreis)} \hyperlink{npv_hists_elecpri}{\beamergotobutton{ Sensitivitätsanalyse: Halbierung / Verdoppelung Strompreis}}
     \begin{itemize}
+        \item Bisher: Strompreise und Einspeisetarife bleiben fix über die ganze Simulation. 
         \item \textit{
-        Neu: Nur Häuser mit positivem NPV entscheiden sich für eine Installation. Subentionen des Papers (ABC) haben jetzt Einfluss auf die Installationsreihenfolge \textbf{und} Installationsmenge (bspw. auch Status Quo vs. Abschaffung KEV). 
+        Zusätzliche Sensitivitätsanaylse: Erhöhung des Strompreiswas verschiebt die Nullgrenze des NPV-Histogramm, sodass in der Simulation mehr Installationen verbaut werden. Anlagen mit hohem Eigenverbrauchsanteil werden in der Reihenfolge weiter nach vorne geschoben. 
         }
-        \item \textit{
-        Sensitivitätsanaylse: Bspw. Senkung des Strompreises in der Zukunft würde  ändert die Mhätten
-        }
+    % : Nur profitable Installationen werden verbautUnprofitable Häuser (mit negativem NPV) erhielten trotzdem eine PV Installation, wenn auch ganz am Schluss der Simulation
+    %     \item \textit{
+    %     Neu: Nur Häuser mit positivem NPV entscheiden sich für eine Installation. Subentionen des Papers (ABC) haben jetzt Einfluss auf die Installationsreihenfolge \textbf{und} Installationsmenge (bspw. auch Status Quo vs. Abschaffung KEV). 
+    %     }
+    %     \item \textit{
+    %     Sensitivitätsanaylse: Bspw. Senkung des Strompreises in der Zukunft würde  ändert die Mhätten
+    %     }
     \end{itemize}
-\end{itemize}
+\end{enumerate}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Results}
 
+% % -------------------------------------------------------
+% \begin{frame}{Adjusted Future Installation Capacity}
+% \begin{minipage}{0.48\textwidth}
+%   \centering\includegraphics[width=\textwidth]{figures/line_PVproduction_instCap1.png}
+% \end{minipage}\hfill
+% \begin{minipage}{0.48\textwidth}
+%   \centering\includegraphics[width=\textwidth]{figures/line_PVproduction_excfeedin1.png}
+% \end{minipage}
+% \end{frame}
+
+
+
 % -------------------------------------------------------
-\begin{frame}{Adjusted Future Installation Capacity}
-\begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{figures/line_PVproduction_bauABC_excfeedin.png}
+\begin{frame}[t]{Angepasste Ausbaukazapität}
+\hypertarget{adjusted_res_capacity}{}   
+
+\begin{minipage}{0.322\textwidth}
+  \centering\includegraphics[width=\textwidth]{figures/line_PVproduction_instCap2.png}
 \end{minipage}\hfill
-\begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{figures/line_PVproduction_bauABC_feedin.png}
+\begin{minipage}{0.322\textwidth}
+  \centering\includegraphics[width=\textwidth]{figures/line_PVproduction_excfeedin2.png}
+\end{minipage}\hfill
+\begin{minipage}{0.322\textwidth}
+  \centering\includegraphics[width=\textwidth]{figures/line_PVproduction_takenfeedin2.png}
 \end{minipage}
+
+% \vspace{0.2cm}
+{\footnotesize
+Linke Grafik zeigt den angepassten, zukünftigen Ausbaupfad (neu mit Startwert auf der historisch verbauten Kapazität in 2023). Netzbedingte Überproduktion tritt erst 2031 auf statt zuvor 2029 (Subsidy C noch später).
+% verzögern sich  Durch tieferen Verlauf kann auch länger im Simulationssample zugebaut werden. Dadurch verzögern sich die Kontenkapaz
+}
 \end{frame}
 
 
-
 % -------------------------------------------------------
-\begin{frame}{PV-Induced Excess Feed-in}
-\begin{minipage}{0.322\textwidth}
-  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/gridnode_feedin_threshold_HOY.png}
-\end{minipage}\hfill
-\begin{minipage}{0.322\textwidth}
-  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_bau_excfeedin.png}
-\end{minipage}\hfill
-\begin{minipage}{0.322\textwidth}
-  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_bau_feedin.png}
-\end{minipage}
-\end{frame}
-
-% -------------------------------------------------------
-\begin{frame}{Grid Optimal Expansion}
-\begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_gridoptim_excfeedin.png}
-\end{minipage}\hfill
-\begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{SSES_StGallen/figures/line_PVproduction_gridoptim_feedin.png}
-\end{minipage}
-\end{frame}
-
-
-% -------------------------------------------------------
-\begin{frame}{Worst Week in Worst Node}
-\begin{minipage}{0.48\textwidth}
+\begin{frame}[t]{Überproduktion: Schlimmster Tag in den schlimmsten Trafos}
+\hypertarget{worstnodesworstweek}{}  
   \centering
-  \vspace{0.3cm}
-  {\small
-  \begin{tabular}{ll}
+  {\footnotesize
+  \begin{tabular}{l|rrrrr}
     \toprule
-    \textbf{Parameter} & \textbf{Value} \\
+    \textbf{Parameter}
+      &  \textcolor[RGB]{200,50,50}{\textbf{751}}
+      & \textbf{524}
+      & \textbf{754}
+      & \textbf{10}
+      & \textbf{734} \\
     \midrule
-    % Worst node                       & 751 \\
-    n Houses                         & 379 \\
-    Peak week start                  & 2025-07-12 \\
-    Peak week end                    & 2025-07-13 \\
-    Total excess feed-in             & 5'970.7 kWh \\
-    Avg.\ excess feed-in p.\ house   & 15.8 kWh \\
-    Tesla Powerwall (\cite{tesla2026})  & 13.5 kWh\\
-    Tesla Powerwall (\cite{tesla2026})  & 13.5 kWh\\
-    Avg.\ demand p.\ house           & kWh\\
+    Peak day
+      & \textcolor{black}{17.07.}
+      & 17.07.
+      & 17.04.
+      & 17.07.
+      & 17.07. \\
+    Total excess feed-in (kWh)
+      & \textcolor{black}{6'259.6}
+      & 5'424.9
+      & 4'215.7
+      & 3'751.2
+      & 3'192.6 \\
+    n h ouses
+      & \textcolor{black}{379}
+      & 243
+      & 283
+      & 197
+      & 167 \\
+    Avg.\ excess feed-in p.\ house (kWh)
+      & \textcolor[RGB]{200,50,50}{16.5}
+      & 22.3
+      & 14.9
+      & 19.0
+      & 19.1 \\
+    Avg.\ remaining netdemand p.\ house (kWh)
+      & \textcolor[RGB]{200,50,50}{2.1}
+      & 3.2
+      & 6.2
+      & 4.1
+      & 2.2 \\
+    \midrule
+    Tesla Powerwall (kWh, \cite{tesla2026})  & \textcolor{black}{13.5} & & & &\\
     \bottomrule
   \end{tabular}
   }
-\end{minipage}\hfill
-\begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{paper_publication/SSES_StGallen/worstnode_worstweek_pegid_pvalloc_LRG3_max.png}
-\end{minipage}
+  \vspace{0.412cm}
+
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \centering
+        \includegraphics[width=\textwidth]{figures/hist_avgloss_pEGID_pvalloc_LRG3_max.png}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering
+        \includegraphics[width=\textwidth]{figures/worstnode_worstweek_pegid_pvalloc_LRG3_max.png}
+    \end{column}
+  \end{columns}
+  
+% \vspace{0.1cm}
+{\footnotesize
+% Linke Grafik zeigt den angepassten Ausbaupfad für die zukünftigen Jahre (neu mit Startwert auf der historisch verbauten Kapazität in 2023). Erste netzbedingte Überproduktion (Excess Feedin) tritt somit erst ca. 2031 statt zuvor 2029. 
+% verzögern sich  Durch tieferen Verlauf kann auch länger im Simulationssample zugebaut werden. Dadurch verzögern sich die Kontenkapaz
+}
 \end{frame}
+
 
 % -------------------------------------------------------
-\begin{frame}{DSO Interventions}
-\begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{paper_publication/SSES_StGallen/line_PVproduction_DSOreact_excfeedin.png}
-\end{minipage}\hfill
-\begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{paper_publication/SSES_StGallen/line_PVproduction_DSOreact_feedin.png}
-\end{minipage}
-\end{frame}
+\begin{frame}[t]{Sensitivitätsanalyse: Halbierung / Verdoppelung Strompreis}
+\hypertarget{npv_hists_elecpri}{}
 
+\begin{minipage}{0.322\textwidth}
+  \centering\includegraphics[width=\textwidth]{figures/NPVhist_LRG3_max_31Rp.png}
+\end{minipage}\hfill
+\begin{minipage}{0.322\textwidth}
+  \centering\includegraphics[width=\textwidth]{figures/NPVhist_LRG3_max_15Rp.png}
+\end{minipage}\hfill
+\begin{minipage}{0.322\textwidth}
+  \centering\includegraphics[width=\textwidth]{figures/NPVhist_LRG3_max_60Rp.png}
+\end{minipage}
+
+\vspace{0.1cm}
+{\footnotesize
+Grafiken zeigen Histogramm der NPVs aller zukünftigen Installationen bei Strompreis von 31.9,  15 und 60 Rp/kWh. Verschobenen Masse betrifft haupts. Anlagen mit hohem Eingenverbrauch welche (netzdienlicher) zuerst installiert werden. 
+}
+\end{frame}
 
 
 
