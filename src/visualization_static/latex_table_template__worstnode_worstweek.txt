@@ -1,24 +1,60 @@
-\begin{{frame}}{{Worst Week in Worst Node}}
-\begin{{minipage}}{{0.48\textwidth}}
+\begin{{frame}}{{Worst Peak Day - Worst Nodes}}
   \centering
-  \vspace{{0.3cm}}
-  {{\small
-  \begin{{tabular}}{{ll}}
+  {{\footnotesize
+  \begin{{tabular}}{{l|rrrrr}}
     \toprule
-    \textbf{{Parameter}} & \textbf{{Value}} \\
+    \textbf{{Parameter}}
+      & \textcolor{{black}}{{\textbf{{{node_1}}}}}
+      & \textbf{{{node_2}}}
+      & \textbf{{{node_3}}}
+      & \textbf{{{node_4}}}
+      & \textbf{{{node_5}}} \\
     \midrule
-    Worst node                          & {worst_node} \\
-    Peak day 1                          & {peak_day_1} \\
-    Total excess feed-in                & {total_excess_feedin} kWh \\
-    n Houses                            & {n_houses} \\
-    Avg.\ excess feed-in p.\ house      & {avg_feedin_p_house} kWh \\
-    Tesla Powerwall (\cite{{tesla2026}}) & 13.5 kWh\\
-    Avg.\ demand p.\ house              & {avg_demand_p_house} kWh\\
+    Peak day
+      & \textcolor{{black}}{{{peak_day_1}}}
+      & {peak_day_2}
+      & {peak_day_3}
+      & {peak_day_4}
+      & {peak_day_5} \\
+    Total excess feed-in (kWh)
+      & \textcolor{{black}}{{{total_excess_feedin_1}}}
+      & {total_excess_feedin_2}
+      & {total_excess_feedin_3}
+      & {total_excess_feedin_4}
+      & {total_excess_feedin_5} \\
+    n Houses
+      & \textcolor{{black}}{{{n_houses_1}}}
+      & {n_houses_2}
+      & {n_houses_3}
+      & {n_houses_4}
+      & {n_houses_5} \\
+    Avg.\ excess feed-in p.\ house (kWh)
+      & \textcolor{{black}}{{{avg_feedin_p_house_1}}}
+      & {avg_feedin_p_house_2}
+      & {avg_feedin_p_house_3}
+      & {avg_feedin_p_house_4}
+      & {avg_feedin_p_house_5} \\
+    Avg.\ demand p.\ house (kWh)
+      & \textcolor{{black}}{{{avg_demand_p_house_1}}}
+      & {avg_demand_p_house_2}
+      & {avg_demand_p_house_3}
+      & {avg_demand_p_house_4}
+      & {avg_demand_p_house_5} \\
+    \midrule
+    Tesla Powerwall (kWh, \cite{{tesla2026}})  & \textcolor{{black}}{{13.5}} & & & &\\
     \bottomrule
   \end{{tabular}}
   }}
-\end{{minipage}}\hfill
-\begin{{minipage}}{{0.48\textwidth}}
-  \centering\includegraphics[width=\textwidth]{{figures/{figure_filename}}}
-\end{{minipage}}
+  \vspace{{0.42cm}}
+
+  \begin{{columns}}[T]
+    \begin{{column}}{{0.48\textwidth}}
+      \centering
+      \includegraphics[width=\textwidth]{{figures/{figure_filename}}}
+    \end{{column}}
+    \begin{{column}}{{0.48\textwidth}}
+      \centering
+      \includegraphics[width=\textwidth]{{figures/{hist_figure_filename}}}
+    \end{{column}}
+  \end{{columns}}
 \end{{frame}}

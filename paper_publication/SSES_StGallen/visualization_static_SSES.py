@@ -76,7 +76,7 @@ if __name__ == "__main__":
     plotter.copy_standalone_graphs_to_presentation_dir()
 
     # SCEN - individual tables + data ======================================================================
-    if True: 
+    if False: 
         
         # plotter.plot_width      = 6.3
         # plotter.plot_height     = 3.6
@@ -193,7 +193,7 @@ if __name__ == "__main__":
             title='Agg. Feed-in',
         )
     
-    plot_gridnode_HOY_wrapper(plotter, plot_width= 3.2, plot_height= 5.2)
+    # plot_gridnode_HOY_wrapper(plotter, plot_width= 3.2, plot_height= 5.2)
 
 
     print('-')
@@ -274,7 +274,7 @@ if __name__ == "__main__":
             title='Agg. Feed-in',
         )
 
-    plot_PVprod_SUBS_OPT_wrapper(plotter, plot_width= 4.8, plot_height= 5.2)
+    # plot_PVprod_SUBS_OPT_wrapper(plotter, plot_width= 4.8, plot_height= 5.2)
 
     PVprod_csv_file = 'plot_agg_line_PVproduction___export_plot_data___26scen.csv'
     print('-')
@@ -314,7 +314,7 @@ if __name__ == "__main__":
             title='Agg. Feed-in',
         )
 
-    plot_PVprod_DSO_wrapper(plotter, plot_width= 4.8, plot_height= 5.2)
+    # plot_PVprod_DSO_wrapper(plotter, plot_width= 4.8, plot_height= 5.2)
 
 
     def plot_worstweek_wrapper(plotter_func, plot_width = 8, plot_height = 4):
@@ -336,21 +336,30 @@ if __name__ == "__main__":
             scen = 'pvalloc_LRG3_max',
             excess_feedin_pegid = True,
             export_name = 'worstnode_worstweek_pegid',
-            title = 'Excess Feedin pHouse ("Worst Week")',
+            title = 'Avg. Exc. Feedin pHouse ("Worst Week")',
             plot_width_func = plot_width,
             plot_height_func = plot_height,
         )
 
-    plot_worstweek_wrapper(plotter, plot_width= 4.8, plot_height= 5.2)
+        plotter_func.hist_avgloss_pEGID(
+            scen = 'pvalloc_LRG3_max',
+            title = 'Avg. Excess Feedin pHouse - All Nodes',
+            export_name = 'hist_avgloss_pEGID',
+            x_label = 'Excess Feed-in per House in 24h (kWh)',
+            y_label = 'Frequency (n Houses)',
+            plot_width_func = plot_width,
+            plot_height_func = plot_height,
+        )
 
-    plotter.worstnode_worstweek()
+    # plot_worstweek_wrapper(plotter, plot_width= 4.8, plot_height= 5.2)
+    plot_worstweek_wrapper(plotter, plot_width = 5.0, plot_height = 2.8)
 
 
 
 
     # Inst Charact Comparison plots ===========================================================
 
-    if True: 
+    if False: 
         contcharacht_csv_file = 'plot_agg_hist_contcharact_newinst___export_plot_data___23scen.csv'
         # bu_contcharact_height   = 3 
         # bu_contcharact_width    = 8.5

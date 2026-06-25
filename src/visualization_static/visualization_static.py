@@ -104,11 +104,23 @@ class static_plotter_class:
                                                       ]
                                                     ):
         for graph in graphs_list:
-            src_path = os.path.join(self.paper_path, '0_standalone_graphs', graph) 
+            src_path = os.path.join(self.paper_path, '0_standalone_graphs', graph)
             dst_path = os.path.join(self.dir_path_export, graph)
-            if os.path.exists(src_path):
+            if not os.path.exists(src_path):
+                print(f'SKIP (not found): {src_path}')
+                continue
+            if os.path.isdir(dst_path):
+                print(f'SKIP (dst is a directory): {dst_path}')
+                continue
+            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+            try:
                 shutil.copy(src_path, dst_path)
-                print(f'Copied {graph} to {dst_path}')                                              
+                print(f'Copied {graph} to {dst_path}')
+            except OSError as e:
+                print(f'ERROR copying {graph}: {e}')
+                print(f'  src exists={os.path.exists(src_path)}, dst_dir exists={os.path.isdir(os.path.dirname(dst_path))}')
+                print(f'  src={src_path}')
+                print(f'  dst={dst_path}')                                              
 
 
 
@@ -1168,7 +1180,8 @@ class static_plotter_class:
                             x_label = 'Hour of year',
                             y_label = 'Excess Feed-in (kW)',
                             y_scaling = 1.0,
-                            rgb_line = (200, 50, 50), 
+                            rgb_line = (200, 50, 50),
+                            legend_loc = 'upper left',
                             plot_width_func = None,
                             plot_height_func = None,):
         
@@ -1208,8 +1221,6 @@ class static_plotter_class:
 
         worst_start = worst_node_df.loc[worst_idx, 't_int'] - 167
         worst_end   = worst_node_df.loc[worst_idx, 't_int']
-        worst_start_date = pd.Timestamp('2025-01-01') + pd.to_timedelta(int(worst_start) - 1, unit='h')
-        worst_end_date   = pd.Timestamp('2025-01-01') + pd.to_timedelta(int(worst_end)   - 1, unit='h')
 
         negid_worstnode = topo_df.filter(pl.col('grid_node') == worst_node).get_column('EGID').count()
         worst_week_df = worst_node_df.loc[worst_node_df['t_int'].between(worst_start, worst_end)].copy()
@@ -1226,33 +1237,75 @@ class static_plotter_class:
         # print(f'Date end:\t\t\t{worst_end_date}')
         # print(f'total loss:\t\t\t{worst_loss:.1f} kWh')
         # print(f'Average loss p House:\t\t{worst_loss / negid_worstnode} kWh')
-        # use a timedelta shift to move to the first complete day after the worst-week start
-        worst_peakweek1_date_start = pd.Timestamp(f'{worst_start_date.year}-{worst_start_date.month:02d}-{worst_start_date.day:02d} 00:00:00') + pd.Timedelta(days=1)
-        worst_peakweek1_date_end = worst_peakweek1_date_start + pd.Timedelta(days=1)
-        worst_peakweek1_start = int((worst_peakweek1_date_start - pd.Timestamp('2025-01-01')).total_seconds() / 3600) + 1
-        worst_peakweek1_end = int((worst_peakweek1_date_end - pd.Timestamp('2025-01-01')).total_seconds() / 3600) + 1
+        # find the actual worst day (max daily loss) within the worst week
+        _ww = worst_node_df.loc[worst_node_df['t_int'].between(worst_start, worst_end)].copy()
+        _ww['day'] = (_ww['t_int'] - 1) // 24 + 1
+        _worst_day = _ww.groupby('day')['feedin_atnode_loss_kW'].sum().idxmax()
+        worst_peakweek1_start = (_worst_day - 1) * 24 + 1
+        worst_peakweek1_end   = _worst_day * 24
         
-        worst_peak_df = worst_node_df.loc[worst_node_df['t_int'].between(worst_peakweek1_start, worst_peakweek1_end)].copy()
-        worst_peak_loss = worst_peak_df['feedin_atnode_loss_kW'].sum()
-        worst_peak_netdemand = worst_peak_df['netdemand_kW'].sum()
-
         def _fmt_ch(val, d=1):
             return f'{val:,.{d}f}'.replace(',', "'")
 
+        def _node_peak_stats(node, node_df_pl, topo_df_pl):
+            ndf = (
+                node_df_pl
+                .filter(pl.col('grid_node') == node)
+                .sort('t_int')
+                .to_pandas()
+                .reset_index(drop=True)
+            )
+            ndf['loss_7d_kW'] = ndf['feedin_atnode_loss_kW'].rolling(168).sum()
+            idx = ndf['loss_7d_kW'].idxmax()
+            w_start = ndf.loc[idx, 't_int'] - 167
+            w_end   = ndf.loc[idx, 't_int']
+            # find the day with maximum total loss within the worst week
+            ww = ndf.loc[ndf['t_int'].between(w_start, w_end)].copy()
+            ww['day'] = (ww['t_int'] - 1) // 24 + 1
+            worst_day = ww.groupby('day')['feedin_atnode_loss_kW'].sum().idxmax()
+            t_peak_start = (worst_day - 1) * 24 + 1
+            t_peak_end   = worst_day * 24
+            peak_date = pd.Timestamp('2025-01-01') + pd.to_timedelta(worst_day - 1, unit='D')
+            peak_df = ndf.loc[ndf['t_int'].between(t_peak_start, t_peak_end)].copy()
+            n_egid = topo_df_pl.filter(pl.col('grid_node') == node).get_column('EGID').count()
+            return {
+                'peak_loss':      peak_df['feedin_atnode_loss_kW'].sum(),
+                'peak_netdemand': peak_df['netdemand_kW'].sum(),
+                'n_egid':         n_egid,
+                'peak_day_str':   peak_date.strftime('%d.%m.'),
+            }
+
+        top5_nodes = (
+            gridnode_df
+            .group_by('grid_node')
+            .agg(pl.col('feedin_atnode_loss_kW').sum().alias('total_loss_kW'))
+            .sort('total_loss_kW', descending=True)
+            .head(5)
+            .get_column('grid_node')
+            .to_list()
+        )
+
+        replacements = {
+            'figure_filename':      f'{export_name}_{scen}.png',
+            'hist_figure_filename': f'hist_avgloss_pEGID_{scen}.png',
+            'node1_color_rgb':      f'{rgb_line[0]},{rgb_line[1]},{rgb_line[2]}',
+        }
+        for i, node in enumerate(top5_nodes, start=1):
+            s = _node_peak_stats(node, gridnode_df, topo_df)
+            replacements[f'node_{i}']                = node
+            replacements[f'peak_day_{i}']            = s['peak_day_str']
+            replacements[f'total_excess_feedin_{i}'] = _fmt_ch(s['peak_loss'])
+            replacements[f'n_houses_{i}']            = s['n_egid']
+            replacements[f'avg_feedin_p_house_{i}']  = _fmt_ch(s['peak_loss'] / s['n_egid'])
+            replacements[f'avg_demand_p_house_{i}']  = _fmt_ch(s['peak_netdemand'] / s['n_egid'])
+
+        # also keep the original single-node keys (node 1 = worst node) for backwards compat
+        replacements['worst_node'] = top5_nodes[0]
+
         self._write_latex_from_template(
             template_file='latex_table_template__worstnode_worstweek.txt',
-            export_file=f'worstweek_node_peak.txt',
-            replacements={
-                'worst_node':          worst_node,
-                'peak_day_1':          (worst_peakweek1_date_start.strftime('%d.%m.')
-                                        + ' -- '
-                                        + worst_peakweek1_date_end.strftime('%d.%m.')),
-                'total_excess_feedin': _fmt_ch(worst_peak_loss),
-                'n_houses':            negid_worstnode,
-                'avg_feedin_p_house':  _fmt_ch(worst_peak_loss / negid_worstnode),
-                'avg_demand_p_house':  _fmt_ch(worst_peak_netdemand / negid_worstnode),
-                'figure_filename':     f'{export_name}_{scen}.png',
-            },
+            export_file='worstweek_node_peak.txt',
+            replacements=replacements,
         )
         
         
@@ -1272,17 +1325,16 @@ class static_plotter_class:
             label=f'grid node {worst_node}',
         )
 
-        # highlight the computed worst peak week range
+        # highlight the actual worst day with a red band behind the line
         ax = plt.gca()
         try:
-            ax.axvspan(worst_peakweek1_start - 0.5, worst_peakweek1_end + 0.5, color=scen_color, alpha=0.18, zorder=0)
+            ax.axvspan(worst_peakweek1_start - 0.5, worst_peakweek1_end + 0.5, color='red', alpha=0.15, zorder=0)
         except Exception:
-            # fall back silently if values are invalid
             pass
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(title)
-        plt.legend(title=None)
+        plt.legend(title=None, loc=legend_loc)
         plt.tight_layout()
         self._save_figure(
             os.path.join(self.dir_path_export, f'{export_name}_{scen}.png'),
@@ -1291,7 +1343,245 @@ class static_plotter_class:
         )
         # plt.show()
         plt.close()
+
+
+    def hist_avgloss_pEGID(self,
+                            scen = 'pvalloc_LRG3_max',
+                            title = 'Average Excess Feed-in per House',
+                            export_name = 'hist_avgloss_pEGID',
+                            x_label = 'Excess Feed-in per House in 24h (kWh)',
+                            y_label = 'Frequency (n Houses)',
+                            hist_rgb =  (200, 50, 50), 
+                            plot_width_func = None,
+                            plot_height_func = None,
+                            ):
+
+        topo = json.load(open(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'topo_egid.json'), 'r'))
+        gridnode_df = pl.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'gridnode_df.parquet'))
+
+        topo_rows = []
+        for k, v in topo.items():
+            topo_rows.append({
+                'EGID': k,
+                'grid_node': v['grid_node'],
+            })
+        topo_df = pl.DataFrame(topo_rows)
+
+        # worst day per node
+        gridnode_day_df = (
+            gridnode_df
+            .with_columns(((pl.col('t_int') - 1) // 24 + 1).alias('day'))
+            .sort(['grid_node', 't_int'], )
+            )
+        worst_per_node_day_df = (
+            gridnode_df
+            .with_columns(
+                ((pl.col('t_int') - 1) // 24 + 1).alias('day')
+            )
+            .group_by(['grid_node', 'day'])
+            .agg(pl.col('feedin_atnode_loss_kW').sum().alias('loss_day_kW'))
+            .sort(['grid_node', 'loss_day_kW'], descending=[False, True])
+            .group_by('grid_node', maintain_order=True)
+            .first()
+            .sort('loss_day_kW', descending=True)
+        )
+        worst_node751 = gridnode_day_df.filter(
+            (pl.col('grid_node') == '751') & 
+            (pl.col('day') == 118) 
+            # (pl.col('t_int') >= 2809 + 10)
+            )
+        worst_node751['feedin_atnode_loss_kW'].sum() # 2809 + 10 = 2819, 2819 - 1 = 2818, 2818 / 24 = 117.4167, day = 118
         
+        # Histogramm, avg. excess feedin p. house
+        negid_node_df = topo_df.group_by('grid_node').agg(pl.col('EGID').count().alias('nEGID'))
+        worst_day_df = worst_per_node_day_df.join(negid_node_df, on='grid_node', how='left')
+        worst_day_df = worst_day_df.with_columns(
+            (pl.col('loss_day_kW') / pl.col('nEGID')).alias('avg_loss_per_house_kW')
+        )
+        hist_excfeedin_df = worst_day_df.filter(
+            pl.col('avg_loss_per_house_kW') > 0
+        )
+
+        scen_color = (hist_rgb[0] / 255, hist_rgb[1] / 255, hist_rgb[2] / 255)
+        plot_width = self.plot_width if plot_width_func is None else plot_width_func
+        plot_height = self.plot_height if plot_height_func is None else plot_height_func       
+        plt.figure(figsize=(plot_width, plot_height))
+
+        sns.histplot(
+            data=hist_excfeedin_df.to_pandas(),
+            x='avg_loss_per_house_kW',
+            bins=15,
+            color = scen_color,
+            alpha=0.6,
+        )   
+        # sns.kdeplot(
+        #     data=hist_excfeedin_df.to_pandas(),
+        #     x='avg_loss_per_house_kW',
+        #     color = scen_color,
+        #     alpha=0.2,
+        # )   
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(title)
+        plt.tight_layout()
+        # plt.show()
+        self._save_figure(os.path.join(self.dir_path_export, f'{export_name}_{scen}.png'), plot_width, plot_height)
+        plt.close()
+
+
+        plt.figure(figsize=(plot_width, plot_height))
+        # sns.kdeplot(
+        #     data=hist_excfeedin_df.to_pandas(),
+        #     x='nEGID',
+        #     color = scen_color,
+        #     alpha=0.6,
+        #     fill=True,
+        # )
+        sns.histplot(
+            data=hist_excfeedin_df.to_pandas(),
+            x='nEGID',
+            color = scen_color,
+            bins=15,
+            alpha=0.6,
+        )
+        plt.xlabel('Number of Houses per Grid Node')
+        plt.ylabel('Density')
+        plt.title('Distribution of Houses per Grid Node')
+        plt.tight_layout()
+        # plt.show()
+        self._save_figure(os.path.join(self.dir_path_export, f'distribution_houses_per_gridnode_{scen}.png'), plot_width, plot_height)
+        plt.close()
+
+
+    def TS_loss_pEGID(self,
+                    scen = 'pvalloc_LRG3_max',
+                    freq = 'daily',           # 'hourly', 'daily', 'weekly', or 'monthly'
+                    title = 'Excess Feed-in Loss per House over Weather Year',
+                    export_name = 'TS_loss_pEGID',
+                    x_label = None,
+                    y_label = 'Excess Feed-in Loss per House (kWh)',
+                    iter = None, 
+                    line_rgb = (200, 50, 50),
+                    line_alpha = 0.3,
+                    plot_width_func = None,
+                    plot_height_func = None,
+                    ):
+
+        if freq not in ('hourly', 'daily', 'weekly', 'monthly'):
+            raise ValueError(f"freq must be 'hourly', 'daily', 'weekly', or 'monthly', got '{freq}'")
+
+        topo = json.load(open(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'topo_egid.json'), 'r'))
+        if iter is None:
+            gridnode_df = pl.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'gridnode_df.parquet'))
+        else:
+            gridnode_df = pl.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'pred_gridprem_node_by_M', f'gridnode_df_{iter}.parquet'))
+
+        topo_rows = []
+        for k, v in topo.items():
+            topo_rows.append({'EGID': k, 'grid_node': v['grid_node']})
+        topo_df = pl.DataFrame(topo_rows)
+        negid_node_df = topo_df.group_by('grid_node').agg(pl.col('EGID').count().alias('nEGID'))
+
+        # aggregate to chosen frequency
+        if freq == 'hourly':
+            period_col = 't_int'
+            agg_df = (
+                gridnode_df
+                .join(negid_node_df, on='grid_node', how='left')
+                .with_columns(
+                    (pl.col('feedin_atnode_loss_kW') / pl.col('nEGID')).alias('loss_pEGID_kWh')
+                )
+                .select(['grid_node', 't_int', 'loss_pEGID_kWh'])
+                .sort(['grid_node', 't_int'])
+            )
+        elif freq == 'daily':
+            period_col = 'day'
+            agg_df = (
+                gridnode_df
+                .with_columns(((pl.col('t_int') - 1) // 24 + 1).alias('day'))
+                .group_by(['grid_node', 'day'])
+                .agg(pl.col('feedin_atnode_loss_kW').sum().alias('loss_node_kWh'))
+                .join(negid_node_df, on='grid_node', how='left')
+                .with_columns(
+                    (pl.col('loss_node_kWh') / pl.col('nEGID')).alias('loss_pEGID_kWh')
+                )
+                .select(['grid_node', 'day', 'loss_pEGID_kWh'])
+                .sort(['grid_node', 'day'])
+            )
+        elif freq == 'weekly':
+            period_col = 'week'
+            agg_df = (
+                gridnode_df
+                .with_columns(((pl.col('t_int') - 1) // 168 + 1).alias('week'))
+                .group_by(['grid_node', 'week'])
+                .agg(pl.col('feedin_atnode_loss_kW').sum().alias('loss_node_kWh'))
+                .join(negid_node_df, on='grid_node', how='left')
+                .with_columns(
+                    (pl.col('loss_node_kWh') / pl.col('nEGID')).alias('loss_pEGID_kWh')
+                )
+                .select(['grid_node', 'week', 'loss_pEGID_kWh'])
+                .sort(['grid_node', 'week'])
+            )
+        else:  # monthly
+            period_col = 'month'
+            _month_end_h = [744, 1416, 2160, 2880, 3624, 4344, 5088, 5832, 6552, 7296, 8016, 8760]
+            month_map = pl.DataFrame({
+                't_int': list(range(1, 8761)),
+                'month': [
+                    next(m + 1 for m, end in enumerate(_month_end_h) if h <= end)
+                    for h in range(1, 8761)
+                ],
+            })
+            agg_df = (
+                gridnode_df
+                .join(month_map, on='t_int', how='left')
+                .group_by(['grid_node', 'month'])
+                .agg(pl.col('feedin_atnode_loss_kW').sum().alias('loss_node_kWh'))
+                .join(negid_node_df, on='grid_node', how='left')
+                .with_columns(
+                    (pl.col('loss_node_kWh') / pl.col('nEGID')).alias('loss_pEGID_kWh')
+                )
+                .select(['grid_node', 'month', 'loss_pEGID_kWh'])
+                .sort(['grid_node', 'month'])
+            )
+
+        x_label_default = {
+            'hourly': 'Hour of Year',
+            'daily': 'Day of Year',
+            'weekly': 'Week of Year',
+            'monthly': 'Month of Year',
+        }
+        x_label = x_label if x_label is not None else x_label_default[freq]
+
+        plot_df = agg_df.to_pandas()
+        line_color = (line_rgb[0] / 255, line_rgb[1] / 255, line_rgb[2] / 255)
+        plot_width = self.plot_width if plot_width_func is None else plot_width_func
+        plot_height = self.plot_height if plot_height_func is None else plot_height_func
+
+        plt.figure(figsize=(plot_width, plot_height))
+        for node, node_df in plot_df.groupby('grid_node'):
+            plt.plot(
+                node_df[period_col],
+                node_df['loss_pEGID_kWh'],
+                color=line_color,
+                linewidth=0.6,
+                alpha=line_alpha,
+            )
+
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(title)
+        plt.tight_layout()
+        # plt.show()
+        self._save_figure(
+            os.path.join(self.dir_path_export, f'{export_name}_{freq}_{scen}.png'),
+            plot_width,
+            plot_height,
+        )
+        plt.close()
+
+
+
 
     def Loss_Subscost_Summary(self,
                               scen_list = None,
@@ -1975,8 +2265,19 @@ if __name__ == "__main__":
 
     # plotter.plot_gridnode_HOY()
 
-    plotter.worstnode_worstweek()
+    # plotter.worstnode_worstweek()
         
+    plotter.hist_avgloss_pEGID()
+
+    plotter.TS_loss_pEGID(
+        freq = 'daily',
+        x_label = 'Hour of Year',
+    )
+    plotter.TS_loss_pEGID(
+        freq = 'weekly',
+        x_label = 'Week of Year',
+    )
+
 
     # plotter.plot_constrcapa_comparison()
 
