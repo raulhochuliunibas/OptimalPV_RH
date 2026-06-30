@@ -1362,7 +1362,9 @@ class static_plotter_class:
                             export_name = 'hist_avgloss_pEGID',
                             x_label = 'Excess Feed-in per House in 24h (kWh)',
                             y_label = 'Frequency (n Houses)',
-                            hist_rgb =  (200, 50, 50), 
+                            hist_rgb =  (200, 50, 50),
+                            x_example_tick = None,
+                            x_example_str = '',
                             plot_width_func = None,
                             plot_height_func = None,
                             ):
@@ -1431,6 +1433,16 @@ class static_plotter_class:
         #     color = scen_color,
         #     alpha=0.2,
         # )   
+        if x_example_tick is not None:
+            ax = plt.gca()
+            ax.axvline(x=x_example_tick, color='black', linewidth=1.2, linestyle='--', zorder=5, ymax=0.80)
+            ax.text(
+                x_example_tick, 0.82, f'{x_example_str}{x_example_tick}',
+                transform=ax.get_xaxis_transform(),
+                ha='center', va='bottom',
+                fontsize=8, color='black',
+            )
+
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(title)
@@ -1852,10 +1864,11 @@ class static_plotter_class:
                                scen_incl_list,
                                n_iter_range_list,
                                export_name,
-                               y_col, 
+                               y_col,
                                title,
-                               y_label, 
+                               y_label,
                                y_scaling = 1.0,
+                               start_year = 2024,
                                plot_width_func = None,
                                plot_height_func = None,
                                    ):
@@ -1875,6 +1888,8 @@ class static_plotter_class:
             file_path = os.path.join(self.dir_path, csv_file)
             self._copy_csv_to_export(file_path)
             df = pd.read_csv(file_path)
+        df.loc[df['n_iter'] == 5 & df['scen'].isin(scen_incl_list), 
+               ['scen', 'n_iter', 'feedin_atnode_loss_kW', 'demand_atnode_kW', 'feedin_atnode_kW',  y_col]]
 
         plot_width = self.plot_width if plot_width_func is None else plot_width_func
         plot_height = self.plot_height if plot_height_func is None else plot_height_func
@@ -1897,29 +1912,35 @@ class static_plotter_class:
 
             # unit conversion (kWh to MWh)
             df_plot[y_col] = df_plot[y_col] / y_scaling
-            
+
+            # map n_iter to calendar year
+            x_col = 'n_iter'
+            if start_year is not None:
+                df_plot['year'] = start_year + df_plot['n_iter'] - 1
+                x_col = 'year'
+
             # get scenario label for legend
             scen_label = self._get_scenario_label(scen)
 
             # get dash style
             scen_linedash, scen_marker = self._get_scenario_linedash_marker(scen)
 
-
             if not df_plot.empty:
                 sns.lineplot(
                     data=df_plot,
-                    x='n_iter',
+                    x=x_col,
                     y=y_col,
                     color=scen_color,
                     label=scen_label,
                     marker=scen_marker,
-                    linestyle = scen_linedash,
-                    dashes = [(2,2)], 
+                    linestyle=scen_linedash,
+                    dashes=[(2,2)],
                     linewidth=1.5,
                     alpha=self.line_opacity,
                 )
 
-        plt.xlabel('Model Iterations (Future Years)')
+        x_label = 'Year' if start_year is not None else 'Model Iterations (Future Years)'
+        plt.xlabel(x_label)
         plt.ylabel(y_label)
         plt.title(f'{title}')
         # if y_col == 'feedin_atnode_taken_kW':

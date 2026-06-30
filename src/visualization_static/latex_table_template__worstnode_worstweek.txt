@@ -4,7 +4,7 @@
   \begin{{tabular}}{{l|rrrrr}}
     \toprule
     \textbf{{Parameter}}
-      & \textcolor{{black}}{{\textbf{{{node_1}}}}}
+      &  \textcolor[RGB]{{{node1_color_rgb}}}{{\textbf{{{node_1}}}}}
       & \textbf{{{node_2}}}
       & \textbf{{{node_3}}}
       & \textbf{{{node_4}}}
@@ -29,13 +29,13 @@
       & {n_houses_4}
       & {n_houses_5} \\
     Avg.\ excess feed-in p.\ house (kWh)
-      & \textcolor{{black}}{{{avg_feedin_p_house_1}}}
+      & \textcolor[RGB]{{{node1_color_rgb}}}{{{avg_feedin_p_house_1}}}
       & {avg_feedin_p_house_2}
       & {avg_feedin_p_house_3}
       & {avg_feedin_p_house_4}
       & {avg_feedin_p_house_5} \\
-    Avg.\ remaining demand p.\ house (kWh)
-      & \textcolor{{black}}{{{avg_demand_p_house_1}}}
+    Avg.\ remaining netdemand p.\ house (kWh)
+      & \textcolor[RGB]{{{node1_color_rgb}}}{{{avg_demand_p_house_1}}}
       & {avg_demand_p_house_2}
       & {avg_demand_p_house_3}
       & {avg_demand_p_house_4}
@@ -50,11 +50,11 @@
   \begin{{columns}}[T]
     \begin{{column}}{{0.48\textwidth}}
       \centering
-      \includegraphics[width=\textwidth]{{figures/{figure_filename}}}
+        \includegraphics[width=\textwidth]{{figures/{hist_figure_filename}}}
     \end{{column}}
     \begin{{column}}{{0.48\textwidth}}
       \centering
-      \includegraphics[width=\textwidth]{{figures/{hist_figure_filename}}}
+        \includegraphics[width=\textwidth]{{figures/{figure_filename}}}
     \end{{column}}
   \end{{columns}}
 \end{{frame}}

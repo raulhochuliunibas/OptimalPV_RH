@@ -13,7 +13,7 @@ from src.visualization_static.visualization_static import static_plotter_class
 if __name__ == "__main__":
 
     plotter = static_plotter_class(
-        export_dir_list = ['paper_publication', 'WCERE', 'figures'],
+        export_dir_list = ['paper_publication', 'WCERE_Lisabon', 'figures'],
     )
     plotter.line_opacity    = 0.65
     plotter.plot_width      = 4
