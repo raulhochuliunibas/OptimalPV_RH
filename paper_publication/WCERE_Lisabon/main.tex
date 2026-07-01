@@ -96,6 +96,7 @@
 
 \usefonttheme[onlymath]{serif}
 \setbeamertemplate{caption}[numbered]
+\setbeamertemplate{frame footer}{\textcolor{unibasgreydark}{Raul Hochuli}}
 
 
 % % -------------------------------------------------------
@@ -166,9 +167,9 @@
 \begin{frame}{Motivation}
   \centering
   \makebox[0pt][c]{%
-    \includegraphics[width=0.9841\textwidth]{paper_publication/SSES_StGallen/newspaper_header3.png}
+    \includegraphics[width=0.9841\textwidth]{figures/newspaper_header3.png}
   }
-\vspace{-0.25cm}
+\vspace{-0.26cm}
   \begin{block}{Research Contribution}
     \begin{enumerate}
       \item \textbf{Problem quantification} $\rightarrow$\textit{Build an extensive data based model simulation that estimates how soon and when solar PV expansion causes "grid-problems".}
@@ -330,9 +331,20 @@ Rollout 2028 at 80\%\\
 \end{tikzpicture}
 
 \vspace{0.01cm}
-\makebox[0pt][c]{%
-  \includegraphics[width=0.751\textwidth]{figures/grid-levels.png}
-}
+% \makebox[0pt][c]{%
+%   \includegraphics[width=0.751\textwidth]{figures/grid-levels.png}
+% }
+  \begin{block}{Result Preview}
+    \begin{enumerate}
+      \item 
+      % \textbf{Problem quantification} $\rightarrow$
+      \textit{Physical congestion in LV grid will occur approx. in 2031 and scale up fast (dependent growth rate of newly installed capacity).}
+      \vspace{0.1cm}
+      \item 
+      % \textbf{ response} $\rightarrow$
+      \textit{Simple, grid-focused subsidy adjustments might delay grid congestion by two years and could be almost as good as a social planner's allocation.}
+    \end{enumerate}
+  \end{block}
 \end{frame}
 
 
@@ -383,7 +395,8 @@ Rollout 2028 at 80\%\\
     \centering
     \only<1>{\includegraphics[width=0.91\linewidth]{figures/plot_EGID_HOY_pvprod.png}}%
     \only<2>{\includegraphics[width=0.91\linewidth]{figures/plot_EGID_HOY_pvprod_demand.png}}%
-    \only<3->{\includegraphics[width=0.91\linewidth]{figures/plot_EGID_HOY_pvprod_demand_feedin.png}}%
+    \only<3>{\includegraphics[width=0.91\linewidth]{figures/plot_EGID_HOY_pvprod_demand.png}}%
+    \only<4->{\includegraphics[width=0.91\linewidth]{figures/plot_EGID_HOY_pvprod_demand_feedin.png}}%
   \end{figure}
 \end{column}
 
@@ -459,9 +472,9 @@ Rollout 2028 at 80\%\\
     \hline
     \textbf{Parameter} & \textbf{Sample} & \textbf{Avail.} & \textbf{All CH} \\
     \hline
-    n Municipalities         & 28     & 79      & 2'133     \\
+    n Municipalities         & \textcolor[RGB]{200,50,50}{28}     & 79      & 2'133     \\
     n All Buildings          & 44'354 & 132'018 & 3'090'962 \\
-    n Resid. Houses          & 21'599 & 47'900  & 1'716'194 \\
+    n Resid. Houses          & \textcolor[RGB]{200,50,50}{21'599} & 47'900  & 1'716'194 \\
     n Grid Nodes             & 391    & 1'113   & --        \\
     Inst. Cap. 2024 (MW)     & 20.6   & 79.0    & 2'450.1   \\
     Capacity 2050 (MW)       & 115.6  & 739.5   & 17'313.8  \\
@@ -542,40 +555,74 @@ Rollout 2028 at 80\%\\
 
 
 % -------------------------------------------------------
-\begin{frame}{Worst Week in Worst Node}
-\begin{minipage}{0.48\textwidth}
+\begin{frame}{Peak Days in Worst Node}
   \centering
-  \vspace{0.3cm}
-  {\small
-  \begin{tabular}{ll}
+  {\footnotesize
+  \begin{tabular}{l|rrrrr}
     \toprule
-    \textbf{Parameter} & \textbf{Value} \\
+    \textbf{Parameter}
+      &  \textcolor[RGB]{200,50,50}{\textbf{751}}
+      & \textbf{524}
+      & \textbf{754}
+      & \textbf{10}
+      & \textbf{734} \\
     \midrule
-    % Worst node                       & 751 \\
-    n Houses                         & 379 \\
-    Peak week start                  & 2025-07-12 \\
-    Peak week end                    & 2025-07-13 \\
-    Total excess feed-in             & 5'970.7 kWh \\
-    Avg.\ excess feed-in p.\ house   & 15.8 kWh \\
-    Tesla Powerwall (\cite{tesla2026})  & 13.5 kWh\\
-    Tesla Powerwall (\cite{tesla2026})  & 13.5 kWh\\
-    Avg.\ demand p.\ house           & kWh\\
+    Peak day
+      & \textcolor{black}{17.07.}
+      & 17.07.
+      & 17.04.
+      & 17.07.
+      & 17.07. \\
+    Total excess feed-in (kWh)
+      & \textcolor{black}{6'259.6}
+      & 5'424.9
+      & 4'215.7
+      & 3'751.2
+      & 3'192.6 \\
+    n h ouses
+      & \textcolor{black}{379}
+      & 243
+      & 283
+      & 197
+      & 167 \\
+    Avg.\ excess feed-in p.\ house (kWh)
+      & \textcolor[RGB]{200,50,50}{16.5}
+      & 22.3
+      & 14.9
+      & 19.0
+      & 19.1 \\
+    Avg.\ remaining netdemand p.\ house (kWh)
+      & \textcolor[RGB]{200,50,50}{2.1}
+      & 3.2
+      & 6.2
+      & 4.1
+      & 2.2 \\
+    \midrule
+    Tesla Powerwall (kWh, \cite{tesla2026})  & \textcolor{black}{13.5} & & & &\\
     \bottomrule
   \end{tabular}
   }
-\end{minipage}\hfill
-\begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{paper_publication/SSES_StGallen/worstnode_worstweek_pegid_pvalloc_LRG3_max.png}
-\end{minipage}
-\end{frame}
+  \vspace{0.412cm}
+
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \centering
+        \includegraphics[width=\textwidth]{figures/hist_avgloss_pEGID_pvalloc_LRG3_max.png}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering
+        \includegraphics[width=\textwidth]{figures/worstnode_worstweek_pegid_pvalloc_LRG3_max.png}
+    \end{column}
+  \end{columns}
+  \end{frame}
 
 % -------------------------------------------------------
 \begin{frame}{DSO Interventions}
 \begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{paper_publication/SSES_StGallen/line_PVproduction_DSOreact_excfeedin.png}
+  \centering\includegraphics[width=\textwidth]{figures/line_PVproduction_DSOreact_excfeedin.png}
 \end{minipage}\hfill
 \begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{paper_publication/SSES_StGallen/line_PVproduction_DSOreact_feedin.png}
+  \centering\includegraphics[width=\textwidth]{figures/line_PVproduction_DSOreact_feedin.png}
 \end{minipage}
 \end{frame}
 
@@ -589,7 +636,7 @@ Rollout 2028 at 80\%\\
 
   \begin{block}{Research Contribution}
     \begin{enumerate}
-      \item \textbf{Problem quantification} $\rightarrow$\textit{Problems will arise in the next couple of years and might scale up fast, dependent on the growth rate of newly installed capacity.}
+      \item \textbf{Problem quantification} $\rightarrow$\textit{Grid congestion will arise in the next 5-6 years and scale up fast, possible endangering the "residential capacity targets" for a successful energy transition.}
       \vspace{0.1cm}
       \item \textbf{Economic response} $\rightarrow$ \textit{Simple subsidy adjustments might delay grid congestion by a few years and could be even as good as a social planner's allocation.}
     \end{enumerate}
@@ -621,10 +668,10 @@ Rollout 2028 at 80\%\\
 \begin{frame}{Appendix: NPV Sensitivity --- Electricity Prices}
 \hypertarget{appendix_npv_hist_sensitivity}{}
 \begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{figures/pvalloc_LRG3_max_elecpri15RP_npv_df_hist.png}
+  \centering\includegraphics[width=\textwidth]{figures/NPVhist_LRG3_max_15Rp.png}
 \end{minipage}\hfill
 \begin{minipage}{0.48\textwidth}
-  \centering\includegraphics[width=\textwidth]{figures/pvalloc_LRG3_max_elecpri60RP_npv_df_hist.png}
+  \centering\includegraphics[width=\textwidth]{figures/NPVhist_LRG3_max_60Rp.png}
 \end{minipage}
 \centering
 \hyperlink{mod_allocation_process}{\beamerreturnbutton{back}}
@@ -648,7 +695,7 @@ Rollout 2028 at 80\%\\
 \begin{minipage}{0.479\textwidth}
   Business as Usual\\
   \centering
-  \includegraphics[width=1.0\textwidth]{paper_publication/SSES_StGallen/hist_contcharact_newinst_bu_pvalloc_LRG3_max.png}
+  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_bu_pvalloc_LRG3_max.png}
   \vspace{-0.311cm}
   \begin{minipage}{0.49\textwidth}
     \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_GKLAS.png}}
@@ -667,7 +714,7 @@ Rollout 2028 at 80\%\\
 \begin{minipage}{0.479\textwidth}
   Subsidy B\\
   \centering
-  \includegraphics[width=1.0\textwidth]{paper_publication/SSES_StGallen/hist_contcharact_newinst_bu_pvalloc_LRG3_max.png}
+  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_bu_pvalloc_LRG3_max.png}
   \vspace{-0.311cm}
   \begin{minipage}{0.49\textwidth}
     \centering\makebox[0pt][c]{\includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_LRG3_max_sBs0p8_GKLAS.png}}

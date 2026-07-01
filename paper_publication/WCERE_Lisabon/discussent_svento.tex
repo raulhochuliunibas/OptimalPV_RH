@@ -1,0 +1,223 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[10pt, aspectratio=169]{beamer}
+\usepackage[many]{tcolorbox}
+\usetheme{metropolis}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{mathrsfs}
+\usepackage{bbding}
+\usepackage{pifont}
+\usepackage{wasysym}
+\usepackage{amssymb}
+\usepackage{enumerate}
+\usepackage{booktabs,threeparttable}
+\usepackage{adjustbox}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage{geometry}
+\usepackage{appendixnumberbeamer}
+
+
+% DEFINE COLORPALETTE
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}
+\definecolor{unibasmintlight}{RGB}{233, 255, 253}
+\definecolor{unibasmint}{RGB}{165,215,210}
+\definecolor{unibasmintmid}{RGB}{30,165,165}
+\definecolor{unibasanthr}{RGB}{45,55,60}
+\definecolor{unibasgreydark}{RGB}{140,145,150}
+\definecolor{unibasred}{RGB}{210,5,55}
+\definecolor{unibaspink}{RGB}{235,130,155}
+\definecolor{unibasgrey}{RGB}{190,195,200}
+\definecolor{unibasmintdark}{RGB}{0,110,110}
+\definecolor{unibasblack}{RGB}{0,0,0}
+\definecolor{unibaswhite}{RGB}{255,255,255}
+
+\definecolor{scenA_table}{RGB}{245, 245, 180}
+\definecolor{scenB_table}{RGB}{235, 215, 245}
+\definecolor{scenC_table}{RGB}{200, 225, 240}
+
+\definecolor{capacity_upgrade}{RGB}{64, 153, 153}
+\definecolor{capacity_expansion}{RGB}{162, 216, 216}
+
+
+% -------------------------------------------------------
+% METROPOLIS COLOR SETUP
+% -------------------------------------------------------
+% \setbeamercolor{normal text}{fg=unibasanthr, bg=white}
+% \setbeamercolor{alerted text}{fg=unibasred}
+% \setbeamercolor{example text}{fg=unibasmintdark}
+
+% \setbeamercolor{frametitle}{bg=unibasmintlight, fg=unibasmintdark}
+% \setbeamercolor{title separator}{fg=unibasmintdark}
+% \setbeamercolor{progress bar}{fg=unibasmintdark, bg=unibasgrey}
+
+% \setbeamercolor{block title}{bg=unibasmintdark, fg=unibasmint}
+% \setbeamercolor{block body}{bg=unibasmintlight, fg=unibasanthr}
+% \setbeamercolor{block title alerted}{bg=unibasred, fg=white}
+% \setbeamercolor{block body alerted}{bg=unibasmintlight!50, fg=unibasanthr}
+
+% \setbeamercolor{title}{fg=unibasmintdark}
+% \setbeamercolor{subtitle}{fg=unibasgreydark}
+% \setbeamercolor{author}{fg=unibasanthr}
+% \setbeamercolor{institute}{fg=unibasgreydark}
+% \setbeamercolor{date}{fg=unibasgreydark}
+
+% \setbeamercolor{section in toc}{fg=unibasmintdark}
+% \setbeamercolor{subsection in toc}{fg=unibasgreydark}
+
+% \setbeamercolor{itemize item}{fg=unibasmintdark}
+% \setbeamercolor{itemize subitem}{fg=unibasmintmid}
+% \setbeamercolor{itemize subsubitem}{fg=unibasgreydark}
+% \setbeamercolor{enumerate item}{fg=unibasmintdark}
+
+% \setbeamercolor{button}{bg=unibasmint, fg=unibasanthr}
+
+% footer / standout
+\setbeamercolor{footline}{fg=unibasgreydark, bg=white}
+
+% -------------------------------------------------------
+% METROPOLIS FONT / STYLE OPTIONS
+% -------------------------------------------------------
+\metroset{
+  titleformat        = regular,
+  titleformat frame  = regular,
+  sectionpage        = none,
+  numbering          = fraction,
+  progressbar        = frametitle,
+  block              = fill
+}
+
+\usefonttheme[onlymath]{serif}
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{frame footer}{\textcolor{unibasgreydark}{Hydro and Wind Power: Complements or Substitutes? (Discussion)}}
+
+
+\usepackage[backend=biber, style=apa, maxbibnames=999, minbibnames=1,
+            maxcitenames=1, mincitenames=1, uniquelist=true]{biblatex}
+\addbibresource{optimalpv_conf.bib}
+\AtBeginBibliography{\small}
+% \hypersetup{colorlinks=true,
+%             citecolor=unibasmintmid,
+%             linkcolor=unibasmintdark,
+%             urlcolor=unibasmintdark}
+
+% -------------------------------------------------------
+% BACKUP FRAME COUNTER
+% -------------------------------------------------------
+\newcommand{\backupbegin}{
+  \newcounter{framenumberappendix}
+  \setcounter{framenumberappendix}{\value{framenumber}}
+}
+\newcommand{\backupend}{
+  \addtocounter{framenumberappendix}{-\value{framenumber}}
+  \addtocounter{framenumber}{\value{framenumberappendix}}
+}
+
+% -------------------------------------------------------
+% TITLE INFO
+% -------------------------------------------------------
+\title[]{Hydro and Wind Power: Complements or Substitutes?∗}
+\subtitle{Paper Discussion}
+\author{Authors: Gautam Gowrisankaran, Stanley Reynolds, \textbf{Rauli Svento}
+\\Discussant: Raul Hochuli}
+\institute{WCERE - Portugal}
+\date{July 2026}
+% \titlegraphic{\includegraphics[width=2.3cm]{UniBas_Logo.jpg}}
+
+
+%*******************************************************************************
+\begin{document}
+%*******************************************************************************
+
+% -------------------------------------------------------
+\begin{frame}
+  \maketitle
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Discussion}
+
+% -------------------------------------------------------
+\begin{frame}{Summary}
+\begin{itemize}
+\item \textbf{Dynamic stochastic model} of a Finnish system operator, \textbf{schedules and dispatches generation} hour-by-hour to maximize expected social surplus.
+\item \textbf{Hourly two-stage decision process}
+\begin{itemize}
+    \item First: Forecasting of load, wind, CHP and hydro inflow $\rightarrow$ schedule fossil fuel generators.
+    \item Second: After realization of these key variables $\rightarrow$ dispatch hydro and fossil capacity.
+    \item Setup with three generation sources: Thermal plants (merit-order), \textbf{wind} (exogenous capacity and weather-driven capacity factor), \textbf{hydro} (flexible reservoir stock and RoR). 
+\end{itemize}
+\item \textbf{Weather variables} and \textbf{load/generation} estimated in SUR system, hourly 2022 Finish data.
+% \vspace{4pt}
+% \item Solves the operator's dynamic programming problem computationally (Halton draws, Markov weather transitions, value function iteration); simulates 100-year paths to capture long-run reservoir variability
+% \vspace{4pt}
+\item Dynamic model, adjustments in two "dimension"
+\begin{itemize}
+    \item Scaling up wind capacity by +50\% and +100\% (of 5'000 MW)
+    \item +/-10\% and +/-30\% rescale of hydro 
+    \item Asses social benefits (operating cost, fossil reserves, price, outage probability, CO2 emissions)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+% -------------------------------------------------------
+\begin{frame}{Main Comments}
+\begin{itemize}
+    \item Rescaling hydro \textbf{including run-of-river} by adjusting must-run nuclear $\rightarrow$ substitute a flexible for an inflexible resource. 
+    \begin{itemize}
+        \item \textit{Higher RoR generation exacerbates wind curtailment in spring/summer. }
+    \end{itemize}
+    \item \textbf{Exclusion of Nord Pool} prohibits export of excess wind to neighbors. 
+    \item Using \textbf{2022 as a single weather year}
+    \begin{itemize}
+        \item \textit{Other years as robustness check.}
+        \item \textit{Estimating 8 equation on 8760 hours, might not include 100 years weather variability.} 
+    \end{itemize}
+    \vspace{0.0cm}
+    \item Ext: Assumed \textbf{no price / curtailment response} of consumers 
+    % \item Ext: Assumed \textbf{no price / curtailment response} of consumers (contrast to Gowrisankaran et al. 2016; \textit{EV 48\% of new registrations in 2026 (3rd in }Europe)\footnote{https://theicct.org/publication/european-car-market-monitor-may-2026/})
+    \begin{itemize}
+        \item Contrast to Gowrisankaran et al. 2016; EV 48\% of new Finish cars in \href{https://theicct.org/publication/european-car-market-monitor-may-2026/}{2026}.
+        % \item In contrast to Gowrisankaran et al. 2016. 
+        % \item \textit{EV 48\% of new registrations in 2026 (3rd in }Europe)\footnote{https://theicct.org/publication/european-car-market-monitor-may-2026/}
+        \item \textit{One aggregated battery / EV component (similar to aggregated reservoir)}
+        \item \textit{Might allow for higher wind penetration.}
+    \end{itemize}
+    
+    \item Ext: \textbf{Data based (but conservative) emission price} of 80 EUR/tCO2. 
+    \begin{itemize}
+        \item \textit{Sensitivity analysis for larger range in social cost of carbon . }
+        \item \textit{Higher wind share more beneficial, push substitute threshold further upwards.}
+    \end{itemize}
+    % \item you have investment cost for wind but keep it veery simple with 50 and 100 percent wind icrease - why not optimize for optimal wind capacity?
+    % \item model a 100 year model -> no assumptions about temperature adjustments over that time. 
+    % \item add model runs with higher soc carbon to see how it might look like with future co2 prices. 
+\end{itemize}
+\end{frame}
+
+% -------------------------------------------------------
+\begin{frame}{Minor Comments}
+\begin{itemize}
+    \item More runs to show smaller change increments (for hydro and wind)
+    \item Converting outcome values (e.g. Table 5, p34) to a line graph (serves complement / substitute story + show "optimal" state).
+    \item Single hydro reservoir but explicit mention of individual reservoir specific multiplier (p18).
+    \item The paper refers to wind capacity increases of 50\% and 100\% without clearly stating the baseline capacity (5'000\,MW) at first mention, making the interpretation of the counterfactuals harder at a first glance. 
+\end{itemize}
+\end{frame}
+
+% -------------------------------------------------------
+% \begin{frame}{Petty Comments}
+% \begin{itemize}
+% \end{itemize}
+% \end{frame}
+
+\end{document}
