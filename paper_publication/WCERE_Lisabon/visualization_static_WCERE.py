@@ -71,6 +71,17 @@ if __name__ == "__main__":
         'pvalloc_LRG3_max_gridoptim':    'Grid-optimized',
         'pvalloc_LRG3_max_nokev':        'No Subsidy',
     }
+    plotter.scen_default_linedash_marker_map = {
+        'pvalloc_LRG3_max':                     ('solid', 'o'),        
+        'pvalloc_LRG3_max_sAs8p0':              ('solid', 'o'),            
+        'pvalloc_LRG3_max_sBs0p8':              ('solid', 'o'),            
+        'pvalloc_LRG3_max_sCs6p8':              ('solid', 'o'),            
+        'pvalloc_LRG3_max_1hll':                ('solid', 'o'),            
+        'pvalloc_LRG3_max_pksh':                ('solid', 'o'),            
+        'pvalloc_LRG3_max_gridoptim':           ('solid', 'o'),                
+        'pvalloc_LRG3_max_nokev':               ('solid', 'o'),            
+    }
+
 
 
     plotter.copy_standalone_graphs_to_presentation_dir()
