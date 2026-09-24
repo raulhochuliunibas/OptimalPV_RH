@@ -22,7 +22,7 @@
       & 4'215.7
       & 3'751.2
       & 3'192.6 \\
-    n h ouses
+    n houses
       & \textcolor{black}{379}
       & 243
       & 283

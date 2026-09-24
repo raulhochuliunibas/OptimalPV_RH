@@ -347,7 +347,7 @@ if __name__ == "__main__":
             scen = 'pvalloc_LRG3_max',
             excess_feedin_pegid = True,
             export_name = 'worstnode_worstweek_pegid',
-            title = 'Avg. Exc. Feedin pHouse ("Worst Week")',
+            title = 'Avg. Exc. Feedin pHouse (Red: Peak Day)',
             plot_width_func = plot_width,
             plot_height_func = plot_height,
         )
@@ -357,7 +357,7 @@ if __name__ == "__main__":
             title = 'Avg. Excess Feedin pHouse - All Nodes',
             export_name = 'hist_avgloss_pEGID',
             x_label = 'Excess Feed-in per House in 24h (kWh)',
-            y_label = 'Frequency (n Houses)',
+            y_label = 'Frequency (n Nodes)',
             plot_width_func = plot_width,
             plot_height_func = plot_height,
         )
