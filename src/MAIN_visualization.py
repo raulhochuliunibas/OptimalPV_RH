@@ -4432,10 +4432,17 @@ class Visualization:
                     tmp_df = gridnode_df_by_iter_pd.loc[:,
                         [
                             'n_iter',
+                            'demand_kW', 
+                            'pvprod_kW',
+                            'selfconsum_kW', 
+                            'netdemand_kW', 
+                            
+                            'feedin_atnode_kW',
+                            'demand_atnode_kW',
+
                             'feedin_atnode_loss_kW',
                             'feedin_atnode_taken_kW',
-                            'demand_atnode_kW',
-                            'feedin_atnode_kW',
+                            
                             'TotalPower',
                         ]]
                     # Align by 'n_iter' to avoid length mismatch when assigning
@@ -7524,17 +7531,17 @@ class Visualization:
                             )
 
 
-                    # # add npv data to tmp_df
-                    # cols_to_join = ['pred_instPower', 'estim_pvinstcost_chf', 'NPV_uid_before_subsidy', 'subs_nodeHC_chf', 'pena_nodeHC_chf', 'NPV_uid', 'econ_inc_chf', 'econ_spend_chf']
-                    # cols_in_npvdfforjoin = [col for col in cols_to_join if col in npv_df.columns]
-                    # if len(cols_in_npvdfforjoin) > 0:
-                    #     df_plot_npv = pl.DataFrame(df_plot).join(
-                    #         npv_df.select(['EGID',] + cols_in_npvdfforjoin),
-                    #         on =['EGID',],
-                    #         how='left',
-                    #     ).to_pandas()
-                    # else:
-                    #     df_plot_npv = df_plot.to_pandas()
+                    # add npv data to tmp_df
+                    cols_to_join = ['pred_instPower', 'estim_pvinstcost_chf', 'NPV_uid_before_subsidy', 'subs_nodeHC_chf', 'pena_nodeHC_chf', 'NPV_uid', 'econ_inc_chf', 'econ_spend_chf']
+                    cols_in_npvdfforjoin = [col for col in cols_to_join if col in npv_df.columns]
+                    if len(cols_in_npvdfforjoin) > 0:
+                        df_plot_npv = pl.DataFrame(df_plot).join(
+                            npv_df.select(['EGID',] + cols_in_npvdfforjoin),
+                            on =['EGID',],
+                            how='left',
+                        ).to_pandas()
+                    else:
+                        df_plot_npv = df_plot.to_pandas()
                      
                     # append export plot data
                     pred_inst_cols_to_csv = ['EGID', 'iter_round','GAREA', 'FLAECHE', 'dfuidPower', 'demand_kW', 'pvprod_kW', 'selfconsum_kW']
@@ -8222,7 +8229,7 @@ if __name__ == '__main__':
                 # '*1hll*', 
                 ], 
             pvalloc_include_pattern_list = [
-                'pvalloc_29nbfs_LRG2_max',
+                'pvalloc_LRG3_max',
                 # 'DEV2_pvalloc_16nbfs_RUR_max',
                 # 'debug_4nodes_max_wGBAUJminmax',
                 # 'debug_4nodes_max__preprep_before_Feb26',
@@ -8247,7 +8254,7 @@ if __name__ == '__main__':
 
             # # plot_ind_map_topo_egid_TF                       = [True,      True,       False]  ,
             # plot_ind_map_topo_egid_incl_gridarea_TF         = [True,      True,       False]  ,
-            # plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
+            plot_ind_hist_contcharact_newinst_TF            = [True,      True,       True]  , 
             # plot_ind_bar_catgcharact_newinst_TF             = [True,      True,       True]  , 
 
 
