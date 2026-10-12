@@ -27,6 +27,7 @@ def chapter_to_logfile(str_def, log_file_name_def, overwrite_file=False):
             log_file.write(f'{check}\n')
 
 
+
 def subchapter_to_logfile(str_def, log_file_name_def):
     """
     Function to write a subchapter to the logfile
@@ -42,6 +43,7 @@ def subchapter_to_logfile(str_def, log_file_name_def):
             log_file.write(f'{check}\n')
 
 
+
 def print_to_logfile(str_def, log_file_name_def):
     """
     Function to write just plain text to logfile
@@ -51,6 +53,7 @@ def print_to_logfile(str_def, log_file_name_def):
 
     with open(f'{log_file_name_def}', 'a') as log_file:
         log_file.write(f"{check}\n")
+
 
 
 def checkpoint_to_logfile(str_def, log_file_name_def, n_tabs_def = 0, show_debug_prints_def = True):
@@ -84,6 +87,7 @@ def checkpoint_to_logfile(str_def, log_file_name_def, n_tabs_def = 0, show_debug
         time_last_call = time_now
 
 
+
 def get_bfs_from_ktnr(
         ktnr_list: List[int] , 
         data_path: str,
@@ -107,6 +111,7 @@ def get_bfs_from_ktnr(
     return bfs_list
 
 
+
 def format_MASTER_settings(settings_dict):
     formatted_settings = {}
     for key, value in settings_dict.items():
@@ -117,6 +122,7 @@ def format_MASTER_settings(settings_dict):
         else:
             formatted_settings[key] = value
     return formatted_settings
+
 
 
 def get_bfsnr_name_tuple_list(bfs_number_list=None):
@@ -369,6 +375,7 @@ def add_static_topo_data_to_subdf(subdf, topo):
     subdf_static_df = pl.DataFrame(subdf_static_list)
     subdf = subdf.join(subdf_static_df, on=['EGID', 'df_uid'], how='left')
     return subdf
+
 
 
 def make_scenario(default_scen, name_dir_export, bfs_numbers=None, **overrides):
