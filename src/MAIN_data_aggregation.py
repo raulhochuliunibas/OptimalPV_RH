@@ -201,6 +201,7 @@ class DataAggScenario:
         
         subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', self.sett.log_name)
         self.get_elecpri_earlier_api_import()
+        self.get_hourly_elecpri_entsoe()
 
         subchapter_to_logfile('pre-prep data: API INPUT DATA', self.sett.log_name)
         self.get_preprep_data_earlier_api_import()
@@ -582,6 +583,134 @@ class DataAggScenario:
             checkpoint_to_logfile('export elecpri of local data from former api import', self.sett.log_name)
             elecpri.write_parquet(os.path.join(self.sett.preprep_path, 'elecpri.parquet'))
 
+
+        def get_hourly_elecpri_entsoe(self):
+            """
+            Input:
+                - DataAggScenario_Settings
+            Tasks:
+                - Function to import hourls electricity prices from downloaded ENTSO-E csv files and 
+                  store them as a single, cleaned file in the preprep folder.
+                - Extend hourly electricity price with grid fee and taxes for the selected municipalities
+                  and years. 
+            Output to preprep dir:
+                - elecpri_hourly.parquet: hourly electricity prices for the selected municipalities
+            """
+            # SETUP --------------------------------------
+            print_to_logfile('run function: get_hourly_elecpri_entsoe.py', self.sett.log_name)
+
+            # electricity price components for the years 2024-2027 (in Rp/kWh)
+            # source: https://www.strompreis.elcom.admin.ch/municipality/2787?period=2027%2C2026%2C2024%2C2025
+            electricity_price_components = {
+                'elcom_grid_fee': {
+                    '2027': 13.78,
+                    '2026': 14.26,
+                    '2025': 14.47,
+                    '2024': 14.41,
+                },
+                'elcom_energyid_fee': {
+                    '2027': 13.45,
+                    '2026': 13.73,
+                    '2025': 15.26,
+                    '2024': 15.56,
+                },
+                'elcom_measurm_fee': {
+                    '2027': 1.91,
+                    '2026': 1.07,
+                    '2025': 0.0,
+                    '2024': 0.0,
+                },
+                'elcom_tax_locgov': {
+                    '2027': 0.61,
+                    '2026': 0.62,
+                    '2025': 0.61,
+                    '2024': 0.56,
+                },
+                'elcom_gridsurcharge': {
+                    '2027': 2.3,
+                    '2026': 0.0,
+                    '2025': 0.0,
+                    '2024': 0.0,
+                },
+            }
+
+
+            # IMPORT + STORE DATA in preprep folder --------------------------------------
+            entsoe_2024_raw = pl.read_csv(os.path.join(self.sett.data_path, 'input', 'ENTSO_transparency', 'GUI_ENERGY_PRICES_202312312300-202412312300.csv'), separator=',')
+            entsoe_2025_raw = pl.read_csv(os.path.join(self.sett.data_path, 'input', 'ENTSO_transparency', 'GUI_ENERGY_PRICES_202412312300-202512312300.csv'), separator=',')
+            ecb_fx_chfeur_raw   = pl.read_csv(os.path.join(self.sett.data_path, 'input', 'ECB_CHFEUR', 'ECB Data Portal_20261013102028.csv'), separator=',')
+
+
+            # ENTSOE
+            entsoe_raw = pl.concat([entsoe_2024_raw, entsoe_2025_raw], how='vertical')
+            mtu_start = pl.col('MTU (CET/CEST)').str.split(' - ').list.first()    # interval start, e.g. '27/10/2024 02:00:00 (CET)' (suffix only on clock-change days)
+            year      = pl.col('timestamp').dt.year()
+            leapday   = (pl.col('timestamp').dt.month() == 2) & (pl.col('timestamp').dt.day() == 29)
+
+            entsoe_transform = (
+                entsoe_raw
+                .with_columns([
+                    (mtu_start.str.slice(0, 19)
+                              .str.strptime(pl.Datetime, format="%d/%m/%Y %H:%M:%S")
+                              .dt.replace_time_zone('Europe/Zurich',
+                                                    ambiguous=pl.when(mtu_start.str.ends_with('(CET)')).then(pl.lit('latest')).otherwise(pl.lit('earliest')))
+                              ).alias('timestamp'),
+                    (pl.col('Day-ahead Price (EUR/MWh)') / 1000).alias('elec_dayahead_EUR_kWh'),
+                ])
+                .filter(~leapday)                                           # drop Feb 29 -> every year has exactly 8760 hours
+                .sort('timestamp')
+                .with_columns([
+                    pl.col('timestamp').dt.date().alias('date'),
+                    (pl.int_range(pl.len()).over(year) + 1).alias('t_int'),   # hour of year: 1 ... 8760
+                ])
+                .with_columns(pl.format('t_{}', pl.col('t_int')).alias('t'))
+            ).select(['timestamp', 'date', 't', 't_int', 'elec_dayahead_EUR_kWh'])
+
+
+            # ECB FX
+            ecb_fx_chfeur_transform = ecb_fx_chfeur_raw.with_columns([
+                (pl.col('DATE').str.strptime(pl.Datetime, format="%Y-%m-%d").dt.date()).alias('date'),
+                (pl.col('Swiss franc/Euro ECB reference exchange rate (EXR.D.CHF.EUR.SP00.A)')).cast(pl.Float64).alias('chf_eur_fx'),
+            ]).select(['DATE', 'date', 'chf_eur_fx']).sort('date')
+            
+            # fill up nans
+            date_range = pl.DataFrame({'date': pl.date_range(
+                            ecb_fx_chfeur_transform['date'].min(),
+                            ecb_fx_chfeur_transform['date'].max(), interval='1d', eager=True)})
+            ecb_fx_chfeur_fill = (date_range.join(ecb_fx_chfeur_transform, on='date', how='left')
+                                  .sort('date')
+                                .with_columns(pl.col('chf_eur_fx').fill_null(strategy='forward'))
+            ).select(['date', 'chf_eur_fx'])
+
+
+
+            # JOIN ENTSOE + ECB FX ----------------------------------------------
+            entsoe_joint = entsoe_transform.join(ecb_fx_chfeur_fill, on='date', how='left')
+            entsoe_joint = entsoe_joint.with_columns([
+                (pl.col('elec_dayahead_EUR_kWh') * 100 * pl.col('chf_eur_fx') ).alias('elec_dayahead_Rp_kWh'), 
+                (pl.col('date').dt.year()).sort().alias('year')
+            ])
+
+            years = sorted(electricity_price_components['elcom_grid_fee'])      # '2024' ... '2027'
+            price_components_df = pl.DataFrame(
+                {'year': pl.Series([int(y) for y in years], dtype=pl.Int32),
+                **{name: [by_year[y] for y in years] for name, by_year in electricity_price_components.items()}}
+            )
+            entsoe = entsoe_joint.join(price_components_df, on='year', how='left')
+
+            non_energy_components = [col for col in electricity_price_components.keys() if col not in ['year', 'elcom_energy'] ]
+            entsoe = entsoe.with_columns([
+                pl.sum([pl.col(col) for col in non_energy_components]).alias('elec_non_energy_Rp_kWh'),
+                (pl.col('elec_dayahead_Rp_kWh') + pl.col('elec_non_energy_Rp_kWh')).alias('elecpri_Rp_kWh')
+            ])
+
+            elecpri_entsoe = entsoe.select(['timestamp', 'date', 't', 't_int', 'year', 'elec_dayahead_Rp_kWh', 'elec_non_energy_Rp_kWh', 'elecpri_Rp_kWh'])
+
+
+            
+            # EXPORT --------------------------------------
+            elecpri_entsoe.write_parquet(os.path.join(self.sett.preprep_path, 'elecpri_entsoe.parquet'))
+            checkpoint_to_logfile('exported elecpri_entsoe.parquet', self.sett.log_name, 2, self.sett.show_debug_prints)
 
 
         def get_preprep_data_earlier_api_import(self):
@@ -1986,58 +2115,6 @@ if __name__ == '__main__':
         #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
 
         # ),
-
-
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'split_mini_geodata__5nbfs_NOgbauj',
-        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
-        #     bfs_numbers = [
-        #         2614, 2615, # RUR
-        #         2761, 2785,       # SUB
-        #         2621,
-        #                    ],
-        #     year_range = [2022, 2024],
-        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-
-        #     # split_data_geometry = True, 
-        #     # apply_GBAUJ_TF = True, 
-        # ),
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'split_mini_geodata__5nbfs_Wgbauj',
-        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
-        #     bfs_numbers = [
-        #         2614, 2615, # RUR
-        #         2761, 2785,       # SUB
-        #         2621,
-        #                    ],
-        #     year_range = [2022, 2024],
-        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-
-        #     # split_data_geometry = True, 
-        #     apply_GBAUJ_TF = True, 
-        # ),
-
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'split_mini_geodata__5nbfs_Wgbauj__EGID_gwradded_T',
-        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
-        #     bfs_numbers = [
-        #         2614, 2615, # RUR
-        #         2761, 2785,       # SUB
-        #         2621,
-        #                    ],
-        #     year_range = [2022, 2024],
-        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-
-        #     # split_data_geometry = True, 
-        #     apply_GBAUJ_TF = True, 
-        # ),
-
-
-
-
 
         ]
 
