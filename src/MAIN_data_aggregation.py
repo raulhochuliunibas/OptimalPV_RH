@@ -480,10 +480,12 @@ class DataAggScenario:
                     sub_idofs_list = []
 
                     for i in evus_list:
+                        i = {k.lstrip('\ufeff'): v for k, v in i.items()}
                         sub_bfs_list = sub_bfs_list+ [bfs]
                         sub_nrElcom_list = sub_nrElcom_list + [i['nrElcom']]
                         sub_name_list = sub_name_list + [i['Name']] 
                         sub_idofs_list = sub_idofs_list + [i['idofs']]
+
 
                     sub_Map_df = pd.DataFrame({'bfs': sub_bfs_list, 'nrElcom': sub_nrElcom_list, 'Name': sub_name_list, 'idofs': sub_idofs_list})
                     Map_df.append(sub_Map_df)
@@ -607,42 +609,48 @@ class DataAggScenario:
                     '2026': 14.26,
                     '2025': 14.47,
                     '2024': 14.41,
+                    '2023': 11.72,
                 },
-                'elcom_energyid_fee': {
+                'elcom_energy': {
                     '2027': 13.45,
                     '2026': 13.73,
                     '2025': 15.26,
                     '2024': 15.56,
+                    '2023': 16.78
                 },
                 'elcom_measurm_fee': {
                     '2027': 1.91,
                     '2026': 1.07,
                     '2025': 0.0,
                     '2024': 0.0,
+                    '2023': 0.0,
                 },
                 'elcom_tax_locgov': {
                     '2027': 0.61,
                     '2026': 0.62,
                     '2025': 0.61,
                     '2024': 0.56,
+                    '2023': 0.51,
                 },
                 'elcom_gridsurcharge': {
                     '2027': 2.3,
                     '2026': 0.0,
                     '2025': 0.0,
                     '2024': 0.0,
+                    '2023': 0.0,
                 },
             }
 
 
             # IMPORT + STORE DATA in preprep folder --------------------------------------
+            entsoe_2023_raw = pl.read_csv(os.path.join(self.sett.data_path, 'input', 'ENTSO_transparency', 'GUI_ENERGY_PRICES_202212312300-202312312300.csv'), separator=',')
             entsoe_2024_raw = pl.read_csv(os.path.join(self.sett.data_path, 'input', 'ENTSO_transparency', 'GUI_ENERGY_PRICES_202312312300-202412312300.csv'), separator=',')
             entsoe_2025_raw = pl.read_csv(os.path.join(self.sett.data_path, 'input', 'ENTSO_transparency', 'GUI_ENERGY_PRICES_202412312300-202512312300.csv'), separator=',')
             ecb_fx_chfeur_raw   = pl.read_csv(os.path.join(self.sett.data_path, 'input', 'ECB_CHFEUR', 'ECB Data Portal_20261013102028.csv'), separator=',')
 
 
             # ENTSOE
-            entsoe_raw = pl.concat([entsoe_2024_raw, entsoe_2025_raw], how='vertical')
+            entsoe_raw = pl.concat([entsoe_2023_raw, entsoe_2024_raw, entsoe_2025_raw], how='vertical')
             mtu_start = pl.col('MTU (CET/CEST)').str.split(' - ').list.first()    # interval start, e.g. '27/10/2024 02:00:00 (CET)' (suffix only on clock-change days)
             year      = pl.col('timestamp').dt.year()
             leapday   = (pl.col('timestamp').dt.month() == 2) & (pl.col('timestamp').dt.day() == 29)
@@ -698,12 +706,17 @@ class DataAggScenario:
             )
             entsoe = entsoe_joint.join(price_components_df, on='year', how='left')
 
-            non_energy_components = [col for col in electricity_price_components.keys() if col not in ['year', 'elcom_energy'] ]
-            entsoe = entsoe.with_columns([
-                pl.sum([pl.col(col) for col in non_energy_components]).alias('elec_non_energy_Rp_kWh'),
+            entsoe = entsoe.with_columns(
+                pl.sum_horizontal([
+                    pl.col('elcom_grid_fee'),
+                    pl.col('elcom_measurm_fee'),
+                    pl.col('elcom_tax_locgov'),
+                    pl.col('elcom_gridsurcharge')
+                    ]).alias('elec_non_energy_Rp_kWh'))
+            entsoe = entsoe.with_columns(
                 (pl.col('elec_dayahead_Rp_kWh') + pl.col('elec_non_energy_Rp_kWh')).alias('elecpri_Rp_kWh')
-            ])
-
+                )
+            
             elecpri_entsoe = entsoe.select(['timestamp', 'date', 't', 't_int', 'year', 'elec_dayahead_Rp_kWh', 'elec_non_energy_Rp_kWh', 'elecpri_Rp_kWh'])
 
 
@@ -1140,6 +1153,7 @@ class DataAggScenario:
                     pl.col('EGID_count').cast(pl.Int64),
                 )
                 for n_egid, egid in enumerate(EGID_old_solkat_list):
+                    solkat_subdf = None  # reset per EGID, stays None if no case below applies (no overlap, case3, error)
                     
                     egid_join_union = join_gwr_pl.filter(pl.col('EGID_old_solkat') == egid)
 
@@ -1269,7 +1283,8 @@ class DataAggScenario:
                                 i_print += 1
                         
                     # merge all solkat partitions to new solkat df
-                    new_solkat_append_list.append(solkat_subdf) 
+                    if solkat_subdf is not None:
+                        new_solkat_append_list.append(solkat_subdf) 
 
                     if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
                         checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition', self.sett.log_name, 3, self.sett.show_debug_prints)
@@ -2057,34 +2072,60 @@ class DataAggScenario:
 if __name__ == '__main__':
     dataagg_scen_list = [
 
-
         # DataAggScenario_Settings(
-        #     name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__May26',
-        #     # kt_numbers = [13, 12, 11], # BL, BS, SO
-        #     kt_numbers = [13, 11],
-        #     # bfs_numbers = [
-        #         # 2614, 2615, # RUR
-        #         # 2761, 2785,       # SUB
-        #         # 2621,
-        #                 #    ],
-        #     year_range = [2015, 2024],
-        #     # year_range = [2022, 2024],
-        #     split_data_geometry = True,
-        #     GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
-        #     SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
-
-        #     apply_GBAUJ_TF = False
+        #     name_dir_export = 'debug_bfs2761',
+        #     bfs_numbers = [
+        #         2761, # SUB
+        #     ],
+        #     year_range = [2022, 2023],
         # ),
 
-
-
         DataAggScenario_Settings(
-            name_dir_export = 'debug_bfs2761',
+            name_dir_export = 'debug_functionality',
             bfs_numbers = [
                 2761, # SUB
             ],
             year_range = [2022, 2023],
+
+            # split_data_geometry = True,
+            # import_slow_api = True,
+            rerun_localimport_and_mappings = True,
+            reextend_fixed_data = True,
+
+            GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+            apply_GBAUJ_TF = False
+
         ),
+
+
+
+        DataAggScenario_Settings(
+            # name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__May26',
+            name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__Oct26',
+            # kt_numbers = [13, 12, 11], # BL, BS, SO
+            kt_numbers = [13, 11],
+            # bfs_numbers = [
+                # 2614, 2615, # RUR
+                # 2761, 2785,       # SUB
+                # 2621,
+                        #    ],
+            year_range = [2015, 2024],
+
+            split_data_geometry = True,
+            import_slow_api = True,
+            rerun_localimport_and_mappings = True,
+            reextend_fixed_data = True,
+            # split_data_geometry = True,
+            GWR_GKLAS = [ '1110',  '1121', '1122',  '1276', '1278' ],
+            SOLKAT_cols_adjust_for_missEGIDs_to_solkat = ['FLAECHE', 'STROMERTRAG'],
+
+            apply_GBAUJ_TF = False
+        ),
+
+
+
 
 
 
@@ -2124,5 +2165,5 @@ if __name__ == '__main__':
         dataagg_class.run_data_agg()
 
 
-print('done')
+    print(f'END of __main__:{__file__}')
 
