@@ -555,6 +555,8 @@ class DataAggScenario:
             checkpoint_to_logfile('api call pvtarif completed', self.sett.log_name, 3, self.sett.show_debug_prints)
 
             pvtarif = copy.deepcopy(pvtarif_raw)
+            pvtarif.columns = pvtarif.columns.str.replace('\ufeff', '', regex=False)   # VESE API returns a BOM in the 'nrElcom' key
+            pvtarif.columns = pvtarif.columns.str.replace('﻿', '', regex=False)   # VESE API returns a BOM in the 'nrElcom' key
             empty_cols = [col for col in pvtarif.columns if (pvtarif[col]=='').all()]
             pvtarif = pvtarif.drop(columns=empty_cols)
 
