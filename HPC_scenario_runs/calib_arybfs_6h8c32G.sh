@@ -11,11 +11,10 @@
 #SBATCH --qos=6hours           #You will run in this queue
 
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
-#SBATCH --output=stdouterr_files/myrun.o%j     #These are the STDOUT and STDERR files
-#SBATCH --error=stdouterr_files/myrun.e%j
+#SBATCH --output=stdouterr_files/myrun.oe%j     #STDOUT and STDERR are written jointly to this file
 
 #You selected an array of jobs from 1 to 2139 with 50 simultaneous jobs
-#SBATCH --array=1-2139%100
+#SBATCH --array=1-2139%200
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT
 #SBATCH --mail-user=raul.hochuli@unibas.ch        #You will be notified via email when your task ends or fails
 
