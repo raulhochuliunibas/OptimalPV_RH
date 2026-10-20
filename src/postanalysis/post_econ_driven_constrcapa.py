@@ -12,7 +12,7 @@ from scipy.optimize import least_squares, brentq
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # from src.auxiliary_functions import add_static_topo_data_to_subdf
-from pvalloc.pvalloc_core import PVAllocCore
+from src.pvalloc.pvalloc_core import PVAllocCore
 # from src.postanalysis.post_worstnode_worstweek import _PlotExportMixin
 
 
@@ -702,18 +702,107 @@ class EconDrivenConstrcapa():
         ax.set_xlim(hist_range[0], hist_range[1])
         plt.xlabel(x_label); plt.ylabel(y_label)
         if adj_tupl is not None:
-            plt.title(title or f'NPV Distribution - {scen} ({adj_tupl[0]}: elecpri {adj_tupl[1]} Rp/kWh, pvtarif {adj_tupl[2]} Rp/kWh)')
+            plt.title(title or f'NPV Dist. - {adj_tupl[0]} (elecp {adj_tupl[1]} Rp, pv {adj_tupl[2]} Rp)')
         else:
-            plt.title(title or f'NPV Distribution - {run_tag}')
+            plt.title(title or f'NPV Dist. - {run_tag}' )
         plt.legend(title=None)
         plt.tight_layout()
 
-        export_file = export_name or f'npv_hist_{scen}_{run_tag}.png'
+        export_file = export_name or f'npv_hist_{run_tag}.png'
         if show_export_plots[1]:
             plt.savefig(os.path.join(self.dir_path_postanalysis, export_file), dpi=self.plot_dpi)
         if show_export_plots[0]:
             plt.show()
         plt.close()
+
+
+    # -- overlay histogram: base vs adjusted, in levels + standardized ----------------
+    def plot_overlay_npv_histo(self, npv_df_base: pl.DataFrame, npv_df_adjusted: pl.DataFrame, scen: str, run_tag: str,
+                               export_name: str = None, title: str = None, threshold_df: pl.DataFrame = None,
+                               npv_hist_xrange: tuple = None, n_bins: int = 40,
+                               x_label: str = 'NPV (CHF)', y_label: str = 'Count',
+                               base_rgb=(31, 119, 180), adjusted_rgb=(255, 127, 14),
+                               alpha_levels: float = 0.55, alpha_standardized: float = 0.35,
+                               plot_width_func=None, plot_height_func=None,
+                               adj_tupl: tuple = None, show_export_plots = (False, True)):
+        """Overlay of the base and the adjusted NPV_uid distribution on identical bins.
+        Top panel: histograms in levels (CHF). Bottom panel: both cases standardized separately,
+        z = (NPV - mean) / std, which removes shift and scale between the cases so that only differences
+        in shape remain (lighter fill). The z-scores live on their own x-axis, hence the second panel.
+        The prices in the legend are read from the elecpri/pvtarif columns of the two dataframes.
+        threshold_df (output of _derive_threshold_npv): its yearly 'threshold_npv' values (derived from the base
+        ranking, applied to the adjusted NPVs in the orchestrator) are drawn as vertical lines in the top panel."""
+        cases = []
+        for df, name, rgb in [(npv_df_base,     'Base',                                             base_rgb),
+                              (npv_df_adjusted, adj_tupl[0] if adj_tupl is not None else 'Adjusted', adjusted_rgb)]:
+            values = df.get_column('NPV_uid').drop_nulls().to_numpy()
+            if values.size == 0:
+                print(f'No NPV_uid values to plot for {scen} ({name}).')
+                return
+            mean_val, median_val, std_val = float(np.mean(values)), float(np.median(values)), float(np.std(values))
+            cases.append({
+                'name':   name,
+                'values': values,
+                'z':      (values - mean_val) / std_val if std_val > 0 else np.zeros_like(values),
+                'mean':   mean_val,
+                'median': median_val,
+                'color':  tuple(c / 255.0 for c in rgb),
+                'label':  f"{name} (elecp {df.get_column('elecpri_Rp_kWh')[0]:g} Rp, pv {df.get_column('pvtarif_Rp_kWh')[0]:g} Rp)\n"
+                          f"mean {mean_val:,.0f} | median {median_val:,.0f}",
+            })
+
+        # common bins for both cases (levels), and the same observations re-expressed as z-scores
+        data_min, data_max = min(c['values'].min() for c in cases), max(c['values'].max() for c in cases)
+        hist_min, hist_max = data_min, data_max
+        if npv_hist_xrange is not None:
+            xr_min, xr_max = max(float(npv_hist_xrange[0]), data_min), min(float(npv_hist_xrange[1]), data_max)
+            if xr_min < xr_max:
+                hist_min, hist_max = xr_min, xr_max
+        bins = np.linspace(hist_min, hist_max, n_bins + 1)
+        z_all = np.concatenate([c['z'][(c['values'] >= hist_min) & (c['values'] <= hist_max)] for c in cases])
+        z_bins = np.linspace(z_all.min(), z_all.max(), n_bins + 1)
+
+        plot_width  = self.plot_width  if plot_width_func  is None else plot_width_func
+        plot_height = self.plot_height if plot_height_func is None else plot_height_func
+
+        fig, (ax_lvl, ax_std) = plt.subplots(2, 1, figsize=(plot_width, 1.6 * plot_height))
+        for c in cases:                     # translucent fill (alpha), solid outline -> overlap stays readable
+            ax_lvl.hist(c['values'], bins=bins, histtype='stepfilled', facecolor=(*c['color'], alpha_levels),
+                        edgecolor=c['color'], linewidth=1.0, label=c['label'])
+            # ax_lvl.axvline(c['mean'],   color=c['color'], linestyle='--', linewidth=1.5)
+            # ax_lvl.axvline(c['median'], color=c['color'], linestyle='-',  linewidth=1.5)
+            ax_std.hist(c['z'], bins=z_bins, histtype='stepfilled', facecolor=(*c['color'], alpha_standardized),
+                        edgecolor=c['color'], linewidth=1.0)
+        ax_lvl.axvline(0, color='black', linestyle=':', linewidth=1.0, label='Zero')
+        # ax_lvl.plot([], [], color='black', linestyle='--', label='Mean')       # legend proxies for the mean/median lines above
+        # ax_lvl.plot([], [], color='black', linestyle='-',  label='Median')
+        ax_std.axvline(0, color='black', linestyle=':', linewidth=1.0)         # z = 0 is the mean of each case
+
+        # yearly NPV thresholds (base ranking): dashed lines, year written above the axes; only those inside the plotted range
+        thr_by_year = []
+        if threshold_df is not None:
+            thr_by_year = [(int(row['year']), row['threshold_npv']) for row in threshold_df.sort('year').iter_rows(named=True)
+                           if row['threshold_npv'] is not None and hist_min <= row['threshold_npv'] <= hist_max]
+        for i, (year, thr) in enumerate(thr_by_year):
+            ax_lvl.axvline(thr, color='0.35', linestyle='--', linewidth=0.8, label='NPV threshold per year (base)' if i == 0 else None)
+            ax_lvl.text(thr, 1.0, str(year), transform=ax_lvl.get_xaxis_transform(), rotation=90, ha='center', va='bottom',
+                        fontsize='xx-small', color='0.2')
+
+        ax_lvl.set_xlim(hist_min, hist_max)
+        ax_lvl.xaxis.set_major_locator(plt.MaxNLocator(nbins=6))               # CHF tick labels are long, avoid overlapping labels
+        ax_lvl.set_xlabel(x_label); ax_lvl.set_ylabel(y_label)
+        ax_lvl.set_title(title or f'NPV Dist. - Base vs {cases[1]["name"]}', pad=22 if thr_by_year else None)     # room for the year labels
+        ax_lvl.legend(fontsize='x-small', loc='upper right')
+        ax_std.set_xlim(z_bins[0], z_bins[-1])
+        ax_std.set_xlabel('Standardized NPV (z = (NPV - mean) / std)'); ax_std.set_ylabel(y_label)
+        fig.tight_layout()
+
+        export_file = export_name or f'npv_hist_overlay_{run_tag}.png'
+        if show_export_plots[1]:            # export BEFORE show: closing the plt.show() window destroys the figure
+            fig.savefig(os.path.join(self.dir_path_postanalysis, export_file), dpi=self.plot_dpi)
+        if show_export_plots[0]:
+            plt.show()
+        plt.close(fig)
 
 
     # -- orchestrator (public entry point) ----------------
@@ -728,10 +817,12 @@ class EconDrivenConstrcapa():
                                         #  pvtarif_Rp_kWh_adjusted: float = None,
                                          constrcapa_override=None,
                                          export_csv: bool = False,
-                                         npv_hist_kwargs: dict = None, 
+                                         npv_hist_kwargs: dict = None,
+                                         overlay_hist_kwargs: dict = None,
                                          show_export_plots: tuple= (False, True),
                                          ) -> dict:
         npv_hist_kwargs = npv_hist_kwargs or {}
+        overlay_hist_kwargs = overlay_hist_kwargs or {}
 
         self.pvalloc_sett  = self._load_pvalloc_sett(scen)
         npv_df_raw    = pl.read_parquet(os.path.join(self.data_path, 'pvalloc', scen, 'zMC1', 'pred_npv_inst_by_M', 'npv_df_1.parquet'))
@@ -765,7 +856,8 @@ class EconDrivenConstrcapa():
                                           elecpri = elecpri_base, 
                                           pvtarif = pvtarif_base
                                           )
-        self._plot_npv_histogram(npv_df_base, scen=scen, run_tag='base', show_export_plots = show_export_plots, # npv_hist_xrange = (60000, 150000),
+        runtag = f'{scen}_base e{elecpri_base}Rp pv{pvtarif_base}Rp'
+        self._plot_npv_histogram(npv_df_base, scen=scen, run_tag=runtag, show_export_plots = show_export_plots, # npv_hist_xrange = (60000, 150000),
                                  **npv_hist_kwargs)
         
         # -- check debug-----
@@ -801,6 +893,7 @@ class EconDrivenConstrcapa():
                                                  pvtarif = adj_tupl[2],
                                             )
             self._plot_npv_histogram(npv_df_adjusted, scen=scen, run_tag=run_tag_adj, adj_tupl = adj_tupl, show_export_plots = show_export_plots, **npv_hist_kwargs)
+            self.plot_overlay_npv_histo(npv_df_base, npv_df_adjusted, scen=scen, run_tag=run_tag_adj, threshold_df = threshold_df, adj_tupl = adj_tupl, show_export_plots = show_export_plots, **overlay_hist_kwargs)
 
             results = []
             npv_df_loop = npv_df_adjusted.clone()

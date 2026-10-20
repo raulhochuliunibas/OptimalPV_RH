@@ -39,10 +39,11 @@ if True:
         create_gdf_export_of_topology   = True,
         export_csvs                     = False,
         T0_year_prediction              = 2024,
-        TECspec_elecpri_year            = 31.98,
-        TECspec_generic_pvtarif_Rp_kWh  = 9.03,
         months_prediction               = 360,
         ALGOspec_topo_subdf_partitioner = 250,
+
+        TECspec_elecpri_year            = 31.98,
+        TECspec_generic_pvtarif_Rp_kWh  = 9.03,
     ) 
 
     # endregion
@@ -51,7 +52,8 @@ if True:
 # ==============================
 # Lists Sub-Scenarios 
 # ==============================
-def create_scen_list_261015(scen_list = [], default_scenario = pvalloc_Xnbfs_DEFAULT, scen_filter = None):
+def create_scen_list_261015(scen_list = None, default_scenario = pvalloc_Xnbfs_DEFAULT, scen_filter = None):
+    scen_list = [] if scen_list is None else scen_list      # no mutable default: a shared [] would accumulate across calls
     f_scen_list = [
         make_scenario(default_scenario,
                       name_dir_suffix = '_max'
@@ -75,7 +77,7 @@ def create_scen_list_261015(scen_list = [], default_scenario = pvalloc_Xnbfs_DEF
                       ),
         make_scenario(default_scenario,
                       name_dir_suffix = '_max_histconstr_e40pv6', 
-                      CSTRspec_ext_constrcapa_path = r"C:\Models\OptimalPV_RH\data\postanalysis\constrcapa_pvalloc_LRG3_max_adj_13.parquet"
+                      CSTRspec_ext_constrcapa_path = os.path.join("postanalysis", "constracpa_adjustments", "constrcapa_pvalloc_LRG3_max_adj_13.parquet")
                     ),
 
         # DSO response
@@ -312,37 +314,44 @@ def get_subscen_list(sub_scen_str = 'test'):
 if __name__ == '__main__':
 
     # call scen in array and run ------------------------------------------
-    pvalloc_scen_list = create_scen_list_261015(default_scenario = DEV_default_scen, 
+
+    pvalloc_scen_list = create_scen_list_261015(default_scenario = LRG_default_scen, 
                                         scen_filter = [
                                             # '_max', 
                                             # '_rnd', 
                                             # '_max_dynelecpri2023', 
-                                            '_max_gridoptim', 
+                                            # '_max_gridoptim', 
                                             '_max_histconstr_e40pv6', 
                                         ])
    
 
+    # # slurm_job_id = os.environ.get('SLURM_JOB_ID_ENV', 'unknown')
+    # slurm_job_id = os.environ.get('SLURM_ARRAY_JOB_ID_ENV', 'unknown')
+    # slurm_array_id = os.environ.get('SLURM_ARRAY_TASK_ID_ENV', 'unknown')
+    # slurm_full_id = f"{slurm_job_id}_{slurm_array_id}"
 
+    # if len(sys.argv) > 1:
+    #     pvalloc_scen_index = int(sys.argv[1])
+    #     if pvalloc_scen_index < len(pvalloc_scen_list):
+    #         pvalloc_scen = pvalloc_scen_list[pvalloc_scen_index]
+            
+    #         scen_class = PVAllocScenario(pvalloc_scen)
 
+    #         scen_class.sett.slurm_full_id        = slurm_full_id
+    #         scen_class.sett.pvalloc_scen_index   = pvalloc_scen_index
+    
+    #         scen_class.RUN_pvalloc_scenario()
 
-    # slurm_job_id = os.environ.get('SLURM_JOB_ID_ENV', 'unknown')
-    slurm_job_id = os.environ.get('SLURM_ARRAY_JOB_ID_ENV', 'unknown')
-    slurm_array_id = os.environ.get('SLURM_ARRAY_TASK_ID_ENV', 'unknown')
-    slurm_full_id = f"{slurm_job_id}_{slurm_array_id}"
+    if 'scicore' in os.getcwd() or 'SCICORE' in os.getcwd():
 
-    if len(sys.argv) > 1:
-        pvalloc_scen_index = int(sys.argv[1])
-        if pvalloc_scen_index < len(pvalloc_scen_list):
+        for pvalloc_scen_index in range(0, len(pvalloc_scen_list)):
             pvalloc_scen = pvalloc_scen_list[pvalloc_scen_index]
             
             scen_class = PVAllocScenario(pvalloc_scen)
-
-            scen_class.sett.slurm_full_id        = slurm_full_id
-            scen_class.sett.pvalloc_scen_index   = pvalloc_scen_index
-    
             scen_class.RUN_pvalloc_scenario()
+
     
-    elif 'c:\\Models' in os.getcwd() or 'C:\\Models' in os.getcwd():
+    if 'c:\\Models' in os.getcwd() or 'C:\\Models' in os.getcwd():
 
         for pvalloc_scen_index in range(0, len(pvalloc_scen_list)):
             pvalloc_scen = pvalloc_scen_list[pvalloc_scen_index]

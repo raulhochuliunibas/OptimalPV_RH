@@ -358,7 +358,7 @@ def add_static_topo_data_to_subdf(subdf, topo):
                 'demand_elec_pGAREA': static_topo['demand_elec_pGAREA'],
                 'grid_node':          static_topo['grid_node'],
                 'pvtarif_Rp_kWh':     static_topo['pvtarif_Rp_kWh'],
-                'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
+                # 'elecpri_Rp_kWh':     static_topo['elecpri_Rp_kWh'],
                 'inst_TF':            static_topo['pv_inst']['inst_TF'],
                 'info_source':        static_topo['pv_inst']['info_source'],
                 'pvid':               static_topo['pv_inst']['xtf_id'],

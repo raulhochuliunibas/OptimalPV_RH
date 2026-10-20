@@ -33,7 +33,7 @@ import multiprocessing as mp
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr, add_static_topo_data_to_subdf
-from pvalloc.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
+from src.pvalloc.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
 
 # settings
 pl.Config.set_tbl_rows(30)  # Adjust 50 to whatever number of rows you want
@@ -115,16 +115,22 @@ class PVAllocGridOpt(PVAllocCore):
 
         # OPTIMIZATION SETUP -----------------------------------------------------------------------------    
 
-        topo = json.load(open(f'{self.sett.optim_path}/topo_egid.json', 'r'))
+        with open(f'{self.sett.optim_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            topo = json.load(f)
         topo_time_paths = glob.glob(os.path.join(self.sett.optim_path, 'topo_subdf*.parquet'))
-        gridprem_ts = pl.read_parquet(f'{self.sett.optim_path}/gridprem_ts.parquet')
+        # gridprem_ts = pl.read_parquet(f'{self.sett.optim_path}/gridprem_ts.parquet')
         gridnode_df = pl.read_parquet(f'{self.sett.optim_path}/gridnode_df.parquet')
+        elecpri_vese = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
+        elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri_entsoe.parquet'))
+
 
         rfr_model = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_model.pkl')
         encoder   = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_encoder.pkl')
 
-        node_1hll_closed_dict     = json.load(open(f'{self.sett.optim_path}/node_1hll_closed_dict.json', 'r')) 
-        node_subsidy_monitor_dict = json.load(open(f'{self.sett.optim_path}/node_subsidy_monitor_dict.json', 'r'))
+        with open(f'{self.sett.optim_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
+            node_1hll_closed_dict = json.load(f)
+        with open(f'{self.sett.optim_path}/node_subsidy_monitor_dict.json', 'r', encoding='utf-8') as f:
+            node_subsidy_monitor_dict = json.load(f)
                 
 
         # filter topo / subdf + calculate NPV ======================
@@ -139,7 +145,7 @@ class PVAllocGridOpt(PVAllocCore):
         
 
 
-        def single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, gridprem_ts, topo, rfr_model, encoder):  
+        def single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, rfr_model, encoder):  
             """ 
             Process a single grid optimization
             """
@@ -160,9 +166,15 @@ class PVAllocGridOpt(PVAllocCore):
 
                     # extend subdf with static data (safe disk space) --------------------
                     node_subdf = add_static_topo_data_to_subdf(node_subdf, topo)
-                
+                    if 'elecpri_Rp_kWh' in subdf.columns:
+                        node_subdf = node_subdf.drop(['elecpri_Rp_kWh', ])
+              
                     # merge gridprem_ts
-                    node_subdf = node_subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
+                    # node_subdf = node_subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
+
+                    # add static electricity price for random forest --------------------
+                    node_subdf = self.add_elecpri_to_subdf(node_subdf, elecpri_vese, elecpri_entsoe)
+
 
                     for egid in list(node_subdf['EGID'].unique()):
                         egid_subdf = node_subdf.filter(pl.col('EGID') == egid).clone()
@@ -194,7 +206,7 @@ class PVAllocGridOpt(PVAllocCore):
                             pl.col('MSTRAHLUNG').first().alias('MSTRAHLUNG'),
                             pl.col('GSTRAHLUNG').first().alias('GSTRAHLUNG'),
                             pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
-                            pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
+                            # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                             ])
 
                         # create direction classes
@@ -247,7 +259,7 @@ class PVAllocGridOpt(PVAllocCore):
                                 pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'),
                                 pl.col('TotalPower').first().alias('TotalPower'),
                                 pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
-                                pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
+                                # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
 
                                 pl.col('FLAECHE').first().alias('FLAECHE_total'),
                                 )
@@ -377,14 +389,15 @@ class PVAllocGridOpt(PVAllocCore):
                         egid_agg = egid_subdf.group_by(['EGID', 't', 't_int' ]).agg([
                             pl.lit(df_uid_w_inst_str).alias('df_uid_winst'), 
                             pl.col('df_uid').count().alias('n_dfuid'),
+                            pl.col('bfs').first().alias('bfs'),
                             pl.col('grid_node').first().alias('grid_node'),
-                            pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
+                            # pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
                             pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
-                            pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
+                            # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                             pl.col('TotalPower').first().alias('TotalPower'),
                             pl.col('AUSRICHTUNG').mean().alias('AUSRICHTUNG_mean'),
                             pl.col('NEIGUNG').mean().alias('NEIGUNG_mean'),
-                            ((pl.col('NEIGUNG') * pl.col('FLAECHE')).sum() / pl.col('FLAECHE').sum()).alias('NEIGUNG_wmean'),
+                            # ((pl.col('NEIGUNG') * pl.col('FLAECHE')).sum() / pl.col('FLAECHE').sum()).alias('NEIGUNG_wmean'),
 
                             pl.col('FLAECHE').sum().alias('FLAECHE'),
                             pl.col('poss_pvprod_kW').sum().alias('poss_pvprod_kW'),
@@ -394,8 +407,8 @@ class PVAllocGridOpt(PVAllocCore):
 
                         # ----------------------------------
                         #sanity check
-                        egid_subdf.filter(pl.col('t').is_in(['t_10', 't_11', 't_12', 't_13'])).select(['EGID', 'df_uid', 'share_pvprod_used', 'poss_pvprod_kW', 'inst_TF', 'pvprod_kW', 't'])
-                        egid_agg.filter(pl.col('t').is_in(['t_10', 't_11'])).select(['EGID', 'poss_pvprod_kW', 'pvprod_kW', 't'])
+                        # egid_subdf.filter(pl.col('t').is_in(['t_10', 't_11', 't_12', 't_13'])).select(['EGID', 'df_uid', 'share_pvprod_used', 'poss_pvprod_kW', 'inst_TF', 'pvprod_kW', 't'])
+                        # egid_agg.filter(pl.col('t').is_in(['t_10', 't_11'])).select(['EGID', 'poss_pvprod_kW', 'pvprod_kW', 't'])
                         # ----------------------------------
 
 
@@ -410,20 +423,18 @@ class PVAllocGridOpt(PVAllocCore):
                             (pl.col("demand_kW") - selfconsum_expr).alias("netdemand_kW")
                         ])
 
-                        # calc econ spend/inc chf
+
+                        # add ACTUAL electricity price for NPV --------------------
+                        egid_agg = self.add_elecpri_to_subdf(egid_agg, elecpri_vese, elecpri_entsoe)
+
+                        # calc econ spend/inc chf -----------------
                         egid_agg = egid_agg.with_columns([
                             ((pl.col("netfeedin_kW") * pl.col("pvtarif_Rp_kWh")) / 100 + (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf")
                         ])
                         
-                        if not self.sett.ALGOspec_tweak_npv_excl_elec_demand:
-                            egid_agg = egid_agg.with_columns([
-                                ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100 +
-                                (pl.col("demand_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_spend_chf")
-                            ])
-                        else:
-                            egid_agg = egid_agg.with_columns([
-                                ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100).alias("econ_spend_chf")
-                            ])
+                        egid_agg = egid_agg.with_columns([
+                            (pl.lit(0.0)).alias("econ_spend_chf")
+                        ])
 
 
                         # NPV calculation -----------------
@@ -575,11 +586,11 @@ class PVAllocGridOpt(PVAllocCore):
         # RUN OPTIMIZATION -----------------------------------------------------------------------------
         if self.sett.OPTIMspecs_gridnode_subsample == 'max_node':
             gridnode_subsample = topo_df['grid_node'].value_counts().sort(by='count', descending=True).head(1)['grid_node'][0]
-            single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, gridprem_ts, topo, rfr_model, encoder)
+            single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, rfr_model, encoder)
             
         elif self.sett.OPTIMspecs_gridnode_subsample == 'all_nodes_loop':
             for gridnode_subsample in list(topo_df['grid_node'].unique()):
-                single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, gridprem_ts, topo, rfr_model, encoder)
+                single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, rfr_model, encoder)
                 
         else:
             if self.sett.OPTIMspecs_gridnode_subsample == 'all_nodes_pyparallel':
@@ -596,12 +607,13 @@ class PVAllocGridOpt(PVAllocCore):
                 for node in gridnode_subsample_list:
                     fut = ex.submit(
                         single_gridoptimized_orderinst,  # nested function in scope
-                        self, node, topo_df, topo_time_paths, gridprem_ts, topo, rfr_model, encoder
+                        self, node, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, rfr_model, encoder
                     )
                     futures[fut] = node
 
                 completed = 0
                 for fut in as_completed(futures):
+                    print('')
                     node = futures[fut]
                     try:
                         fut.result()
@@ -609,7 +621,6 @@ class PVAllocGridOpt(PVAllocCore):
                         print(f'Completed node: {node} ({completed}/{len(gridnode_subsample_list)})')
                     except Exception as e:
                         print(f'Error processing node {node}: {e}')
-
 
         chapter_to_logfile(f'end MAIN_pvalloc_GridOptim_Orderinst for : {self.sett.name_dir_export}', self.sett.log_name, overwrite_file=True)
 
@@ -653,7 +664,8 @@ class PVAllocGridOpt(PVAllocCore):
 
             print_to_logfile(f'\n-- n_iter {i_m} -- month {m} -- iter OptExpan -- {self.sett.name_dir_export} --', self.sett.log_name)
             start_allocation_month = datetime.datetime.now()
-            topo = json.load(open(f'{self.sett.optim_path}/topo_egid.json', 'r'))
+            with open(f'{self.sett.optim_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+                topo = json.load(f)
             egid_without_pv = [k for k,v in topo.items() if not v['pv_inst']['inst_TF']]
 
 
@@ -668,7 +680,8 @@ class PVAllocGridOpt(PVAllocCore):
             if len(egid_without_pv) > 0:
 
                 # check if any EGID w/o PV in open node
-                node_1hll_closed_dict = json.load(open(f'{self.sett.optim_path}/node_1hll_closed_dict.json', 'r')) 
+                with open(f'{self.sett.optim_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
+                    node_1hll_closed_dict = json.load(f)
                 closed_nodes = node_1hll_closed_dict[str(i_m)]['all_nodes_abv_1hll']
                 closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
                 egid_wo_pv_open_node = [egid for egid in egid_without_pv if egid not in closed_nodes_egid]
@@ -690,8 +703,10 @@ class PVAllocGridOpt(PVAllocCore):
                 print_to_logfile('- START inst while loop', self.sett.log_name)
 
                 while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
-                    topo = json.load(open(f'{self.sett.optim_path}/topo_egid.json', 'r'))
-                    node_1hll_closed_dict = json.load(open(f'{self.sett.optim_path}/node_1hll_closed_dict.json', 'r')) 
+                    with open(f'{self.sett.optim_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+                        topo = json.load(f)
+                    with open(f'{self.sett.optim_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
+                        node_1hll_closed_dict = json.load(f)
 
                     npv_df = pl.read_parquet(f'{self.sett.optim_path}/npv_df.parquet')
 
