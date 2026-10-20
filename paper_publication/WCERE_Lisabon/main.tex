@@ -221,7 +221,7 @@
 }
 
 % MAIN ROW
-\node[topiccard, fill=card3] (t1) at (0*\dx, 0)
+\node[topiccard, fill=card6] (t1) at (0*\dx, 0) %card3
 {
 \begin{minipage}{\cardwidth}
 \raggedright
@@ -233,7 +233,7 @@
 \end{minipage}
 };
 
-\node[topiccard, fill=card4, fill opacity = 0.25, text opacity = 0.95] (t2) at (1*\dx, 0)
+\node[topiccard, fill=card3, fill opacity = 0.25, text opacity = 0.95] (t2) at (1*\dx, 0)  % card4
 {
 \begin{minipage}{\cardwidth}
 \raggedright
@@ -247,7 +247,7 @@ Poss. underestimation \hyperlink{appendix_model_grid_analysis}{\beamerreturnbutt
 \end{minipage}
 };
 
-\node[topiccard, fill=card5, fill opacity = 0.25, text opacity = 0.95] (t3) at (2*\dx, 0)
+\node[topiccard, fill=card3, fill opacity = 0.25, text opacity = 0.95] (t3) at (2*\dx, 0)   % card5
 {
 \begin{minipage}{\cardwidth}
 \raggedright
@@ -281,7 +281,7 @@ Biodiversity a.o.\\
 };
 
 % STACKED PAIR
-\node[smallcard, fill=card2, fill opacity = 0.25, text opacity = 0.95] (s1) at (4.1*\dx, 0.801)
+\node[smallcard, fill=card3, fill opacity = 0.25, text opacity = 0.95] (s1) at (4.1*\dx, 0.801) % card2
 {
 \begin{minipage}{\cardwidth}
 \raggedright
@@ -293,7 +293,7 @@ Penetration limits\\
 \end{minipage}
 };
 
-\node[smallcard, fill=card2, fill opacity = 0.25, text opacity = 0.95] (s2) at (4.1*\dx, -0.801)
+\node[smallcard, fill=card3, fill opacity = 0.25, text opacity = 0.95] (s2) at (4.1*\dx, -0.801)  % card2
 {
 \begin{minipage}{\cardwidth}
 \raggedright
@@ -579,7 +579,7 @@ Rollout 2028 at 80\%\\
       & 4'215.7
       & 3'751.2
       & 3'192.6 \\
-    n h ouses
+    n houses
       & \textcolor{black}{379}
       & 243
       & 283
@@ -605,11 +605,11 @@ Rollout 2028 at 80\%\\
   \vspace{0.412cm}
 
   \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
+    \begin{column}{0.46\textwidth}
       \centering
         \includegraphics[width=\textwidth]{figures/hist_avgloss_pEGID_pvalloc_LRG3_max.png}
     \end{column}
-    \begin{column}{0.48\textwidth}
+    \begin{column}{0.46\textwidth}
       \centering
         \includegraphics[width=\textwidth]{figures/worstnode_worstweek_pegid_pvalloc_LRG3_max.png}
     \end{column}
@@ -637,24 +637,28 @@ Rollout 2028 at 80\%\\
   \begin{block}{Research Contribution}
     \begin{enumerate}
       \item \textbf{Problem quantification} $\rightarrow$\textit{Grid congestion will arise in the next 5-6 years and scale up fast, possible endangering the "residential capacity targets" for a successful energy transition.}
-      \vspace{0.1cm}
+      \vspace{-0.05cm}
       \item \textbf{Economic response} $\rightarrow$ \textit{Simple subsidy adjustments might delay grid congestion by a few years and could be even as good as a social planner's allocation.}
     \end{enumerate}
   \end{block}
 
   \textbf{Outlook}
+  \vspace{-0.1cm}
   \begin{itemize}
-    \item Post calculation: battery capacity for "worst week" in "worst node" (in progress).
-    \item Cost comparison of subsidy spending to grid reinforcements in most affected nodes.
+    \item Post calculation: Max battery capacities needed to bridge "worst week".
+    % \item Cost comparison of subsidy spending to grid reinforcements in most affected nodes.
+    \item Derive alternative PV expansion capacities (PSI).
+    \item Welfare effect of distorted incentives (interest rate effect on later realized installations)
+    \item \textbf{Postponed}: Add battery investment and battery usage to the model.
   \end{itemize}
 
-  \textbf{Postponed}
-  \begin{itemize}
-    \item Add battery investment and battery usage to the model
-    \begin{itemize}
-      \item Optimized for household consumption vs.\ grid serving (quasi-obligatory for PV installations)
-    \end{itemize}
-  \end{itemize}
+  % \textbf{Postponed}
+  % \begin{itemize}
+  %   % \item Add battery investment and battery usage to the model
+  %   \begin{itemize}
+  %     % \item Optimized for household consumption vs.\ grid serving (quasi-obligatory for PV installations)
+  %   \end{itemize}
+  % \end{itemize}
 
 \end{frame}
 
