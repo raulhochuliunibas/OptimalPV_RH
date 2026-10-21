@@ -7,6 +7,7 @@ import json
 import copy
 import itertools
 import time
+import uuid
 import joblib
 
 # external packages
@@ -81,6 +82,39 @@ class PVAllocCore:
 
             with open(f'{self.sett.name_dir_export_path}/pvalloc_sett.json', 'w') as f:
                 json.dump(sett_dict, f, indent=4)
+
+
+
+
+    def atomic_export(self, final_path: str, write_fn) -> None:
+        """
+        Input:
+            > final_path: path of a file that parallel scenario runs (e.g. HPC array tasks) SHARE, e.g. in the preprep folder.
+            > write_fn:   function taking one path argument and writing the complete file to it, e.g. lambda p: df.to_parquet(p).
+
+        Output:
+            > final_path contains the complete new file. Nobody ever reads a half-written (or empty) file, because
+              write_fn writes to a private temp file in the SAME folder (same file system) which is then swapped in
+              with os.replace (an atomic rename: readers see either the old or the new complete file, never something in between).
+              If writing fails (or on Ctrl-C) the temp file is removed; after a hard kill (SIGTERM, SLURM timeout) a stray *.tmp_<id> file may remain. final_path is never left truncated.
+            > (Windows only) os.replace fails with PermissionError while another process (a reader, a virus scanner) holds one of the two
+              files open, so it is retried briefly. On Linux (HPC) this never triggers: renaming over a file that is open elsewhere is allowed.
+        """
+        tmp_path = f'{final_path}.tmp_{uuid.uuid4().hex}'     # random name -> no two tasks (also on different nodes) ever share it
+        try:
+            write_fn(tmp_path)
+            for i_try in range(5):
+                try:
+                    os.replace(tmp_path, final_path)
+                    break
+                except PermissionError:
+                    if i_try == 4:
+                        raise
+                    time.sleep(0.2)
+        except BaseException:                                  # also Ctrl-C (KeyboardInterrupt) and sys.exit (SystemExit), not just normal errors
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise
 
 
 

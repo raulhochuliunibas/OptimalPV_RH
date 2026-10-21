@@ -52,23 +52,100 @@ if True:
 # ==============================
 # Lists Sub-Scenarios 
 # ==============================
-def create_scen_list_261015(scen_list = None, default_scenario = pvalloc_Xnbfs_DEFAULT, scen_filter = None):
+def create_MAIN_scen_list(scen_list          = None, 
+                                 default_scenario   = pvalloc_Xnbfs_DEFAULT, 
+                                 scen_suffix_filter = None):
     scen_list = [] if scen_list is None else scen_list      # no mutable default: a shared [] would accumulate across calls
     f_scen_list = [
+
         make_scenario(default_scenario,
-                      name_dir_suffix = '_max'
+                      name_dir_suffix = '_max_fixep2023'
                       ),
+        make_scenario(default_scenario,
+                      name_dir_suffix = '_max_hoyep2023',
+                      TECspec_elecpri_Rp_kWh   = 'elecpri_entsoe.parquet',
+                      ),
+    ]
+    
+    if scen_suffix_filter is not None:
+        keep = {f'{default_scenario.name_dir_export}{s}' for s in scen_suffix_filter}
+        f_scen_list = [scen for scen in f_scen_list if scen.name_dir_export in keep]
+    
+    scen_list.extend(f_scen_list)
+    return scen_list
+
+def add_MAIN_subsidy_scen_list(scen_list          = None,
+                               default_scenario   = pvalloc_Xnbfs_DEFAULT, 
+                               scen_suffix_filter = None):
+    scen_list = [] if scen_list is None else scen_list      # no mutable default: a shared [] would accumulate across calls
+    f_scen_list = [
+
+        # subsidies
+        make_scenario(default_scenario,
+                      name_dir_suffix = '',
+                      ),
+        make_scenario(default_scenario,
+                      name_dir_suffix = '_nokev',
+                      TECspec_KEVflatsubs = 0.0,
+                      ),
+
+        make_scenario(default_scenario,
+                      name_dir_suffix = '_As8p0',
+                      GRIDspec_subsidy_name = 'As8p0',
+                      ),
+        make_scenario(default_scenario, 
+                      name_dir_suffix = '_Bs0p6',
+                      GRIDspec_subsidy_name = 'Bs0p6',
+                      ),
+        make_scenario(default_scenario,
+                      name_dir_suffix = '_Bs0p8',
+                      GRIDspec_subsidy_name = 'Bs0p8',
+                      ),
+        make_scenario(default_scenario,
+                      name_dir_suffix = '_Cs6p6',
+                      GRIDspec_subsidy_name = 'Cs6p6',
+                      ),
+        make_scenario(default_scenario,
+                      name_dir_suffix = '_Cs6p8',
+                      GRIDspec_subsidy_name = 'Cs6p8',
+                      ),
+        make_scenario(default_scenario,
+                      name_dir_suffix = '_Cs8p6',
+                      GRIDspec_subsidy_name = 'Cs8p6',
+                      ),
+        make_scenario(default_scenario,
+                      name_dir_suffix = '_Cs8p8',
+                      GRIDspec_subsidy_name = 'Cs8p8',
+                      )
+    ]
+
+    if scen_suffix_filter is not None:
+        keep = {f'{default_scenario.name_dir_export}{s}' for s in scen_suffix_filter}
+        f_scen_list = [scen for scen in f_scen_list if scen.name_dir_export in keep]
+
+    scen_list.extend(f_scen_list)
+    return scen_list
+
+def add_ADDITIONAL_scen_list(scen_list          = None,
+                             default_scenario   = pvalloc_Xnbfs_DEFAULT, 
+                             scen_suffix_filter = None):
+    scen_list = [] if scen_list is None else scen_list      # no mutable default: a shared [] would accumulate across calls
+    f_scen_list = [
+
         make_scenario(default_scenario,
                       name_dir_suffix = '_rnd', 
                       ALGOspec_inst_selection_method = 'random',
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_max_dynelecpri2023',
+                      name_dir_suffix = '_max_hoyep2025',
                       TECspec_elecpri_Rp_kWh   = 'elecpri_entsoe.parquet',
+                      TECspec_elecpri_year     = 2025,
+                      TECspec_generic_pvtarif_Rp_kWh  = 6.0,
                       ),
+
         make_scenario(default_scenario,
                       name_dir_suffix = '_max_gridoptim',
-                      run_pvalloc_initalization_TF     = False,
+                      run_pvalloc_initalization_TF     = True,
                       run_pvalloc_mcalgorithm_TF       = False,
                       run_gridoptimized_orderinst_TF   = True,
                       run_gridoptimized_expansion_TF   = True,
@@ -89,52 +166,10 @@ def create_scen_list_261015(scen_list = None, default_scenario = pvalloc_Xnbfs_D
                       name_dir_suffix = '_max_pksh07',
                       GRID_peak_shaving_enabled_tupl  = (True, 0.7, 0.7),
                       ),
-        make_scenario(default_scenario,
-                      name_dir_suffix = '_max_pksh09',
-                      GRID_peak_shaving_enabled_tupl  = (True, 0.9, 0.9),
-                      ),
-
-        # subsidies
-        make_scenario(default_scenario,
-                      name_dir_suffix = '_max_nokev',
-                      TECspec_KEVflatsubs = 0.0,
-                      ),
-        make_scenario(default_scenario,
-                      name_dir_suffix = '_max_As6p0',
-                      GRIDspec_subsidy_name = 'As6p0',
-                      ),
-        make_scenario(default_scenario,
-                      name_dir_suffix = '_max_As8p0',
-                      GRIDspec_subsidy_name = 'As8p0',
-                      ),
-        make_scenario(default_scenario, 
-                      name_dir_suffix = '_max_Bs0p6',
-                      GRIDspec_subsidy_name = 'Bs0p6',
-                      ),
-        make_scenario(default_scenario,
-                      name_dir_suffix = '_max_Bs0p8',
-                      GRIDspec_subsidy_name = 'Bs0p8',
-                      ),
-        make_scenario(default_scenario,
-                      name_dir_suffix = '_max_Cs6p6',
-                      GRIDspec_subsidy_name = 'Cs6p6',
-                      ),
-        make_scenario(default_scenario,
-                      name_dir_suffix = '_max_Cs6p8',
-                      GRIDspec_subsidy_name = 'Cs6p8',
-                      ),
-        make_scenario(default_scenario,
-                      name_dir_suffix = '_max_Cs8p6',
-                      GRIDspec_subsidy_name = 'Cs8p6',
-                      ),
-        make_scenario(default_scenario,
-                      name_dir_suffix = '_max_Cs8p8',
-                      GRIDspec_subsidy_name = 'Cs8p8',
-                      )
     ]
-    
-    if scen_filter is not None:
-        keep = {f'{default_scenario.name_dir_export}{s}' for s in scen_filter}
+
+    if scen_suffix_filter is not None:
+        keep = {f'{default_scenario.name_dir_export}{s}' for s in scen_suffix_filter}
         f_scen_list = [scen for scen in f_scen_list if scen.name_dir_export in keep]
     
     scen_list.extend(f_scen_list)
@@ -143,7 +178,7 @@ def create_scen_list_261015(scen_list = None, default_scenario = pvalloc_Xnbfs_D
 
 
 # less used scen lists
-if True: 
+if False: 
 
     RUR_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT, 
                                      name_dir_export = 'pvalloc_16nbfs_RUR', 
@@ -213,11 +248,11 @@ DEV_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
                                                                     '415', 
                                                                     ],
                                     # mini_sub_model_nEGIDs     = 500,
-                                    mini_sub_model_nEGIDs     = 50,
+                                    mini_sub_model_nEGIDs     = 200,
 
 )
-DEV_scen_list = create_scen_list_261015(default_scenario = DEV_default_scen, 
-                                        scen_filter = [
+DEV_scen_list = create_MAIN_scen_list(default_scenario = DEV_default_scen, 
+                                        scen_suffix_filter = [
                                             '_max', 
                                             '_rnd', 
                                             '_max_dynelecpri2023', 
@@ -227,7 +262,7 @@ DEV_scen_list = create_scen_list_261015(default_scenario = DEV_default_scen,
 
 
 LRG_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
-                                    name_dir_export = 'pvalloc_26nbfs_LRG',
+                                    name_dir_export = 'pvalloc_LRG4',   # 'pvalloc_26nbfs_LRG',
                                     bfs_numbers = [
                                     # RURAL 
                                     2612, 2889, 2883, 2621, 2622,
@@ -240,7 +275,17 @@ LRG_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
                                     2773, 2769, 2770,
                                     ],
 )
-LRG_scen_list = create_scen_list_261015(default_scenario = LRG_default_scen,)
+LRG_scen_list = []
+fixed_elecpri_2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_max_fixep2023')
+dynam_elecpri_2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_max_hoyep2023',
+                                                          TECspec_elecpri_year     = 2023,
+                                                          TECspec_elecpri_Rp_kWh   = 'elecpri_entsoe.parquet',
+)
+LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_elecpri_2023)
+LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = dynam_elecpri_2023)
+LRG_scen_list = add_ADDITIONAL_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_elecpri_2023)
+
+
 
 
 
@@ -300,9 +345,9 @@ XALL_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
 # ==============================
 def get_subscen_list(sub_scen_str = 'test'):
     if sub_scen_str == 'RUR':
-        return RUR_scen_list
+        return []
     elif sub_scen_str == 'SUB':
-        return SUB_scen_list
+        return []
     elif sub_scen_str == 'LRG':
         return LRG_scen_list
     elif sub_scen_str == 'DEV':
@@ -315,13 +360,17 @@ if __name__ == '__main__':
 
     # call scen in array and run ------------------------------------------
 
-    pvalloc_scen_list = create_scen_list_261015(default_scenario = LRG_default_scen, 
-                                        scen_filter = [
+    for i in range(0,len(LRG_scen_list)):
+        print(f"python HPC_scenario_runs/pvalloc_LRG.py    {i}")
+
+
+    pvalloc_scen_list = create_MAIN_scen_list(default_scenario = LRG_default_scen, 
+                                        scen_suffix_filter = [
                                             # '_max', 
-                                            # '_rnd', 
                                             # '_max_dynelecpri2023', 
+                                            # '_rnd', 
                                             # '_max_gridoptim', 
-                                            '_max_histconstr_e40pv6', 
+                                            # '_max_histconstr_e40pv6', 
                                         ])
    
 

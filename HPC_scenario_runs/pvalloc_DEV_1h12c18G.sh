@@ -43,6 +43,6 @@ export SLURM_ARRAY_JOB_ID_ENV=$SLURM_ARRAY_JOB_ID
 #add your command lines below
 #############################
 export PYTHONPATH="$HOME/OptimalPV_RH:$PYTHONPATH"
-$(head -$SLURM_ARRAY_TASK_ID HPC_scenario_runs/pvalloc_DEV_20task.cmd| tail -1)
+$(head -$SLURM_ARRAY_TASK_ID HPC_scenario_runs/pvalloc_DEV_array_tasks.cmd| tail -1)
 
 

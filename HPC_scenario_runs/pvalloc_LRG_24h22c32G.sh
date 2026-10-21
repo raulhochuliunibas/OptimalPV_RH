@@ -13,8 +13,8 @@
 # Paths to STDOUT or STDERR files should be absolute or relative to current working directory
 #SBATCH --output=stdouterr_files/myrun.oe%A_%a     #STDOUT and STDERR are written jointly to this file
 
-#You selected an array of jobs from 1 to 20 with 20 simultaneous jobs
-#SBATCH --array=1-20%20
+#You selected an array of jobs from 1 to 25 with 20 simultaneous jobs
+#SBATCH --array=1-25%20
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT
 #SBATCH --mail-user=raul.hochuli@unibas.ch        #You will be notified via email when your task ends or fails
 
@@ -43,6 +43,6 @@ export SLURM_ARRAY_JOB_ID_ENV=$SLURM_ARRAY_JOB_ID
 #add your command lines below
 #############################
 export PYTHONPATH="$HOME/OptimalPV_RH:$PYTHONPATH"
-$(head -$SLURM_ARRAY_TASK_ID HPC_scenario_runs/pvalloc_LRG_20task.cmd| tail -1)
+$(head -$SLURM_ARRAY_TASK_ID HPC_scenario_runs/pvalloc_LRG_array_tasks.cmd| tail -1)
 
 

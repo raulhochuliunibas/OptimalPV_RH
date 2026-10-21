@@ -8,6 +8,7 @@ import copy
 import itertools
 import time
 import joblib
+from pathlib import Path
 
 # external packages
 import numpy as np
@@ -1147,12 +1148,15 @@ class PVAllocInitialization(PVAllocCore):
 
 
         # export ----------------------
-        dsonodes_df.to_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
-        dsonodes_df.to_csv(f'{self.sett.name_dir_import_path}/dsonodes_df.csv') if self.sett.export_csvs else None
-        dsonodes_ts.write_parquet(f'{self.sett.name_dir_import_path}/dsonodes_ts.parquet')
-        with open(f'{self.sett.name_dir_import_path}/dsonodes_gdf.geojson', 'w') as f:
-            f.write(dsonodes_gdf.to_json())
-            
+        # These files live in the preprep folder, which is SHARED by all scenarios running in parallel (HPC array tasks). Every task writes
+        # identical content, but a plain open(path, 'w') empties the file first, so a task reading it at that moment sees an empty / partial file.
+        # atomic_export writes to a private temp file and swaps it in in one step, so readers always see a complete file.
+        import_path = self.sett.name_dir_import_path
+        self.atomic_export(f'{import_path}/dsonodes_df.parquet',  lambda p: dsonodes_df.to_parquet(p))
+        self.atomic_export(f'{import_path}/dsonodes_df.csv',      lambda p: dsonodes_df.to_csv(p)) if self.sett.export_csvs else None
+        self.atomic_export(f'{import_path}/dsonodes_ts.parquet',  lambda p: dsonodes_ts.write_parquet(p))
+        self.atomic_export(f'{import_path}/dsonodes_gdf.geojson', lambda p: Path(p).write_text(dsonodes_gdf.to_json()))
+
 
 
 
