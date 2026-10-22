@@ -8,6 +8,7 @@ import copy
 import itertools
 import time
 import joblib
+from pathlib import Path
 
 # external packages
 import numpy as np
@@ -33,7 +34,7 @@ import multiprocessing as mp
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr, add_static_topo_data_to_subdf
-from src.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
+from src.pvalloc.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
 
 
 # settings
@@ -148,7 +149,9 @@ class PVAllocInitialization(PVAllocCore):
 
             subchapter_to_logfile('initialization: DEFINE CONSTRUCTION CAPACITY', self.sett.log_name)
             if self.sett.CSTRspec_ext_constrcapa_path is None:
-                self.initial_lrg_define_construction_capacity(topo, df_list, trange_prediction, months_lookback, df_names, ts_list, ts_names)
+                self.initial_lrg_define_construction_capacity(topo = topo, 
+                                                              trange_prediction = trange_prediction, months_lookback = months_lookback,
+                                                              df_list=df_list, df_names=df_names, ts_list=ts_list, ts_names=ts_names)
             elif self.sett.CSTRspec_ext_constrcapa_path is not None:
                 self.initial_copy_ext_construction_capacity_to_dir()
 
@@ -412,7 +415,7 @@ class PVAllocInitialization(PVAllocCore):
             tranche_counter += 1
             # print_to_logfile(f'-- merges to topo_time_subdf {tranche_counter}/{len(range(0, len(egids), stepsize))} tranches ({i} to {i+stepsize-1} egids.iloc) ,  {7*"-"}  (stamp: {datetime.now()})', self.sett.log_name)
             subdf = topo_df.filter(pl.col("EGID").is_in(list(egids[i:i+stepsize]))).clone()
-        
+
 
             # I  MERGE WEATHER DATA - CALC PRODUCTION PER PARTITION ===========================================================
             if True: 
@@ -1145,12 +1148,15 @@ class PVAllocInitialization(PVAllocCore):
 
 
         # export ----------------------
-        dsonodes_df.to_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
-        dsonodes_df.to_csv(f'{self.sett.name_dir_import_path}/dsonodes_df.csv') if self.sett.export_csvs else None
-        dsonodes_ts.write_parquet(f'{self.sett.name_dir_import_path}/dsonodes_ts.parquet')
-        with open(f'{self.sett.name_dir_import_path}/dsonodes_gdf.geojson', 'w') as f:
-            f.write(dsonodes_gdf.to_json())
-            
+        # These files live in the preprep folder, which is SHARED by all scenarios running in parallel (HPC array tasks). Every task writes
+        # identical content, but a plain open(path, 'w') empties the file first, so a task reading it at that moment sees an empty / partial file.
+        # atomic_export writes to a private temp file and swaps it in in one step, so readers always see a complete file.
+        import_path = self.sett.name_dir_import_path
+        self.atomic_export(f'{import_path}/dsonodes_df.parquet',  lambda p: dsonodes_df.to_parquet(p))
+        self.atomic_export(f'{import_path}/dsonodes_df.csv',      lambda p: dsonodes_df.to_csv(p)) if self.sett.export_csvs else None
+        self.atomic_export(f'{import_path}/dsonodes_ts.parquet',  lambda p: dsonodes_ts.write_parquet(p))
+        self.atomic_export(f'{import_path}/dsonodes_gdf.geojson', lambda p: Path(p).write_text(dsonodes_gdf.to_json()))
+
 
 
 
@@ -1428,6 +1434,8 @@ class PVAllocInitialization(PVAllocCore):
                 
             Map_gm_ewr = pd.read_parquet(f'{self.sett.name_dir_import_path}/Map_gm_ewr.parquet')
             pvtarif = pd.read_parquet(f'{self.sett.name_dir_import_path}/pvtarif.parquet')
+            if '\ufeff' in pvtarif.columns:
+                pvtarif.columns = pvtarif.columns.str.replace('﻿', '', regex=False)   # guard: API data may carry a BOM in 'nrElcom'
             pvtarif = pvtarif.merge(Map_gm_ewr, how='left', on='nrElcom')
 
             pvtarif['bfs'] = pvtarif['bfs'].astype(str)
@@ -1709,7 +1717,7 @@ class PVAllocInitialization(PVAllocCore):
             elecpri_egid = {}
             elecpri_info = {}
 
-            if self.sett.TECspec_generic_elecpri_Rp_kWh is None:
+            if self.sett.TECspec_elecpri_Rp_kWh is None:
 
                 mask_bfs = np.isin(elecpri_npry[:, elecpri.columns.get_loc('bfs_number')], [bfs_of_egid,]) 
                 mask_year = np.isin(elecpri_npry[:, elecpri.columns.get_loc('year')],    self.sett.TECspec_elecpri_year)
@@ -1737,8 +1745,8 @@ class PVAllocInitialization(PVAllocCore):
                         'fixcosts': fixcosts,
                     }
 
-            elif self.sett.TECspec_generic_elecpri_Rp_kWh is not None:
-                elecpri_egid = self.sett.TECspec_generic_elecpri_Rp_kWh
+            elif isinstance(self.sett.TECspec_elecpri_Rp_kWh, float):
+                elecpri_egid = self.sett.TECspec_elecpri_Rp_kWh
                 elecpri_info = {
                     'energy': '- (generic elecpri)',
                     'grid': '- (generic elecpri)',
@@ -1746,6 +1754,15 @@ class PVAllocInitialization(PVAllocCore):
                     'taxes': '- (generic elecpri)',
                     'fixcosts': '- (generic elecpri)',
                 }
+            elif isinstance(self.sett.TECspec_elecpri_Rp_kWh, str):
+                elecpri_info = {
+                    'energy': '- (hourly elecpri)',
+                    'grid': '- (hourly elecpri)',
+                    'aidfee': '- (hourly elecpri)',
+                    'taxes': '- (hourly elecpri)',
+                    'fixcosts': '- (hourly elecpri)',
+                }
+
 
             # add GWR --------
             if all([col in gwr.columns for col in ['GWAERZH2', 'GENH2']]):
@@ -2433,7 +2450,7 @@ class PVAllocInitialization(PVAllocCore):
 
 
     def initial_copy_ext_construction_capacity_to_dir(self, ):
-        constrcapa_path = self.sett.CSTRspec_ext_constrcapa_path
+        constrcapa_path = os.path.join(self.sett.data_path, self.sett.CSTRspec_ext_constrcapa_path)
         constrcapa = pd.read_parquet(constrcapa_path)
 
         constrcapa.to_parquet(f'{self.sett.name_dir_export_path}/constrcapa.parquet')
@@ -2461,7 +2478,8 @@ class PVAllocInitialization(PVAllocCore):
 
 
         # import -----------------------------------------------------
-        topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
+        with open(f'{subdir_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            topo = json.load(f)
         npv_df = pd.read_parquet(f'{subdir_path}/npv_df.parquet')
         path_pred_inst = glob.glob(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_*.parquet')
         pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet')
@@ -2672,7 +2690,8 @@ class PVAllocInitialization(PVAllocCore):
 
 
         # create topo_df -----------------------------------------------------
-        topo = json.load(open(f'{self.sett.name_dir_export_path}/topo_egid.json', 'r'))
+        with open(f'{self.sett.name_dir_export_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            topo = json.load(f)
         egid_list, gklas_list, inst_tf_list, inst_info_list, inst_id_list, beginop_list, power_list = [], [], [], [], [], [], []
         topo_df_uid_list = []    
         for k,v in topo.items():
@@ -2825,7 +2844,8 @@ class PVAllocInitialization(PVAllocCore):
         pv_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/pv_gdf.geojson')
         Map_egid_pv = pd.read_parquet(f'{self.sett.name_dir_import_path}/Map_egid_pv.parquet')
 
-        check_egid = json.load(open(f'{self.sett.name_dir_export_path}/CHECK_egid_with_problems.json', 'r'))
+        with open(f'{self.sett.name_dir_export_path}/CHECK_egid_with_problems.json', 'r', encoding='utf-8') as f:
+            check_egid = json.load(f)
         egid_list, issue_list= [], []
         for k,v in check_egid.items():
             egid_list.append(k)

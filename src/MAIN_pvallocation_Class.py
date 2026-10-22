@@ -8,7 +8,7 @@ import datetime as datetime
 import polars as pl
 from  dataclasses import dataclass, field, asdict
 from dataclasses import replace
-from typing_extensions import List, Dict
+from typing_extensions import List, Dict, Union
 from scipy import optimize
 from scipy.stats import pearson3
 # from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -19,7 +19,7 @@ import multiprocessing as mp
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr, add_static_topo_data_to_subdf
-from src.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
+from src.pvalloc.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
 
 
 # settings
@@ -40,7 +40,7 @@ pd.set_option('display.max_rows', 30)
 class PVAllocScenario_Settings:
     # DEFAULT SETTINGS ---------------------------------------------------
     name_dir_export: str                        = 'pvalloc_BL_smallsample'   # name of the directory where the data is exported to (name to replace/ extend the name of the folder "preprep_data" in the end)
-    name_dir_import: str                        = 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI'     #'preprep_BLSO_22to23_extSolkatEGID_aggrfarms'
+    name_dir_import: str                        = 'preprep_BLSO_15to24_extSolkatEGID__Oct26'     # 'preprep_BLSO_15to24_extSolkatEGID_aggrfarms_reimportAPI'     #'preprep_BLSO_22to23_extSolkatEGID_aggrfarms'
     run_pvalloc_initalization_TF: bool          = True
     run_pvalloc_mcalgorithm_TF: bool            = True
     run_gridoptimized_orderinst_TF: bool        = False
@@ -249,11 +249,12 @@ class PVAllocScenario_Settings:
     CSTRspec_ext_constrcapa_path: str                   = None  
     
     # tech_economic_specs
-    TECspec_KEVflatsubs: float                              = 0.3
-    TECspec_generic_pvtarif_Rp_kWh: float                   = 6.0     # energy 6.94 Rp, herkunfsn. 2 Rp PVtarif of DSO in mid-late 2026  # None: pvtarif of previous year is applied (T0_prediction -1 )
-    TECspec_generic_elecpri_Rp_kWh: float                   = 31.98     # Elecpri Elcom in 2026   # None: elecpri of previous year is applied (T0_prediction -1 )
+    TECspec_elecpri_year: int                               = None
     # TECspec_pvtarif_year: int                               = 2023
-    # TECspec_elecpri_year: int                               = 2023
+    TECspec_elecpri_Rp_kWh: Union[None, float, str]         = 30.0   # None: elecpri of T0 year; float: generic elecpri; str: path to hourly elecpri data (parquet) for T0 year
+    # TECspec_generic_elecpri_Rp_kWh: float                   = 31.98     # Elecpri Elcom in 2026   # None: elecpri of previous year is applied (T0_prediction -1 )
+    TECspec_generic_pvtarif_Rp_kWh: float                   = 6.0     # energy 6.94 Rp, herkunfsn. 2 Rp PVtarif of DSO in mid-late 2026  # None: pvtarif of previous year is applied (T0_prediction -1 )
+    TECspec_KEVflatsubs: float                              = 0.3
     TECspec_interest_rate: float                            = 0.015
     TECspec_self_consumption_ifapplicable: float            = 1.0
     TECspec_pvtarif_col: List[str]                          = field(default_factory=lambda: ['energy1', ])  # 'energy1', 'eco1'
@@ -361,7 +362,6 @@ class PVAllocScenario_Settings:
     ALGOspec_reinstall_inst_EGID_pvdf_for_check_TF :bool        = False  # True: will reinstall the dfuid_winst to EGIDs that already have a inst in reality in pv_df to check accuracy of allocation kWp estimates
     ALGOspec_tweak_constr_capacity_fact: float                  = 1
     ALGOspec_tweak_npv_calc: float                              = 1
-    ALGOspec_tweak_npv_excl_elec_demand: bool                   = True
     ALGOspec_tweak_gridnode_df_prod_demand_fact: float          = 1
     ALGOspec_tweak_demand_profile: float                        = 1.8
     ALGOspec_pvinst_size_calculation: str                       = 'estim_rfr'   # 'estim_rf_segdist' / 'estim_rfr' / 'inst_full_partition' / 'npv_optimized'
@@ -602,7 +602,8 @@ class PVAllocScenario_Settings:
         # self.GWRspec_GBAUJ_minmax[0] = 1920
         self.GWRspec_GBAUJ_minmax[1] = self.T0_year_prediction - 1
         self.TECspec_pvtarif_year    = self.T0_year_prediction - 1
-        self.TECspec_elecpri_year    = self.T0_year_prediction - 1
+
+        self.TECspec_elecpri_year    = self.T0_year_prediction - 1 if self.TECspec_elecpri_year is None else self.TECspec_elecpri_year
 
 
 
@@ -658,34 +659,45 @@ if __name__ == "__main__":
 
     mini_dev_base_scen = PVAllocScenario_Settings(
         name_dir_export = 'pvalloc_minidev',
-        name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID__May26',
-        bfs_numbers                                          = [
-                                                    # 2641, 2615,
-                                                    2761,
-                                                                ],         
-        mini_sub_model_TF                                    = True,
-        mini_sub_model_by_X                                  = 'by_gridnode',
-        mini_sub_model_ngridnodes                            = 2,
-        mini_sub_model_grid_nodes                            = [
-                                                                '3', 
-                                                                '16', 
-                                                                # '28', 
-                                                                ],
-        mini_sub_model_nEGIDs                                = 20,
-        create_gdf_export_of_topology                        = False,
-        export_csvs                                          = False,
-        months_prediction                                    = 120,
-        ALGOspec_topo_subdf_partitioner                      = 250, 
+        name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID__Oct26',
+        run_pvalloc_initalization_TF      = True,     
+        run_pvalloc_mcalgorithm_TF        = True, 
+        # run_gridoptimized_orderinst_TF    = True,     
+        # run_gridoptimized_expansion_TF    = True,     
+
+
+        bfs_numbers                       = [
+                                            2641, 2615,
+                                            2761,
+                                            ],         
+        mini_sub_model_TF                 = True,
+        mini_sub_model_by_X               = 'by_gridnode',
+        mini_sub_model_ngridnodes         = 5,
+        mini_sub_model_grid_nodes         = [
+                                             '3', 
+                                             '16', 
+                                             # '28', 
+                                             ],
+        # mini_sub_model_select_EGIDs        = [
+        #     '390449', '3029927', 
+        # ],
+        mini_sub_model_nEGIDs             = 500,
+        create_gdf_export_of_topology     = False,
+        export_csvs                       = False,
+        months_prediction                 = 120,
+        ALGOspec_topo_subdf_partitioner   = 250, 
+        ALGOspec_rand_seed                = 42,
+        # TECspec_elecpri_Rp_kWh            = 'elecpri_entsoe.parquet'
     )
 
     mini_dev_scen_list = [
         make_scenario(
             mini_dev_base_scen, 
             name_dir_suffix = '_max',
+            CSTRspec_ext_constrcapa_path = os.path.join("postanalysis", "constracpa_adjustments", "constrcapa_pvalloc_LRG3_max_adj_13.parquet")
         ), 
 
     ]
-
 
 
     pvalloc_scen_list = mini_dev_scen_list  

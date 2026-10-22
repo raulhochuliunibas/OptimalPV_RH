@@ -33,7 +33,7 @@ import multiprocessing as mp
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr, add_static_topo_data_to_subdf
-from src.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
+from src.pvalloc.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
 
 
 # settings
@@ -164,7 +164,8 @@ class PVAllocMCAlgo(PVAllocCore):
 
                 print_to_logfile(f'\n-- n_iter {i_m} -- month {m} -- iter MC{mc_iter:0{max_digits}} -- {self.sett.name_dir_export} --', self.sett.log_name)
                 start_allocation_month = datetime.datetime.now()
-                topo = json.load(open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r'))
+                with open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+                    topo = json.load(f)
                 egid_without_pv = [k for k,v in topo.items() if not v['pv_inst']['inst_TF']]
 
 
@@ -180,7 +181,8 @@ class PVAllocMCAlgo(PVAllocCore):
                 if len(egid_without_pv) > 0:
 
                     # check if any EGID w/o PV in open node
-                    node_1hll_closed_dict = json.load(open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'r')) 
+                    with open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
+                        node_1hll_closed_dict = json.load(f)
                     closed_nodes = node_1hll_closed_dict[str(i_m)]['all_nodes_abv_1hll']
                     closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
                     egid_wo_pv_open_node = [egid for egid in egid_without_pv if egid not in closed_nodes_egid]
@@ -220,8 +222,10 @@ class PVAllocMCAlgo(PVAllocCore):
                 print_to_logfile('- START inst while loop', self.sett.log_name)
 
                 while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
-                    topo = json.load(open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r'))
-                    node_1hll_closed_dict = json.load(open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'r')) 
+                    with open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+                        topo = json.load(f)
+                    with open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
+                        node_1hll_closed_dict = json.load(f)
 
                     npv_df = pl.read_parquet(f'{self.sett.mc_iter_path}/npv_df.parquet')
 
@@ -290,10 +294,11 @@ class PVAllocMCAlgo(PVAllocCore):
             # all CSVs in pred_gridprem_node_by_M
             gridnode_gridprem_by_M_paths = glob.glob(f'{self.sett.mc_iter_path}/pred_gridprem_node_by_M/*.csv')
             for path in files_to_remove_paths:
-                try:
-                    os.remove(path)
-                except Exception as e:
-                    print(f'Failed to remove obsolete CSV file in: {path}. Error: {e}')
+                if os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except Exception as e:
+                        print(f'Failed to remove obsolete CSV file in: {path}. Error: {e}')
             
 
             mc_iter_time = datetime.datetime.now() - start_mc_iter

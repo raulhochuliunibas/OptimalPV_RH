@@ -1,0 +1,28 @@
+import os
+import sys
+from src.MAIN_pvallocation_Class import PVAllocScenario
+from HPC_scenario_runs.SCENARIOS import get_subscen_list
+
+if __name__ == "__main__":
+
+    pvalloc_scen_list = get_subscen_list('LRG')
+    # pvalloc_scen_list = get_subscen_list('LRG_final')
+
+    slurm_job_id = os.environ.get('SLURM_ARRAY_JOB_ID_ENV', 'unknown')
+    slurm_array_id = os.environ.get('SLURM_ARRAY_TASK_ID_ENV', 'unknown')
+    slurm_full_id = f"{slurm_job_id}_{slurm_array_id}"
+
+    if len(sys.argv) > 1:
+        pvalloc_scen_index = int(sys.argv[1])
+        if pvalloc_scen_index < len(pvalloc_scen_list):
+            pvalloc_scen = pvalloc_scen_list[pvalloc_scen_index]
+            
+            scen_class = PVAllocScenario(pvalloc_scen)
+
+            scen_class.sett.slurm_full_id        = slurm_full_id
+            scen_class.sett.pvalloc_scen_index   = pvalloc_scen_index
+    
+            scen_class.RUN_pvalloc_scenario()
+    
+            print(f"end of file: {os.path.basename(__file__)} | scen_name: {pvalloc_scen.name_dir_export} | slurm_full_id: {slurm_full_id} scen_index: {pvalloc_scen_index} |")
+        

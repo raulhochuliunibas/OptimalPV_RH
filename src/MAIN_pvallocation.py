@@ -33,7 +33,7 @@ import multiprocessing as mp
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr, add_static_topo_data_to_subdf
-from src.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
+from src.pvalloc.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
 
 
 # settings
@@ -1105,10 +1105,11 @@ class PVAllocScenario:
             # all CSVs in pred_gridprem_node_by_M
             gridnode_gridprem_by_M_paths = glob.glob(f'{self.sett.mc_iter_path}/pred_gridprem_node_by_M/*.csv')
             for path in files_to_remove_paths:
-                try:
-                    os.remove(path)
-                except Exception as e:
-                    print(f'Failed to remove obsolete CSV file in: {path}. Error: {e}')
+                if os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except Exception as e:
+                        print(f'Failed to remove obsolete CSV file in: {path}. Error: {e}')
             
 
             mc_iter_time = datetime.datetime.now() - start_mc_iter

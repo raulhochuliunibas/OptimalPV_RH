@@ -1,0 +1,979 @@
+%---------------------------------------------------------------
+%   MODEL DESCRIPTION RAUL HOCHULi
+%   author: Raul Hochuli, raul.hochuli@unibas.ch
+%   date: December 2024
+%   org: Chair Environmental Economics, Faculty Business & Economics, University Basel 
+%---------------------------------------------------------------
+
+
+%===============================================================
+%   PREAMBLE
+%===============================================================
+
+% FORMATTING
+\documentclass[12PT, ]{article}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[left = 3.4cm, right = 3.4cm, top = 3.4cm, bottom = 3.4cm]{geometry}
+\linespread{1.6}
+
+
+% DEF USED PACKAGES
+\usepackage[dvipsnames]{xcolor}
+\usepackage[table]{xcolor}
+\usepackage{outlines}
+\usepackage{comment}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}\usepackage{tikz}
+\usetikzlibrary{shapes,positioning,calc}
+\usepackage{tabularx, enumitem}
+\usepackage{amsmath}
+
+% CITATION
+\usepackage[backend = biber, style = apa, maxbibnames=999, minbibnames = 1, maxcitenames=2, mincitenames=1, uniquelist=true]{biblatex}
+\addbibresource{optimalpv_rh_bib.bib}
+
+
+% COLOR REFERENCES
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}
+
+\usepackage[colorlinks, breaklinks]{hyperref}
+\hypersetup{
+  colorlinks = true,
+  citecolor= NavyBlue,
+  linkcolor= NavyBlue,
+  urlcolor = NavyBlue,
+  pdfborderstyle={/S/U} }% border style will be underline of width 1pt
+
+% add color UNIBAS color palette
+\definecolor{unibasmint}{RGB}{165,215,210}
+\definecolor{unibasmintmid}{RGB}{30,165,165}
+\definecolor{unibasmintdark}{RGB}{0,110,110} 
+\definecolor{unibasanthr}{RGB}{45,55,60}
+\definecolor{unibasgreydark}{RGB}{140,145,150}
+\definecolor{unibasred}{RGB}{210,5,55}
+\definecolor{unibaspink}{RGB}{235,130,155}
+\definecolor{unibasgrey}{RGB}{190,195,200}
+\definecolor{unibasblack}{RGB}{0,0,0}
+\definecolor{unibaswhite}{RGB}{255,255,255}
+
+\definecolor{LVgrid_provider}{RGB}{0, 161, 16}
+\definecolor{scenA_table}{RGB}{245, 245, 180}
+\definecolor{scenB_table}{RGB}{235, 215, 245}
+\definecolor{scenC_table}{RGB}{200, 225, 240}
+
+
+% TIKZ SETTINGS
+\tikzset{
+    custom_diamond1/.style={
+        draw, 
+        diamond, 
+        aspect=3, 
+        text width=7em, 
+        inner sep=-2pt,
+        align=center
+    }, 
+    custom_diamond2/.style={
+        draw=red,
+        dashed,
+        diamond, 
+        aspect=3, 
+        text width=7em, 
+        inner sep=-1pt,
+        align=center
+    },
+    custom_diamond3/.style={
+        draw, 
+        diamond, 
+        aspect=3, 
+        text width=7em, 
+        inner sep=0pt,
+        align=center
+    }
+}
+
+% OTHER PACKAGES
+\usepackage{multicol}
+\usepackage{csquotes}
+
+
+
+
+%===============================================================
+%   DOCUMENT
+%===============================================================
+
+\begin{document}
+
+% Layout for in-document references (plots, tables, functions)
+\renewcommand{\thesection}{\arabic{section}}
+
+\renewcommand{\figurename}{}
+\renewcommand{\tablename}{}
+
+\renewcommand\thefigure{\textcolor{NavyBlue}{Fig.\thesection.\arabic{figure}}}    
+\renewcommand\thetable{\textcolor{NavyBlue}{Tab.\thesection.\arabic{table}}}
+\renewcommand\theequation{\textcolor{NavyBlue}{Equ.\thesection.\arabic{equation}}}
+% \renewcommand\thesection{\textcolor{NavyBlue}{Sec.\arabic{section}} }
+
+
+% === STILL TODO =================================================
+
+
+
+% === TITLE =================================================
+\begin{minipage}{0.95\textwidth}
+\begin{flushleft}
+\LARGE
+\textbf{Decisions at the Grid's Edge: An Improved Spatial PV Expansion in Swiss Residences}\\[1ex] 
+\large
+% Working Paper \\ %, \emph{Department of Economics, University of Zurich} \\
+% \textit{Working Paper} - January 2026 \\ % [2ex]
+\textit{Working Paper} - June 2026 \\ % [2ex]
+% \textit{Conference Paper} - January 2026 \\ % [2ex]
+
+% \normalsize 
+Raul Hochuli (raul.hochuli@unibas.ch), University of Basel\\
+% Author: (redacted)
+% Supervisor: Prof. Dr. David Yanagizawa-Drott\textsuperscript{**}, Dr. Alexandra Schubert\textsuperscript{***}  \\[1ex]
+\footnotesize
+% \textsuperscript{*}\emph{raul.hochuli@uzh.ch}, \textsuperscript{**}\emph{david.yanagizawa-drott@econ.uzh.ch},
+% \textsuperscript{***}\emph{lexi.schubert@econ.uzh.ch)}
+% \\[1ex]
+\end{flushleft}
+\end{minipage}
+\bigskip \bigskip
+
+
+% === ABSTRACT =================================================
+\begin{abstract} 
+The rapid expansion of residential photovoltaic (PV) installations is a central pillar of the transition toward a renewable energy production. However, increasing PV penetration is beginning to create congestion in low-voltage distribution grids, risking damage to network components, production losses and constraints on further PV deployment. Using a newly developed spatial expansion model for a Swiss subregion, this paper quantifies the timing and magnitude of grid-related losses in the near future. The results further illustrate how a small adjustment to existing subsidy schemes can delay binding grid constraints by one to two years and reduce congestion-related losses by up to 6.02 percent. While such a subsidy design does not represent a first-best economic solution, it offers a practical and readily implementable approach, addressing the coordination challenges associated with decentralized residential PV adoption.
+\end{abstract}
+
+% FULLY SELF WRITTEN
+% The ongoing expansion of residential PV installations is a key component in efforts towards a successful energy transition to renewable production sources. 
+% This development begins to cause congestion problems in low-voltage grid sections, potentially damaging network components, causing production losses and stalling further PV penetration. 
+% By developing a new spatial expansion model for a Swiss subregion, I examine the timing and magnitued of grid-related losses for the near future. 
+% The model results further show, how simply adjusting an existing economic subsidy can postpone constraining effects by one to two years and reduce overall congestion-related losses by \textcolor{red}{XY percent}.
+% Although the proposed subsidy scheme is by far not a first-best economic solution, it proposes a practical approach to the problem of uncoordinated residential PV adaptation low-voltage grid circuits. 
+
+
+
+% ==================================================================================
+\section{Introduction} \label{sec:intro}% SEC 
+% ==================================================================================
+
+The global debate about the energy transition has been accelerated in recent years both due to more political attention to climate change and a surge in fossil fuel prices. 
+Policymakers at all levels are increasing their efforts to decarbonize their energy production. 
+Photovoltaic (PV) electricity production is playing a decisive role in this transition and is predicted to surpass coal in 2027 with 2350 GW or 22 percent of global cumulative power production capacity (\cite{iea_resreport2022}). 
+
+Because the decision of adaptation of residential PV is with individual investors, their installations' impacts on low-voltage grid network capacities are not taken into consideration. A coordination mechanism steering decentralized behavior and avoiding negative effects is still absent. 
+Consequently, grid component overloading has already been observed, requiring costly grid updates or the curtailment of production which in turn slows down the further expansion of renewable energy (\cite{renewables2023}). 
+
+Several attempts have been made to explore this research area (\cite{tomar2024}) e.g. quantifying the grid-related cost a future PV increase will cause (\cite{bfe_ep2050_netz2022}), estimating the maximal PV capacity levels that can be facilitated in local distribution grids (\cite{tevar2019}) or the optimal placement of installations in a large network for minimal grid reinforcements (\cite{gupta2021}).
+These model estimations have a number of simplifying assumptions which make them likely to underestimate the true scale and timing of upcoming grid constraints or how the PV production side might be adjusted to ease grid strain.
+
+The first contribution of this paper is the creation of a highly detailed spatial PV expansion model that estimates installation-induced effects on low-voltage grid circuits. 
+For this, I use a subregion of Switzerland to replicate a building topology that simulates the future increase in PV adaptation for residential buildings. To my knowledge, this is the first model to integrate actual low-voltage grid data with rooftop-specific PV production profiles at this level of detail.
+Such a fine-grained analysis examines not only how soon increasing PV penetration exceeds individual local grid nodes' capacity, but also which building characteristics are associated with the most affected circuits. 
+This enables the model to conduct house-specific investment calculations that mimic the decentralized decision-making by economically rational individuals. 
+
+
+As it is only a question of when grid constraints will seriously prohibit further PV expansion, it is incumbent on academic scholars to provide solutions for this looming problem. 
+At its conceptual core, the issue resembles a negative externality: a large number of uncoordinated PV installations place strain on local grid infrastructure and restrict other participants from connecting their systems (\cite{babar2019, tomar2024}). 
+While economists would propose standard instruments such as congestion pricing (\cite{bai2018}), these first-best solution approaches could not yet be implemented in practice. 
+A less optimal, but viable approach, would be the adjustment of existing subsidy schemes that are already in place. 
+
+As a second contribution, this paper introduces a number of simple subsidy schemes based on building characteristics and circuit-specific grid load levels, aiming at postponing and reducing future grid bottlenecks as much as possible. Although such a subsidy cannot hold off grid constraints indefinitely, it could nonetheless buy distribution system operators (DSOs) sufficient amounts of time to reinforce their grid infrastructure or to roll out more smart grid components to avoid a further grid-induced delay of residential PV expansion. 
+
+This paper is structured to first review the relationship between residential PV penetration and grid capacity (Sec \ref{sec:lit_review}), second introduces the newly developed model structure and its data sources (Sec \ref{sec:methodology}), third presents (Sec \ref{sec:results}) and fourth discusses (Sec \ref{sec:discussion})  results and lastly concludes with an outlook for future research (Sec \ref{sec:conclusion}). 
+
+
+
+% ==================================================================================
+\section{The Interplay of PV Installations and Grid Capacity} \label{sec:lit_review}% SEC 
+% ==================================================================================
+
+Following the academic discourse, PV electricity production will play a decisive role in the renewable energy transition (\cite{iea_resreport2022}). 
+%
+This strong increase in PV capacity poses a difficult challenge for grid integration and stability, not just for individual countries but also at a European (\cite{ceer2025}) and even global scale (\cite{renewables2023}). 
+%
+Low-voltage distribution grids, historically constructed to serve an uncoordinated demand, are now repurposed by decentralized residential PV installations. % that feed electricity back to the grid. 
+Due to the simultaneity in production hours, feed-in peaks put pressure on the grid infrastructure, potentially overloading transformers and causing over- or under-voltages (\cite{ismael2019}, \cite{mulenga2020}). 
+This limits the expansion potential in a local grid node not to its available rooftop surface, but to the amount of PV capacity that can be connected without causing adverse effects. This is usually referred to as hosting capacity (HC).(\cite{chathurangi2021}, \cite{mulenga2020}).
+
+By now, these grid problems have become so prevalent that they are stalling the needed PV expansion for the energy transition (\cite{renewables2023}).
+%
+The absence of a coordination mechanism disregards negative effects, resulting in a classic economic externality (\cite{babar2019}).
+%
+Neither the presence of externalities nor the economic response to them is a new discovery. Economists would propose a congestion pricing scheme as an appropriate first-best solution for addressing an externality of this kind (\cite{bai2018}). Although theoretically efficient, such a solution is not pragmatic for large-scale implementation and has therefore not been adopted in practice.
+%
+Other pragmatic alternatives, although not theoretically optimal, are still worth examining e.g. if they build on already existing policies and could therefore be quickly implemented.
+
+Such a pragmatic suggestion would be the revision of classic PV subsidies which are already in place. 
+%
+Even relatively simple and low-cost modifications to current subsidy schemes could yield substantial improvements in grid integration outcomes. 
+%
+By better aligning investment incentives with local grid conditions, such an adaptation could mitigate congestion and coordination problems without requiring large reforms. %  fundamental regulatory
+While adjusted subsidies alone will not resolve grid constraints, they could certainly "buy some time" for grid reinforcements or reduce the congestion problem to a level that can be addressed by smart grid applications.
+
+% CH as a good case Study --------------
+Because of its large pool of open-access data sources, Switzerland is an optimal case to closely examine how such a subsidy revision could reduce grid problems and allow for a continued PV expansion. 
+%
+It both has ambitious capacity targets\footnote{The main scenario of the Energy Perspective 2050+ ZERO Basis assumes 37.5 GW PV capacity by 2050, ZERO A 44.6 GW, ZERO B 22.4 GW and ZERO C 22.4 GW} (37.5 GW by 2050) and a large production potential on existing building roof tops (\cite{vese_pvpower2021}).
+In addition, the perception of residential installations is positive in contrast to large utility-sized installations (\cite{sutterlin2017}) or the negative view on wind power plants (\cite{cousse2020}).
+
+% b1)
+Simultaneously, the governmental administration is not oblivious to negative PV-related effects. The Swiss Federal Office of Energy (SFOE) analyzes grid impacts of the projected PV expansion until 2050 in an extension of its Energy Perspective 2050+ (EP2050+) scenarios (\cite{bfe_ep2050_2020, bfe_ep2050_netz2022}).
+This report estimates that the low-voltage section of the grid will face relatively stable investment needs of approximately CHF 0.6 billion annually\footnote{\cite{bfe_ep2050_netz2022} estimates expenditures of ca. CHF 3 billion every five years for the low-voltage section, to the medium and high-voltage sections of ca. CHF 3.5 - 4.5 billion.} until 2050 (\ref{fig:ep2050_netz:invest_cost_gridlayers}). These estimates are based upon a "model grid analysis, which uses a rather oversimplified grid topology, illustrated in \ref{fig:ep2050_netz:MNA_homogen_grid_approx}.
+%
+It assumes a homogeneous grid structure for 2200 such sub-regions\footnote{It is not explicitly mentioned in \cite{bfe_ep2050_netz2022}, but the authors probably chose administration areas of all 2136 Swiss municipalities for a more detailed estimation.}
+to which future PV capacity is uniformly distributed to, 
+claiming to be sufficiently accurate\footnote{Possibly 10-15 percent deviation from the real number of transformers and cable length.} for an investment cost estimation.
+%
+However, this model assumption, even when applied in a large number of subregions, probably misses within-region clustering of highly productive PV installations which are likely concentrated in semi-rural and rural areas with large roofs and low demand.
+\cite{muller2020} give partial evidence to this, showing how PV panels are not homogeneously distributed but spatially clustered and highly correlated with socio-economic and building-specific factors. 
+Within a subregion such as \ref{fig:ep2050_netz:MNA_homogen_grid_approx}, potential grid issues might therefore arise much faster in certain grid circuits than in others. 
+
+% FIG: graphs from EP2050 Grid Section
+\begin{figure}[tbh]
+\centering
+\begin{subfigure}{.945\textwidth}
+  \centering
+  \includegraphics[width=.7\linewidth]{figures/NE7_EP2050_investmentcost.PNG}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+    \caption{{\footnotesize Development of total investment need for the ZERO Basis scenario by grid level (NE2 = highest voltage, NE7 = lowest voltage) in real prices for 2020 (\cite{bfe_ep2050_netz2022}, p.44. Fig. 2.8)}}
+  \label{fig:ep2050_netz:invest_cost_gridlayers}
+\end{subfigure}
+\vspace{0.25cm} 
+\begin{subfigure}{.945\textwidth}
+  \centering
+  \includegraphics[width=.8\linewidth]{figures/bfe_ep2050_netz_MNA_notitle.PNG}
+      \captionsetup{width = 0.9\linewidth, format=hang}
+    \caption{{\footnotesize Comparison real and assumed  model distribution grid in \cite{bfe_ep2050_netz2022}, p.44, Fig.2.8).}}
+\label{fig:ep2050_netz:MNA_homogen_grid_approx}
+\end{subfigure}
+\vspace{-0.4cm}
+\caption{}
+\end{figure}
+
+% b2)
+% \textcolor{red}{tevar2019} 
+\cite{tevar2019} try to find the optimal level of residential PV penetration in low-voltage networks, where benefits still outweigh grid-related drawbacks. They forecast that DSOs have to take a more active role in managing their grids in the coming future. 
+\cite{nguyen2016} go even further, assuming that this additional grid management might pose the greatest challenge to a residential PV-driven energy transition.
+In their methodology, 
+\cite{tevar2019} use a more reality-based modeling approach than \cite{bfe_ep2050_netz2022}, incorporating actual low-voltage grid data to estimate the PV penetration level the circuit's HC can accommodate. 
+%
+In their model, PV production is estimated using building size, which approximates the roof area but ignores orientation completely. 
+This is unfortunate, considering that east- or west-facing installations could increase HC and total generation by allowing production peaks in less-used morning and afternoon hours in the model mechanics.
+
+
+% d1)
+To tackle the issue of scarce HC, the implementation of "smart grid" components is often considered a popular alternative to expensive grid reinforcements, as it is cheaper and less invasive. 
+Such components would allow for information exchange between electricity consumers and producers within a grid circuit, enabling an active DSO to regulate deployment for a grid-optimal outcome
+(\cite{tevar2019}). %  SOURCES 11 + 12(\href{https://www.sciencedirect.com/science/article/pii/S0142061518312237#f0010}{source}, see source 11, 12) 
+For the Swiss case, a  government report outlining a road map for smart grid implementation estimates that an optimal application of smart grid components until 2050 can reduce PV-induced, low-voltage grid reinforcements by almost two-thirds, from CHF 12.6 billion to CHF 4.5 billion (\cite{consentc2012_in_smartgridroadmap}
+\cite{bfe_smartgridroadmap2015}).
+% (\textcolor{red}{cite smartgrid\_roadmap source 11}). 
+% Abbildung 4 veranschaulicht die Kausalitäten treibender Kräfte für intelligente Netze – Smart Grids. Eine konventionelle Bewältigungsform vieler der genannten Herausforderungen ist der Netzausbau. Studien für das Schweizer Stromnetz zeigen, dass je nach Nachfrageszenario und Ausprägung der Stromproduktion Netzausbaukosten bis zu 12.6 Mrd. CHF in den Verteilnetzen bis zum Jahre 2050 anfallen10. Diese werden vor allem durch die Integration von dezentralen Energiequellen getrieben. Die Kosten können substantiell auf ca. 4.5 Mrd. CHF bis 2050 verringert werden, indem innovative Technologien11
+
+% d2)
+Because these technologies are rolled out gradually, it is difficult to assess when smart grid components will be sufficiently widespread to mitigate the grid impacts of high PV penetration.
+In their outlook report, \cite{bfe_smartgridroadmap2015} estimates that by 2021, smart grid technologies should have overcome all major administrative hurdles for widespread implementation, and by 2030, should be applicable in practice, ready to offer network protective services in low-voltage grid sections.
+
+% e1)
+Although the installation of smart grid components is more cost-efficient than grid reinforcements, it should not be viewed as a "cheap solution" to be carelessly applied at a large scale. A rollout in Switzerland between 2015 to 2035 still has a sizable estimated cost of CHF 835 million (\cite{ecoplan2015}).
+Reducing PV-related grid strain using other, less costly means would still be preferable and an efficiency improvement. 
+
+
+% e)
+So far, the current, classic subsidization of Swiss residential PV installations\footnote{In 2009 a guaranteed, cost-covering feed-in tariff (KEV - Kostendeckende Einspeisevergügtung) was rolled out, financed through a consumption surcharge of Rp 0.45 / kWh (\cite{bfe_kev_charge2008}; \cite{bfe_kev2009}). In 2014 the scheme transitioned to a compensation (EIV-Einmalvergütung) covering up to 30 percent or up to 60 percent of the investment costs if the owner is committed to making no self-consumption for installations below 100kW (\cite{bfe_kleiv2018}).}
+lead to a fast but spatially clustered capacity expansion (\cite{muller2020}), which begins to affect grid networks. 
+Adjusting this existing scheme to a still simple, but dynamic instrument might be sufficient to delay grid effects sufficiently for smart grid components to be rolled out before severe problems arise. 
+
+
+
+% ==================================================================================
+\section{Spatial PV Expansion Model} \label{sec:methodology}% SEC 
+% ==================================================================================
+
+
+\subsection{Model Structure} \label{subsec:}% SUB =========================
+To address the previously highlighted model shortcomings, I developed a model that simulates a PV expansion path based on individual installation decisions at the individual house level which also considers the resulting grid effects.
+For this, the model structure incorporates three different actors: Homeowners who can choose to adopt PV and build an installation in a given future year, the DSO which monitors its grid and can either act cautiously or not and the local administration which sets the subsidy for all homeowners. 
+
+Still "empty" houses (without an installation) have their available roof partition as a set of assets, determining the technically possible production levels and hours throughout the year. Once an installation is built, the production profile (and demand profile) cannot be influenced (e.g no consumption shift, batteries etc).
+Because highly profitable installations are assumed to be built first, I calculate the installations' net present value (NPV) to determine the order of adaptation to mimic a somewhat realistic individual behavior. 
+
+It is not only the NPV that determines when and if an installation is built, but also the local circuit HC to which the house is connected.
+A node $k$'s holding capacity $HC_{k,h} = \left( \frac{max(kW\_infeed_{k,h})}{kW\_threshold_k} \right)$ at any hour of the year $h$, is exceeded when the feedin capacity is larger then the node capacity, hence $HC_{k,h} \geq 1$. This is assumed to be potentially damaging to the grid and to physically prevent any additional feed-in to the grid in hour $h$. 
+This threshold limit is assumed to apply to both the node and the cable lines connected to the house, not just the node's net position\footnote{Looking only at the node's net position (net feed-in or net demand) might obscure the strain on cables beyond the node's kW-threshold, as any feein level could be facilitated if the demand in the same circuit is just large enough, which would be an unreaslistic model feature.}
+As a protective measure, a cautious DSO can deny new installations to an already critical grid circuit if the HC is exceeded during a single hour of the previous year.
+
+Lastly, the effective subsidy scheme that influences a house's NPV is set by a local administration. All residents receive a base subsidy (similar to Switzerland today), which can then be both further increased or decreased with the intent to reorder the profitability of houses in favor of grid-suitable installations. Going forward, I only mention these subsidy changes as the base subsidy does not alter the NPV order. This is still worth mentioning to highlight that negative NPV adjustments are just subsidy reductions, not actual penalties.  
+
+Starting in 2024, the model simulates a PV expansion over future years (also called iterations) based on the described mechanics and a building topology that represents the current real-world state of a Swiss subregion. 
+First, all data sources are aggregated to a sample topology and the grid state is examined based on the already existing installations. 
+\ref{fig:topo_DSO_sample} shows an example of a small neighborhood with its low-voltage node connections after initialization and \ref{fig:topo_solkat_sample} shows available roof partitions (by productivity) for installations on individual houses.
+
+\begin{figure}[h!]
+\centering
+\begin{minipage}{0.485\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/wp_topo_DSO_example.png}
+  \caption{{\footnotesize Building connections to distribution nodes (data provided by DSO for model topology)}}
+  \label{fig:topo_DSO_sample}
+\end{minipage}\hfill
+\begin{minipage}{0.485\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{figures/wp_topo_roof_solkat.png}
+  \caption{{\footnotesize Building roof top data, partitions colored by productivity (blue (bad) to red (good), \cite{solkat2023}) }}
+  \label{fig:topo_solkat_sample}
+\end{minipage}
+\end{figure}
+
+Second, to predict the future installed capacity for all empty houses, a specifically calibrated random forest regression model is used\footnote{The random forest regression is calibrated on all available attributes from the sample topology (\ref{tab:optimalpv_data_structure}) over 61270 Swiss houses that have a PV installation that covers between 20 to 70 percent of their available roof surface. This subsample offers the best prediction results and represents economic "reasonable" actors.}, predicting the installation size a house might choose based on all available data attributes (\ref{tab:optimalpv_data_structure}). 
+This approach is chosen as a practical solution as it predicts the installed capacity reasonably well (\ref{fig:calib_rfr2}). %in a subsample of XY Swiss residential houses \textcolor{red}{(footnote: XY training, and YZ for testing)}
+Other methods for determining modeled PV capacity (e.g. individually optimized installation size on a house level that maximizes economic return or selecting an optimal combination of fully installed roof partitions) either consistently over- or underestimated the installation sizes when the method was validated in the subsample of all Swiss residential houses equipped with recent PV installations\footnote{Only installations between 2018 and 2023 where considered.}. 
+
+Third, each house calculates its self-consumption based on the assigned production and demand profile. The remaining excess production is considered feed-in and flows to the low-voltage grid. 
+Multiplying the local electricity price and feed-in tariff by the yearly amount of self-consumption and feed-in constitutes the economic income the PV installation of house $i$ will yield\footnote{The economic yield is constant across future years, because the weather year and demand profile are constant over all future iteration periods.} as consumption savings $Sav_{i,t}$ and feed-in reimbursements $Feed_{i,t}$ in \ref{equ:NPV_calc}. 
+
+% \vspace{0.1cm}
+\begin{equation}
+\label{equ:NPV_calc}
+    \begin{aligned}
+    NPV_{i} = -Inv_{i} + \sum_{t=0}^{T=25}\frac{Sav_{i,t} + Feed_{i,t}}{(1+r)^t}
+    \end{aligned}
+\end{equation}
+% \vspace{0.05cm}
+
+The installation's investment cost $Inv_i$, are determined by an interpolated, concave cost function from a technical appendix of a widely known PV installation calculator(\ref{fig:pvinstcost_table}, \cite{energieschweiz2023}).
+The $NPV$ is then derived by the investment cost and the annual discounted economic return over 25 years. Example houses in \ref{tab:data_aggregated_demand+pvprod} show the NPV value for a given installation size.
+
+Finally, the model iteratively allocates these installations to the houses based on the highest NPV values until the construction capacity for the year is met. This construction constraint is derived from the PV expansion path until 2050 from the EP2050+ model scenario (\cite{bfe_ep2050_2020}). The total capacity value is scaled down to the relevant level by taking only the designated share for small buildings (< 30kWp) and approximating for the share of residential houses in the sample compared to all of Switzerland. 
+When the construction capacity for a given year is reached, the model moves to the next prediction iteration. With every passing year, grid impacts and subsidies are recalculated based on the new, increased number of installations and NPVs are updated before the allocation of installation begins again. 
+This process should approximate a PV expansion which is driven by economically rational individuals and which stops if either the prediction time window is exceeded or all houses in the sample have received a PV installation. 
+
+The entire code constituting this model can be reviewed in detail in my publicly accessible GitHub repository (\cite{github_redacted2026}).
+As the model is running on a very fine-grained data structure, it quickly exceeds a conventional computer's working memory, which is why calculations were performed on the university's High Performance Cluster (\cite{hpc_redacted2026}).
+
+
+
+\subsection{Data Sources \& Assumptions} \label{subsec:}% SUB =========================
+The high level of detail introduced in the model structure requires a host of assumptions, which are covered using multiple data sources. While the model results are of a theoretical nature, I want to highlight that the data sources are, wherever feasible, based on real-world data at an individual house and even rooftop level. 
+%
+While I only cover the most important assumptions for PV production potential and demand profiles here in detail, \ref{tab:optimalpv_data_structure} gives an overview of the main data sources and their level of observation, shown in a descending order of granularity. 
+The data on low-voltage grid networks and their capacities have been obtained in a cooperation agreement with a medium to large Swiss grid operator and remain classified.
+The remaining data listed in \ref{tab:optimalpv_data_structure} is open-source\footnote{The data is available for free. Some sources require registration to receive a personalized API key. }. 
+%
+% TABLE: data structure
+\begin{table}[bth]
+    \centering
+    \footnotesize
+    \begin{tabularx}{\linewidth}{|l X X|}
+    \hline
+    \textbf{Level} & \textbf{Fixed Data} & \textbf{Hourly Time Series} \\
+    \hline
+    % \multicolumn{3}{|l|}{Roof Level (multiple roof  partitions per house, \cite{solkat2023})} \\
+    \textbf{Roof Level} & 
+    \begin{itemize}[nosep,leftmargin=0.8em]
+      \item Surface (\cite{solkat2023})
+      \item Orientation + tilt (\cite{solkat2023})
+      \item Avg. estimated yearly PV production (\cite{solkat2023})
+    \end{itemize} & 
+    \begin{itemize}[nosep,leftmargin=0.8em]
+      \item Monthly coefficients to calculate PV production radiation (direct + diffuse)
+    \end{itemize} 
+    \\
+    \hline
+    % \multicolumn{3}{|l|}{House Level} \\
+    \textbf{House Level} & 
+    \begin{itemize}[nosep,leftmargin=0.8em]
+      \item Building age (\cite{gwr2025})
+      \item House type + surroundings (single-/ multi-family, rural sub-, urban) (\cite{gwr2025})
+      \item Building area (\cite{gwr2025})
+      \item Heating technology (\cite{gwr2025})
+      \item Local electricity price (\cite{elcom2023})
+      \item PV tariff (\cite{vese_pvtarif2023})
+      \item Existing PV installations (\cite{elec_prod2024})
+    \end{itemize} &
+    \begin{itemize}[nosep,leftmargin=0.8em]
+      \item Demand profile by house type classifi-cation (\cite{swissstore2022})
+    \end{itemize} 
+    \\
+    \hline
+    % \multicolumn{3}{|l|}{Grid Data} \\
+    \textbf{Grid Data} & 
+    \begin{itemize}[nosep,leftmargin=0.8em]
+      % \item \textcolor{LVgrid_provider}{Grid node connection + kW threshold} (\textcolor{LVgrid_provider}{cite LVgridNDA)}
+      \item Grid node connection + kW threshold
+    \end{itemize} 
+    & 
+    \\
+    \hline
+    % \multicolumn{3}{|l|}{Other Data} \\
+    \textbf{Other Data} &
+    \begin{itemize}[nosep,leftmargin=0.8em]
+      \item House type demand coeff. (\cite{swissstore2022})
+      \item Future PV expansion targets (\cite{bfe_ep2050_2020})
+    \end{itemize} & 
+    \begin{itemize}[nosep,leftmargin=0.8em]
+      \item Local Temperature + Radiation (direct + diffuse), (\cite{meteoblue2023})
+    \end{itemize} 
+    \\
+    \hline
+    \end{tabularx}
+    \caption{{ \footnotesize Available data structure for houses in model topology (\ref{fig:topo_DSO_sample}, \ref{fig:topo_solkat_sample}) in descending order, e.g. multiple roof partitions for a house, multiple houses for a grid node etc.} }
+    \label{tab:optimalpv_data_structure}
+\end{table}
+
+The hourly PV radiation potential $pvpot$ is derived for each roof $j$ and hour $h$ from the linear combination of roof-month-specific coefficient ($a$, $b$ and $c$ for month $m$, \cite{solkat2023}) and local hourly direct and diffuse radiation (\cite{meteoblue2023}) per m\textsuperscript{2}, shown in \ref{equ:pvprod_calc}. The coefficients $a$, $b$, and $c$ already account for shading effects by other buildings.
+As future weather is uncertain, a single representative weather year (2022) is assumed for all future model years (\cite{meteoblue2023}).
+
+This potential is then used to calculate the actual hourly production $pvprod$ (kW) of a PV installation on a roof partition $j$ by multiplying it with the efficiency $ef$ for both PV panel\footnote{The panel efficiency $ef^{panel}$ reduces PV production during the hot hours of the year by 10 percent. Hot hours are assumed to occur in the months June to September from the hours 11 to 17. This simple correction to avoid overestimating production in summer months could be made more sophisticated using actual temperature data.} 
+and inverter\footnote{The inverter efficiency $ef^{invert}$ is assumed to be constant at 0.8.}, a factor $d$ to account for surface loss\footnote{The default assumed for the share of available roof surface is $d=0.7$} 
+(e.g., roof windows, chimneys) and the actual roof partition surface $area$. 
+A house's PV capacity (already existing or modelled) is allocated in a descending order to the most productive partitions (average kWh/y production, \cite{solkat2023}), determining the share production profile as the share of PV potential that is actually captured by the installation $p$.
+
+\vspace{0.1cm}
+\begin{equation}
+    \begin{aligned}
+    pvpot_{j,h,m} &= a_{j,m} \cdot rad_h^{direct} + b_{j,m} \cdot rad_h^{diffuse} + c_{j,m}\\
+    \\
+    pvprod_{j,h} & = \frac{1}{1000} \cdot pvpot_{j,h,m} \cdot ef^{panel} \cdot ef^{invert}_{h} \cdot area_j \cdot p_{j} \cdot d   
+    \end{aligned}
+\label{equ:pvprod_calc}
+\end{equation}
+\vspace{0.05cm}
+
+The estimation for the house-specific demand follows a similar logic to that for the PV production. Following \cite{swissstore2022}, I use building area (\cite{gwr2025}) as a proxy to estimate electricity demand, which is multiplied by two hourly load profiles for single-family (SFH) and multi-family houses (MFH) and location-specific scaling coefficients (rural, suburban, urban). 
+For houses equipped with a heat pump, this basic home appliance demand is further scaled up during the winter months\footnote{From October to May, the appliance electricity demand is increased by a scaling factor of up to 7.}. An example load profile is illustrated for a week in \ref{fig:example_demand_BU_week} and a year in \ref{fig:example_demand_BU_year}. Aggregate values for annual demand and production are summarized in \ref{tab:data_aggregated_demand+pvprod}.
+
+The model area contains 29 municipalities in a subregion of Switzerland across rural, suburban and urban classified areas, consisting of 15435 single or multifamily houses. The modeled PV expansion starts in 2024 and continues for 30 years.
+
+% FIG: demand 
+\vspace{0.5cm} 
+\begin{figure}[h!]
+\centering
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/example_demand_BU_week.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{ \footnotesize Example for weekly demand profile}}
+  \label{fig:example_demand_BU_week}
+\end{subfigure}
+%
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/example_demand_BU_lwfine_year.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{ \footnotesize Example for yearly demand profile}}
+  \label{fig:example_demand_BU_year} 
+\end{subfigure}
+\vspace{-0.25cm}
+  \label{fig:example_demand_BU}
+    \caption{}
+\end{figure}
+
+%
+% TABLE: demand + pvprod
+\begin{table}[thb!]
+    \centering
+    \footnotesize
+\begin{tabular}{|l r r r r r|}
+    \hline
+    \textbf{Type} 
+    & \textbf{Build. Area} 
+    & \textbf{Ann. Demand} 
+    & \textbf{Ann. Prod.} 
+    & \textbf{PV kWp }
+    & \textbf{NPV}
+    \\
+    \hline
+    Single-Family (SFH) & 83 m\textsuperscript{2}   & 38'434.6 kWh & 15'084.9 kWh & 9.19 kW & 13'334.7 CHF \\
+    Multi-Family (MFH)  & 145 m\textsuperscript{2}  & 80'698.5 kWh & 43'174.6 kWh & 13.4 kW & 42'302.6 CHF \\
+    \hline
+\end{tabular}
+    \caption{{\footnotesize Annual values for example houses in \ref{fig:example_demand_BU_week}, \ref{fig:example_demand_BU_year} + building area, installation size and NPV. }}
+    \label{tab:data_aggregated_demand+pvprod}
+\end{table}
+
+
+
+\subsection{Subsidy Description \& Scenario Settings} \label{subsec:subsidy_desc}% SUB =========================
+
+This section outlines the subsidy designs applied to delay and reduce grid congestion in the model analysis. 
+%
+Four main scenario types $X$ are considered that modify the NPV calculation either up or down (\ref{equ:NPV_calc_subs_adjust}). The reference case assumes no subsidies (BU - business as usual). Scenario A introduces roof-specific subsidies $S$ only, scenario B applies grid-specific subsidy reduction $R$ only, and scenario C combines both adjustments. 
+% Based on the subsidy scheme $X$ (BU, A, B, C), the baseline NPV (Equ \ref{equ:NPV_calc}) is adjusted accordingly.
+
+The roof specific subsidy increase $S$ applies to all houses where a minimum of 70 percent of the roof surface is in an east and west facing direction\footnote{A house is classified as having 70 percent east and west facing roof surface if it contains both a roof partition that constitutes 35 percent of the houses total surface with an east facing direction (between -45 and -135 degrees) and a west facing direction (between 45 and 135 degrees). The reference direction for a perfect south-facing alignment is 0 degrees.}
+The subsidy reduction $R$ decreases the overall subsidization if the grid circuit's HC exceeds 0.9 for only a single hour of the year, given the previous' year's PV penetration level. 
+%
+While $S$ is either applicable or not, $R$ can kick in a any point in time of the modeled PV expansion, mimicking an incentive-based counter-measure to not further strain a critical grid circuit.
+\ref{tab:subs_range_SandR} shows the value range $S$ and $R$ can take.
+%
+\vspace{0.2cm}
+% EQU: susbsidy formula
+% TABLE: subsidy range
+\begin{figure}[bth]
+\centering
+% left minipage for the equation
+\begin{minipage}{0.45\textwidth}
+\begin{equation}
+\label{equ:NPV_calc_subs_adjust}
+NPV_{i,X} = NPV_{i} + S_{i,X} - R_{i,X}
+\end{equation}
+\end{minipage}%
+\hfill % add space between them
+% right minipage for the table
+\begin{minipage}{0.50\textwidth}
+\centering
+\small
+\begin{tabular}{|l| c c c c|}
+    \hline
+    % \textbf{$R$\textbackslash$S$} & 0 & 2000 & 4000 & 6000 \\
+    % & \multicolumn{4}|c|{$S$} \\
+    & $S=$ 0 & 2000 & 4000 & 6000 \\
+    \hline
+    $R=$ 0    & BU      & \cellcolor{scenA_table} & \cellcolor{scenA_table} A & \cellcolor{scenA_table}  \\
+     4000 & \cellcolor{scenB_table}    & \cellcolor{scenC_table} & \cellcolor{scenC_table}   & \cellcolor{scenC_table} \\
+     6000 & \cellcolor{scenB_table} B  & \cellcolor{scenC_table} & \cellcolor{scenC_table} C & \cellcolor{scenC_table} \\
+     8000 & \cellcolor{scenB_table}    & \cellcolor{scenC_table} & \cellcolor{scenC_table}   & \cellcolor{scenC_table} \\
+    \hline
+\end{tabular}
+\caption{{\footnotesize Scenario types with range for $S$ and $R$}}
+\label{tab:subs_range_SandR}
+\end{minipage}
+\end{figure}
+\vspace{-0.5cm}
+
+As mentioned, a cautious grid operator could choose to deny new installations in a critical circuit (when the node threshold has been exceeded for at least one hour in the previous year, $HC\geq1$) to avoid more grid congestion in the future.
+In the model, all scenario settings are simulated both with and without this protective measure. 
+
+
+% ==================================================================================
+\section{Results} \label{sec:results}% SEC 
+% ==================================================================================
+
+\subsection{Business as Usual } \label{subsec:}% SUB =========================
+
+To get a good model understanding, we first look at the results for the BU scenario to see how soon in the future problems arise and what the main drivers are.
+\ref{fig:bu_loss_HOY} illustrates the hourly electricity losses across the entire model area for a week after a few iterations and for the final model year (2054), caused by increasing PV feed-in that exceeds the HC of certain grids.
+\ref{fig:bu_loss_line} aggregates these losses on an annual basis for every model iteration and shows how they increase over the years as PV installations increase. This second figure further shows that grid-related production losses begin to occur after five years in the BU scenario at approximately 0.012 MWh/y and quickly rise above 3 MWh/y in 2035. These values serve as reference points, which should be undercut by an active subsidy scenario, delaying grid effects compared to this uncoordinated expansion path.
+
+The plateau-effect in  \ref{fig:bu_loss_line} occurs because after nine model iterations the model runs out of "empty" residential houses to allocate PV to.
+Equipping every residential building with a PV installation within nine years is, of course an unrealistic prediction but not an unreasonable model outcome, given the ambitious expansion targets in \cite{bfe_ep2050_2020} and the static model building stock, which does not increase as it would in reality. 
+%
+% FIG: plot - BU loss 
+\begin{figure}[tbh!]
+\centering
+\begin{subfigure}{.485\textwidth}
+  \centering
+  \includegraphics[width=.995\linewidth]{figures/line_PVHOY_bu_loss_byiter.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize Grid-constrained hourly loss (kW) of sample topology by model iterations (BU scenario).}}
+  \label{fig:bu_loss_HOY}
+\end{subfigure}
+%
+\begin{subfigure}{.485\textwidth}
+  \centering
+  \includegraphics[width=.995\linewidth]{figures/line_PVproduction_bu_loss.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize Grid-constrained annual loss (kWh/y) over modeled years (BU scenario).}}
+  \label{fig:bu_loss_line} 
+\end{subfigure}
+\vspace{-0.3cm}
+  % \label{fig:bu_loss}
+    \caption{}
+\end{figure}
+%
+Taking a closer look at buildings that are selected earlier, based on higher calculated NPVs in \ref{fig:bu_cont_charac_hist} shows houses with a larger roof surface and building area.
+%
+These drivers of high productivity and demand are also mirrored in the categorical attributes shown in \ref{fig:bu_catg_charact}. 
+%
+Larger, multi-apartment buildings (three or more, \ref{fig:bu_loss_catgcharact_gklas}) in rural areas (\ref{fig:bu_loss_catgcharact_are}) are selected first due to their higher overall demand level and are gradually replaced by single and double apartment buildings in later iterations.
+If the demand influencing, single-/ multi-family house classification\footnote{A house with one apartment is a single-family, with two or more apartments a multi-family house.} were the driver, these lines in \ref{fig:bu_loss_catgcharact_gklas} would be grouped differently. 
+Also worth noting is that there is no clear preference trend for buildings with
+% heat pumps (\ref{fig:bu_loss_catgcharact_gklas_heatpump}) and 
+a south-facing roof orientation (\ref{fig:bu_loss_catgcharact_filtertag}).
+
+% FIG: cont_charact - Hist
+\begin{figure}[h!]
+  \includegraphics[width=.95\linewidth]{figures/hist_contcharact_newinst_bu.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+    \caption{{\footnotesize Surface area (left) and building size (right) of PV installed houses by model iteration (BU) }}
+  \label{fig:bu_cont_charac_hist}
+\end{figure}
+
+% FIG: catg_charact - line
+\vspace{0.5cm} 
+\begin{figure}[h!]
+\centering
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_30y5_max_GKLAS.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize n appart. per house }}
+  \label{fig:bu_loss_catgcharact_gklas}
+\end{subfigure}
+% 
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_30y5_max_are_typ.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize area type }}
+  \label{fig:bu_loss_catgcharact_are} 
+\end{subfigure}
+%
+% \begin{subfigure}{.242\textwidth}
+%   \centering
+%   \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_30y5_max_heatpump_TF.png}
+%     \captionsetup{width = 0.9\linewidth, format=hang}
+%   \caption{\textcolor{red}{tba}}
+%   \label{fig:bu_loss_catgcharact_gklas_heatpump} 
+% \end{subfigure}
+% % 
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_30y5_max_filter_tag.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize roof orientation}}
+  \label{fig:bu_loss_catgcharact_filtertag} 
+\end{subfigure}
+\caption{{\footnotesize Characteristics (categorical) of modeled PV installed houses by model iterations (BU scenario) }}
+\label{fig:bu_catg_charact}
+\end{figure}
+
+
+\subsection{Subsidies to Delay Grid Constraints} \label{subsec:}% SUB =========================
+
+Now I want to showcase how the introduced subsidy schemes A, B and C can delay and reduce HC-related losses in production in comparison to the reference scenario \ref{fig:bu_loss_line}, based on all the different subsidy adjustments in \ref{tab:subs_range_SandR}, all attached in the appendix. \ref{fig:buABC_loss} already foreshadows the best performing settings for each subsidy category. 
+
+The losses over iterations in the A scenarios (\ref{tab:subs_range_SandR}) in the appendix (\ref{fig:A_loss_line}) clearly show how a subsidy for east-west facing roof structures has a small delaying effect as intended and reduces the magnitude of losses in earlier modeling periods. In later periods however, the aggregated losses increase similarly to the BU scenario and surpass it even after six iterations, thus not reducing the congestion problem in general. 
+%
+Changing subsidies based on roof characteristics might therefore be a well-intended, general instrument to reduce HC-related losses, but it appears to be too blunt and cause even more adverse grid effects later. A close examination of the most critical grid nodes shows that they tend to feature a very specific neighborhood structure with an over-representation of east-west facing roof structures (e.g. \ref{fig:A_problematic_node}). A-type subsidies rearrange the NPVs' order, shifting the constraining HC problem into such specific grid circuits, as most installations are built there within the first few iterations.
+
+
+The B scenarios (\ref{fig:B_loss_line}) delay both the timing of grid-related losses as well as the overall congestion magnitude across all model periods compared to the BU reference. 
+The return to the maximum loss plateau after period eight is not driven by secondary subsidy effects as in scheme A, but because all buildings in the sample area received a PV installation.
+
+C-type scenarios in the appendix (\ref{fig:C_loss_line}) show a combination of both adjustment mechanisms in A and B. Surprisingly, the most aggressive C scenario practically has an identical loss curve compared to B (see \ref{fig:buABC_loss}), suggesting that a grid-specific NPV adjustment is effective at delaying grid constraints, regardless of additional rooftop-specific incentives.
+
+The trend already observed for the BU scenario, that houses with large roof surfaces and three or more living spaces have a higher NPV and get picked first, persists also across all scenarios (\ref{fig:A_cont_charac_hist}, \ref{fig:B_cont_charac_hist}, \ref{fig:C_cont_charac_hist}).
+
+
+Compared to BU, scenario A shows the expected increase in the share of east–west facing roofs in early iterations (\ref{fig:bu_loss_catgcharact_filtertag}, \ref{fig:A_loss_catgcharact_filtertag}), rising from 10.57 percent to 14 percent in the final iteration. 
+In contrast, no buildings with a typical south\footnote{A building is classified south facing if minimum 40 percent roof surface is southward facing +/- 45 degrees.} or east–west\footnote{A building is classified east-west facing if minimum of 35 percent roof surface faces both east or west- +/- 45 degrees.} facing roofs are selected in the initial iterations of scenario B (\ref{fig:B_catg_charact}). 
+Even more astonishing is that the effect in B persits in scenarios C,
+despite the explicit incentive for east–west orientations (\ref{fig:C_catg_charact}).
+
+One might suspect the observed loss reductions in scenarios A to C are due to the selection of generally less productive rooftops rather than a genuine HC relief through more off-peak generation. This is however not the case as the aggregated annual feedin over the model iterations is virtually the same for all scenario cases (\ref{fig:buAC_feedin_wwo1hll}).
+\ref{fig:buABC_loss} summarizes the best performing subsidy settings for the reference and all subsidy scenarios. With sufficiently large subsidy parameter(s), both scenario B and C are able to delay grid constraints and reduce congestion levels across all model iterations compared to the business as usual case.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/line_PVproduction_buABC_loss.png}
+        \captionsetup{width = 0.9\linewidth, format=hang}
+    \caption{{\footnotesize Grid-constrained annual loss (kWh/y) over modeled years (BU and best A,B,C scenarios).}}
+    \label{fig:buABC_loss}
+\end{figure}
+
+\subsection{A Cautious Grid Operator} \label{subsec:}% SUB =========================
+
+As already mentioned in Sec \ref{subsec:subsidy_desc}, a new installation could be denied by the local grid operator %before it can be connected to the grid. New installations in already critical grid nodes could therefore be denied 
+to avoid additional grid strain. The following model results show the aggregated loss for the already established scenarios BU, A, B and C with their most favorable parameter settings, but with the application of the DSO's grid protection measure\footnote{No additional installations are allowed in node circuits where $HC<\geq1$ for a single hour of the previous year.}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/line_PVproduction_buABC_loss_1hll.png}
+        \captionsetup{width = 0.9\linewidth, format=hang}
+    \caption{{\footnotesize Grid-constrained annual loss (kWh/y) with cautious DSO (BU and best A,B,C scenarios).}}
+    \label{fig:buABC_loss_1hll}
+\end{figure}
+
+
+Focusing again on aggregated loss over time, \ref{fig:buABC_loss_1hll} shows how both scenario B and C again delay grid-related losses in production throughout all model iterations more effectively than in A.
+Even though the lines of all scenarios intersect multiple times, scenario C appears to represent the best expansion path, both delaying grid-related losses as much as possible and minimizing congestion at the end of the model time window. Interestingly, it is not the most aggressive model parameters in C that perform best but rather medium values ($S = 4000$, $R =6000$).
+
+Similar to the results with no DSO intervention, the improvement of HC is not a consequence of decreased overall production, as there is again virtually no distinction between the lines representing aggregated production in \ref{fig:buAC_feedin_wwo1hll}.
+The only difference, the slope off before between the plateau points, occurs because the state with no remaining available houses (without installation or outside a critical grid node) arrives two iterations earlier. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/buAC_feedin_w+wo1hll_line.png}
+        \captionsetup{width = 0.9\linewidth, format=hang}
+    \caption{{\footnotesize PV production of model topology (kWh/y) over modeled iterations (all best scenarios).}}
+    \label{fig:buAC_feedin_wwo1hll}
+\end{figure}
+
+
+
+\subsection{Limitations \& Bias Concerns} \label{subsec:}% SUB =========================
+As with any scientific modeling endeavor, this model relies on assumptions and simplifications to capture key mechanisms in a tractable way. This section discusses how omitted features would increase (worsen) or decrease (relieve) adverse grid effects, compared to reality.
+
+The model installs all new PV capacity on a stagnant building stock. As new buildings are still connected to existing grids, this should not systematically bias my results. %, or even slightly relieve grid effects, given the mandatory requirement for PV on new buildings in many cantons. 
+Hosting capacity and grid criticality are represented in a highly simplified way, falling short of engineering-level standards, but this is necessary for a system-wide analysis and should not introduce any directional bias.
+%
+PV adoption is modeled by sequentially selecting installations with the highest NPV. Although real adoption is more heterogeneous, this assumption plausibly reflects earlier realization of more profitable projects and isolates grid effects driven by economic suitability.
+
+Socio-economic constraints such as income or wealth are not considered, which likely underestimates grid impacts, as PV adoption may be spatially clustered by capital availability.
+%
+Because batteries and electric vehicle charging can reduce feed-in in peak hours, their omission likely overstates grid impacts and may in reality delay incidences of critical grid conditions. 
+
+Finally, although the model covers a large region, the limited sample topology may lead to an early saturation, also referred to as plateau effects. A larger study area could delay these plateaus and reveal a more gradual hosting-capacity development over time. 
+The presented results should still be interpreted with these limitations in mind.
+
+
+% ==================================================================================
+\section{Discussion} \label{sec:discussion}% SEC 
+% ==================================================================================
+If left unchecked, low-voltage grid congestion will arise in approximately five years. For the Swiss case, this might not be in time for smart grid components to reach sufficient grid penetration (\cite{bfe_smartgridroadmap2015}), putting \cite{bfe_ep2050_2020} PV expansion targets into question. The rapid and large increase in congestion effects across several nodes, just a few model iterations later, prohibits the full use of residential PV production potential. 
+
+However, the revision of simple existing economic subsidy schemes to newly consider individual nodes' HC levels could "buy" a few more years for the first grid effects to occur, providing valuable time to complete solutions on the grid side, e.g. smart grid roll out or selective grid reinforcements.
+
+Strong endorsements for buildings with an east-west orientation show a small delaying effect for grid constraints, but appear to cause even more congestion later. This underlines the limitations of a static, building-characteristic-based subsidy scheme, which tends to shift hosting capacity bottlenecks, similar to the ones they wish to mitigate, into nodes with a high share of east-west structures. 
+This finding emphasizes the importance of grid-centered, dynamically adaptive policy instruments. 
+
+Such adjustable subsidies are examined in scenarios B and C which give similar results by delaying grid constraints up to two additional years. Under the assumption of active grid management by the local operator, scenario C appears most favorable, as it not only postpones adverse grid effects but also minimizes congestion in later iterations. Compared to the BU case with DSO intervention, it reduces annual loss to congestion at the end of the model iterations by 6.02 percent (607'733.1 kWh/y in BU to 571'151.4 kWh/y in C).
+In practice such a subsidy could be implemented partially by local grid operators, which could publish adjustable, grid-based criteria for eligibility that are better aligned with the future grid development. This mirrors the active DSO role suggested by \cite{tevar2019}.
+
+The model results are based on a partial replication of the Swiss distribution grid, which might differ substantially from infrastructure characteristics in other countries' grid networks. While this heterogeneity prevents the generalization of the quantitative results, it still showcases how grid impasses could be delayed with a simple adjustment of existing economic instruments. 
+
+
+% ==================================================================================
+\section{Conclusion} \label{sec:conclusion}% SEC 
+% ==================================================================================
+With the increasing penetration of PV installations in residential houses, adverse effects on local low-voltage grid manifest themselves and start to prohibit a further needed expansion. 
+To accurately approximate the timing and magnitude of these future grid limitations, a sophisticated expansion model using various real-world data sources is required. 
+
+This paper introduces such a model and examines an adjustment of an existing subsidy as a simple but in reality practical solution to a theoretical externality problem, caused by a lack of coordination of individual homeowners' installation decisions.    
+Examining this economic instrument for the Swiss case, I find it delays grid constraints by up to two years while also reducing overall congestion based losses  by 6.02 percent in the long run. 
+Mitigation measures such as this simple subsidy can be implemented at low cost and might be crucial for future PV expansion. 
+They could create the necessary time window for smart grid deployment or selective grid reinforcements before large numbers of low-voltage nodes reach critical levels of HC.
+The model's high granularity reveals that buildings with high production potential and high electricity demand are the first to adopt a PV installation across all scenarios.
+
+
+Because low-voltage distribution networks differ from region to region and country to country, the observed effect magnitudes cannot be directly scaled up to a national or international contexts.
+A re-simulation of a larger and more diverse grid sample area might be advisable as a robustness check. 
+Future research could take a next step and explore whether a truly grid-optimal PV expansion schedule for the future could be achieved by optimizing the building selection within each low-voltage node for the maximum possible production within the HC. Comparing the results in this paper to such an optimal PV expansion would be highly insightful to examine how close an optimal state can be replicated, using simple economic instruments such as the presented grid-centered subsidies. 
+
+
+
+% ==================================================================================
+\printbibliography
+% ==================================================================================
+
+\newpage
+% ==================================================================================
+\section*{Appendix} \label{sec:}% SEC 
+% ==================================================================================
+\renewcommand{\thesection}{\Alph{section}}
+\setcounter{section}{1}
+\setcounter{subsection}{0}
+\setcounter{figure}{0}
+\setcounter{table}{0}
+
+\subsection{Scenario A, B \& C} \label{subsec:}% SUB =========================
+% FIG: Scen A loss
+\begin{figure}[h!]
+  \includegraphics[width=.87\linewidth]{figures/line_PVproduction_A_loss.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize Grid-constrained annual loss (kWh/y) over modeled years (A scenario).}}
+  \label{fig:A_loss_line}
+\end{figure}
+\vspace{-0.5cm}
+% FIG: cont_charact - Hist
+\begin{figure}[h!]
+  \includegraphics[width=.95\linewidth]{figures/hist_contcharact_newinst_A.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+    \caption{{\footnotesize Surface area (left) and building size (right) of PV installed houses by model iteration (A) }}
+  \label{fig:A_cont_charac_hist}
+\end{figure}
+\vspace{-0.5cm}
+% FIG: catg_charact - line
+\vspace{0.5cm} 
+\begin{figure}[h!]
+\centering
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_A_pvalloc_29nbfs_30y5_max_sAs6p0_GKLAS.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize n appart. per house }}
+  \label{fig:A_loss_catgcharact_gklas}
+\end{subfigure}
+%
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_A_pvalloc_29nbfs_30y5_max_sAs6p0_are_typ.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize area type }}
+  \label{fig:A_loss_catgcharact_are} 
+\end{subfigure}
+%
+% \begin{subfigure}{.242\textwidth}
+%   \centering
+%   \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_A_pvalloc_29nbfs_30y5_max_sAs6p0_heatpump_TF.png}
+%     \captionsetup{width = 0.9\linewidth, format=hang}
+%   \caption{\textcolor{red}{tba}}
+%   \label{fig:A_loss_catgcharact_gklas_heatpump} 
+% \end{subfigure}
+% 
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_A_pvalloc_29nbfs_30y5_max_sAs6p0_filter_tag.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize roof orientation}}
+  \label{fig:A_loss_catgcharact_filtertag} 
+\end{subfigure}
+\caption{{\footnotesize Characteristics (categorical) of modeled PV installed houses by model iterations (A scenario) }}
+\label{fig:A_catg_charact}
+\end{figure}
+
+
+
+
+% FIG: Scen B loss
+\begin{figure}[h!]
+  \includegraphics[width=.87\linewidth]{figures/line_PVproduction_B_loss.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize Grid-constrained annual loss (kWh/y) over modeled years (B scenario).}}
+  \label{fig:B_loss_line}
+\end{figure}
+% FIG: cont_charact - Hist
+\begin{figure}[h!]
+  \includegraphics[width=.95\linewidth]{figures/hist_contcharact_newinst_B.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+    \caption{{\footnotesize Surface area (left) and building size (right) of PV installed houses by model iteration (B)}}  \label{fig:B_cont_charac_hist}
+\end{figure}
+\vspace{-0.5cm}
+% FIG: catg_charact - line
+\vspace{0.5cm} 
+\begin{figure}[h!]
+\centering
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_B_pvalloc_29nbfs_30y5_max_sBs0p8_GKLAS.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize n appart. per house }}
+  \label{fig:B_loss_catgcharact_gklas}
+\end{subfigure}
+%
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_B_pvalloc_29nbfs_30y5_max_sBs0p8_are_typ.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize area type }}
+  \label{fig:B_loss_catgcharact_are} 
+\end{subfigure}
+%
+% \begin{subfigure}{.242\textwidth}
+%   \centering
+%   \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_B_pvalloc_29nbfs_30y5_max_sBs0p8_heatpump_TF.png}
+%     \captionsetup{width = 0.9\linewidth, format=hang}
+%   \caption{\textcolor{red}{tba}}
+%   \label{fig:B_loss_catgcharact_gklas_heatpump} 
+% \end{subfigure}
+% 
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_B_pvalloc_29nbfs_30y5_max_sBs0p8_filter_tag.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize roof orientation}}
+  \label{fig:B_loss_catgcharact_filtertag} 
+\end{subfigure}
+\caption{{\footnotesize Characteristics (categorical) of modeled PV installed houses by model iterations (B scenario) }}
+\label{fig:B_catg_charact}
+\end{figure}
+
+
+
+
+% FIG: Scen C loss
+\begin{figure}[h!]
+  \includegraphics[width=.87\linewidth]{figures/line_PVproduction_C_loss.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize Grid-constrained annual loss (kWh/y) over modeled years (C scenario).}}
+  \label{fig:C_loss_line}
+\end{figure}
+% FIG: cont_charact - Hist
+\begin{figure}[h!]
+  \includegraphics[width=.95\linewidth]{figures/hist_contcharact_newinst_C.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+    \caption{{\footnotesize Surface area (left) and building size (right) of PV installed houses by model iteration (C)}}  \label{fig:C_cont_charac_hist}
+\end{figure}
+\vspace{-0.5cm}
+% FIG: catg_charact - line
+\vspace{0.5cm} 
+\begin{figure}[h!]
+\centering
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_C_pvalloc_29nbfs_30y5_max_sCs6p8_GKLAS.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize n appart. per house }}
+  \label{fig:C_loss_catgcharact_gklas}
+\end{subfigure}
+%
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_C_pvalloc_29nbfs_30y5_max_sCs6p8_are_typ.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize area type }}
+  \label{fig:C_loss_catgcharact_are} 
+\end{subfigure}
+%
+% \begin{subfigure}{.242\textwidth}
+%   \centering
+%   \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_C_pvalloc_29nbfs_30y5_max_sCs6p8_heatpump_TF.png}
+%     \captionsetup{width = 0.9\linewidth, format=hang}
+%   \caption{\textcolor{red}{tba}}
+%   \label{fig:C_loss_catgcharact_gklas_heatpump} 
+% \end{subfigure}
+% 
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=.95\linewidth]{figures/line_catgcharact_newinst_C_pvalloc_29nbfs_30y5_max_sCs6p8_filter_tag.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize roof orientation}}
+  \label{fig:C_loss_catgcharact_filtertag} 
+\end{subfigure}
+\caption{{\footnotesize Characteristics (categorical) of modeled PV installed houses by model iterations (C scenario) }}
+\label{fig:C_catg_charact}
+\end{figure}
+
+
+
+% FIG: Rand FOREST - PREDICTIONS
+
+\begin{figure}[h!]
+\centering
+  \includegraphics[width=.95\linewidth]{figures/calib_rfr2_predvsactual2.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize Scatterplot for actual and predicted installation sizes (incl 45 degree diagonal) of calibrated random forest regression on 61270 Swiss houses with a PV installation (that covers between 20 to 70 percent of their available roof surface) on all attributes \ref{tab:optimalpv_data_structure}.}}
+  \label{fig:calib_rfr2}
+\end{figure}
+
+% FIG: PVINST_COST TABLE
+\begin{figure}[h!]
+    \centering
+  \includegraphics[width=.6\linewidth]{figures/pvinstcost_table.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize Intrapolation approximation function (green, only on small scale installations) based on cost assumptions in the technical model appendix of \cite{energieschweiz2023}}}
+  \label{fig:pvinstcost_table}
+\end{figure}
+
+
+% FIG: Scen A problematic grid node. 
+\begin{figure}[h!]
+\centering
+  \includegraphics[width=.85\linewidth]{figures/map_topo_egid_ew_problem_neighborhood.png}
+    \captionsetup{width = 0.9\linewidth, format=hang}
+  \caption{{\footnotesize Example neighborhood with an over-representation of east-west facing building structures and roof surfaces (top right), leading to undesired secondary congestion effects in Scenario A}}
+  \label{fig:A_problematic_node}
+\end{figure}
+
+\end{document}

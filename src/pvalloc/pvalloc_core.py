@@ -7,6 +7,7 @@ import json
 import copy
 import itertools
 import time
+import uuid
 import joblib
 
 # external packages
@@ -33,7 +34,7 @@ import multiprocessing as mp
 # own modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from src.auxiliary_functions import chapter_to_logfile, subchapter_to_logfile, print_to_logfile, checkpoint_to_logfile, get_bfs_from_ktnr, add_static_topo_data_to_subdf
-from src.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
+from src.pvalloc.pvallocation_inst_selection_optimization import run_pv_selection_optimization, prepare_feedin_matrix, optimize_pv_selection_greedy , optimize_pv_selection_pulp
 
 
 # settings
@@ -81,6 +82,39 @@ class PVAllocCore:
 
             with open(f'{self.sett.name_dir_export_path}/pvalloc_sett.json', 'w') as f:
                 json.dump(sett_dict, f, indent=4)
+
+
+
+
+    def atomic_export(self, final_path: str, write_fn) -> None:
+        """
+        Input:
+            > final_path: path of a file that parallel scenario runs (e.g. HPC array tasks) SHARE, e.g. in the preprep folder.
+            > write_fn:   function taking one path argument and writing the complete file to it, e.g. lambda p: df.to_parquet(p).
+
+        Output:
+            > final_path contains the complete new file. Nobody ever reads a half-written (or empty) file, because
+              write_fn writes to a private temp file in the SAME folder (same file system) which is then swapped in
+              with os.replace (an atomic rename: readers see either the old or the new complete file, never something in between).
+              If writing fails (or on Ctrl-C) the temp file is removed; after a hard kill (SIGTERM, SLURM timeout) a stray *.tmp_<id> file may remain. final_path is never left truncated.
+            > (Windows only) os.replace fails with PermissionError while another process (a reader, a virus scanner) holds one of the two
+              files open, so it is retried briefly. On Linux (HPC) this never triggers: renaming over a file that is open elsewhere is allowed.
+        """
+        tmp_path = f'{final_path}.tmp_{uuid.uuid4().hex}'     # random name -> no two tasks (also on different nodes) ever share it
+        try:
+            write_fn(tmp_path)
+            for i_try in range(5):
+                try:
+                    os.replace(tmp_path, final_path)
+                    break
+                except PermissionError:
+                    if i_try == 4:
+                        raise
+                    time.sleep(0.2)
+        except BaseException:                                  # also Ctrl-C (KeyboardInterrupt) and sys.exit (SystemExit), not just normal errors
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise
 
 
 
@@ -211,7 +245,7 @@ class PVAllocCore:
 
         ])
 
-        #  groupby egid + derive filter_tags
+        #  group_by egid + derive filter_tags
         topo_filter_egid = topo_filter.group_by('EGID').agg([
             pl.col('filt_dfuid_east_50pr').any().alias('filt_dfuid_east_50pr'),
             pl.col('filt_dfuid_east_40pr').any().alias('filt_dfuid_east_40pr'),
@@ -301,12 +335,15 @@ class PVAllocCore:
 
 
         # import  -----------------------------------------------------
-        topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
+        with open(f'{subdir_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            topo = json.load(f)
         topo_subdf_paths = glob.glob(f'{subdir_path}/topo_subdf_*.parquet')
         outtopo_subdf_paths = glob.glob(f'{self.sett.name_dir_export_path}/outtopo_time_subdf/*.parquet')
         dsonodes_df = pl.read_parquet(f'{self.sett.name_dir_import_path}/dsonodes_df.parquet')
-        node_1hll_closed_dict = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r'))
-        node_subsidy_monitor_dict = json.load(open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'r'))
+        with open(f'{subdir_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
+            node_1hll_closed_dict = json.load(f)
+        with open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'r', encoding='utf-8') as f:
+            node_subsidy_monitor_dict = json.load(f)
 
         data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
         gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
@@ -797,6 +834,55 @@ class PVAllocCore:
 
 
 
+    def add_elecpri_to_subdf(self, subdf_func, elecpri_vese, elecpri_entsoe ): 
+        if self.sett.TECspec_elecpri_Rp_kWh is None: 
+            # elecpri_raw = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
+            elecpri_select = elecpri_vese.filter(
+                (pl.col('bfs_number').is_in([str(bfs) for bfs in self.sett.bfs_numbers]) ) ,
+                (pl.col('year') == self.sett.TECspec_elecpri_year)  , 
+                (pl.col('category') == self.sett.TECspec_elecpri_category)
+            ).rename({
+                'bfs_number': 'bfs',})
+            # multiple prices per bfs -> mean
+            if pd.Series(elecpri_select['bfs']).duplicated().any():
+                print_to_logfile(f'elecpri: multiple prices per bfs, mean taken', self.sett.log_name)
+            elecpri_select = elecpri_select.group_by('bfs').agg([
+                pl.col('energy').mean().alias('energy'),
+                pl.col('grid').mean().alias('grid'),
+                pl.col('aidfee').mean().alias('aidfee'),
+                pl.col('taxes').mean().alias('taxes'),
+                pl.col('fixcosts').mean().alias('fixcosts'),
+            ])
+
+            price_component_expr = pl.sum_horizontal([
+                pl.col('energy'),
+                pl.col('grid'),
+                pl.col('aidfee'),
+                pl.col('taxes'),
+                pl.col('fixcosts'),
+            ])
+            elecpri_select = elecpri_select.with_columns([
+                price_component_expr.alias('elecpri_Rp_kWh'), 
+            ]).select(['bfs', 'elecpri_Rp_kWh'])
+            subdf_func = subdf_func.join(elecpri_select, on='bfs', how='left')
+                    
+        elif isinstance(self.sett.TECspec_elecpri_Rp_kWh, float) or isinstance(self.sett.TECspec_elecpri_Rp_kWh, int):
+            elecpri = self.sett.TECspec_elecpri_Rp_kWh
+            subdf_func = subdf_func.with_columns(
+                pl.lit(elecpri).alias('elecpri_Rp_kWh')
+            )
+
+        elif isinstance(self.sett.TECspec_elecpri_Rp_kWh, str):
+            # elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, self.sett.TECspec_elecpri_Rp_kWh))
+            elecpri_entsoe = elecpri_entsoe.filter(pl.col('year') == self.sett.TECspec_elecpri_year)
+            elecpri = elecpri_entsoe['elecpri_Rp_kWh'].mean()                    
+            subdf_func = subdf_func.with_columns(
+                pl.lit(elecpri).alias('elecpri_Rp_kWh')
+            )
+
+        return subdf_func
+
+
 
 
     def algo_update_npv_df_RFR(self, subdir_path: str, i_m: int, m, rfr_model, encoder):
@@ -811,12 +897,20 @@ class PVAllocCore:
         # setup -----------------------------------------------------
         checkpoint_to_logfile(f'run function: algo_update_npv_df_RFR, GRIDspec_node_1hll_closed_TF:{self.sett.GRIDspec_node_1hll_closed_TF}', self.sett.log_name, 0, True)         
 
+
+
         # import -----------------------------------------------------
         # gridprem_ts = pl.read_parquet(f'{subdir_path}/gridprem_ts.parquet')    
-        topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
+        with open(f'{subdir_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            topo = json.load(f)
 
-        node_1hll_closed_dict     = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r')) 
-        node_subsidy_monitor_dict = json.load(open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'r'))
+        with open(f'{subdir_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
+            node_1hll_closed_dict = json.load(f)
+        with open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'r', encoding='utf-8') as f:
+            node_subsidy_monitor_dict = json.load(f)
+
+        elecpri_vese = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
+        elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri_entsoe.parquet'))
 
         GRID_peak_shave_TF          = self.sett.GRID_peak_shaving_enabled_tupl[0]
         GRID_peak_shave_crit_level  = self.sett.GRID_peak_shaving_enabled_tupl[1]
@@ -860,12 +954,17 @@ class PVAllocCore:
 
                 # extend subdf with static data (safe disk space) --------------------
                 subdf = add_static_topo_data_to_subdf(subdf, topo)
-
+                if 'elecpri_Rp_kWh' in subdf.columns:
+                    subdf = subdf.drop(['elecpri_Rp_kWh', ])
 
                 # # merge gridprem_ts
                 # checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
                 # subdf = subdf.join(gridprem_ts[['t', 'grid_node', 'prem_Rp_kWh']], on=['t', 'grid_node'], how='left')  
                 # checkpoint_to_logfile('npv > subdf: start merge subdf w gridprem_ts', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
+                
+
+                # add static electricity price for random forest --------------------
+                subdf = self.add_elecpri_to_subdf(subdf, elecpri_vese, elecpri_entsoe)
 
                 checkpoint_to_logfile('npv > subdf - all df_uid-combinations: start calc selfconsumption + netdemand', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
@@ -904,7 +1003,7 @@ class PVAllocCore:
                         pl.col('MSTRAHLUNG').first().alias('MSTRAHLUNG'),
                         pl.col('GSTRAHLUNG').first().alias('GSTRAHLUNG'),
                         pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
-                        pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
+                        # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                         ])
 
                     # create direction classes
@@ -957,7 +1056,7 @@ class PVAllocCore:
                             pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'),
                             pl.col('TotalPower').first().alias('TotalPower'),
                             pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
-                            pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
+                            # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
 
                             pl.col('FLAECHE').first().alias('FLAECHE_total'),
                             )
@@ -1087,10 +1186,11 @@ class PVAllocCore:
                     egid_agg = egid_subdf.group_by(['EGID', 't', 't_int' ]).agg([
                         pl.lit(df_uid_w_inst_str).alias('df_uid_winst'), 
                         pl.col('df_uid').count().alias('n_dfuid'),
+                        pl.col('bfs').first().alias('bfs'),
                         pl.col('grid_node').first().alias('grid_node'),
-                        pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
+                        # pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
                         pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
-                        pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
+                        # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                         pl.col('TotalPower').first().alias('TotalPower'),
                         pl.col('AUSRICHTUNG').mean().alias('AUSRICHTUNG_mean'),
                         pl.col('NEIGUNG').mean().alias('NEIGUNG_mean'),
@@ -1109,7 +1209,7 @@ class PVAllocCore:
                     # ----------------------------------
 
 
-                    # calc selfconsumption
+                    # calc selfconsumption --------------------
                     egid_agg = egid_agg.sort(['EGID', 't_int'], descending = [False, False])
 
                     selfconsum_expr = pl.min_horizontal([pl.col("pvprod_kW"), pl.col("demand_kW")]) * self.sett.TECspec_self_consumption_ifapplicable
@@ -1184,20 +1284,19 @@ class PVAllocCore:
                             pl.lit(0.0).alias('peak_shaved_kW'),
                         ])
 
-                    # calc econ spend/inc chf
+
+                    # add ACTUAL electricity price for NPV --------------------
+                    egid_agg = self.add_elecpri_to_subdf(egid_agg, elecpri_vese, elecpri_entsoe)
+
+
+                    # calc econ spend/inc chf --------------------
                     egid_agg = egid_agg.with_columns([
                         ((pl.col("netfeedin_kW") * pl.col("pvtarif_Rp_kWh")) / 100 + (pl.col("selfconsum_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_inc_chf")
                     ])
                         
-                    if not self.sett.ALGOspec_tweak_npv_excl_elec_demand:
-                        egid_agg = egid_agg.with_columns([
-                            ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100 +
-                            (pl.col("demand_kW") * pl.col("elecpri_Rp_kWh")) / 100).alias("econ_spend_chf")
-                        ])
-                    else:
-                        egid_agg = egid_agg.with_columns([
-                            ((pl.col("netfeedin_kW") * pl.col("prem_Rp_kWh")) / 100).alias("econ_spend_chf")
-                        ])
+                    egid_agg = egid_agg.with_columns([
+                        (pl.lit(0.0)).alias("econ_spend_chf")
+                    ])
 
 
                     # NPV calculation -----------------
@@ -1206,7 +1305,6 @@ class PVAllocCore:
 
                     annual_cashflow = (egid_agg["econ_inc_chf"].sum() - egid_agg["econ_spend_chf"].sum())
                     installation_cost = estim_instcost_chftotal(pred_instPower) * (1-self.sett.TECspec_KEVflatsubs)
-                    self.sett.TECspec_BAUsubsidy    
                                
                     discount_factor = np.array([(1 + self.sett.TECspec_interest_rate)**-i for i in range(1, self.sett.TECspec_invst_maturity + 1)])
                     disc_cashflow = annual_cashflow * np.sum(discount_factor)
@@ -1216,9 +1314,9 @@ class PVAllocCore:
                         pl.col('df_uid_winst').first().alias('df_uid_winst'),
                         pl.col('n_dfuid').first().alias('n_dfuid'),
                         pl.col('grid_node').first().alias('grid_node'),
-                        pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
+                        # pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
                         pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
-                        pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
+                        # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                         pl.col('TotalPower').first().alias('TotalPower'),
                         pl.col('AUSRICHTUNG_mean').first().alias('AUSRICHTUNG_mean'),
                         pl.col('NEIGUNG_mean').first().alias('NEIGUNG_mean'),
@@ -1330,11 +1428,13 @@ class PVAllocCore:
         checkpoint_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name, 0, True) if while_safety_counter < 5 else None
 
         # import ----------------
-        topo = json.load(open(f'{subdir_path}/topo_egid.json', 'r'))
-        npv_df = pd.read_parquet(f'{subdir_path}/npv_df.parquet') 
+        with open(f'{subdir_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            topo = json.load(f)
+        npv_df = pd.read_parquet(f'{subdir_path}/npv_df.parquet')
         pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path}/pred_inst_df.parquet') else pd.DataFrame()
-            
-        node_1hll_closed_dict = json.load(open(f'{subdir_path}/node_1hll_closed_dict.json', 'r')) 
+
+        with open(f'{subdir_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
+            node_1hll_closed_dict = json.load(f)
 
 
         #  remove all EGIDs with pv ----------------
