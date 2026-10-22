@@ -10,6 +10,7 @@ import  sqlite3
 import shutil
 import copy
 import json
+import io
 import requests
 from shapely.geometry import Point
 from shapely.ops import unary_union
@@ -38,6 +39,7 @@ class DataAggScenario_Settings:
     kt_numbers: List[int] = field(default_factory=list)                               # list of cantons to be considered, 0 used for NON canton-selection, selecting only certain individual municipalities
     bfs_numbers: List[int] = field(default_factory=lambda: [2761,])                                      # list of municipalites to select for allocation (only used if kt_numbers == 0)
     year_range: List[int] = field(default_factory=lambda: [2021, 2022])                             # range of years to import
+    ELCOM_year_range: List[int] = field(default_factory=lambda: [2022, 2025])                       # range of years to import from the ElCom API (consumer electricity prices), only used if import_slow_api == True
 
     # split_data_geometry_AND_slow_api: bool = False
     split_data_geometry: bool = False
@@ -197,6 +199,9 @@ class DataAggScenario:
             
             subchapter_to_logfile('pre-prep data: API PVTARIF', self.sett.log_name)
             self.api_pvtarif_data()
+
+            subchapter_to_logfile('pre-prep data: API ELCOM ELECTRICITY PRICES', self.sett.log_name)
+            self.api_elcom_elecpri_data()
 
         
         subchapter_to_logfile('pre-prep data: API ELECTRICITY PRICES', self.sett.log_name)
@@ -563,6 +568,80 @@ class DataAggScenario:
             # EXPORT --------------------------------------
             pvtarif.to_parquet(f'{self.sett.data_path}/input_api/pvtarif.parquet')
             checkpoint_to_logfile('exported pvtarif from API', self.sett.log_name, 3)
+
+
+        def api_elcom_elecpri_data(self):
+            '''
+            Input:
+                - DataAggScenario_Settings
+            Tasks:
+                - API call (LINDAS SPARQL endpoint) to get the ElCom consumer electricity prices (standard product) for all
+                  municipalities, consumer categories (H1-H8, C1-C7) and years in ELCOM_year_range
+                  source: https://www.strompreis.elcom.admin.ch (data served via LINDAS: https://lindas.admin.ch/sparql/)
+                  query adapted from: https://jupyter.zazuko.com/electricity_prices.html
+                - output (Rp/kWh): energy, grid, aidfee, taxes (= community charges + aidfee), meteringrate (from 2026),
+                  variablecosts (= total), fixcosts (CHF/year), per municipality x consumer category x year
+                - if a municipality has multiple grid operators, the operator with the lowest total price is kept
+            Output to input dir:
+                - ElCom_consum_price_api_data/elecpri.parquet: electricity prices for all municipalities
+                  (subset to the selected municipalities in get_elecpri_earlier_api_import)
+            '''
+            # SETUP --------------------------------------
+            print_to_logfile('run function: api_elcom_elecpri_data', self.sett.log_name)
+            export_path = os.path.join(self.sett.data_path, 'input', 'ElCom_consum_price_api_data')
+            os.makedirs(export_path, exist_ok=True)
+
+            # QUERY --------------------------------------
+            endpoint_sparql = 'https://lindas.admin.ch/query'
+            query_template = """
+            PREFIX schema: <http://schema.org/>
+            PREFIX cube: <https://cube.link/>
+            PREFIX elcom: <https://energy.ld.admin.ch/elcom/electricityprice/dimension/>
+
+            SELECT ?municipality_id ?category ?energy ?grid ?aidfee (?community_fees + ?aidfee AS ?taxes) ?meteringrate ?fixcosts ?variablecosts
+            FROM <https://lindas.admin.ch/elcom/electricityprice>
+            WHERE {{
+                <https://energy.ld.admin.ch/elcom/electricityprice/observation/> cube:observation ?observation.
+
+                ?observation
+                elcom:category/schema:name ?category;
+                elcom:municipality ?municipality_id;
+                elcom:period "{year}"^^<http://www.w3.org/2001/XMLSchema#gYear>;
+                elcom:product <https://energy.ld.admin.ch/elcom/electricityprice/product/standard>;
+                elcom:fixcosts ?fixcosts;
+                elcom:total ?variablecosts;
+                elcom:gridusage ?grid;
+                elcom:energy ?energy;
+                elcom:charge ?community_fees;
+                elcom:aidfee ?aidfee.
+                OPTIONAL {{ ?observation elcom:meteringrate ?meteringrate. }}
+            }}
+            ORDER BY ?municipality_id ?category ?variablecosts
+            """
+
+            tariffs_list = []
+            for y in range(self.sett.ELCOM_year_range[0], self.sett.ELCOM_year_range[1]+1):
+                response = requests.post(endpoint_sparql, data={'query': query_template.format(year=y)},
+                                         headers={'Accept': 'text/csv'}, timeout=300)
+                response.raise_for_status()
+                tariffs_y = pd.read_csv(io.StringIO(response.text))
+                tariffs_y = tariffs_y.groupby(['municipality_id', 'category']).first().reset_index()    # rows sorted by variablecosts -> cheapest operator per municipality
+                tariffs_y['year'] = y
+                checkpoint_to_logfile(f'api call elcom year: {y} completed, {tariffs_y.shape[0]} rows', self.sett.log_name, 3, self.sett.show_debug_prints)
+                if not tariffs_y.empty:
+                    tariffs_list.append(tariffs_y)
+
+            elecpri = pd.concat(tariffs_list, ignore_index=True)
+            num_cols = ['energy', 'grid', 'aidfee', 'taxes', 'meteringrate', 'fixcosts', 'variablecosts']
+            elecpri[num_cols] = elecpri[num_cols].astype(float)
+            elecpri['bfs_number'] = elecpri['municipality_id'].str.extract(r'https://ld.admin.ch/municipality/(\d+)', expand=False)
+
+            # overwride DSO of interest:
+
+            # EXPORT --------------------------------------
+            elecpri.to_parquet(os.path.join(export_path, 'elecpri.parquet'), index=False)
+            elecpri.to_csv(os.path.join(export_path, 'elecpri.csv'), index=False)
+            checkpoint_to_logfile(f'exported elecpri from ElCom API ({elecpri.shape[0]} rows, years {elecpri["year"].min()}-{elecpri["year"].max()})', self.sett.log_name, 3)
 
 
         def get_elecpri_earlier_api_import(self):
@@ -2074,13 +2153,13 @@ class DataAggScenario:
 if __name__ == '__main__':
     dataagg_scen_list = [
 
-        # DataAggScenario_Settings(
-        #     name_dir_export = 'debug_bfs2761',
-        #     bfs_numbers = [
-        #         2761, # SUB
-        #     ],
-        #     year_range = [2022, 2023],
-        # ),
+        DataAggScenario_Settings(
+            name_dir_export = 'debug_bfs2761',
+            bfs_numbers = [
+                2761, # SUB
+            ],
+            year_range = [2022, 2023],
+        ),
 
         DataAggScenario_Settings(
             name_dir_export = 'debug_functionality',
@@ -2089,8 +2168,8 @@ if __name__ == '__main__':
             ],
             year_range = [2022, 2023],
 
-            # split_data_geometry = True,
-            # import_slow_api = True,
+            split_data_geometry = True,
+            import_slow_api = True,
             rerun_localimport_and_mappings = True,
             reextend_fixed_data = True,
 
