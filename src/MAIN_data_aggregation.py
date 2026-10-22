@@ -598,7 +598,9 @@ class DataAggScenario:
                 - Extend hourly electricity price with grid fee and taxes for the selected municipalities
                   and years. 
             Output to preprep dir:
-                - elecpri_hourly.parquet: hourly electricity prices for the selected municipalities
+                - elecpri_entsoe.parquet: hourly electricity prices (day-ahead price + grid fee and taxes)
+                - pvtarif_entsoe.parquet: hourly PV feed-in price (plain day-ahead price, no grid fee, no floor;
+                  the floor TECspec_pvtarif_Rp_floor is applied at model time)
             """
             # SETUP --------------------------------------
             print_to_logfile('run function: get_hourly_elecpri_entsoe.py', self.sett.log_name)
@@ -721,11 +723,17 @@ class DataAggScenario:
             
             elecpri_entsoe = entsoe.select(['timestamp', 'date', 't', 't_int', 'year', 'elec_dayahead_Rp_kWh', 'elec_non_energy_Rp_kWh', 'elecpri_Rp_kWh'])
 
+            # PV feed-in price: plain day-ahead price (no grid fee), kept raw
+            pvtarif_entsoe = entsoe.select(['timestamp', 'date', 't', 't_int', 'year', 'elec_dayahead_Rp_kWh', pl.col('elec_dayahead_Rp_kWh').alias('pvtarif_Rp_kWh')])
 
-            
+
+
             # EXPORT --------------------------------------
             elecpri_entsoe.write_parquet(os.path.join(self.sett.preprep_path, 'elecpri_entsoe.parquet'))
             checkpoint_to_logfile('exported elecpri_entsoe.parquet', self.sett.log_name, 2, self.sett.show_debug_prints)
+
+            pvtarif_entsoe.write_parquet(os.path.join(self.sett.preprep_path, 'pvtarif_entsoe.parquet'))
+            checkpoint_to_logfile('exported pvtarif_entsoe.parquet', self.sett.log_name, 2, self.sett.show_debug_prints)
 
 
         def get_preprep_data_earlier_api_import(self):

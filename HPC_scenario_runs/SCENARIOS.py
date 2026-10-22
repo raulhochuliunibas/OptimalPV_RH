@@ -42,8 +42,8 @@ if True:
         months_prediction               = 360,
         ALGOspec_topo_subdf_partitioner = 250,
 
-        TECspec_elecpri_year            = 31.98,
-        TECspec_generic_pvtarif_Rp_kWh  = 9.03,
+        TECspec_elecpri_Rp_kWh          = 31.98,
+        TECspec_pvtarif_Rp_kWh          = 9.03,
     ) 
 
     # endregion
@@ -137,10 +137,9 @@ def add_ADDITIONAL_scen_list(scen_list          = None,
                       ALGOspec_inst_selection_method = 'random',
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_max_hoyep2025',
-                      TECspec_elecpri_Rp_kWh   = 'elecpri_entsoe.parquet',
-                      TECspec_elecpri_year     = 2025,
-                      TECspec_generic_pvtarif_Rp_kWh  = 6.0,
+                      name_dir_suffix = '_max_hoypv2025',
+                      TECspec_pvtarif_Rp_kWh   = 'pvtarif_entsoe.parquet',
+                      TECspec_pvtarif_year     = 2025,
                       ),
 
         make_scenario(default_scenario,
@@ -224,6 +223,9 @@ if False:
     ]
 
 
+
+# DEV --------------------------------------------
+
 DEV_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
                                     name_dir_export = 'pvalloc_DEV', 
                                     bfs_numbers = [
@@ -261,6 +263,7 @@ DEV_scen_list = create_MAIN_scen_list(default_scenario = DEV_default_scen,
                                         ])
 
 
+# LRG --------------------------------------------
 LRG_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
                                     name_dir_export = 'pvalloc_LRG4',   # 'pvalloc_26nbfs_LRG',
                                     bfs_numbers = [
@@ -276,14 +279,24 @@ LRG_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
                                     ],
 )
 LRG_scen_list = []
-fixed_elecpri_2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_max_fixep2023')
-dynam_elecpri_2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_max_hoyep2023',
-                                                          TECspec_elecpri_year     = 2023,
-                                                          TECspec_elecpri_Rp_kWh   = 'elecpri_entsoe.parquet',
-)
-LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_elecpri_2023)
-LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = dynam_elecpri_2023)
-LRG_scen_list = add_ADDITIONAL_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_elecpri_2023)
+# fixed_elecpri_2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_max_fixep2023')
+# dynam_elecpri_2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_max_hoyep2023',
+#                                                           TECspec_elecpri_year     = 2023,
+#                                                           TECspec_elecpri_Rp_kWh   = 'elecpri_entsoe.parquet',
+# )
+# LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_elecpri_2023)
+# LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = dynam_elecpri_2023)
+# LRG_scen_list = add_ADDITIONAL_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_elecpri_2023)
+
+fixed_pvt2023 = make_scenario(DEV_default_scen, name_dir_suffix = '_max_fixpv2023')
+dynam_pvt2023 = make_scenario(DEV_default_scen, name_dir_suffix = '_max_hoypv2023',
+                                                TECspec_pvtarif_year     = 2023,
+                                                TECspec_pvtarif_Rp_kWh   = 'pvtarif_entsoe.parquet',
+    )               
+# LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_pvt2023)
+LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = dynam_pvt2023)
+LRG_scen_list = add_ADDITIONAL_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_pvt2023, 
+                                         scen_suffix_filter = ['_max_hoypv2025',])
 
 
 

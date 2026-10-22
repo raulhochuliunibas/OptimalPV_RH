@@ -834,7 +834,7 @@ class PVAllocCore:
 
 
 
-    def add_elecpri_to_subdf(self, subdf_func, elecpri_vese, elecpri_entsoe ): 
+    def add_elecpri_to_subdf(self, subdf_func, elecpri_vese, elecpri_entsoe, hourly=False): 
         if self.sett.TECspec_elecpri_Rp_kWh is None: 
             # elecpri_raw = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
             elecpri_select = elecpri_vese.filter(
@@ -872,12 +872,125 @@ class PVAllocCore:
                 pl.lit(elecpri).alias('elecpri_Rp_kWh')
             )
 
-        elif isinstance(self.sett.TECspec_elecpri_Rp_kWh, str):
-            # elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, self.sett.TECspec_elecpri_Rp_kWh))
-            elecpri_entsoe = elecpri_entsoe.filter(pl.col('year') == self.sett.TECspec_elecpri_year)
-            elecpri = elecpri_entsoe['elecpri_Rp_kWh'].mean()                    
+        elif isinstance(self.sett.TECspec_elecpri_Rp_kWh, str) and hourly:
+            # price per hour of the elecpri year, joined on hour of year (t_int)  > used for the NPV
+            elecpri_year = elecpri_entsoe.filter(pl.col('year') == self.sett.TECspec_elecpri_year)
+            if elecpri_year.shape[0] == 0:
+                raise ValueError(f'elecpri: year {self.sett.TECspec_elecpri_year} not found in the hourly elecpri data')
+            if 'elecpri_Rp_kWh' in subdf_func.columns:
+                subdf_func = subdf_func.drop('elecpri_Rp_kWh')
+            subdf_func = subdf_func.join(
+                elecpri_year.select([pl.col('t_int').cast(subdf_func.schema['t_int']), 'elecpri_Rp_kWh']),
+                on='t_int', how='left', maintain_order='left')
+            if subdf_func['elecpri_Rp_kWh'].null_count() > 0:
+                raise ValueError(f"elecpri: {subdf_func['elecpri_Rp_kWh'].null_count()} rows without an hourly price after the join on t_int")
+
+        elif isinstance(self.sett.TECspec_elecpri_Rp_kWh, str) and not hourly:
+            # yearly mean as one scalar  > used as feature for the random forest
+            elecpri_year = elecpri_entsoe.filter(pl.col('year') == self.sett.TECspec_elecpri_year)
+            if elecpri_year.shape[0] == 0:
+                raise ValueError(f'elecpri: year {self.sett.TECspec_elecpri_year} not found in the hourly elecpri data')
+            elecpri = elecpri_year['elecpri_Rp_kWh'].mean()                    
             subdf_func = subdf_func.with_columns(
                 pl.lit(elecpri).alias('elecpri_Rp_kWh')
+            )
+
+        return subdf_func
+
+
+
+
+    def load_pvtarif_inputs(self):
+        """
+        Load the price tables that add_pvtarif_to_subdf needs for the current TECspec_pvtarif_Rp_kWh setting.
+        The table of a mode that is not active stays None (old preprep folders without pvtarif_entsoe.parquet keep working for None / float).
+            - None  : pvtarif_vese   = [bfs, pvtarif_Rp_kWh], official VESE tariff of TECspec_pvtarif_year by municipality
+            - float : nothing to load
+            - str   : pvtarif_entsoe = hourly pvtarif data from the preprep folder, clipped to TECspec_pvtarif_Rp_floor
+        """
+        pvtarif_vese, pvtarif_entsoe = None, None
+
+        if self.sett.TECspec_pvtarif_Rp_kWh is None:
+            pvtarif_col = self.sett.TECspec_pvtarif_col
+            pvtarif_raw = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'pvtarif.parquet'))
+            Map_gm_ewr  = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'Map_gm_ewr.parquet'))
+
+            pvtarif_select = (
+                pvtarif_raw
+                .select([pl.col('nrElcom').cast(pl.Utf8), pl.col('year').cast(pl.Utf8)] + [pl.col(col) for col in pvtarif_col])
+                .join(
+                    Map_gm_ewr.select([pl.col('nrElcom').cast(pl.Utf8), pl.col('bfs').fill_null(0).cast(pl.Int64).cast(pl.Utf8)]),
+                    on='nrElcom', how='inner')
+                .filter(
+                    (pl.col('year') == str(self.sett.TECspec_pvtarif_year)[2:4]) &              # VESE years are 2-digit strings
+                    (pl.col('bfs').is_in([str(bfs) for bfs in self.sett.bfs_numbers])))
+                .with_columns([pl.col(col).cast(pl.Utf8).replace('', '0').cast(pl.Float64, strict=False) for col in pvtarif_col])    # as in initialization: '' = 0, null = no tariff reported (skipped in the mean)
+            )
+            # multiple tariffs per bfs (several EWRs in one municipality) -> mean, then sum of the tariff columns
+            if pvtarif_select.shape[0] > pvtarif_select['bfs'].n_unique():
+                print_to_logfile(f'pvtarif: multiple tariffs per bfs, mean taken', self.sett.log_name)
+            pvtarif_vese = (
+                pvtarif_select
+                .group_by('bfs')
+                .agg([pl.col(col).mean() for col in pvtarif_col])
+                .with_columns(pl.sum_horizontal(pvtarif_col).alias('pvtarif_Rp_kWh'))
+                .select(['bfs', 'pvtarif_Rp_kWh'])
+            )
+
+        elif isinstance(self.sett.TECspec_pvtarif_Rp_kWh, str):
+            pvtarif_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, self.sett.TECspec_pvtarif_Rp_kWh))
+            n_below_floor = pvtarif_entsoe.filter(
+                (pl.col('year') == self.sett.TECspec_pvtarif_year) & (pl.col('pvtarif_Rp_kWh') < self.sett.TECspec_pvtarif_Rp_floor)
+            ).shape[0]
+            print_to_logfile(f'pvtarif: {n_below_floor} hours of {self.sett.TECspec_pvtarif_year} raised to the floor of {self.sett.TECspec_pvtarif_Rp_floor} Rp/kWh', self.sett.log_name)
+            # clip keeps nulls as nulls, so missing prices are still caught by the null check in add_pvtarif_to_subdf
+            pvtarif_entsoe = pvtarif_entsoe.with_columns(pl.col('pvtarif_Rp_kWh').clip(lower_bound=self.sett.TECspec_pvtarif_Rp_floor))
+
+        return pvtarif_vese, pvtarif_entsoe
+
+
+
+    def add_pvtarif_to_subdf(self, subdf_func, pvtarif_vese, pvtarif_entsoe, hourly=False):
+        """
+        Add pvtarif_Rp_kWh to subdf_func, same logic as add_elecpri_to_subdf (inputs from load_pvtarif_inputs):
+            - None  : official VESE tariff of TECspec_pvtarif_year by municipality (pvtarif_vese, join on bfs)
+            - float : generic tariff
+            - str   : hourly data (pvtarif_entsoe, already clipped to TECspec_pvtarif_Rp_floor)
+                        hourly=True : price per hour (join on t_int)  > used for the NPV
+                        hourly=False: yearly mean as one scalar       > used as feature for the random forest
+        There is deliberately no final else: for an unexpected setting no column is created and the next pl.col('pvtarif_Rp_kWh') fails loudly.
+        """
+        if 'pvtarif_Rp_kWh' in subdf_func.columns:      # a stale column of an earlier step must not mask an unmatched setting
+            subdf_func = subdf_func.drop('pvtarif_Rp_kWh')
+
+        if self.sett.TECspec_pvtarif_Rp_kWh is None:
+            subdf_func = subdf_func.join(pvtarif_vese, on='bfs', how='left', maintain_order='left')
+            if subdf_func['pvtarif_Rp_kWh'].null_count() > 0:
+                bfs_without_tarif = subdf_func.filter(pl.col('pvtarif_Rp_kWh').is_null())['bfs'].unique().to_list()
+                raise ValueError(f'pvtarif: no VESE tariff for year {self.sett.TECspec_pvtarif_year} in bfs {bfs_without_tarif}')
+
+        elif isinstance(self.sett.TECspec_pvtarif_Rp_kWh, (int, float)):
+            subdf_func = subdf_func.with_columns(
+                pl.lit(float(self.sett.TECspec_pvtarif_Rp_kWh)).alias('pvtarif_Rp_kWh')
+            )
+
+        elif isinstance(self.sett.TECspec_pvtarif_Rp_kWh, str) and hourly:
+            pvtarif_year = pvtarif_entsoe.filter(pl.col('year') == self.sett.TECspec_pvtarif_year)
+            if pvtarif_year.shape[0] == 0:
+                raise ValueError(f'pvtarif: year {self.sett.TECspec_pvtarif_year} not found in the hourly pvtarif data')
+            subdf_func = subdf_func.join(
+                pvtarif_year.select([pl.col('t_int').cast(subdf_func.schema['t_int']), 'pvtarif_Rp_kWh']),
+                on='t_int', how='left', maintain_order='left')
+            if subdf_func['pvtarif_Rp_kWh'].null_count() > 0:
+                raise ValueError(f"pvtarif: {subdf_func['pvtarif_Rp_kWh'].null_count()} rows without an hourly price after the join on t_int")
+
+        elif isinstance(self.sett.TECspec_pvtarif_Rp_kWh, str) and not hourly:
+            pvtarif_year = pvtarif_entsoe.filter(pl.col('year') == self.sett.TECspec_pvtarif_year)
+            if pvtarif_year.shape[0] == 0:
+                raise ValueError(f'pvtarif: year {self.sett.TECspec_pvtarif_year} not found in the hourly pvtarif data')
+            pvtarif = pvtarif_year['pvtarif_Rp_kWh'].mean()
+            subdf_func = subdf_func.with_columns(
+                pl.lit(pvtarif).alias('pvtarif_Rp_kWh')
             )
 
         return subdf_func
@@ -911,6 +1024,7 @@ class PVAllocCore:
 
         elecpri_vese = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
         elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri_entsoe.parquet'))
+        pvtarif_vese, pvtarif_entsoe = self.load_pvtarif_inputs()
 
         GRID_peak_shave_TF          = self.sett.GRID_peak_shaving_enabled_tupl[0]
         GRID_peak_shave_crit_level  = self.sett.GRID_peak_shaving_enabled_tupl[1]
@@ -965,6 +1079,9 @@ class PVAllocCore:
 
                 # add static electricity price for random forest --------------------
                 subdf = self.add_elecpri_to_subdf(subdf, elecpri_vese, elecpri_entsoe)
+
+                # add static pvtarif for random forest --------------------
+                subdf = self.add_pvtarif_to_subdf(subdf, pvtarif_vese, pvtarif_entsoe)
 
                 checkpoint_to_logfile('npv > subdf - all df_uid-combinations: start calc selfconsumption + netdemand', self.sett.log_name, 0, self.sett.show_debug_prints) if i_m < 3 else None
 
@@ -1189,7 +1306,7 @@ class PVAllocCore:
                         pl.col('bfs').first().alias('bfs'),
                         pl.col('grid_node').first().alias('grid_node'),
                         # pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
-                        pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
+                        # pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
                         # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                         pl.col('TotalPower').first().alias('TotalPower'),
                         pl.col('AUSRICHTUNG').mean().alias('AUSRICHTUNG_mean'),
@@ -1285,8 +1402,9 @@ class PVAllocCore:
                         ])
 
 
-                    # add ACTUAL electricity price for NPV --------------------
-                    egid_agg = self.add_elecpri_to_subdf(egid_agg, elecpri_vese, elecpri_entsoe)
+                    # add ACTUAL electricity price + pvtarif for NPV (per hour if the setting is a parquet) --------------------
+                    egid_agg = self.add_elecpri_to_subdf(egid_agg, elecpri_vese, elecpri_entsoe, hourly=True)
+                    egid_agg = self.add_pvtarif_to_subdf(egid_agg, pvtarif_vese, pvtarif_entsoe, hourly=True)
 
 
                     # calc econ spend/inc chf --------------------
@@ -1315,7 +1433,7 @@ class PVAllocCore:
                         pl.col('n_dfuid').first().alias('n_dfuid'),
                         pl.col('grid_node').first().alias('grid_node'),
                         # pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
-                        pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
+                        pl.col('pvtarif_Rp_kWh').mean().alias('pvtarif_Rp_kWh'),            # mean: with hourly pvtarif first() would only report hour 1 
                         # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                         pl.col('TotalPower').first().alias('TotalPower'),
                         pl.col('AUSRICHTUNG_mean').first().alias('AUSRICHTUNG_mean'),

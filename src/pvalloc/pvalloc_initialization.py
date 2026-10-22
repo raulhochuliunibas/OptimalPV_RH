@@ -1414,7 +1414,7 @@ class PVAllocInitialization(PVAllocCore):
 
 
             # PV -------
-            pv = pd.read_parquet(f'{self.sett.name_dir_import_path}/pv.parquet')
+            pv = pd.read_parquet(f'{self.sett.name_dir_import_path}/pv.parquet').drop(columns='__index_level_0__', errors='ignore')   # stale index column of the preprep file, would clash with the index written on export
             pv['xtf_id'] = pv['xtf_id'].fillna(0).astype(int).replace(0, '').astype(str)    
             pv['TotalPower'] = pv['TotalPower'].fillna(0).astype(float)
 
@@ -1446,11 +1446,13 @@ class PVAllocInitialization(PVAllocCore):
             pvtarif = pvtarif.loc[(pvtarif['year'] == str(pvtarif_year)[2:4]) & 
                                 (pvtarif['bfs'].isin((self.sett.bfs_numbers)))]
 
-            empty_cols = [col for col in pvtarif.columns if pvtarif[col].isna().all()]
-            pvtarif = pvtarif.drop(columns=empty_cols)
+            # empty table: fine for a generic / hourly pvtarif (TECspec_pvtarif_year may lie outside the VESE data), for the None mode it must still fail here
+            if pvtarif.shape[0] > 0 or self.sett.TECspec_pvtarif_Rp_kWh is None:
+                empty_cols = [col for col in pvtarif.columns if pvtarif[col].isna().all()]
+                pvtarif = pvtarif.drop(columns=empty_cols)
 
-            select_cols = ['nrElcom', 'nomEw', 'year', 'bfs', 'idofs'] + pvtarif_col
-            pvtarif = pvtarif[select_cols].copy()
+                select_cols = ['nrElcom', 'nomEw', 'year', 'bfs', 'idofs'] + pvtarif_col
+                pvtarif = pvtarif[select_cols].copy()
 
 
             # ELECTRICITY PRICE -------
@@ -1674,7 +1676,7 @@ class PVAllocInitialization(PVAllocCore):
 
             # add pvtarif --------
             bfs_of_egid = gwr_npry[np.isin(gwr_npry[:, gwr.columns.get_loc('EGID')], [egid,]), gwr.columns.get_loc('GGDENR')][0]
-            if self.sett.TECspec_generic_pvtarif_Rp_kWh is None:
+            if self.sett.TECspec_pvtarif_Rp_kWh is None:
                 pvtarif_egid = sum([pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid), col].sum() for col in pvtarif_col])
 
                 pvtarif_sub = pvtarif.loc[pvtarif['bfs'] == str(bfs_of_egid)]
@@ -1697,19 +1699,23 @@ class PVAllocInitialization(PVAllocCore):
                     CHECK_egid_with_problems.append((egid, 'multiple pvtarif data'))
 
 
-            elif self.sett.TECspec_generic_pvtarif_Rp_kWh is not None:
-                pvtarif_egid = self.sett.TECspec_generic_pvtarif_Rp_kWh
+            elif isinstance(self.sett.TECspec_pvtarif_Rp_kWh, (int, float)):
+                pvtarif_egid = self.sett.TECspec_pvtarif_Rp_kWh
                 ewr_info = {
                     'nrElcom': '-',
                     'name': 'generic pvtarif',
                     'energy1': '-',
                     'eco1': '-',
                 }
-                
-            else: 
-                checkpoint_to_logfile(f'ERROR: no RWD or generic pvtarif  data for EGID {egid}', self.sett.log_name, 0, self.sett.show_debug_prints)
-                ewr_info = {}
-                CHECK_egid_with_problems.append((egid, 'no pvtarif data or generic tarif'))
+
+            elif isinstance(self.sett.TECspec_pvtarif_Rp_kWh, str):
+                pvtarif_egid = None     # hourly pvtarif is added to the subdf later (add_pvtarif_to_subdf), no static value per EGID
+                ewr_info = {
+                    'nrElcom': '-',
+                    'name': 'hourly pvtarif',
+                    'energy1': '-',
+                    'eco1': '-',
+                }
 
 
 

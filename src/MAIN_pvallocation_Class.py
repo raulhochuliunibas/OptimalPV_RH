@@ -250,10 +250,12 @@ class PVAllocScenario_Settings:
     
     # tech_economic_specs
     TECspec_elecpri_year: int                               = None
-    # TECspec_pvtarif_year: int                               = 2023
-    TECspec_elecpri_Rp_kWh: Union[None, float, str]         = 30.0   # None: elecpri of T0 year; float: generic elecpri; str: path to hourly elecpri data (parquet) for T0 year
+    TECspec_pvtarif_year: int                               = None
+    TECspec_elecpri_Rp_kWh: Union[None, float, str]         = 31.98   # None: elecpri of T0 year; float: generic elecpri; str: path to hourly elecpri data (parquet) for T0 year
     # TECspec_generic_elecpri_Rp_kWh: float                   = 31.98     # Elecpri Elcom in 2026   # None: elecpri of previous year is applied (T0_prediction -1 )
-    TECspec_generic_pvtarif_Rp_kWh: float                   = 6.0     # energy 6.94 Rp, herkunfsn. 2 Rp PVtarif of DSO in mid-late 2026  # None: pvtarif of previous year is applied (T0_prediction -1 )
+    TECspec_pvtarif_Rp_kWh: Union[None, float, str]         = 9.03     # None: pvtarif of T0 year; float: generic pvtarif; str: path to hourly pvtarif data (parquet) for T0 year
+    TECspec_pvtarif_Rp_floor: float                         = 6.0      # lower bound (Rp/kWh) clipped onto the hourly pvtarif data; only used if TECspec_pvtarif_Rp_kWh is a str
+    # TECspec_generic_pvtarif_Rp_kWh: float                   = 6.0     # energy 6.94 Rp, herkunfsn. 2 Rp PVtarif of DSO in mid-late 2026  # None: pvtarif of previous year is applied (T0_prediction -1 )
     TECspec_KEVflatsubs: float                              = 0.3
     TECspec_interest_rate: float                            = 0.015
     TECspec_self_consumption_ifapplicable: float            = 1.0
@@ -601,7 +603,7 @@ class PVAllocScenario_Settings:
         # self.GWRspec_GBAUJ_minmax: List[int]    = field(default_factory=lambda: [GBAUJ_min, GBAUJ_max])
         # self.GWRspec_GBAUJ_minmax[0] = 1920
         self.GWRspec_GBAUJ_minmax[1] = self.T0_year_prediction - 1
-        self.TECspec_pvtarif_year    = self.T0_year_prediction - 1
+        self.TECspec_pvtarif_year    = self.T0_year_prediction - 1 if self.TECspec_pvtarif_year is None else self.TECspec_pvtarif_year
 
         self.TECspec_elecpri_year    = self.T0_year_prediction - 1 if self.TECspec_elecpri_year is None else self.TECspec_elecpri_year
 

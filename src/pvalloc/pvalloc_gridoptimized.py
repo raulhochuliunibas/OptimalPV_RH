@@ -122,6 +122,7 @@ class PVAllocGridOpt(PVAllocCore):
         gridnode_df = pl.read_parquet(f'{self.sett.optim_path}/gridnode_df.parquet')
         elecpri_vese = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
         elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri_entsoe.parquet'))
+        pvtarif_vese, pvtarif_entsoe = self.load_pvtarif_inputs()
 
 
         rfr_model = joblib.load(f'{self.sett.calib_model_coefs}/{self.sett.ALGOspec_calib_estim_mod_name_pkl}_model.pkl')
@@ -145,7 +146,7 @@ class PVAllocGridOpt(PVAllocCore):
         
 
 
-        def single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, rfr_model, encoder):  
+        def single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, pvtarif_vese, pvtarif_entsoe, rfr_model, encoder):  
             """ 
             Process a single grid optimization
             """
@@ -174,6 +175,9 @@ class PVAllocGridOpt(PVAllocCore):
 
                     # add static electricity price for random forest --------------------
                     node_subdf = self.add_elecpri_to_subdf(node_subdf, elecpri_vese, elecpri_entsoe)
+
+                    # add static pvtarif for random forest --------------------
+                    node_subdf = self.add_pvtarif_to_subdf(node_subdf, pvtarif_vese, pvtarif_entsoe)
 
 
                     for egid in list(node_subdf['EGID'].unique()):
@@ -392,7 +396,7 @@ class PVAllocGridOpt(PVAllocCore):
                             pl.col('bfs').first().alias('bfs'),
                             pl.col('grid_node').first().alias('grid_node'),
                             # pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
-                            pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
+                            # pl.col('pvtarif_Rp_kWh').first().alias('pvtarif_Rp_kWh'), 
                             # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
                             pl.col('TotalPower').first().alias('TotalPower'),
                             pl.col('AUSRICHTUNG').mean().alias('AUSRICHTUNG_mean'),
@@ -424,8 +428,9 @@ class PVAllocGridOpt(PVAllocCore):
                         ])
 
 
-                        # add ACTUAL electricity price for NPV --------------------
-                        egid_agg = self.add_elecpri_to_subdf(egid_agg, elecpri_vese, elecpri_entsoe)
+                        # add ACTUAL electricity price + pvtarif for NPV (per hour if the setting is a parquet) --------------------
+                        egid_agg = self.add_elecpri_to_subdf(egid_agg, elecpri_vese, elecpri_entsoe, hourly=True)
+                        egid_agg = self.add_pvtarif_to_subdf(egid_agg, pvtarif_vese, pvtarif_entsoe, hourly=True)
 
                         # calc econ spend/inc chf -----------------
                         egid_agg = egid_agg.with_columns([
@@ -586,11 +591,11 @@ class PVAllocGridOpt(PVAllocCore):
         # RUN OPTIMIZATION -----------------------------------------------------------------------------
         if self.sett.OPTIMspecs_gridnode_subsample == 'max_node':
             gridnode_subsample = topo_df['grid_node'].value_counts().sort(by='count', descending=True).head(1)['grid_node'][0]
-            single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, rfr_model, encoder)
+            single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, pvtarif_vese, pvtarif_entsoe, rfr_model, encoder)
             
         elif self.sett.OPTIMspecs_gridnode_subsample == 'all_nodes_loop':
             for gridnode_subsample in list(topo_df['grid_node'].unique()):
-                single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, rfr_model, encoder)
+                single_gridoptimized_orderinst(self, gridnode_subsample, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, pvtarif_vese, pvtarif_entsoe, rfr_model, encoder)
                 
         else:
             if self.sett.OPTIMspecs_gridnode_subsample == 'all_nodes_pyparallel':
@@ -607,7 +612,7 @@ class PVAllocGridOpt(PVAllocCore):
                 for node in gridnode_subsample_list:
                     fut = ex.submit(
                         single_gridoptimized_orderinst,  # nested function in scope
-                        self, node, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, rfr_model, encoder
+                        self, node, topo_df, topo_time_paths, topo, gridnode_df, elecpri_vese, elecpri_entsoe, pvtarif_vese, pvtarif_entsoe, rfr_model, encoder
                     )
                     futures[fut] = node
 
