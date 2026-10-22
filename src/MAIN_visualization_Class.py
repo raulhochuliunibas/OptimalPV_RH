@@ -497,7 +497,7 @@ class Visualization(
             print_to_logfile(f'WARNING plot_ALL: not a plot name, ignored: {unknown_names}', self.visual_sett.log_name)
         if not plots_to_run:
             print_to_logfile('WARNING plot_ALL: no plot to run', self.visual_sett.log_name)
-        print_to_logfile(f'plot_ALL: running {len(plots_to_run)} plots for {len(self.visual_sett.pvalloc_scen_list)} scenarios', self.visual_sett.log_name)
+        print_to_logfile(f'\nplot_ALL: running {len(plots_to_run)} plots for {len(self.visual_sett.pvalloc_scen_list)} scenarios', self.visual_sett.log_name)
 
         plots_failed = []
         for plot_name in plots_to_run:
@@ -527,17 +527,18 @@ if __name__ == '__main__':
     visual_default = Visual_Settings(
         # pvalloc_scen_list                 = [
         #     'pvalloc_26nbfs_LRG_max', 
+        #     'pvalloc_26nbfs_LRG_max_histconstr_e40pv6', 
 
-        #     # 'pvalloc_26nbfs_LRG_max_nokev', 
-        #     # 'pvalloc_26nbfs_LRG_max_As8p0',
-        #     # 'pvalloc_26nbfs_LRG_max_Bs0p8', 
-        #     'pvalloc_26nbfs_LRG_max_Cs6p8', 
-        #     'pvalloc_26nbfs_LRG_max_dynelecpri2023', 
-        #     # 'pvalloc_26nbfs_LRG_rnd', 
+        # #     # 'pvalloc_26nbfs_LRG_max_nokev', 
+        # #     # 'pvalloc_26nbfs_LRG_max_As8p0',
+        # #     # 'pvalloc_26nbfs_LRG_max_Bs0p8', 
+        # #     'pvalloc_26nbfs_LRG_max_Cs6p8', 
+        # #     'pvalloc_26nbfs_LRG_max_dynelecpri2023', 
+        # #     # 'pvalloc_26nbfs_LRG_rnd', 
         # ], 
         pvalloc_include_pattern_list       = [
-            # 'pvalloc_26nbfs_LRG_*', 
-            'pvalloc_LRG4*', 
+            'pvalloc_26nbfs_LRG_*', 
+            # 'pvalloc_LRG4*', 
                                             ],
         pvalloc_exclude_pattern_list       = [
                                                 '*.txt', '*.tar.gz', '*old_vers*',
@@ -563,9 +564,11 @@ if __name__ == '__main__':
     visual_class = Visualization(visual_default)
 
     if 'scicore' in os.getcwd() or 'SCICORE' in os.getcwd():
+        visual_class.plot_ind_line_PVproduction(plot_show = False, plot_export = True)
         visual_class.plot_ALL(plot_show = False, plot_export = True)
 
     else:
+        visual_class.plot_ind_line_PVproduction(plot_show = False, plot_export = True)
         visual_class.plot_ALL(plot_show = False, plot_export = True, main_plots_only = True)
 
 

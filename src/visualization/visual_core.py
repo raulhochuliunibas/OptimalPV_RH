@@ -4,10 +4,12 @@ import os as os
 import fnmatch
 import glob
 import json
+from datetime import datetime
 
 # external packages
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 from shapely import MultiPolygon, Polygon
 
 # own modules
@@ -40,7 +42,8 @@ class VisualizationCore:
         self.visual_sett.data_path = os.path.join(self.visual_sett.wd_path, 'data')
         self.visual_sett.visual_path = os.path.join(self.visual_sett.data_path, 'visualization')
         self.visual_sett.visual_static_export_path = os.path.join(self.visual_sett.data_path, 'visualization_static_wpaper')
-        self.visual_sett.log_name = f'{self.visual_sett.visual_path}/visual_log.txt'
+        log_stamp = datetime.now().strftime('%y%m%d_%H%M')       # yymmdd_hhmm when the run starts, e.g. 261022_0905
+        self.visual_sett.log_name = f'{self.visual_sett.visual_path}/visual_log_{log_stamp}.txt'
 
         os.makedirs(self.visual_sett.visual_path, exist_ok=True)
 
@@ -80,6 +83,17 @@ class VisualizationCore:
         for key, value in sett_json.items():
             if hasattr(self.pvalloc_scen, key):
                 setattr(self.pvalloc_scen, key, value)
+
+
+    def read_pv_parquet(self, scen):
+        """
+        pv.parquet of older pvalloc runs holds two columns named __index_level_0__ (leftover index of the preprep file + the pandas
+        index written on export), which pd.read_parquet cannot resolve (ArrowInvalid: Multiple matches for FieldRef.Name).
+        Read by column position instead of name and drop both index columns.
+        """
+        tbl = pq.ParquetFile(f'{self.visual_sett.data_path}/pvalloc/{scen}/pv.parquet').read(use_pandas_metadata=False)
+        keep = [i for i, name in enumerate(tbl.schema.names) if not name.startswith('__index_level_')]
+        return tbl.select(keep).replace_schema_metadata(None).to_pandas()
 
 
     def add_scen_name_to_plot(self, fig_func, scen, pvalloc_scen):

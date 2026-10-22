@@ -86,6 +86,13 @@ class PlotIndLinePVproduction(VisualizationCore):
 
 
             # add constracapa  capacity ------------------
+            # if date column is object, convert to datetime
+            if pd.api.types.is_object_dtype(constrcapa['date']):
+                try:
+                    constrcapa['date'] = pd.to_datetime(constrcapa['date'], errors='coerce')
+                except Exception as e:
+                    print(f"Error converting 'date' column to date: {e}")
+
             constrcapa = constrcapa.merge(trange_prediction[['date', 'n_iter']] , on='date', how='left')
             constrcapa = constrcapa.loc[ ~ constrcapa['n_iter'].isna()]
             # if self.pvalloc_scen.CSTRspec_capacity_type == 'ep2050_zerobasis':
@@ -101,6 +108,7 @@ class PlotIndLinePVproduction(VisualizationCore):
             # girdnode_df: transform and prep ------------------
             gridnode_df_by_iter_list, agg_bynode_df_by_iter_list = [] , []
             print(f'** processing gridnode_df for scen {scen} **\n** n_paths: {len(gridnode_df_paths)} **') if i_scen == 0 else None
+
             for i_path, path in enumerate( gridnode_df_paths ):
                 n_iter = int(path.split('gridnode_df_')[1].split('.parquet')[0])
 
@@ -110,8 +118,8 @@ class PlotIndLinePVproduction(VisualizationCore):
                     pl.col('t').str.strip_chars('t_').cast(pl.Int64).alias('t_int'),
                 ])
                 gridnode_df = gridnode_df.sort("t_int", descending=False)
-                if i_path < 5: 
-                    print(f'\t\t processing iter {n_iter} from path: {path}') 
+                if i_path < 1 and i_scen == 0: 
+                    print(f'\t\t processing iter {n_iter} from path: {path.split("data")[-1]}') 
                     print(f'\t\t shape gridnode_df: {gridnode_df.shape}, rows / 8760: {gridnode_df.shape[0] / 8760:.2f} ')
 
 

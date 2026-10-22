@@ -35,7 +35,7 @@ class PlotIndBoxpRadiationRngSanitycheck(VisualizationCore):
 
             # data import
             sanity_scen_data_path = f'{self.visual_sett.data_path}/pvalloc/{scen}/sanity_check_byEGID'
-            pv = pd.read_parquet(f'{self.visual_sett.data_path}/pvalloc/{scen}/pv.parquet')
+            pv = self.read_pv_parquet(scen)
             topo = json.load(open(f'{sanity_scen_data_path}/topo_egid.json', 'r'))
             gwr_gdf = gpd.read_file(f'{self.visual_sett.data_path}/preprep/{self.pvalloc_scen.name_dir_import}/gwr_gdf.geojson')
 
