@@ -323,6 +323,7 @@ class PVAllocScenario_Settings:
 
     # algorithm_specs
     ALGOspec_inst_selection_method: str                         = 'max_npv'          # 'random', max_npv', 'prob_weighted_npv'
+    ALGOspec_inst_selection_cumulative_TF: bool                 = False              # F: one installation per while-loop round (algo_select_AND_adjust_topology_RFR), T: all installations of an iteration at once, cumulative sum up to the construction capacity (algo_selectCUM_AND_adjust_topology_RFR)
     ALGOspec_rand_seed: bool                                    = None
     ALGOspec_topo_subdf_partitioner: int                        = 250  # 9999999
     ALGOspec_npv_update_groupby_cols_topo_aggdf: List[str]      = field(default_factory=lambda: [
@@ -368,6 +369,7 @@ class PVAllocScenario_Settings:
     ALGOspec_pvinst_size_calculation: str                       = 'estim_rfr'   # 'estim_rf_segdist' / 'estim_rfr' / 'inst_full_partition' / 'npv_optimized'
     ALGOspec_calib_estim_dir_name: str                          = 'PVALLOC_calibration_model_coefs'
     ALGOspec_calib_estim_mod_name_pkl: str                      = 'allCHbfs_rfr2b'
+    ALGOspec_rfr_FLAECHE_total_sum_TF: bool                     = False         # RFR input FLAECHE_total. T: sum of all roof partitions of the EGID (as in the RFR calibration, calibration_class.py), F: first() = area of one partition, which one depends on row order (behavior until 2026-10-28, not reproducible run to run)
     ALGOspec_sleep_bfr_MCiter_TF: bool                          = False
 
     # dsonodes_ts_specs

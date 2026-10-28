@@ -222,9 +222,21 @@ class PVAllocMCAlgo(PVAllocCore):
                 # INST PICK ==========
                 start_time_installation_whileloop = datetime.datetime.now()
                 inst_counter = 0
+                inst_power = 0.0        # defined before the first round: a year whose first round finds no free EGID no longer crashes (NameError)
                 print_to_logfile('- START inst while loop', self.sett.log_name)
 
-                while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
+                # CUMULATIVE INST PICK: all installations of this iteration in one call, then skip the one-by-one while loop
+                run_inst_whileloop_TF = True
+                if self.sett.ALGOspec_inst_selection_cumulative_TF and (self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr'):
+                    constr_built_m, inst_counter = self.algo_selectCUM_AND_adjust_topology_RFR(
+                        self.sett.mc_iter_path, i_m, m,
+                        constr_capa_kW       = min(constr_capa_m, constr_capa_y),
+                        max_n_inst           = safety_counter_max + 1,
+                        require_positive_npv = True,         # same rule as the NPV_uid > 0 check in the while loop below
+                    )
+                    run_inst_whileloop_TF = False
+
+                while( run_inst_whileloop_TF & (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
                     with open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r', encoding='utf-8') as f:
                         topo = json.load(f)
                     with open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:

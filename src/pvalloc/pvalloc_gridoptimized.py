@@ -264,7 +264,7 @@ class PVAllocGridOpt(PVAllocCore):
                                 pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
                                 # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
 
-                                pl.col('FLAECHE').first().alias('FLAECHE_total'),
+                                (pl.col('FLAECHE').sum() if self.sett.ALGOspec_rfr_FLAECHE_total_sum_TF else pl.col('FLAECHE').first()).alias('FLAECHE_total'),   # T: sum of all partitions (as in calibration), F: one partition
                                 )
                             )
                         subagg = topo_rest.join(topo_pivot, on=['EGID'], how='left')
@@ -707,9 +707,21 @@ class PVAllocGridOpt(PVAllocCore):
                 # INST PICK ==========
                 start_time_installation_whileloop = datetime.datetime.now()
                 inst_counter = 0
+                inst_power = 0.0        # defined before the first round: a year whose first round finds no free EGID no longer crashes (NameError)
                 print_to_logfile('- START inst while loop', self.sett.log_name)
 
-                while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
+                # CUMULATIVE INST PICK: all installations of this iteration in one call, then skip the one-by-one while loop
+                run_inst_whileloop_TF = True
+                if self.sett.ALGOspec_inst_selection_cumulative_TF and (self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr'):
+                    constr_built_m, inst_counter = self.algo_selectCUM_AND_adjust_topology_RFR(
+                        self.sett.optim_path, i_m, m,
+                        constr_capa_kW       = min(constr_capa_m, constr_capa_y),
+                        max_n_inst           = safety_counter_max + 1,
+                        require_positive_npv = False,        # the expansion while loop below does not check NPV either
+                    )
+                    run_inst_whileloop_TF = False
+
+                while( run_inst_whileloop_TF & (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
                     with open(f'{self.sett.optim_path}/topo_egid.json', 'r', encoding='utf-8') as f:
                         topo = json.load(f)
                     with open(f'{self.sett.optim_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
