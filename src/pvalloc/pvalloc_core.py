@@ -900,6 +900,26 @@ class PVAllocCore:
 
 
 
+    def load_elecpri_inputs(self):
+        """
+        Load the price tables that add_elecpri_to_subdf needs for the current TECspec_elecpri_Rp_kWh setting.
+        The table of a mode that is not active stays None (old preprep folders without elecpri_entsoe.parquet keep working for None / float).
+            - None  : elecpri_vese   = ElCom elecpri table (elecpri.parquet), filtered by bfs, year and category in add_elecpri_to_subdf
+            - float : nothing to load
+            - str   : elecpri_entsoe = hourly elecpri data from the preprep folder, file name = TECspec_elecpri_Rp_kWh
+        """
+        elecpri_vese, elecpri_entsoe = None, None
+
+        if self.sett.TECspec_elecpri_Rp_kWh is None:
+            elecpri_vese = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
+
+        elif isinstance(self.sett.TECspec_elecpri_Rp_kWh, str):
+            elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, self.sett.TECspec_elecpri_Rp_kWh))
+
+        return elecpri_vese, elecpri_entsoe
+
+
+
     def load_pvtarif_inputs(self):
         """
         Load the price tables that add_pvtarif_to_subdf needs for the current TECspec_pvtarif_Rp_kWh setting.
@@ -1022,8 +1042,7 @@ class PVAllocCore:
         with open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'r', encoding='utf-8') as f:
             node_subsidy_monitor_dict = json.load(f)
 
-        elecpri_vese = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
-        elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri_entsoe.parquet'))
+        elecpri_vese, elecpri_entsoe = self.load_elecpri_inputs()
         pvtarif_vese, pvtarif_entsoe = self.load_pvtarif_inputs()
 
         GRID_peak_shave_TF          = self.sett.GRID_peak_shaving_enabled_tupl[0]
