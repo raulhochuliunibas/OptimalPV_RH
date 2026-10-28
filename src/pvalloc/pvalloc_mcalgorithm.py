@@ -192,7 +192,7 @@ class PVAllocMCAlgo(PVAllocCore):
                     if len(egid_wo_pv_open_node) > 0:
                                                                                                                             
                         # (only updated each iteration if feedin premium adjusts)
-                        if (i_m == 1) or (self.sett.GRIDspec_apply_prem_tiers_TF): 
+                        if (i_m == 1) or (self.sett.GRIDspec_reupdate_npv_df_TF): 
                             start_time_update_npv = datetime.datetime.now()
                             print_to_logfile('- START update npv', self.sett.log_name)
                             if self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':

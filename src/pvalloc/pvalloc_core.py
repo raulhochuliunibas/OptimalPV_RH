@@ -347,7 +347,7 @@ class PVAllocCore:
 
         data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
         gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
-        if not self.sett.GRIDspec_apply_prem_tiers_TF: 
+        if not self.sett.GRIDspec_reupdate_npv_df_TF: 
             gridtiers_df['gridprem_Rp_kWh'] = 0.0   
 
 

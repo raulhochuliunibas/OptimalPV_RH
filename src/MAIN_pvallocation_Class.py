@@ -380,7 +380,7 @@ class PVAllocScenario_Settings:
     GRIDspec_flat_profile_demand_type_col: set                  = 'MFH_swstore'  # 'flat' / 'MFH_swstore' / 'outtopo_demand_zero'
 
     # gridprem_adjustment_specs
-    GRIDspec_apply_prem_tiers_TF: bool                          = False 
+    GRIDspec_reupdate_npv_df_TF: bool                          = False 
     GRIDspec_tier_description: str                              = 'tier_level: (voltage_threshold, gridprem_Rp_kWh)'
     GRIDspec_power_factor: float                                = 1
     GRIDspec_perf_factor_1kVA_to_XkW: float                     = 0.8
