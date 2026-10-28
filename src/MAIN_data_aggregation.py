@@ -11,6 +11,7 @@ import shutil
 import copy
 import json
 import io
+import time
 import requests
 from shapely.geometry import Point
 from shapely.ops import unary_union
@@ -446,6 +447,30 @@ class DataAggScenario:
                 shutil.copy(self.sett.log_name, f'{self.sett.data_path}/input_split_data_geometry/split_data_geometry_logfile.txt')
 
 
+        def get_vese_json(self, req_url, label, n_tries=5):
+            '''
+            GET request to the VESE API with retries (VESE occasionally returns an empty / non-JSON body).
+            Retries on request errors, status != 200 or non-JSON body (wait 2, 4, 8, 16 s), raises RuntimeError after n_tries.
+            License key is masked in log and error messages.
+            '''
+            for i_try in range(1, n_tries+1):
+                try:
+                    response = requests.get(req_url, timeout=60)
+                    if response.status_code == 200:
+                        return response.json()
+                    err_str = f'status {response.status_code}, body: {response.text[:200]!r}'
+                except requests.exceptions.JSONDecodeError:
+                    err_str = f'status {response.status_code}, non-JSON body: {response.text[:200]!r}'
+                except requests.exceptions.RequestException as e:
+                    err_str = f'{type(e).__name__}: {e}'
+                err_str = err_str.replace(get_pvtarif_key(), '<KEY>')
+
+                if i_try == n_tries:
+                    raise RuntimeError(f'VESE API failed for {label} after {n_tries} tries, last error: {err_str}')
+                checkpoint_to_logfile(f'VESE API try {i_try}/{n_tries} failed for {label}, {err_str} -> retry in {2**i_try} s', self.sett.log_name, 3)
+                time.sleep(2**i_try)
+
+
         def api_pvtarif_gm_ewr_Mapping(self):
             '''
             Input:
@@ -474,8 +499,7 @@ class DataAggScenario:
 
             for i_bfs, bfs in enumerate(bfs_list):
                 req_url = f'{url}?idofs={bfs}&licenseKey={get_pvtarif_key()}'
-                response = requests.get(req_url)
-                response_json = response.json()
+                response_json = self.get_vese_json(req_url, f'bfs={bfs}')
 
                 if response_json['valid'] == True:
                     evus_list = response_json['evus']
@@ -542,8 +566,7 @@ class DataAggScenario:
 
                 for i_ew, ew in enumerate(ew_id):
                     req_url = f'{url}evuId={ew}&year={y}&licenseKey={get_pvtarif_key()}'
-                    response = requests.get(req_url)
-                    response_json = response.json()
+                    response_json = self.get_vese_json(req_url, f'evuId={ew} year={y}')
 
                     if response_json['valid'] == True:
                         response_ew_list.append(response_json)
@@ -1092,6 +1115,7 @@ class DataAggScenario:
             gwr = pl.read_parquet(f'{self.sett.preprep_path}/gwr.parquet')
             gwr_gdf = gpd.read_file(f'{self.sett.preprep_path}/gwr_gdf.geojson')
             gwr_all_building_gdf = gpd.read_file(f'{self.sett.preprep_path}/gwr_all_building_gdf.geojson')
+            gwr_egid_set = set(gwr['EGID'].cast(pl.Utf8).to_list())
             checkpoint_to_logfile(f'import gwr, {gwr.shape[0]} rows', self.sett.log_name, 5, self.sett.show_debug_prints)
 
 
@@ -1123,30 +1147,31 @@ class DataAggScenario:
             )
             solkat_all_pq = solkat_all_pq.rename({'GWR_EGID': 'EGID'})
             solkat_all_pq = solkat_all_pq.filter(pl.col('DF_UID').is_not_null())
+
+            # Not dropping all the EGID nans but give them a proxy to keep as many roofs in the sample as possible (union shape by SB_UUID, same as in calibration_class)
+            solkat_all_pq = solkat_all_pq.with_columns(
+                pl.when((pl.col('EGID') == 'NAN') & pl.col('SB_UUID').is_not_null())
+                .then(pl.concat_str([pl.lit('egid_proxysbuuid_'), pl.col('SB_UUID')]))
+                .otherwise(pl.col('EGID'))
+                .alias('EGID')
+            )
             solkat_all_pq = solkat_all_pq.with_columns(
                 pl.col('EGID').count().over('EGID').alias('EGID_count')
             )
 
             # PARTITION SOLKAT with BFS NUMBERS  ---------------------------------------------------------------------------------
-            solkat_all_pq.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers))
+            solkat_all_pq = solkat_all_pq.filter(pl.col('BFS_NUMMER').is_in(self.sett.bfs_numbers))
 
-            solkat_all_dfuid = solkat_all_pq['DF_UID'].unique().to_list()
-            stepsize = 500
+            # partition by EGID (incl. SB_UUID proxies), NOT by DF_UID: all partitions of an EGID must be in the same tranche, because they are unioned per EGID below
+            solkat_all_egid = solkat_all_pq.filter(pl.col('EGID') != 'NAN')['EGID'].unique().sort().to_list()
+            stepsize = 100
             tranche_counter = 0
-            for i in range(0, len(solkat_all_dfuid), stepsize):
-
+            for i in range(0, len(solkat_all_egid), stepsize):
                 # if tranche_counter < 50:
                 if True:
-                    checkpoint_to_logfile(f'partition solkat_sub {i} to {i+stepsize} of {len(solkat_all_dfuid)} unique DF_UIDs', self.sett.log_name, 5, self.sett.show_debug_prints) if i < 3 else None
+                    checkpoint_to_logfile(f'partition solkat_sub {i} to {i+stepsize} of {len(solkat_all_egid)} unique EGIDs', self.sett.log_name, 5, self.sett.show_debug_prints) if i < 3 else None
                     tranche_counter += 1
-                    solkat_sub = solkat_all_pq.filter(pl.col('DF_UID').is_in(solkat_all_dfuid[i:i+stepsize]))
-
-                    # DEBUGGING ----------------------------------
-                    df_uids = ['10225999', '10226000']
-                    tf = [tg in solkat_all_dfuid[i:i+stepsize] for tg in df_uids]
-                    if any(tf):
-                        print(f'found in tranche: {tranche_counter}; between {i} and {i+stepsize} of {len(solkat_all_dfuid)} unique DF_UIDs; {tf}')
-                    # DEBUGGING ----------------------------------
+                    solkat_sub = solkat_all_pq.filter(pl.col('EGID').is_in(solkat_all_egid[i:i+stepsize]))
 
                     solkat_sub_pd = solkat_sub.to_pandas()
                     solkat_subgdf = solkat_all_geo[['DF_UID', 'geometry']].merge(solkat_sub_pd, how='inner', on='DF_UID')
@@ -1168,6 +1193,19 @@ class DataAggScenario:
             print_to_logfile('\nMatch missing EGIDs to solkat (where gwrEGIDs overlapp solkat shape but are not present as a single solkat_row)', self.sett.summary_name)
             cols_adjust_for_missEGIDs_to_solkat = self.sett.SOLKAT_cols_adjust_for_missEGIDs_to_solkat
 
+
+            # count how often each case applies (summary in log file at the end)
+            case_desc = {
+                'nooverlap_drop': 'no overlap with gwr -> dropped',
+                'nooverlap_keep': 'no overlap with gwr -> kept (EGID in gwr)',
+                'case1':          'case1: 1 gwr EGID, same as solkat EGID',
+                'case2':          'case2: 1 gwr EGID, not solkat EGID',
+                'case3':          'case3: >1 rows incl. null (error)',
+                'case4':          'case4: >1 gwr EGIDs, incl. solkat EGID',
+                'case5':          'case5: >1 gwr EGIDs, excl. solkat EGID',
+                'nocase':         'no case fitting (error)',
+            }
+            case_stats = {case: [0, 0, 0, 0] for case in case_desc}    # n EGIDs, of which SB_UUID proxy, partitions in, rows out
 
             solkat_subgdf_paths = glob.glob(f'{self.sett.preprep_path}/solkat_partitioned_tranche_*.geojson')
             for i_path, path in enumerate(solkat_subgdf_paths):
@@ -1241,20 +1279,22 @@ class DataAggScenario:
                     pl.col('BFS_NUMMER').cast(pl.Utf8),
                     pl.col('EGID_count').cast(pl.Int64),
                 )
+                n_partitions_by_egid = dict(solkat_v2_pl.group_by('EGID').len().iter_rows())    # for case summary in log file
                 for n_egid, egid in enumerate(EGID_old_solkat_list):
                     solkat_subdf = None  # reset per EGID, stays None if no case below applies (no overlap, case3, error)
-                    
+                    case_name = 'nocase'  # overwritten by the case that applies, for case summary in log file
+
                     egid_join_union = join_gwr_pl.filter(pl.col('EGID_old_solkat') == egid)
 
                     if all(egid_join_union['EGID_gwradded'].is_null()) :
-                        # no overlapp between solkat and any GWR => skip
-                        print('')
-                                            
-                    # Shapes of building that will not be included given GWR filter settings
-                    elif any(egid_join_union['EGID_gwradded'].is_null()):
-                        solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                        # no overlapp between solkat and any GWR => drop, unless solkat EGID is itself a GWR EGID (GWR point outside of roof shape)
+                        if egid in gwr_egid_set:
+                            case_name = 'nooverlap_keep'
+                            solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
+                        else:
+                            case_name = 'nooverlap_drop'
 
-                    elif all(egid_join_union['EGID_gwradded'] != np.nan): 
+                    else:
 
                         # cases
                         case1_TF = (egid_join_union.shape[0] == 1) & (egid_join_union['EGID_gwradded'].first() == egid)
@@ -1265,22 +1305,26 @@ class DataAggScenario:
 
                         # "Best" case (unless step above applies): Shapes of building that only has 1 GWR EGID
                         if case1_TF:
+                            case_name = 'case1'
                             solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
 
                             
                         # Not best case but for consistency better to keep individual solkatEGIs matches (otherwise missmatch of newer buildings with old shape partitions possible)
                         # edit: Because also roofs with GWR_EGID == NAN are considered with SB_UUID proxy, make sense to also overwrite solkat EGID for this case
                         elif case2_TF:
+                            case_name = 'case2'
                             solkat_subdf = solkat_v2_pl.filter(pl.col('EGID') == egid).clone()
                             solkat_subdf = solkat_subdf.with_columns(
                                 pl.lit(egid_join_union['EGID_gwradded'].item()).alias('EGID')   
                             )
 
                         elif case3_TF:
+                            case_name = 'case3'
                             print(f'**MAJOR ERROR**: EGID {egid}, np.nan in egid_join_union[EGID_gwradded] column')
 
                         # Intended case: Shapes of building that has multiple GWR EGIDs within the shape boundaries
                         elif case4_TF:
+                            case_name = 'case4'
                             
                             solkat_subdf_addedEGID_list = []
                             n, egid_to_add = 0, egid_join_union['EGID_gwradded'].unique()[0]
@@ -1326,6 +1370,7 @@ class DataAggScenario:
                         # using SB_UUID.
                     
                         elif case5_TF:
+                            case_name = 'case5'
                             # 5b case
                             solkat_subdf_addedEGID_list = []
 
@@ -1373,7 +1418,13 @@ class DataAggScenario:
                         
                     # merge all solkat partitions to new solkat df
                     if solkat_subdf is not None:
-                        new_solkat_append_list.append(solkat_subdf) 
+                        new_solkat_append_list.append(solkat_subdf)
+
+                    # count cases for summary in log file
+                    case_stats[case_name][0] += 1
+                    case_stats[case_name][1] += str(egid).startswith('egid_proxysbuuid_')
+                    case_stats[case_name][2] += n_partitions_by_egid.get(egid, 0)
+                    case_stats[case_name][3] += solkat_subdf.shape[0] if solkat_subdf is not None else 0
 
                     if n_egid == int(len(EGID_old_solkat_list)/add_solkat_partition):
                         checkpoint_to_logfile(f'Match gwrEGID to solkat: {add_solkat_counter}/{add_solkat_partition} partition', self.sett.log_name, 3, self.sett.show_debug_prints)
@@ -1417,12 +1468,33 @@ class DataAggScenario:
             solkat_pl_final = pl.concat(solkat_postadjust_list)
             solkat_pl_final.write_parquet(f'{self.sett.preprep_path}/solkat.parquet')
 
-            # remove adjusted / non-covered solkat_sub 
-            solkat_postadjust_csv_paths = glob.glob(f'{self.sett.preprep_path}/solkat_postadjust_tranche_*.csv')
-            remove_paths = solkat_postadjust_pl_paths # + solkat_postadjust_csv_paths 
-            for file in remove_paths:
-                os.remove(file)
-            
+            # summary final solkat + case counts to log file (expected: ~4 partitions per EGID, 0 EGIDs not in gwr, 0 proxy EGIDs left, 0 duplicates)
+            n_rows, n_egid = solkat_pl_final.shape[0], solkat_pl_final['EGID'].n_unique()
+            partitions_per_egid = solkat_pl_final.group_by('EGID').len()['len']
+            summary_rows = [
+                ('solkat partitions in (scenario BFS)',     solkat_all_pq.shape[0]),
+                ('  of which without EGID (SB_UUID proxy)', solkat_all_pq.filter(pl.col('EGID').str.starts_with('egid_proxysbuuid_')).shape[0]),
+                ('solkat rows out',                         n_rows),
+                ('EGIDs out',                               n_egid),
+                ('partitions per EGID (mean / median)',     f'{partitions_per_egid.mean():.2f} / {partitions_per_egid.median():.0f}'),
+                ('roof area per EGID (m2)',                 f'{solkat_pl_final["FLAECHE"].sum() / n_egid:.1f}'),
+                ('STROMERTRAG per EGID (MWh)',              f'{solkat_pl_final["STROMERTRAG"].sum() / n_egid / 1000:.1f}'),
+                ('DF_UIDs under >1 EGID (case4/5 copies)',  (solkat_pl_final.group_by('DF_UID').agg(pl.col('EGID').n_unique())['EGID'] > 1).sum()),
+                ('gwr EGIDs without solkat roof',           len(gwr_egid_set - set(solkat_pl_final['EGID'].to_list()))),
+                ('EGIDs not in gwr (expect 0)',             solkat_pl_final.filter(~pl.col('EGID').is_in(list(gwr_egid_set)))['EGID'].n_unique()),
+                ('SB_UUID proxy EGIDs left (expect 0)',     solkat_pl_final.filter(pl.col('EGID').str.starts_with('egid_proxysbuuid_'))['EGID'].n_unique()),
+                ('duplicate (EGID, DF_UID) (expect 0)',     n_rows - solkat_pl_final.select(['EGID', 'DF_UID']).unique().shape[0]),
+            ]
+            summary_str = '\n'.join([f'\t{name:<45}{value:>15}' for name, value in summary_rows])
+
+            case_str = f'\t{"case":<45}{"n EGIDs":>10}{"of which proxy":>16}{"partitions in":>15}{"rows out":>10}\n'
+            case_str += '\n'.join([f'\t{case_desc[case]:<45}{n_keys:>10}{n_proxy:>16}{n_part:>15}{n_out:>10}' for case, (n_keys, n_proxy, n_part, n_out) in case_stats.items()])
+            case_tot = [sum(stats[i] for stats in case_stats.values()) for i in range(4)]
+            case_str += f'\n\t{"total":<45}{case_tot[0]:>10}{case_tot[1]:>16}{case_tot[2]:>15}{case_tot[3]:>10}'
+
+            print_to_logfile(f'\nsolkat after matching missing EGIDs, summary:\n{summary_str}\n\nsolkat cases (per EGID or SB_UUID proxy):\n{case_str}\n', self.sett.log_name)
+
+
             # GEOJSON
             solkat_postadjust_gdf_paths = glob.glob(f'{self.sett.preprep_path}/solkat_postadjust_tranche_*.geojson')
             solkat_postadjust_gdf_list = []
@@ -1439,10 +1511,16 @@ class DataAggScenario:
             # remove adjusted / non-covered solkat_sub
             no_gwr_match_paths = glob.glob(f'{self.sett.preprep_path}/x_NO_GWR_MATCH__solkat_partitioned_tranche_*.geojson')
             solkat_partitioned_gdf_paths = glob.glob(f'{self.sett.preprep_path}/solkat_partitioned_tranche_*.geojson')
+            solkat_postadjust_csv_paths = glob.glob(f'{self.sett.preprep_path}/solkat_postadjust_tranche_*.csv')
 
-            remove_paths = solkat_postadjust_gdf_paths + no_gwr_match_paths + solkat_partitioned_gdf_paths
+            paths1 = solkat_partitioned_gdf_paths + no_gwr_match_paths
+            paths2 = solkat_postadjust_pl_paths + solkat_postadjust_gdf_paths + solkat_postadjust_csv_paths
+            remove_paths = paths1 + paths2
             for file in remove_paths:
-                os.remove(file)
+                try:
+                    os.remove(file)
+                except OSError as e:
+                    print(f"Error: {file} : {e.strerror}")
 
 
         def preprep_local_data_AND_spatial_mappings(self):
@@ -2161,13 +2239,13 @@ class DataAggScenario:
 if __name__ == '__main__':
     dataagg_scen_list = [
 
-        DataAggScenario_Settings(
-            name_dir_export = 'debug_bfs2761',
-            bfs_numbers = [
-                2761, # SUB
-            ],
-            year_range = [2022, 2023],
-        ),
+        # DataAggScenario_Settings(
+        #     name_dir_export = 'debug_bfs2761',
+        #     bfs_numbers = [
+        #         2761, # SUB
+        #     ],
+        #     year_range = [2022, 2023],
+        # ),
 
         DataAggScenario_Settings(
             name_dir_export = 'debug_functionality',
@@ -2192,7 +2270,8 @@ if __name__ == '__main__':
 
         DataAggScenario_Settings(
             # name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__May26',
-            name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__Oct26',
+            # name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__Oct26',
+            name_dir_export = 'preprep_BLSO_15to24_extSolkatEGID__Oct2_26',
             # kt_numbers = [13, 12, 11], # BL, BS, SO
             kt_numbers = [13, 11],
             # bfs_numbers = [
