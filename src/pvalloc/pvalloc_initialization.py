@@ -2488,7 +2488,7 @@ class PVAllocInitialization(PVAllocCore):
             topo = json.load(f)
         npv_df = pd.read_parquet(f'{subdir_path}/npv_df.parquet')
         path_pred_inst = glob.glob(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_*.parquet')
-        pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet')
+        pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path}/pred_inst_df.parquet') else pd.DataFrame(columns=['EGID', 'info_source'])   # empty if the sanity check could not build anything (no EGID with NPV > 0)
 
         # add a EGID of model algorithm to the list
         if pred_inst_df.shape[0]< self.sett.CHECKspec_n_EGIDs_of_alloc_algorithm:

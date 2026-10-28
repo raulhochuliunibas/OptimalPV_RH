@@ -322,9 +322,8 @@ class PVAllocScenario_Settings:
                                                                 ])
 
     # algorithm_specs
-    ALGOspec_inst_selection_method: str                         = 'prob_weighted_npv'          # 'random', max_npv', 'prob_weighted_npv'
+    ALGOspec_inst_selection_method: str                         = 'max_npv'          # 'random', max_npv', 'prob_weighted_npv'
     ALGOspec_rand_seed: bool                                    = None
-    ALGOspec_while_inst_counter_max: int                        = 5000
     ALGOspec_topo_subdf_partitioner: int                        = 250  # 9999999
     ALGOspec_npv_update_groupby_cols_topo_aggdf: List[str]      = field(default_factory=lambda: [
                                                                     'EGID', 'df_uid', 'grid_node', 'bfs', 'GKLAS', 'GAREA', 'sfhmfh_typ', 'demand_arch_typ', 'inst_TF', 'info_source',

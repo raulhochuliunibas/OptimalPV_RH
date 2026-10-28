@@ -120,8 +120,7 @@ class PVAllocGridOpt(PVAllocCore):
         topo_time_paths = glob.glob(os.path.join(self.sett.optim_path, 'topo_subdf*.parquet'))
         # gridprem_ts = pl.read_parquet(f'{self.sett.optim_path}/gridprem_ts.parquet')
         gridnode_df = pl.read_parquet(f'{self.sett.optim_path}/gridnode_df.parquet')
-        elecpri_vese = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
-        elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri_entsoe.parquet'))
+        elecpri_vese, elecpri_entsoe = self.load_elecpri_inputs()
         pvtarif_vese, pvtarif_entsoe = self.load_pvtarif_inputs()
 
 
@@ -643,7 +642,10 @@ class PVAllocGridOpt(PVAllocCore):
         print_to_logfile('*model allocation specifications*:', self.sett.log_name)
 
         self.sett.optim_path = os.path.join(self.sett.name_dir_export_path, 'zMC1_OptimExpa')
-        safety_counter_max = self.sett.ALGOspec_while_inst_counter_max
+        # safety cap of the installation while loop: number of EGIDs in the topology (each EGID can get only one installation, so the cap only stops a malfunction)
+        with open(f'{self.sett.name_dir_export_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            safety_counter_max = len(json.load(f))
+        print_to_logfile(f'> safety cap of the installation while loop: {safety_counter_max} (number of EGIDs in topo_egid.json)', self.sett.log_name)
 
 
         # CONCATENATE NPV_DF -----------------------------------------------------------------------------    
@@ -734,7 +736,7 @@ class PVAllocGridOpt(PVAllocCore):
                     if not npv_df_empty_TF: 
                         inst_counter += 1
                         if self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
-                            inst_power = self.algo_select_AND_adjust_topology_RFR(self.sett.optim_path, i_m, m, safety_counter)
+                            inst_power = self.algo_select_AND_adjust_topology_RFR(self.sett.optim_path, i_m, m, safety_counter, require_positive_npv = False)   # grid optimized order ignores NPV
                         else:
                             break
 

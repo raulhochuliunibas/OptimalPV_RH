@@ -89,7 +89,10 @@ class PVAllocMCAlgo(PVAllocCore):
 
         # CREATE MC DIR + TRANSFER INITIAL DATA FILES ----------------------------------------------
         montecarlo_iterations_fordev_seq = [*range(1, self.sett.MCspec_montecarlo_iterations_fordev_sequentially+1, 1)]
-        safety_counter_max = self.sett.ALGOspec_while_inst_counter_max
+        # safety cap of the installation while loop: number of EGIDs in the topology (each EGID can get only one installation, so the cap only stops a malfunction)
+        with open(f'{self.sett.name_dir_export_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            safety_counter_max = len(json.load(f))
+        print_to_logfile(f'> safety cap of the installation while loop: {safety_counter_max} (number of EGIDs in topo_egid.json)', self.sett.log_name)
         
         # get all initial files to start a fresh MC iteration
         fresh_initial_paths = [f'{self.sett.name_dir_export_path}/{file}' for file in self.sett.MCspec_fresh_initial_files]

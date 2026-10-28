@@ -1560,7 +1560,7 @@ class PVAllocCore:
 
 
 
-    def algo_select_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
+    def algo_select_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0, require_positive_npv: bool = True):
 
         checkpoint_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name, 0, True) if while_safety_counter < 5 else None
 
@@ -1585,6 +1585,15 @@ class PVAllocCore:
             closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
 
             npv_df = copy.deepcopy(npv_df.loc[~npv_df['EGID'].isin(closed_nodes_egid)])
+
+
+        #  remove all EGIDs with NPV <= 0 (MC algorithm + sanity check; the grid optimized expansion passes require_positive_npv=False) ----------------
+        if require_positive_npv:
+            npv_df = copy.deepcopy(npv_df.loc[npv_df['NPV_uid'] > 0])
+
+        if npv_df.shape[0] == 0:
+            checkpoint_to_logfile('no free EGID to select (with NPV > 0), no installation built', self.sett.log_name, 0, True)
+            return 0.0
 
 
         #  SUBSELECTION FILTER specific scenarios ----------------
@@ -1743,7 +1752,7 @@ class PVAllocCore:
 
             topo_pick_df.loc[idx, 'inst_TF'] =             True                                   if flaeche_ratio > 0.0 else False
             topo_pick_df.loc[idx, 'share_pvprod_used'] =   flaeche_ratio                          if flaeche_ratio > 0.0 else 0.0
-            topo_pick_df.loc[idx, 'info_source'] = '       alloc_algorithm'                       if flaeche_ratio > 0.0 else ''
+            topo_pick_df.loc[idx, 'info_source'] =         'alloc_algorithm'                      if flaeche_ratio > 0.0 else ''
             topo_pick_df.loc[idx, 'BeginOp'] =             str(m)                                 if flaeche_ratio > 0.0 else ''
             topo_pick_df.loc[idx, 'iter_round'] =          i_m                                    if flaeche_ratio > 0.0 else -1
             topo_pick_df.loc[idx, 'NPV_uid'] =             picked_npv                             if flaeche_ratio > 0.0 else 0.0
