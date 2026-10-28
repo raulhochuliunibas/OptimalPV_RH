@@ -1218,6 +1218,9 @@ class PVAllocCore:
 
                     # apply estim model prediction --------------------
                     df = subagg.to_pandas()
+                    # GWR codes in the format of the RFR calibration (read as float there: '7410' -> '7410.0'); otherwise the encoder ignores them as unknown categories
+                    for col in ['GWAERZH1', 'GENH1']:
+                        df[col] = df[col].map(lambda x: str(float(x)) if str(x).replace('.', '', 1).isdigit() else x)
                     df['GWAERZH1_str'] = np.where(df['GWAERZH1'].isin(['7410', '7411']), 'heatpump', 'no_heatpump')
 
                     cols_dtypes_tupls = {

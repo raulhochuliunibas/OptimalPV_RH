@@ -1540,14 +1540,16 @@ class PVAllocInitialization(PVAllocCore):
 
 
         # mini model for exploratory work ----------
+        gwr_before_mini_sub_model = copy.deepcopy(gwr)
         if self.sett.mini_sub_model_TF:
 
             if self.sett.mini_sub_model_by_X == 'by_gridnode':
                 gridnodes_in_gwr = Map_egid_dsonode.loc[Map_egid_dsonode['EGID'].isin(gwr['EGID'])]['grid_node'].unique()
-                if any([node in gridnodes_in_gwr for node in self.sett.mini_sub_model_grid_nodes]):
-                    mini_sub_model_nodes = self.sett.mini_sub_model_grid_nodes
-                else:
-                    mini_sub_model_nodes = gridnodes_in_gwr[0:self.sett.mini_sub_model_ngridnodes]
+                # listed nodes (if in sample) always kept, remaining slots up to mini_sub_model_ngridnodes topped up in Map_egid_dsonode order
+                listed_nodes = [node for node in self.sett.mini_sub_model_grid_nodes if node in gridnodes_in_gwr]
+                topup_nodes  = [node for node in gridnodes_in_gwr if node not in listed_nodes]
+                n_topup      = max(self.sett.mini_sub_model_ngridnodes - len(listed_nodes), 0)
+                mini_sub_model_nodes = listed_nodes + topup_nodes[0:n_topup]
                         
                 mini_submodel_EGIDs = Map_egid_dsonode.loc[Map_egid_dsonode['grid_node'].isin(mini_sub_model_nodes)]['EGID'].unique()
                 gwr = copy.deepcopy(gwr.loc[gwr['EGID'].isin(mini_submodel_EGIDs)])
@@ -1582,14 +1584,19 @@ class PVAllocInitialization(PVAllocCore):
         # summary prints ----------
         print_to_logfile('\nEGID selection for TOPOLOGY:', self.sett.summary_name)
         checkpoint_to_logfile('Loop for topology creation over GWR EGIDs', self.sett.summary_name, 0, True)
-        checkpoint_to_logfile('In Total: {gwr["EGID"].nunique()} gwrEGIDs ({round(gwr["EGID"].nunique() / gwr_before_solkat_selection["EGID"].nunique() * 100,1)}% of {gwr_before_solkat_selection["EGID"].nunique()} total gwrEGIDs) are used for topology creation', self.sett.summary_name, 0, True)
+        checkpoint_to_logfile(f'In Total: {gwr["EGID"].nunique()} gwrEGIDs ({round(gwr["EGID"].nunique() / gwr_before_solkat_selection["EGID"].nunique() * 100,1)}% of {gwr_before_solkat_selection["EGID"].nunique()} total gwrEGIDs) are used for topology creation', self.sett.summary_name, 0, True)
         checkpoint_to_logfile('  The rest drops out because gwrEGID not present in all data sources', self.sett.summary_name, 0, True)
             
         subtraction1 = gwr_before_solkat_selection["EGID"].nunique() - gwr_before_dsonode_selection["EGID"].nunique()
         checkpoint_to_logfile(f'  > {subtraction1} ({round(subtraction1 / gwr_before_solkat_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in solkat', self.sett.summary_name, 0, True)
             
-        subtraction2 = gwr_before_dsonode_selection["EGID"].nunique() - gwr["EGID"].nunique()
+        subtraction2 = gwr_before_dsonode_selection["EGID"].nunique() - gwr_before_mini_sub_model["EGID"].nunique()
         checkpoint_to_logfile(f'  > {subtraction2} ({round(subtraction2 / gwr_before_dsonode_selection["EGID"].nunique()*100,1)} % ) gwrEGIDs missing in dsonodes', self.sett.summary_name, 0, True)
+
+        if self.sett.mini_sub_model_TF:
+            subtraction3 = gwr_before_mini_sub_model["EGID"].nunique() - gwr["EGID"].nunique()
+            n_nodes_mini_sub_model = Map_egid_dsonode.loc[Map_egid_dsonode['EGID'].isin(gwr['EGID']), 'grid_node'].nunique()
+            checkpoint_to_logfile(f'  > {subtraction3} ({round(subtraction3 / gwr_before_mini_sub_model["EGID"].nunique()*100,1)} % ) gwrEGIDs dropped by mini_sub_model ({self.sett.mini_sub_model_by_X}, ngridnodes: {self.sett.mini_sub_model_ngridnodes}, nEGIDs: {self.sett.mini_sub_model_nEGIDs}) -> {gwr["EGID"].nunique()} EGIDs on {n_nodes_mini_sub_model} grid nodes', self.sett.summary_name, 0, True)
         # if Map_appendings_df.shape[0] > 0:
 
         #     checkpoint_to_logfile(f'  > (REMARK: Even matched {Map_appendings_df.shape[0]} EGIDs matched artificially to gridnode, because EGID lies in close node range, max_distance_m_for_EGID_node_matching: {self.sett.TECspec_max_distance_m_for_EGID_node_matching} meters', self.sett.summary_name, 0, True)

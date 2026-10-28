@@ -61,6 +61,7 @@ if True:
                                             2768, 2769,
                                         ], 
                                         months_prediction         = 360,
+                                        ALGOspec_rand_seed        = 42,
                                         mini_sub_model_TF         = True,
                                         mini_sub_model_by_X       = 'by_gridnode',
                                         mini_sub_model_ngridnodes = 50,
@@ -71,7 +72,7 @@ if True:
                                                                         '411', 
                                                                         '415', 
                                                                         ],
-                                        # mini_sub_model_nEGIDs     = 5000,
+                                        mini_sub_model_nEGIDs     = 99999,
     )
 
     # DEV_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
