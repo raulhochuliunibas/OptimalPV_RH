@@ -347,7 +347,7 @@ class PVAllocCore:
 
         data = [(k, v[0], v[1]) for k, v in self.sett.GRIDspec_tiers.items()]
         gridtiers_df = pd.DataFrame(data, columns=self.sett.GRIDspec_colnames)
-        if not self.sett.GRIDspec_apply_prem_tiers_TF: 
+        if not self.sett.GRIDspec_reupdate_npv_df_TF: 
             gridtiers_df['gridprem_Rp_kWh'] = 0.0   
 
 
@@ -900,6 +900,26 @@ class PVAllocCore:
 
 
 
+    def load_elecpri_inputs(self):
+        """
+        Load the price tables that add_elecpri_to_subdf needs for the current TECspec_elecpri_Rp_kWh setting.
+        The table of a mode that is not active stays None (old preprep folders without elecpri_entsoe.parquet keep working for None / float).
+            - None  : elecpri_vese   = ElCom elecpri table (elecpri.parquet), filtered by bfs, year and category in add_elecpri_to_subdf
+            - float : nothing to load
+            - str   : elecpri_entsoe = hourly elecpri data from the preprep folder, file name = TECspec_elecpri_Rp_kWh
+        """
+        elecpri_vese, elecpri_entsoe = None, None
+
+        if self.sett.TECspec_elecpri_Rp_kWh is None:
+            elecpri_vese = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
+
+        elif isinstance(self.sett.TECspec_elecpri_Rp_kWh, str):
+            elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, self.sett.TECspec_elecpri_Rp_kWh))
+
+        return elecpri_vese, elecpri_entsoe
+
+
+
     def load_pvtarif_inputs(self):
         """
         Load the price tables that add_pvtarif_to_subdf needs for the current TECspec_pvtarif_Rp_kWh setting.
@@ -1022,8 +1042,7 @@ class PVAllocCore:
         with open(f'{subdir_path}/node_subsidy_monitor_dict.json', 'r', encoding='utf-8') as f:
             node_subsidy_monitor_dict = json.load(f)
 
-        elecpri_vese = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri.parquet'))
-        elecpri_entsoe = pl.read_parquet(os.path.join(self.sett.name_dir_import_path, 'elecpri_entsoe.parquet'))
+        elecpri_vese, elecpri_entsoe = self.load_elecpri_inputs()
         pvtarif_vese, pvtarif_entsoe = self.load_pvtarif_inputs()
 
         GRID_peak_shave_TF          = self.sett.GRID_peak_shaving_enabled_tupl[0]
@@ -1175,7 +1194,7 @@ class PVAllocCore:
                             pl.col('elecpri_Rp_kWh').first().alias('elecpri_Rp_kWh'),
                             # pl.col('prem_Rp_kWh').first().alias('prem_Rp_kWh'),
 
-                            pl.col('FLAECHE').first().alias('FLAECHE_total'),
+                            (pl.col('FLAECHE').sum() if self.sett.ALGOspec_rfr_FLAECHE_total_sum_TF else pl.col('FLAECHE').first()).alias('FLAECHE_total'),   # T: sum of all partitions (as in calibration), F: one partition
                             )
                         )
                     subagg = topo_rest.join(topo_pivot, on=['EGID'], how='left')
@@ -1541,7 +1560,7 @@ class PVAllocCore:
 
 
 
-    def algo_select_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0):
+    def algo_select_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, while_safety_counter: int = 0, require_positive_npv: bool = True):
 
         checkpoint_to_logfile('run function: algo_select_AND_adjust_topology_RFR', self.sett.log_name, 0, True) if while_safety_counter < 5 else None
 
@@ -1566,6 +1585,15 @@ class PVAllocCore:
             closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
 
             npv_df = copy.deepcopy(npv_df.loc[~npv_df['EGID'].isin(closed_nodes_egid)])
+
+
+        #  remove all EGIDs with NPV <= 0 (MC algorithm + sanity check; the grid optimized expansion passes require_positive_npv=False) ----------------
+        if require_positive_npv:
+            npv_df = copy.deepcopy(npv_df.loc[npv_df['NPV_uid'] > 0])
+
+        if npv_df.shape[0] == 0:
+            checkpoint_to_logfile('no free EGID to select (with NPV > 0), no installation built', self.sett.log_name, 0, True)
+            return 0.0
 
 
         #  SUBSELECTION FILTER specific scenarios ----------------
@@ -1724,7 +1752,7 @@ class PVAllocCore:
 
             topo_pick_df.loc[idx, 'inst_TF'] =             True                                   if flaeche_ratio > 0.0 else False
             topo_pick_df.loc[idx, 'share_pvprod_used'] =   flaeche_ratio                          if flaeche_ratio > 0.0 else 0.0
-            topo_pick_df.loc[idx, 'info_source'] = '       alloc_algorithm'                       if flaeche_ratio > 0.0 else ''
+            topo_pick_df.loc[idx, 'info_source'] =         'alloc_algorithm'                      if flaeche_ratio > 0.0 else ''
             topo_pick_df.loc[idx, 'BeginOp'] =             str(m)                                 if flaeche_ratio > 0.0 else ''
             topo_pick_df.loc[idx, 'iter_round'] =          i_m                                    if flaeche_ratio > 0.0 else -1
             topo_pick_df.loc[idx, 'NPV_uid'] =             picked_npv                             if flaeche_ratio > 0.0 else 0.0
@@ -1778,4 +1806,267 @@ class PVAllocCore:
             json.dump(topo, f)
 
         return  inst_power    #, npv_df  # , picked_uid, picked_combo_uid, pred_inst_df, dfuid_installed_list, topo
+
+
+
+
+    def algo_selectCUM_AND_adjust_topology_RFR(self, subdir_path: str, i_m: int, m, constr_capa_kW: float,
+                                                max_n_inst: int = None, require_positive_npv: bool = True):
+        """
+        Input:
+            > subdir_path, i_m, m:   same as in algo_select_AND_adjust_topology_RFR (folder of the MC / OptimExpa run, number and date of the iteration)
+            > constr_capa_kW:        construction capacity of this iteration in kW
+            > max_n_inst:            max number of installations in this iteration (safety cap; the one-by-one while loop allows
+                                     number of EGIDs in topo_egid.json + 1 rounds), None = no cap
+            > require_positive_npv:  True (MC algorithm): only EGIDs with NPV_uid > 0 can be selected (same filter as in
+                                     algo_select_AND_adjust_topology_RFR and the while loop in run_pvalloc_mcalgorithm).
+                                     False (grid optimized expansion): NPV is not checked (same as its while loop).
+        Output:
+            > (built_kW, n_inst): kW and number of installations built in this iteration
+            > topo_egid.json, pred_inst_df.parquet and pred_npv_inst_by_M/pred_inst_df_<i_m>.parquet + topo_<i_m>.json, written ONCE per iteration
+              (nothing is written if no installation is built, same as in the one-by-one version)
+        Description:
+            > Bulk ("cumulative") twin of algo_select_AND_adjust_topology_RFR: selects ALL installations of one iteration in one call, instead of
+              one installation per round of the while loop (where each round reads + writes topo, npv_df and pred_inst_df).
+            > Why this gives the same result: within one iteration, nothing the selection depends on changes between two installations
+              (npv_df, grid premiums and closed grid nodes are only updated at the start of an iteration); the only thing that changes is which
+              EGIDs are still free. So the one-by-one loop walks down a fixed ranking. This function computes that ranking once and keeps
+              installations as long as the kW built BEFORE an installation is still <= constr_capa_kW (same rule as the while loop, so the
+              installation that crosses the capacity is still built).
+            > The row filters of the one-by-one version become sort keys (priority ranks): subselection filter tags ('ordered' / 'pooled'),
+              then the grid optimized installation order (OptimExpa only), then the selection method:
+                - max_npv:            highest NPV first -> identical installations as the one-by-one version
+                - random:             random order (shuffle all, then cut) -> same probabilities as drawing one after the other
+                - prob_weighted_npv:  every pick depends on the EGIDs still free (NPV / max NPV of the free EGIDs), so picks are drawn one after
+                                      the other, but in memory (no file reading / writing in between)
+        """
+        checkpoint_to_logfile('run function: algo_selectCUM_AND_adjust_topology_RFR', self.sett.log_name, 0, True)
+
+        # import ----------------
+        with open(f'{subdir_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            topo = json.load(f)
+        npv_df = pd.read_parquet(f'{subdir_path}/npv_df.parquet')
+        pred_inst_df = pd.read_parquet(f'{subdir_path}/pred_inst_df.parquet') if os.path.exists(f'{subdir_path}/pred_inst_df.parquet') else pd.DataFrame()
+
+        with open(f'{subdir_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:
+            node_1hll_closed_dict = json.load(f)
+
+
+        #  remove all EGIDs with pv ----------------
+        egid_without_pv = [k for k,v in topo.items() if not v['pv_inst']['inst_TF']]
+        npv_df = npv_df.loc[npv_df['EGID'].isin(egid_without_pv)].copy()
+
+
+        #  remove all closed nodes EGIDs if applicable ----------------
+        if self.sett.GRIDspec_node_1hll_closed_TF:
+            closed_nodes = node_1hll_closed_dict[str(i_m)]['all_nodes_abv_1hll']
+            closed_nodes_egid = [k for k, v in topo.items() if v.get('grid_node')  in closed_nodes ]
+
+            npv_df = npv_df.loc[~npv_df['EGID'].isin(closed_nodes_egid)].copy()
+
+
+        #  remove all EGIDs with NPV <= 0 (MC algorithm; the grid optimized expansion passes require_positive_npv=False) ----------------
+        if require_positive_npv:
+            npv_df = npv_df.loc[npv_df['NPV_uid'] > 0].copy()
+
+
+        #  export geojson for sanity check (subselection filter, same as in the one-by-one version) ----------------
+        if (self.sett.ALGOspec_subselec_filter_criteria is not None) and (i_m == 1) and ('sanity' not in subdir_path):
+            gwr_all_building_gdf = gpd.read_file(f'{self.sett.name_dir_import_path}/gwr_all_building_gdf.geojson')
+            gwr_filter_tag_facing_gdf = gwr_all_building_gdf.merge(npv_df, on = 'EGID', how = 'inner')
+            filter_tag_list = [col for col in npv_df.columns if 'filter_tag__' in col ]
+            for filter_tag in filter_tag_list:
+                gwr_filter_tag = gwr_filter_tag_facing_gdf.loc[gwr_filter_tag_facing_gdf[filter_tag] == True]
+                with open(f'{self.sett.name_dir_export_path}/gwr_{filter_tag}_gdf.geojson', 'w') as f:
+                    f.write(gwr_filter_tag.to_json())
+
+
+        #  PRIORITY RANKS (replace the row filters of the one-by-one version by sort keys) ----------------
+        # tie-breaker: among equal values, the one-by-one version picks the first row in file order
+        npv_df['pos_in_file'] = np.arange(npv_df.shape[0])
+
+        # subselection filter: 'ordered' -> rank = position of the first filter tag that is True (no tag True -> last), because the
+        #                                   one-by-one version picks from the first non-empty tag subset until that subset is built empty
+        #                      'pooled'  -> rank = 0 if any filter tag is True, else 1
+        npv_df['rank_subselec'] = 0
+        if self.sett.ALGOspec_subselec_filter_criteria is not None:
+            subselec_tags = list(self.sett.ALGOspec_subselec_filter_criteria)
+            tag_TF_list = [(npv_df[filter_tag] == True).to_numpy() for filter_tag in subselec_tags]
+
+            if self.sett.ALGOspec_subselec_filter_method == 'ordered':
+                rank_subselec = np.full(npv_df.shape[0], len(subselec_tags))
+                for i_tag in reversed(range(len(subselec_tags))):
+                    rank_subselec = np.where(tag_TF_list[i_tag], i_tag, rank_subselec)
+                npv_df['rank_subselec'] = rank_subselec
+
+            elif self.sett.ALGOspec_subselec_filter_method == 'pooled':
+                npv_df['rank_subselec'] = np.where(np.any(tag_TF_list, axis=0), 0, 1)
+
+        # grid optimized installation order (OptimExpa only): smallest grid_optim_inst_order first, applied within the subselection rank
+        if self.sett.OPTEXPApecs_apply_gridoptim_order_TF and 'OptimExpa' in subdir_path:
+            npv_df['rank_gridoptim'] = npv_df['grid_optim_inst_order']
+        else:
+            npv_df['rank_gridoptim'] = 0
+
+        rank_cols = ['rank_subselec', 'rank_gridoptim']
+
+
+        # SELECTION BY METHOD ---------------
+        # one random number generator per call: reproducible if ALGOspec_rand_seed is set (seed + i_m -> different draws in each iteration);
+        # the global np.random state is not touched
+        rng = np.random.default_rng(None if self.sett.ALGOspec_rand_seed is None else self.sett.ALGOspec_rand_seed + i_m)
+        inst_selection_method = self.sett.ALGOspec_inst_selection_method
+
+        if inst_selection_method in ['max_npv', 'random']:
+            # rank ALL free EGIDs ---
+            if inst_selection_method == 'max_npv':
+                npv_df['method_key'] = -npv_df['NPV_uid']                      # highest NPV first
+            else:
+                npv_df['method_key'] = rng.random(npv_df.shape[0])             # random order = drawing at random one after the other
+            order_df = npv_df.sort_values(by = rank_cols + ['method_key', 'pos_in_file'], na_position = 'last')
+
+            # cut the ranking with the cumulative sum of kW ---
+            kW_arr          = order_df['pred_instPower'].to_numpy(dtype=float)
+            built_before_kW = np.cumsum(kW_arr) - kW_arr                       # kW already built before each installation
+            over_capa_TF    = built_before_kW > constr_capa_kW
+            n_keep          = int(np.argmax(over_capa_TF)) if over_capa_TF.any() else len(kW_arr)   # while loop: build as long as built kW <= capacity
+            if max_n_inst is not None:
+                n_keep = min(n_keep, max_n_inst)                               # safety cap
+            picks_df = order_df.iloc[:n_keep]
+
+        elif inst_selection_method == 'prob_weighted_npv':
+            # same rule as the one-by-one version: draw u ~ U(0,1) and pick the free EGID whose NPV / max(NPV of the free EGIDs) is closest
+            # to u (random pick among ties). Every pick changes max(NPV) of the free EGIDs, so pick one after the other - in memory.
+            order_df  = npv_df.sort_values(by = rank_cols + ['pos_in_file'], na_position = 'last')
+            npv_arr   = order_df['NPV_uid'].to_numpy(dtype=float)
+            kW_arr    = order_df['pred_instPower'].to_numpy(dtype=float)
+            group_arr = order_df.groupby(rank_cols, sort=True, dropna=False).ngroup().to_numpy()      # 0 = highest priority group
+            free_TF   = np.ones(order_df.shape[0], dtype=bool)
+            pick_idx, built_kW_loop = [], 0.0
+            while free_TF.any() and (built_kW_loop <= constr_capa_kW) and ((max_n_inst is None) or (len(pick_idx) < max_n_inst)):
+                cand_idx  = np.flatnonzero(free_TF & (group_arr == group_arr[free_TF].min()))
+                npv_stand = npv_arr[cand_idx] / npv_arr[cand_idx].max()
+                diff_npv  = np.abs(npv_stand - rng.uniform(0, 1))
+                tie_idx   = cand_idx[diff_npv == diff_npv.min()]
+                pick      = tie_idx[0] if len(tie_idx) == 1 else rng.choice(tie_idx)
+                pick_idx.append(pick)
+                free_TF[pick]  = False
+                built_kW_loop += kW_arr[pick]
+            picks_df = order_df.iloc[pick_idx]
+
+        else:
+            raise ValueError(f'algo_selectCUM_AND_adjust_topology_RFR: unknown ALGOspec_inst_selection_method "{inst_selection_method}"')
+
+
+        # log result + stop reason ---------------
+        n_inst   = picks_df.shape[0]
+        built_kW = float(picks_df['pred_instPower'].sum())
+        if built_kW > constr_capa_kW:
+            stop_str = 'construction capacity reached'
+        elif (max_n_inst is not None) and (n_inst >= max_n_inst):
+            stop_str = f'SAFETY CAP reached ({n_inst} installations; cap = number of EGIDs in topo_egid.json + 1)'
+        else:
+            stop_str = 'no more free EGID with NPV > 0' if require_positive_npv else 'no more free EGID to install PV on'
+        checkpoint_to_logfile(f'cumulative selection ({inst_selection_method}): {n_inst} installations, {round(built_kW,1)} of {round(constr_capa_kW,1)} kW capacity built; stop: {stop_str}', self.sett.log_name, 0, True)
+
+        if n_inst == 0:
+            return 0.0, 0
+
+
+        # distribute kWp to partition(s) + adjust topo, per picked EGID (same formulas as in algo_select_AND_adjust_topology_RFR) -----------------
+        pred_inst_cols = ['EGID', 'df_uid', 'STROMERTRAG', 'FLAECHE', 'AUSRICHTUNG', 'NEIGUNG',
+                          'inst_TF', 'info_source', 'xtf_id', 'BeginOp', 'dfuidPower', 'share_pvprod_used',
+                          'demand_kW', 'poss_pvprod', 'pvprod_kW', 'selfconsum_kW', 'netfeedin_kW', 'netdemand_kW',
+                          'iter_round', 'NPV_uid', 'grid_node', ]
+        if 'OptimExpa' in subdir_path:
+            pred_inst_cols.append('grid_optim_inst_order')
+
+        topo_pick_rows = []
+        for pick in picks_df.to_dict('records'):
+            picked_egid = pick['EGID']
+            inst_power  = np.float64(pick['pred_instPower'])        # numpy float: a partition with FLAECHE 0 gives inf / nan (as in the one-by-one version), not a ZeroDivisionError
+
+            solkat_partitions = topo[picked_egid]['solkat_partitions']
+            topo_egid_df = pd.DataFrame({
+                'EGID':        [picked_egid] * len(solkat_partitions),
+                'df_uid':      list(solkat_partitions.keys()),
+                'STROMERTRAG': [sub_v['STROMERTRAG'] for sub_v in solkat_partitions.values()],
+                'FLAECHE':     [sub_v['FLAECHE']     for sub_v in solkat_partitions.values()],
+                'AUSRICHTUNG': [sub_v['AUSRICHTUNG'] for sub_v in solkat_partitions.values()],
+                'NEIGUNG':     [sub_v['NEIGUNG']     for sub_v in solkat_partitions.values()],
+                })
+            topo_egid_df = topo_egid_df.sort_values(by=['STROMERTRAG', ], ascending = [False,])
+
+            picked_flaeche = inst_power / (self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available)
+            remaining_flaeche = picked_flaeche
+            dfuid_w_inst_tuples = []
+            for part in topo_egid_df.to_dict('records'):
+                dfuid_flaeche = part['FLAECHE']
+                dfuid_inst_power = dfuid_flaeche * self.sett.TECspec_kWpeak_per_m2 * self.sett.TECspec_share_roof_area_available
+
+                total_ratio = remaining_flaeche / dfuid_flaeche
+                flaeche_ratio = 1       if total_ratio >= 1 else total_ratio
+                remaining_flaeche -= dfuid_flaeche
+
+                if flaeche_ratio > 0.0:
+                    row = {
+                        'EGID':              picked_egid,
+                        'df_uid':            part['df_uid'],
+                        'STROMERTRAG':       part['STROMERTRAG'],
+                        'FLAECHE':           part['FLAECHE'],
+                        'AUSRICHTUNG':       part['AUSRICHTUNG'],
+                        'NEIGUNG':           part['NEIGUNG'],
+                        'inst_TF':           True,
+                        'info_source':       'alloc_algorithm',
+                        'xtf_id':            pick['df_uid_winst'],
+                        'BeginOp':           str(m),
+                        'dfuidPower':        float(dfuid_inst_power),
+                        'share_pvprod_used': float(flaeche_ratio),
+                        'demand_kW':         pick['demand_kW'],
+                        'poss_pvprod':       pick['poss_pvprod_kW'],
+                        'pvprod_kW':         pick['pvprod_kW'],
+                        'selfconsum_kW':     pick['selfconsum_kW'],
+                        'netfeedin_kW':      pick['netfeedin_kW'],
+                        'netdemand_kW':      pick['netdemand_kW'],
+                        'iter_round':        i_m,
+                        'NPV_uid':           pick['NPV_uid'],
+                        'grid_node':         topo[picked_egid]['grid_node'],
+                    }
+                    if 'OptimExpa' in subdir_path:
+                        row['grid_optim_inst_order'] = pick['grid_optim_inst_order']
+                    topo_pick_rows.append(row)
+
+                    dfuid_w_inst_tuples.append(('tuple_names: df_uid_inst, share_pvprod_used, kWpeak',
+                                                part['df_uid'], float(flaeche_ratio), float(dfuid_inst_power) ))
+
+            topo[picked_egid]['pv_inst'] = {'inst_TF': True,
+                                            'info_source': 'alloc_algorithm',
+                                            'xtf_id': pick['df_uid_winst'],
+                                            'BeginOp': f'{m}',
+                                            'TotalPower': inst_power,
+                                            'dfuid_w_inst_tuples': dfuid_w_inst_tuples
+                                            }
+
+        topo_pick_df = pd.DataFrame(topo_pick_rows, columns = pred_inst_cols)
+        topo_pick_df['iter_round'] = topo_pick_df['iter_round'].astype(float)          # float, as in the one-by-one version
+        if 'grid_optim_inst_order' in topo_pick_df.columns:
+            topo_pick_df['grid_optim_inst_order'] = topo_pick_df['grid_optim_inst_order'].astype(float)
+        pred_inst_df = pd.concat([pred_inst_df, topo_pick_df], ignore_index=True)
+
+
+        # export main dfs (once per iteration) ------------------------------------------
+        pred_inst_df.to_parquet(f'{subdir_path}/pred_inst_df.parquet')
+        pred_inst_df.to_csv(f'{subdir_path}/pred_inst_df.csv') if self.sett.export_csvs else None
+        with open (f'{subdir_path}/topo_egid.json', 'w') as f:
+            json.dump(topo, f)
+
+
+        # export by Month ------------------------------------------
+        os.makedirs(f'{subdir_path}/pred_npv_inst_by_M', exist_ok=True)
+        pred_inst_df.to_parquet(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{i_m}.parquet')
+        pred_inst_df.to_csv(f'{subdir_path}/pred_npv_inst_by_M/pred_inst_df_{i_m}.csv') if self.sett.export_csvs else None
+        with open(f'{subdir_path}/pred_npv_inst_by_M/topo_{i_m}.json', 'w') as f:
+            json.dump(topo, f)
+
+        return built_kW, n_inst
 

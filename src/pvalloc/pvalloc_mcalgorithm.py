@@ -89,7 +89,10 @@ class PVAllocMCAlgo(PVAllocCore):
 
         # CREATE MC DIR + TRANSFER INITIAL DATA FILES ----------------------------------------------
         montecarlo_iterations_fordev_seq = [*range(1, self.sett.MCspec_montecarlo_iterations_fordev_sequentially+1, 1)]
-        safety_counter_max = self.sett.ALGOspec_while_inst_counter_max
+        # safety cap of the installation while loop: number of EGIDs in the topology (each EGID can get only one installation, so the cap only stops a malfunction)
+        with open(f'{self.sett.name_dir_export_path}/topo_egid.json', 'r', encoding='utf-8') as f:
+            safety_counter_max = len(json.load(f))
+        print_to_logfile(f'> safety cap of the installation while loop: {safety_counter_max} (number of EGIDs in topo_egid.json)', self.sett.log_name)
         
         # get all initial files to start a fresh MC iteration
         fresh_initial_paths = [f'{self.sett.name_dir_export_path}/{file}' for file in self.sett.MCspec_fresh_initial_files]
@@ -192,7 +195,7 @@ class PVAllocMCAlgo(PVAllocCore):
                     if len(egid_wo_pv_open_node) > 0:
                                                                                                                             
                         # (only updated each iteration if feedin premium adjusts)
-                        if (i_m == 1) or (self.sett.GRIDspec_apply_prem_tiers_TF): 
+                        if (i_m == 1) or (self.sett.GRIDspec_reupdate_npv_df_TF): 
                             start_time_update_npv = datetime.datetime.now()
                             print_to_logfile('- START update npv', self.sett.log_name)
                             if self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr':
@@ -219,9 +222,21 @@ class PVAllocMCAlgo(PVAllocCore):
                 # INST PICK ==========
                 start_time_installation_whileloop = datetime.datetime.now()
                 inst_counter = 0
+                inst_power = 0.0        # defined before the first round: a year whose first round finds no free EGID no longer crashes (NameError)
                 print_to_logfile('- START inst while loop', self.sett.log_name)
 
-                while( (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
+                # CUMULATIVE INST PICK: all installations of this iteration in one call, then skip the one-by-one while loop
+                run_inst_whileloop_TF = True
+                if self.sett.ALGOspec_inst_selection_cumulative_TF and (self.sett.ALGOspec_pvinst_size_calculation == 'estim_rfr'):
+                    constr_built_m, inst_counter = self.algo_selectCUM_AND_adjust_topology_RFR(
+                        self.sett.mc_iter_path, i_m, m,
+                        constr_capa_kW       = min(constr_capa_m, constr_capa_y),
+                        max_n_inst           = safety_counter_max + 1,
+                        require_positive_npv = True,         # same rule as the NPV_uid > 0 check in the while loop below
+                    )
+                    run_inst_whileloop_TF = False
+
+                while( run_inst_whileloop_TF & (constr_built_m <= constr_capa_m) & (constr_built_y <= constr_capa_y) & (safety_counter <= safety_counter_max) ):
                     with open(f'{self.sett.mc_iter_path}/topo_egid.json', 'r', encoding='utf-8') as f:
                         topo = json.load(f)
                     with open(f'{self.sett.mc_iter_path}/node_1hll_closed_dict.json', 'r', encoding='utf-8') as f:

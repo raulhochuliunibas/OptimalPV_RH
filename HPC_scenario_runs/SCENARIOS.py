@@ -18,7 +18,7 @@ if True:
 
     pvalloc_Xnbfs_DEFAULT = PVAllocScenario_Settings(
         name_dir_export                 = 'pvalloc_DEFAULT',
-        name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID__Oct26', 
+        name_dir_import                 = 'preprep_BLSO_15to24_extSolkatEGID__Oct2_26', 
         bfs_numbers                     = [
                                     # RURAL 
                                     2612, 2889, 2883, 2621, 2622,
@@ -40,21 +40,86 @@ if True:
         export_csvs                     = False,
         T0_year_prediction              = 2024,
         months_prediction               = 360,
+        ALGOspec_inst_selection_method  = 'max_npv',
         ALGOspec_topo_subdf_partitioner = 250,
 
         TECspec_elecpri_Rp_kWh          = 31.98,
         TECspec_pvtarif_Rp_kWh          = 9.03,
     ) 
 
+
+    DEV_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
+                                        name_dir_export = 'pvalloc_DEV', 
+                                        bfs_numbers = [
+                                            2614, 2615, # RUR
+                                            2761, 2785, # SUB
+                                            2621,
+
+                                            # critical nodes - max npv
+                                            2762, 2771, 
+                                            # critical nodes - ew 
+                                            2768, 2769,
+                                        ], 
+                                        months_prediction         = 360,
+                                        mini_sub_model_TF         = True,
+                                        mini_sub_model_by_X       = 'by_gridnode',
+                                        mini_sub_model_ngridnodes = 50,
+                                        mini_sub_model_grid_nodes = [
+                                                                        '514', 
+                                                                        '511', 
+                                                                        '412', 
+                                                                        '411', 
+                                                                        '415', 
+                                                                        ],
+                                        # mini_sub_model_nEGIDs     = 5000,
+    )
+
+    # DEV_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
+    #                                     name_dir_export = 'pvalloc_DEV', 
+    #                                     months_prediction         = 360,
+    #                                     mini_sub_model_TF         = True,
+    #                                     ALGOspec_rand_seed        = 42,
+
+    #                                     # mini_sub_model_by_X       = 'by_gridnode',
+    #                                     # mini_sub_model_ngridnodes = 200,
+    #                                     # mini_sub_model_grid_nodes = [
+    #                                     #                                 '514', 
+    #                                     #                                 '511', 
+    #                                     #                                 '412', 
+    #                                     #                                 '411', 
+    #                                     #                                 '415', 
+    #                                     #                                 ],
+    #                                     # mini_sub_model_nEGIDs     = 500,
+
+    #                                     mini_sub_model_by_X       = 'by_EGID',
+    #                                     mini_sub_model_nEGIDs     = 5000,
+
+    # )
     # endregion
 
 
 # ==============================
 # Lists Sub-Scenarios 
 # ==============================
+
+# Helper Functions
+def keep_scen_pattern_filter(scen_list           = None, 
+                             scen_pattern_filter = None,
+                             ): 
+    scen_list = [] if scen_list is None else scen_list
+    if scen_pattern_filter is None:
+        return scen_list
+
+    remain_scen = [scen for scen in scen_list 
+                   if any(pattern in scen.name_dir_export for pattern in scen_pattern_filter)]
+
+    return remain_scen   
+
+        
+# Sub-Scenario Functions
 def create_MAIN_scen_list(scen_list          = None, 
                                  default_scenario   = pvalloc_Xnbfs_DEFAULT, 
-                                 scen_suffix_filter = None):
+                                 scen_pattern_filter = None):
     scen_list = [] if scen_list is None else scen_list      # no mutable default: a shared [] would accumulate across calls
     f_scen_list = [
 
@@ -66,113 +131,120 @@ def create_MAIN_scen_list(scen_list          = None,
                       TECspec_elecpri_Rp_kWh   = 'elecpri_entsoe.parquet',
                       ),
     ]
-    
-    if scen_suffix_filter is not None:
-        keep = {f'{default_scenario.name_dir_export}{s}' for s in scen_suffix_filter}
-        f_scen_list = [scen for scen in f_scen_list if scen.name_dir_export in keep]
-    
+
     scen_list.extend(f_scen_list)
+    scen_list = keep_scen_pattern_filter(scen_list, scen_pattern_filter)
+    
     return scen_list
+
 
 def add_MAIN_subsidy_scen_list(scen_list          = None,
                                default_scenario   = pvalloc_Xnbfs_DEFAULT, 
-                               scen_suffix_filter = None):
+                               scen_pattern_filter = None):
     scen_list = [] if scen_list is None else scen_list      # no mutable default: a shared [] would accumulate across calls
     f_scen_list = [
 
         # subsidies
         make_scenario(default_scenario,
-                      name_dir_suffix = '',
+                      name_dir_suffix = '_max_kev',
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_nokev',
+                      name_dir_suffix = '_max_nokev',
                       TECspec_KEVflatsubs = 0.0,
                       ),
 
         make_scenario(default_scenario,
-                      name_dir_suffix = '_As8p0',
+                      name_dir_suffix = '_max_As8p0',
                       GRIDspec_subsidy_name = 'As8p0',
                       ),
         make_scenario(default_scenario, 
-                      name_dir_suffix = '_Bs0p6',
+                      name_dir_suffix = '_max_Bs0p6',
                       GRIDspec_subsidy_name = 'Bs0p6',
+                      GRIDspec_reupdate_npv_df_TF = True, 
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_Bs0p8',
+                      name_dir_suffix = '_max_Bs0p8',
                       GRIDspec_subsidy_name = 'Bs0p8',
+                      GRIDspec_reupdate_npv_df_TF = True, 
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_Cs6p6',
+                      name_dir_suffix = '_max_Cs6p6',
                       GRIDspec_subsidy_name = 'Cs6p6',
+                      GRIDspec_reupdate_npv_df_TF = True, 
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_Cs6p8',
+                      name_dir_suffix = '_max_Cs6p8',
                       GRIDspec_subsidy_name = 'Cs6p8',
+                      GRIDspec_reupdate_npv_df_TF = True, 
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_Cs8p6',
+                      name_dir_suffix = '_max_Cs8p6',
                       GRIDspec_subsidy_name = 'Cs8p6',
+                      GRIDspec_reupdate_npv_df_TF = True, 
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_Cs8p8',
+                      name_dir_suffix = '_max_Cs8p8',
                       GRIDspec_subsidy_name = 'Cs8p8',
+                      GRIDspec_reupdate_npv_df_TF = True, 
                       )
     ]
 
-    if scen_suffix_filter is not None:
-        keep = {f'{default_scenario.name_dir_export}{s}' for s in scen_suffix_filter}
-        f_scen_list = [scen for scen in f_scen_list if scen.name_dir_export in keep]
-
     scen_list.extend(f_scen_list)
+    scen_list = keep_scen_pattern_filter(scen_list, scen_pattern_filter)
+    
     return scen_list
+
 
 def add_ADDITIONAL_scen_list(scen_list          = None,
                              default_scenario   = pvalloc_Xnbfs_DEFAULT, 
-                             scen_suffix_filter = None):
+                             scen_pattern_filter = None):
     scen_list = [] if scen_list is None else scen_list      # no mutable default: a shared [] would accumulate across calls
     f_scen_list = [
 
         make_scenario(default_scenario,
-                      name_dir_suffix = '_rnd', 
+                      name_dir_suffix = '_fixpv2023_rnd', 
                       ALGOspec_inst_selection_method = 'random',
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_max_hoypv2025',
+                      name_dir_suffix = '_fixpv2025_max', 
+                      TECspec_elecpri_Rp_kWh          = 29.0,
+                      TECspec_pvtarif_Rp_kWh          = 6.0,
+                      ),
+        make_scenario(default_scenario,
+                      name_dir_suffix = '_hoypv2025_max',
                       TECspec_pvtarif_Rp_kWh   = 'pvtarif_entsoe.parquet',
                       TECspec_pvtarif_year     = 2025,
                       ),
 
         make_scenario(default_scenario,
-                      name_dir_suffix = '_max_gridoptim',
+                      name_dir_suffix = '_fixpv2023_gridoptim',
                       run_pvalloc_initalization_TF     = True,
                       run_pvalloc_mcalgorithm_TF       = False,
                       run_gridoptimized_orderinst_TF   = True,
                       run_gridoptimized_expansion_TF   = True,
                       OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel',
-                      OPTEXPApecs_apply_gridoptim_order_TF     = True,
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_max_histconstr_e40pv6', 
-                      CSTRspec_ext_constrcapa_path = os.path.join("postanalysis", "constracpa_adjustments", "constrcapa_pvalloc_LRG3_max_adj_13.parquet")
+                      name_dir_suffix = '_fixpv2023_max_histconstr_e40pv6', 
+                      CSTRspec_ext_constrcapa_path = os.path.join("postanalysis", "constracpa_adjustments", "constrcapa_pvalloc_LRG3_max_adj_13.parquet"),
                     ),
 
         # DSO response
         make_scenario(default_scenario,
-                      name_dir_suffix = '_max_1hll',
+                      name_dir_suffix = '_fixpv2023_max_1hll',
                       GRIDspec_node_1hll_closed_TF = True,
                       ),
         make_scenario(default_scenario,
-                      name_dir_suffix = '_max_pksh07',
+                      name_dir_suffix = '_fixpv2023_max_pksh07',
                       GRID_peak_shaving_enabled_tupl  = (True, 0.7, 0.7),
                       ),
     ]
 
-    if scen_suffix_filter is not None:
-        keep = {f'{default_scenario.name_dir_export}{s}' for s in scen_suffix_filter}
-        f_scen_list = [scen for scen in f_scen_list if scen.name_dir_export in keep]
-    
     scen_list.extend(f_scen_list)
+    scen_list = keep_scen_pattern_filter(scen_list, scen_pattern_filter)
+    
     return scen_list
+
 
 
 
@@ -225,47 +297,111 @@ if False:
 
 
 # DEV --------------------------------------------
-
-DEV_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
-                                    name_dir_export = 'pvalloc_DEV', 
-                                    bfs_numbers = [
-                                        2614, 2615, # RUR
-                                        2761, 2785, # SUB
-                                        2621,
-
-                                        # critical nodes - max npv
-                                        2762, 2771, 
-                                        # critical nodes - ew 
-                                        2768, 2769,
-                                    ], 
-                                    months_prediction         = 24,
-                                    mini_sub_model_TF         = True,
-                                    mini_sub_model_by_X       = 'by_gridnode',
-                                    mini_sub_model_ngridnodes = 8,
-                                    mini_sub_model_grid_nodes = [
-                                                                    '514', 
-                                                                    '511', 
-                                                                    '412', 
-                                                                    '411', 
-                                                                    '415', 
-                                                                    ],
-                                    # mini_sub_model_nEGIDs     = 500,
-                                    mini_sub_model_nEGIDs     = 200,
-
+DEV_scen_list = []
+DEV_May26 = make_scenario(default_scen = DEV_default_scen, 
+                          name_dir_suffix = '_May26', 
+                          name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID__May26',
 )
-DEV_scen_list = create_MAIN_scen_list(default_scenario = DEV_default_scen, 
-                                        scen_suffix_filter = [
-                                            '_max', 
-                                            '_rnd', 
-                                            '_max_dynelecpri2023', 
-                                            '_max_gridoptim', 
-                                            '_max_histconstr_e40pv6', 
-                                        ])
+DEV_scen_list = add_MAIN_subsidy_scen_list(scen_list = DEV_scen_list, default_scenario = DEV_May26)
+
+DEV_Oct2_26 = make_scenario(default_scen = DEV_default_scen, 
+                            name_dir_suffix = '_Oct2_26',
+                            name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID__Oct2_26', 
+)
+DEV_scen_list = add_MAIN_subsidy_scen_list(scen_list = DEV_scen_list, default_scenario = DEV_Oct2_26)
+
+DEV_additional_scen = [
+    # DEV_May26_gridoptim + rnd
+    make_scenario(default_scen = DEV_May26, 
+                  name_dir_suffix = '_gridoptim',
+                  run_pvalloc_initalization_TF     = True,
+                  run_pvalloc_mcalgorithm_TF       = False,
+                  run_gridoptimized_orderinst_TF   = True,
+                  run_gridoptimized_expansion_TF   = True,
+                  OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel',
+                  OPTEXPApecs_apply_gridoptim_order_TF     = True,
+    ), 
+    make_scenario(default_scen = DEV_May26, 
+                  name_dir_suffix = '_rnd',
+                  ALGOspec_inst_selection_method = 'random',
+    ), 
+
+    # DEV_Oct2_26_gridoptim
+    make_scenario(default_scen = DEV_Oct2_26,
+                  name_dir_suffix = '_gridoptim',
+                  run_pvalloc_initalization_TF     = True,
+                  run_pvalloc_mcalgorithm_TF       = False,
+                  run_gridoptimized_orderinst_TF   = True,
+                  run_gridoptimized_expansion_TF   = True,
+                  OPTIMspecs_gridnode_subsample            = 'all_nodes_pyparallel',
+                  OPTEXPApecs_apply_gridoptim_order_TF     = True,
+    ),    
+    make_scenario(default_scen = DEV_Oct2_26, 
+                  name_dir_suffix = '_rnd',
+                  ALGOspec_inst_selection_method = 'random',
+    ), 
+
+    #  DEV_May26 cummax, sumFLACH, cummax_sumFLACH
+    make_scenario(default_scen = DEV_default_scen,
+                  name_dir_suffix = '_May26_cummax_Cs8p8', 
+                  name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID__May26',
+                  GRIDspec_subsidy_name = 'Cs8p8',
+                  GRIDspec_reupdate_npv_df_TF = True, 
+                  ALGOspec_inst_selection_cumulative_TF = True, 
+                  #   ALGOspec_rfr_FLAECHE_total_sum_TF = True, 
+    ), 
+    make_scenario(default_scen = DEV_default_scen,
+                  name_dir_suffix = '_May26_max_sumFLACH_Cs8p8', 
+                  name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID__May26',
+                  GRIDspec_subsidy_name = 'Cs8p8',
+                  GRIDspec_reupdate_npv_df_TF = True, 
+                  #   ALGOspec_inst_selection_cumulative_TF = True, 
+                  ALGOspec_rfr_FLAECHE_total_sum_TF = True, 
+    ), 
+    make_scenario(default_scen = DEV_default_scen,
+                  name_dir_suffix = '_May26_cummax_sumFLACH_Cs8p8', 
+                  name_dir_import = 'preprep_BLSO_15to24_extSolkatEGID__May26',
+                  GRIDspec_subsidy_name = 'Cs8p8',
+                  GRIDspec_reupdate_npv_df_TF = True, 
+                  ALGOspec_inst_selection_cumulative_TF = True, 
+                  ALGOspec_rfr_FLAECHE_total_sum_TF = True, 
+    )
+]
+
+DEV_scen_list = DEV_scen_list + DEV_additional_scen
+
+DEV_suffix_filters = [
+    # '_May26_rnd',
+    # '_May26_max_kev', 
+    # '_May26_max_As8p0', 
+    '_May26_max_Bs0p8',
+    # '_May26_max_Cs8p8',
+    # '_May26_gridoptim', 
+
+    # '_Oct2_26_rnd',
+    # '_Oct2_26_max_kev', 
+    # '_Oct2_26_max_As8p0',
+    # '_Oct2_26_max_Bs0p8',
+    # '_Oct2_26_max_Cs8p8',
+    # '_Oct2_26_gridoptim',
+
+    # '_May26_cummax_Cs8p8', 
+    # '_May26_max_sumFLACH_Cs8p8',
+    # '_May26_cummax_sumFLACH_Cs8p8',
+
+]                    
+DEV_scen_list = keep_scen_pattern_filter(scen_list = DEV_scen_list, scen_pattern_filter = DEV_suffix_filters)
+
+
+for scen in DEV_scen_list:
+    print(scen.name_dir_export)
+
+
 
 
 # LRG --------------------------------------------
 LRG_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
-                                    name_dir_export = 'pvalloc_LRG4',   # 'pvalloc_26nbfs_LRG',
+                                    name_dir_export = 'pvalloc_LRG',   # 'pvalloc_26nbfs_LRG',
                                     bfs_numbers = [
                                     # RURAL 
                                     2612, 2889, 2883, 2621, 2622,
@@ -278,6 +414,8 @@ LRG_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,
                                     2773, 2769, 2770,
                                     ],
 )
+
+
 LRG_scen_list = []
 # fixed_elecpri_2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_max_fixep2023')
 # dynam_elecpri_2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_max_hoyep2023',
@@ -288,15 +426,138 @@ LRG_scen_list = []
 # LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = dynam_elecpri_2023)
 # LRG_scen_list = add_ADDITIONAL_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_elecpri_2023)
 
-fixed_pvt2023 = make_scenario(DEV_default_scen, name_dir_suffix = '_max_fixpv2023')
-dynam_pvt2023 = make_scenario(DEV_default_scen, name_dir_suffix = '_max_hoypv2023',
+fixed_pvt2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_fixpv2023')
+LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_pvt2023)
+
+
+dynam_pvt2023 = make_scenario(LRG_default_scen, name_dir_suffix = '_hoypv2023',
                                                 TECspec_pvtarif_year     = 2023,
-                                                TECspec_pvtarif_Rp_kWh   = 'pvtarif_entsoe.parquet',
-    )               
-# LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_pvt2023)
+                                                TECspec_pvtarif_Rp_kWh   = 'pvtarif_entsoe.parquet',)               
 LRG_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_scen_list, default_scenario = dynam_pvt2023)
-LRG_scen_list = add_ADDITIONAL_scen_list(scen_list = LRG_scen_list, default_scenario = fixed_pvt2023, 
-                                         scen_suffix_filter = ['_max_hoypv2025',])
+
+
+add_fixed_pvt2023 = make_scenario(LRG_default_scen, name_dir_suffix = '')
+LRG_scen_list = add_ADDITIONAL_scen_list(  scen_list = LRG_scen_list, default_scenario = add_fixed_pvt2023)
+
+LRG_filters = [
+    'pvalloc_LRG5_fixpv2023_max_kev', 
+    # 'pvalloc_LRG5_fixpv2023_max_nokev', 
+    # 'pvalloc_LRG5_fixpv2023_max_As8p0', 
+    # 'pvalloc_LRG5_fixpv2023_max_Bs0p6', 
+    'pvalloc_LRG5_fixpv2023_max_Bs0p8', 
+    # 'pvalloc_LRG5_fixpv2023_max_Cs6p6', 
+    # 'pvalloc_LRG5_fixpv2023_max_Cs6p8', 
+    # 'pvalloc_LRG5_fixpv2023_max_Cs8p6', 
+    'pvalloc_LRG5_fixpv2023_max_Cs8p8', 
+    'pvalloc_LRG5_hoypv2023_max_kev', 
+    # 'pvalloc_LRG5_hoypv2023_max_nokev', 
+    # 'pvalloc_LRG5_hoypv2023_max_As8p0', 
+    # 'pvalloc_LRG5_hoypv2023_max_Bs0p6', 
+    'pvalloc_LRG5_hoypv2023_max_Bs0p8', 
+    # 'pvalloc_LRG5_hoypv2023_max_Cs6p6', 
+    # 'pvalloc_LRG5_hoypv2023_max_Cs6p8', 
+    # 'pvalloc_LRG5_hoypv2023_max_Cs8p6', 
+    'pvalloc_LRG5_hoypv2023_max_Cs8p8', 
+    # 'pvalloc_LRG5_fixpv2023_rnd', 
+    # 'pvalloc_LRG5_fixpv2025_max', 
+    # 'pvalloc_LRG5_hoypv2025_max', 
+    'pvalloc_LRG5_fixpv2023_gridoptim', 
+    # 'pvalloc_LRG5_fixpv2023_max_histconstr_e40pv6', 
+    # 'pvalloc_LRG5_fixpv2023_max_1hll', 
+    # 'pvalloc_LRG5_fixpv2023_max_pksh07', 
+]   
+
+LRG_scen_list = keep_scen_pattern_filter(scen_list = LRG_scen_list, scen_pattern_filter = LRG_filters)
+# for scen in LRG_scen_list:
+#     print(scen.name_dir_export)
+
+
+
+
+
+# LRG 5 ----------------------------------------------------------------
+
+
+# LRG 5 + 6 Adjustments 
+LRG_filter_patterns = [
+    '_fixpv2023_max_kev', 
+    '_fixpv2023_max_Bs0p8', 
+    '_fixpv2023_max_Cs8p8', 
+    '_hoypv2023_max_kev', 
+    '_hoypv2023_max_Bs0p8', 
+    '_hoypv2023_max_Cs8p8', 
+    '_fixpv2023_gridoptim',  
+]   
+
+LRG_5_scen_list = []
+LRG_5_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,name_dir_export = 'pvalloc_LRG5', )
+
+LRG_5_fixed_pvt2023 = make_scenario(LRG_5_default_scen, name_dir_suffix = '_fixpv2023')
+LRG_5_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_5_scen_list, default_scenario = LRG_5_fixed_pvt2023)
+
+LRG_5_dynam_pvt2023 = make_scenario(LRG_5_default_scen, name_dir_suffix = '_hoypv2023',
+                                                TECspec_pvtarif_year     = 2023,
+                                                TECspec_pvtarif_Rp_kWh   = 'pvtarif_entsoe.parquet',)               
+LRG_5_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_5_scen_list, default_scenario = LRG_5_dynam_pvt2023)
+
+LRG_5_add_fixed_pvt2023 = make_scenario(LRG_5_default_scen, name_dir_suffix = '')
+LRG_5_scen_list = add_ADDITIONAL_scen_list(  scen_list = LRG_5_scen_list, default_scenario = LRG_5_add_fixed_pvt2023)
+
+
+LRG_5_filter = [f'pvalloc_LRG5{pattern}' for pattern in LRG_filter_patterns]
+LRG_5_scen_list = keep_scen_pattern_filter(scen_list = LRG_5_scen_list, scen_pattern_filter = LRG_5_filter)
+
+
+# LRG 6 ----------------------------------------------------------------
+LRG_6_scen_list = []
+LRG_6_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,name_dir_export = 'pvalloc_LRG6',
+                                   ALGOspec_inst_selection_cumulative_TF = True
+                                     )
+LRG_6_fixed_pvt2023 = make_scenario(LRG_6_default_scen, name_dir_suffix = '_fixpv2023')
+LRG_6_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_6_scen_list, default_scenario = LRG_6_fixed_pvt2023)
+
+LRG_6_dynam_pvt2023 = make_scenario(LRG_6_default_scen, name_dir_suffix = '_hoypv2023',
+                                                TECspec_pvtarif_year     = 2023,
+                                                TECspec_pvtarif_Rp_kWh   = 'pvtarif_entsoe.parquet',)               
+LRG_6_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_6_scen_list, default_scenario = LRG_6_dynam_pvt2023)
+
+
+LRG_6_add_fixed_pvt2023 = make_scenario(LRG_6_default_scen, name_dir_suffix = '')
+LRG_6_scen_list = add_ADDITIONAL_scen_list(  scen_list = LRG_6_scen_list, default_scenario = LRG_6_add_fixed_pvt2023)
+
+
+LRG_6_filter = [f'pvalloc_LRG6{pattern}' for pattern in LRG_filter_patterns]
+LRG_6_scen_list = keep_scen_pattern_filter(scen_list = LRG_6_scen_list, scen_pattern_filter = LRG_6_filter)
+
+
+# LRG 7 ----------------------------------------------------------------
+LRG_7_scen_list = []
+LRG_7_default_scen = make_scenario(pvalloc_Xnbfs_DEFAULT,name_dir_export = 'pvalloc_LRG7',
+                                   ALGOspec_inst_selection_cumulative_TF = True, 
+                                   ALGOspec_rfr_FLAECHE_total_sum_TF     = True
+                                     )
+LRG_7_fixed_pvt2023 = make_scenario(LRG_7_default_scen, name_dir_suffix = '_fixpv2023')
+LRG_7_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_7_scen_list, default_scenario = LRG_7_fixed_pvt2023)
+
+LRG_7_dynam_pvt2023 = make_scenario(LRG_7_default_scen, name_dir_suffix = '_hoypv2023',
+                                                TECspec_pvtarif_year     = 2023,
+                                                TECspec_pvtarif_Rp_kWh   = 'pvtarif_entsoe.parquet',)               
+LRG_7_scen_list = add_MAIN_subsidy_scen_list(scen_list = LRG_7_scen_list, default_scenario = LRG_7_dynam_pvt2023)
+
+
+LRG_7_add_fixed_pvt2023 = make_scenario(LRG_7_default_scen, name_dir_suffix = '')
+LRG_7_scen_list = add_ADDITIONAL_scen_list(  scen_list = LRG_7_scen_list, default_scenario = LRG_7_add_fixed_pvt2023)
+
+
+LRG_7_filter = [f'pvalloc_LRG6{pattern}' for pattern in LRG_filter_patterns]
+LRG_7_scen_list = keep_scen_pattern_filter(scen_list = LRG_7_scen_list, scen_pattern_filter = LRG_7_filter)
+
+
+
+
+
+asdf = LRG_5_scen_list + LRG_6_scen_list
+
 
 
 
@@ -377,16 +638,8 @@ if __name__ == '__main__':
         print(f"python HPC_scenario_runs/pvalloc_LRG.py    {i}")
 
 
-    pvalloc_scen_list = create_MAIN_scen_list(default_scenario = LRG_default_scen, 
-                                        scen_suffix_filter = [
-                                            # '_max', 
-                                            # '_max_dynelecpri2023', 
-                                            # '_rnd', 
-                                            # '_max_gridoptim', 
-                                            # '_max_histconstr_e40pv6', 
-                                        ])
-   
-
+    pvalloc_scen_list = get_subscen_list(sub_scen_str = 'DEV', )
+    
     # # slurm_job_id = os.environ.get('SLURM_JOB_ID_ENV', 'unknown')
     # slurm_job_id = os.environ.get('SLURM_ARRAY_JOB_ID_ENV', 'unknown')
     # slurm_array_id = os.environ.get('SLURM_ARRAY_TASK_ID_ENV', 'unknown')
@@ -429,6 +682,21 @@ if __name__ == '__main__':
 
 # old scen lists (commented out in Oct 26) ===========================================================================================
 
+
+if False:
+    import json
+    import pandas as pd
+    topo = json.load(open(r"C:\Models\OptimalPV_RH\data\pvalloc\pvalloc_26nbfs_LRG_max\topo_egid.json", "r"))
+
+    rows = []
+    for k, v in topo.items():
+        d = {
+            "EGID": k,
+            "grid_node": v['grid_node'],
+        }
+        rows.append(d)
+
+    topo_df = pd.DataFrame(rows)
 
 # LRG_constrcapa_scen_list = [
 

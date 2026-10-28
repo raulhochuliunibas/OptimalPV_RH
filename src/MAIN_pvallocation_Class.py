@@ -322,9 +322,9 @@ class PVAllocScenario_Settings:
                                                                 ])
 
     # algorithm_specs
-    ALGOspec_inst_selection_method: str                         = 'prob_weighted_npv'          # 'random', max_npv', 'prob_weighted_npv'
+    ALGOspec_inst_selection_method: str                         = 'max_npv'          # 'random', max_npv', 'prob_weighted_npv'
+    ALGOspec_inst_selection_cumulative_TF: bool                 = False              # F: one installation per while-loop round (algo_select_AND_adjust_topology_RFR), T: all installations of an iteration at once, cumulative sum up to the construction capacity (algo_selectCUM_AND_adjust_topology_RFR)
     ALGOspec_rand_seed: bool                                    = None
-    ALGOspec_while_inst_counter_max: int                        = 5000
     ALGOspec_topo_subdf_partitioner: int                        = 250  # 9999999
     ALGOspec_npv_update_groupby_cols_topo_aggdf: List[str]      = field(default_factory=lambda: [
                                                                     'EGID', 'df_uid', 'grid_node', 'bfs', 'GKLAS', 'GAREA', 'sfhmfh_typ', 'demand_arch_typ', 'inst_TF', 'info_source',
@@ -369,6 +369,7 @@ class PVAllocScenario_Settings:
     ALGOspec_pvinst_size_calculation: str                       = 'estim_rfr'   # 'estim_rf_segdist' / 'estim_rfr' / 'inst_full_partition' / 'npv_optimized'
     ALGOspec_calib_estim_dir_name: str                          = 'PVALLOC_calibration_model_coefs'
     ALGOspec_calib_estim_mod_name_pkl: str                      = 'allCHbfs_rfr2b'
+    ALGOspec_rfr_FLAECHE_total_sum_TF: bool                     = False         # RFR input FLAECHE_total. T: sum of all roof partitions of the EGID (as in the RFR calibration, calibration_class.py), F: first() = area of one partition, which one depends on row order (behavior until 2026-10-28, not reproducible run to run)
     ALGOspec_sleep_bfr_MCiter_TF: bool                          = False
 
     # dsonodes_ts_specs
@@ -380,7 +381,7 @@ class PVAllocScenario_Settings:
     GRIDspec_flat_profile_demand_type_col: set                  = 'MFH_swstore'  # 'flat' / 'MFH_swstore' / 'outtopo_demand_zero'
 
     # gridprem_adjustment_specs
-    GRIDspec_apply_prem_tiers_TF: bool                          = False 
+    GRIDspec_reupdate_npv_df_TF: bool                          = False 
     GRIDspec_tier_description: str                              = 'tier_level: (voltage_threshold, gridprem_Rp_kWh)'
     GRIDspec_power_factor: float                                = 1
     GRIDspec_perf_factor_1kVA_to_XkW: float                     = 0.8
