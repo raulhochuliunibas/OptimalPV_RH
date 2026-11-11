@@ -29,11 +29,24 @@ venv*
 paper_publication/SustainableFutureLunch_Unibas/**
 # paper_publication/SustainableFutureLunch_Unibas/*.pdf
 
-paper_publication/EconLunch_Unibas/figures/*.png
-paper_publication/SURED_Ascona/figures/*.png
-paper_publication/SSES_StGallen/figures/*.png
+paper_publication/*/EconLunch_Unibas/figures/*.png
+paper_publication/*/SURED_Ascona/figures/*.png
+paper_publication/*/SSES_StGallen/figures/*.png
 # paper_publication/WCERE_Lisabon/figures/*.png
 # paper_publication/Update_Primeo_June26/figures/*.png
+paper_publication/DataAggregation_MergeIssues/build_deck.py
+paper_publication/DataAggregation_MergeIssues/data_sources_facts.md
+paper_publication/DataAggregation_MergeIssues/findings_code_comments.md
+paper_publication/DataAggregation_MergeIssues/findings_git_history.md
+paper_publication/DataAggregation_MergeIssues/slides_code_comments.json
+paper_publication/DataAggregation_MergeIssues/slides_git_history.json
+paper_publication/DataAggregation_MergeIssues/single slides + screenshots/DataAggregation_MergeIssues_slide_split_tranches.pptx
+paper_publication/DataAggregation_MergeIssues/single slides + screenshots/DataAggregation_MergeIssues_slide_topo_tranches - Copy.pptx
+paper_publication/DataAggregation_MergeIssues/single slides + screenshots/DataAggregation_MergeIssues_slide_topo_tranches.pptx
+paper_publication/DataAggregation_MergeIssues/single slides + screenshots/DataAggregation_MergeIssues_slide4_flow.pptx
+paper_publication/DataAggregation_MergeIssues/single slides + screenshots/DataAggregation_MergeIssues_v2.pptx
+paper_publication/DataAggregation_MergeIssues/single slides + screenshots/DataAggregation_MergeIssues.pptx
+
 paper_publication/WorkingPaper_v3_OptimalPV_RH/figures/*.png
 paper_publication/WorkingPaper_v3_OptimalPV_RH/figures/*.csv
 

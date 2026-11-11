@@ -1,0 +1,32 @@
+# Notes 3_Exc_DICE_EconEmis (Resource Economics 25)
+
+### General setup 
+
+- Show cheat sheet, explain that there are two model parts (econ / emis), first go through econ then emis
+- **keep in mind**, what we are modeling is so very very complex that this is might almost be a rude simplification, but it is one we can understand and grasp.
+
+**ECON**
+- as always, what are parameters, 
+- what are exogenous variables
+    - show them in graphs (Actual variables vs flat constants for now)
+    - these will later be imported as csv files. (don't have to be bothered by it)
+- highlight that here, state variable creation and functional assignment are still very much together. 
+- trickle down into endogenous states (cheat sheet)
+
+
+### BREAK
+
+**EMIS**
+- use Prod_Gross from before or flat one
+- highlight identical setup 
+    - also exogenous variables that influence EMIS part
+    - decision variable is Emission control rate
+    - NO true Objective function 
+    - proxy objective would be abat_cost + Damg (minimize damages by accepting a certain amount of cost)
+    - the REAL breakthrough of DICE is linking this to the economic part (allowing for a "response" in the economic part of the model)
+
+
+### optional
+- show how to add CSV files and import the default values
+
+

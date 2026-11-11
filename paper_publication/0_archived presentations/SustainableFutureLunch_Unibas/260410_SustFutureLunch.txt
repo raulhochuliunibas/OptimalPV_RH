@@ -1,0 +1,717 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[10pt, aspectration=169]{beamer}
+\usepackage[many]{tcolorbox}
+% \usetheme{Copenhagen}
+\usetheme{Frankfurt}
+\setbeamercovered{transparent=30}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{mathrsfs}
+\usepackage{bbding}
+\usepackage{pifont}
+\usepackage{wasysym}
+\usepackage{amssymb}
+\usepackage{enumerate}
+\usepackage{booktabs,threeparttable}
+\usepackage{adjustbox}
+\usepackage{tikz}
+% \usepackage{natbib}
+
+% DEFINE COLORPALETTE
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}
+\definecolor{unibasmintlight}{RGB}{233, 255, 253}
+\definecolor{unibasmint}{RGB}{165,215,210}
+\definecolor{unibasmintmid}{RGB}{30,165,165}
+\definecolor{unibasanthr}{RGB}{45,55,60}
+\definecolor{unibasgreydark}{RGB}{140,145,150}
+\definecolor{unibasred}{RGB}{210,5,55}
+\definecolor{unibaspink}{RGB}{235,130,155}
+\definecolor{unibasgrey}{RGB}{190,195,200}
+\definecolor{unibasmintdark}{RGB}{0,110,110} 
+\definecolor{unibasblack}{RGB}{0,0,0}
+\definecolor{unibaswhite}{RGB}{255,255,255}
+
+\definecolor{scenA_table}{RGB}{245, 245, 180}
+\definecolor{scenB_table}{RGB}{235, 215, 245}
+\definecolor{scenC_table}{RGB}{200, 225, 240}
+
+
+\definecolor{capacity_upgrade}{RGB}{64, 153, 153}
+\definecolor{capacity_expansion}{RGB}{162, 216, 216}
+
+\useinnertheme{circles}
+\usefonttheme[onlymath]{serif}
+\setbeamertemplate{caption}[numbered]
+\usepackage{graphicx}
+
+
+\newcommand{\backupbegin}{
+	\newcounter{framenumberappendix}
+	\setcounter{framenumberappendix}{\value{framenumber}}
+}
+\newcommand{\backupend}{
+	\addtocounter{framenumberappendix}{-\value{framenumber}}
+	\addtocounter{framenumber}{\value{framenumberappendix}} 
+}
+
+\AtBeginEnvironment{block}{%
+	\setbeamercolor{itemize item}{fg=black}
+	\setbeamercolor{itemize subitem}{fg=black}
+	\setbeamercolor{itemize subsubitem}{fg=black}
+	\setbeamercolor{enumerate item}{fg=unibasmint, bg=unibasmintdark}
+	\setbeamercolor{enumerate subitem}{fg=unibasmintdark}
+	\setbeamercolor{enumerate subsubitem}{fg=unibasmintdark}
+	\setbeamercolor{item projected}{fg=white, bg=unibasmintdark}
+}
+
+\AtBeginEnvironment{alertblock}{%
+	\setbeamercolor{itemize item}{fg=black}
+	\setbeamercolor{itemize subitem}{fg=black}
+	\setbeamercolor{itemize subsubitem}{fg=black}
+	\setbeamercolor{enumerate item}{fg=unibasmint, bg=red}
+	\setbeamercolor{enumerate subitem}{fg=unibasmintdark}
+	\setbeamercolor{enumerate subsubitem}{fg=unibasmintdark}
+	\setbeamercolor{item projected}{fg=white, bg=unibasmintdark}
+}
+
+
+% SET CITATION
+%\usepackage[backend = biber, style = apa, maxbibnames=999, minbibnames = 1, maxcitenames=2, mincitenames=1, uniquelist=true]{biblatex}
+\usepackage[backend = biber, style = apa, maxbibnames=999, minbibnames = 1, maxcitenames=2, mincitenames=1, uniquelist=true]{biblatex}
+
+\addbibresource{proposal_raulhochuli_bib.bib}
+\AtBeginBibliography{\small}
+\hypersetup{colorlinks = true, 
+            citecolor = unibasmintmid, 
+            linkcolor = white, 
+            urlcolor = unibasmintdark}
+
+% SET BEAMER COLOR
+\setbeamercolor*{structure}{fg=unibasmint,bg=unibasblack}
+\setbeamercolor*{palette primary}{use=structure,fg=unibasblack,bg=structure.fg}
+\setbeamercolor*{palette secondary}{use=structure,fg=white,bg=structure.fg!75!black}
+\setbeamercolor*{palette tertiary}{use=structure,fg=white,bg=structure.fg!50!black}
+\setbeamercolor*{palette quaternary}{fg=black,bg=white}
+\setbeamercolor*{item projected}{fg=black,bg=unibasmint!80}
+\setbeamercolor*{block title example}{fg=white,bg=unibasmint}
+
+\setbeamercolor{title}{bg=white, fg=unibasmintdark}
+\setbeamercolor{button}{bg=unibasmint,fg=black}
+\setbeamercolor{section in toc}{fg=unibasmintdark,bg=white} %Here we adjust colors for table of contents
+\setbeamercolor{subsection in toc}{fg=unibasgreydark,bg=white}
+\setbeamercolor{block title}{bg=unibasmintdark,fg=unibasmint}  %Here I changed color of the block! See Slide 3
+\setbeamercolor{itemize item}{fg=black}
+\setbeamercolor{itemize subitem}{fg=black}
+\setbeamercolor{itemize subsubitem}{fg=unibasmintdark}
+\setbeamercolor{frametitle}{bg=white,fg=unibasmintdark}
+
+\setbeamertemplate{blocks}[rounded][shadow=false] %Here I make bullet points as circles; Here I make rounded blocks with shadow
+\setbeamertemplate{itemize item}[circle]
+\setbeamertemplate{itemize subitem}{$-$}
+\setbeamertemplate{itemize subsubitem}[triangle]
+
+% SET TITLEPAGE LAYOUT
+\setbeamertemplate{title page}
+{
+    \begin{beamercolorbox}[sep=8pt,center,shadow=false,rounded=false]{title}
+        \usebeamerfont{title}\inserttitle\par%
+        \ifx\insertsubtitle\@empty%
+        \else%
+            \vskip0.25em%
+            {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}%
+        \fi%     
+    \end{beamercolorbox}%
+    \vskip1em\par
+    \begin{beamercolorbox}[sep=8pt,center]{author}
+        \usebeamerfont{author}\insertauthor
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[sep=8pt,center]{institute}
+        \usebeamerfont{institute}\insertinstitute
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[sep=8pt,center]{date}
+        \usebeamerfont{date}\insertdate
+    \end{beamercolorbox}
+}
+
+
+% shift all titles per slide a bit downwords
+\makeatletter
+\setbeamertemplate{frametitle}{
+  \vspace{0.2cm}% Increase this value as needed
+  \insertframetitle
+}
+
+
+% navigation bar
+% \useoutertheme{infolines}         % for no footer
+\setbeamertemplate{footline}{}      % for no footer
+\setbeamertemplate{headline}[default]
+\setbeamertemplate{navigation symbols}{}
+\useoutertheme[subsection=false]{miniframes}
+
+
+% Title page %***************************************************************
+\title[Improved Residential PV Expansion]{Decisions at the Grid's Edge: \\ An Improved Spatial PV Expansion in Swiss Residences}
+
+\author{Raul Hochuli}
+\institute[University of Basel]{University of Basel, Faculty of Business and Economics, } 
+\date[Feb 2026]{April 2026}
+\titlegraphic{\includegraphics[width=2.3cm]{UniBas_Logo.jpg}}
+
+
+
+%*******************************************************************************
+\begin{document}  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%******************************************************************************
+
+% =======================================
+\begin{frame}
+    \maketitle
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Motivation} 
+
+% =======================================
+\begin{frame}{Motivation}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.1\textwidth]{figures/newspaper_header_optimalpv.png}
+  }
+% \href{https://www.nzz.ch/schweiz/der-solarboom-bringt-das-stromnetz-an-den-anschlag-ld.1728398}{https://www.nzz.ch/schweiz/der-solarboom-bringt-das-stromnetz-an-den-anschlag-ld.1728398}
+% \href{https://www.nzz.ch/wirtschaft/die-deutsche-energiewende-geht-voran-jetzt-will-katharina-reiche-die-spielregeln-aendern-ld.1930553}{https://www.nzz.ch/wirtschaft/die-deutsche-energiewende-geht-voran-jetzt-will-katharina-reiche-die-spielregeln-aendern-ld.1930553}
+% \href{https://www.spiegel.de/wirtschaft/soziales/katherina-reiche-wirtschaftsministerin-plant-massive-einschnitte-fuer-erneuerbare-energien-a-c8d3fb96-2d80-41c4-9ff4-dc7a82f9019e}{https://www.spiegel.de/wirtschaft/soziales/katherina-reiche-wirtschaftsministerin-plant-massive-einschnitte-fuer-erneuerbare-energien-a-c8d3fb96-2d80-41c4-9ff4-dc7a82f9019e}
+% \href{https://www.sueddeutsche.de/wirtschaft/erneuerbare-energien-solarbranche-ausbau-erneuerbarer-energien-ist-buergerwille-dpa.urn-newsml-dpa-com-20090101-260404-930-907053}{https://www.sueddeutsche.de/wirtschaft/erneuerbare-energien-solarbranche-ausbau-erneuerbarer-energien-ist-buergerwille-dpa.urn-newsml-dpa-com-20090101-260404-930-907053}
+\end{frame}
+
+
+% =======================================
+\begin{frame}{Motivation}
+\hypertarget{motivation_relevance}{}
+\textbf{To achieve the energy transition, (residential) PV plays a vital role...}
+\vspace{0.1cm}
+\begin{itemize}
+    \item Surpass coal in 2027 with 2'350 GW (22\%) of global power production capacity (\cite{iea_resreport2022})
+    \item Has a potential of 67 TWh/y on existing Swiss infrastructure (\cite{vese_pvpower2021})
+    \item Targeted to have 37.5 GW capacity in Switzerland in 2050 (\cite{bfe_ep2050_2020}, 8.17 GW in 2024 \cite{swisssolar2024}, \hyperlink{appendix_res_targets}{\beamerreturnbutton{App.Res Targets}})
+\end{itemize}
+\vspace{0.4cm }
+\textbf{... but faces serious problems.}
+\vspace{0.1cm}
+\begin{itemize}
+    \item Recent political opposition. 
+    \item Dislike for large scale installations (\cite{sutterlin2017}, \cite{cousse2020})
+    \item Grid overloading has already been observed and requires costly counter-measures (\cite{renewables2023}, \cite{tomar2024})
+\end{itemize}
+\end{frame}
+
+% =======================================
+\begin{frame}{Grid Structure}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.1\textwidth]{figures/grid-levels.png}
+  }
+\end{frame}
+
+% =======================================
+\begin{frame}{Literature}
+\hypertarget{intro_literature}{}
+\vspace{0.15cm}
+\begin{itemize}
+    \item What drives PV adaptation (\cite{muller2020})
+    \item How to assess the PV induced problem on "hosting capacity" (\cite{ismael2019}, \cite{mulenga2020})
+    \item What levels of PV-penetration is problematic (\cite{tevar2019})
+    \item Optimal placement of PV installations and energy storage for minimal medium voltage grid strain (\cite{gupta2021})
+    \item Level of investments needed to facility energy transition (incl. high levels of residential PV, \cite{bfe_ep2050_netz2022}, \hyperlink{appendix_model_grid_analysis}{\beamerreturnbutton{App.Grid Analysis}}).         
+\end{itemize}
+
+\vspace{0.15cm}
+        \begin{block}{Research Contribution - A Swiss Case Study}
+        \begin{enumerate}
+            \item \textbf{Problem quantification}: 
+            \begin{itemize}
+                \item Create highly detailed spatial model to estimate PV-induced effects in larger LV grid (incl. roof specifics + individual "decision making").
+            \end{itemize}
+            \vspace{0.1cm}
+            \item \textbf{Economic response}: 
+            \begin{itemize}
+                \item \textcolor{unibasgreydark}{1st-best) Congestion pricing for externality (not feasible in practice)}
+                \item 2nd-best) Simple subsidy adjustments, focusing on grid capacity
+            \end{itemize}
+        \end{enumerate}
+        \vspace{0.1cm}
+        \end{block}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Model} 
+
+% =======================================
+\begin{frame}{Model Structure - 3 Agents }
+\hypertarget{mod_structure_agents}{}
+
+\begin{columns}
+    \begin{column}{0.49\textwidth}    
+    \textcolor{red}{Demand}
+    \begin{itemize}
+        \item Archetype profiles (single/multi family, rural / urban) scaled by living area. 
+        \item Scaling up winter months for heat pumps.
+    \end{itemize}
+    \textcolor{purple}{Production}
+    \begin{itemize}
+        \item Roof partitions and radiation yield production potential.
+        \item Calibrated random forest assigns installation size \hyperlink{appendix_randomforest_scatterplot}{\beamerreturnbutton{App. RFR}}.
+    \end{itemize}
+    \textcolor{unibasgreydark}{Investments}
+    \begin{itemize}
+        \item General cost assumption of PV calculator \hyperlink{appendix_cost_function}{\beamerreturnbutton{App. Cost}}
+    \end{itemize}
+    \vspace{0.25cm}
+
+    $\rightarrow NPV_{i} = -Inv_{i} + \sum_{t}^{25}\frac{Sav_{i,t} + Feed_{i,t}}{(1+r)^t}$     
+    \end{column}
+    
+    \begin{column}{0.49\textwidth}    
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.61\linewidth]{figures/EGID_solkat_example.png}
+            \label{fig:placeholder}
+        \end{figure}
+        \begin{figure}
+            \centering
+            \includegraphics[width=0.91\linewidth]{figures/EGID_HOY_profile.png}
+            \label{fig:placeholder}
+        \end{figure}
+    \end{column}
+\end{columns}
+\end{frame}
+
+% =======================================
+\begin{frame}{Model Structure - Allocation Process}
+\begin{columns}
+\begin{column}{0.49\textwidth}    
+    Allocation process
+    \begin{itemize}
+        \item Installation "order" defined by NPV.
+        \item Scaled, annual "construction budget" (\cite{bfe_ep2050_2020}) until 2050.
+    \end{itemize}
+    \vspace{0.5cm}
+    
+    Subsidy adjustment
+    \begin{itemize}
+        \item Subsidy budget given to operator (transparent criteria)
+        \item 3 types (A: roof orientation, B: grid specific, C: combination)
+    \end{itemize}
+    \vspace{0.5cm}
+
+    $\rightarrow NPV_{i,X} = NPV_{i} + S_{i,X} - R_{i,X}$ 
+
+\end{column}
+
+\begin{column}{0.49\textwidth}    
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.971\linewidth]{figures/pvalloc_29nbfs_LRG2_max_npv_df_hist.png}
+        \label{fig:placeholder}
+    \end{figure}
+    
+    \begin{minipage}{0.450\textwidth}
+    \centering
+    \footnotesize
+    \begin{tabular}{|l| c c c c|}
+        \hline
+        & $S=$ 0 & 2000 & 4000 & 6000 \\
+        \hline
+        $R=$ 0    & BU      & \cellcolor{scenA_table} & \cellcolor{scenA_table} A & \cellcolor{scenA_table}  \\
+         4000 & \cellcolor{scenB_table}    & \cellcolor{scenC_table} & \cellcolor{scenC_table}   & \cellcolor{scenC_table} \\
+         6000 & \cellcolor{scenB_table} B  & \cellcolor{scenC_table} & \cellcolor{scenC_table} C & \cellcolor{scenC_table} \\
+         8000 & \cellcolor{scenB_table}    & \cellcolor{scenC_table} & \cellcolor{scenC_table}   & \cellcolor{scenC_table} \\
+        \hline
+    \end{tabular}
+    \end{minipage}
+    \end{column}
+\end{columns}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Data} 
+
+
+% =======================================
+\begin{frame}{Data}
+
+
+% ----------- Summary Table -----------
+\centering
+\textbf{Summary}\\
+\vspace{0.2cm}
+
+{\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.15}
+
+\begin{tabular}{|l c c c|}
+    \hline
+    \textbf{Metric} & \textbf{Sample} & \textbf{Avail. Sample} & \textbf{All CH} \\
+    \hline
+    Municipalities         & 28              & 79            & 2132 \\
+    All Buildings          & 44'354          & 132'018       & - \\
+    Residential Houses     & 15'435          & 47'900        & - \\
+    Grid Nodes             & 334             & 1'113         & - \\
+    Total Roof Surface (m$^2$) & 2'322'657.0 & 20'788'344.3 & - \\
+    Capacity Target 2050 (MW)     & 129.2           & -             & - \\
+    \hline
+\end{tabular}
+}
+
+\vspace{0.6cm}
+
+% ----------- Data Sources Table -----------
+\centering
+\textbf{Data Sources}\\
+\vspace{0.2cm}
+
+{\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.15}
+
+\begin{tabular}{|l l l|} %p{1cm}|}
+    \hline
+    \textbf{Category} & \textbf{Description} & \textbf{Ref.} \\
+    \hline
+    Rooftop Data 
+        & Roof surface, orientation, tilt
+        & [1] \\
+        
+    Building Data 
+        & Building type, heating tech, existing inst.  prices / tariffs
+        & [2--5] \\
+                
+    Grid Infrastructure 
+        & Nodes, connections + capacity
+        & (NDA) \\
+        
+    Other Data
+        & Demand, costs assumptions, capacity targets, radiation
+        & [6--9] \\
+        
+    Computing Infrastructure
+        & High Performance Cluster for model run
+        & [10] \\
+    \hline
+\end{tabular}
+
+\vspace{0.2cm}
+}
+
+\vspace{0.2cm}
+{\tiny
+\begin{minipage}{\linewidth}
+\raggedright
+[1]: \cite{solkat2023}\par
+[2--5]: \cite{gwr2025, elec_prod2024, vese_pvtarif2023, elcom2023}\par
+[6--9]: \cite{swissstore2022,  energieschweiz2023, bfe_ep2050_2020, meteoblue2023}\par
+[10]: \cite{hpc_scicore2026}\par
+\end{minipage}
+
+}\end{frame}
+
+% =======================================
+\begin{frame}{Data - Figure}
+\begin{minipage}{0.323\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/wp_topo_roof_solkat_1_3.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.323\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/wp_topo_DSO_example_1_3.png}
+  }
+\end{minipage}
+\begin{minipage}{0.323\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/wp_topo_DSO_grid_large_example_1_3.png}
+  }
+\end{minipage}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results} 
+
+% =======================================
+\begin{frame}{Future Grid-Related Losses}
+
+\begin{minipage}{0.492\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/line_PVHOY_bu_loss_byiter.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.492\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_bu_loss.png}
+  }
+\end{minipage}
+\end{frame}
+
+% =======================================
+\begin{frame}{Characteristics}
+
+% --- Top full-width plot ---
+\begin{minipage}{\textwidth}
+  \centering
+  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_bu.png}
+\end{minipage}
+
+\vspace{0.25cm}
+
+% --- Bottom row: 4 plots side by side ---
+\begin{minipage}{0.245\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+  \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_GKLAS.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.245\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+  \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_heatpump_TF.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.245\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+  \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_are_typ.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.245\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+  \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_bu_pvalloc_29nbfs_LRG2_max_filter_tag.png}
+  }
+\end{minipage}
+\end{frame}
+
+% =======================================
+\begin{frame}{"Subsidies A,B and C"}
+\begin{minipage}{0.492\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_buABC_loss.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.492\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_buABC_feedin.png}
+  }
+\end{minipage}
+\end{frame}
+
+% =======================================
+\begin{frame}{"Subsidy C"}
+
+% --- Top full-width plot ---
+\begin{minipage}{\textwidth}
+  \centering
+  \includegraphics[width=1.0\textwidth]{figures/hist_contcharact_newinst_C.png}
+\end{minipage}
+
+\vspace{0.25cm}
+
+% --- Bottom row: 4 plots side by side ---
+\begin{minipage}{0.245\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+  \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_C_pvalloc_29nbfs_LRG2_max_sCs2p8_GKLAS.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.245\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+  \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_C_pvalloc_29nbfs_LRG2_max_sCs2p8_heatpump_TF.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.245\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+  \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_C_pvalloc_29nbfs_LRG2_max_sCs2p8_are_typ.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.245\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+  \includegraphics[width=1.05\textwidth]{figures/line_catgcharact_newinst_C_pvalloc_29nbfs_LRG2_max_sCs2p8_filter_tag.png}
+  }
+\end{minipage}
+\end{frame}
+
+% =======================================
+\begin{frame}{"Cautious Grid Operator"}
+\begin{minipage}{0.492\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_buABC_1hll_loss.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.492\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_buAB_1hll_feedin.png}
+  }
+\end{minipage}
+\end{frame}
+
+% =======================================
+\begin{frame}{"Optimal Expansion" (in developing)}
+\begin{minipage}{0.492\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_buABCgridopt_loss.png}
+  }
+\end{minipage}\hfill
+\begin{minipage}{0.492\textwidth}
+  \centering
+  \makebox[0pt][c]{%
+    \includegraphics[width=1.005\textwidth]{figures/line_PVproduction_buABCgridopt_feedin.png}
+  }
+\end{minipage}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Outlook} 
+
+% =======================================
+\begin{frame}{Conclusion}
+% \textbf{Summary}
+\begin{block}{Research Contribution}
+    \begin{enumerate}
+        \item \textbf{Problem quantification}: 
+        \begin{itemize}
+            % \item Create highly detailed spatial model to estimate PV-induced effects in larger LV grid (incl. roof specifics + individual "decision making").
+            %(incl. roof specifics production profiles + individual "decision making").
+            \item \textcolor{unibasgreydark}{\textit{Problems will arise in the next couple of years and scale up fast}}
+        \end{itemize}
+        \vspace{0.1cm}
+        \item \textbf{Economic response}: 
+        \begin{itemize}
+            % \item \textcolor{unibasgreydark}{1st-best) Congestion pricing for externality (not feasible in practice)}
+            % \item 2nd-best) Simple subsidy adjustments, focusing on grid capacity
+            \item \textcolor{unibasgreydark}{\textit{Simple subsidy adjustments can delay grid congestion by a few years and overall size, possibly maybe even as good as a social planners allocation. }}
+        \end{itemize}
+    \end{enumerate}
+\end{block}
+
+\textbf{Outlook}
+\begin{itemize}
+    \item Derive "optimal installation schedule" for comparison (*in progress)
+    \item Add battery investment and individual battery usage to the model 
+    $\rightarrow$ optimize household consumption
+    \item  More sophisticated pricing schemes (actual congestion pricing)
+    \item Use RTP instead of TOU prices for electricity self consumption.
+\end{itemize}
+
+\end{frame}
+
+% =======================================
+\begin{frame}{}
+\centering
+{\Huge \textcolor{unibasmintdark}{Thank you} }
+%  \\  {\LARGE Questions \& Discussion}}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \section{References}
+
+% =======================================
+\renewcommand{\bibfont}{\footnotesize}
+\begin{frame}[allowframebreaks]{References}
+\printbibliography
+
+\end{frame}
+\renewcommand{\bibfont}{\normalsize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Appendix} 
+
+% =======================================
+\begin{frame}{Appendix: Model Grid Analysis EP2050+}
+\hypertarget{appendix_model_grid_analysis}{}
+\vspace{-\baselineskip}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/bfe_ep2050_netz_MNA_notitle.PNG}
+\end{figure}
+\vspace{-\baselineskip}
+\small
+\centering
+\textit{Comparison between the real (left) and homogeneous model assumed grid
+topology \cite{bfe_ep2050_netz2022}} \hyperlink{back}{\beamerreturnbutton{Literature}}
+
+\end{frame}
+
+% =======================================
+\begin{frame}{Appendix: Calibrated Random Forest}
+\hypertarget{appendix_randomforest_scatterplot}{}
+\vspace{-\baselineskip}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/calib_rfr2_predvsactual.png}
+\end{figure}
+\vspace{-\baselineskip}
+\small
+\centering
+\textit{Scatterplot for actual and predicted installation sizes (incl 45 degree diagonal) of calibrated random forest regression on 61270 Swiss houses with a PV installation, between 20 to 70 percent an available roof partition used.}\hyperlink{mod_structure_agents}{\beamerreturnbutton{back}}
+
+\end{frame}
+
+% =======================================
+\begin{frame}{Appendix: Interpolated Cost Function}
+\hypertarget{appendix_cost_function}{}
+\vspace{-\baselineskip}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/pvinstcost_table.png}
+\end{figure}
+\vspace{-\baselineskip}
+\small
+\centering
+\textit{Intrapolation approximation function (green, only on small scale installations) based on
+cost assumptions in the technical model appendix of energieschweiz.}\hyperlink{mod_structure_agents}{\beamerreturnbutton{back}}
+
+\end{frame}
+
+% =======================================
+\begin{frame}{Appendix: RES Targets 2050 Switzerland}
+\hypertarget{appendix_res_targets}{}
+\vspace{-\baselineskip}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/eth_summerschool_scenario_agg_notitle.png}
+\end{figure}
+\vspace{-\baselineskip}
+\small
+\centering
+\textit{}\hyperlink{motivation_relevance}{\beamerreturnbutton{back}}
+\end{frame}
+
+
+\end{document}
