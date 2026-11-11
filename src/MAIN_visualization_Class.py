@@ -537,8 +537,9 @@ if __name__ == '__main__':
         # #     # 'pvalloc_26nbfs_LRG_rnd', 
         # ], 
         pvalloc_include_pattern_list       = [
-            'pvalloc_26nbfs_LRG_*', 
+            # 'pvalloc_26nbfs_LRG_*', 
             # 'pvalloc_LRG4*', 
+            'pvalloc_DEV_*', 
                                             ],
         pvalloc_exclude_pattern_list       = [
                                                 '*.txt', '*.tar.gz', '*old_vers*',

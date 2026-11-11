@@ -10,6 +10,7 @@ import  sqlite3
 
 import json
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as patheffects
 from matplotlib.collections import LineCollection
 import seaborn as sns
 
@@ -95,9 +96,30 @@ class static_plotter_class:
         if plot_width is not None and plot_height is not None:
             fig.set_size_inches(plot_width, plot_height, forward=True)
         plt.savefig(export_path, dpi=self.plot_dpi)
-    
 
-    def copy_standalone_graphs_to_presentation_dir(self, 
+    def _add_line_value_labels(self, ax, points, fmt):
+        # points = list of (x, y, line color). Call after tight_layout, when the dot positions on the page are final.
+        pt_per_px = 72 / ax.figure.dpi
+        gap_pt, offset_pt = 8, 4                # text line height; distance from the dot
+        for x_val in sorted({p[0] for p in points}):
+            top_pt, printed = -np.inf, set()
+            # go from the lowest to the highest dot of this year and push a number up if it would overlap the one below
+            for _, y_val, color in sorted((p for p in points if p[0] == x_val), key=lambda p: p[1]):
+                text = fmt.format(y_val)
+                if text in printed:             # same rounded number in the same year: print once
+                    continue
+                printed.add(text)
+                y_pt = ax.transData.transform((x_val, y_val))[1] * pt_per_px
+                top_pt = max(y_pt + offset_pt, top_pt + gap_pt)
+                ax.annotate(text, xy=(x_val, y_val),
+                            xytext=(-offset_pt, top_pt - y_pt), textcoords='offset points',
+                            ha='right', va='bottom', fontsize=6.5, color='0.15',
+                            path_effects=[patheffects.withStroke(linewidth=1.5, foreground='white')],
+                            arrowprops=dict(arrowstyle='-', color=color, linewidth=0.5,
+                                            shrinkA=0, shrinkB=2, relpos=(1, 0)))
+
+
+    def copy_standalone_graphs_to_presentation_dir(self,
                                                   graphs_list =[
                                                       'bfe_ep2050_netz_MNA_notitle.PNG', 
                                                       'calib_rfr2_predvsactual.png', 
@@ -1871,6 +1893,8 @@ class static_plotter_class:
                                start_year = 2024,
                                plot_width_func = None,
                                plot_height_func = None,
+                               value_label_iters = None,    # which n_iter get numbers, e.g. [5, 12]; None = no numbers
+                               value_label_fmt = '{:.1f}',  # number format; '{:.1f}' = one decimal
                                    ):
         if isinstance(csv_file, list) and len(csv_file) > 1:
             df_list = []
@@ -1901,10 +1925,11 @@ class static_plotter_class:
         plot_color_map.update(random_colors_map)
 
         plt.figure(figsize=(plot_width, plot_height))
+        label_points = []
 
         for i, scen in enumerate(scen_incl_list):
             df_plot = df.loc[
-                (df['scen'] == scen) & 
+                (df['scen'] == scen) &
                 (df['n_iter'].isin(n_iter_range_list)),
                 :
             ].copy()
@@ -1939,6 +1964,12 @@ class static_plotter_class:
                     alpha=self.line_opacity,
                 )
 
+                if value_label_iters is not None:
+                    df_label = df_plot.loc[df_plot['n_iter'].isin(value_label_iters)]
+                    # seaborn draws the mean per year, so label that same number
+                    label_values = df_label.groupby(x_col)[y_col].mean().dropna()
+                    label_points += [(x_val, y_val, scen_color) for x_val, y_val in label_values.items()]
+
         x_label = 'Year' if start_year is not None else 'Model Iterations (Future Years)'
         plt.xlabel(x_label)
         plt.ylabel(y_label)
@@ -1952,8 +1983,12 @@ class static_plotter_class:
         # else:
         #     plt.title(f'Agg. {y_label}')
 
-        plt.legend()
+        plt.legend(fontsize=8 if value_label_iters is not None else None)  # with numbers: smaller, so it keeps clear of them
+        if value_label_iters is not None:
+            plt.gca().margins(x=0.1, y=0.1)   # extra empty space so numbers stay inside the frame
         plt.tight_layout()
+        if value_label_iters is not None:
+            self._add_line_value_labels(plt.gca(), label_points, value_label_fmt)
         # plt.show()
         self._save_figure(os.path.join(self.dir_path_export, f'{export_name}.png'), plot_width, plot_height)
 

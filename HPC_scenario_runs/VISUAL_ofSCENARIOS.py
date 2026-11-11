@@ -10,7 +10,7 @@ from src.MAIN_visualization_Class import Visual_Settings, Visualization
 
 # SELECT SUB-SCENARIO TO PLOT --------------------------------------------------------------------------
 
-sub_scen_str = 'DEV'
+sub_scen_str = 'LRG'
 
 pvalloc_scen_list = get_subscen_list(sub_scen_str = sub_scen_str, )
 scen_to_plot = [scen.name_dir_export for scen in pvalloc_scen_list ]
@@ -23,7 +23,11 @@ visual_default = Visual_Settings(
         pvalloc_include_pattern_list       = [
             # 'pvalloc_26nbfs_LRG_*', 
             # 'pvalloc_LRG4*', 
-            'pvalloc_DEV_*', 
+            # 'pvalloc_DEV_*', 
+            'pvalloc_LRG5*', 
+            'pvalloc_LRG6*', 
+            'pvalloc_LRG7*', 
+            
                                             ],
     pvalloc_exclude_pattern_list       = [
                                             '*.txt', '*.tar.gz', '*old_vers*',
